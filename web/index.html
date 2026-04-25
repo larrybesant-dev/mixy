@@ -93,14 +93,33 @@
       }
 
       function watchForFlutterSurface() {
-        var matcher = 'flt-glass-pane, flutter-view, flt-scene-host';
-        if (document.querySelector(matcher)) {
-          hideBootShell();
-          return;
+        var matcher = 'flt-glass-pane, flutter-view, flt-scene-host, flt-semantics-host, flt-platform-view';
+        var didHide = false;
+
+        function tryHide(reason) {
+          if (didHide) return;
+          if (document.querySelector(matcher)) {
+            didHide = true;
+            hideBootShell();
+          }
         }
 
+        // Flutter emits this when the first frame is rendered.
+        window.addEventListener('flutter-first-frame', function () {
+          didHide = true;
+          hideBootShell();
+        }, { once: true });
+
+        tryHide('initial-query');
+        if (didHide) return;
+
         var observer = new MutationObserver(function () {
+          if (didHide) {
+            observer.disconnect();
+            return;
+          }
           if (document.querySelector(matcher)) {
+            didHide = true;
             observer.disconnect();
             hideBootShell();
           }
@@ -110,6 +129,29 @@
           childList: true,
           subtree: true,
         });
+
+        // Poll briefly to catch renderers attaching outside mutation timing.
+        var checks = 0;
+        var poll = setInterval(function () {
+          checks += 1;
+          if (didHide) {
+            clearInterval(poll);
+            return;
+          }
+          if (document.querySelector(matcher)) {
+            didHide = true;
+            clearInterval(poll);
+            observer.disconnect();
+            hideBootShell();
+            return;
+          }
+          // Final failsafe so the loader cannot permanently block the app.
+          if (checks >= 120) {
+            clearInterval(poll);
+            observer.disconnect();
+            hideBootShell();
+          }
+        }, 250);
       }
 
       if ('serviceWorker' in navigator) {

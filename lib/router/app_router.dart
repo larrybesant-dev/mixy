@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,6 +64,11 @@ import '../features/profile/edit_profile_screen.dart';
 import '../features/payments/payments_screen.dart';
 import '../features/payments/vip_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
+
+const bool _debugRtcEntryEnabled = bool.fromEnvironment(
+  'MIXVY_DEBUG_RTC_ENTRY',
+  defaultValue: false,
+);
 
 class _CacheEntry<T> {
   const _CacheEntry({required this.value, required this.loadedAt});
@@ -236,26 +242,67 @@ Future<String?> evaluateAppRedirect({
   // Set by the router redirect when the user landed on /splash?from=...
   String? redirectFrom,
 }) async {
+  developer.log(
+    'redirect check location=$matchedLocation uid=${uid ?? 'null'} authLoading=$authLoading debugRtcEntry=$_debugRtcEntryEnabled redirectFrom=${redirectFrom ?? 'null'}',
+    name: 'AppRouter',
+  );
+
   if (isRouteError || matchedLocation == '/404') {
+    developer.log(
+      'redirect decision from=$matchedLocation to=stay reason=route_error_or_404',
+      name: 'AppRouter',
+    );
     return null;
   }
 
   // Let After Dark handle its own guard (age-gate + PIN redirect).
-  if (matchedLocation.startsWith('/after-dark')) return null;
+  if (matchedLocation.startsWith('/after-dark')) {
+    developer.log(
+      'redirect decision from=$matchedLocation to=stay reason=after_dark_self_guarded',
+      name: 'AppRouter',
+    );
+    return null;
+  }
 
   if (authLoading) {
-    if (matchedLocation == '/splash') return null;
+    if (matchedLocation == '/splash') {
+      developer.log(
+        'redirect decision from=$matchedLocation to=stay reason=auth_loading_hold',
+        name: 'AppRouter',
+      );
+      return null;
+    }
     // Preserve the intended deep link through the auth-loading pause so that
     // a web refresh on e.g. /room/abc123 comes back to that room once auth
     // resolves, rather than silently dropping the user at /discover.
     final encodedFrom = _isPreservableDeepLink(matchedLocation)
         ? '?from=${Uri.encodeComponent(matchedLocation)}'
         : '';
-    return '/splash$encodedFrom';
+    final target = '/splash$encodedFrom';
+    developer.log(
+      'redirect decision from=$matchedLocation to=$target reason=auth_loading_redirect',
+      name: 'AppRouter',
+    );
+    return target;
   }
 
   final loggedIn = uid != null;
   final isSplash = matchedLocation == '/splash';
+  final isRtcRoute =
+      matchedLocation == '/live' || matchedLocation.startsWith('/room/');
+
+  if (kDebugMode && _debugRtcEntryEnabled && isSplash) {
+    developer.log(
+      'Debug entry override active -> /room/debug-rtc',
+      name: 'AppRouter',
+    );
+    developer.log(
+      'redirect decision from=$matchedLocation to=/room/debug-rtc reason=debug_rtc_entry_override',
+      name: 'AppRouter',
+    );
+    return '/room/debug-rtc';
+  }
+
   final isLoggingIn =
       matchedLocation == '/login' || matchedLocation == '/register';
   final isOnboarding = matchedLocation == '/onboarding';
@@ -263,18 +310,69 @@ Future<String?> evaluateAppRedirect({
   final isProfile = matchedLocation == '/profile';
   final firstRun = await isFirstRun();
 
-  if (firstRun && !isOnboarding && !isLegalRoute) return '/onboarding';
-  if (!firstRun && isOnboarding) return loggedIn ? '/discover' : '/login';
+  if (firstRun && !isOnboarding && !isLegalRoute) {
+    developer.log(
+      'redirect decision from=$matchedLocation to=/onboarding reason=first_run',
+      name: 'AppRouter',
+    );
+    return '/onboarding';
+  }
+  if (!firstRun && isOnboarding) {
+    final target = loggedIn ? '/discover' : '/login';
+    developer.log(
+      'redirect decision from=$matchedLocation to=$target reason=onboarding_already_seen',
+      name: 'AppRouter',
+    );
+    return target;
+  }
 
   final legalAccepted = await isLegalAccepted();
   if (!legalAccepted && !isOnboarding && !isLegalRoute) {
+    developer.log(
+      'redirect decision from=$matchedLocation to=/legal/terms reason=legal_not_accepted',
+      name: 'AppRouter',
+    );
     return '/legal/terms';
   }
 
-  if (!loggedIn && !isLoggingIn && !isLegalRoute) return '/login';
+  if (!loggedIn && !isLoggingIn && !isLegalRoute) {
+    if (kDebugMode && isRtcRoute) {
+      developer.log(
+        'Debug bypass: allowing signed-out access to $matchedLocation for RTC validation.',
+        name: 'AppRouter',
+      );
+      developer.log(
+        'redirect decision from=$matchedLocation to=stay reason=debug_signed_out_rtc_bypass',
+        name: 'AppRouter',
+      );
+      return null;
+    }
+    developer.log(
+      'redirect decision from=$matchedLocation to=/login reason=signed_out_guard',
+      name: 'AppRouter',
+    );
+    return '/login';
+  }
   if (loggedIn) {
     final profileComplete = await isProfileComplete(uid);
-    if (!profileComplete && !isProfile) return '/profile';
+    if (!profileComplete && !isProfile) {
+      if (kDebugMode && isRtcRoute) {
+        developer.log(
+          'Debug bypass: skipping profile gate for $matchedLocation during RTC validation.',
+          name: 'AppRouter',
+        );
+        developer.log(
+          'redirect decision from=$matchedLocation to=stay reason=debug_profile_gate_bypass',
+          name: 'AppRouter',
+        );
+      } else {
+        developer.log(
+          'redirect decision from=$matchedLocation to=/profile reason=profile_incomplete',
+          name: 'AppRouter',
+        );
+        return '/profile';
+      }
+    }
     if (profileComplete && (isLoggingIn || isSplash)) {
       // If auth resolved while we were holding a deep-link destination,
       // go there directly instead of /discover.
@@ -282,12 +380,30 @@ Future<String?> evaluateAppRedirect({
           redirectFrom != null &&
           redirectFrom.isNotEmpty &&
           _isPreservableDeepLink(redirectFrom)) {
+        developer.log(
+          'redirect decision from=$matchedLocation to=$redirectFrom reason=restore_deeplink',
+          name: 'AppRouter',
+        );
         return redirectFrom;
       }
+      developer.log(
+        'redirect decision from=$matchedLocation to=/discover reason=post_auth_default',
+        name: 'AppRouter',
+      );
       return '/discover';
     }
   }
-  if (!loggedIn && isSplash) return '/login';
+  if (!loggedIn && isSplash) {
+    developer.log(
+      'redirect decision from=$matchedLocation to=/login reason=splash_signed_out',
+      name: 'AppRouter',
+    );
+    return '/login';
+  }
+  developer.log(
+    'redirect decision from=$matchedLocation to=stay reason=no_redirect',
+    name: 'AppRouter',
+  );
   return null;
 }
 
@@ -300,6 +416,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
+    debugLogDiagnostics: kDebugMode,
     errorBuilder: (context, state) =>
         NotFoundScreen(path: state.uri.toString()),
     redirect: (context, state) async {

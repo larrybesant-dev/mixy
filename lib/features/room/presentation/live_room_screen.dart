@@ -559,6 +559,8 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
   /// Ensure RTC is initialized before attempting media actions.
   /// This is the tap-time resolution entry point that guarantees RTC readiness.
   Future<void> ensureRtcInitialized() async {
+    developer.log('[DEBUG-RTC] ensureRtcInitialized() called', name: 'RTC-Pipeline');
+    
     final mediaController = ref.read(
       liveRoomMediaControllerProvider(widget.roomId).notifier,
     );
@@ -566,13 +568,17 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
       liveRoomMediaControllerProvider(widget.roomId),
     );
 
+    developer.log('[DEBUG-RTC] Current state: ${mediaState.rtcState}', name: 'RTC-Pipeline');
+
     // Already ready or initializing — no need to do anything.
     if (mediaState.rtcState == RtcState.ready ||
         mediaState.rtcState == RtcState.initializing) {
+      developer.log('[DEBUG-RTC] Already ready or initializing, skipping', name: 'RTC-Pipeline');
       return;
     }
 
     // Mark as initializing
+    developer.log('[DEBUG-RTC] Setting state to initializing', name: 'RTC-Pipeline');
     mediaController.setRtcState(RtcState.initializing);
 
     try {
@@ -587,31 +593,37 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
 
       final service = ref.read(rtcServiceProvider(widget.roomId));
       if (service != null) {
+        developer.log('[DEBUG-RTC] Service available after $attempts attempts, marking ready', name: 'RTC-Pipeline');
         mediaController.markRtcReady();
       } else {
+        developer.log('[DEBUG-RTC] Service NOT available after $attempts attempts, marking degraded', name: 'RTC-Pipeline');
         mediaController.markRtcDegraded();
       }
     } catch (e) {
       developer.log(
-        'ensureRtcInitialized failed: $e',
-        name: 'LiveRoomScreen',
+        '[DEBUG-RTC] ensureRtcInitialized failed: $e',
+        name: 'RTC-Pipeline',
       );
       mediaController.markRtcDegraded();
     }
   }
 
   Future<void> _toggleMic() async {
+    developer.log('[DEBUG-BUTTON] Mic button tapped', name: 'RTC-Pipeline');
+    
     await ensureRtcInitialized();
 
     final mediaState = ref.read(
       liveRoomMediaControllerProvider(widget.roomId),
     );
 
+    developer.log('[DEBUG-BUTTON] After ensureRtcInitialized: rtcState=${mediaState.rtcState}', name: 'RTC-Pipeline');
+
     // If RTC failed, we cannot proceed
     if (mediaState.rtcState == RtcState.failed) {
       developer.log(
-        '_toggleMic: RTC failed — cannot proceed',
-        name: 'LiveRoomScreen',
+        '[DEBUG-BUTTON] RTC failed — cannot proceed',
+        name: 'RTC-Pipeline',
       );
       return;
     }
@@ -619,11 +631,13 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
     final service = ref.read(rtcServiceProvider(widget.roomId));
     if (service == null) {
       developer.log(
-        '_toggleMic: RTC service not available',
-        name: 'LiveRoomScreen',
+        '[DEBUG-BUTTON] RTC service not available',
+        name: 'RTC-Pipeline',
       );
       return;
     }
+
+    developer.log('[DEBUG-BUTTON] Service available, proceeding with mic toggle', name: 'RTC-Pipeline');
 
     final mediaController = ref.read(
       liveRoomMediaControllerProvider(widget.roomId).notifier,
@@ -634,21 +648,25 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
 
     if (isCurrentlyMuted) {
       try {
+        developer.log('[DEBUG-BUTTON] Enabling mic', name: 'RTC-Pipeline');
         await service.setBroadcaster(true);
         await service.mute(false);
         mediaController.finishMicAction(isMuted: service.isLocalAudioMuted);
+        developer.log('[DEBUG-BUTTON] Mic enabled successfully', name: 'RTC-Pipeline');
       } catch (e) {
-        developer.log('_toggleMic: enable failed — $e', name: 'LiveRoomScreen');
+        developer.log('[DEBUG-BUTTON] Mic enable failed — $e', name: 'RTC-Pipeline');
         mediaController.endMicAction();
         mediaController.markRtcDegraded();
       }
     } else {
       try {
+        developer.log('[DEBUG-BUTTON] Disabling mic', name: 'RTC-Pipeline');
         await service.mute(true);
         await service.setBroadcaster(false);
         mediaController.finishMicAction(isMuted: service.isLocalAudioMuted);
+        developer.log('[DEBUG-BUTTON] Mic disabled successfully', name: 'RTC-Pipeline');
       } catch (e) {
-        developer.log('_toggleMic: disable failed — $e', name: 'LiveRoomScreen');
+        developer.log('[DEBUG-BUTTON] Mic disable failed — $e', name: 'RTC-Pipeline');
         mediaController.endMicAction();
         mediaController.markRtcDegraded();
       }
@@ -656,13 +674,18 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
   }
 
   Future<void> _toggleSystemAudio() async {
+    developer.log('[DEBUG-BUTTON] Screen share button tapped', name: 'RTC-Pipeline');
+    
     await ensureRtcInitialized();
 
     final mediaState = ref.read(
       liveRoomMediaControllerProvider(widget.roomId),
     );
 
+    developer.log('[DEBUG-BUTTON] After ensureRtcInitialized: rtcState=${mediaState.rtcState}', name: 'RTC-Pipeline');
+
     if (mediaState.rtcState == RtcState.failed) {
+      developer.log('[DEBUG-BUTTON] RTC failed, cannot share', name: 'RTC-Pipeline');
       return;
     }
 
@@ -672,22 +695,24 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
     );
 
     if (service == null || !kIsWeb || mediaState.isSystemAudioActionInFlight) {
+      developer.log('[DEBUG-BUTTON] Cannot proceed: service=$service, kIsWeb=$kIsWeb, inFlight=${mediaState.isSystemAudioActionInFlight}', name: 'RTC-Pipeline');
       return;
     }
 
     final target = !service.isSharingSystemAudio;
+    developer.log('[DEBUG-BUTTON] Toggling system audio to: $target', name: 'RTC-Pipeline');
+    
     mediaController.beginSystemAudioAction();
     try {
-      // shareSystemAudio properly handles getDisplayMedia with audio: true
-      // This restores screen share audio which was previously gated by dead UI
       await service.shareSystemAudio(target);
+      developer.log('[DEBUG-BUTTON] System audio toggled successfully', name: 'RTC-Pipeline');
       mediaController.finishSystemAudioAction(
         isSharing: service.isSharingSystemAudio,
       );
     } catch (e) {
       developer.log(
-        '_toggleSystemAudio failed — $e',
-        name: 'LiveRoomScreen',
+        '[DEBUG-BUTTON] System audio toggle failed — $e',
+        name: 'RTC-Pipeline',
       );
       mediaController.endSystemAudioAction();
       mediaController.markRtcDegraded();
@@ -836,12 +861,27 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
             if (statusLabel != null)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: cs.onSurfaceVariant,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    // Show RTC state for debugging
+                    Text(
+                      '[RTC: ${mediaState.rtcState.toString().split('.').last}]',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: cs.outline,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
                 ),
               ),
             const Spacer(),
