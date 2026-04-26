@@ -1,25 +1,29 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/environment.dart';
 import '../../core/logger.dart';
+import '../../core/services/feature_gate_service.dart';
 
 const String _appVersion = String.fromEnvironment(
   'APP_VERSION',
   defaultValue: 'dev-local',
 );
 
-class OperationalDebugOverlay extends StatefulWidget {
+class OperationalDebugOverlay extends ConsumerStatefulWidget {
   const OperationalDebugOverlay({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<OperationalDebugOverlay> createState() => _OperationalDebugOverlayState();
+  ConsumerState<OperationalDebugOverlay> createState() =>
+      _OperationalDebugOverlayState();
 }
 
-class _OperationalDebugOverlayState extends State<OperationalDebugOverlay> {
+class _OperationalDebugOverlayState
+    extends ConsumerState<OperationalDebugOverlay> {
   static const int _tapThreshold = 6;
   int _tapCount = 0;
   DateTime? _firstTapAt;
@@ -57,6 +61,47 @@ class _OperationalDebugOverlayState extends State<OperationalDebugOverlay> {
     };
   }
 
+  ({Color color, String label}) _healthSummary({
+    required FeatureGateState gates,
+    required LoggerErrorSnapshot? lastError,
+  }) {
+    final now = DateTime.now();
+    final lastUpdatedAt = gates.lastUpdatedAt;
+    final updateAge = lastUpdatedAt == null
+        ? const Duration(days: 999)
+        : now.difference(lastUpdatedAt);
+
+    final hasRecentError =
+        lastError != null && now.difference(lastError.occurredAt) < const Duration(minutes: 5);
+    final staleConfig = updateAge > const Duration(minutes: 5);
+    final limitedMode = !gates.enableLiveRooms || !gates.enableMessaging;
+
+    if (hasRecentError) {
+      return (color: const Color(0xFF9B2535), label: 'Health: Incident Watch');
+    }
+    if (staleConfig) {
+      return (color: const Color(0xFFB37A2A), label: 'Health: Config Stale');
+    }
+    if (limitedMode) {
+      return (color: const Color(0xFFB37A2A), label: 'Health: Limited Mode');
+    }
+    return (color: const Color(0xFF2E7D32), label: 'Health: Normal');
+  }
+
+  String _formatRelative(DateTime? value) {
+    if (value == null) {
+      return 'never';
+    }
+    final diff = DateTime.now().difference(value);
+    if (diff.inSeconds < 60) {
+      return '${diff.inSeconds}s ago';
+    }
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m ago';
+    }
+    return '${diff.inHours}h ago';
+  }
+
   String? _safeCurrentUserId() {
     try {
       return FirebaseAuth.instance.currentUser?.uid;
@@ -67,6 +112,7 @@ class _OperationalDebugOverlayState extends State<OperationalDebugOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final gates = ref.watch(featureGateControllerProvider);
     final userId = _safeCurrentUserId();
 
     return Stack(
@@ -106,6 +152,10 @@ class _OperationalDebugOverlayState extends State<OperationalDebugOverlay> {
                     child: ValueListenableBuilder<LoggerErrorSnapshot?>(
                       valueListenable: Logger.lastCapturedErrorNotifier,
                       builder: (context, snapshot, _) {
+                        final health = _healthSummary(
+                          gates: gates,
+                          lastError: snapshot,
+                        );
                         final lastErrorLabel = snapshot == null
                             ? 'none'
                             : '${snapshot.message} (${snapshot.errorType ?? 'error'})';
@@ -125,9 +175,54 @@ class _OperationalDebugOverlayState extends State<OperationalDebugOverlay> {
                                 ),
                               ),
                               const SizedBox(height: 8),
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: health.color.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: health.color.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.monitor_heart_outlined,
+                                        size: 14,
+                                        color: health.color,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        health.label,
+                                        style: TextStyle(
+                                          color: health.color,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
                               Text('Version: $_appVersion'),
                               Text('Environment: ${_environmentLabel()}${kReleaseMode ? ' (release)' : ''}'),
                               Text('User: ${_maskedUserId(userId)}'),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Remote Config',
+                                style: TextStyle(
+                                  color: Color(0xFFD4AF37),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text('enable_live_rooms: ${gates.enableLiveRooms}'),
+                              Text('enable_messaging: ${gates.enableMessaging}'),
+                              Text('config_source: ${gates.source}'),
+                              Text('last_update: ${_formatRelative(gates.lastUpdatedAt)}'),
                               const SizedBox(height: 6),
                               const Text(
                                 'Last Error',

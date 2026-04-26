@@ -47,7 +47,6 @@ class FeatureGateState {
 final featureGateControllerProvider =
     StateNotifierProvider<FeatureGateController, FeatureGateState>((ref) {
       final controller = FeatureGateController();
-      ref.onDispose(controller.dispose);
       unawaited(controller.initialize());
       return controller;
     });

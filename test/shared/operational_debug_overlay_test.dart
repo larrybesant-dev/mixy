@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/shared/widgets/operational_debug_overlay.dart';
 
 void main() {
   testWidgets('operational overlay opens via hidden tap sequence', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: OperationalDebugOverlay(
-            child: SizedBox.expand(),
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: OperationalDebugOverlay(
+              child: SizedBox.expand(),
+            ),
           ),
         ),
       ),
@@ -22,9 +25,14 @@ void main() {
     }
 
     expect(find.text('Operational Debug'), findsOneWidget);
+    expect(find.textContaining('Health:'), findsOneWidget);
     expect(find.textContaining('Version:'), findsOneWidget);
     expect(find.textContaining('Environment:'), findsOneWidget);
     expect(find.textContaining('User:'), findsOneWidget);
+    expect(find.text('Remote Config'), findsOneWidget);
+    expect(find.textContaining('enable_live_rooms:'), findsOneWidget);
+    expect(find.textContaining('enable_messaging:'), findsOneWidget);
+    expect(find.textContaining('last_update:'), findsOneWidget);
     expect(find.text('Last Error'), findsOneWidget);
   });
 }
