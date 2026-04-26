@@ -155,21 +155,21 @@
       }
 
       if ('serviceWorker' in navigator) {
-        // If older deployments registered Flutter's app SW, remove it so stale
-        // cached bundles can never pin clients to an outdated runtime.
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          regs.forEach(function (reg) {
-            var scriptUrl = '';
-            if (reg.active && reg.active.scriptURL) scriptUrl = reg.active.scriptURL;
-            else if (reg.waiting && reg.waiting.scriptURL) scriptUrl = reg.waiting.scriptURL;
-            else if (reg.installing && reg.installing.scriptURL) scriptUrl = reg.installing.scriptURL;
-            if (scriptUrl.indexOf('flutter_service_worker.js') >= 0) {
+        var isLocalDevHost =
+          location.hostname === 'localhost' ||
+          location.hostname === '127.0.0.1' ||
+          location.hostname === '[::1]';
+
+        if (isLocalDevHost) {
+          // Keep local dev sessions clean without disrupting production caching.
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (reg) {
               reg.unregister();
-            }
+            });
+          }).catch(function () {
+            // Ignore cleanup failures; app still proceeds.
           });
-        }).catch(function () {
-          // Ignore cleanup failures; app still proceeds.
-        });
+        }
 
         var swUrl = baseHref + 'firebase-messaging-sw.js';
 
