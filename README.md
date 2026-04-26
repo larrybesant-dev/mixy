@@ -44,6 +44,21 @@ MixVy is a Flutter social/live-room app with Firebase, Riverpod, payments, moder
 - Spot-check every few hours for recurring stack traces and error spikes.
 - If an issue spikes, pause rollout expansion and triage by app version from startup logs.
 
+## Remote Kill Switches
+- `enable_live_rooms` (default `true`)
+- `enable_messaging` (default `true`)
+
+Behavior:
+- Local defaults are `true` so development remains fully enabled.
+- Remote Config can override both flags at runtime.
+- Feature gating is applied at route entry points for graceful shutdown (`/room/*`, `/live`, `/rooms`, `/create-room`, `/messages*`, `/friends`, `/whisper`).
+
+## Operational Smoke Checks
+- Toggle `enable_live_rooms=false` remotely and verify `/room/:id` and `/live` redirect safely.
+- Toggle `enable_messaging=false` remotely and verify `/messages` redirects safely.
+- Trigger 5 identical errors within 10 minutes and verify one escalation event is logged.
+- Open hidden operational overlay (top-left long press or 6 taps within 3 seconds) and confirm version/environment/user/last-error values.
+
 ## Web Stability Notes
 - Hosting rewrites are configured in firebase.json to route all paths to /index.html.
 - Entry boot script is now stable and no longer force-clears browser caches every load.

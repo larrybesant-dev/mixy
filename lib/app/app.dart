@@ -3,13 +3,14 @@ import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/app_settings_service.dart';
+import '../core/services/feature_gate_service.dart';
 import 'boot_state.dart';
 import 'boot_state_notifier.dart';
 import '../router/app_router.dart';
@@ -19,6 +20,7 @@ import '../theme/app_theme.dart';
 import '../core/theme.dart';
 import '../shared/widgets/beta_feedback_overlay.dart';
 import '../shared/widgets/app_debug_overlay.dart';
+import '../shared/widgets/operational_debug_overlay.dart';
 import '../shared/widgets/incoming_call_overlay.dart';
 import '../features/after_dark/providers/after_dark_provider.dart';
 import '../features/after_dark/theme/after_dark_theme.dart';
@@ -138,6 +140,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
 
       ref.read(presenceControllerProvider);
       ref.read(eventPipelineProvider);
+      ref.read(featureGateControllerProvider.notifier);
     } catch (error, stackTrace) {
       developer.log(
         'Runtime services failed during startup',
@@ -366,15 +369,18 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           builder: (context, child) {
+            final routedChild = child ?? const SizedBox.shrink();
+            final diagnosticsChild = kDebugMode
+                ? AppDebugOverlay(child: routedChild)
+                : routedChild;
+
             final appChild = DefaultTextStyle.merge(
               style: const TextStyle(
                 fontFamilyFallback: mixvyFontFamilyFallback,
               ),
               child: IncomingCallOverlay(
                 child: BetaFeedbackOverlay(
-                  child: AppDebugOverlay(
-                    child: child ?? const SizedBox.shrink(),
-                  ),
+                  child: OperationalDebugOverlay(child: diagnosticsChild),
                 ),
               ),
             );

@@ -163,5 +163,35 @@ void main() {
       // /login is blocked — falls back to /discover
       expect(result, '/discover');
     });
+
+    test('redirects live routes when live rooms are remotely disabled',
+        () async {
+      final result = await evaluateAppRedirect(
+        matchedLocation: '/room/abc123',
+        uid: 'user-1',
+        authLoading: false,
+        isFirstRun: () async => false,
+        isProfileComplete: (_) async => true,
+        isLegalAccepted: () async => true,
+        enableLiveRooms: false,
+      );
+
+      expect(result, '/discover');
+    });
+
+    test('redirects messaging routes when messaging is remotely disabled',
+        () async {
+      final result = await evaluateAppRedirect(
+        matchedLocation: '/messages',
+        uid: 'user-1',
+        authLoading: false,
+        isFirstRun: () async => false,
+        isProfileComplete: (_) async => true,
+        isLegalAccepted: () async => true,
+        enableMessaging: false,
+      );
+
+      expect(result, '/social');
+    });
   });
 }

@@ -26,6 +26,7 @@ import 'package:mixvy/features/beta/beta_feedback_screen.dart';
 import 'package:mixvy/features/beta/beta_tester_provider.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
 import 'package:mixvy/core/services/app_settings_service.dart';
+import 'package:mixvy/core/services/feature_gate_service.dart';
 import 'package:mixvy/features/search/screens/search_screen.dart';
 import 'package:mixvy/features/bookmarks/screens/bookmarks_screen.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
@@ -230,6 +231,22 @@ bool _isPreservableDeepLink(String path) {
   return true;
 }
 
+bool _isLiveRoomsEntryRoute(String path) {
+  return path == '/live' ||
+      path == '/rooms' ||
+      path == '/create-room' ||
+      path == '/speed-dating' ||
+      path.startsWith('/room/');
+}
+
+bool _isMessagingEntryRoute(String path) {
+  return path == '/messages' ||
+      path == '/messages/new' ||
+      path == '/friends' ||
+      path == '/whisper' ||
+      path.startsWith('/messages/');
+}
+
 Future<String?> evaluateAppRedirect({
   required String matchedLocation,
   required String? uid,
@@ -237,6 +254,8 @@ Future<String?> evaluateAppRedirect({
   required FirstRunCheck isFirstRun,
   required ProfileCompleteCheck isProfileComplete,
   required LegalAcceptedCheck isLegalAccepted,
+  bool enableLiveRooms = true,
+  bool enableMessaging = true,
   bool isRouteError = false,
   // Optional: the decoded value of the 'from' query param carried through splash.
   // Set by the router redirect when the user landed on /splash?from=...
@@ -253,6 +272,22 @@ Future<String?> evaluateAppRedirect({
       name: 'AppRouter',
     );
     return null;
+  }
+
+  if (!enableLiveRooms && _isLiveRoomsEntryRoute(matchedLocation)) {
+    developer.log(
+      'redirect decision from=$matchedLocation to=/discover reason=live_rooms_disabled',
+      name: 'AppRouter',
+    );
+    return '/discover';
+  }
+
+  if (!enableMessaging && _isMessagingEntryRoute(matchedLocation)) {
+    developer.log(
+      'redirect decision from=$matchedLocation to=/social reason=messaging_disabled',
+      name: 'AppRouter',
+    );
+    return '/social';
   }
 
   // Let After Dark handle its own guard (age-gate + PIN redirect).
@@ -409,6 +444,7 @@ Future<String?> evaluateAppRedirect({
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
+  final featureGates = ref.watch(featureGateControllerProvider);
   final firstRunCheck = ref.read(firstRunCheckProvider);
   final profileCompleteCheck = ref.read(profileCompleteCheckProvider);
   final legalAcceptedCheck = ref.read(legalAcceptedCheckProvider);
@@ -428,6 +464,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           isFirstRun: firstRunCheck,
           isProfileComplete: profileCompleteCheck,
           isLegalAccepted: legalAcceptedCheck,
+          enableLiveRooms: featureGates.enableLiveRooms,
+          enableMessaging: featureGates.enableMessaging,
           isRouteError: state.error != null,
           redirectFrom: state.uri.queryParameters['from'],
         );
