@@ -31,10 +31,18 @@ MixVy is a Flutter social/live-room app with Firebase, Riverpod, payments, moder
 ## Web Build and Deploy Workflow
 1. Build release web:
 	- flutter build web --release --base-href "/"
-2. Optional runtime compatibility patch:
+2. Build release web with explicit version tag (recommended for production traceability):
+	- flutter build web --release --base-href "/" --dart-define=APP_VERSION=1.0.0+001
+3. Optional runtime compatibility patch:
 	- powershell -ExecutionPolicy Bypass -File tools/patch_flutter_web_runtime.ps1
-3. Deploy hosting:
+4. Deploy hosting:
 	- firebase deploy --only hosting
+
+## Launch Monitoring Checklist (First 24 Hours)
+- Keep one terminal on web/runtime logs for the first 2 hours after deploy.
+- Watch for repeated routing, auth persistence, and connection errors.
+- Spot-check every few hours for recurring stack traces and error spikes.
+- If an issue spikes, pause rollout expansion and triage by app version from startup logs.
 
 ## Web Stability Notes
 - Hosting rewrites are configured in firebase.json to route all paths to /index.html.

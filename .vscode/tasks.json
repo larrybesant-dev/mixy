@@ -82,6 +82,19 @@
 			"group": "build"
 		},
 		{
+			"label": "Build Flutter Web App (versioned + patched)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$ver = Get-Date -Format 'yyyy.MM.dd.HHmm'; flutter build web --release --base-href '/' --dart-define=APP_VERSION=$ver ; powershell -ExecutionPolicy Bypass -File tools/patch_flutter_web_runtime.ps1"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
 			"label": "Audit Dart File Integrity",
 			"type": "shell",
 			"command": "powershell",

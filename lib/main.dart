@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,13 @@ import 'observability/startup_timeline.dart';
 import 'app/app.dart';
 import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
+import 'core/logger.dart';
 import 'firebase_options.dart';
+
+const String _appVersion = String.fromEnvironment(
+  'APP_VERSION',
+  defaultValue: 'dev-local',
+);
 
 Future<void> main() async {
   final startup = StartupProfiler.instance;
@@ -18,6 +25,7 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   startup.markBindingReady();
+  Logger.info('App startup version=$_appVersion');
 
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
@@ -27,8 +35,22 @@ Future<void> main() async {
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    debugPrint('FLUTTER ERROR: ${details.exceptionAsString()}');
-    debugPrintStack(stackTrace: details.stack);
+    Logger.error(
+      'Unhandled Flutter framework error',
+      error: details.exception,
+      stackTrace: details.stack,
+      fatal: true,
+    );
+  };
+
+  ui.PlatformDispatcher.instance.onError = (error, stackTrace) {
+    Logger.error(
+      'Unhandled platform error',
+      error: error,
+      stackTrace: stackTrace,
+      fatal: true,
+    );
+    return true;
   };
 
   try {
