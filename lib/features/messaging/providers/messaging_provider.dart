@@ -13,8 +13,8 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
-// Stream of all conversations for current user, filtered to exclude blocked users.
-final conversationsStreamProvider =
+// Single raw realtime stream for all conversation documents of a user.
+final rawConversationsStreamProvider =
     StreamProvider.autoDispose.family<List<Conversation>, String>((ref, userId) {
   final firestore = ref.watch(firestoreProvider);
   return firestore
@@ -23,19 +23,25 @@ final conversationsStreamProvider =
       .where('isArchived', isEqualTo: false)
       .orderBy('lastMessageAt', descending: true)
       .snapshots()
-      .map((snapshot) {
-    // Map to models first (synchronous)
-    final allConversations = snapshot.docs
-        .map((doc) => Conversation.fromJson(doc.data(), doc.id))
-        .where((c) => c.status != 'pending')
-        .toList();
+      .map(
+        (snapshot) => snapshot.docs
+            .map((doc) => Conversation.fromJson(doc.data(), doc.id))
+            .toList(growable: false),
+      );
+});
 
-    // Optimization: we don't perform the Moderation lookup here anymore because
-    // asyncMap in a StreamProvider can lead to multiple concurrent executions
-    // and race conditions on every snapshot.
-    // Instead, the UI layer or a separate filtered provider should handle blocking.
-    return allConversations;
-  });
+// Active conversations derived from the single raw stream.
+final conversationsStreamProvider =
+    Provider.autoDispose.family<AsyncValue<List<Conversation>>, String>((
+      ref,
+      userId,
+    ) {
+      return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
+        final active = all.where((c) => c.status != 'pending').toList();
+        active.sort((left, right) => _compareConversationsForUser(left, right, userId));
+        return active;
+      });
+    });
 });
 
 int _compareConversationsForUser(
@@ -56,18 +62,16 @@ int _compareConversationsForUser(
 
 // Stream of pending message requests for the current user.
 final requestsStreamProvider =
-    StreamProvider.autoDispose.family<List<Conversation>, String>((ref, userId) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('conversations')
-      .where('participantIds', arrayContains: userId)
-      .where('status', isEqualTo: 'pending')
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => Conversation.fromJson(doc.data(), doc.id))
-          .toList());
-});
+    Provider.autoDispose.family<AsyncValue<List<Conversation>>, String>((
+      ref,
+      userId,
+    ) {
+      return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
+        final pending = all.where((c) => c.status == 'pending').toList();
+        pending.sort((left, right) => right.createdAt.compareTo(left.createdAt));
+        return pending;
+      });
+    });
 
 // Stream of a single conversation document (used for read receipt tracking)
 final conversationDocProvider =
@@ -549,19 +553,22 @@ final unreadmessageCountProvider = Provider.autoDispose<int>((ref) {
 /// Hardening: separates the raw Firestore stream from the expensive moderation logic.
 final filteredConversationsProvider =
     FutureProvider.autoDispose.family<List<Conversation>, String>((ref, userId) async {
-  final allConversations = await ref.watch(conversationsStreamProvider(userId).future);
+  final allConversations = await ref.watch(rawConversationsStreamProvider(userId).future);
+  final activeConversations = allConversations
+      .where((conversation) => conversation.status != 'pending')
+      .toList(growable: false);
   
   try {
     final moderationService = ModerationService();
     final excludedIds = await moderationService.getExcludedUserIds(userId);
     
     if (excludedIds.isEmpty) {
-      final sorted = List<Conversation>.from(allConversations);
+      final sorted = List<Conversation>.from(activeConversations);
       sorted.sort((left, right) => _compareConversationsForUser(left, right, userId));
       return sorted;
     }
     
-    final visibleConversations = allConversations.where((conv) {
+    final visibleConversations = activeConversations.where((conv) {
       final others = conv.participantIds.where((id) => id != userId);
       return !others.any((id) => excludedIds.contains(id));
     }).toList();
@@ -570,6 +577,6 @@ final filteredConversationsProvider =
     return visibleConversations;
   } catch (e) {
     // Fail safe: return all conversations if moderation check fails
-    return allConversations;
+    return activeConversations;
   }
 });
