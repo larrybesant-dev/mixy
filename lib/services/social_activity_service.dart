@@ -33,6 +33,28 @@ class SocialActivityService {
         });
   }
 
+  Future<List<SocialActivity>> getUserActivities(
+    String userId, {
+    int limit = 6,
+  }) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return const <SocialActivity>[];
+    }
+
+    final snapshot = await _firestore
+        .collection('activity_feed')
+        .where('userId', isEqualTo: normalizedUserId)
+        .limit(limit * 3)
+        .get();
+
+    final activities = snapshot.docs
+        .map((doc) => SocialActivity.fromJson(doc.id, doc.data()))
+        .toList(growable: false)
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return activities.take(limit).toList(growable: false);
+  }
+
   Future<void> handleEvent(AppEvent event) async {
     if (event is FollowEvent) {
       await logActivity(

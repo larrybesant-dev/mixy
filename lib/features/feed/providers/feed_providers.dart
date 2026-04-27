@@ -114,13 +114,13 @@ final homeFeedServiceProvider = Provider<HomeFeedService>((ref) {
 });
 
 final currentUserActivitiesProvider =
-    StreamProvider.autoDispose<List<SocialActivity>>((ref) {
-      final currentUser = ref.watch(userProvider);
-      final userId = currentUser?.id ?? '';
-      return ref
-          .watch(socialActivityServiceProvider)
-          .watchUserActivities(userId, limit: 12);
-    });
+  FutureProvider.autoDispose<List<SocialActivity>>((ref) async {
+    final currentUser = ref.watch(userProvider);
+    final userId = currentUser?.id ?? '';
+    return ref
+      .watch(socialActivityServiceProvider)
+      .getUserActivities(userId, limit: 12);
+  });
 
 final homeFeedSnapshotProvider =
     Provider.autoDispose<AsyncValue<HomeFeedSnapshot>>((ref) {

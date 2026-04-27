@@ -55,7 +55,9 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   void initState() {
     super.initState();
     _entryTime = DateTime.now();
-    _messageController = TextEditingController();
+    final savedDraft =
+        ref.read(draftCacheProvider.notifier).getDraft(widget.conversationId);
+    _messageController = TextEditingController(text: savedDraft);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _messageController.addListener(_onTextChanged);
@@ -71,6 +73,10 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   }
 
   void _onTextChanged() {
+    // Persist draft on every keystroke so tab switches don't lose it.
+    ref
+        .read(draftCacheProvider.notifier)
+        .setDraft(widget.conversationId, _messageController.text);
     if (_messageController.text.isEmpty) {
       _clearTyping();
       return;
@@ -161,6 +167,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
           .read(conversationScrollMemoryProvider.notifier)
           .setOffset(widget.conversationId, _scrollController.offset);
     }
+    // Safety-net: persist any unsent draft that wasn't saved via _onTextChanged.
+    final remainingDraft = _messageController.text;
+    ref
+        .read(draftCacheProvider.notifier)
+        .setDraft(widget.conversationId, remainingDraft);
     _clearTyping();
     _typingTimer?.cancel();
     _messageController.removeListener(_onTextChanged);
@@ -174,6 +185,10 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     if (content.isEmpty) return;
 
     _clearTyping();
+    // Clear draft — message is being sent.
+    ref
+        .read(draftCacheProvider.notifier)
+        .clearDraft(widget.conversationId);
     _messageController.clear();
 
     final pendingmessage = _Pendingmessage(

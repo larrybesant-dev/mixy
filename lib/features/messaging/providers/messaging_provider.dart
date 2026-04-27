@@ -42,7 +42,6 @@ final conversationsStreamProvider =
         return active;
       });
     });
-});
 
 int _compareConversationsForUser(
   Conversation left,
@@ -212,6 +211,39 @@ class ConversationScrollMemoryNotifier
 final conversationScrollMemoryProvider = StateNotifierProvider<
     ConversationScrollMemoryNotifier, Map<String, double>>(
   (ref) => ConversationScrollMemoryNotifier(),
+);
+
+// ── Draft message cache ───────────────────────────────────────────────────────
+// Persists unsent message text keyed by conversationId across tab switches.
+// NOT autoDispose — must survive the chat pane being disposed when the user
+// navigates away, so the draft is restored when they return.
+class DraftCacheNotifier extends StateNotifier<Map<String, String>> {
+  DraftCacheNotifier() : super(const <String, String>{});
+
+  void setDraft(String conversationId, String text) {
+    if (text.isEmpty) {
+      // Remove empty drafts to keep the map small.
+      if (!state.containsKey(conversationId)) return;
+      final updated = Map<String, String>.of(state)..remove(conversationId);
+      state = updated;
+    } else {
+      if (state[conversationId] == text) return;
+      state = <String, String>{...state, conversationId: text};
+    }
+  }
+
+  String getDraft(String conversationId) => state[conversationId] ?? '';
+
+  void clearDraft(String conversationId) {
+    if (!state.containsKey(conversationId)) return;
+    final updated = Map<String, String>.of(state)..remove(conversationId);
+    state = updated;
+  }
+}
+
+final draftCacheProvider =
+    StateNotifierProvider<DraftCacheNotifier, Map<String, String>>(
+  (ref) => DraftCacheNotifier(),
 );
 
 class MessagingController {

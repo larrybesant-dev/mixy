@@ -17,14 +17,26 @@
 - Tab lifecycle hardening:
 	- `AppShell` switched from `IndexedStack` to active-tab-only rendering.
 	- File: `lib/shared/widgets/app_shell.dart`.
+- Messaging consolidation (slice 2):
+	- Added `rawConversationsStreamProvider` as the single Firestore conversation listener.
+	- `conversationsStreamProvider` now derives active conversations from raw stream.
+	- `requestsStreamProvider` now derives pending requests from the same raw stream.
+	- Removed separate pending-requests Firestore subscription.
+	- File: `lib/features/messaging/providers/messaging_provider.dart`.
+- Feed cost optimization (slice 3):
+	- `currentUserActivitiesProvider` moved from realtime stream to one-shot fetch provider.
+	- Added `SocialActivityService.getUserActivities(...)` for non-realtime dashboard/feed use.
+	- Removed unused legacy `following_feed_provider.dart` to prevent accidental realtime reintroduction.
+	- Files: `lib/features/feed/providers/feed_providers.dart`, `lib/services/social_activity_service.dart`.
 - Debug overlay production gate verified:
 	- `AppDebugOverlay` mounted only under `kDebugMode` in `lib/app/app.dart`.
 
 ## Current Listener Hotspots
 
 ### Messaging
-- `conversationsStreamProvider` (`conversations` collection listener)
-- `requestsStreamProvider` (`conversations` pending listener)
+- `rawConversationsStreamProvider` (`conversations` collection listener)
+- `conversationsStreamProvider` (derived active subset, no extra listener)
+- `requestsStreamProvider` (derived pending subset, no extra listener)
 - `messagestreamProvider` (`messages` subcollection listener)
 - `messageReactionsProvider` (reactions stream)
 - Typing/read-receipt stream providers
@@ -35,8 +47,8 @@ Risk:
 
 ### Feed/Social
 - `roomsStreamProvider` (shared live rooms realtime stream)
-- `currentUserActivitiesProvider` (realtime social activity stream)
-- `postsFeedProvider` and `userPostsStreamProvider` (realtime post streams)
+- `userPostsStreamProvider` (profile post stream)
+- `currentUserActivitiesProvider` is now one-shot (no persistent listener)
 - File: `lib/features/feed/providers/feed_providers.dart`
 
 Risk:
@@ -55,13 +67,13 @@ Risk:
 
 ## Priority Next Slices
 
-1. Messaging stream consolidation (high)
-- Build a single base conversation stream and derive inbox/request views from it where possible.
+1. Messaging stream consolidation (follow-up)
 - Ensure only active chat pane watches message/reaction/typing streams.
+- Add light typing/debounce safeguards for high-churn rooms.
 
-2. Feed stream scope tightening (medium)
+2. Feed stream scope tightening (follow-up)
 - Keep rooms realtime on active social surfaces.
-- Convert passive or vanity realtime streams to one-shot fetch when realtime adds little UX value.
+- Audit and remove any remaining unused realtime providers.
 
 3. Friends overlap reduction (medium)
 - Audit whether `friendsProvider`, `friendRosterProvider`, and `friendsListProvider` can share base data.
@@ -70,4 +82,8 @@ Risk:
 ## Validation Performed
 - `flutter analyze` on changed social/provider/app shell files: clean.
 - Router redirect smoke test: pass.
+- `flutter analyze` on messaging provider + dependent messaging/shell files: clean.
+- `flutter test test/messages_screen_test.dart`: pass.
+- `flutter analyze` on feed providers + discovery/dashboard social activity changes: clean.
+- `flutter test test/home_feed_snapshot_test.dart test/discovery_feed_screen_test.dart`: pass.
 

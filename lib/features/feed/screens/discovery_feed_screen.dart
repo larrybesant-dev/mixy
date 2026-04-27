@@ -20,6 +20,7 @@ import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/ui_stability_contract.dart';
 import '../../../widgets/brand_ui_kit.dart';
 
+import '../../../shared/state/tab_scroll_memory.dart';
 import '../../ads/ad_manager.dart';
 import '../../stories/widgets/stories_row.dart';
 import '../../../features/profile/profile_controller.dart';
@@ -55,11 +56,51 @@ final _hostAvatarProvider = FutureProvider.autoDispose.family<String?, String>((
   return sanitizeNetworkImageUrl(doc.data()?['avatarUrl'] as String?);
 });
 
-class DiscoveryFeedScreen extends ConsumerWidget {
+class DiscoveryFeedScreen extends ConsumerStatefulWidget {
   const DiscoveryFeedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DiscoveryFeedScreen> createState() => _DiscoveryFeedScreenState();
+}
+
+class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
+  late ScrollController _scrollController;
+
+  // Tab index for AppShell (Feed = 0)
+  static const int _tabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final savedOffset = ref.read(tabScrollMemoryProvider)[_tabIndex] ?? 0.0;
+    _scrollController = ScrollController(initialScrollOffset: savedOffset);
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.hasContentDimensions) {
+      ref
+          .read(tabScrollMemoryProvider.notifier)
+          .setOffset(_tabIndex, _scrollController.offset);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.hasContentDimensions) {
+      ref
+          .read(tabScrollMemoryProvider.notifier)
+          .setOffset(_tabIndex, _scrollController.offset);
+    }
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: AppPageScaffold(
@@ -67,6 +108,7 @@ class DiscoveryFeedScreen extends ConsumerWidget {
         safeArea: false,
         floatingActionButton: const _GoLiveFab(),
         body: NestedScrollView(
+          controller: _scrollController,
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
               pinned: true,
