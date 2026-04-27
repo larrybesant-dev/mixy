@@ -698,11 +698,18 @@ async function handleCheckoutSessionCompleted(session, deps = {}) {
   const productType = session.metadata && session.metadata.productType;
   const coins = Number((session.metadata && session.metadata.coins) || 0);
   const webhookEventRef = firestore.collection("stripe_webhook_events").doc(session.id);
+  // Secondary dedup keyed on Stripe event ID so that replays carrying a
+  // different event.id but the same session.id are caught in both directions.
+  const eventDedupRef = eventId
+    ? firestore.collection("stripe_webhook_events").doc(`event_${eventId}`)
+    : null;
   const entitlementEventRef = firestore.collection("entitlement_events").doc(`stripe_${session.id}`);
 
   return firestore.runTransaction(async (txn) => {
-    const eventSnap = await txn.get(webhookEventRef);
-    if (eventSnap.exists) {
+    const reads = [txn.get(webhookEventRef)];
+    if (eventDedupRef) reads.push(txn.get(eventDedupRef));
+    const [eventSnap, eventDedupSnap] = await Promise.all(reads);
+    if (eventSnap.exists || (eventDedupSnap && eventDedupSnap.exists)) {
       return {creditedCoins: 0, premiumApplied: false, deduplicated: true};
     }
 
@@ -766,6 +773,15 @@ async function handleCheckoutSessionCompleted(session, deps = {}) {
       eventType,
       processedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+    // Write secondary event-level dedup record so Stripe retries carrying the
+    // same event.id are caught even if the session-level doc is somehow absent.
+    if (eventDedupRef) {
+      txn.set(eventDedupRef, {
+        sessionId: session.id,
+        eventId,
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
 
     return {creditedCoins, premiumApplied, deduplicated: false};
   });
@@ -1810,12 +1826,147 @@ async function stripeWebhookHandler(req, res, deps = {}) {
       eventType: event.type,
     });
   }
+
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object;
+    await handleChargeRefunded(charge, {firestore, eventId: event.id, eventType: event.type});
+  }
+
   return res.json({received: true});
+}
+
+// Revoke entitlement when Stripe confirms a full refund. Uses the stored
+// sessionId on the charge to find the right user and writes an audit event.
+async function handleChargeRefunded(charge, deps = {}) {
+  const firestore = deps.firestore || db;
+  const eventId = typeof deps.eventId === "string" ? deps.eventId : null;
+  const eventType = typeof deps.eventType === "string" ? deps.eventType : null;
+  const sessionId = charge.payment_intent ? null : charge.id;
+  // Stripe attaches the Checkout session ID in metadata when a session is used.
+  const metaSessionId = charge.metadata && charge.metadata.checkoutSessionId;
+  const resolvedSessionId = metaSessionId || sessionId;
+  if (!resolvedSessionId) {
+    return {revoked: false, reason: "no_session_id"};
+  }
+
+  // Find the original entitlement event to resolve the userId.
+  const entitlementEventRef = firestore.collection("entitlement_events").doc(`stripe_${resolvedSessionId}`);
+  const entitlementSnap = await entitlementEventRef.get();
+  if (!entitlementSnap.exists) {
+    return {revoked: false, reason: "no_entitlement_event"};
+  }
+  const {userId} = entitlementSnap.data();
+  if (!userId) {
+    return {revoked: false, reason: "no_user_id"};
+  }
+
+  // Dedup: do not revoke twice for the same event.
+  const dedupRef = firestore.collection("stripe_webhook_events").doc(`event_${eventId}`);
+  if (eventId) {
+    const dedupSnap = await dedupRef.get();
+    if (dedupSnap.exists) {
+      return {revoked: false, reason: "deduplicated"};
+    }
+  }
+
+  const userRef = firestore.collection("users").doc(userId);
+  const revokeEventRef = firestore.collection("entitlement_events").doc(`refund_${resolvedSessionId}`);
+
+  await firestore.runTransaction(async (txn) => {
+    txn.set(userRef, {
+      entitlements: {
+        vip: {
+          active: false,
+          revokedAt: admin.firestore.FieldValue.serverTimestamp(),
+          revokeReason: "refund",
+          sessionId: resolvedSessionId,
+        },
+      },
+    }, {merge: true});
+
+    txn.set(revokeEventRef, {
+      id: revokeEventRef.id,
+      userId,
+      sessionId: resolvedSessionId,
+      type: "vip_revoked",
+      source: "stripe_refund",
+      eventId,
+      eventType,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    if (eventId) {
+      txn.set(dedupRef, {
+        sessionId: resolvedSessionId,
+        eventId,
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+  });
+
+  return {revoked: true, userId};
 }
 
 exports.stripeWebhook = functionsV1.runWith({secrets: ["STRIPE_WEBHOOK_SECRET"]}).https.onRequest(async (req, res) => {
   return stripeWebhookHandler(req, res);
 });
+
+// Admin callable: grant or revoke a VIP entitlement manually.
+// Only callable by users with admin: true on their Firestore user doc.
+async function adminSetEntitlementHandler(request, deps = {}) {
+  const callerId = requireAuth(request);
+  const firestore = deps.firestore || db;
+
+  // Verify caller is admin.
+  const callerSnap = await firestore.collection("users").doc(callerId).get();
+  if (!callerSnap.exists || callerSnap.data().admin !== true) {
+    throw new HttpsError("permission-denied", "Admin access required.");
+  }
+
+  const targetUserId = parseIdField(request.data && request.data.userId, "userId");
+  const active = request.data && request.data.active;
+  if (typeof active !== "boolean") {
+    throw new HttpsError("invalid-argument", "active must be a boolean.");
+  }
+  const reason = typeof (request.data && request.data.reason) === "string"
+    ? request.data.reason.trim().slice(0, 256)
+    : (active ? "admin_grant" : "admin_revoke");
+
+  const userRef = firestore.collection("users").doc(targetUserId);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    throw new HttpsError("not-found", "Target user not found.");
+  }
+
+  const auditRef = firestore.collection("entitlement_events").doc();
+  await firestore.runTransaction(async (txn) => {
+    txn.set(userRef, {
+      entitlements: {
+        vip: {
+          active,
+          source: "admin_override",
+          adminId: callerId,
+          reason,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      },
+    }, {merge: true});
+
+    txn.set(auditRef, {
+      id: auditRef.id,
+      userId: targetUserId,
+      type: active ? "vip_admin_granted" : "vip_admin_revoked",
+      source: "admin_override",
+      adminId: callerId,
+      reason,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  return {success: true, userId: targetUserId, active};
+}
+
+exports.adminSetEntitlement = onCall(async (request) => adminSetEntitlementHandler(request));
 
 // ---------------------------------------------------------------------------
 // Beta feedback
@@ -2687,6 +2838,8 @@ exports.__testing = {
   buildIdempotentTransactionDocId,
   validateStripePaymentIntent,
   stripeWebhookHandler,
+  handleChargeRefunded,
+  adminSetEntitlementHandler,
   registerFcmTokenHandler,
   unregisterFcmTokenHandler,
   sendPushForNotification,

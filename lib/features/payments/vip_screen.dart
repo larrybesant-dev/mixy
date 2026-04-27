@@ -27,7 +27,11 @@ class VipScreen extends StatefulWidget {
 class _VipScreenState extends State<VipScreen> {
   bool _isYearly = false;
   bool _checkoutInProgress = false;
+  // True while we are waiting for the webhook to confirm VIP after checkout.
+  bool _awaitingWebhookConfirmation = false;
   String? _checkoutError;
+
+  static const _webhookPollTimeout = Duration(seconds: 45);
 
   Future<void> _startVipCheckout({required String tier}) async {
     if (_checkoutInProgress) {
@@ -63,6 +67,24 @@ class _VipScreenState extends State<VipScreen> {
 
       if (!launched) {
         throw Exception('Could not open Stripe checkout.');
+      }
+
+      // User has been sent to Stripe. Show optimistic pending state while we
+      // wait for the webhook to flip entitlements.vip.active. The Firestore
+      // StreamBuilder in build() will automatically dismiss this view the
+      // moment the entitlement lands; the timeout is a safety net for users
+      // who abandon the checkout or experience a slow webhook delivery.
+      if (mounted) {
+        setState(() {
+          _awaitingWebhookConfirmation = true;
+        });
+        Future.delayed(_webhookPollTimeout, () {
+          if (mounted && _awaitingWebhookConfirmation) {
+            setState(() {
+              _awaitingWebhookConfirmation = false;
+            });
+          }
+        });
       }
     } on FirebaseFunctionsException catch (error) {
       setState(() {
@@ -125,7 +147,17 @@ class _VipScreenState extends State<VipScreen> {
               builder: (context, snapshot) {
                 final isVip = hasVipEntitlement(snapshot.data?.data());
                 if (isVip) {
+                  // Clear pending flag if webhook arrived.
+                  if (_awaitingWebhookConfirmation) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _awaitingWebhookConfirmation = false);
+                    });
+                  }
                   return _VipUnlockedView();
+                }
+
+                if (_awaitingWebhookConfirmation) {
+                  return _VipPendingView();
                 }
 
                 return ListView(
@@ -359,6 +391,50 @@ class _SignInRequiredView extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VipPendingView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(_vPrimary),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Activating your VIP',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: _vCream,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Your payment was received. Access will unlock automatically — no action needed.',
+              style: GoogleFonts.raleway(
+                fontSize: 13,
+                color: _vCream.withValues(alpha: 0.6),
+                height: 1.6,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

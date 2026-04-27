@@ -20,6 +20,8 @@ const {
   cleanupDeletedUserData,
   createCheckoutSessionHandler,
   handleCheckoutSessionCompleted,
+  handleChargeRefunded,
+  adminSetEntitlementHandler,
   getCheckoutBaseUrl,
   stripeWebhookHandler,
   grabMicHandler,
@@ -648,6 +650,60 @@ describe("payment callable handlers", () => {
     assert.equal(firestore.__state.entitlementEvents.size, 0);
   });
 
+  it("handleCheckoutSessionCompleted writes event-level dedup doc when eventId is provided", async () => {
+    const firestore = createFirestoreDouble({"user-1": {balance: 0}});
+    const session = {
+      id: "cs_edup_1",
+      payment_status: "paid",
+      metadata: {userId: "user-1", productType: "coin_package", coins: "50"},
+    };
+
+    const result = await handleCheckoutSessionCompleted(session, {firestore, eventId: "evt_abc_1"});
+
+    assert.equal(result.creditedCoins, 50);
+    assert.equal(result.deduplicated, false);
+    // Both session-level and event-level dedup docs are written atomically.
+    assert.ok(firestore.__state.stripeWebhookEvents.has("cs_edup_1"),
+      "session-level dedup doc must be written");
+    assert.ok(firestore.__state.stripeWebhookEvents.has("event_evt_abc_1"),
+      "event-level dedup doc must be written");
+  });
+
+  it("handleCheckoutSessionCompleted deduplicates replay with same eventId even after session doc is written", async () => {
+    const firestore = createFirestoreDouble({"user-1": {balance: 0}});
+    const session = {
+      id: "cs_edup_2",
+      payment_status: "paid",
+      metadata: {userId: "user-1", productType: "coin_package", coins: "50"},
+    };
+    const deps = {firestore, eventId: "evt_abc_2"};
+
+    const first = await handleCheckoutSessionCompleted(session, deps);
+    const second = await handleCheckoutSessionCompleted(session, deps);
+
+    assert.equal(first.creditedCoins, 50);
+    assert.equal(second.deduplicated, true);
+    assert.equal(firestore.__state.users.get("user-1").balance, 50);
+    assert.equal(firestore.__state.stripeWebhookEvents.size, 2); // session doc + event doc
+  });
+
+  it("handleCheckoutSessionCompleted deduplicates when different eventId arrives for same session", async () => {
+    const firestore = createFirestoreDouble({"user-1": {balance: 0}});
+    const session = {
+      id: "cs_edup_3",
+      payment_status: "paid",
+      metadata: {userId: "user-1", productType: "coin_package", coins: "50"},
+    };
+
+    const first = await handleCheckoutSessionCompleted(session, {firestore, eventId: "evt_first"});
+    // Simulate Stripe delivering a second event for the same session (different event ID).
+    const second = await handleCheckoutSessionCompleted(session, {firestore, eventId: "evt_second"});
+
+    assert.equal(first.creditedCoins, 50);
+    assert.equal(second.deduplicated, true, "second delivery for same session must be deduplicated regardless of event ID");
+    assert.equal(firestore.__state.users.get("user-1").balance, 50);
+  });
+
   it("stripeWebhookHandler credits checkout.session.completed only once during replay", async () => {
     const firestore = createFirestoreDouble({
       "user-1": {balance: 10, coinBalance: 10},
@@ -740,6 +796,119 @@ describe("payment callable handlers", () => {
     const loggedError = [...firestore.__state.logs.values()][0];
     assert.equal(loggedError.type, "stripe_webhook_error");
     assert.equal(loggedError.message, "bad signature");
+  });
+
+  it("handleChargeRefunded revokes VIP entitlement and writes audit event", async () => {
+    const firestore = createFirestoreDouble({"user-1": {}});
+    // Seed an entitlement event as if VIP was previously purchased.
+    firestore.__state.entitlementEvents.set("stripe_cs_refund_1", {
+      userId: "user-1",
+      sessionId: "cs_refund_1",
+      type: "vip_purchase",
+    });
+    // Simulate the user having an active entitlement.
+    firestore.__state.users.set("user-1", {
+      entitlements: {vip: {active: true, source: "stripe_checkout"}},
+    });
+
+    const charge = {
+      id: "ch_1",
+      metadata: {checkoutSessionId: "cs_refund_1"},
+    };
+    const result = await handleChargeRefunded(charge, {firestore, eventId: "evt_refund_1"});
+
+    assert.equal(result.revoked, true);
+    assert.equal(result.userId, "user-1");
+    const user = firestore.__state.users.get("user-1");
+    assert.equal(user.entitlements.vip.active, false);
+    assert.equal(user.entitlements.vip.revokeReason, "refund");
+    // Audit event must be written.
+    const auditEvent = firestore.__state.entitlementEvents.get("refund_cs_refund_1");
+    assert.ok(auditEvent, "refund audit event must exist");
+    assert.equal(auditEvent.type, "vip_revoked");
+    assert.equal(auditEvent.userId, "user-1");
+  });
+
+  it("handleChargeRefunded is idempotent on same eventId", async () => {
+    const firestore = createFirestoreDouble({"user-1": {}});
+    firestore.__state.entitlementEvents.set("stripe_cs_refund_2", {
+      userId: "user-1",
+      sessionId: "cs_refund_2",
+      type: "vip_purchase",
+    });
+    firestore.__state.users.set("user-1", {
+      entitlements: {vip: {active: true}},
+    });
+
+    const charge = {id: "ch_2", metadata: {checkoutSessionId: "cs_refund_2"}};
+    const first = await handleChargeRefunded(charge, {firestore, eventId: "evt_refund_2"});
+    const second = await handleChargeRefunded(charge, {firestore, eventId: "evt_refund_2"});
+
+    assert.equal(first.revoked, true);
+    assert.equal(second.reason, "deduplicated");
+  });
+
+  it("handleChargeRefunded returns no_entitlement_event when session was never purchased", async () => {
+    const firestore = createFirestoreDouble({"user-1": {}});
+    const charge = {id: "ch_ghost", metadata: {checkoutSessionId: "cs_never_existed"}};
+    const result = await handleChargeRefunded(charge, {firestore, eventId: "evt_ghost"});
+    assert.equal(result.revoked, false);
+    assert.equal(result.reason, "no_entitlement_event");
+  });
+
+  it("adminSetEntitlementHandler grants VIP and writes audit event", async () => {
+    const firestore = createFirestoreDouble({
+      "admin-1": {admin: true},
+      "user-99": {},
+    });
+
+    const result = await adminSetEntitlementHandler(
+      makeRequest({userId: "user-99", active: true, reason: "support_grant"}, "admin-1"),
+      {firestore},
+    );
+
+    assert.equal(result.success, true);
+    assert.equal(result.active, true);
+    const user = firestore.__state.users.get("user-99");
+    assert.equal(user.entitlements.vip.active, true);
+    assert.equal(user.entitlements.vip.source, "admin_override");
+    // Audit trail must exist.
+    const events = [...firestore.__state.entitlementEvents.values()];
+    const grantEvent = events.find((e) => e.type === "vip_admin_granted");
+    assert.ok(grantEvent, "grant audit event must be written");
+    assert.equal(grantEvent.adminId, "admin-1");
+    assert.equal(grantEvent.reason, "support_grant");
+  });
+
+  it("adminSetEntitlementHandler revokes VIP", async () => {
+    const firestore = createFirestoreDouble({
+      "admin-1": {admin: true},
+      "user-99": {entitlements: {vip: {active: true}}},
+    });
+
+    const result = await adminSetEntitlementHandler(
+      makeRequest({userId: "user-99", active: false, reason: "chargeback"}, "admin-1"),
+      {firestore},
+    );
+
+    assert.equal(result.active, false);
+    const user = firestore.__state.users.get("user-99");
+    assert.equal(user.entitlements.vip.active, false);
+  });
+
+  it("adminSetEntitlementHandler rejects non-admin caller", async () => {
+    const firestore = createFirestoreDouble({
+      "plain-user": {},
+      "target": {},
+    });
+
+    await assert.rejects(
+      () => adminSetEntitlementHandler(
+        makeRequest({userId: "target", active: true}, "plain-user"),
+        {firestore},
+      ),
+      (err) => err.code === "permission-denied",
+    );
   });
 
   it("claimDailyCheckinHandler increments balance once per day", async () => {

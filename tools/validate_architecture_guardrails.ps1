@@ -106,6 +106,64 @@ function Assert-FollowsSnapshotsCentralized([System.IO.FileInfo[]]$files) {
     }
 }
 
+function Assert-MonetizationGatesImportEntitlement([System.IO.FileInfo[]]$files) {
+    $violations = @()
+
+    foreach ($file in $files) {
+        $content = Get-Content -Path $file.FullName -Raw
+        if ($null -eq $content) {
+            $content = ''
+        }
+
+        # Any file that calls AdManager.shouldShowAds is making a monetization gate
+        # decision. It must derive entitlement state from the canonical provider.
+        if ($content -match '\bAdManager\.shouldShowAds\b') {
+            if ($content -notmatch 'premium_entitlement\.dart') {
+                $violations += To-RepoRelativePath $file.FullName
+            }
+        }
+    }
+
+    if ($violations.Count -gt 0) {
+        $joined = ($violations | Sort-Object -Unique) -join ', '
+        Fail "Monetization gate guardrail violation: files calling AdManager.shouldShowAds must import premium_entitlement.dart. Found in: $joined"
+    }
+}
+
+function Assert-LegacyPremiumFieldsScoped([System.IO.FileInfo[]]$files) {
+    $allowedOwners = @(
+        'lib/features/profile/profile_controller.dart',
+        'lib/features/room/repository/room_repository.dart',
+        'lib/features/room/rtc/rtc_audio_service.dart',
+        'lib/features/room/rtc/rtc_screen_service.dart',
+        'lib/models/user_model.dart',
+        'lib/widgets/user_profile_popup.dart'
+    )
+    $legacyFieldPattern = '\b(vipLevel|membershipLevel|isPremium)\b'
+    $violations = @()
+
+    foreach ($file in $files) {
+        $rel = To-RepoRelativePath $file.FullName
+        if ($allowedOwners -contains $rel) {
+            continue
+        }
+
+        $content = Get-Content -Path $file.FullName -Raw
+        if ($null -eq $content) {
+            $content = ''
+        }
+
+        if ($content -match $legacyFieldPattern) {
+            $violations += $rel
+        }
+    }
+
+    if ($violations.Count -gt 0) {
+        $joined = ($violations | Sort-Object -Unique) -join ', '
+        Fail "Legacy premium field guardrail violation: vipLevel, membershipLevel, and isPremium are restricted to transitional model/profile owners. Route premium access through lib/features/payments/premium_entitlement.dart. Found in: $joined"
+    }
+}
+
 function Resolve-ImportTarget([string]$currentRelPath, [string]$importSpec) {
     if ([string]::IsNullOrWhiteSpace($importSpec)) {
         return $null
@@ -268,6 +326,12 @@ Assert-NoPrototypeReachableFromMain -graph $graph
 
 # 8) Follows realtime ownership guardrail.
 Assert-FollowsSnapshotsCentralized -files $dartFiles
+
+# 9) Legacy premium access fields are quarantined while entitlement migration finishes.
+Assert-LegacyPremiumFieldsScoped -files $dartFiles
+
+# 10) Any file making a monetization gate decision must import the entitlement truth source.
+Assert-MonetizationGatesImportEntitlement -files $dartFiles
 
 Write-Host 'Architecture guardrails validated successfully.'
 Pop-Location

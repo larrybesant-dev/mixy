@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/ads/ad_manager.dart';
 import 'package:mixvy/features/feed/controllers/feed_controller.dart';
+import 'package:mixvy/features/payments/premium_entitlement.dart';
 import 'package:mixvy/features/profile/profile_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,10 +19,8 @@ class _PromoBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final membership = ref.watch(
-      profileControllerProvider.select((s) => s.membershipLevel ?? 'Free'),
-    );
-    if (!AdManager.shouldShowAds(membership)) {
+    final hasVipEntitlement = ref.watch(vipEntitlementProvider).valueOrNull ?? false;
+    if (!AdManager.shouldShowAds(hasVipEntitlement: hasVipEntitlement)) {
       return const SizedBox.shrink();
     }
     return const Column(
@@ -33,6 +32,12 @@ class _PromoBanner extends ConsumerWidget {
       ],
     );
   }
+}
+
+Override _vipEntitlementOverride(bool hasVipEntitlement) {
+  return vipEntitlementProvider.overrideWith(
+    (ref) => Stream<bool>.value(hasVipEntitlement),
+  );
 }
 
 Widget _buildWidget(List<Override> overrides) {
@@ -54,30 +59,20 @@ void main() {
   });
 
   group('AdManager.shouldShowAds', () {
-    test('returns true for Free membership', () {
-      expect(AdManager.shouldShowAds('Free'), isTrue);
+    test('returns true when VIP entitlement is inactive', () {
+      expect(AdManager.shouldShowAds(hasVipEntitlement: false), isTrue);
     });
 
-    test('returns false for Premium membership', () {
-      expect(AdManager.shouldShowAds('Premium'), isFalse);
-    });
-
-    test('returns false for Gold membership', () {
-      expect(AdManager.shouldShowAds('Gold'), isFalse);
-    });
-
-    test('returns false for any non-Free value', () {
-      for (final level in ['VIP', 'Pro', 'Elite', 'Subscriber']) {
-        expect(AdManager.shouldShowAds(level), isFalse,
-            reason: 'Expected ads hidden for "$level"');
-      }
+    test('returns false when VIP entitlement is active', () {
+      expect(AdManager.shouldShowAds(hasVipEntitlement: true), isFalse);
     });
   });
 
   group('DiscoveryFeedContent -- promo banner', () {
-    testWidgets('shows banner when membershipLevel is Free', (tester) async {
+    testWidgets('shows banner when VIP entitlement is inactive', (tester) async {
       await tester.pumpWidget(
         _buildWidget([
+          _vipEntitlementOverride(false),
           profileControllerProvider.overrideWith(
             () => _StubProfileController(
               const ProfileState(membershipLevel: 'Free', followers: []),
@@ -92,9 +87,10 @@ void main() {
       expect(find.text('Upgrade'), findsOneWidget);
     });
 
-    testWidgets('hides banner when membershipLevel is Premium', (tester) async {
+    testWidgets('hides banner when VIP entitlement is active', (tester) async {
       await tester.pumpWidget(
         _buildWidget([
+          _vipEntitlementOverride(true),
           profileControllerProvider.overrideWith(
             () => _StubProfileController(
               const ProfileState(membershipLevel: 'Premium', followers: []),
@@ -107,25 +103,11 @@ void main() {
       expect(find.text('Upgrade to MixVy Premium'), findsNothing);
     });
 
-    testWidgets('hides banner when membershipLevel is Gold', (tester) async {
-      await tester.pumpWidget(
-        _buildWidget([
-          profileControllerProvider.overrideWith(
-            () => _StubProfileController(
-              const ProfileState(membershipLevel: 'Gold', followers: []),
-            ),
-          ),
-        ]),
-      );
-      await tester.pump();
-
-      expect(find.text('Upgrade to MixVy Premium'), findsNothing);
-    });
-
-    testWidgets('shows banner when membershipLevel is null (defaults to Free)',
+    testWidgets('shows banner when profile membership is null and entitlement is inactive',
         (tester) async {
       await tester.pumpWidget(
         _buildWidget([
+          _vipEntitlementOverride(false),
           profileControllerProvider.overrideWith(
             () => _StubProfileController(
               const ProfileState(followers: []),
