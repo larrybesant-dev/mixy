@@ -77,6 +77,32 @@ function Find-MatchingFiles([System.IO.FileInfo[]]$files, [string]$pattern) {
     return $hits
 }
 
+function Assert-FollowsSnapshotsCentralized([System.IO.FileInfo[]]$files) {
+    $allowedOwner = 'lib/services/follow_service.dart'
+    $violations = @()
+
+    foreach ($file in $files) {
+        $content = Get-Content -Path $file.FullName -Raw
+        if ($null -eq $content) {
+            $content = ''
+        }
+
+        # Guardrail: follow graph realtime listeners must be centralized.
+        # Disallow any direct follows `.snapshots()` pipeline outside FollowService.
+        if ($content -match '(?s)collection\([''"']follows[''"']\).*?snapshots\s*\(') {
+            $rel = To-RepoRelativePath $file.FullName
+            if ($rel -ne $allowedOwner) {
+                $violations += $rel
+            }
+        }
+    }
+
+    if ($violations.Count -gt 0) {
+        $joined = ($violations | Sort-Object -Unique) -join ', '
+        Fail "Follow graph stream guardrail violation: direct follows snapshots are only allowed in $allowedOwner. Found in: $joined"
+    }
+}
+
 function Resolve-ImportTarget([string]$currentRelPath, [string]$importSpec) {
     if ([string]::IsNullOrWhiteSpace($importSpec)) {
         return $null
@@ -236,6 +262,9 @@ if ($stitchLeakHits.Count -gt 0) {
 # 7) Import graph guard: main.dart dependency closure must never reach prototype code.
 $graph = Build-ImportGraph -files $dartFiles
 Assert-NoPrototypeReachableFromMain -graph $graph
+
+# 8) Follows realtime ownership guardrail.
+Assert-FollowsSnapshotsCentralized -files $dartFiles
 
 Write-Host 'Architecture guardrails validated successfully.'
 Pop-Location

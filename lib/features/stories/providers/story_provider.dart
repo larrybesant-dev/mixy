@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/features/follow/providers/follow_provider.dart';
 
 DateTime _parseDateTime(dynamic value) {
   if (value is Timestamp) {
@@ -131,22 +132,7 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
-final followingIdsProvider = StreamProvider.family<List<String>, String>((
-  ref,
-  uid,
-) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('follows')
-      .where('followerUserId', isEqualTo: uid)
-      .snapshots()
-      .map(
-        (snap) => snap.docs
-            .map((doc) => doc.data()['followedUserId'] as String?)
-            .whereType<String>()
-            .toList(growable: false),
-      );
-});
+final followingIdsProvider = rawFollowGraphStreamProvider;
 
 // Stream of stories from following users
 final followingStoriesProvider =

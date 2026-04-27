@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../friends/parity/friend_parity_validator.dart';
@@ -32,6 +33,18 @@ class SchemaParityMonitorReport {
 
 final schemaParityMonitorProvider =
   Provider.autoDispose.family<SchemaParityMonitorReport, String>((ref, moduleId) {
+  if (!kDebugMode) {
+    return SchemaParityMonitorReport(
+      moduleId: moduleId,
+      isComparable: false,
+      isMatch: true,
+      signature: 'disabled_outside_debug',
+      missingInSchema: const <String>[],
+      missingInLegacy: const <String>[],
+      mismatchDetails: const <String>[],
+    );
+  }
+
   switch (moduleId) {
     case 'message':
       final contract = ref.watch(messageConsistencyContractProvider);

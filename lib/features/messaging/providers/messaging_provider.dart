@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
+import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import '../../../services/presence_repository.dart';
 import '../models/conversation_model.dart';
 import '../../../services/moderation_service.dart';
 import '../../../presentation/providers/user_provider.dart';
@@ -212,6 +214,40 @@ final conversationScrollMemoryProvider = StateNotifierProvider<
     ConversationScrollMemoryNotifier, Map<String, double>>(
   (ref) => ConversationScrollMemoryNotifier(),
 );
+
+String buildPresenceBatchKey(Iterable<String> userIds) {
+  final normalized = userIds
+      .map((id) => id.trim())
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList(growable: false)
+    ..sort();
+  return normalized.join('|');
+}
+
+final batchedPresenceProvider = StreamProvider.autoDispose
+    .family<Map<String, PresenceModel>, String>((ref, batchKey) {
+  if (batchKey.trim().isEmpty) {
+    return Stream<Map<String, PresenceModel>>.value(
+      const <String, PresenceModel>{},
+    );
+  }
+
+  final userIds = batchKey
+      .split('|')
+      .map((id) => id.trim())
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
+
+  if (userIds.isEmpty) {
+    return Stream<Map<String, PresenceModel>>.value(
+      const <String, PresenceModel>{},
+    );
+  }
+
+  return ref.watch(presenceRepositoryProvider).watchUsersPresence(userIds);
+});
 
 // ── Draft message cache ───────────────────────────────────────────────────────
 // Persists unsent message text keyed by conversationId across tab switches.

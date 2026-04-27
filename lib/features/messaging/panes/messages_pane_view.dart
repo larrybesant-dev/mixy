@@ -11,7 +11,6 @@ import '../../../core/theme.dart';
 import '../../../models/presence_model.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../widgets/safe_network_avatar.dart';
-import '../../friends/providers/friends_providers.dart';
 import '../models/conversation_model.dart';
 import '../providers/messaging_provider.dart';
 
@@ -445,7 +444,18 @@ class MessageRequestsSheet extends ConsumerWidget {
   }
 }
 
-class _ConversationsList extends StatelessWidget {
+String? _otherParticipantIdForConversation(Conversation conversation, String userId) {
+  if (conversation.type == 'group') {
+    return null;
+  }
+  final peer = conversation.participantIds.firstWhere(
+    (id) => id != userId,
+    orElse: () => '',
+  );
+  return peer.isEmpty ? null : peer;
+}
+
+class _ConversationsList extends ConsumerWidget {
   const _ConversationsList({
     required this.conversations,
     required this.userId,
@@ -457,7 +467,7 @@ class _ConversationsList extends StatelessWidget {
   final String emptymessage;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (conversations.isEmpty) {
       return Center(
         child: Container(
@@ -502,6 +512,16 @@ class _ConversationsList extends StatelessWidget {
         ),
       );
     }
+
+    final visiblePeerIds = conversations
+        .map((conversation) => _otherParticipantIdForConversation(conversation, userId))
+        .whereType<String>()
+        .toSet()
+        .toList(growable: false);
+    final presenceBatchKey = buildPresenceBatchKey(visiblePeerIds);
+    final presenceMap = ref.watch(batchedPresenceProvider(presenceBatchKey)).valueOrNull ??
+        const <String, PresenceModel>{};
+
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 24),
       itemCount: conversations.length,
@@ -528,6 +548,8 @@ class _ConversationsList extends StatelessWidget {
       itemBuilder: (context, index) => _ConversationTile(
         conversation: conversations[index],
         userId: userId,
+        peerPresence:
+            presenceMap[_otherParticipantIdForConversation(conversations[index], userId)],
       ),
     );
   }
@@ -537,10 +559,12 @@ class _ConversationTile extends ConsumerWidget {
   const _ConversationTile({
     required this.conversation,
     required this.userId,
+    required this.peerPresence,
   });
 
   final Conversation conversation;
   final String userId;
+  final PresenceModel? peerPresence;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -554,10 +578,8 @@ class _ConversationTile extends ConsumerWidget {
     final typingUsers = ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
         const <String>{};
     final isPeerTyping = peerUserId != null && typingUsers.contains(peerUserId);
-    final peerPresence = isGroup || peerUserId == null
-        ? null
-      : ref.watch(friendPresenceProvider(peerUserId)).valueOrNull;
-    final presenceColor = _presenceColor(peerPresence);
+    final resolvedPresence = isGroup ? null : peerPresence;
+    final presenceColor = _presenceColor(resolvedPresence);
     final hasPresenceSignal = presenceColor != null;
 
     return Material(

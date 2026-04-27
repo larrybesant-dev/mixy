@@ -10,8 +10,6 @@ import '../../../core/layout/app_layout.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils/network_image_url.dart';
 import '../../../features/feed/providers/user_providers.dart' as feed_user;
-import '../../../features/friends/models/friend_roster_entry.dart';
-import '../../../features/friends/providers/friends_providers.dart';
 import '../../../services/web_popout_service.dart';
 import '../../../widgets/safe_network_avatar.dart';
 import '../../../shared/widgets/async_state_view.dart';
@@ -248,15 +246,6 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
             (participantId) => participantId != widget.userId,
             orElse: () => '',
           );
-    final roster =
-        ref.watch(friendRosterProvider).valueOrNull ?? const <FriendRosterEntry>[];
-    FriendRosterEntry? rosterEntry;
-    for (final entry in roster) {
-      if (entry.friendId == otherUserId) {
-        rosterEntry = entry;
-        break;
-      }
-    }
     final otherUserAsync = otherUserId.isEmpty
         ? const AsyncValue<UserModel?>.data(null)
         : ref.watch(feed_user.userProvider(otherUserId));
@@ -265,10 +254,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         : (conversation?.getDisplayName(widget.userId).trim().isNotEmpty == true
             ? conversation!.getDisplayName(widget.userId)
             : (otherUserAsync.valueOrNull?.username ?? 'Conversation'));
+    final peerUser = otherUserAsync.valueOrNull;
     final displayAvatarUrl = sanitizeNetworkImageUrl(
       conversation?.type == 'group'
           ? conversation?.groupAvatarUrl
-          : rosterEntry?.user.avatarUrl ?? otherUserAsync.valueOrNull?.avatarUrl,
+        : peerUser?.avatarUrl,
     );
 
     return Column(

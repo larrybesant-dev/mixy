@@ -86,6 +86,50 @@ class FollowService {
     return snapshot.count ?? 0;
   }
 
+  /// Shared follow graph stream used by social/stories/feed derivations.
+  Stream<List<String>> watchFollowingIds(String userId) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return Stream<List<String>>.value(const <String>[]);
+    }
+
+    return _firestore
+        .collection('follows')
+        .where('followerUserId', isEqualTo: normalizedUserId)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => doc.data()['followedUserId'] as String?)
+              .whereType<String>()
+              .map((id) => id.trim())
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList(growable: false),
+        );
+  }
+
+  /// Shared follower graph stream for profile/followers surfaces.
+  Stream<List<String>> watchFollowerIds(String userId) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return Stream<List<String>>.value(const <String>[]);
+    }
+
+    return _firestore
+        .collection('follows')
+        .where('followedUserId', isEqualTo: normalizedUserId)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => doc.data()['followerUserId'] as String?)
+              .whereType<String>()
+              .map((id) => id.trim())
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList(growable: false),
+        );
+  }
+
   Future<void> followUser(String followedUserId) async {
     final followerUserId = _auth.currentUser?.uid;
     if (followerUserId == null ||

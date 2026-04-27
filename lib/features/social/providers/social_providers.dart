@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/feed/providers/feed_providers.dart';
+import 'package:mixvy/features/follow/providers/follow_provider.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/services/room_service.dart';
@@ -12,24 +13,17 @@ import 'package:mixvy/services/room_service.dart';
 /// Live rooms where the users that [userId] follows are currently hosting.
 /// Reuses the shared live-rooms stream to avoid opening a second rooms listener.
 final followingHostIdsProvider =
-    StreamProvider.autoDispose.family<Set<String>, String>((ref, userId) {
+    Provider.autoDispose.family<AsyncValue<Set<String>>, String>((ref, userId) {
       if (userId.isEmpty) {
-        return Stream<Set<String>>.value(const <String>{});
+        return const AsyncValue.data(<String>{});
       }
 
-      final firestore = ref.watch(firestoreProvider);
-      return firestore
-          .collection('follows')
-          .where('followerUserId', isEqualTo: userId)
-          .snapshots()
-          .map(
-            (followSnap) => followSnap.docs
-                .map((d) => d.data()['followedUserId'] as String?)
-                .whereType<String>()
-                .map((id) => id.trim())
-                .where((id) => id.isNotEmpty)
-                .toSet(),
-          );
+      return ref.watch(rawFollowGraphStreamProvider(userId)).whenData(
+        (ids) => ids
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet(),
+      );
     });
 
 final followingLiveRoomsProvider =
@@ -74,49 +68,65 @@ final followingLiveRoomsProvider =
 // ── Following users list ──────────────────────────────────────────────────────
 
 /// User profiles of everyone that [userId] follows (max 50).
-final followingUsersProvider = StreamProvider.family<List<UserModel>, String>((
+final _followingUsersByKeyProvider =
+    FutureProvider.autoDispose.family<List<UserModel>, String>((ref, key) async {
+  if (key.isEmpty) {
+    return const <UserModel>[];
+  }
+
+  final firestore = ref.watch(firestoreProvider);
+  final ids = key.split('|').where((id) => id.isNotEmpty).toList(growable: false);
+  if (ids.isEmpty) {
+    return const <UserModel>[];
+  }
+
+  final users = <UserModel>[];
+  for (var i = 0; i < ids.length; i += 10) {
+    final batch = ids.sublist(i, (i + 10).clamp(0, ids.length));
+    try {
+      final userSnap = await firestore
+          .collection('users')
+          .where(FieldPath.documentId, whereIn: batch)
+          .get();
+      for (final doc in userSnap.docs) {
+        final data = Map<String, dynamic>.from(doc.data());
+        data['id'] = doc.id;
+        users.add(UserModel.fromJson(data));
+      }
+    } on FirebaseException {
+      continue;
+    }
+  }
+
+  return users;
+});
+
+final followingUsersProvider = Provider.autoDispose.family<AsyncValue<List<UserModel>>, String>((
   ref,
   userId,
 ) {
-  if (userId.isEmpty) return const Stream.empty();
-  final firestore = ref.watch(firestoreProvider);
+  if (userId.isEmpty) {
+    return const AsyncValue.data(<UserModel>[]);
+  }
 
-  return firestore
-      .collection('follows')
-      .where('followerUserId', isEqualTo: userId)
-      .limit(50)
-      .snapshots()
-      .asyncExpand((snap) async* {
-        final ids = snap.docs
-            .map((d) => d.data()['followedUserId'] as String?)
-            .whereType<String>()
-            .toList();
+  final followingIdsAsync = ref.watch(rawFollowGraphStreamProvider(userId));
+  if (followingIdsAsync.hasError) {
+    return AsyncValue<List<UserModel>>.error(
+      followingIdsAsync.error!,
+      followingIdsAsync.stackTrace!,
+    );
+  }
+  if (followingIdsAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
 
-        if (ids.isEmpty) {
-          yield const <UserModel>[];
-          return;
-        }
-
-        final users = <UserModel>[];
-        for (var i = 0; i < ids.length; i += 10) {
-          final batch = ids.sublist(i, (i + 10).clamp(0, ids.length));
-          try {
-            final userSnap = await firestore
-                .collection('users')
-                .where(FieldPath.documentId, whereIn: batch)
-                .get();
-            for (final doc in userSnap.docs) {
-              final data = Map<String, dynamic>.from(doc.data());
-              data['id'] = doc.id;
-              users.add(UserModel.fromJson(data));
-            }
-          } on FirebaseException {
-            continue;
-          }
-        }
-
-        yield users;
-      });
+  final ids = (followingIdsAsync.valueOrNull ?? const <String>[])
+      .where((id) => id.isNotEmpty)
+      .take(50)
+      .toList(growable: false)
+    ..sort();
+  final key = ids.join('|');
+  return ref.watch(_followingUsersByKeyProvider(key));
 });
 
 // ── For-You rooms ─────────────────────────────────────────────────────────────

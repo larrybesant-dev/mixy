@@ -75,7 +75,9 @@ class _FriendsSchemaBridgeViewState
               );
 
     _syncBootSession(authUserId);
-    _runParityDiagnostics(mode);
+    if (kDebugMode) {
+      _runParityDiagnostics(mode);
+    }
     _runConversationFirstBoot(
       bootTarget: bootTarget,
     );
