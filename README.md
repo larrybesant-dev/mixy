@@ -88,6 +88,14 @@ Run full suite:
 - MIXVY_PRODUCT_AUDIT_2026-03-29.md
 - MIXVY_AUDIT_SUMMARY.md
 - ONBOARDING.md
+- RELEASE_VALIDATION_PROTOCOL.md
+- POST_LAUNCH_CONTROL_SYSTEM.md
+- CALIBRATION_48H_MAP.md
+- FIRST_25_USERS_LAUNCH_PLAYBOOK.md
+- FIRST_10_USERS_SIGNAL_CHECKLIST.md
+- WHEN_NOT_TO_TOUCH_SYSTEM.md
+- SCALE_PAST_25_USERS_GATE.md
+- STABILITY_SCORECARD_4H_DASHBOARD.md
 
 ## Current Product Audit Direction
 - Apple Sign In is intentionally deferred until web behavior is validated and stable in production.

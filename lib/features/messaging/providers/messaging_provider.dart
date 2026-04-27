@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/telemetry/app_telemetry.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../models/conversation_model.dart';
 import '../../../services/moderation_service.dart';
@@ -20,7 +21,7 @@ final conversationsStreamProvider =
       .collection('conversations')
       .where('participantIds', arrayContains: userId)
       .where('isArchived', isEqualTo: false)
-      .orderBy('lastmessageAt', descending: true)
+      .orderBy('lastMessageAt', descending: true)
       .snapshots()
       .asyncMap((snapshot) async {
     final allConversations = snapshot.docs
@@ -65,8 +66,8 @@ int _compareConversationsForUser(
     return leftPinned ? -1 : 1;
   }
 
-  final leftTimestamp = left.lastmessageAt ?? left.createdAt;
-  final rightTimestamp = right.lastmessageAt ?? right.createdAt;
+  final leftTimestamp = left.lastMessageAt ?? left.createdAt;
+  final rightTimestamp = right.lastMessageAt ?? right.createdAt;
   return rightTimestamp.compareTo(leftTimestamp);
 }
 
@@ -240,6 +241,15 @@ class MessagingController {
     required String content,
     String? clientmessageId,
   }) async {
+    AppTelemetry.logAction(
+      domain: 'messaging',
+      action: 'send_message',
+      message: 'Message send started.',
+      roomId: conversationId,
+      userId: senderId,
+      result: 'start',
+    );
+
     final now = DateTime.now();
     final expiresAt = now.add(const Duration(days: messageRetentionDays));
     final resolvedClientmessageId = clientmessageId ?? _newClientmessageId();
@@ -248,30 +258,57 @@ class MessagingController {
         .doc(conversationId)
         .collection('messages')
         .doc();
-    
-    // Add message to message subcollection
-    await messageRef.set({
-      'conversationId': conversationId,
-      'senderId': senderId,
-      'senderName': senderName,
-      'senderAvatarUrl': senderAvatarUrl,
-      'content': content,
-      'clientmessageId': resolvedClientmessageId,
-      'createdAt': Timestamp.fromDate(now),
-      'expiresAt': Timestamp.fromDate(expiresAt),
-      'isDeleted': false,
-      'readBy': [senderId],
-    });
 
-    // Update conversation with last message info
-    final convRef = _firestore.collection('conversations').doc(conversationId);
-    await convRef.update({
-      'lastmessageId': messageRef.id,
-      'lastmessagePreview': content,
-      'lastmessageenderId': senderId,
-      'lastmessageAt': Timestamp.fromDate(now),
-      'lastmessageClientmessageId': resolvedClientmessageId,
-    });
+    try {
+      // Add message to message subcollection
+      await messageRef.set({
+        'conversationId': conversationId,
+        'senderId': senderId,
+        'senderName': senderName,
+        'senderAvatarUrl': senderAvatarUrl,
+        'content': content,
+        'clientmessageId': resolvedClientmessageId,
+        'createdAt': Timestamp.fromDate(now),
+        'expiresAt': Timestamp.fromDate(expiresAt),
+        'isDeleted': false,
+        'readBy': [senderId],
+      });
+
+      // Update conversation with last message info
+      final convRef = _firestore.collection('conversations').doc(conversationId);
+      await convRef.update({
+        'lastMessageId': messageRef.id,
+        'lastMessagePreview': content,
+        'lastMessageSenderId': senderId,
+        'lastMessageAt': Timestamp.fromDate(now),
+        'lastMessageClientMessageId': resolvedClientmessageId,
+      });
+
+      AppTelemetry.logAction(
+        domain: 'messaging',
+        action: 'send_message',
+        message: 'Message send completed.',
+        roomId: conversationId,
+        userId: senderId,
+        result: 'success',
+      );
+    } catch (error, stackTrace) {
+      AppTelemetry.logAction(
+        level: 'error',
+        domain: 'messaging',
+        action: 'send_message',
+        message: 'Message send failed.',
+        roomId: conversationId,
+        userId: senderId,
+        result: 'failure',
+        metadata: <String, Object?>{
+          'client_message_id': resolvedClientmessageId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   Future<String> createDirectConversation({

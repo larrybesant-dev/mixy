@@ -50,10 +50,10 @@ void main() {
       expect(expiresAt.isBefore(upperBound), isTrue);
 
       final conversation = await firestore.collection('conversations').doc('conv-1').get();
-      expect(conversation.data()?['lastmessageId'], message.docs.single.id);
-      expect(conversation.data()?['lastmessagePreview'], 'Hello there');
-      expect(conversation.data()?['lastmessageenderId'], 'user-1');
-      expect(conversation.data()?['lastmessageAt'], isA<Timestamp>());
+      expect(conversation.data()?['lastMessageId'], message.docs.single.id);
+      expect(conversation.data()?['lastMessagePreview'], 'Hello there');
+      expect(conversation.data()?['lastMessageSenderId'], 'user-1');
+      expect(conversation.data()?['lastMessageAt'], isA<Timestamp>());
     });
 
     test('MessageModel.fromJson parses expiresAt', () {

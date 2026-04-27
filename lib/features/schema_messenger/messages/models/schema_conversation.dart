@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Schema model for a [conversations/{id}] Firestore document.
 ///
-/// Allowed Fields: participantIds, type, status, lastmessageAt,
-///   lastmessagePreview, lastmessageenderId, lastmessageId, pinnedBy,
+/// Allowed Fields: participantIds, type, status, lastMessageAt,
+///   lastMessagePreview, lastMessageSenderId, lastMessageId, pinnedBy,
 ///   groupName, groupAvatarUrl, participantNames, lastReadAt, isArchived, createdAt.
 /// Forbidden Fields: users/{uid} subdocuments, wallet fields,
 ///   verification fields, adult_content fields.
@@ -17,10 +17,10 @@ class SchemaConversation {
     required this.isArchived,
     required this.pinnedBy,
     required this.lastReadAt,
-    this.lastmessageAt,
-    this.lastmessagePreview,
-    this.lastmessageenderId,
-    this.lastmessageId,
+    this.lastMessageAt,
+    this.lastMessagePreview,
+    this.lastMessageSenderId,
+    this.lastMessageId,
     this.groupName,
     this.groupAvatarUrl,
   });
@@ -33,10 +33,10 @@ class SchemaConversation {
   final bool isArchived;
   final List<String> pinnedBy;
   final Map<String, DateTime> lastReadAt; // {userId: lastReadTime}
-  final DateTime? lastmessageAt;
-  final String? lastmessagePreview;
-  final String? lastmessageenderId;
-  final String? lastmessageId;
+  final DateTime? lastMessageAt;
+  final String? lastMessagePreview;
+  final String? lastMessageSenderId;
+  final String? lastMessageId;
   final String? groupName;
   final String? groupAvatarUrl;
 
@@ -46,9 +46,9 @@ class SchemaConversation {
   bool get isPending => status == 'pending';
 
   bool hasUnreadFor(String userId) {
-    return lastmessageAt != null &&
+    return lastMessageAt != null &&
         (lastReadAt[userId] == null ||
-            lastReadAt[userId]!.isBefore(lastmessageAt!));
+        lastReadAt[userId]!.isBefore(lastMessageAt!));
   }
 
   bool isPinnedFor(String userId) => pinnedBy.contains(userId);
@@ -66,10 +66,10 @@ class SchemaConversation {
       isArchived: _asBool(data['isArchived']),
       pinnedBy: _asStringList(data['pinnedBy']),
       lastReadAt: _asLastReadAt(data['lastReadAt']),
-      lastmessageAt: _asNullableDateTime(data['lastmessageAt']),
-      lastmessagePreview: _asNullableString(data['lastmessagePreview']),
-      lastmessageenderId: _asNullableString(data['lastmessageenderId']),
-      lastmessageId: _asNullableString(data['lastmessageId']),
+      lastMessageAt: _asNullableDateTime(data['lastMessageAt']),
+      lastMessagePreview: _asNullableString(data['lastMessagePreview']),
+      lastMessageSenderId: _asNullableString(data['lastMessageSenderId']),
+      lastMessageId: _asNullableString(data['lastMessageId']),
       groupName: _asNullableString(data['groupName']),
       groupAvatarUrl: _asNullableString(data['groupAvatarUrl']),
     );

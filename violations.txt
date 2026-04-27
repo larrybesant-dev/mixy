@@ -114,9 +114,9 @@ lib\shared\widgets\desktop_messenger_shell.dart:13:import '../../features/messag
 lib\shared\widgets\incoming_call_overlay.dart:9:import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 lib\shared\widgets\messenger_shell_route.dart:6:import '../../features/messaging/providers/messaging_provider.dart';
 lib\shared\widgets\messenger_shell_route.dart:9:import '../../features/schema_messenger/friends/views/friends_schema_bridge_view.dart';
-lib\shared\widgets\messenger_shell_route.dart:10:import '../../features/schema_messenger/MessageModels/views/MessageModels_schema_bridge_view.dart';
+lib\shared\widgets\messenger_shell_route.dart:10:import '../../features/schema_messenger/messages/views/messages_schema_bridge_view.dart';
 lib\shared\widgets\messenger_shell_route.dart:11:import '../../features/messaging/panes/chat_pane_view.dart';
-lib\shared\widgets\messenger_shell_route.dart:12:import '../../features/messaging/panes/MessageModels_pane_view.dart';
+lib\shared\widgets\messenger_shell_route.dart:12:import '../../features/messaging/panes/messages_pane_view.dart';
 lib\shared\widgets\messenger_shell_route.dart:13:import '../../features/messaging/screens/new_MessageModel_screen.dart';
 lib\widgets\floating_whisper_panel.dart:7:import '../features/messaging/models/MessageModel_model.dart';
 lib\widgets\floating_whisper_panel.dart:8:import '../features/messaging/providers/messaging_provider.dart';
@@ -174,8 +174,8 @@ test\live_room_screen_test.dart:21:import 'package:mixvy/features/room/providers
 test\live_room_screen_test.dart:23:import 'package:mixvy/features/room/room_controller.dart'
 test\login_signup_navigation_test.dart:5:import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 test\MessageModel_bubble_vip_test.dart:3:import 'package:mixvy/features/room/widgets/MessageModel_bubble.dart';
-test\MessageModels_screen_test.dart:7:import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
-test\MessageModels_screen_test.dart:8:import 'package:mixvy/features/messaging/screens/MessageModels_screen.dart';
+test\messages_screen_test.dart:7:import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
+test\messages_screen_test.dart:8:import 'package:mixvy/features/messaging/screens/messages_screen.dart';
 test\messaging_retention_test.dart:4:import 'package:mixvy/features/messaging/models/MessageModel_model.dart';
 test\messaging_retention_test.dart:5:import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
 test\new_members_provider_test.dart:6:import 'package:mixvy/features/feed/providers/feed_providers.dart';
@@ -245,6 +245,6 @@ test\features\schema_messenger\consistency\architecture_health_interpretation_pr
 test\features\schema_messenger\consistency\architecture_health_interpretation_provider_test.dart:7:import 'package:mixvy/features/schema_messenger/core/schema_engine/schema_module_health_provider.dart';
 test\features\schema_messenger\consistency\golden_snapshot_replay_harness_test.dart:3:import 'package:mixvy/features/schema_messenger/consistency/consistency_template.dart';
 test\features\schema_messenger\consistency\golden_snapshot_replay_harness_test.dart:4:import 'package:mixvy/features/schema_messenger/friends/parity/friend_parity_validator.dart';
-test\features\schema_messenger\consistency\golden_snapshot_replay_harness_test.dart:5:import 'package:mixvy/features/schema_messenger/MessageModels/MessageModels_consistency_contract.dart';
-test\features\schema_messenger\MessageModels\providers\MessageModels_render_mode_provider_test.dart:3:import 'package:mixvy/features/schema_messenger/MessageModels/providers/MessageModels_render_mode_provider.dart';
+test\features\schema_messenger\consistency\golden_snapshot_replay_harness_test.dart:5:import 'package:mixvy/features/schema_messenger/messages/messages_consistency_contract.dart';
+test\features\schema_messenger\messages\providers\messages_render_mode_provider_test.dart:3:import 'package:mixvy/features/schema_messenger/messages/providers/messages_render_mode_provider.dart';
 

@@ -28,7 +28,7 @@ final schemaConversationsProvider = StreamProvider.autoDispose
           .collection('conversations')
           .where('participantIds', arrayContains: userId)
           .where('isArchived', isEqualTo: false)
-          .orderBy('lastmessageAt', descending: true)
+          .orderBy('lastMessageAt', descending: true)
           .snapshots()
           .map(
             (snap) => snap.docs

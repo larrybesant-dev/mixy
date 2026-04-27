@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/environment.dart';
 import '../../core/logger.dart';
+import '../../core/services/auto_response_service.dart';
 import '../../core/services/feature_gate_service.dart';
 
 const String _appVersion = String.fromEnvironment(
@@ -113,6 +114,7 @@ class _OperationalDebugOverlayState
   @override
   Widget build(BuildContext context) {
     final gates = ref.watch(featureGateControllerProvider);
+    final autoResponse = ref.watch(autoResponseControllerProvider);
     final userId = _safeCurrentUserId();
 
     return Stack(
@@ -221,8 +223,33 @@ class _OperationalDebugOverlayState
                               ),
                               Text('enable_live_rooms: ${gates.enableLiveRooms}'),
                               Text('enable_messaging: ${gates.enableMessaging}'),
+                              Text('rooms_mode: ${gates.liveRoomsMode.name}'),
+                              Text('messaging_mode: ${gates.messagingMode.name}'),
                               Text('config_source: ${gates.source}'),
+                              Text('remote_live_rooms: ${gates.remoteEnableLiveRooms}'),
+                              Text('remote_messaging: ${gates.remoteEnableMessaging}'),
+                              Text('local_override_source: ${gates.localOverrideSource ?? 'none'}'),
+                              Text('local_override_at: ${_formatRelative(gates.localOverrideUpdatedAt)}'),
+                              Text('operator_override_active: ${gates.hasOperatorOverrides}'),
+                              Text('operator_override_source: ${gates.operatorOverrideSource ?? 'none'}'),
+                              Text('operator_override_at: ${_formatRelative(gates.operatorOverrideUpdatedAt)}'),
                               Text('last_update: ${_formatRelative(gates.lastUpdatedAt)}'),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Auto Response',
+                                style: TextStyle(
+                                  color: Color(0xFFD4AF37),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text('messaging_failures_5m: ${autoResponse.messagingFailures5m}'),
+                              Text('room_join_failures_5m: ${autoResponse.roomJoinFailures5m}'),
+                              Text('auth_failures_5m: ${autoResponse.authFailures5m}'),
+                              Text('auto_messaging_mode: ${autoResponse.messagingMode.name}'),
+                              Text('auto_rooms_mode: ${autoResponse.roomsMode.name}'),
+                              Text('auth_recovery_recommended: ${autoResponse.authRecoveryRecommended}'),
+                              Text('last_auto_action: ${autoResponse.lastAction ?? 'none'}'),
+                              Text('last_auto_action_at: ${_formatRelative(autoResponse.lastActionAt)}'),
                               const SizedBox(height: 6),
                               const Text(
                                 'Last Error',

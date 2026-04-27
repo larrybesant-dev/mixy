@@ -7,13 +7,9 @@ import 'package:mixvy/shared/widgets/app_shell.dart';
 import 'package:mixvy/shared/widgets/messenger_shell_route.dart';
 
 void main() {
-  testWidgets('AppShell keeps a docked desktop menu that can be hidden', (
+  testWidgets('AppShell renders simplified shell with bottom nav', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(1440, 960);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
     await tester.pumpWidget(
       ProviderScope(
         overrides: [unreadmessageCountProvider.overrideWith((ref) => 0)],
@@ -25,17 +21,13 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Home Feed'), findsOneWidget);
-    expect(find.byTooltip('Hide menu'), findsWidgets);
-
-    await tester.tap(find.byTooltip('Hide menu').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Home Feed'), findsNothing);
-    expect(find.byTooltip('Show menu'), findsOneWidget);
+    expect(find.text('Feed'), findsOneWidget);
+    expect(find.text('Messages'), findsOneWidget);
+    expect(find.text('Live Rooms'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
   });
 
-  testWidgets('AppShell exposes the new five-tab navigation labels', (
+  testWidgets('AppShell switches selected tab via bottom nav taps', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -49,21 +41,23 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Rooms'), findsOneWidget);
-    expect(find.text('message'), findsOneWidget);
-    expect(find.text('Groups'), findsOneWidget);
-    expect(find.text('Profile'), findsOneWidget);
+    await tester.tap(find.text('Messages'));
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsWidgets);
+
+    await tester.tap(find.text('Live Rooms'));
+    await tester.pumpAndSettle();
+    expect(find.text('Live Rooms'), findsWidgets);
   });
 
   testWidgets('Messenger routes accept concrete conversation URLs', (
     WidgetTester tester,
   ) async {
     final router = GoRouter(
-      initialLocation: '/message/conversation-123',
+      initialLocation: '/messages/conversation-123',
       routes: [
         GoRoute(
-          path: '/message/:conversationId',
+          path: '/messages/:conversationId',
           builder: (context, state) {
             final routeState = MessengerRouteState.fromGoRouterState(state);
             return Material(

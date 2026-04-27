@@ -7,6 +7,11 @@ class BootStateNotifier extends StateNotifier<BootState> {
   BootStateNotifier({BootState initialState = BootState.loading})
       : super(initialState);
 
+  /// Move boot flow back into loading state for explicit retry attempts.
+  void setLoading() {
+    state = BootState.loading;
+  }
+
   /// Mark boot as successful and ready.
   void setReady() {
     if (state == BootState.loading) {

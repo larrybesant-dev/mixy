@@ -760,6 +760,9 @@ class AppTelemetry {
       'presence',
       'schema',
       'moderation',
+      'routing',
+      'ops',
+      'messaging',
     }.contains(event.domain);
   }
 

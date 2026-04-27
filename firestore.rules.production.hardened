@@ -270,22 +270,22 @@ service cloud.firestore {
           'participants',
           'createdAt',
           'updatedAt',
-          'lastMessageModel'
+          'lastMessage'
         ]);
 
       allow update: if isParticipant()
         && noExtraFields([
-          'lastMessageModel',
+          'lastMessage',
           'updatedAt'
         ]);
 
       allow delete: if false;
 
       // ───────────────────────────────────────────────────────────────────────
-      // MessageModelS (append-only, immutable)
+      // messages (append-only, immutable)
       // ───────────────────────────────────────────────────────────────────────
 
-      match /MessageModels/{MessageModelId} {
+      match /messages/{messageId} {
 
         function isConversationParticipant() {
           return signedIn()
@@ -410,10 +410,10 @@ service cloud.firestore {
       }
 
       // ───────────────────────────────────────────────────────────────────────
-      // MessageModelS (immutable chat log)
+      // messages (immutable chat log)
       // ───────────────────────────────────────────────────────────────────────
 
-      match /MessageModels/{MessageModelId} {
+      match /messages/{messageId} {
         allow read: if signedIn();
         allow create: if signedIn()
           && request.resource.data.senderId == request.auth.uid
@@ -425,7 +425,7 @@ service cloud.firestore {
           ]);
         allow update, delete: if isRoomHost() || resource.data.senderId == request.auth.uid;
 
-        // MessageModel reactions
+        // message reactions
         match /reactions/{userId} {
           allow read: if signedIn();
           allow create, update, delete: if userId == request.auth.uid;

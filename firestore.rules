@@ -420,7 +420,7 @@ service cloud.firestore {
         allow create, update, delete: if userId == request.auth.uid;
       }
 
-      match /MessageModels/{MessageModelId} {
+      match /messages/{messageId} {
         allow read: if signedIn();
         allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
         allow update, delete: if isRoomHost(roomId) || resource.data.senderId == request.auth.uid;
@@ -857,7 +857,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
           'category',
-          'MessageModel',
+          'message',
           'route',
           'uid',
           'email',
@@ -867,9 +867,9 @@ service cloud.firestore {
           'createdAt'
         ])
         && request.resource.data.category in ['bug', 'ux', 'performance', 'feature-request']
-        && request.resource.data.MessageModel is string
-        && request.resource.data.MessageModel.size() > 0
-        && request.resource.data.MessageModel.size() <= 4000
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 4000
         && request.resource.data.route is string
         && request.resource.data.route.size() > 0
         && request.resource.data.route.size() <= 500
@@ -936,14 +936,14 @@ service cloud.firestore {
       allow update: if signedIn()
         && resource.data.participantIds.hasAny([request.auth.uid])
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['lastMessageModel', 'lastMessageModelId', 'lastMessageModelPreview',
-                      'lastMessageModelSenderId', 'lastMessageModelAt', 'updatedAt',
-                      'isArchived', 'unreadCounts', 'lastReadAt',
-                      'status']);
+          .hasOnly(['lastMessage', 'lastMessageId', 'lastMessagePreview',
+                'lastMessageSenderId', 'lastMessageAt', 'lastMessageClientMessageId',
+                'updatedAt', 'isArchived', 'unreadCounts', 'lastReadAt',
+                'status']);
       allow delete: if false;
 
       // Lightweight ephemeral subcollection for typing indicators.
-      // Isolated from the parent doc so MessageModel sends do not trigger
+      // Isolated from the parent doc so message sends do not trigger
       // the typing stream.
       match /ephemeral/{docId} {
         allow read: if signedIn()
@@ -954,7 +954,7 @@ service cloud.firestore {
               .data.participantIds.hasAny([request.auth.uid]);
       }
 
-      match /MessageModels/{MessageModelId} {
+      match /messages/{messageId} {
         allow read: if signedIn()
           && get(/databases/$(database)/documents/conversations/$(conversationId))
               .data.participantIds.hasAny([request.auth.uid]);

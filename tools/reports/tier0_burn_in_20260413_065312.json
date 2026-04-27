@@ -1,4 +1,4 @@
-﻿{
+{
     "generatedAtUtc":  "2026-04-13T11:53:12.4904681Z",
     "cycles":  1,
     "shuffle":  true,
@@ -278,20 +278,20 @@
                      }
                  ],
                  [
-                     "00:00 +0: loading C:/MixVy/test/MessageModels_screen_test.dart",
-                     "00:00 +0: MessageModelsScreen renders Inbox AppBar and request action",
-                     "00:01 +1: MessageModelsScreen shows empty Chats state when no conversations exist",
-                     "00:01 +2: MessageModelsScreen shows conversations when they exist",
-                     "00:01 +3: MessageModelsScreen shows pinned conversations before newer unpinned conversations",
-                     "00:01 +4: MessageModelsScreen add MessageModel button is shown in AppBar actions",
-                     "00:01 +5: MessageModelsScreen requests sheet shows empty state when no pending requests",
+                     "00:00 +0: loading C:/MixVy/test/messages_screen_test.dart",
+                     "00:00 +0: messagesScreen renders Inbox AppBar and request action",
+                     "00:01 +1: messagesScreen shows empty Chats state when no conversations exist",
+                     "00:01 +2: messagesScreen shows conversations when they exist",
+                     "00:01 +3: messagesScreen shows pinned conversations before newer unpinned conversations",
+                     "00:01 +4: messagesScreen add MessageModel button is shown in AppBar actions",
+                     "00:01 +5: messagesScreen requests sheet shows empty state when no pending requests",
                      "00:01 +6: All tests passed!",
                      {
                          "cycle":  1,
                          "caseId":  "MC-1",
                          "caseName":  "Ordering Determinism",
                          "isPressure":  false,
-                         "command":  "flutter test --no-pub test/MessageModels_screen_test.dart",
+                         "command":  "flutter test --no-pub test/messages_screen_test.dart",
                          "exitCode":  0,
                          "startedAtUtc":  "2026-04-13T11:52:55.3505235Z",
                          "endedAtUtc":  "2026-04-13T11:53:01.6239305Z",

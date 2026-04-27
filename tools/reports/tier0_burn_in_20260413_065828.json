@@ -1,4 +1,4 @@
-﻿{
+{
     "generatedAtUtc":  "2026-04-13T11:58:28.4992185Z",
     "cycles":  1,
     "shuffle":  true,
@@ -106,7 +106,7 @@
                      "caseId":  "MC-1",
                      "caseName":  "Ordering Determinism",
                      "isPressure":  false,
-                     "command":  "flutter test --no-pub test/MessageModels_screen_test.dart",
+                     "command":  "flutter test --no-pub test/messages_screen_test.dart",
                      "exitCode":  0,
                      "startedAtUtc":  "2026-04-13T11:57:48.4661034Z",
                      "endedAtUtc":  "2026-04-13T11:57:57.4458811Z",

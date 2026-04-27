@@ -467,7 +467,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 for (final conversation in conversations) {
                   if (conversation.type == 'direct' &&
                       conversation.participantIds.contains(widget.userId)) {
-                    directPreview = conversation.lastmessagePreview;
+                    directPreview = conversation.lastMessagePreview;
                     break;
                   }
                 }
@@ -559,7 +559,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                           ? () => context.go('/room/$roomId')
                           : null,
                       currentRoom: (roomId ?? '').isNotEmpty ? roomId : null,
-                      lastmessagePreview: directPreview,
+                        lastMessagePreview: directPreview,
                       mutualFriendsCount: null,
                       onMute: () {
                         ScaffoldMessenger.of(context).showSnackBar(

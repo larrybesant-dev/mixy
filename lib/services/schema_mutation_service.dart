@@ -492,7 +492,7 @@ class SchemaMutationService {
   ///
   /// Write paths:
   ///   conversations/{conversationId}/message/{messageId}
-  ///   conversations/{conversationId} — updates lastmessage* fields only.
+  ///   conversations/{conversationId} — updates lastMessage* fields only.
   ///
   /// Forbidden: any field outside [_messageEntryFields] or [_conversationsFields].
   Future<void> sendmessage({
@@ -517,13 +517,14 @@ class SchemaMutationService {
       if (mediaUrl != null && mediaUrl.isNotEmpty) 'mediaUrl': mediaUrl,
     };
 
+    final preview = text.trim().length > 120
+        ? '${text.trim().substring(0, 120)}…'
+        : text.trim();
     final convUpdate = <String, dynamic>{
-      'lastmessageAt': now,
-      'lastmessagePreview': text.trim().length > 120
-          ? '${text.trim().substring(0, 120)}…'
-          : text.trim(),
-      'lastmessageenderId': senderId,
-      'lastmessageId': msgRef.id,
+      'lastMessageAt': now,
+      'lastMessagePreview': preview,
+      'lastMessageSenderId': senderId,
+      'lastMessageId': msgRef.id,
       'updatedAt': now,
     };
 

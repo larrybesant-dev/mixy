@@ -207,7 +207,7 @@ class _MessengerSidebar extends ConsumerWidget {
       if (conversation.type != 'direct') return false;
       if (query.isEmpty) return true;
       final displayName = conversation.getDisplayName(currentUser.id).toLowerCase();
-      final preview = (conversation.lastmessagePreview ?? '').toLowerCase();
+      final preview = (conversation.lastMessagePreview ?? '').toLowerCase();
       return displayName.contains(query) || preview.contains(query);
     }).toList(growable: false)
       ..sort((left, right) {
@@ -216,14 +216,14 @@ class _MessengerSidebar extends ConsumerWidget {
         if (leftPinned != rightPinned) {
           return leftPinned ? -1 : 1;
         }
-        return (right.lastmessageAt ?? right.createdAt)
-            .compareTo(left.lastmessageAt ?? left.createdAt);
+        return (right.lastMessageAt ?? right.createdAt)
+          .compareTo(left.lastMessageAt ?? left.createdAt);
       });
 
     final filteredRoster = roster.where((entry) {
       if (query.isEmpty) return true;
       final conversation = _directConversationForFriend(conversations, currentUser.id, entry.friendId);
-      final preview = (conversation?.lastmessagePreview ?? '').toLowerCase();
+      final preview = (conversation?.lastMessagePreview ?? '').toLowerCase();
       return entry.user.username.toLowerCase().contains(query) || preview.contains(query);
     }).toList(growable: false)
       ..sort(_compareRosterEntries);
@@ -298,8 +298,8 @@ class _MessengerSidebar extends ConsumerWidget {
                                   isOnline: rosterEntry?.isOnline ?? false,
                                   displayName: conversation.getDisplayName(currentUser.id),
                                   avatarUrl: rosterEntry == null ? null : sanitizeNetworkImageUrl(rosterEntry.user.avatarUrl),
-                                  preview: conversation.lastmessagePreview ?? 'No message yet',
-                                  timestamp: conversation.lastmessageAt ?? conversation.createdAt,
+                                  preview: conversation.lastMessagePreview ?? 'No message yet',
+                                  timestamp: conversation.lastMessageAt ?? conversation.createdAt,
                                   unread: conversation.hasUnreadmessage(currentUser.id),
                                   onTogglePin: () => controller.togglePinned(
                                     conversationId: conversation.id,
@@ -511,8 +511,8 @@ class _FriendRosterRowState extends State<_FriendRosterRow> {
 
   @override
   Widget build(BuildContext context) {
-    final preview = widget.conversation?.lastmessagePreview ?? _presenceLabel(widget.entry.presence);
-    final timestamp = widget.conversation?.lastmessageAt ?? widget.entry.lastSeen;
+    final preview = widget.conversation?.lastMessagePreview ?? _presenceLabel(widget.entry.presence);
+    final timestamp = widget.conversation?.lastMessageAt ?? widget.entry.lastSeen;
     final avatarUrl = sanitizeNetworkImageUrl(widget.entry.user.avatarUrl);
     final borderColor = widget.unread
         ? VelvetNoir.primary.withValues(alpha: 0.42)

@@ -65,8 +65,8 @@ void main() {
       final firestore = FakeFirebaseFirestore();
       await firestore.collection('conversations').doc('conv-1').set({
         'participantIds': ['user-1', 'user-2'],
-        'lastmessagePreview': 'Hey there!',
-        'lastmessageAt': Timestamp.fromDate(DateTime.now()),
+        'lastMessagePreview': 'Hey there!',
+        'lastMessageAt': Timestamp.fromDate(DateTime.now()),
         'isArchived': false,
         'status': 'active',
         'participantNames': {'user-2': 'Alice'},
@@ -88,8 +88,8 @@ void main() {
 
       await firestore.collection('conversations').doc('conv-older-pinned').set({
         'participantIds': ['user-1', 'user-2'],
-        'lastmessagePreview': 'Pinned hello',
-        'lastmessageAt': Timestamp.fromDate(now.subtract(const Duration(minutes: 5))),
+        'lastMessagePreview': 'Pinned hello',
+        'lastMessageAt': Timestamp.fromDate(now.subtract(const Duration(minutes: 5))),
         'isArchived': false,
         'status': 'active',
         'participantNames': {'user-2': 'Alice'},
@@ -99,8 +99,8 @@ void main() {
       });
       await firestore.collection('conversations').doc('conv-newer').set({
         'participantIds': ['user-1', 'user-3'],
-        'lastmessagePreview': 'Fresh message',
-        'lastmessageAt': Timestamp.fromDate(now),
+        'lastMessagePreview': 'Fresh message',
+        'lastMessageAt': Timestamp.fromDate(now),
         'isArchived': false,
         'status': 'active',
         'participantNames': {'user-3': 'Bianca'},

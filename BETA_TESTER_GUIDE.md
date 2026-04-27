@@ -27,7 +27,7 @@
 > Try out as many features as you can:
 > - 🏠 **Home Feed** — browse posts, react, and comment
 > - 👥 **Friends** — search for users, send friend requests, and accept them
-> - 💬 **MessageModels** — start a 1:1 or group chat
+> - 💬 **messages** — start a 1:1 or group chat
 > - 🎥 **Live Rooms** — create or join a live video room
 > - 💘 **Speed Dating** — join a session and meet new people
 > - 🔔 **Notifications** — check your notification feed

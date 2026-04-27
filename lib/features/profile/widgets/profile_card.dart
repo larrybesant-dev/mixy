@@ -19,7 +19,7 @@ class ProfileCard extends StatelessWidget {
     required this.onInvite,
     this.onJoin,
     this.currentRoom,
-    this.lastmessagePreview,
+    this.lastMessagePreview,
     this.mutualFriendsCount,
     this.activities = const <ProfileActivityItem>[],
     this.onMute,
@@ -37,7 +37,7 @@ class ProfileCard extends StatelessWidget {
   final VoidCallback onInvite;
   final VoidCallback? onJoin;
   final String? currentRoom;
-  final String? lastmessagePreview;
+  final String? lastMessagePreview;
   final int? mutualFriendsCount;
   final List<ProfileActivityItem> activities;
   final VoidCallback? onMute;
@@ -260,13 +260,13 @@ class ProfileActivitySection extends StatelessWidget {
   const ProfileActivitySection({
     super.key,
     this.currentRoom,
-    this.lastmessagePreview,
+    this.lastMessagePreview,
     this.mutualFriendsCount,
     this.activities = const <ProfileActivityItem>[],
   });
 
   final String? currentRoom;
-  final String? lastmessagePreview;
+  final String? lastMessagePreview;
   final int? mutualFriendsCount;
   final List<ProfileActivityItem> activities;
 
@@ -296,12 +296,12 @@ class ProfileActivitySection extends StatelessWidget {
       );
     }
 
-    if ((lastmessagePreview ?? '').isNotEmpty) {
+    if ((lastMessagePreview ?? '').isNotEmpty) {
       rows.add(
         _ActivityRow(
           icon: Icons.chat_bubble_outline_rounded,
           label: 'Last message',
-          value: lastmessagePreview!,
+          value: lastMessagePreview!,
         ),
       );
     }

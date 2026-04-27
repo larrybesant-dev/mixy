@@ -9,37 +9,128 @@ import '../logger.dart';
 const String kEnableLiveRoomsKey = 'enable_live_rooms';
 const String kEnableMessagingKey = 'enable_messaging';
 
+enum FeatureServiceMode {
+  full,
+  degraded,
+  disabled,
+}
+
+const Object _featureGateUnset = Object();
+
 @immutable
 class FeatureGateState {
   const FeatureGateState({
-    required this.enableLiveRooms,
-    required this.enableMessaging,
+    required this.remoteEnableLiveRooms,
+    required this.remoteEnableMessaging,
+    required this.localLiveRoomsMode,
+    required this.localMessagingMode,
     required this.lastUpdatedAt,
     required this.source,
+    required this.localOverrideSource,
+    required this.localOverrideUpdatedAt,
+    required this.operatorLiveRoomsMode,
+    required this.operatorMessagingMode,
+    required this.operatorOverrideSource,
+    required this.operatorOverrideUpdatedAt,
   });
 
   const FeatureGateState.defaults()
-      : enableLiveRooms = true,
-        enableMessaging = true,
+      : remoteEnableLiveRooms = true,
+        remoteEnableMessaging = true,
+        localLiveRoomsMode = FeatureServiceMode.full,
+        localMessagingMode = FeatureServiceMode.full,
         lastUpdatedAt = null,
-        source = 'local-defaults';
+        source = 'local-defaults',
+        localOverrideSource = null,
+        localOverrideUpdatedAt = null,
+        operatorLiveRoomsMode = null,
+        operatorMessagingMode = null,
+        operatorOverrideSource = null,
+        operatorOverrideUpdatedAt = null;
 
-  final bool enableLiveRooms;
-  final bool enableMessaging;
+  final bool remoteEnableLiveRooms;
+  final bool remoteEnableMessaging;
+  final FeatureServiceMode localLiveRoomsMode;
+  final FeatureServiceMode localMessagingMode;
   final DateTime? lastUpdatedAt;
   final String source;
+  final String? localOverrideSource;
+  final DateTime? localOverrideUpdatedAt;
+  final FeatureServiceMode? operatorLiveRoomsMode;
+  final FeatureServiceMode? operatorMessagingMode;
+  final String? operatorOverrideSource;
+  final DateTime? operatorOverrideUpdatedAt;
+
+  FeatureServiceMode get liveRoomsMode {
+    if (operatorLiveRoomsMode != null) {
+      return operatorLiveRoomsMode!;
+    }
+    if (!remoteEnableLiveRooms) {
+      return FeatureServiceMode.disabled;
+    }
+    return localLiveRoomsMode;
+  }
+
+  FeatureServiceMode get messagingMode {
+    if (operatorMessagingMode != null) {
+      return operatorMessagingMode!;
+    }
+    if (!remoteEnableMessaging) {
+      return FeatureServiceMode.disabled;
+    }
+    return localMessagingMode;
+  }
+
+  bool get enableLiveRooms => liveRoomsMode != FeatureServiceMode.disabled;
+  bool get enableMessaging => messagingMode != FeatureServiceMode.disabled;
+
+  bool get liveRoomsDegraded => liveRoomsMode == FeatureServiceMode.degraded;
+  bool get messagingDegraded => messagingMode == FeatureServiceMode.degraded;
+
+  bool get hasLocalOverrides =>
+      localLiveRoomsMode != FeatureServiceMode.full ||
+      localMessagingMode != FeatureServiceMode.full;
+
+    bool get hasOperatorOverrides =>
+      operatorLiveRoomsMode != null || operatorMessagingMode != null;
 
   FeatureGateState copyWith({
-    bool? enableLiveRooms,
-    bool? enableMessaging,
+    bool? remoteEnableLiveRooms,
+    bool? remoteEnableMessaging,
+    FeatureServiceMode? localLiveRoomsMode,
+    FeatureServiceMode? localMessagingMode,
     DateTime? lastUpdatedAt,
     String? source,
+    String? localOverrideSource,
+    DateTime? localOverrideUpdatedAt,
+    Object? operatorLiveRoomsMode = _featureGateUnset,
+    Object? operatorMessagingMode = _featureGateUnset,
+    Object? operatorOverrideSource = _featureGateUnset,
+    Object? operatorOverrideUpdatedAt = _featureGateUnset,
   }) {
     return FeatureGateState(
-      enableLiveRooms: enableLiveRooms ?? this.enableLiveRooms,
-      enableMessaging: enableMessaging ?? this.enableMessaging,
+      remoteEnableLiveRooms: remoteEnableLiveRooms ?? this.remoteEnableLiveRooms,
+      remoteEnableMessaging: remoteEnableMessaging ?? this.remoteEnableMessaging,
+      localLiveRoomsMode: localLiveRoomsMode ?? this.localLiveRoomsMode,
+      localMessagingMode: localMessagingMode ?? this.localMessagingMode,
       lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
       source: source ?? this.source,
+      localOverrideSource: localOverrideSource ?? this.localOverrideSource,
+      localOverrideUpdatedAt:
+          localOverrideUpdatedAt ?? this.localOverrideUpdatedAt,
+          operatorLiveRoomsMode: identical(operatorLiveRoomsMode, _featureGateUnset)
+            ? this.operatorLiveRoomsMode
+            : operatorLiveRoomsMode as FeatureServiceMode?,
+          operatorMessagingMode: identical(operatorMessagingMode, _featureGateUnset)
+            ? this.operatorMessagingMode
+            : operatorMessagingMode as FeatureServiceMode?,
+          operatorOverrideSource: identical(operatorOverrideSource, _featureGateUnset)
+            ? this.operatorOverrideSource
+            : operatorOverrideSource as String?,
+          operatorOverrideUpdatedAt:
+            identical(operatorOverrideUpdatedAt, _featureGateUnset)
+            ? this.operatorOverrideUpdatedAt
+            : operatorOverrideUpdatedAt as DateTime?,
     );
   }
 }
@@ -141,8 +232,8 @@ class FeatureGateController extends StateNotifier<FeatureGateState> {
     final enableMessaging = rc.getBool(kEnableMessagingKey);
 
     state = state.copyWith(
-      enableLiveRooms: enableLiveRooms,
-      enableMessaging: enableMessaging,
+      remoteEnableLiveRooms: enableLiveRooms,
+      remoteEnableMessaging: enableMessaging,
       lastUpdatedAt: DateTime.now(),
       source: source,
     );
@@ -150,6 +241,90 @@ class FeatureGateController extends StateNotifier<FeatureGateState> {
     Logger.info(
       'Feature gates updated liveRooms=$enableLiveRooms messaging=$enableMessaging source=$source',
     );
+  }
+
+  void setLocalFeatureMode({
+    required String feature,
+    required FeatureServiceMode mode,
+    String source = 'local-override',
+  }) {
+    switch (feature) {
+      case 'messaging':
+        state = state.copyWith(
+          localMessagingMode: mode,
+          localOverrideSource: source,
+          localOverrideUpdatedAt: DateTime.now(),
+        );
+        Logger.warning(
+          'Feature gate local override messagingMode=${mode.name} source=$source',
+        );
+        break;
+      case 'rooms':
+        state = state.copyWith(
+          localLiveRoomsMode: mode,
+          localOverrideSource: source,
+          localOverrideUpdatedAt: DateTime.now(),
+        );
+        Logger.warning(
+          'Feature gate local override roomsMode=${mode.name} source=$source',
+        );
+        break;
+      default:
+        Logger.warning('Unknown feature gate override target: $feature');
+        return;
+    }
+  }
+
+  void clearLocalFeatureModes({String source = 'local-override-cleared'}) {
+    state = state.copyWith(
+      localMessagingMode: FeatureServiceMode.full,
+      localLiveRoomsMode: FeatureServiceMode.full,
+      localOverrideSource: source,
+      localOverrideUpdatedAt: DateTime.now(),
+    );
+    Logger.info('Feature gate local overrides cleared source=$source');
+  }
+
+  void setOperatorFeatureMode({
+    required String feature,
+    required FeatureServiceMode mode,
+    String source = 'operator',
+  }) {
+    switch (feature) {
+      case 'messaging':
+        state = state.copyWith(
+          operatorMessagingMode: mode,
+          operatorOverrideSource: source,
+          operatorOverrideUpdatedAt: DateTime.now(),
+        );
+        Logger.warning(
+          'Feature gate operator override messagingMode=${mode.name} source=$source',
+        );
+        break;
+      case 'rooms':
+        state = state.copyWith(
+          operatorLiveRoomsMode: mode,
+          operatorOverrideSource: source,
+          operatorOverrideUpdatedAt: DateTime.now(),
+        );
+        Logger.warning(
+          'Feature gate operator override roomsMode=${mode.name} source=$source',
+        );
+        break;
+      default:
+        Logger.warning('Unknown feature gate operator override target: $feature');
+        return;
+    }
+  }
+
+  void clearOperatorFeatureModes({String source = 'operator-cleared'}) {
+    state = state.copyWith(
+      operatorMessagingMode: null,
+      operatorLiveRoomsMode: null,
+      operatorOverrideSource: source,
+      operatorOverrideUpdatedAt: DateTime.now(),
+    );
+    Logger.info('Feature gate operator overrides cleared source=$source');
   }
 
   @override

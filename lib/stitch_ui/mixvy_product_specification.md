@@ -30,7 +30,7 @@ The UI must visually support a system where not everyone is on camera simultaneo
 
 ### 3. Messaging (DM System)
 - **Layout:** Desktop-style list on left, chat on right.
-- **Features:** Real-time MessageModels, media sharing, lightweight UI.
+- **Features:** Real-time messages, media sharing, lightweight UI.
 
 ### 4. Profile Page
 - **Layout:** Banner, avatar, stats (followers/following), history (hosted/joined), badges/roles.

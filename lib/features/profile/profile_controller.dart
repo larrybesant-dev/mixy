@@ -10,7 +10,7 @@ import 'package:mixvy/services/profile_service.dart';
 import '../auth/controllers/auth_controller.dart';
 import '../../core/events/app_event.dart';
 import '../../core/events/app_event_bus.dart';
-import 'models/user_model.dart';
+import '../../models/user_model.dart';
 
 class ProfileState {
   final bool isLoading;

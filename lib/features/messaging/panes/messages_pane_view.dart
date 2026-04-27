@@ -67,7 +67,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
     if (_query.isEmpty) return convs;
     return convs.where((c) {
       final name = c.getDisplayName(widget.userId).toLowerCase();
-      final preview = (c.lastmessagePreview ?? '').toLowerCase();
+      final preview = (c.lastMessagePreview ?? '').toLowerCase();
       return name.contains(_query) || preview.contains(_query);
     }).toList();
   }
@@ -408,7 +408,7 @@ class MessageRequestsSheet extends ConsumerWidget {
                           style: const TextStyle(color: VelvetNoir.onSurface),
                         ),
                         subtitle: Text(
-                          conversation.lastmessagePreview ?? 'New message request',
+                          conversation.lastMessagePreview ?? 'New message request',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -548,7 +548,7 @@ class _ConversationTile extends ConsumerWidget {
     final pinned = conversation.isPinnedFor(userId);
     final displayName = conversation.getDisplayName(userId);
     final avatarUrl = conversation.groupAvatarUrl;
-    final previewText = conversation.lastmessagePreview ?? 'No message yet';
+    final previewText = conversation.lastMessagePreview ?? 'No message yet';
     final isGroup = conversation.type == 'group';
     final peerUserId = _otherParticipantId();
     final typingUsers = ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
@@ -695,7 +695,7 @@ class _ConversationTile extends ConsumerWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _formatTime(conversation.lastmessageAt),
+                          _formatTime(conversation.lastMessageAt),
                           style: GoogleFonts.raleway(
                             fontSize: 11,
                             fontWeight:

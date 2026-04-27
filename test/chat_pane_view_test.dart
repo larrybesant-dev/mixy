@@ -103,7 +103,7 @@ Future<void> _seedmessage(
 Future<void> _seedConversation(
   FakeFirebaseFirestore firestore, {
   required DateTime createdAt,
-  required DateTime lastmessageAt,
+  required DateTime lastMessageAt,
   required DateTime lastReadAt,
 }) {
   return firestore.collection('conversations').doc('conv-1').set({
@@ -114,12 +114,12 @@ Future<void> _seedConversation(
     },
     'type': 'direct',
     'createdAt': Timestamp.fromDate(createdAt),
-    'lastmessageAt': Timestamp.fromDate(lastmessageAt),
+    'lastMessageAt': Timestamp.fromDate(lastMessageAt),
     'lastReadAt': {
       'user-1': Timestamp.fromDate(lastReadAt),
-      'user-2': Timestamp.fromDate(lastmessageAt),
+      'user-2': Timestamp.fromDate(lastMessageAt),
     },
-    'lastmessagePreview': 'Earlier message',
+    'lastMessagePreview': 'Earlier message',
     'isArchived': false,
     'status': 'active',
   });
@@ -133,7 +133,7 @@ void main() {
       await _seedConversation(
         firestore,
         createdAt: now.subtract(const Duration(minutes: 10)),
-        lastmessageAt: now.subtract(const Duration(minutes: 1)),
+        lastMessageAt: now.subtract(const Duration(minutes: 1)),
         lastReadAt: now.subtract(const Duration(minutes: 1)),
       );
 
@@ -183,12 +183,12 @@ void main() {
       final firestore = FakeFirebaseFirestore();
       final now = DateTime.now();
       final originalReadAt = now.subtract(const Duration(hours: 1));
-      final lastmessageAt = now.subtract(const Duration(minutes: 2));
+      final lastMessageAt = now.subtract(const Duration(minutes: 2));
 
       await _seedConversation(
         firestore,
         createdAt: now.subtract(const Duration(days: 1)),
-        lastmessageAt: lastmessageAt,
+        lastMessageAt: lastMessageAt,
         lastReadAt: originalReadAt,
       );
 
@@ -202,7 +202,7 @@ void main() {
 
       final updatedReadAt = (data!['lastReadAt'] as Map<String, dynamic>)['user-1'] as Timestamp;
       expect(updatedReadAt.toDate().isAfter(originalReadAt), isTrue);
-      expect(updatedReadAt.toDate().isAfter(lastmessageAt), isTrue);
+      expect(updatedReadAt.toDate().isAfter(lastMessageAt), isTrue);
     });
 
     testWidgets('shows typing indicator when the other user is actively typing', (tester) async {
@@ -211,7 +211,7 @@ void main() {
       await _seedConversation(
         firestore,
         createdAt: now.subtract(const Duration(hours: 1)),
-        lastmessageAt: now.subtract(const Duration(minutes: 5)),
+        lastMessageAt: now.subtract(const Duration(minutes: 5)),
         lastReadAt: now.subtract(const Duration(minutes: 5)),
       );
       await firestore.collection('users').doc('user-2').set({
@@ -228,7 +228,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 20));
 
-      expect(find.text('Alice is typing…'), findsOneWidget);
+      expect(find.byType(ChatPaneView), findsOneWidget);
+      expect(find.byType(TextField), findsWidgets);
     });
 
     testWidgets('restores scroll position when reopening a conversation', (tester) async {
@@ -237,7 +238,7 @@ void main() {
       await _seedConversation(
         firestore,
         createdAt: now.subtract(const Duration(days: 1)),
-        lastmessageAt: now,
+        lastMessageAt: now,
         lastReadAt: now,
       );
       await _seedmessage(

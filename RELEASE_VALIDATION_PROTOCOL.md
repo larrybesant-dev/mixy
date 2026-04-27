@@ -1,197 +1,200 @@
-# MixVy Release Validation Protocol
+# MIXVY - MVP Pre-Launch Runbook (24-Hour Ship Plan)
 
-## Release Rule
-Release state is binary.
+Use this runbook in exact order. Do not skip gates.
 
-- PASS: all required tests pass
-- FAIL: any Tier 0 or Tier 1 test fails
-- Non-blocking: Tier 2 issues, unless runtime-critical
+## Phase 0 - Freeze (Non-Negotiable)
 
-Ship is allowed only when all required gate conditions below are met.
+### 0.1 Create release branch
 
-## Tier Model
+```bash
+git checkout -b release/mvp-v1
+git tag mvp-stable-prelaunch
+```
 
-### Tier 0: Hard Blockers (Core Correctness)
+### 0.2 Freeze scope (7 day rule)
 
-- Messaging Core
-- Presence and Sync
+- No new features
+- No refactors
+- No schema changes
+- Only bug fixes
 
-If any Tier 0 test fails, ship is blocked.
+## Phase 1 - Build Verification
 
-### Tier 1: Product Usability Blockers
+### 1.1 Clean build
 
-- Notifications and Routing
+```bash
+flutter clean
+flutter pub get
+flutter build web --release
+```
 
-If any Tier 1 test fails, ship is blocked.
+Pass condition:
 
-### Tier 2: Confidence Gates
+- Build completes with no errors
+- No missing assets
+- No runtime console crash on load
 
-- Analyzer and test health
-- CI stability
+### 1.2 Smoke test built artifact
 
-Tier 2 is non-blocking unless there is a critical runtime failure.
+Open build/web/index.html and verify:
 
-## Executable Test Cases
+- App loads
+- Firebase initializes
+- No blank screen
+- Router resolves correctly
 
-### Tier 0: Messaging Core
+Fail condition: stop release immediately.
 
-#### MC-1 Ordering Determinism
-- Setup: dual client, force one client offline, reconnect.
-- Pass condition: final MessageModel ordering is identical across clients.
+## Phase 2 - Core System Tests (Hard Gates)
 
-#### MC-2 Duplicate Suppression
-- Setup: retry same MessageModel under network flaps.
-- Pass condition: exactly one persisted MessageModel per `MessageModelId`.
+Run critical test suite:
 
-#### MC-3 Offline Queue Integrity
-- Setup: queue 20 MessageModels offline, reconnect.
-- Pass condition: all 20 delivered once, in correct order.
+```bash
+flutter test
+```
 
-#### MC-4 Crash Recovery Consistency
-- Setup: kill app immediately after send.
-- Pass condition: no ghost/pending mismatch after restart.
+Must pass:
 
-### Tier 0: Presence and Sync
+- Auth: sign in, sign out, session restore
+- Onboarding: new user flow and completion redirect to /app
+- Messaging: create conversation, send message, receive UI update, lastMessage updates correctly
+- Rooms: join, leave, reconnect, state recovery
 
-#### PS-1 Lifecycle Correctness
-- Setup: foreground, background, and kill cycles.
-- Pass condition: presence is correct within defined latency window.
+Pass rule: 100 percent pass or release is blocked.
 
-#### PS-2 Multi-Device Truth Convergence
-- Setup: same user on two devices.
-- Pass condition: one correct presence state, no ghost online.
+## Phase 3 - Firebase Deployment Validation
 
-#### PS-3 Partition Recovery
-- Setup: network partition then restore.
-- Pass condition: presence converges to source of truth.
+Use staging project first. Never deploy straight to production.
 
-#### PS-4 Room Dominance Rule
-- Setup: user joins room during active presence updates.
-- Pass condition: no dual classification state.
+Deploy order:
 
-### Tier 1: Notifications and Routing
+1. Firestore rules
+2. Cloud Functions
+3. App build test against staging
 
-#### NR-1 Push to Correct Route
-- Setup: app in background, tap push notification.
-- Pass condition: correct conversation opens.
+### 3.1 Rules validation checklist
 
-#### NR-2 Deep Link Correctness
-- Setup: deep link on cold start and active session.
-- Pass condition: correct route every time.
+Verify:
 
-#### NR-3 No Double Navigation
-- Setup: collide boot, deep link, and auth refresh.
-- Pass condition: exactly one navigation event.
+- messages collection readable and writable where expected
+- conversations update allowed for lastMessage fields
+- rooms/{id} access works
+- beta_feedback accepts message field
 
-#### NR-4 Auth-Aware Routing
-- Setup: push tap while unauthenticated.
-- Pass condition: auth flow completes, then correct post-auth route opens.
+### 3.2 Functions validation checklist
 
-### Tier 2: Confidence Gates
+Verify:
 
-#### CG-1 Analyzer
-- Pass condition: no runtime-blocking analyzer errors.
+- message creation behavior works as expected
+- lastMessage updates are correct
+- room lifecycle events operate correctly
 
-#### CG-2 Test Suite
-- Pass condition: all Tier 0 and Tier 1 tests are green.
+## Phase 4 - Auth Flow End-to-End
 
-#### CG-3 CI Stability
-- Pass condition: no flaky failures across two consecutive CI runs.
+Manual checks:
 
-## Room Stability Gate
+- Sign in via supported provider
+- Sign out fully clears session
+- Refresh browser restores session correctly
+- Incomplete user routes to onboarding
+- Completed user enters /app
 
-### RS-1 Reconnect Storm
-- Runner command: powershell -ExecutionPolicy Bypass -File tools/run_room_release_stress_gate.ps1
-- Deterministic command case: flutter test --no-pub test/room_session_stress_test.dart
-- Pass condition: reconnect chaos suite passes with no room-state drift regression.
+## Phase 5 - Messaging Validation (Critical)
 
-### RS-2 Listener Leak Verification
-- Deterministic command case: flutter test --no-pub test/room_chaos_master_test.dart
-- Pass condition: duplicate-session and listener-chaos suite passes.
+Validate full loop:
 
-### RS-3 Host Authority Stress
-- Deterministic command case: flutter test --no-pub test/room_state_machine_test.dart
-- Pass condition: host authority converges to one source of truth.
+1. Create conversation
+2. Send message
+3. Verify Firestore write
+4. Verify UI update
+5. Verify lastMessage fields update
 
-### RS-4 Mic Pressure Test
-- Deterministic command case: flutter test --no-pub test/room_slot_service_test.dart test/room_host_control_panel_stage_tab_test.dart
-- Pass condition: mic-seat limits and stage controls remain aligned.
+Pass criteria:
 
-### RS-5 Late Join Sync
-- Deterministic command case: flutter test --no-pub test/live_room_screen_test.dart test/room_state_test.dart
-- Pass condition: late-join hydration and UI sync remain correct.
+- No silent failure
+- No rules rejection
+- No schema mismatch
 
-### RS-6 Telemetry Truth Validation
-- Deterministic command case: flutter test --no-pub test/app_telemetry_test.dart
-- Pass condition: alerts, suppression, and stability scoring remain truthful.
+## Phase 6 - Room System Test (Real Device Required)
 
-### RS-7 Recovery Baseline Build
-- Deterministic command case: flutter build web --release --base-href /
-- Pass condition: production build still succeeds after room-stress validation.
+Test both mobile browser and desktop browser.
 
-## Final Ship Gate
-Ship equals TRUE only if:
+Flow:
 
-- All Tier 0 tests PASS.
-- All Tier 1 tests PASS.
-- Tier 2 has no critical runtime failures.
-- Room Stability Gate passes with verdict PASS.
+1. Enter room
+2. Send message
+3. Leave room
+4. Rejoin room
+5. Verify state recovery
 
-Otherwise, ship equals FALSE.
+Pass criteria:
 
-## CI Mapping Layer
+- No duplicate state
+- No stuck listeners
+- No null crashes
 
-### Tier 0 stage (blocking)
-- CI job: flutter-tier0
-- Runner command: bash tools/run_release_gate.sh tier0
-- Cases: MC-1..MC-4, PS-1..PS-4
+## Phase 7 - Observability (MVP Metrics Only)
 
-### Tier 1 stage (blocking)
-- CI job: flutter-tier1
-- Runner command: bash tools/run_release_gate.sh tier1
-- Cases: NR-1..NR-4
+Track only these three metrics:
 
-### Tier 2 stage (soft gate)
-- CI job: flutter-tier2
-- Runner command: bash tools/run_release_gate.sh tier2
-- Cases: CG-1..CG-3
-- Policy: job is continue-on-error true; warnings must still be reviewed before release.
+- login_success_rate
+- message_send_success_rate
+- room_join_success_rate
 
-### Room stage (blocking for launch hardening)
-- CI job: flutter-room-gate
-- Runner command: bash tools/run_release_gate.sh room
-- Local report runner: powershell -ExecutionPolicy Bypass -File tools/run_room_release_stress_gate.ps1
-- Cases: RS-1..RS-7
-- CI prerequisite: ensure flutter and unzip are available on the runner image; on local Windows, the PowerShell runner is the supported path.
+Alert thresholds:
 
-## Case-to-Command Mapping
+- login success below 95 percent
+- message send failures above 2 percent
+- room join failures above 3 percent
 
-### MC (Messaging Core)
-- `MC-1` -> `flutter test --no-pub test/MessageModels_screen_test.dart`
-- `MC-2` -> `flutter test --no-pub test/chat_pane_view_test.dart`
-- `MC-3` -> `flutter test --no-pub test/messaging_retention_test.dart`
-- `MC-4` -> `flutter test --no-pub test/app_integration_test.dart`
+## Phase 8 - Dogfood Window (24 to 72 Hours)
 
-### PS (Presence + Sync)
-- `PS-1` -> `flutter test --no-pub test/presence_service_test.dart`
-- `PS-2` -> `flutter test --no-pub test/presence_guardrail_test.dart`
-- `PS-3` -> `flutter test --no-pub test/room_session_stress_test.dart`
-- `PS-4` -> `flutter test --no-pub test/live_room_screen_test.dart`
+Internal testers only, real usage only.
 
-### NR (Notifications + Routing)
-- `NR-1` -> `flutter test --no-pub test/notification_service_test.dart`
-- `NR-2` -> `flutter test --no-pub test/app_router_redirect_test.dart`
-- `NR-3` -> `flutter test --no-pub test/MessageModels_screen_test.dart`
-- `NR-4` -> `flutter test --no-pub test/login_signup_navigation_test.dart`
+Collect:
 
-### CG (Confidence)
-- `CG-1` -> `flutter analyze --no-pub`
-- `CG-2` -> `flutter test --no-pub test/features/schema_messenger/consistency`
-- `CG-2` -> `flutter test --no-pub test/friend_list_screen_test.dart test/friend_provider_test.dart test/presence_guardrail_test.dart`
-- `CG-3` -> `bash tools/enforce_governance_boundaries.sh`
+- Top 10 errors by frequency
+- Crash logs
+- Firestore errors
+- Routing issues
 
-## Usage Notes
+## Phase 9 - Patch Cycle
 
-- This protocol supersedes narrative readiness estimates.
-- Interpret all results as binary PASS/FAIL for release decisions.
-- Keep test evidence attached to each case ID (`MC-*`, `PS-*`, `NR-*`, `CG-*`).
+Fix only:
+
+- P0: app broken or unusable
+- P1: key feature unusable
+
+Do not do polish work in this cycle.
+
+## Phase 10 - MVP Release
+
+After all gates pass:
+
+```bash
+git tag mvp-v1-release
+```
+
+Deploy production.
+
+## Rollback Plan
+
+If production fails:
+
+```bash
+git checkout mvp-stable-prelaunch
+flutter build web --release
+```
+
+Redeploy immediately from the rollback tag.
+
+## Evidence Checklist (Required)
+
+Store release evidence in one place before final go decision:
+
+- Build log
+- Test run summary
+- Staging rules and functions validation notes
+- Manual auth and messaging validation notes
+- Room validation notes from mobile and desktop
+- Metrics dashboard screenshot or export

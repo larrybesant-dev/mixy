@@ -1,0 +1,6 @@
+
+lib\app\app.dart:20:import '../features/profile/profile_controller.dart';
+lib\router\app_router.dart:11:import 'package:mixvy/features/profile/user_profile_screen.dart';
+lib\router\app_router.dart:61:import '../features/profile/profile_screen.dart';
+lib\router\app_router.dart:62:import '../features/profile/edit_profile_screen.dart';
+

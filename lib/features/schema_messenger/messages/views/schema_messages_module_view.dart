@@ -11,7 +11,7 @@ import '../messages_consistency_contract.dart';
 /// Component Name: SchemamessageModuleView
 /// Firestore Read Paths: conversations, conversations/{conversationId}/message
 /// Firestore Write Paths: none (read-only validation view)
-/// Allowed Fields: participantIds/participants, lastmessageAt, lastmessagePreview,
+/// Allowed Fields: participantIds/participants, lastMessageAt, lastMessagePreview,
 /// unread indicators derived from conversation state
 /// Forbidden Fields: wallet/security/verification writes, role mutation, legacy
 /// friends arrays

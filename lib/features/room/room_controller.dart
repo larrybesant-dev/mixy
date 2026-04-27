@@ -1099,6 +1099,15 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       result = RoomJoinResult.failure(message);
     }
     if (!result.isSuccess) {
+      AppTelemetry.logAction(
+        level: 'error',
+        domain: 'room',
+        action: 'join',
+        message: result.errormessage ?? 'Room join failed.',
+        roomId: arg,
+        userId: normalizedUserId,
+        result: 'failure',
+      );
       _stopRoomHeartbeat();
       _phase = LiveRoomPhase.error;
       _currentUserId = null;

@@ -8,12 +8,17 @@ class UserModel {
   final String username;
   final String? avatarUrl;
   final String? coverPhotoUrl;
+  final List<String> galleryUrls;
+  final String? introVideoUrl;
   final String? bio;
   final String? aboutMe;
   final int? age;
   final String? gender;
   final String? location;
   final String? relationshipStatus;
+  final String? vibePrompt;
+  final String? firstDatePrompt;
+  final String? musicTastePrompt;
   final List<String> interests;
   final DateTime createdAt;
   final int coinBalance;
@@ -38,12 +43,17 @@ class UserModel {
     required this.username,
     this.avatarUrl,
     this.coverPhotoUrl,
+    this.galleryUrls = const [],
+    this.introVideoUrl,
     this.bio,
     this.aboutMe,
     this.age,
     this.gender,
     this.location,
     this.relationshipStatus,
+    this.vibePrompt,
+    this.firstDatePrompt,
+    this.musicTastePrompt,
     this.interests = const [],
     required this.createdAt,
     this.coinBalance = 0,
@@ -70,12 +80,17 @@ class UserModel {
           _stringOrNull(json['avatarUrl'] ?? json['photoUrl']),
         ),
         coverPhotoUrl: sanitizeNetworkImageUrl(_stringOrNull(json['coverPhotoUrl'])),
+        galleryUrls: _stringList(json['galleryUrls']),
+        introVideoUrl: _stringOrNull(json['introVideoUrl']),
         bio: _stringOrNull(json['bio']),
         aboutMe: _stringOrNull(json['aboutMe']),
         age: (json['age'] as num?)?.toInt(),
         gender: _stringOrNull(json['gender']),
         location: _stringOrNull(json['location']),
         relationshipStatus: _stringOrNull(json['relationshipStatus']),
+        vibePrompt: _stringOrNull(json['vibePrompt']),
+        firstDatePrompt: _stringOrNull(json['firstDatePrompt']),
+        musicTastePrompt: _stringOrNull(json['musicTastePrompt']),
         interests: _stringList(json['interests']),
         createdAt: (json['createdAt'] is Timestamp)
             ? (json['createdAt'] as Timestamp).toDate()
@@ -183,12 +198,17 @@ class UserModel {
         'photoUrl': avatarUrl,
         'isComplete': isComplete,
         'coverPhotoUrl': coverPhotoUrl,
+        'galleryUrls': galleryUrls,
+        'introVideoUrl': introVideoUrl,
         'bio': bio,
         'aboutMe': aboutMe,
         'age': age,
         'gender': gender,
         'location': location,
         'relationshipStatus': relationshipStatus,
+        'vibePrompt': vibePrompt,
+        'firstDatePrompt': firstDatePrompt,
+        'musicTastePrompt': musicTastePrompt,
         'interests': interests,
         'createdAt': createdAt.toIso8601String(),
         'balance': coinBalance,
@@ -199,6 +219,11 @@ class UserModel {
         'adultModeEnabled': adultModeEnabled,
         'adultConsentAccepted': adultConsentAccepted,
         'themeId': themeId,
+        'profileAccentColor': profileAccentColor,
+        'profileBgGradientStart': profileBgGradientStart,
+        'profileBgGradientEnd': profileBgGradientEnd,
+        'profileMusicUrl': profileMusicUrl,
+        'profileMusicTitle': profileMusicTitle,
       };
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) =>

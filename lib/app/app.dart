@@ -10,6 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/app_settings_service.dart';
+import '../core/services/auto_response_service.dart';
 import '../core/services/feature_gate_service.dart';
 import 'boot_state.dart';
 import 'boot_state_notifier.dart';
@@ -28,6 +29,7 @@ import '../features/profile/profile_controller.dart';
 import '../services/presence_controller.dart';
 import '../core/events/event_providers.dart';
 import '../observability/startup_timeline.dart';
+import '../firebase_options.dart';
 
 final appBootstrapProvider = FutureProvider<void>((ref) async {
   final startup = StartupProfiler.instance;
@@ -141,6 +143,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
       ref.read(presenceControllerProvider);
       ref.read(eventPipelineProvider);
       ref.read(featureGateControllerProvider.notifier);
+      ref.read(autoResponseControllerProvider.notifier);
     } catch (error, stackTrace) {
       developer.log(
         'Runtime services failed during startup',
@@ -156,7 +159,33 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
     }
   }
 
-  Widget _buildBootShell({String? message}) {
+  Future<void> _retryStartup() async {
+    ref.read(bootStateProvider.notifier).setLoading();
+
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+
+      ref.invalidate(appBootstrapProvider);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Retry startup failed',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'MixVyApp',
+      );
+      ref.read(bootStateProvider.notifier).setFailed();
+    }
+  }
+
+  Widget _buildBootShell({
+    String? message,
+    String? actionLabel,
+    Future<void> Function()? onAction,
+  }) {
     final bootMessage = message ?? _bootHints[_bootHintIndex];
     final body = Scaffold(
       backgroundColor: VelvetNoir.surface,
@@ -266,6 +295,13 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
                     strokeWidth: 2.6,
                   ),
                 ),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: () => unawaited(onAction()),
+                    child: Text(actionLabel),
+                  ),
+                ],
               ],
             ),
           ),
@@ -320,7 +356,11 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
     final bootState = ref.watch(bootStateProvider);
 
     if (bootState == BootState.failed) {
-      return _buildBootShell(message: 'Startup failed. Please restart MixVy.');
+      return _buildBootShell(
+        message: 'Session startup failed. Retry session.',
+        actionLabel: 'Retry session',
+        onAction: _retryStartup,
+      );
     }
 
     final boot = ref.watch(appBootstrapProvider);

@@ -254,8 +254,8 @@ C:\MIXVY\LIB
 �   �   �       
 �   �   +---screens
 �   �           chat_screen.dart
-�   �       MessageModelsages_screen.dart
-�   �           MessageModelsage_screen.dart
+�   �       messagesages_screen.dart
+�   �           messagesage_screen.dart
 �   �           whisper_popout_screen.dart
 �   �           
 �   +---onboarding
@@ -370,7 +370,7 @@ C:\MIXVY\LIB
 �   �           live_room_app_bar_status.dart
 �   �           live_room_media_action_strip.dart
 �   �           live_stage_spotlight.dart
-�   �       MessageModelsage_bubble.dart
+�   �       messagesage_bubble.dart
 �   �           mic_queue_panel.dart
 �   �           on_mic_panel.dart
 �   �           rich_text_toolbar.dart
@@ -419,8 +419,8 @@ C:\MIXVY\LIB
 �   �   �   +---widgets
 �   �   �           schema_friend_tile.dart
 �   �   �           
-�   �   MessageModelsages
-�   �       MessageModelsages_consistency_contract.dart
+�   �   messagesages
+�   �       messagesages_consistency_contract.dart
 �   �       �   
 �   �       +---models
 �   �       �       schema_conversation.dart
@@ -430,8 +430,8 @@ C:\MIXVY\LIB
 �   �       �       schema_conversations_providers.dart
 �   �       �       
 �   �       +---views
-�   �           MessageModelsages_schema_bridge_view.dart
-�   �               schMessageModelsages_module_view.dart
+�   �           messagesages_schema_bridge_view.dart
+�   �               schmessagesages_module_view.dart
 �   �               
 �   +---search
 �   �   +---providers
@@ -545,7 +545,7 @@ C:\MIXVY\LIB
 �   �       friend_provider.dart
 �   �       gift_provider.dart
 �   �       index.dart
-�   �   MessageModelsage_provider.dart
+�   �   messagesage_provider.dart
 �   �       notification_provider.dart
 �   �       presence_provider.dart
 �   �       referral_provider.dart
