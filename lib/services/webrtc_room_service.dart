@@ -1027,7 +1027,7 @@ class WebRtcRoomService extends RtcRoomService {
           final age = DateTime.now().difference(hbRaw.toDate());
           if (age > _kHeartbeatStaleDuration) {
             _log(
-              'ignoring stale broadcaster $remoteBroadcasterId '
+              'cleaning up stale broadcaster $remoteBroadcasterId '
               '(heartbeat ${age.inSeconds}s ago)',
             );
             // Best-effort cleanup so subsequent viewers don't see the tile.

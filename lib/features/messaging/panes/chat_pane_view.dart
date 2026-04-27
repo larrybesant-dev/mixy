@@ -17,6 +17,7 @@ import '../../../widgets/safe_network_avatar.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../widgets/emoji_pack/emoji_pack_picker.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import '../../../core/telemetry/app_telemetry.dart';
 import '../../../models/user_model.dart';
 import '../providers/messaging_provider.dart';
 
@@ -48,10 +49,12 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   bool _didAutoScrollInitialLoad = false;
   late final double? _savedScrollOffset;
   final List<_Pendingmessage> _pendingmessage = <_Pendingmessage>[];
+  late final DateTime _entryTime;
 
   @override
   void initState() {
     super.initState();
+    _entryTime = DateTime.now();
     _messageController = TextEditingController();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
@@ -141,6 +144,17 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
   @override
   void dispose() {
+    final duration = DateTime.now().difference(_entryTime);
+    AppTelemetry.logAction(
+      domain: 'messaging',
+      action: 'chat_session_duration',
+      message: 'User left the chat pane.',
+      userId: widget.userId,
+      metadata: {
+        'conversationId': widget.conversationId,
+        'durationSeconds': duration.inSeconds,
+      },
+    );
     if (_scrollController.hasClients &&
         _scrollController.position.hasContentDimensions) {
       ref

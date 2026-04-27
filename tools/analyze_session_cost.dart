@@ -1,4 +1,5 @@
-import 'dart:math';
+// ignore_for_file: avoid_print
+
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
 import 'package:mixvy/features/feed/repository/feed_repository.dart';
@@ -33,13 +34,11 @@ Future<void> main() async {
   // 1. Feed Fetch
   print('Step 1: Fetching feed...');
   await feedRepo.getPostsFeed();
-  final step1Reads = AppTelemetry.state.firestoreReadCount;
   
   // 2. Join Room
   print('Step 2: Joining live room...');
   await firestore.collection('rooms').doc('test-room').set({'isLive': true});
   await sessionService.joinRoom(roomId: 'test-room', userId: 'user-1');
-  final step2Reads = AppTelemetry.state.firestoreReadCount - step1Reads;
   
   // 3. Speed Dating Swipe
   print('Step 3: Speed dating decision (Swipe)...');
@@ -49,7 +48,6 @@ Future<void> main() async {
     liked: true,
     sessionSeconds: 10,
   );
-  final step3Writes = AppTelemetry.state.firestoreWriteCount;
   
   print('\n---------- Resource Usage Report ----------');
   print('Total Firestore Reads: ${AppTelemetry.state.firestoreReadCount}');

@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/layout/app_layout.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
-import '../../../shared/widgets/async_state_view.dart';
 import '../providers/messaging_provider.dart';
 
 class CreateGroupChatScreen extends ConsumerStatefulWidget {
@@ -27,7 +25,6 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
   final Set<String> _selectedUserIds = {};
   final Map<String, String> _selectedUserNames = {};
   List<Map<String, String>> _searchResults = [];
-  bool _isSearching = false;
   bool _isCreating = false;
 
   @override
@@ -41,7 +38,6 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
       setState(() => _searchResults = []);
       return;
     }
-    setState(() => _isSearching = true);
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -58,9 +54,13 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
               })
           .toList();
 
-      if (mounted) setState(() => _searchResults = matches, _isSearching = false);
+      if (mounted) {
+        setState(() {
+          _searchResults = matches;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _isSearching = false);
+      // Keep the current result set on search errors.
     }
   }
 

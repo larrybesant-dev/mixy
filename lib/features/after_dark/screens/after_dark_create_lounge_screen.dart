@@ -73,7 +73,7 @@ class _AfterDarkCreateLoungeScreenState
     }
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      context.go('/login');
+      context.go('/auth');
       return;
     }
     setState(() => _creating = true);
@@ -120,7 +120,7 @@ class _AfterDarkCreateLoungeScreenState
   Future<void> _pickAndUploadLogo() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      context.go('/login');
+      context.go('/auth');
       return;
     }
 

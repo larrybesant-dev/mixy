@@ -2,7 +2,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionPersistence {
   static const String _kLastRoomId = 'mixvy.last_room_id';
-  static const String _kLastChatId = 'mixvy.last_chat_id';
   static const String _kFeedScrollOffset = 'mixvy.feed_scroll_offset';
   static const String _kIsSpeedDatingActive = 'mixvy.speed_dating_active';
 

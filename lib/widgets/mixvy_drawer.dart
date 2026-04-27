@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme.dart';
-import '../features/after_dark/providers/after_dark_provider.dart';
 import '../features/auth/providers/admin_provider.dart';
 import '../features/beta/beta_tester_provider.dart';
 import '../presentation/providers/notification_provider.dart';
@@ -135,12 +134,6 @@ class MixVyDrawer extends ConsumerWidget {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
     final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
     final isBetaTester = ref.watch(isBetaTesterProvider).valueOrNull ?? false;
-    final afterDarkEnabled =
-        ref.watch(afterDarkEnabledProvider).valueOrNull ?? false;
-    final afterDarkSessionActive = ref.watch(afterDarkSessionProvider);
-    final afterDarkRoute = !afterDarkEnabled
-        ? '/after-dark/setup'
-        : (afterDarkSessionActive ? '/after-dark' : '/after-dark/unlock');
 
     final drawerContent = DecoratedBox(
       decoration: const BoxDecoration(
@@ -217,25 +210,25 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.home_rounded,
             title: 'Home Feed',
-            route: '/discover',
+            route: '/home',
           ),
           _navItem(
             context,
             icon: Icons.meeting_room_outlined,
             title: 'Rooms',
-            route: '/live',
+            route: '/home',
           ),
           _navItem(
             context,
             icon: Icons.mail_rounded,
             title: 'message',
-            route: '/messages',
+            route: '/home',
           ),
           _navItem(
             context,
             icon: Icons.people_outline_rounded,
             title: 'Groups',
-            route: '/groups',
+            route: '/fallback',
           ),
           _navItem(
             context,
@@ -248,107 +241,107 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.mic_external_on_rounded,
             title: 'Host Room',
-            route: '/create-room',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.article_outlined,
             title: 'New Post',
-            route: '/create-post',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.auto_stories_outlined,
             title: 'New Story',
-            route: '/create-story',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.group_add_outlined,
             title: 'New Group',
-            route: '/create-group',
+            route: '/fallback',
           ),
           _sectionLabel(context, 'MORE'),
           _navItem(
             context,
             icon: Icons.search_rounded,
             title: 'Search',
-            route: '/search',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.meeting_room_rounded,
             title: 'Room Directory',
-            route: '/rooms',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.notifications_active_rounded,
             title: 'Notifications',
-            route: '/notifications',
+            route: '/fallback',
             badgeCount: unreadCount,
           ),
           _navItem(
             context,
             icon: Icons.bookmark_rounded,
             title: 'Bookmarks',
-            route: '/bookmarks',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.people_alt_rounded,
             title: 'Friends',
-            route: '/friends',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.trending_up_rounded,
             title: 'Trending',
-            route: '/trending',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.local_fire_department_rounded,
             title: 'Live Speed Dating',
-            route: '/speed-dating',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.nightlight_rounded,
             title: 'After Dark',
-            route: afterDarkRoute,
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.verified_user_rounded,
             title: 'Get Verified',
-            route: '/verification',
+            route: '/fallback',
           ),
           _navItem(
             context,
             icon: Icons.payments_rounded,
             title: 'Payments',
-            route: '/payments',
+            route: '/fallback',
           ),
           if (isBetaTester)
             _navItem(
               context,
               icon: Icons.science_outlined,
               title: 'Beta Feedback',
-              route: '/beta-feedback',
+              route: '/fallback',
             ),
           if (isAdmin)
             _navItem(
               context,
               icon: Icons.admin_panel_settings_rounded,
               title: 'Moderation',
-              route: '/moderation',
+              route: '/fallback',
             ),
           _navItem(
             context,
             icon: Icons.settings_rounded,
             title: 'Settings',
-            route: '/settings',
+            route: '/fallback',
           ),
           const SizedBox(height: 20),
         ],

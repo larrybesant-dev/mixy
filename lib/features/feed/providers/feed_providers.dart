@@ -18,6 +18,19 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(ref.read(firestoreProvider));
 });
 
+final postsFeedProvider = StreamProvider.autoDispose<List<PostModel>>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  return firestore
+      .collection('posts')
+      .orderBy('createdAt', descending: true)
+      .limit(30)
+      .snapshots()
+      .map(
+        (snap) =>
+            snap.docs.map((d) => PostModel.fromDoc(d.id, d.data())).toList(),
+      );
+});
+
 final postsStreamProvider = FutureProvider.autoDispose<List<PostModel>>((ref) {
   return ref.read(feedRepositoryProvider).getPostsFeed();
 });

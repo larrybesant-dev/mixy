@@ -237,7 +237,7 @@ class _UserProfilePopupSheetState
                 label: 'View full profile',
                 onTap: () {
                   Navigator.of(context).pop();
-                  context.go('/profile/${widget.userId}');
+                  context.go('/profile');
                 },
               ),
               if (!_isBlocked)
@@ -275,7 +275,7 @@ class _UserProfilePopupSheetState
                         );
                     if (!context.mounted) return;
                     Navigator.of(context).pop();
-                    context.go('/messages/$conversationId');
+                    context.go('/chat/$conversationId');
                   },
                 ),
               if (!_isBlocked)

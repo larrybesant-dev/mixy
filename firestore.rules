@@ -66,6 +66,17 @@ service cloud.firestore {
       ]);
     }
 
+    // Adult-mode consent fields are self-managed by the user.
+    // Separated from identity fields to keep the whitelist narrow.
+    function onlyAdultConsentFieldsAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'adultModeEnabled',
+        'adultConsentAccepted',
+        'adultModeEnabledAt',
+        'updatedAt'
+      ]);
+    }
+
     function onlyProfilePublicFieldsAllowed() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
         'userId',
@@ -181,7 +192,9 @@ service cloud.firestore {
           || request.resource.data.membershipLevel == 'basic');
 
       // Update: isSelf + strict field whitelist.
+      // Adult-consent fields are allowed as a separate self-update path.
       allow update: if (isSelf(userId) && onlyIdentityFieldsAllowed())
+        || (isSelf(userId) && onlyAdultConsentFieldsAllowed())
         || (signedIn() && isFriendLinkUpdate());
 
       // Delete: isSelf only.
@@ -420,7 +433,21 @@ service cloud.firestore {
         allow create, update, delete: if userId == request.auth.uid;
       }
 
-      match /messages/{messageId} {
+    match /messages/{messageId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.createdAt == request.time; // Prevent timestamp spoofing
+        allow update, delete: if false; // Hardening: no editing/deleting for now
+
+        match /reactions/{userId} {
+          allow read: if signedIn();
+          allow create, update, delete: if userId == request.auth.uid;
+        }
+      }
+
+      // Support singular 'message' collection as used in some client tracing/debug calls.
+      match /message/{messageId} {
         allow read: if signedIn();
         allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
         allow update, delete: if isRoomHost(roomId) || resource.data.senderId == request.auth.uid;
@@ -631,8 +658,13 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn()
         && (!('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid)
-        && (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid);
-      allow update, delete: if signedIn()
+        && (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid)
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedIn()
+        && ((('authorId' in resource.data) && resource.data.authorId == request.auth.uid)
+          || (('userId' in resource.data) && resource.data.userId == request.auth.uid))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'content', 'imageUrl', 'videoUrl', 'tags', 'updatedAt']);
+      allow delete: if signedIn()
         && ((('authorId' in resource.data) && resource.data.authorId == request.auth.uid)
           || (('userId' in resource.data) && resource.data.userId == request.auth.uid));
 
@@ -1017,7 +1049,9 @@ service cloud.firestore {
         && request.resource.data.reason.size() <= 2000
         && request.resource.data.status == 'pending';
       // Only Cloud Functions / admin can update status.
-      allow update, delete: if false;
+      allow update: if false;
+      // User may delete their own request to allow resubmission after rejection.
+      allow delete: if signedIn() && requestId == request.auth.uid;
     }
 
     match /vip_waitlist/{entryId} {

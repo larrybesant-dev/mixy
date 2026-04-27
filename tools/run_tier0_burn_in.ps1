@@ -18,14 +18,15 @@ if ($PressureRepeatsPerCycle -lt 0) {
 }
 
 $tier0Cases = @(
-  @{ Id = 'MC-1'; Name = 'Ordering Determinism'; Command = 'flutter test --no-pub test/MessageModels_screen_test.dart' },
+  @{ Id = 'MC-1'; Name = 'Ordering Determinism'; Command = 'flutter test --no-pub test/home_controller_test.dart' },
   @{ Id = 'MC-2'; Name = 'Duplicate Suppression'; Command = 'flutter test --no-pub test/chat_pane_view_test.dart' },
   @{ Id = 'MC-3'; Name = 'Offline Queue Integrity'; Command = 'flutter test --no-pub test/messaging_retention_test.dart' },
   @{ Id = 'MC-4'; Name = 'Crash Recovery Consistency'; Command = 'flutter test --no-pub test/app_integration_test.dart' },
   @{ Id = 'PS-1'; Name = 'Lifecycle Correctness'; Command = 'flutter test --no-pub test/presence_service_test.dart' },
   @{ Id = 'PS-2'; Name = 'Multi-Device Truth Convergence'; Command = 'flutter test --no-pub test/presence_guardrail_test.dart' },
   @{ Id = 'PS-3'; Name = 'Partition Recovery'; Command = 'flutter test --no-pub test/room_session_stress_test.dart' },
-  @{ Id = 'PS-4'; Name = 'Room Dominance Rule'; Command = 'flutter test --no-pub test/live_room_screen_test.dart' }
+  @{ Id = 'PS-4'; Name = 'Room Dominance Rule'; Command = 'flutter test --no-pub test/live_room_screen_test.dart' },
+  @{ Id = 'RD-1'; Name = 'Readiness Checklist'; Command = 'flutter test --no-pub test/room_launch_checklist_test.dart' }
 )
 
 $pressureCases = @(

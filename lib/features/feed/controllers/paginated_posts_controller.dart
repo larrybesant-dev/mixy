@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/feature_gate_service.dart';
 import '../models/post_model.dart';
 
 class PaginatedPostsState {
@@ -7,12 +8,14 @@ class PaginatedPostsState {
   final bool isLoading;
   final bool hasMore;
   final DocumentSnapshot? lastDoc;
+  final DateTime? lastFetchAt;
 
   PaginatedPostsState({
     this.posts = const [],
     this.isLoading = false,
     this.hasMore = true,
     this.lastDoc,
+    this.lastFetchAt,
   });
 
   PaginatedPostsState copyWith({
@@ -20,24 +23,40 @@ class PaginatedPostsState {
     bool? isLoading,
     bool? hasMore,
     DocumentSnapshot? lastDoc,
+    DateTime? lastFetchAt,
   }) {
     return PaginatedPostsState(
       posts: posts ?? this.posts,
       isLoading: isLoading ?? this.isLoading,
       hasMore: hasMore ?? this.hasMore,
       lastDoc: lastDoc ?? this.lastDoc,
+      lastFetchAt: lastFetchAt ?? this.lastFetchAt,
     );
   }
 }
 
 class PaginatedPostsController extends StateNotifier<PaginatedPostsState> {
-  PaginatedPostsController(this._firestore) : super(PaginatedPostsState());
+  PaginatedPostsController(this._firestore, this._ref)
+      : super(PaginatedPostsState());
 
   final FirebaseFirestore _firestore;
+  final Ref _ref;
   static const int _pageSize = 15;
 
   Future<void> loadPosts() async {
     if (state.isLoading || !state.hasMore) return;
+
+    final gates = _ref.read(featureGateControllerProvider);
+    final now = DateTime.now();
+
+    // Throttle refresh rate based on Feature Gate
+    if (state.lastFetchAt != null) {
+      final diff = now.difference(state.lastFetchAt!);
+      if (diff.inSeconds < gates.feedRefreshRateSeconds) {
+        return; // Throttled
+      }
+    }
+
     state = state.copyWith(isLoading: true);
 
     try {
@@ -60,6 +79,7 @@ class PaginatedPostsController extends StateNotifier<PaginatedPostsState> {
         isLoading: false,
         hasMore: snapshot.docs.length == _pageSize,
         lastDoc: snapshot.docs.isNotEmpty ? snapshot.docs.last : state.lastDoc,
+        lastFetchAt: DateTime.now(),
       );
     } catch (e) {
       state = state.copyWith(isLoading: false);
@@ -74,5 +94,5 @@ class PaginatedPostsController extends StateNotifier<PaginatedPostsState> {
 
 final paginatedPostsProvider =
     StateNotifierProvider.autoDispose<PaginatedPostsController, PaginatedPostsState>((ref) {
-  return PaginatedPostsController(FirebaseFirestore.instance);
+  return PaginatedPostsController(FirebaseFirestore.instance, ref);
 });

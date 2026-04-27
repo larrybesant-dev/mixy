@@ -41,8 +41,8 @@ final messagetreamProvider = StreamProvider.autoDispose
       final firestore = ref.watch(roomFirestoreProvider);
       final currentUserId = ref.watch(userProvider)?.id;
       return traceFirestoreStream<List<MessageModel>>(
-        key: 'message/$roomId',
-        query: 'rooms/$roomId/message orderBy sentAt',
+        key: 'messages/$roomId',
+        query: 'rooms/$roomId/messages orderBy sentAt',
         roomId: roomId,
         itemCount: (value) => value.length,
         stream: firestore

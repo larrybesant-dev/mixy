@@ -45,7 +45,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   final _bioController = TextEditingController();
   final _aboutMeController = TextEditingController();
 
-  // Tab 2 – Interests
+  // Tab 2 – Personalization
+  final _musicUrlController = TextEditingController();
+  final _musicTitleController = TextEditingController();
+  String? _profileAccentColor;
+
+  // Tab 3 – Interests
   final _interestInputController = TextEditingController();
   List<String> _interests = [];
 
@@ -53,7 +58,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-        length: 3, vsync: this, initialIndex: widget.initialTab.clamp(0, 2));
+        length: 4, vsync: this, initialIndex: widget.initialTab.clamp(0, 3));
     final s = ref.read(profileControllerProvider);
     _nameController.text = s.username ?? '';
     _emailController.text = s.email ?? '';
@@ -61,6 +66,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     _coverPhotoUrl = s.coverPhotoUrl;
     _bioController.text = s.bio ?? '';
     _aboutMeController.text = s.aboutMe ?? '';
+    _musicUrlController.text = s.profileMusicUrl ?? '';
+    _musicTitleController.text = s.profileMusicTitle ?? '';
+    _profileAccentColor = s.profileAccentColor;
     _interests = List<String>.from(s.interests);
   }
 
@@ -72,6 +80,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     _passwordController.dispose();
     _bioController.dispose();
     _aboutMeController.dispose();
+    _musicUrlController.dispose();
+    _musicTitleController.dispose();
     _interestInputController.dispose();
     super.dispose();
   }
@@ -125,6 +135,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         coverPhotoUrl: _coverPhotoUrl ?? '',
         bio: _bioController.text.trim(),
         aboutMe: _aboutMeController.text.trim(),
+        profileMusicUrl: _musicUrlController.text.trim(),
+        profileMusicTitle: _musicTitleController.text.trim(),
+        profileAccentColor: _profileAccentColor,
         interests: List<String>.from(_interests),
       ),
     );
@@ -452,9 +465,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           indicatorColor: VelvetNoir.primary,
           labelColor: VelvetNoir.primary,
           unselectedLabelColor: Colors.white54,
+          isScrollable: true,
           tabs: const [
             Tab(text: 'Basics'),
             Tab(text: 'About'),
+            Tab(text: 'Personalization'),
             Tab(text: 'Interests'),
           ],
         ),
@@ -479,10 +494,67 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
               children: [
                 _buildBasicsTab(state),
                 _buildAboutTab(),
+                _buildPersonalizationTab(),
                 _buildInterestsTab(),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalizationTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('Profile Music', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 12),
+        _field(_musicTitleController, 'Song Title', Icons.music_note_outlined, next: true),
+        const SizedBox(height: 14),
+        _field(_musicUrlController, 'Direct MP3 URL', Icons.link, next: true),
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text('Enter a direct https link to an MP3 file.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+        ),
+        const SizedBox(height: 24),
+        const Text('Accent Color', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _colorOption(null, 'Default'),
+            _colorOption('#D4A853', 'Gold'),
+            _colorOption('#FF6EB4', 'Pink'),
+            _colorOption('#4A90E2', 'Blue'),
+            _colorOption('#50E3C2', 'Teal'),
+            _colorOption('#B8E986', 'Green'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _colorOption(String? hex, String label) {
+    final isSelected = _profileAccentColor == hex;
+    final color = hex != null ? Color(int.parse(hex.replaceFirst('#', '0xFF'))) : VelvetNoir.primary;
+    return GestureDetector(
+      onTap: () => setState(() => _profileAccentColor = hex),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
+              boxShadow: isSelected ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)] : null,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 10, color: isSelected ? Colors.white : Colors.white54)),
         ],
       ),
     );

@@ -22,16 +22,17 @@ import 'package:flutter/foundation.dart';
 class RtdbPresenceService {
   RtdbPresenceService(this._rtdb);
 
-  final FirebaseDatabase _rtdb;
+  final FirebaseDatabase? _rtdb;
   String? _sessionId;
   String? _inRoom;
   bool _camOn = false;
   bool _micOn = false;
 
-  DatabaseReference _userRef(String userId) => _rtdb.ref('status/$userId');
+  DatabaseReference? _userRef(String userId) =>
+      _rtdb?.ref('status/$userId');
 
-  DatabaseReference _sessionsRef(String userId) =>
-      _userRef(userId).child('sessions');
+  DatabaseReference? _sessionsRef(String userId) =>
+      _userRef(userId)?.child('sessions');
 
   String _ensureSessionId() {
     final existing = _sessionId;
@@ -43,9 +44,9 @@ class RtdbPresenceService {
     return created;
   }
 
-  DatabaseReference _sessionRef(String userId) {
+  DatabaseReference? _sessionRef(String userId) {
     final sessionId = _ensureSessionId();
-    return _sessionsRef(userId).child(sessionId);
+    return _sessionsRef(userId)?.child(sessionId);
   }
 
   Map<String, Object?> _onlinePayload({bool includeSessionId = false}) {
@@ -65,10 +66,11 @@ class RtdbPresenceService {
   }
 
   Future<void> connect(String userId) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     try {
       _ensureSessionId();
       final ref = _sessionRef(userId);
+      if (ref == null) return;
       final offlinePayload = {
         'online': false,
         'last_seen': ServerValue.timestamp,
@@ -84,19 +86,20 @@ class RtdbPresenceService {
   }
 
   Future<void> heartbeat(String userId) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     try {
-      await _sessionRef(userId).update({'last_seen': ServerValue.timestamp});
+      await _sessionRef(userId)?.update({'last_seen': ServerValue.timestamp});
     } catch (_) {
       // Best-effort. Silently ignore if RTDB is unavailable.
     }
   }
 
   Future<void> setInRoom(String userId, String roomId) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     _inRoom = roomId.trim().isEmpty ? null : roomId.trim();
     try {
       final ref = _sessionRef(userId);
+      if (ref == null) return;
       await ref.onDisconnect().update({
         'online': false,
         'last_seen': ServerValue.timestamp,
@@ -111,41 +114,42 @@ class RtdbPresenceService {
   }
 
   Future<void> clearInRoom(String userId) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     _inRoom = null;
     _camOn = false;
     _micOn = false;
     try {
-      await _sessionRef(userId).update(_onlinePayload());
+      await _sessionRef(userId)?.update(_onlinePayload());
     } catch (e) {
       debugPrint('[RTDB] clearInRoom error (non-fatal): $e');
     }
   }
 
   Future<void> setCamOn(String userId, {required bool camOn}) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     _camOn = camOn;
     try {
-      await _sessionRef(userId).update(_onlinePayload());
+      await _sessionRef(userId)?.update(_onlinePayload());
     } catch (e) {
       debugPrint('[RTDB] setCamOn update failed (non-fatal): $e');
     }
   }
 
   Future<void> setMicOn(String userId, {required bool micOn}) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     _micOn = micOn;
     try {
-      await _sessionRef(userId).update(_onlinePayload());
+      await _sessionRef(userId)?.update(_onlinePayload());
     } catch (e) {
       debugPrint('[RTDB] setMicOn update failed (non-fatal): $e');
     }
   }
 
   Future<void> disconnect(String userId) async {
-    if (userId.trim().isEmpty) return;
+    if (userId.trim().isEmpty || _rtdb == null) return;
     try {
       final ref = _sessionRef(userId);
+      if (ref == null) return;
       await ref.onDisconnect().cancel();
       await ref.remove();
     } catch (e) {
@@ -159,9 +163,11 @@ class RtdbPresenceService {
   }
 
   Stream<bool> watchOnline(String userId) {
-    if (userId.trim().isEmpty) return Stream.value(false);
+    if (userId.trim().isEmpty || _rtdb == null) return Stream.value(false);
     try {
-      return _sessionsRef(userId).onValue
+      final ref = _sessionsRef(userId);
+      if (ref == null) return Stream.value(false);
+      return ref.onValue
           .map((event) {
             final raw = event.snapshot.value;
             if (raw is! Map) return false;
@@ -179,9 +185,11 @@ class RtdbPresenceService {
   }
 
   Future<String?> getInRoom(String userId) async {
-    if (userId.trim().isEmpty) return null;
+    if (userId.trim().isEmpty || _rtdb == null) return null;
     try {
-      final snap = await _sessionsRef(userId).get();
+      final ref = _sessionsRef(userId);
+      if (ref == null) return null;
+      final snap = await ref.get();
       final raw = snap.value;
       if (raw is! Map) return null;
       for (final value in raw.values) {

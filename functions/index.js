@@ -2091,7 +2091,7 @@ exports.cleanupExpiredSpeedDatingSessions = onSchedule(
   async () => {
     const now = admin.firestore.Timestamp.now();
 
-    // Deactivate expired sessions
+    // 1. Deactivate expired sessions
     const expiredSessions = await db
       .collection("speed_dating_sessions")
       .where("active", "==", true)
@@ -2101,11 +2101,29 @@ exports.cleanupExpiredSpeedDatingSessions = onSchedule(
 
     const sessionBatch = db.batch();
     expiredSessions.docs.forEach((doc) => {
-      sessionBatch.update(doc.ref, { active: false });
+      sessionBatch.update(doc.ref, {active: false});
     });
     if (!expiredSessions.empty) await sessionBatch.commit();
 
-    // Remove stale queue entries (matched or joined > 10 min ago)
+    // 2. Deactivate expired rooms (speed dating sessions)
+    const expiredRooms = await db
+      .collection("rooms")
+      .where("category", "==", "speed_dating")
+      .where("isLive", "==", true)
+      .where("expiresAt", "<=", now)
+      .limit(200)
+      .get();
+
+    const roomBatch = db.batch();
+    expiredRooms.docs.forEach((doc) => {
+      roomBatch.update(doc.ref, {
+        isLive: false,
+        endedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    if (!expiredRooms.empty) await roomBatch.commit();
+
+    // 3. Remove stale queue entries (matched or joined > 10 min ago)
     const staleCutoff = admin.firestore.Timestamp.fromMillis(
       Date.now() - 10 * 60 * 1000,
     );
@@ -2189,15 +2207,12 @@ exports.cleanupExpiredMessages = onSchedule("every 6 hours", async () => {
   );
 });
 
-/* TEMPORARILY COMMENTED OUT — Requires Firestore Realtime Database to be enabled.
-   Re-enable after setting up RTDB or adjust to use Firestore-only presence.
-
 // ── RTDB presence -> Firestore aggregate sync ───────────────────────────────
 // Keeps Firestore `presence/{userId}` truthful using RTDB onDisconnect-driven
 // session state. This is the canonical bridge from transport truth to UI truth.
 exports.syncPresenceFromRtdbSessions = functionsV1.database
   .ref("/status/{userId}/sessions/{sessionId}")
-  .onWrite(async (_change, context) => {
+  .onWrite(async (change, context) => {
     const userId = context.params && context.params.userId;
     if (!userId) return;
 
@@ -2246,7 +2261,22 @@ exports.syncPresenceFromRtdbSessions = functionsV1.database
       }
     }
 
-    await db.collection("presence").doc(userId).set(
+    const presenceRef = db.collection("presence").doc(userId);
+    const presenceSnap = await presenceRef.get();
+    const oldInRoom = presenceSnap.exists ? presenceSnap.data().inRoom : null;
+
+    // Hardening: if user is truly offline (no active sessions), clean up room membership.
+    if (!isOnline && oldInRoom) {
+      try {
+        await db.collection("rooms").doc(oldInRoom).collection("participants").doc(userId).delete();
+        await db.collection("rooms").doc(oldInRoom).collection("members").doc(userId).delete();
+        logger.info(`Cleaned up ghost participant ${userId} from room ${oldInRoom}`);
+      } catch (e) {
+        logger.error(`Failed to cleanup ghost participant ${userId}: ${e.message}`);
+      }
+    }
+
+    await presenceRef.set(
       {
         isOnline,
         online: isOnline,
@@ -2267,8 +2297,6 @@ exports.syncPresenceFromRtdbSessions = functionsV1.database
       {merge: true},
     );
   });
-
-*/
 
 // ── Friend-online notification ────────────────────────────────────────────────
 // Triggers whenever a presence document is written.  When ``isOnline`` flips

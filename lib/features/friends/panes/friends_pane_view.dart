@@ -356,7 +356,7 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
             user2AvatarUrl: friend.avatarUrl,
           );
       if (!context.mounted) return;
-      context.go('/messages/$conversationId');
+      context.go('/chat/$conversationId');
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(

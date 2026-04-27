@@ -293,7 +293,7 @@ class _FriendTile extends ConsumerWidget {
       trailing: _MessageButton(friend: friend),
       onTap: () {
         Navigator.of(context).pop();
-        GoRouter.of(context).push('/profile/${friend.id}');
+        GoRouter.of(context).push('/profile');
       },
     );
   }
@@ -325,7 +325,7 @@ class _MessageButton extends ConsumerWidget {
                 user2AvatarUrl: friend.avatarUrl,
               );
           navigator.pop();
-          unawaited(router.push('/messages/$conversationId'));
+          unawaited(router.push('/chat/$conversationId'));
         } catch (error) {
           messenger.showSnackBar(
             SnackBar(content: Text('Could not open chat: $error')),

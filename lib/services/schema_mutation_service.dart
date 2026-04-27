@@ -239,7 +239,10 @@ class SchemaMutationService {
       'updatedAt': now,
     }, SetOptions(merge: true));
 
-    final shouldMirrorUsersDoc = mirrorLegacyUsersDoc ?? true;
+    // Legacy mirror is opt-in only. Disabled by default because the users doc
+    // whitelist does not allow isVerified/verifiedAt fields client-side.
+    // This path must only be invoked from Cloud Functions (admin SDK) if needed.
+    final shouldMirrorUsersDoc = mirrorLegacyUsersDoc ?? false;
     if (shouldMirrorUsersDoc) {
       await usersRef.set({
         'isVerified': isVerified,

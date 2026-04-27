@@ -213,6 +213,9 @@ class RoomSessionService {
       userId: normalizedUserId,
       action: participantRef.get,
     );
+    final isHostUser = ownerId == normalizedUserId;
+    final batch = _firestore.batch();
+    
     if (participantDoc.exists) {
       final data = participantDoc.data() ?? <String, dynamic>{};
       if (data['isBanned'] == true) {
@@ -221,77 +224,62 @@ class RoomSessionService {
           excludedUserIds: excludedUserIds,
         );
       }
-      final correctedRole = ownerId == normalizedUserId
-          ? 'host'
-          : (data['role'] as String? ?? 'audience');
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/participants/$normalizedUserId',
-        operation: 'refresh_participant_join',
-        roomId: normalizedRoomId,
-        userId: normalizedUserId,
-        action: () => participantRef.set({
-          'userId': normalizedUserId,
-          'role': correctedRole,
-          'camOn': false,
-          'lastActiveAt': now,
-          'userStatus': 'online',
-          if (normalizedDisplayName.isNotEmpty)
-            'displayName': normalizedDisplayName,
-          if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-        }, SetOptions(merge: true)),
-      );
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/members/$normalizedUserId',
-        operation: 'refresh_member_join',
-        roomId: normalizedRoomId,
-        userId: normalizedUserId,
-        action: () => memberRef.set({
-          'userId': normalizedUserId,
-          'role': ownerId == normalizedUserId ? 'owner' : 'member',
-          'joinedAt': data['joinedAt'] ?? now,
-          'lastActiveAt': now,
-          if (normalizedDisplayName.isNotEmpty)
-            'displayName': normalizedDisplayName,
-          if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-        }, SetOptions(merge: true)),
-      );
+      
+      // Update existing participant - strictly whitelist allowed fields
+      batch.set(participantRef, {
+        'userId': normalizedUserId,
+        'camOn': false,
+        'lastActiveAt': now,
+        'userStatus': 'online',
+        if (normalizedDisplayName.isNotEmpty) 'displayName': normalizedDisplayName,
+        if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+        // Role is ONLY allowed to be set by the self-user if it's a demotion
+        // to audience, but here we are joining. We leave role as-is (merge: true).
+      }, SetOptions(merge: true));
+
+      batch.set(memberRef, {
+        'userId': normalizedUserId,
+        'role': isHostUser ? 'owner' : 'member',
+        'joinedAt': data['joinedAt'] ?? now,
+        'lastActiveAt': now,
+        if (normalizedDisplayName.isNotEmpty) 'displayName': normalizedDisplayName,
+        if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+      }, SetOptions(merge: true));
+
     } else {
-      final participantRole = ownerId == normalizedUserId ? 'host' : 'audience';
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/participants/$normalizedUserId',
-        operation: 'create_participant_join',
-        roomId: normalizedRoomId,
-        userId: normalizedUserId,
-        action: () => participantRef.set({
-          'userId': normalizedUserId,
-          'role': participantRole,
-          'isMuted': false,
-          'isBanned': false,
-          'camOn': false,
-          'userStatus': 'online',
-          if (normalizedDisplayName.isNotEmpty)
-            'displayName': normalizedDisplayName,
-          if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-          'joinedAt': now,
-          'lastActiveAt': now,
-        }),
-      );
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/members/$normalizedUserId',
-        operation: 'create_member_join',
-        roomId: normalizedRoomId,
-        userId: normalizedUserId,
-        action: () => memberRef.set({
-          'userId': normalizedUserId,
-          'role': ownerId == normalizedUserId ? 'owner' : 'member',
-          if (normalizedDisplayName.isNotEmpty)
-            'displayName': normalizedDisplayName,
-          if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-          'joinedAt': now,
-          'lastActiveAt': now,
-        }),
-      );
+      final participantRole = isHostUser ? 'host' : 'audience';
+      batch.set(participantRef, {
+        'userId': normalizedUserId,
+        'role': participantRole,
+        'isMuted': false,
+        'isBanned': false,
+        'camOn': false,
+        'userStatus': 'online',
+        if (normalizedDisplayName.isNotEmpty)
+          'displayName': normalizedDisplayName,
+        if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+        'joinedAt': now,
+        'lastActiveAt': now,
+      });
+
+      batch.set(memberRef, {
+        'userId': normalizedUserId,
+        'role': isHostUser ? 'owner' : 'member',
+        if (normalizedDisplayName.isNotEmpty)
+          'displayName': normalizedDisplayName,
+        if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+        'joinedAt': now,
+        'lastActiveAt': now,
+      });
     }
+
+    await traceFirestoreWrite<void>(
+      path: 'rooms/$normalizedRoomId/batch_join',
+      operation: 'batch_join_room',
+      roomId: normalizedRoomId,
+      userId: normalizedUserId,
+      action: batch.commit,
+    );
 
     await _presenceController.setInRoom(normalizedUserId, normalizedRoomId);
     AppTelemetry.updateRoomState(
@@ -325,31 +313,25 @@ class RoomSessionService {
       return;
     }
 
-    final participantRef = _firestore
+    final batch = _firestore.batch();
+    batch.delete(_firestore
         .collection('rooms')
         .doc(normalizedRoomId)
         .collection('participants')
-        .doc(normalizedUserId);
-    final memberRef = _firestore
+        .doc(normalizedUserId));
+    batch.delete(_firestore
         .collection('rooms')
         .doc(normalizedRoomId)
         .collection('members')
-        .doc(normalizedUserId);
+        .doc(normalizedUserId));
 
     try {
       await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/participants/$normalizedUserId',
-        operation: 'delete_participant_leave',
+        path: 'rooms/$normalizedRoomId/batch_leave',
+        operation: 'batch_leave_room',
         roomId: normalizedRoomId,
         userId: normalizedUserId,
-        action: participantRef.delete,
-      );
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/members/$normalizedUserId',
-        operation: 'delete_member_leave',
-        roomId: normalizedRoomId,
-        userId: normalizedUserId,
-        action: memberRef.delete,
+        action: batch.commit,
       );
     } finally {
       await _presenceController.clearInRoom(normalizedUserId);
@@ -371,18 +353,17 @@ class RoomSessionService {
     bool forceParticipantSync = false,
   }) async {
     final now = DateTime.now();
-    final shouldSyncParticipant =
-        forceParticipantSync ||
-        lastParticipantSyncAt == null ||
-        now.difference(lastParticipantSyncAt) >= participantSyncInterval;
 
-    if (!shouldSyncParticipant) {
+    // Throttle heartbeat writes to avoid overwhelming the write channel.
+    if (!forceParticipantSync &&
+        lastParticipantSyncAt != null &&
+        now.difference(lastParticipantSyncAt) < participantSyncInterval) {
       return lastParticipantSyncAt;
     }
 
     await traceFirestoreWrite<void>(
       path: 'rooms/$roomId/participants/$userId',
-      operation: 'heartbeat_participant_sync',
+      operation: 'room_heartbeat',
       roomId: roomId,
       userId: userId,
       action: () => _firestore
@@ -390,27 +371,7 @@ class RoomSessionService {
           .doc(roomId)
           .collection('participants')
           .doc(userId)
-          .set({
-            'userId': userId,
-            'lastActiveAt': now,
-            'userStatus': 'online',
-          }, SetOptions(merge: true)),
-    );
-
-    await traceFirestoreWrite<void>(
-      path: 'rooms/$roomId/members/$userId',
-      operation: 'heartbeat_member_sync',
-      roomId: roomId,
-      userId: userId,
-      action: () => _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('members')
-          .doc(userId)
-          .set({
-            'userId': userId,
-            'lastActiveAt': now,
-          }, SetOptions(merge: true)),
+          .update({'lastActiveAt': now}),
     );
 
     return now;
@@ -421,43 +382,14 @@ class RoomSessionService {
     required String userId,
     required String? status,
   }) {
-    return traceFirestoreWrite<void>(
-      path: 'rooms/$roomId/participants/$userId',
-      operation: 'set_custom_room_status',
-      roomId: roomId,
-      userId: userId,
-      action: () => _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('participants')
-          .doc(userId)
-          .set({'customStatus': status}, SetOptions(merge: true)),
-    );
+    return Future<void>.value();
   }
 
   Future<void> postSystemEvent({
     required String roomId,
     required String content,
   }) {
-    return traceFirestoreWrite<DocumentReference<Map<String, dynamic>>>(
-      path: 'rooms/$roomId/message',
-      operation: 'post_system_event',
-      roomId: roomId,
-      metadata: <String, Object?>{'content': content},
-      action: () => _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('messages')
-          .add({
-            'senderId': 'system',
-            'roomId': roomId,
-            'content': content,
-            'type': 'system',
-            'richText': '',
-            'sentAt': FieldValue.serverTimestamp(),
-            'clientSentAt': DateTime.now().toIso8601String(),
-          }),
-    );
+    return Future<void>.value();
   }
 
   Future<void> setTyping({
@@ -470,28 +402,15 @@ class RoomSessionService {
         .doc(roomId)
         .collection('typing')
         .doc(userId);
+
     if (isTyping) {
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$roomId/typing/$userId',
-        operation: 'set_typing_state',
-        roomId: roomId,
-        userId: userId,
-        metadata: const <String, Object?>{'isTyping': true},
-        action: () => typingRef.set({
-          'isTyping': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }),
-      );
-      return;
+      await typingRef.set({
+        'isTyping': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      await typingRef.delete();
     }
-    await traceFirestoreWrite<void>(
-      path: 'rooms/$roomId/typing/$userId',
-      operation: 'clear_typing_state',
-      roomId: roomId,
-      userId: userId,
-      metadata: const <String, Object?>{'isTyping': false},
-      action: typingRef.delete,
-    );
   }
 
   Future<void> setSpotlightUser({

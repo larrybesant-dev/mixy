@@ -23,9 +23,11 @@ export 'controllers/room_state.dart'
 import '../../core/events/app_event.dart';
 import '../../core/events/app_event_bus.dart';
 import '../../core/firestore/firestore_error_utils.dart';
+import '../../core/services/feature_gate_service.dart';
 import '../../core/telemetry/app_telemetry.dart';
 import '../../models/mic_access_request_model.dart';
 import '../../models/room_participant_model.dart';
+import '../../services/session_persistence_service.dart';
 import 'controllers/room_state.dart';
 import 'models/room_theme_model.dart';
 import 'room_permissions.dart';
@@ -1035,6 +1037,15 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   }) async {
     final normalizedUserId = userId.trim();
     final normalizedDisplayName = displayName?.trim() ?? '';
+
+    // Kill switch check
+    final gates = ref.read(featureGateControllerProvider);
+    if (!gates.enableLiveRooms) {
+      return RoomJoinResult.failure(
+        'Room creation and joining are currently paused for maintenance.',
+      );
+    }
+
     if (_phase == LiveRoomPhase.joining ||
         (state.isJoined && state.currentUserId == normalizedUserId)) {
       AppTelemetry.logAction(
@@ -1214,6 +1225,10 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     _phase = LiveRoomPhase.leaving;
     _emitState(state.copyWith(phase: _phase, errormessage: null));
     await _sessionService.leaveRoom(roomId: arg, userId: userId);
+    
+    // Hardening: Clear persisted room session on clean exit
+    unawaited(SessionPersistence.saveLastRoom(null));
+
     AppEventBus.instance.emit(
       RoomLeftEvent(
         id: 'room-left:$arg:$userId:${DateTime.now().millisecondsSinceEpoch}',

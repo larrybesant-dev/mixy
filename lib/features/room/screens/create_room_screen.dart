@@ -85,7 +85,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     }
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      if (mounted) context.go('/login');
+      if (mounted) context.go('/auth');
       return;
     }
 
@@ -144,7 +144,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   Future<void> _pickAndUploadRoomLogo() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      if (mounted) context.go('/login');
+      if (mounted) context.go('/auth');
       return;
     }
 

@@ -19,8 +19,17 @@ final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
 );
 
-final firebaseDatabaseProvider = Provider<FirebaseDatabase>(
-  (ref) => FirebaseDatabase.instance,
+final firebaseDatabaseProvider = Provider<FirebaseDatabase?>(
+  (ref) {
+    try {
+      // Accessing instance will throw or warn if databaseURL is missing/invalid
+      // on some platforms. We wrap it to allow the app to boot even if RTDB
+      // is misconfigured.
+      return FirebaseDatabase.instance;
+    } catch (e) {
+      return null;
+    }
+  },
 );
 
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
@@ -28,5 +37,8 @@ final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
 );
 
 final rtdbPresenceServiceProvider = Provider<RtdbPresenceService>(
-  (ref) => RtdbPresenceService(ref.watch(firebaseDatabaseProvider)),
+  (ref) {
+    final db = ref.watch(firebaseDatabaseProvider);
+    return RtdbPresenceService(db);
+  },
 );

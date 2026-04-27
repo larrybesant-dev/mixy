@@ -25,30 +25,22 @@ class MessengerRouteState {
 
   static bool matches(GoRouterState state) {
     final path = _routePath(state);
-    return path == '/messages' ||
-        path == '/messages/new' ||
-        path == '/friends' ||
-        (path.startsWith('/messages/') && path.length > '/messages/'.length);
+    return path == '/friends' ||
+      (path.startsWith('/chat/') && path.length > '/chat/'.length);
   }
 
   static MessengerRouteState fromGoRouterState(GoRouterState state) {
     final path = _routePath(state);
 
-    if (path == '/messages') {
-      return const MessengerRouteState._(kind: MessengerRouteKind.inbox);
-    }
-    if (path == '/messages/new') {
-      return const MessengerRouteState._(kind: MessengerRouteKind.compose);
-    }
     if (path == '/friends') {
       return const MessengerRouteState._(kind: MessengerRouteKind.friends);
     }
-    if (path.startsWith('/messages/') && path.length > '/messages/'.length) {
+    if (path.startsWith('/chat/') && path.length > '/chat/'.length) {
       // pathParameters may be empty at the ShellRoute level; extract the
       // conversationId directly from the path as the reliable source.
       final fromParams = state.pathParameters['conversationId'];
       final fromPath =
-          path.substring('/messages/'.length).split('/').first;
+          path.substring('/chat/'.length).split('/').first;
       final conversationId =
           (fromParams != null && fromParams.isNotEmpty) ? fromParams : fromPath;
       return MessengerRouteState._(
@@ -129,7 +121,7 @@ class _MobileInboxRoute extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'New message',
-            onPressed: () => GoRouter.of(context).push('/messages/new'),
+            onPressed: () => GoRouter.of(context).push('/fallback'),
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz_rounded),

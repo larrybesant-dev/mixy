@@ -174,7 +174,7 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
         uidOverride: uid,
           );
       if (!mounted) return;
-      context.go('/login');
+      context.go('/auth');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final message = e.code == 'requires-recent-login'

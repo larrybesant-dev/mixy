@@ -4,22 +4,24 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/feature_gate_service.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../core/theme.dart';
 import '../models/speed_dating_models.dart';
 import '../services/speed_dating_service.dart';
 
-class SpeedDatingScreen extends StatefulWidget {
+class SpeedDatingScreen extends ConsumerStatefulWidget {
   const SpeedDatingScreen({super.key});
 
   @override
-  State<SpeedDatingScreen> createState() => _SpeedDatingScreenState();
+  ConsumerState<SpeedDatingScreen> createState() => _SpeedDatingScreenState();
 }
 
-class _SpeedDatingScreenState extends State<SpeedDatingScreen>
+class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     with SingleTickerProviderStateMixin {
   static const int _sessionLengthSeconds = 90;
 
@@ -472,6 +474,7 @@ class _SpeedDatingScreenState extends State<SpeedDatingScreen>
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
+    final gates = ref.watch(featureGateControllerProvider);
 
     if (user == null) {
       return AppPageScaffold(
@@ -479,6 +482,17 @@ class _SpeedDatingScreenState extends State<SpeedDatingScreen>
         body: const AppEmptyView(
           title: 'Please sign in to use speed dating',
           icon: Icons.login_rounded,
+        ),
+      );
+    }
+
+    if (!gates.enableSpeedDating) {
+      return AppPageScaffold(
+        appBar: AppBar(title: const Text('Speed Dating')),
+        body: const AppEmptyView(
+          title: 'Speed Dating is currently unavailable',
+          message: 'The system is undergoing maintenance. Please check back soon.',
+          icon: Icons.timer_off_outlined,
         ),
       );
     }

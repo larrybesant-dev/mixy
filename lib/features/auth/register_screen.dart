@@ -555,7 +555,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
                   // ── SIGN IN — gold outline button ─────────────────────
                   _goldOutlineButton(
-                    onPressed: isLoading ? null : () => context.go('/login'),
+                    onPressed: isLoading ? null : () => context.go('/auth'),
                     label: 'ALREADY HAVE AN ACCOUNT',
                   ),
 

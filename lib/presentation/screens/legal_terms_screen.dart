@@ -26,7 +26,7 @@ class _LegalTermsScreenState extends ConsumerState<LegalTermsScreen> {
       if (!mounted) return;
 
       final isLoggedIn = ref.read(authControllerProvider).uid != null;
-      context.go(isLoggedIn ? '/' : '/login');
+      context.go(isLoggedIn ? '/home' : '/auth');
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

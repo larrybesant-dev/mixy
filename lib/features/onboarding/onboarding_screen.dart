@@ -117,7 +117,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_submitting) return;
     await FirstRunService.markOnboardingSeen();
     if (!mounted) return;
-    context.go('/login');
+    context.go('/auth');
   }
 
   Future<void> _continue() async {
@@ -151,7 +151,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       await AnalyticsService().logEvent('onboarding_complete');
       if (!mounted) return;
-      context.go('/');
+      context.go('/home');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

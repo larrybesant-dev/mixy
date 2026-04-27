@@ -14,6 +14,7 @@ import '../../../dev/app_debug_flags.dart';
 import '../../../dev/app_state_reasoning.dart';
 import '../../../core/utils/network_image_url.dart';
 import '../../../models/room_model.dart';
+import '../../../services/session_persistence_service.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/ui_stability_contract.dart';
@@ -23,8 +24,7 @@ import '../../ads/ad_manager.dart';
 import '../../stories/widgets/stories_row.dart';
 import '../../../features/profile/profile_controller.dart';
 import '../controllers/feed_controller.dart';
-import '../models/post_model.dart';
-import '../providers/following_feed_provider.dart';
+import '../controllers/paginated_following_feed_controller.dart';
 import '../widgets/post_card.dart';
 import '../widgets/trending_user_card.dart';
 import '../../stories/providers/story_provider.dart';
@@ -428,6 +428,10 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     if (_joiningRoomId != null) return;
     setState(() => _joiningRoomId = roomId);
     context.go('/room/$roomId');
+    
+    // Hardening: Persist room ID so it can be recovered after crash
+    unawaited(SessionPersistence.saveLastRoom(roomId));
+
     // Clear the joining state after a short window so the button re-enables
     // if the user navigates back before the new screen mounts.
     Future.delayed(const Duration(seconds: 3), () {
@@ -1617,11 +1621,26 @@ class _LiveStatPill extends StatelessWidget {
 }
 
 // ── Following feed tab ────────────────────────────────────────────────────────
-class _FollowingFeedTab extends ConsumerWidget {
+class _FollowingFeedTab extends ConsumerStatefulWidget {
   const _FollowingFeedTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FollowingFeedTab> createState() => _FollowingFeedTabState();
+}
+
+class _FollowingFeedTabState extends ConsumerState<_FollowingFeedTab> {
+  @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      Future.microtask(() =>
+          ref.read(paginatedFollowingFeedProvider(uid).notifier).loadPosts());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       return const AppEmptyView(
@@ -1631,34 +1650,47 @@ class _FollowingFeedTab extends ConsumerWidget {
       );
     }
 
-    final feedAsync = ref.watch(followingFeedProvider(uid));
+    final feedState = ref.watch(paginatedFollowingFeedProvider(uid));
 
-    return AppAsyncValueView<List<Map<String, dynamic>>>(
-      value: feedAsync,
-      fallbackContext: 'Unable to load the following feed.',
-      loadingLabel: 'Loading following feed',
-      data: (maps) {
-        if (maps.isEmpty) {
-          return AppEmptyView(
-            title: 'No posts from people you follow yet',
-            message:
-                'Find more creators and your following feed will update live.',
-            icon: Icons.people_outline_rounded,
-            action: _FollowFeedActionButton(onTap: () => context.go('/search')),
-          );
-        }
-        final posts = maps.map((m) {
-          final id = m['id'] as String? ?? '';
-          return PostModel.fromDoc(id, m);
-        }).toList();
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: posts.length,
-          separatorBuilder: (_, _) => Divider(height: 1, color: _npGhost),
-          itemBuilder: (context, i) =>
-              PostCard(post: posts[i], currentUserId: uid),
-        );
-      },
+    if (feedState.posts.isEmpty && feedState.isLoading) {
+      return const AppLoadingView(label: 'Loading following feed');
+    }
+
+    if (feedState.posts.isEmpty) {
+      return AppEmptyView(
+        title: 'No posts from people you follow yet',
+        message: 'Find more creators and your following feed will update live.',
+        icon: Icons.people_outline_rounded,
+        action: _FollowFeedActionButton(onTap: () => context.go('/search')),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.read(paginatedFollowingFeedProvider(uid).notifier).refresh(),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: feedState.posts.length + (feedState.hasMore ? 1 : 0),
+        separatorBuilder: (_, _) => Divider(height: 1, color: _npGhost),
+        itemBuilder: (context, i) {
+          if (i == feedState.posts.length) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: feedState.isLoading
+                    ? const CircularProgressIndicator()
+                    : OutlinedButton(
+                        onPressed: () => ref
+                            .read(paginatedFollowingFeedProvider(uid).notifier)
+                            .loadPosts(),
+                        child: const Text('Load More'),
+                      ),
+              ),
+            );
+          }
+          return PostCard(post: feedState.posts[i], currentUserId: uid);
+        },
+      ),
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:async';
 
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/features/feed/providers/feed_providers.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/services/room_service.dart';
@@ -10,72 +10,65 @@ import 'package:mixvy/services/room_service.dart';
 // ── Following-live rooms ──────────────────────────────────────────────────────
 
 /// Live rooms where the users that [userId] follows are currently hosting.
-/// Emits every time the follows collection changes.
-final followingLiveRoomsProvider =
-    StreamProvider.family<List<RoomModel>, String>((ref, userId) {
+/// Reuses the shared live-rooms stream to avoid opening a second rooms listener.
+final followingHostIdsProvider =
+    StreamProvider.autoDispose.family<Set<String>, String>((ref, userId) {
       if (userId.isEmpty) {
-        return const Stream<List<RoomModel>>.empty();
+        return Stream<Set<String>>.value(const <String>{});
       }
 
       final firestore = ref.watch(firestoreProvider);
-      final roomService = ref.watch(roomServiceProvider);
-      final controller = StreamController<List<RoomModel>>();
-
-      StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? followsSub;
-      StreamSubscription<List<RoomModel>>? liveRoomsSub;
-      var followedIds = <String>{};
-      var currentRooms = const <RoomModel>[];
-
-      void emitFilteredRooms() {
-        if (controller.isClosed) {
-          return;
-        }
-        if (followedIds.isEmpty) {
-          controller.add(const <RoomModel>[]);
-          return;
-        }
-
-        final filtered = currentRooms
-            .where((room) => followedIds.contains(room.hostId))
-            .take(12)
-            .toList(growable: false);
-        controller.add(filtered);
-      }
-
-      followsSub = firestore
+      return firestore
           .collection('follows')
           .where('followerUserId', isEqualTo: userId)
           .snapshots()
-          .listen((followSnap) {
-            followedIds = followSnap.docs
+          .map(
+            (followSnap) => followSnap.docs
                 .map((d) => d.data()['followedUserId'] as String?)
                 .whereType<String>()
                 .map((id) => id.trim())
                 .where((id) => id.isNotEmpty)
-                .toSet();
-            emitFilteredRooms();
-          }, onError: controller.addError);
+                .toSet(),
+          );
+    });
 
-      liveRoomsSub = roomService.watchLiveRooms(limit: 100).listen((rooms) {
-        currentRooms = rooms;
-        emitFilteredRooms();
-      }, onError: controller.addError);
-
-      Future<void> disposeSubscriptions() async {
-        await followsSub?.cancel();
-        await liveRoomsSub?.cancel();
-        if (!controller.isClosed) {
-          await controller.close();
-        }
+final followingLiveRoomsProvider =
+    Provider.autoDispose.family<AsyncValue<List<RoomModel>>, String>((
+      ref,
+      userId,
+    ) {
+      if (userId.isEmpty) {
+        return const AsyncValue.data(<RoomModel>[]);
       }
 
-      ref.onDispose(() {
-        unawaited(disposeSubscriptions());
-      });
+      final followedIdsAsync = ref.watch(followingHostIdsProvider(userId));
+      final roomsAsync = ref.watch(roomsStreamProvider);
 
-      controller.onCancel = disposeSubscriptions;
+      if (followedIdsAsync.hasError) {
+        return AsyncValue<List<RoomModel>>.error(
+          followedIdsAsync.error!,
+          followedIdsAsync.stackTrace!,
+        );
+      }
+      if (roomsAsync.hasError) {
+        return AsyncValue<List<RoomModel>>.error(
+          roomsAsync.error!,
+          roomsAsync.stackTrace!,
+        );
+      }
+      if (followedIdsAsync.isLoading || roomsAsync.isLoading) {
+        return const AsyncValue.loading();
+      }
 
-      return controller.stream;
+      final followedIds = followedIdsAsync.valueOrNull ?? const <String>{};
+      final rooms = roomsAsync.valueOrNull ?? const <RoomModel>[];
+      final filtered = followedIds.isEmpty
+          ? const <RoomModel>[]
+          : rooms
+              .where((room) => followedIds.contains(room.hostId))
+              .take(12)
+              .toList(growable: false);
+      return AsyncValue.data(filtered);
     });
 
 // ── Following users list ──────────────────────────────────────────────────────
@@ -210,6 +203,10 @@ final forYouRoomsProvider = FutureProvider.family
 // ── New live rooms (recent) ───────────────────────────────────────────────────
 
 /// Stream of live rooms ordered by creation time (newest first).
-final newLiveRoomsProvider = StreamProvider.autoDispose<List<RoomModel>>((ref) {
-  return ref.watch(roomServiceProvider).watchLiveRooms(limit: 20);
-});
+final newLiveRoomsProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>(
+  (ref) {
+    return ref.watch(roomsStreamProvider).whenData(
+      (rooms) => rooms.take(20).toList(growable: false),
+    );
+  },
+);

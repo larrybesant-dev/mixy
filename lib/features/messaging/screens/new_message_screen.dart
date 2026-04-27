@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/theme.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../providers/messaging_provider.dart';
@@ -97,7 +98,7 @@ class _NewmessagePaneViewState extends ConsumerState<NewmessagePaneView> {
           );
 
       if (!mounted) return;
-      context.go('/messages/$conversationId');
+      context.go('/chat/$conversationId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,16 +182,29 @@ class _NewmessagePaneViewState extends ConsumerState<NewmessagePaneView> {
           ),
         Padding(
           padding: EdgeInsets.all(context.pageHorizontalPadding),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search people...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
+          child: Column(
+            children: [
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: VelvetNoir.secondary,
+                  child: const Icon(Icons.group_add, color: Colors.white),
+                ),
+                title: const Text('Create Group Chat'),
+                onTap: () => context.push('/create-group-chat'),
               ),
-            ),
-            onChanged: _searchUsers,
+              const Divider(),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search people...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onChanged: _searchUsers,
+              ),
+            ],
           ),
         ),
         if (_isSearching)

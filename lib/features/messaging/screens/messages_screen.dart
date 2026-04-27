@@ -27,7 +27,7 @@ class MessagesScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'New message',
-            onPressed: () => GoRouter.of(context).push('/messages/new'),
+            onPressed: () => GoRouter.of(context).push('/new-message'),
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz_rounded),

@@ -55,8 +55,8 @@ class BetaMetricsController extends StateNotifier<BetaMetricsState> {
     int roomCount = 0;
     int chatCount = 0;
     int matchSuccess = 0;
-    int matchFail = 0;
-    List<int> roomDurations = [];
+    final int matchFail = 0;
+    final List<int> roomDurations = [];
 
     for (final event in events) {
       if (now.difference(event.timestamp) > window) continue;

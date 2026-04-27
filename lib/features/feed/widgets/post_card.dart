@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../models/post_model.dart';
 import '../providers/feed_providers.dart';
@@ -38,6 +40,12 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
   }
 
+  Future<void> _openVideo(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
@@ -47,7 +55,7 @@ class _PostCardState extends ConsumerState<PostCard> {
             .toUpperCase();
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -59,7 +67,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 CircleAvatar(
                   radius: 18,
                   backgroundImage: post.authorAvatarUrl != null
-                      ? NetworkImage(post.authorAvatarUrl!)
+                      ? CachedNetworkImageProvider(post.authorAvatarUrl!)
                       : null,
                   child: post.authorAvatarUrl == null
                       ? Text(authorInitial)
@@ -88,10 +96,53 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             // Post body
-            Text(post.text),
-            const SizedBox(height: 10),
+            if (post.text.isNotEmpty) ...[
+              Text(post.text),
+              const SizedBox(height: 12),
+            ],
+            // Image media
+            if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: post.imageUrl!,
+                  memCacheHeight: 800, // Hardening: prevent memory bloat
+                  placeholder: (context, url) => Container(
+                    height: 200,
+                    color: Colors.grey[900],
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (context, url, error) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // Video media indicator
+            if (post.videoUrl != null && post.videoUrl!.isNotEmpty) ...[
+              InkWell(
+                onTap: () => _openVideo(post.videoUrl!),
+                child: Container(
+                  height: 160,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_fill, size: 48, color: Colors.white70),
+                      SizedBox(height: 8),
+                      Text('Watch Video', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             // Action row
             Row(
               children: [
@@ -131,6 +182,17 @@ class _PostCardState extends ConsumerState<PostCard> {
                       ),
                     ],
                   ),
+                ),
+                const Spacer(),
+                // Share button
+                IconButton(
+                  icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
+                  onPressed: () {
+                    // Simple share logic using existing metadata
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sharing coming soon!')),
+                    );
+                  },
                 ),
               ],
             ),

@@ -243,7 +243,7 @@ class _MessengerSidebar extends ConsumerWidget {
                 unread: conversation?.hasUnreadmessage(currentUser.id) ?? false,
                 canInviteToRoom: currentRoomId != null && currentRoomId.isNotEmpty && currentRoomId != entry.roomId,
                 onOpenChat: () => _openConversation(context, currentUser, entry.user, conversation),
-                onViewProfile: () => context.go('/profile/${entry.friendId}'),
+                onViewProfile: () => context.go('/profile'),
                 onInviteToRoom: currentRoomId == null || currentRoomId.isEmpty
                     ? null
                     : () => _inviteToRoom(context, currentUser, entry.user, currentRoomId),
@@ -306,7 +306,7 @@ class _MessengerSidebar extends ConsumerWidget {
                                     userId: currentUser.id,
                                     pinned: !conversation.isPinnedFor(currentUser.id),
                                   ),
-                                  onTap: () => context.go('/messages/${conversation.id}'),
+                                  onTap: () => context.go('/chat/${conversation.id}'),
                                 ),
                               );
                             }).toList(growable: false),
@@ -344,7 +344,7 @@ class _MessengerSidebar extends ConsumerWidget {
   Future<void> _openConversation(BuildContext context, UserModel currentUser, UserModel friend, Conversation? conversation) async {
     try {
       final conversationId = await controller.openConversation(currentUser: currentUser, friend: friend, existingConversation: conversation);
-      if (context.mounted) context.go('/messages/$conversationId');
+      if (context.mounted) context.go('/chat/$conversationId');
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open chat: $error')));

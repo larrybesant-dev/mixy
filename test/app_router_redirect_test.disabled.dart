@@ -1,99 +1,56 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mixvy/router/app_router.dart';
+import 'package:mixvy/core/routing/redirect_logic.dart';
 
 void main() {
   group('evaluateAppRedirect', () {
-    test('holds user on splash while auth is loading', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/app',
+    test('returns null while auth is loading', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/home',
         uid: null,
         authLoading: true,
-        isFirstRun: () async => false,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
-      );
-
-      expect(result, '/splash');
-    });
-
-    test('routes signed-out users to auth', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/app',
-        uid: null,
-        authLoading: false,
-        isFirstRun: () async => false,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
-      );
-
-      expect(result, '/auth');
-    });
-
-    test('routes signed-in incomplete users to onboarding', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/app',
-        uid: 'user-1',
-        authLoading: false,
-        isFirstRun: () async => true,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
-      );
-
-      expect(result, '/onboarding');
-    });
-
-    test('routes ready users from gate pages to app', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/auth',
-        uid: 'user-1',
-        authLoading: false,
-        isFirstRun: () async => false,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
-      );
-
-      expect(result, '/app');
-    });
-
-    test('keeps ready users in app paths', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/messages/new',
-        uid: 'user-1',
-        authLoading: false,
-        isFirstRun: () async => false,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
       );
 
       expect(result, isNull);
     });
 
-    test('redirects messaging paths when messaging gate is off', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/messages/new',
-        uid: 'user-1',
+    test('routes signed-out users to auth route', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/home',
+        uid: null,
         authLoading: false,
-        isFirstRun: () async => false,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
-        enableMessaging: false,
       );
 
-      expect(result, '/status/messaging-unavailable');
+      expect(result, '/auth');
     });
 
-    test('redirects room paths when rooms gate is off', () async {
-      final result = await evaluateAppRedirect(
-        matchedLocation: '/room/abc123',
+    test('routes signed-in users away from auth route', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/auth',
         uid: 'user-1',
         authLoading: false,
-        isFirstRun: () async => false,
-        isProfileComplete: (_) async => true,
-        isLegalAccepted: () async => true,
-        enableLiveRooms: false,
       );
 
-      expect(result, '/status/rooms-unavailable');
+      expect(result, '/home');
+    });
+
+    test('keeps signed-in users on non-auth route', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/speed-dating',
+        uid: 'user-1',
+        authLoading: false,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('keeps signed-out users on auth route', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/auth',
+        uid: null,
+        authLoading: false,
+      );
+
+      expect(result, isNull);
     });
   });
 }

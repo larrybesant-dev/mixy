@@ -178,15 +178,8 @@ class HostControls {
       'speakerSyncVersion': 1,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-    batch.set(
-      _roomRef(roomId).collection('speakers').doc(normalizedUserId),
-      {
-        'userId': normalizedUserId,
-        'joinedAt': FieldValue.serverTimestamp(),
-        'role': participantRole == 'stage' ? 'speaker' : participantRole,
-      },
-      SetOptions(merge: true),
-    );
+    // NOTE: speakers subcollection is server-only (Cloud Function: inviteToMic).
+    // Client writes are explicitly denied by Firestore rules.
     batch.set(_participantRef(roomId, normalizedUserId), {
       'userId': normalizedUserId,
       'role': participantRole,
@@ -214,7 +207,8 @@ class HostControls {
     final nextRole = canModerateRole(currentRole) ? currentRole : 'member';
 
     final batch = _db.batch();
-    batch.delete(_roomRef(roomId).collection('speakers').doc(normalizedUserId));
+    // NOTE: speakers subcollection is server-only (Cloud Function: grabMic).
+    // Client writes are explicitly denied by Firestore rules.
     batch.set(_roomRef(roomId), {
       'maxSpeakers': 4,
       'speakerSyncVersion': 1,

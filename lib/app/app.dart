@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
@@ -10,8 +11,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/app_settings_service.dart';
-import '../core/services/auto_response_service.dart';
-import '../core/services/feature_gate_service.dart';
 import 'boot_state.dart';
 import 'boot_state_notifier.dart';
 import '../router/app_router.dart';
@@ -21,7 +20,6 @@ import '../theme/app_theme.dart';
 import '../core/theme.dart';
 import '../shared/widgets/beta_feedback_overlay.dart';
 import '../shared/widgets/app_debug_overlay.dart';
-import '../shared/widgets/operational_debug_overlay.dart';
 import '../shared/widgets/incoming_call_overlay.dart';
 import '../features/after_dark/providers/after_dark_provider.dart';
 import '../features/after_dark/theme/after_dark_theme.dart';
@@ -98,6 +96,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
   bool _runtimeQueued = false;
   int _bootHintIndex = 0;
   Timer? _bootHintTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   static const List<String> _bootHints = <String>[
     'Connecting...',
@@ -108,6 +107,12 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
   @override
   void initState() {
     super.initState();
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final isOffline = results.contains(ConnectivityResult.none);
+      if (isOffline) {
+        developer.log('App is offline', name: 'MixVyApp');
+      }
+    });
     _bootHintTimer = Timer.periodic(const Duration(milliseconds: 1400), (
       timer,
     ) {
@@ -125,6 +130,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
   @override
   void dispose() {
     _bootHintTimer?.cancel();
+    _connectivitySub?.cancel();
     super.dispose();
   }
 
@@ -142,8 +148,6 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
 
       ref.read(presenceControllerProvider);
       ref.read(eventPipelineProvider);
-      ref.read(featureGateControllerProvider.notifier);
-      ref.read(autoResponseControllerProvider.notifier);
     } catch (error, stackTrace) {
       developer.log(
         'Runtime services failed during startup',
@@ -420,7 +424,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
               ),
               child: IncomingCallOverlay(
                 child: BetaFeedbackOverlay(
-                  child: OperationalDebugOverlay(child: diagnosticsChild),
+                  child: diagnosticsChild,
                 ),
               ),
             );

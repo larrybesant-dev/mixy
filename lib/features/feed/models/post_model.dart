@@ -7,9 +7,12 @@ class PostModel {
   final DateTime createdAt;
   final String? authorName;
   final String? authorAvatarUrl;
+  final String? imageUrl;
+  final String? videoUrl;
   final int likeCount;
   final List<String> likedBy;
   final int commentCount;
+  final int shareCount;
 
   PostModel({
     required this.id,
@@ -18,9 +21,12 @@ class PostModel {
     required this.createdAt,
     this.authorName,
     this.authorAvatarUrl,
+    this.imageUrl,
+    this.videoUrl,
     this.likeCount = 0,
     this.likedBy = const [],
     this.commentCount = 0,
+    this.shareCount = 0,
   });
 
   bool isLikedBy(String uid) => likedBy.contains(uid);
@@ -33,9 +39,12 @@ class PostModel {
       createdAt: _parseDateTime(data['createdAt']),
       authorName: data['authorName'] as String?,
       authorAvatarUrl: data['authorAvatarUrl'] as String?,
+      imageUrl: data['imageUrl'] as String?,
+      videoUrl: data['videoUrl'] as String?,
       likeCount: (data['likeCount'] as num?)?.toInt() ?? 0,
       likedBy: _asStringList(data['likes']),
       commentCount: (data['commentCount'] as num?)?.toInt() ?? 0,
+      shareCount: (data['shareCount'] as num?)?.toInt() ?? 0,
     );
   }
 

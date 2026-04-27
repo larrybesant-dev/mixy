@@ -7,6 +7,8 @@ import '../../config/environment.dart';
 import '../../core/logger.dart';
 import '../../core/services/auto_response_service.dart';
 import '../../core/services/feature_gate_service.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../../core/telemetry/beta_metrics.dart';
 
 const String _appVersion = String.fromEnvironment(
   'APP_VERSION',
@@ -115,7 +117,14 @@ class _OperationalDebugOverlayState
   Widget build(BuildContext context) {
     final gates = ref.watch(featureGateControllerProvider);
     final autoResponse = ref.watch(autoResponseControllerProvider);
+    final betaMetrics = ref.watch(betaMetricsProvider);
+    final telemetry = AppTelemetry.state;
     final userId = _safeCurrentUserId();
+
+    // Trigger beta metrics update on build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(betaMetricsProvider.notifier).refreshFromTelemetry(telemetry);
+    });
 
     return Stack(
       children: [
@@ -223,6 +232,8 @@ class _OperationalDebugOverlayState
                               ),
                               Text('enable_live_rooms: ${gates.enableLiveRooms}'),
                               Text('enable_messaging: ${gates.enableMessaging}'),
+                              Text('enable_speed_dating: ${gates.enableSpeedDating}'),
+                              Text('feed_refresh_rate: ${gates.feedRefreshRateSeconds}s'),
                               Text('rooms_mode: ${gates.liveRoomsMode.name}'),
                               Text('messaging_mode: ${gates.messagingMode.name}'),
                               Text('config_source: ${gates.source}'),
@@ -250,6 +261,19 @@ class _OperationalDebugOverlayState
                               Text('auth_recovery_recommended: ${autoResponse.authRecoveryRecommended}'),
                               Text('last_auto_action: ${autoResponse.lastAction ?? 'none'}'),
                               Text('last_auto_action_at: ${_formatRelative(autoResponse.lastActionAt)}'),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Beta Observability',
+                                style: TextStyle(
+                                  color: Color(0xFFD4AF37),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text('active_feed: ${betaMetrics.activeUsersFeed}'),
+                              Text('active_rooms: ${betaMetrics.activeUsersRooms}'),
+                              Text('active_chat: ${betaMetrics.activeUsersChat}'),
+                              Text('match_success: ${betaMetrics.matchSuccessCount}'),
+                              Text('avg_room_mins: ${betaMetrics.avgRoomDurationMinutes.toStringAsFixed(1)}'),
                               const SizedBox(height: 6),
                               const Text(
                                 'Last Error',

@@ -663,6 +663,39 @@ class AppTelemetry {
     );
   }
 
+  static void logEngagement({
+    required String type,
+    required String value,
+    String? subType,
+    Map<String, Object?> metadata = const {},
+  }) {
+    logAction(
+      domain: 'engagement',
+      action: type,
+      message: 'Engagement metric recorded.',
+      result: value,
+      metadata: {
+        'subType': subType,
+        ...metadata,
+      },
+    );
+  }
+
+  static void recordRoomDropOff({
+    required String roomId,
+    required Duration duration,
+    required String reason,
+  }) {
+    logAction(
+      domain: 'room',
+      action: 'drop_off',
+      message: 'User left room after ${duration.inMinutes}m.',
+      roomId: roomId,
+      result: reason,
+      metadata: {'durationSeconds': duration.inSeconds},
+    );
+  }
+
   static void logAction({
     String level = 'info',
     required String domain,

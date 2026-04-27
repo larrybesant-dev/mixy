@@ -204,7 +204,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             user2AvatarUrl: peerAvatarUrl,
           );
       if (!mounted) return;
-      context.go('/messages/$conversationId');
+      context.go('/chat/$conversationId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

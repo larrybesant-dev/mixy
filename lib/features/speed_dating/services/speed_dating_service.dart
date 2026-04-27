@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/telemetry/app_telemetry.dart';
 import '../../../services/moderation_service.dart';
 import '../models/speed_dating_models.dart';
 
@@ -63,6 +64,7 @@ class SpeedDatingService {
     final actionId = '${fromUserId}_$toUserId';
     final reciprocalActionId = '${toUserId}_$fromUserId';
 
+    // 1. Record the decision
     await _firestore.collection('speed_dating_actions').doc(actionId).set({
       'fromUserId': fromUserId,
       'toUserId': toUserId,
@@ -76,65 +78,103 @@ class SpeedDatingService {
       return const SpeedDateDecisionResult(isMatch: false);
     }
 
-    final reciprocalDoc = await _firestore.collection('speed_dating_actions').doc(reciprocalActionId).get();
-    final reciprocalData = reciprocalDoc.data();
-    final reciprocalLiked = reciprocalData != null && reciprocalData['decision'] == 'like';
-
-    if (!reciprocalLiked) {
-      return const SpeedDateDecisionResult(isMatch: false);
-    }
-
+    // 2. Atomically check for reciprocal like and create match
     final sorted = [fromUserId, toUserId]..sort();
     final matchId = '${sorted.first}_${sorted.last}';
+    final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
 
-    await _firestore.collection('speed_dating_matches').doc(matchId).set({
-      'participantIds': sorted,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-      'lastActionBy': fromUserId,
-    }, SetOptions(merge: true));
+    return await _firestore.runTransaction((txn) async {
+      final reciprocalDoc = await txn.get(
+        _firestore.collection('speed_dating_actions').doc(reciprocalActionId),
+      );
+      final reciprocalData = reciprocalDoc.data();
+      final reciprocalLiked = reciprocalData != null && reciprocalData['decision'] == 'like';
 
-    final notificationsRef = _firestore.collection('notifications');
-    await notificationsRef.add({
-      'userId': toUserId,
-      'actorId': fromUserId,
-      'type': 'speed_dating_match',
-      'content': 'You have a new speed dating match.',
-      'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
+      if (!reciprocalLiked) {
+        return const SpeedDateDecisionResult(isMatch: false);
+      }
+
+      final matchSnap = await txn.get(matchRef);
+      if (matchSnap.exists) {
+        // Match already exists, just return it
+        return SpeedDateDecisionResult(isMatch: true, matchId: matchId);
+      }
+
+      // Create match document
+      txn.set(matchRef, {
+        'participantIds': sorted,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastActionBy': fromUserId,
+      });
+
+      // Add notification for the other user
+      txn.set(_firestore.collection('notifications').doc(), {
+        'userId': toUserId,
+        'actorId': fromUserId,
+        'type': 'speed_dating_match',
+        'content': 'You have a new speed dating match.',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      AppTelemetry.logAction(
+        domain: 'speed_dating',
+        action: 'match_success',
+        message: 'A new match was created.',
+        userId: fromUserId,
+        result: 'success',
+        metadata: {'matchId': matchId, 'targetUserId': toUserId},
+      );
+
+      return SpeedDateDecisionResult(isMatch: true, matchId: matchId);
     });
-
-    return SpeedDateDecisionResult(isMatch: true, matchId: matchId);
   }
 
   Future<String> startLiveDateRoom({
     required String hostUserId,
     required String targetUserId,
     required String matchId,
+    int durationSeconds = 300,
   }) async {
-    final roomRef = _firestore.collection('rooms').doc();
-    await roomRef.set({
-      'name': 'Speed Date',
-      'description': 'Private speed date session',
-      'hostId': hostUserId,
-      'isLive': true,
-      'isLocked': true,
-      'category': 'speed_dating',
-      'memberCount': 2,
-      'stageUserIds': [hostUserId, targetUserId],
-      'audienceUserIds': <String>[],
-      'coHosts': <String>[],
-      'tags': ['speed_dating', 'private'],
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+    final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
+    
+    return await _firestore.runTransaction((txn) async {
+      final matchSnap = await txn.get(matchRef);
+      final data = matchSnap.data();
+      
+      // If a room already exists for this match, reuse it instead of creating a duplicate.
+      if (data != null && data['latestRoomId'] != null) {
+        return data['latestRoomId'] as String;
+      }
+
+      final roomRef = _firestore.collection('rooms').doc();
+      final expiresAt = DateTime.now().add(Duration(seconds: durationSeconds));
+
+      txn.set(roomRef, {
+        'name': 'Speed Date',
+        'description': 'Private speed date session',
+        'hostId': hostUserId,
+        'isLive': true,
+        'isLocked': true,
+        'category': 'speed_dating',
+        'memberCount': 2,
+        'stageUserIds': [hostUserId, targetUserId],
+        'audienceUserIds': <String>[],
+        'coHosts': <String>[],
+        'tags': ['speed_dating', 'private'],
+        'expiresAt': Timestamp.fromDate(expiresAt),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      txn.set(matchRef, {
+        'latestRoomId': roomRef.id,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return roomRef.id;
     });
-
-    await _firestore.collection('speed_dating_matches').doc(matchId).set({
-      'latestRoomId': roomRef.id,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    return roomRef.id;
   }
 
   String randomSessionId() => _uuid.v4();

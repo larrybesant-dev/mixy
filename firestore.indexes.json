@@ -355,6 +355,15 @@
       "collectionGroup": "rooms",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "category",  "order": "ASCENDING" },
+        { "fieldPath": "isLive",    "order": "ASCENDING" },
+        { "fieldPath": "expiresAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "rooms",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "isAdult",   "order": "ASCENDING" },
         { "fieldPath": "isLive",    "order": "ASCENDING" },
         { "fieldPath": "category",  "order": "ASCENDING" },

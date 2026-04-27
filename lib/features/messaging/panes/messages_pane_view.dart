@@ -131,7 +131,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                   ),
                 ),
                 FilledButton.icon(
-                  onPressed: () => GoRouter.of(context).push('/messages/new'),
+                  onPressed: () => GoRouter.of(context).push('/fallback'),
                   icon: const Icon(Icons.add_comment_outlined),
                   label: const Text('New message'),
                 ),
@@ -392,7 +392,7 @@ class MessageRequestsSheet extends ConsumerWidget {
                       return ListTile(
                         onTap: () {
                           Navigator.of(context).pop();
-                          GoRouter.of(context).push('/messages/${conversation.id}');
+                          GoRouter.of(context).push('/chat/${conversation.id}');
                         },
                         leading: CircleAvatar(
                           backgroundColor: VelvetNoir.surfaceHigh,
@@ -423,7 +423,7 @@ class MessageRequestsSheet extends ConsumerWidget {
                             if (context.mounted) {
                               Navigator.of(context).pop();
                               unawaited(
-                                GoRouter.of(context).push('/messages/${conversation.id}'),
+                                GoRouter.of(context).push('/chat/${conversation.id}'),
                               );
                             }
                           },
@@ -488,7 +488,7 @@ class _ConversationsList extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: () => GoRouter.of(context).push('/messages/new'),
+                onPressed: () => GoRouter.of(context).push('/fallback'),
                 child: Text(
                   'Start a conversation',
                   style: GoogleFonts.raleway(
@@ -563,7 +563,7 @@ class _ConversationTile extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => GoRouter.of(context).push('/messages/${conversation.id}'),
+        onTap: () => GoRouter.of(context).push('/chat/${conversation.id}'),
         onLongPress: () => _showActionSheet(context, ref),
         child: Container(
           color: unread ? VelvetNoir.secondary.withValues(alpha: 0.08) : Colors.transparent,

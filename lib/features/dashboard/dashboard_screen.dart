@@ -7,6 +7,7 @@ import '../../widgets/safe_network_avatar.dart';
 import '../../core/layout/app_layout.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
+import '../feed/controllers/paginated_posts_controller.dart';
 import '../feed/providers/feed_providers.dart';
 import '../feed/widgets/post_card.dart';
 import '../profile/profile_completion.dart';
@@ -32,6 +33,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(paginatedPostsProvider.notifier).loadPosts();
+      }
+    });
   }
 
   void _showNavigationError(String message) {
@@ -66,7 +72,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _refreshDashboard() async {
-    ref.invalidate(postsStreamProvider);
+    ref.invalidate(paginatedPostsProvider);
     ref.invalidate(roomsStreamProvider);
     ref.invalidate(onlineUsersCountProvider);
     ref.invalidate(liveRoomsCountProvider);
@@ -92,7 +98,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final postsAsync = ref.watch(postsStreamProvider);
+    final postsState = ref.watch(paginatedPostsProvider);
     final roomsAsync = ref.watch(roomsStreamProvider);
     final trendingUsersAsync = ref.watch(trendingUsersStreamProvider);
     final profileState = ref.watch(profileControllerProvider);
@@ -429,32 +435,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               // Recent Posts header
               SliverToBoxAdapter(
                 child: _SectionHeader(
-                  title: 'Recent Posts',
+                  title: 'Recent Activity',
                   dotColor: VelvetNoir.primary,
                   topPadding: 24,
                 ),
               ),
 
               // Posts feed
-              postsAsync.when(
-                data: (posts) {
-                  if (posts.isEmpty) {
-                    return const SliverToBoxAdapter(
-                      child: _EmptyPill(
-                        label: 'No posts yet — follow someone!',
-                      ),
-                    );
-                  }
-                  final capped = posts.take(30).toList();
-                  return SliverList.builder(
-                    itemCount: capped.length,
-                    itemBuilder: (ctx, i) => PostCard(
-                      post: capped[i],
-                      currentUserId: currentUser?.id ?? '',
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(
+              if (postsState.posts.isEmpty && postsState.isLoading)
+                const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(32),
                     child: Center(
@@ -463,11 +452,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ),
+                )
+              else if (postsState.posts.isEmpty)
+                const SliverToBoxAdapter(
+                  child: _EmptyPill(
+                    label: 'No posts yet — be the first!',
+                  ),
+                )
+              else
+                SliverList.builder(
+                  itemCount: postsState.posts.length,
+                  itemBuilder: (ctx, i) => PostCard(
+                    post: postsState.posts[i],
+                    currentUserId: currentUser?.id ?? '',
+                  ),
                 ),
-                error: (e, _) => const SliverToBoxAdapter(
-                  child: _ErrorCard(message: 'Could not load posts'),
+
+              if (postsState.hasMore && postsState.posts.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: postsState.isLoading
+                          ? const CircularProgressIndicator()
+                          : OutlinedButton(
+                              onPressed: () => ref
+                                  .read(paginatedPostsProvider.notifier)
+                                  .loadPosts(),
+                              child: const Text('Load More'),
+                            ),
+                    ),
+                  ),
                 ),
-              ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],

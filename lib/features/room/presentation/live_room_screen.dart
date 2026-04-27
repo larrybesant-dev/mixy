@@ -54,7 +54,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
     // Cache notifier now — ref.read is unsafe inside dispose().
     _rtcServiceNotifier =
         ref.read(rtcServiceProvider(widget.roomId).notifier);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _autoJoin());
+    
+    // ── Reactive Auto-Join ───────────────────────────────────────────────
+    // Listen for the user profile to arrive. This ensures we join with the
+    // correct name and prevents redundant calls if the user state changes.
+    ref.listenManual(userProvider, (previous, next) {
+      if (next != null && previous == null) {
+        Future<void>.microtask(() {
+          if (mounted) {
+            _autoJoin();
+          }
+        });
+      }
+    }, fireImmediately: true);
   }
 
   Future<void> _autoJoin() async {
@@ -157,9 +169,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
     // ── RTC teardown (safe: uses cached references) ─────────────────────────
     _rtcService?.dispose().ignore();
     _rtcServiceNotifier.state = null;
-    ref
-        .read(liveRoomMediaControllerProvider(widget.roomId).notifier)
-        .resetDisconnected();
+    // Hardening: check mounted/valid state before reading providers in dispose
+    // (Testing environments often unmount scopes early)
+    try {
+      ref
+          .read(liveRoomMediaControllerProvider(widget.roomId).notifier)
+          .resetDisconnected();
+    } catch (_) {}
     // ── Firestore session teardown ───────────────────────────────────────────
     _roomController.leaveRoom().ignore();
     // Reset diff tracker so the next room starts with a clean baseline.

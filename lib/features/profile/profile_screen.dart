@@ -63,7 +63,7 @@ class ProfileScreen extends ConsumerWidget {
             onPressed: () async {
               await ref.read(authControllerProvider.notifier).logout();
               if (!context.mounted) return;
-              context.go('/login');
+              context.go('/auth');
             },
           ),
         ],
