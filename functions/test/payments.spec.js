@@ -66,6 +66,7 @@ function createFirestoreDouble(initialUsers = {}) {
   const logs = new Map();
   const stripeConnectAccounts = new Map();
   const stripeWebhookEvents = new Map();
+  const entitlementEvents = new Map();
   const refundRequests = new Map();
   const referralCodes = new Map();
   const referrals = new Map();
@@ -89,6 +90,8 @@ function createFirestoreDouble(initialUsers = {}) {
         return stripeConnectAccounts;
       case "stripe_webhook_events":
         return stripeWebhookEvents;
+      case "entitlement_events":
+        return entitlementEvents;
       case "refund_requests":
         return refundRequests;
       case "referral_codes":
@@ -359,6 +362,7 @@ function createFirestoreDouble(initialUsers = {}) {
       logs,
       stripeConnectAccounts,
       stripeWebhookEvents,
+      entitlementEvents,
       refundRequests,
       referralCodes,
       referrals,
@@ -566,6 +570,7 @@ describe("payment callable handlers", () => {
 
     const session = {
       id: "cs_test_123",
+      payment_status: "paid",
       metadata: {
         userId: "user-1",
         productType: "coin_package",
@@ -583,6 +588,66 @@ describe("payment callable handlers", () => {
     assert.equal(firestore.__state.wallets.get("user-1").coinBalance, 80);
   });
 
+  it("handleCheckoutSessionCompleted writes authoritative VIP entitlement", async () => {
+    const firestore = createFirestoreDouble({
+      "user-1": {balance: 10, membershipLevel: "basic"},
+    });
+
+    const session = {
+      id: "cs_vip_123",
+      payment_status: "paid",
+      amount_total: 500,
+      currency: "usd",
+      metadata: {
+        userId: "user-1",
+        productType: "premium_access",
+      },
+    };
+
+    const first = await handleCheckoutSessionCompleted(session, {firestore});
+    const second = await handleCheckoutSessionCompleted(session, {firestore});
+
+    const user = firestore.__state.users.get("user-1");
+    assert.equal(first.premiumApplied, true);
+    assert.equal(second.deduplicated, true);
+    assert.equal(user.entitlement, "vip");
+    assert.equal(user.isPremium, true);
+    assert.equal(user.vipLevel, 1);
+    assert.equal(user.membershipLevel, "vip");
+    assert.equal(user.entitlements.vip.active, true);
+    assert.equal(user.entitlements.vip.source, "stripe_checkout");
+    assert.equal(user.entitlements.vip.sessionId, "cs_vip_123");
+    assert.equal(firestore.__state.entitlementEvents.size, 1);
+    const entitlementEvent = firestore.__state.entitlementEvents.get("stripe_cs_vip_123");
+    assert.equal(entitlementEvent.type, "vip_purchase");
+    assert.equal(entitlementEvent.paymentStatus, "paid");
+    assert.equal(entitlementEvent.amountTotal, 500);
+    assert.equal(entitlementEvent.currency, "usd");
+  });
+
+  it("handleCheckoutSessionCompleted does not unlock premium when payment is not paid", async () => {
+    const firestore = createFirestoreDouble({
+      "user-1": {membershipLevel: "basic", vipLevel: 0},
+    });
+
+    const session = {
+      id: "cs_vip_unpaid",
+      payment_status: "unpaid",
+      metadata: {
+        userId: "user-1",
+        productType: "premium_access",
+      },
+    };
+
+    const result = await handleCheckoutSessionCompleted(session, {firestore});
+    const user = firestore.__state.users.get("user-1");
+
+    assert.equal(result.premiumApplied, false);
+    assert.equal(user.entitlement, undefined);
+    assert.equal(user.membershipLevel, "basic");
+    assert.equal(firestore.__state.entitlementEvents.size, 0);
+  });
+
   it("stripeWebhookHandler credits checkout.session.completed only once during replay", async () => {
     const firestore = createFirestoreDouble({
       "user-1": {balance: 10, coinBalance: 10},
@@ -594,6 +659,7 @@ describe("payment callable handlers", () => {
           data: {
             object: {
               id: "cs_replay_1",
+              payment_status: "paid",
               metadata: {
                 userId: "user-1",
                 productType: "coin_package",
@@ -981,8 +1047,11 @@ describe("payment callable handlers", () => {
 
     await createCheckoutSessionHandler(req, res, {stripeClient});
 
-    assert.equal(capturedPayload.success_url, "https://beta.mixvy.app/success");
-    assert.equal(capturedPayload.cancel_url, "https://beta.mixvy.app/cancel");
+    assert.equal(
+      capturedPayload.success_url,
+      "https://beta.mixvy.app/vip?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    );
+    assert.equal(capturedPayload.cancel_url, "https://beta.mixvy.app/vip?checkout=cancel");
     assert.deepEqual(res.jsonBody, {url: "https://checkout.stripe.test/session_123"});
 
     if (previousCheckoutBaseUrl === undefined) {

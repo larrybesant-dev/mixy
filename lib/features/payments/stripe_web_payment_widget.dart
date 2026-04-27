@@ -67,7 +67,11 @@ class _StripeWebPaymentWidgetState
       final callable = FirebaseFunctions.instance.httpsCallable(
         'createCheckoutSessionCallable',
       );
-      final result = await callable.call<Map<String, dynamic>>(<String, dynamic>{});
+      final result = await callable.call<Map<String, dynamic>>(
+        <String, dynamic>{
+          'packageId': 'premium_access',
+        },
+      );
       final data = Map<String, dynamic>.from(result.data);
       return _asNullableString(data['url']);
     } catch (e, stack) {

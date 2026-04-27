@@ -89,7 +89,10 @@ function Assert-FollowsSnapshotsCentralized([System.IO.FileInfo[]]$files) {
 
         # Guardrail: follow graph realtime listeners must be centralized.
         # Disallow any direct follows `.snapshots()` pipeline outside FollowService.
-        if ($content -match '(?s)collection\([''"']follows[''"']\).*?snapshots\s*\(') {
+        $hasFollowsSnapshots =
+            ($content -match "(?s)collection\('follows'\).*?snapshots\s*\(") -or
+            ($content -match '(?s)collection\("follows"\).*?snapshots\s*\(')
+        if ($hasFollowsSnapshots) {
             $rel = To-RepoRelativePath $file.FullName
             if ($rel -ne $allowedOwner) {
                 $violations += $rel

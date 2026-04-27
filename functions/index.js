@@ -320,8 +320,8 @@ function buildCheckoutSessionPayload({uid, packageId}) {
       userId: uid,
       ...product.metadata,
     },
-    success_url: `${checkoutBaseUrl}/success`,
-    cancel_url: `${checkoutBaseUrl}/cancel`,
+    success_url: `${checkoutBaseUrl}/vip?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${checkoutBaseUrl}/vip?checkout=cancel`,
   };
 }
 
@@ -687,14 +687,18 @@ async function recordStripePaymentSuccessHandler(request, deps = {}) {
 
 async function handleCheckoutSessionCompleted(session, deps = {}) {
   const firestore = deps.firestore || db;
+  const eventId = typeof deps.eventId === "string" ? deps.eventId : null;
+  const eventType = typeof deps.eventType === "string" ? deps.eventType : null;
+  const paymentStatus = String(session.payment_status || "").toLowerCase();
   const userId = session.metadata && session.metadata.userId;
-  if (!userId) {
+  if (!userId || !session.id) {
     return {creditedCoins: 0, premiumApplied: false, deduplicated: false};
   }
 
   const productType = session.metadata && session.metadata.productType;
   const coins = Number((session.metadata && session.metadata.coins) || 0);
   const webhookEventRef = firestore.collection("stripe_webhook_events").doc(session.id);
+  const entitlementEventRef = firestore.collection("entitlement_events").doc(`stripe_${session.id}`);
 
   return firestore.runTransaction(async (txn) => {
     const eventSnap = await txn.get(webhookEventRef);
@@ -708,7 +712,7 @@ async function handleCheckoutSessionCompleted(session, deps = {}) {
     let creditedCoins = 0;
     let premiumApplied = false;
 
-    if (productType === "coin_package" && coins > 0) {
+    if (productType === "coin_package" && coins > 0 && paymentStatus === "paid") {
       const nextBalance = currentBalance + coins;
       creditedCoins = coins;
       txn.set(userRef, {
@@ -717,11 +721,37 @@ async function handleCheckoutSessionCompleted(session, deps = {}) {
         coinBalance: nextBalance,
       }, {merge: true});
       syncWalletCoinBalance(txn, firestore, userId, nextBalance);
-    } else if (productType === "premium_access") {
+    } else if (productType === "premium_access" && paymentStatus === "paid") {
       premiumApplied = true;
       txn.set(userRef, {
+        entitlement: "vip",
+        entitlements: {
+          vip: {
+            active: true,
+            source: "stripe_checkout",
+            sessionId: session.id,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
         isPremium: true,
+        vipLevel: 1,
+        membershipLevel: "vip",
         premiumSince: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      txn.set(entitlementEventRef, {
+        id: entitlementEventRef.id,
+        userId,
+        sessionId: session.id,
+        type: "vip_purchase",
+        source: "stripe_checkout",
+        productType: productType || null,
+        paymentStatus,
+        eventId,
+        eventType,
+        amountTotal: Number(session.amount_total || 0),
+        currency: typeof session.currency === "string" ? session.currency : null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
     }
 
@@ -729,7 +759,11 @@ async function handleCheckoutSessionCompleted(session, deps = {}) {
       sessionId: session.id,
       userId,
       productType: productType || null,
+      paymentStatus: paymentStatus || null,
       creditedCoins,
+      premiumApplied,
+      eventId,
+      eventType,
       processedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -1770,7 +1804,11 @@ async function stripeWebhookHandler(req, res, deps = {}) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    await handleCheckoutSessionCompleted(session, {firestore});
+    await handleCheckoutSessionCompleted(session, {
+      firestore,
+      eventId: event.id,
+      eventType: event.type,
+    });
   }
   return res.json({received: true});
 }

@@ -22,8 +22,8 @@ import '../../../widgets/brand_ui_kit.dart';
 
 import '../../../shared/state/tab_scroll_memory.dart';
 import '../../ads/ad_manager.dart';
+import '../../payments/premium_entitlement.dart';
 import '../../stories/widgets/stories_row.dart';
-import '../../../features/profile/profile_controller.dart';
 import '../controllers/feed_controller.dart';
 import '../controllers/paginated_following_feed_controller.dart';
 import '../widgets/post_card.dart';
@@ -652,12 +652,11 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
           SliverToBoxAdapter(
             child: Builder(
               builder: (ctx) {
-                final profileMembership = ref.watch(
-                  profileControllerProvider.select(
-                    (s) => s.membershipLevel ?? 'Free',
-                  ),
-                );
-                if (!AdManager.shouldShowAds(profileMembership)) {
+                final hasVipEntitlement =
+                    ref.watch(vipEntitlementProvider).valueOrNull ?? false;
+                if (!AdManager.shouldShowAds(
+                  hasVipEntitlement: hasVipEntitlement,
+                )) {
                   return const SizedBox.shrink();
                 }
                 return _buildPromoBanner(ctx);

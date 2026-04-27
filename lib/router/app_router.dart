@@ -9,6 +9,7 @@ import 'package:mixvy/features/auth/screens/login_screen.dart';
 import 'package:mixvy/features/messaging/screens/chat_screen.dart';
 import 'package:mixvy/features/messaging/screens/create_group_chat_screen.dart';
 import 'package:mixvy/features/messaging/screens/new_message_screen.dart';
+import 'package:mixvy/features/payments/vip_screen.dart';
 import 'package:mixvy/features/profile/user_profile_screen.dart';
 import 'package:mixvy/features/groups/screens/create_group_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
@@ -133,6 +134,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/speed-dating',
         builder: (context, state) => const SpeedDatingScreen(),
+      ),
+
+      GoRoute(
+        path: '/vip',
+        builder: (context, state) => const VipScreen(),
       ),
 
       GoRoute(

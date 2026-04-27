@@ -1,18 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/layout/app_layout.dart';
+import 'premium_entitlement.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 
-// ── Velvet Noir brand tokens ──────────────────────────────────────────────────
-const _vSurface   = Color(0xFF0B0B0B);
-const _vCard      = Color(0xFF141414);
-const _vPrimary   = Color(0xFFD4AF37);
+// Velvet Noir brand tokens
+const _vSurface = Color(0xFF0B0B0B);
+const _vCard = Color(0xFF141414);
+const _vPrimary = Color(0xFFD4AF37);
 const _vSecondary = Color(0xFF781E2B);
-const _vCream     = Color(0xFFF7EDE2);
-const _vOutline   = Color(0x22D4AF37);
+const _vCream = Color(0xFFF7EDE2);
+const _vOutline = Color(0x22D4AF37);
 
 class VipScreen extends StatefulWidget {
   const VipScreen({super.key});
@@ -23,9 +26,65 @@ class VipScreen extends StatefulWidget {
 
 class _VipScreenState extends State<VipScreen> {
   bool _isYearly = false;
+  bool _checkoutInProgress = false;
+  String? _checkoutError;
+
+  Future<void> _startVipCheckout({required String tier}) async {
+    if (_checkoutInProgress) {
+      return;
+    }
+
+    setState(() {
+      _checkoutInProgress = true;
+      _checkoutError = null;
+    });
+
+    try {
+      final callable = FirebaseFunctions.instance
+          .httpsCallable('createCheckoutSessionCallable');
+      final result = await callable.call<Map<String, dynamic>>(
+        <String, dynamic>{
+          'packageId': 'premium_access',
+          'tier': tier,
+        },
+      );
+
+      final data = Map<String, dynamic>.from(result.data);
+      final rawUrl = data['url'];
+      final checkoutUrl = rawUrl is String ? rawUrl.trim() : '';
+      if (checkoutUrl.isEmpty) {
+        throw Exception('No checkout URL returned.');
+      }
+
+      final launched = await launchUrl(
+        Uri.parse(checkoutUrl),
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        throw Exception('Could not open Stripe checkout.');
+      }
+    } on FirebaseFunctionsException catch (error) {
+      setState(() {
+        _checkoutError = error.message ?? 'Unable to start checkout.';
+      });
+    } catch (error) {
+      setState(() {
+        _checkoutError = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checkoutInProgress = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
     return AppPageScaffold(
       backgroundColor: _vSurface,
       appBar: AppBar(
@@ -38,8 +97,7 @@ class _VipScreenState extends State<VipScreen> {
         ),
         title: Row(
           children: [
-            const Icon(Icons.workspace_premium_rounded,
-                color: _vPrimary, size: 22),
+            const Icon(Icons.workspace_premium_rounded, color: _vPrimary, size: 22),
             const SizedBox(width: 8),
             Text(
               'MIXVY VIP',
@@ -54,105 +112,129 @@ class _VipScreenState extends State<VipScreen> {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(
-              height: 1, color: _vPrimary.withValues(alpha: 0.15)),
+          child: Container(height: 1, color: _vPrimary.withValues(alpha: 0.15)),
         ),
       ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          // Hero header
-          _buildHeroHeader(),
+      body: uid == null
+          ? _SignInRequiredView(error: _checkoutError)
+          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final isVip = hasVipEntitlement(snapshot.data?.data());
+                if (isVip) {
+                  return _VipUnlockedView();
+                }
 
-          // Monthly / Yearly toggle
-          _buildBillingToggle(),
-
-          const SizedBox(height: 24),
-
-          // Tier cards
-          _TierCard(
-            tier: 'Silver',
-            tagline: 'Start the experience',
-            monthlyPrice: 4.99,
-            yearlyPrice: 49.99,
-            isYearly: _isYearly,
-            accentColor: const Color(0xFFB8C0C8),
-            gradientColors: const [Color(0xFF1A1E22), Color(0xFF0B0B0B)],
-            icon: Icons.star_outline_rounded,
-            features: const [
-              'Ad-free experience',
-              'Silver profile badge',
-              'Exclusive Silver rooms',
-              '10% bonus coins on purchase',
-              'Priority room joining',
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          _TierCard(
-            tier: 'Gold',
-            tagline: 'Command the room',
-            monthlyPrice: 9.99,
-            yearlyPrice: 99.99,
-            isYearly: _isYearly,
-            accentColor: _vPrimary,
-            gradientColors: const [Color(0xFF2A1E05), Color(0xFF1A1200)],
-            icon: Icons.workspace_premium_rounded,
-            isRecommended: true,
-            features: const [
-              'Everything in Silver',
-              'Gold profile badge & crown',
-              'VIP-only Gold lounges',
-              '25% bonus coins on purchase',
-              'Gold-tier gifts & stickers',
-              'Custom profile theme',
-              'Whisper anyone (no restrictions)',
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          _TierCard(
-            tier: 'Diamond',
-            tagline: 'Own the spotlight',
-            monthlyPrice: 19.99,
-            yearlyPrice: 199.99,
-            isYearly: _isYearly,
-            accentColor: const Color(0xFF9CD0FA),
-            gradientColors: const [Color(0xFF0A1525), Color(0xFF050C18)],
-            icon: Icons.diamond_outlined,
-            features: const [
-              'Everything in Gold',
-              'Diamond profile badge & glow',
-              'Private Diamond-only rooms',
-              '50% bonus coins on purchase',
-              'Exclusive Diamond animations',
-              'Co-host any room',
-              'Monthly virtual gift pack',
-              'Direct creator support line',
-            ],
-          ),
-
-          const SizedBox(height: 32),
-
-          // FAQ / legal note
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.pageHorizontalPadding),
-            child: Text(
-              'Subscriptions renew automatically. Cancel anytime in settings. '
-              'Prices shown in USD.',
-              style: GoogleFonts.raleway(
-                fontSize: 11,
-                color: _vCream.withValues(alpha: 0.35),
-                height: 1.6,
-              ),
-              textAlign: TextAlign.center,
+                return ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _buildHeroHeader(),
+                    _buildBillingToggle(),
+                    if (_checkoutError != null)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          context.pageHorizontalPadding,
+                          16,
+                          context.pageHorizontalPadding,
+                          0,
+                        ),
+                        child: Text(
+                          _checkoutError!,
+                          style: GoogleFonts.raleway(
+                            fontSize: 12,
+                            color: Colors.red.shade300,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+                    _TierCard(
+                      tier: 'Silver',
+                      tagline: 'Start the experience',
+                      monthlyPrice: 4.99,
+                      yearlyPrice: 49.99,
+                      isYearly: _isYearly,
+                      accentColor: const Color(0xFFB8C0C8),
+                      gradientColors: const [Color(0xFF1A1E22), Color(0xFF0B0B0B)],
+                      icon: Icons.star_outline_rounded,
+                      isBusy: _checkoutInProgress,
+                      onPressed: () => _startVipCheckout(tier: 'silver'),
+                      features: const [
+                        'Ad-free experience',
+                        'Silver profile badge',
+                        'Exclusive Silver rooms',
+                        '10% bonus coins on purchase',
+                        'Priority room joining',
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _TierCard(
+                      tier: 'Gold',
+                      tagline: 'Command the room',
+                      monthlyPrice: 9.99,
+                      yearlyPrice: 99.99,
+                      isYearly: _isYearly,
+                      accentColor: _vPrimary,
+                      gradientColors: const [Color(0xFF2A1E05), Color(0xFF1A1200)],
+                      icon: Icons.workspace_premium_rounded,
+                      isRecommended: true,
+                      isBusy: _checkoutInProgress,
+                      onPressed: () => _startVipCheckout(tier: 'gold'),
+                      features: const [
+                        'Everything in Silver',
+                        'Gold profile badge & crown',
+                        'VIP-only Gold lounges',
+                        '25% bonus coins on purchase',
+                        'Gold-tier gifts & stickers',
+                        'Custom profile theme',
+                        'Whisper anyone (no restrictions)',
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _TierCard(
+                      tier: 'Diamond',
+                      tagline: 'Own the spotlight',
+                      monthlyPrice: 19.99,
+                      yearlyPrice: 199.99,
+                      isYearly: _isYearly,
+                      accentColor: const Color(0xFF9CD0FA),
+                      gradientColors: const [Color(0xFF0A1525), Color(0xFF050C18)],
+                      icon: Icons.diamond_outlined,
+                      isBusy: _checkoutInProgress,
+                      onPressed: () => _startVipCheckout(tier: 'diamond'),
+                      features: const [
+                        'Everything in Gold',
+                        'Diamond profile badge & glow',
+                        'Private Diamond-only rooms',
+                        '50% bonus coins on purchase',
+                        'Exclusive Diamond animations',
+                        'Co-host any room',
+                        'Monthly virtual gift pack',
+                        'Direct creator support line',
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: context.pageHorizontalPadding),
+                      child: Text(
+                        'Access unlocks automatically after successful Stripe checkout. '
+                        'No waitlist state is used for VIP entitlement.',
+                        style: GoogleFonts.raleway(
+                          fontSize: 11,
+                          color: _vCream.withValues(alpha: 0.35),
+                          height: 1.6,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 80),
+                  ],
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 80),
-        ],
-      ),
     );
   }
 
@@ -190,8 +272,7 @@ class _VipScreenState extends State<VipScreen> {
                 ),
               ],
             ),
-            child: const Icon(Icons.workspace_premium_rounded,
-                color: Colors.white, size: 36),
+            child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 36),
           ),
           const SizedBox(height: 16),
           Text(
@@ -205,7 +286,7 @@ class _VipScreenState extends State<VipScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Join thousands of VIP members enjoying\nexclusive features, lounges, and privileges.',
+            'Stripe checkout unlocks VIP automatically after payment success.',
             style: GoogleFonts.raleway(
               fontSize: 13,
               color: _vCream.withValues(alpha: 0.55),
@@ -247,15 +328,122 @@ class _VipScreenState extends State<VipScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Toggle chip
-// ─────────────────────────────────────────────────────────────────────────────
+class _SignInRequiredView extends StatelessWidget {
+  const _SignInRequiredView({this.error});
+
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: context.pageHorizontalPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline, color: _vCream, size: 42),
+            const SizedBox(height: 12),
+            Text(
+              'Sign in to unlock VIP.',
+              style: GoogleFonts.playfairDisplay(
+                color: _vCream,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                error!,
+                style: GoogleFonts.raleway(color: Colors.red.shade300),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VipUnlockedView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        context.pageHorizontalPadding,
+        24,
+        context.pageHorizontalPadding,
+        40,
+      ),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2A1E05), Color(0xFF1A1200)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: _vPrimary.withValues(alpha: 0.6)),
+            boxShadow: [
+              BoxShadow(
+                color: _vPrimary.withValues(alpha: 0.2),
+                blurRadius: 20,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: _vPrimary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'VIP ACTIVE',
+                    style: GoogleFonts.raleway(
+                      color: _vPrimary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your entitlement is active.',
+                style: GoogleFonts.playfairDisplay(
+                  color: _vCream,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Premium features are now unlocked across the app in real time.',
+                style: GoogleFonts.raleway(
+                  color: _vCream.withValues(alpha: 0.8),
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _ToggleChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   final String? badge;
+
   const _ToggleChip({
     required this.label,
     required this.isSelected,
@@ -291,8 +479,7 @@ class _ToggleChip extends StatelessWidget {
             if (badge != null) ...[
               const SizedBox(width: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.black.withValues(alpha: 0.2)
@@ -316,127 +503,6 @@ class _ToggleChip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Tier card
-// ─────────────────────────────────────────────────────────────────────────────
-
-Future<void> _showWaitlistDialog(
-  BuildContext context,
-  String tier,
-  Color accentColor,
-) async {
-  final emailCtrl = TextEditingController(
-    text: FirebaseAuth.instance.currentUser?.email ?? '',
-  );
-  var submitted = false;
-
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setDialogState) => AlertDialog(
-        backgroundColor: const Color(0xFF141414),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: accentColor.withValues(alpha: 0.3)),
-        ),
-        title: Text(
-          submitted ? 'You\'re on the list!' : 'Join the $tier Waitlist',
-          style: GoogleFonts.playfairDisplay(
-            color: accentColor,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: submitted
-            ? Text(
-                'We\'ll notify you when $tier launches. Stay tuned.',
-                style: GoogleFonts.raleway(color: const Color(0xFFF7EDE2)),
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$tier is coming soon. Drop your email and we\'ll reach out first.',
-                    style: GoogleFonts.raleway(
-                      color: const Color(0xFFF7EDE2).withValues(alpha: 0.8),
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    style:
-                        GoogleFonts.raleway(color: const Color(0xFFF7EDE2)),
-                    decoration: InputDecoration(
-                      hintText: 'your@email.com',
-                      hintStyle: GoogleFonts.raleway(
-                        color:
-                            const Color(0xFFF7EDE2).withValues(alpha: 0.4),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: accentColor.withValues(alpha: 0.4)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: accentColor),
-                      ),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                ],
-              ),
-        actions: submitted
-            ? [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text('Close',
-                      style: GoogleFonts.raleway(color: accentColor)),
-                ),
-              ]
-            : [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.raleway(
-                      color: const Color(0xFFF7EDE2).withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    final email = emailCtrl.text.trim();
-                    if (email.isEmpty || !email.contains('@')) return;
-                    await FirebaseFirestore.instance
-                        .collection('vip_waitlist')
-                        .add({
-                      'email': email,
-                      'tier': tier,
-                      'userId': FirebaseAuth.instance.currentUser?.uid,
-                      'createdAt': FieldValue.serverTimestamp(),
-                    });
-                    setDialogState(() => submitted = true);
-                  },
-                  child: Text(
-                    'Notify Me',
-                    style: GoogleFonts.raleway(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-      ),
-    ),
-  );
-
-  emailCtrl.dispose();
-}
-
 class _TierCard extends StatelessWidget {
   final String tier;
   final String tagline;
@@ -447,6 +513,8 @@ class _TierCard extends StatelessWidget {
   final List<Color> gradientColors;
   final IconData icon;
   final bool isRecommended;
+  final bool isBusy;
+  final VoidCallback onPressed;
   final List<String> features;
 
   const _TierCard({
@@ -459,6 +527,8 @@ class _TierCard extends StatelessWidget {
     required this.gradientColors,
     required this.icon,
     this.isRecommended = false,
+    required this.isBusy,
+    required this.onPressed,
     required this.features,
   });
 
@@ -498,7 +568,6 @@ class _TierCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header row
                 Row(
                   children: [
                     Container(
@@ -507,11 +576,9 @@ class _TierCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: accentColor.withValues(alpha: 0.15),
-                        border: Border.all(
-                            color: accentColor.withValues(alpha: 0.4)),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.4)),
                       ),
-                      child:
-                          Icon(icon, color: accentColor, size: 22),
+                      child: Icon(icon, color: accentColor, size: 22),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -558,59 +625,57 @@ class _TierCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 18),
-                Container(
-                    height: 1,
-                    color: accentColor.withValues(alpha: 0.15)),
+                Container(height: 1, color: accentColor.withValues(alpha: 0.15)),
                 const SizedBox(height: 16),
-
-                // Features list
-                ...features.map((f) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 18,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: accentColor.withValues(alpha: 0.15),
-                            ),
-                            child: Icon(Icons.check,
-                                color: accentColor, size: 11),
+                ...features.map((feature) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: accentColor.withValues(alpha: 0.15),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              f,
-                              style: GoogleFonts.raleway(
-                                fontSize: 13,
-                                color: _vCream.withValues(alpha: 0.85),
-                              ),
+                          child: Icon(Icons.check, color: accentColor, size: 11),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            feature,
+                            style: GoogleFonts.raleway(
+                              fontSize: 13,
+                              color: _vCream.withValues(alpha: 0.85),
                             ),
                           ),
-                        ],
-                      ),
-                    )),
-
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 20),
-
-                // CTA button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => _showWaitlistDialog(context, tier, accentColor),
+                    onPressed: isBusy ? null : onPressed,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: accentColor,
                       foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
                     child: Text(
-                      isRecommended ? 'GET GOLD — MOST POPULAR' : 'GET $tier'.toUpperCase(),
+                      isBusy
+                          ? 'OPENING CHECKOUT...'
+                          : isRecommended
+                              ? 'UNLOCK VIP - MOST POPULAR'
+                              : 'UNLOCK VIP',
                       style: GoogleFonts.raleway(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -622,15 +687,12 @@ class _TierCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Recommended badge
           if (isRecommended)
             Positioned(
               top: -12,
               right: 20,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFD4AF37), Color(0xFF8C6020)],
@@ -640,7 +702,7 @@ class _TierCard extends StatelessWidget {
                     BoxShadow(
                       color: _vPrimary.withValues(alpha: 0.4),
                       blurRadius: 8,
-                    )
+                    ),
                   ],
                 ),
                 child: Text(
