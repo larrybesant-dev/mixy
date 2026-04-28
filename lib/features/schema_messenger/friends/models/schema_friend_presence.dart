@@ -59,7 +59,7 @@ class SchemaFriendPresence {
 
     DateTime? latestSeen;
     String? activeRoomId;
-    var hasLiveSignal = false;
+    bool hasLiveSignal = false;
 
     for (final doc in docs) {
       final data = doc.data();

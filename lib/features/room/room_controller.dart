@@ -57,6 +57,10 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   UserCamPermissionsController get _camPermissions =>
       ref.read(userCamPermissionsControllerProvider);
 
+  // Cached so it can be used inside ref.onDispose without calling ref.read
+  // (which is illegal after a dependency has changed).
+  RoomSessionService? _cachedSessionService;
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MUTABLE STATE
   //   Session state   — cleared fully on every leaveRoom().
@@ -116,12 +120,40 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   @override
   RoomState build(String roomId) {
+    // Cache the session service while ref is valid so it can be used
+    // in ref.onDispose without triggering !_didChangeDependency.
+    _cachedSessionService = ref.read(roomSessionServiceProvider);
     ref.onDispose(() {
       for (final t in _joinStabilizationTimers.values) {
         t.cancel();
       }
       _joinStabilizationTimers.clear();
       _roomHeartbeatTimer?.cancel();
+      // Fire-and-forget: remove participant presence from Firestore when the
+      // room controller is auto-disposed (widget unmount / navigation away).
+      // leaveRoom() would throw accessing a disposed container, so we call
+      // the session service directly with the snapshot values we already hold.
+      final userId = _currentUserId?.trim();
+      if (userId != null && userId.isNotEmpty) {
+        final roomId = arg;
+        // Best-effort fire-and-forget — do not await.
+        _cachedSessionService?.leaveRoom(roomId: roomId, userId: userId).ignore();
+        unawaited(SessionPersistence.saveLastRoom(null));
+        AppEventBus.instance.emit(
+          RoomLeftEvent(
+            id:
+                'room-left:$roomId:$userId:${DateTime.now().millisecondsSinceEpoch}',
+            timestamp: DateTime.now(),
+            sessionId: AppEventIds.roomSession(roomId: roomId, userId: userId),
+            correlationId: AppEventIds.roomCorrelation(
+              roomId: roomId,
+              userId: userId,
+            ),
+            userId: userId,
+            roomId: roomId,
+          ),
+        );
+      }
     });
 
     final roomDoc = ref.watch(roomDocStreamProvider(roomId)).valueOrNull;
@@ -629,7 +661,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   @protected
   RoomState _selfHeal(RoomState candidate) {
-    var healed = candidate;
+    RoomState healed = candidate;
 
     // Repair 1 — Ghost speaker removal.
     // Cause: speaker-doc arrives at this client before the participant-doc.

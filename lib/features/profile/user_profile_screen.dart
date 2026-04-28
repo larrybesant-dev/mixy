@@ -126,10 +126,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       privacyData = privacySnapshot.data() ?? const <String, dynamic>{};
     }
 
-    var isBlocked = false;
-    var isFollowing = false;
-    var followerCount = 0;
-    var followingCount = 0;
+    bool isBlocked = false;
+    bool isFollowing = false;
+    int followerCount = 0;
+    int followingCount = 0;
     if (viewerId != null && viewerId != widget.userId) {
       try {
         isBlocked = await _moderationService.isBlocked(widget.userId);

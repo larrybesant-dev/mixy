@@ -128,7 +128,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
         return;
       }
       _rtcService = service;
-      _rtcServiceNotifier.state = service;
+      ref.read(rtcServiceProvider(widget.roomId).notifier).state = service;
       mediaController.markReady(
         rtcUid: _stableUid(user.id),
         cameraStatus: 'RTC connected.',
@@ -158,7 +158,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
   /// Must be stable within a session. On Flutter Web, Dart2JS String.hashCode
   /// is deterministic; this helper makes the intent explicit.
   static int _stableUid(String userId) {
-    var h = 0;
+    int h = 0;
     for (final c in userId.codeUnits) {
       h = (h * 31 + c) & 0x7FFFFFFF;
     }
@@ -172,9 +172,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
     rtcService?.dispose().ignore();
     // Riverpod rejects provider writes during widget disposal. Defer room
     // controller cleanup to a microtask while using cached notifiers.
-    scheduleMicrotask(() async {
+    scheduleMicrotask(() {
       _mediaController.resetDisconnected();
-      await _roomController.leaveRoom();
     });
     // Reset diff tracker so the next room starts with a clean baseline.
     RoomContractGuard.reset();
@@ -597,7 +596,7 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
 
     try {
       // Wait for the RTC service to become available (up to 10s)
-      var attempts = 0;
+      int attempts = 0;
       final maxAttempts = 20; // 20 × 500ms = 10s
       while (ref.read(rtcServiceProvider(widget.roomId)) == null &&
           attempts < maxAttempts) {

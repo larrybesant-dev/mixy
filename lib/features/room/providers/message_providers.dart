@@ -105,16 +105,17 @@ final messagetreamProvider = StreamProvider.autoDispose
                       data['recipientDisplayName'],
                     );
                     final senderId = _asString(data['senderId']);
-                    var content = _asString(data['content']);
+                    final contentRaw = _asString(data['content']);
+                    String content = contentRaw;
                     if (recipientUserId.isNotEmpty) {
                       if (currentUserId != null && senderId == currentUserId) {
                         final targetLabel = recipientDisplayName.isEmpty
                             ? recipientUserId
                             : recipientDisplayName;
-                        content = '[Private to $targetLabel] $content';
+                        content = '[Private to $targetLabel] $contentRaw';
                       } else if (currentUserId != null &&
                           recipientUserId == currentUserId) {
-                        content = '[Private to you] $content';
+                        content = '[Private to you] $contentRaw';
                       }
                     }
                     return MessageModel(

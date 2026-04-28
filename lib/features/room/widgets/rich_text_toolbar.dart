@@ -193,7 +193,7 @@ class _RichTextToolbarState extends State<RichTextToolbar> {
 
   void _insertColor(String colorHex) {
     final controller = widget.controller;
-    var sel = controller.selection;
+    TextSelection sel = controller.selection;
     if (!sel.isValid || sel.start < 0) {
       sel = _savedSelection ?? const TextSelection.collapsed(offset: 0);
     }

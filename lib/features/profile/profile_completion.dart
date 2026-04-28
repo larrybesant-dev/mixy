@@ -11,7 +11,7 @@ class ProfileCompletion {
   }
 
   static double homeNudgeCompleteness(ProfileState state) {
-    var score = 0;
+    int score = 0;
     if ((state.username ?? '').trim().length >= 2) score++;
     if ((state.avatarUrl ?? '').trim().isNotEmpty) score++;
     if ((state.bio ?? '').trim().isNotEmpty) score++;
@@ -31,7 +31,7 @@ class ProfileCompletion {
   }
 
   static double completeness(ProfileState state) {
-    var score = 0;
+    int score = 0;
     if ((state.username ?? '').trim().length >= 2) score++;
     if ((state.avatarUrl ?? '').trim().isNotEmpty) score++;
     if ((state.coverPhotoUrl ?? '').trim().isNotEmpty) score++;

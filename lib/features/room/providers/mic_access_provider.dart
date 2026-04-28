@@ -145,7 +145,7 @@ class MicAccessController {
       return docPriority > maxPriority ? docPriority : maxPriority;
     });
 
-    var shouldNotifyHost = false;
+    bool shouldNotifyHost = false;
 
     await _db.runTransaction((tx) async {
       final existingSnapshot = await tx.get(requestRef);

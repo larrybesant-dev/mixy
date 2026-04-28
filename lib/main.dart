@@ -31,7 +31,7 @@ Future<void> main() async {
     setUrlStrategy(PathUrlStrategy());
   }
 
-  var initialBootState = BootState.loading;
+  BootState initialBootState = BootState.loading;
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);

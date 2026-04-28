@@ -200,7 +200,7 @@ int _computeStructuralScore({
   }
 
   final readyCount = readinessSignals.where((signal) => signal).length;
-  var score = (60 + ((readyCount / readinessSignals.length) * 40)).round();
+  int score = (60 + ((readyCount / readinessSignals.length) * 40)).round();
 
   if (bootMetrics != null && bootMetrics.duration > const Duration(seconds: 3)) {
     score -= 5;

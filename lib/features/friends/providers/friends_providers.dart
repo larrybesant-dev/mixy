@@ -68,7 +68,7 @@ final offlineFriendsProvider = Provider.autoDispose<AsyncValue<List<FriendRoster
 });
 
 final currentFriendIdsProvider = FutureProvider.autoDispose<List<String>>((ref) async {
-  var disposed = false;
+  bool disposed = false;
   ref.onDispose(() {
     disposed = true;
   });
@@ -138,7 +138,7 @@ final pendingOutgoingFriendRequestIdsProvider = StreamProvider<Set<String>>((ref
 });
 
 final friendCandidateSearchProvider = FutureProvider.autoDispose<List<UserModel>>((ref) async {
-  var disposed = false;
+  bool disposed = false;
   ref.onDispose(() {
     disposed = true;
   });

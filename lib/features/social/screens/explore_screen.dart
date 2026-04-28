@@ -49,7 +49,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   }
 
   List<RoomModel> _filterRooms(List<RoomModel> rooms) {
-    var filtered = rooms;
+    List<RoomModel> filtered = rooms;
     if (_selectedCategory != null) {
       filtered = filtered
           .where((r) => r.category?.toLowerCase() == _selectedCategory)

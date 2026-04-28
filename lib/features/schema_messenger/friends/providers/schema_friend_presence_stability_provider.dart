@@ -11,8 +11,8 @@ const _presenceHoldDuration = Duration(seconds: 2);
 final schemaStableFriendPresenceProvider =
     StreamProvider.autoDispose.family<SchemaFriendPresence, String>((ref, friendId) {
   return Stream.multi((controller) {
-    var disposed = false;
-    var hasEmittedInitialState = false;
+    bool disposed = false;
+    bool hasEmittedInitialState = false;
     Timer? debounceTimer;
     Timer? pendingTransitionTimer;
     SchemaFriendPresence? stablePresence;
@@ -110,8 +110,8 @@ final schemaStableFriendPresenceProvider =
 final schemaStableFriendPresenceMapProvider =
     StreamProvider.autoDispose<Map<String, SchemaFriendPresence>>((ref) {
   return Stream.multi((controller) {
-    var disposed = false;
-    var hasEmittedInitialState = false;
+    bool disposed = false;
+    bool hasEmittedInitialState = false;
     Timer? debounceTimer;
     final Map<String, SchemaFriendPresence> stablePresenceMap = <String, SchemaFriendPresence>{};
     Map<String, SchemaFriendPresence> latestRawPresenceMap = <String, SchemaFriendPresence>{};
@@ -128,9 +128,8 @@ final schemaStableFriendPresenceMapProvider =
       final pendingTransition = pendingTransitions.remove(friendId);
       pendingTransition?.timer.cancel();
     }
-
     void applySnapshot(Map<String, SchemaFriendPresence> snapshot) {
-      var didChange = false;
+      bool didChange = false;
       final normalizedSnapshot = {
         for (final entry in snapshot.entries) entry.key: entry.value.normalized(),
       };

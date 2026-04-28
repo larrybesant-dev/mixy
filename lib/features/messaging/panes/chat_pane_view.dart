@@ -395,7 +395,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   final isOwn = message.senderId == widget.userId;
                     final isPending = message.clientmessageId != null &&
                       pendingClientIds.contains(message.clientmessageId);
-                  var isReadByOther = false;
+                  bool isReadByOther = false;
                   if (isOwn && conversation != null) {
                     final otherIds =
                         conversation.participantIds.where((id) => id != widget.userId);
