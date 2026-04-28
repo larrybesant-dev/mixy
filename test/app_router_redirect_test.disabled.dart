@@ -8,6 +8,8 @@ void main() {
         matchedLocation: '/home',
         uid: null,
         authLoading: true,
+        legalStateResolved: false,
+        hasAcceptedLegal: false,
       );
 
       expect(result, isNull);
@@ -18,6 +20,8 @@ void main() {
         matchedLocation: '/home',
         uid: null,
         authLoading: false,
+        legalStateResolved: false,
+        hasAcceptedLegal: false,
       );
 
       expect(result, '/auth');
@@ -28,6 +32,8 @@ void main() {
         matchedLocation: '/auth',
         uid: 'user-1',
         authLoading: false,
+        legalStateResolved: true,
+        hasAcceptedLegal: true,
       );
 
       expect(result, '/home');
@@ -38,6 +44,8 @@ void main() {
         matchedLocation: '/speed-dating',
         uid: 'user-1',
         authLoading: false,
+        legalStateResolved: true,
+        hasAcceptedLegal: true,
       );
 
       expect(result, isNull);
@@ -48,9 +56,35 @@ void main() {
         matchedLocation: '/auth',
         uid: null,
         authLoading: false,
+        legalStateResolved: false,
+        hasAcceptedLegal: false,
       );
 
       expect(result, isNull);
+    });
+
+    test('does not redirect authenticated users until legal state resolves', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/speed-dating',
+        uid: 'user-1',
+        authLoading: false,
+        legalStateResolved: false,
+        hasAcceptedLegal: false,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('routes authenticated users without accepted legal to onboarding after settings load', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/speed-dating',
+        uid: 'user-1',
+        authLoading: false,
+        legalStateResolved: true,
+        hasAcceptedLegal: false,
+      );
+
+      expect(result, '/onboarding');
     });
   });
 }

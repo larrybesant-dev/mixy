@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mixvy/core/routing/redirect_logic.dart';
+import 'package:mixvy/core/routing/redirect_trace.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/features/auth/screens/login_screen.dart';
 import 'package:mixvy/features/messaging/screens/chat_screen.dart';
@@ -13,9 +15,16 @@ import 'package:mixvy/features/payments/vip_screen.dart';
 import 'package:mixvy/features/payments/screens/admin_entitlement_viewer_screen.dart';
 import 'package:mixvy/features/profile/user_profile_screen.dart';
 import 'package:mixvy/features/groups/screens/create_group_screen.dart';
+import 'package:mixvy/features/social/screens/live_floor_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
+import 'package:mixvy/features/room/screens/create_room_screen.dart';
+import 'package:mixvy/features/search/screens/search_screen.dart';
+import 'package:mixvy/presentation/screens/notifications_screen.dart';
 import 'package:mixvy/features/auth/providers/admin_provider.dart';
 import 'package:mixvy/presentation/screens/feature_degraded_screen.dart';
+import 'package:mixvy/core/services/app_settings_service.dart';
+import 'package:mixvy/features/onboarding/onboarding_screen.dart';
+import 'package:mixvy/presentation/providers/app_settings_provider.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/live_room_screen.dart';
 import 'package:mixvy/shared/widgets/app_shell.dart';
@@ -27,6 +36,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
   final currentUser = ref.watch(userProvider);
   final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
+  final appSettingsAsync = ref.watch(appSettingsControllerProvider);
+  final appSettings = appSettingsAsync.valueOrNull;
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -35,11 +46,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
 
     redirect: (context, state) {
-      return evaluateAppRedirect(
+      final evaluation = evaluateAppRedirectWithReason(
         matchedLocation: state.matchedLocation,
         uid: authState.uid,
         authLoading: !authState.hasResolvedSession,
+        legalStateResolved: appSettings != null,
+        hasAcceptedLegal: appSettings?.hasAcceptedCurrentLegal ?? false,
       );
+
+      assert(() {
+        RedirectTrace.record(
+          from: state.matchedLocation,
+          to: evaluation.redirectTo ?? 'stay',
+          reason: evaluation.reason,
+        );
+        return true;
+      }());
+
+      return evaluation.redirectTo;
     },
 
     routes: [
@@ -52,6 +76,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth',
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
 
       GoRoute(
@@ -86,7 +115,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final user = currentUser;
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-          return Newmessagecreen(
+          return NewMessageScreen(
             userId: user?.id ?? uid,
             username: user?.username ?? 'User',
             avatarUrl: user?.avatarUrl,
@@ -132,6 +161,31 @@ final routerProvider = Provider<GoRouter>((ref) {
           final roomId = state.pathParameters['id'] ?? '';
           return LiveRoomScreen(roomId: roomId);
         },
+      ),
+
+      GoRoute(
+        path: '/rooms',
+        builder: (context, state) => const LiveFloorScreen(),
+      ),
+
+      GoRoute(
+        path: '/live',
+        redirect: (context, state) => '/rooms',
+      ),
+
+      GoRoute(
+        path: '/create-room',
+        builder: (context, state) => const CreateRoomScreen(),
+      ),
+
+      GoRoute(
+        path: '/search',
+        builder: (context, state) => const SearchScreen(),
+      ),
+
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
 
       GoRoute(

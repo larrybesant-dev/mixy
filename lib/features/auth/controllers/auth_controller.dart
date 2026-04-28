@@ -170,10 +170,14 @@ class AuthController extends Notifier<AuthState> {
 
     AppTelemetry.updateAuthState(
       userId: currentUser?.uid,
-      isLoading: true,
+      isLoading: false,
       error: null,
     );
-    return AuthState(isLoading: true, uid: currentUser?.uid);
+    return AuthState(
+      isLoading: false,
+      hasResolvedSession: true,
+      uid: currentUser?.uid,
+    );
   }
 
   bool _isAnonymousUser(User? user) => user?.isAnonymous ?? false;

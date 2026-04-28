@@ -107,12 +107,14 @@ class RoomService {
     }
   }
 
+/*
   Future<void> _markRoomInactive(String roomId) {
     return _roomsCollection.doc(roomId).set({
       'isLive': false,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+*/
 
   int _effectiveRoomMemberCount(RoomModel room) {
     return math.max(
@@ -257,10 +259,7 @@ class RoomService {
       try {
         if (await _hasFreshParticipants(room)) {
           activeRooms.add(room);
-          continue;
         }
-
-        await _markRoomInactive(doc.id);
       } on FirebaseException {
         // Keep the room visible instead of failing the entire feed.
         activeRooms.add(room);

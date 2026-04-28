@@ -158,7 +158,7 @@ Widget buildMessengerRouteChild({
     case MessengerRouteKind.inbox:
       return MessageSchemaBridgeView(userId: userId, username: username);
     case MessengerRouteKind.compose:
-      return NewmessagePaneView(
+      return NewMessagePaneView(
         userId: userId,
         username: username,
         avatarUrl: avatarUrl,

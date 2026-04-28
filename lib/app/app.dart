@@ -51,13 +51,14 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     await auth
         .authStateChanges()
         .timeout(
-          const Duration(seconds: 3),
+          const Duration(seconds: 10),
           onTimeout: (sink) {
             sink.add(auth.currentUser);
             sink.close();
           },
         )
         .first;
+      await ref.read(appSettingsControllerProvider.notifier).load();
     // Auth check succeeded; boot is ready
     bootStateNotifier.setReady();
     startup.markBootstrapResolved(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/feed/screens/discovery_feed_screen.dart';
 import '../../features/messaging/screens/messages_screen.dart';
 import '../../features/profile/profile_screen.dart';
@@ -38,7 +39,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     switch (_index) {
       case 0:
-        return const DiscoveryFeedScreen();
+        return const DashboardScreen();
       case 1:
         return MessagesScreen(userId: user.id, username: user.username);
       case 2:
@@ -50,7 +51,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             ? const ProfileScreen()
             : UserProfileScreen(userId: user.id);
       default:
-        return const DiscoveryFeedScreen();
+        return const DashboardScreen();
     }
   }
 

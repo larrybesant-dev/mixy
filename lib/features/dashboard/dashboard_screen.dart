@@ -296,7 +296,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     liveRoomCount: snapshot.liveRooms.length,
                     suggestionCount: snapshot.suggestedUsers.length,
                     onOpenRooms: () => context.go('/rooms'),
-                    onOpenDiscover: () => context.go('/discover'),
+                    onOpenDiscover: () => context.go('/search'),
                   ),
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -305,7 +305,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   error: (_, _) => SocialPulseSection(
                     pulseItems: const [],
                     onOpenRooms: () => context.go('/rooms'),
-                    onOpenDiscover: () => context.go('/discover'),
+                    onOpenDiscover: () => context.go('/search'),
                   ),
                 ),
               ),
@@ -317,7 +317,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   dotColor: VelvetNoir.secondary,
                   topPadding: 24,
                   trailing: TextButton(
-                    onPressed: () => context.go('/discover'),
+                    onPressed: () => context.go('/search'),
                     child: const Text(
                       'See all',
                       style: TextStyle(color: VelvetNoir.primary, fontSize: 13),
@@ -1496,7 +1496,7 @@ class _BrandNavCards extends StatelessWidget {
             sub: 'Find your vibe',
             icon: Icons.people_alt_rounded,
             accent: VelvetNoir.primary,
-            onTap: () => context.go('/discover'),
+            onTap: () => context.go('/search'),
           ),
           const SizedBox(width: 10),
           _NavCard(
@@ -1504,7 +1504,7 @@ class _BrandNavCards extends StatelessWidget {
             sub: 'Start something real',
             icon: Icons.chat_bubble_outline_rounded,
             accent: VelvetNoir.secondaryBright,
-            onTap: () => context.go('/messages'),
+            onTap: () => context.go('/home?tab=1'),
           ),
           const SizedBox(width: 10),
           _NavCard(

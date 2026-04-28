@@ -216,13 +216,13 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.meeting_room_outlined,
             title: 'Rooms',
-            route: '/home',
+            route: '/home?tab=2',
           ),
           _navItem(
             context,
             icon: Icons.mail_rounded,
             title: 'message',
-            route: '/home',
+            route: '/home?tab=1',
           ),
           _navItem(
             context,
@@ -241,7 +241,7 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.mic_external_on_rounded,
             title: 'Host Room',
-            route: '/fallback',
+            route: '/rooms',
           ),
           _navItem(
             context,
@@ -272,7 +272,7 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.meeting_room_rounded,
             title: 'Room Directory',
-            route: '/fallback',
+            route: '/rooms',
           ),
           _navItem(
             context,
@@ -303,7 +303,7 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.local_fire_department_rounded,
             title: 'Live Speed Dating',
-            route: '/fallback',
+            route: '/speed-dating',
           ),
           _navItem(
             context,

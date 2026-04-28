@@ -9,12 +9,12 @@ import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../providers/messaging_provider.dart';
 
-class Newmessagecreen extends StatelessWidget {
+class NewMessageScreen extends StatelessWidget {
   final String userId;
   final String username;
   final String? avatarUrl;
 
-  const Newmessagecreen({
+  const NewMessageScreen({
     super.key,
     required this.userId,
     required this.username,
@@ -27,7 +27,7 @@ class Newmessagecreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('New message'),
       ),
-      body: NewmessagePaneView(
+      body: NewMessagePaneView(
         userId: userId,
         username: username,
         avatarUrl: avatarUrl,
@@ -37,13 +37,13 @@ class Newmessagecreen extends StatelessWidget {
   }
 }
 
-class NewmessagePaneView extends ConsumerStatefulWidget {
+class NewMessagePaneView extends ConsumerStatefulWidget {
   final String userId;
   final String username;
   final String? avatarUrl;
   final bool showHeader;
 
-  const NewmessagePaneView({
+  const NewMessagePaneView({
     super.key,
     required this.userId,
     required this.username,
@@ -52,10 +52,10 @@ class NewmessagePaneView extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<NewmessagePaneView> createState() => _NewmessagePaneViewState();
+  ConsumerState<NewMessagePaneView> createState() => _NewMessagePaneViewState();
 }
 
-class _NewmessagePaneViewState extends ConsumerState<NewmessagePaneView> {
+class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
   late TextEditingController _searchController;
   List<Map<String, String>> _searchResults = [];
   bool _isSearching = false;
