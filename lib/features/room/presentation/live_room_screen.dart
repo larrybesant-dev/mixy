@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
@@ -39,7 +40,7 @@ class LiveRoomScreen extends ConsumerStatefulWidget {
 class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
   // Cached so lifecycle calls are safe after widget deactivation.
   late RoomController _roomController;
-  late StateController<RtcRoomService?> _rtcServiceNotifier;
+  late LiveRoomMediaController _mediaController;
   RtcRoomService? _rtcService;
 
   // "Connected to Room" one-shot banner.
@@ -51,16 +52,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
     super.initState();
     _roomController =
         ref.read(roomControllerProvider(widget.roomId).notifier);
-    // Cache notifier now — ref.read is unsafe inside dispose().
-    _rtcServiceNotifier =
-        ref.read(rtcServiceProvider(widget.roomId).notifier);
-    
+    _mediaController = ref.read(
+      liveRoomMediaControllerProvider(widget.roomId).notifier,
+    );
+
     // ── Reactive Auto-Join ───────────────────────────────────────────────
     // Listen for the user profile to arrive. This ensures we join with the
     // correct name and prevents redundant calls if the user state changes.
     ref.listenManual(userProvider, (previous, next) {
       if (next != null && previous == null) {
-        Future<void>.microtask(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _autoJoin();
           }
@@ -167,17 +168,14 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
   @override
   void dispose() {
     // ── RTC teardown (safe: uses cached references) ─────────────────────────
-    _rtcService?.dispose().ignore();
-    _rtcServiceNotifier.state = null;
-    // Hardening: check mounted/valid state before reading providers in dispose
-    // (Testing environments often unmount scopes early)
-    try {
-      ref
-          .read(liveRoomMediaControllerProvider(widget.roomId).notifier)
-          .resetDisconnected();
-    } catch (_) {}
-    // ── Firestore session teardown ───────────────────────────────────────────
-    _roomController.leaveRoom().ignore();
+    final rtcService = _rtcService;
+    rtcService?.dispose().ignore();
+    // Riverpod rejects provider writes during widget disposal. Defer room
+    // controller cleanup to a microtask while using cached notifiers.
+    scheduleMicrotask(() async {
+      _mediaController.resetDisconnected();
+      await _roomController.leaveRoom();
+    });
     // Reset diff tracker so the next room starts with a clean baseline.
     RoomContractGuard.reset();
     super.dispose();

@@ -10,9 +10,11 @@ import 'package:mixvy/features/messaging/screens/chat_screen.dart';
 import 'package:mixvy/features/messaging/screens/create_group_chat_screen.dart';
 import 'package:mixvy/features/messaging/screens/new_message_screen.dart';
 import 'package:mixvy/features/payments/vip_screen.dart';
+import 'package:mixvy/features/payments/screens/admin_entitlement_viewer_screen.dart';
 import 'package:mixvy/features/profile/user_profile_screen.dart';
 import 'package:mixvy/features/groups/screens/create_group_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
+import 'package:mixvy/features/auth/providers/admin_provider.dart';
 import 'package:mixvy/presentation/screens/feature_degraded_screen.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/live_room_screen.dart';
@@ -24,6 +26,7 @@ GlobalKey<NavigatorState>(debugLabel: 'mixvy-root-navigator');
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
   final currentUser = ref.watch(userProvider);
+  final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -139,6 +142,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/vip',
         builder: (context, state) => const VipScreen(),
+      ),
+
+      GoRoute(
+        path: '/admin-entitlements',
+        builder: (context, state) {
+          if (!isAdmin) {
+            return const FeatureDegradedScreen(
+              title: 'Admin only',
+              message: 'You do not have access to entitlement support tools.',
+              primaryLabel: 'Go home',
+              primaryRoute: '/home',
+              icon: Icons.lock_outline,
+            );
+          }
+          return const AdminEntitlementViewerScreen();
+        },
       ),
 
       GoRoute(

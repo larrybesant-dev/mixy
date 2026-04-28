@@ -334,8 +334,8 @@ class MixVyDrawer extends ConsumerWidget {
             _navItem(
               context,
               icon: Icons.admin_panel_settings_rounded,
-              title: 'Moderation',
-              route: '/fallback',
+              title: 'Entitlement Support',
+              route: '/admin-entitlements',
             ),
           _navItem(
             context,
