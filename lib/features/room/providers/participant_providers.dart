@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firestore/firestore_debug_tracing.dart';
 import '../../../models/room_participant_model.dart';
+import '../../../presentation/providers/user_provider.dart';
 import '../controllers/room_state.dart';
 import '../repository/room_repository.dart';
 import 'room_firestore_provider.dart';
@@ -59,6 +60,22 @@ final roomMemberUserIdsProvider = StreamProvider.autoDispose
 
 final roomSpeakerUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
+      final currentUserId = ref.watch(userProvider)?.id.trim() ?? '';
+
+      // Speakers subcollection requires isRoomParticipant() which reads the
+      // participant doc via get(). Gate the stream until the current user's
+      // participant doc exists to avoid a permission-denied on screen load.
+      if (currentUserId.isNotEmpty) {
+        final participantValue = ref.watch(
+          currentParticipantProvider(
+            CurrentParticipantParams(roomId: roomId, userId: currentUserId),
+          ),
+        );
+        if (!participantValue.hasValue || participantValue.value == null) {
+          return Stream.value(const <String>[]);
+        }
+      }
+
       final repository = ref.watch(roomRepositoryProvider);
       return traceFirestoreStream<List<String>>(
         key: 'room_speakers/$roomId',

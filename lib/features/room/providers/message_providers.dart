@@ -99,7 +99,7 @@ final messagetreamProvider = StreamProvider.autoDispose
               return docs
                   .map((doc) {
                     final data = doc.data();
-                    final sentAt = data['sentAt'] ?? data['clientSentAt'];
+                    final sentAt = data['sentAt'] ?? data['createdAt'] ?? data['clientSentAt'];
                     final recipientUserId = _asString(data['recipientUserId']);
                     final recipientDisplayName = _asString(
                       data['recipientDisplayName'],

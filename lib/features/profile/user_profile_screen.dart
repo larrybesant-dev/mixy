@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mixvy/models/moderation_model.dart';
 import 'package:mixvy/services/follow_service.dart';
+import 'package:mixvy/features/follow/providers/follow_provider.dart';
 import 'package:mixvy/services/friend_service.dart';
 import 'package:mixvy/services/moderation_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -213,12 +214,22 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
   }
 
-  Future<void> _toggleFollow(bool currentlyFollowing) async {
+  Future<void> _toggleFollow(bool currentlyFollowing, {String targetUsername = ''}) async {
+    final currentUser = ref.read(userProvider);
+    if (currentUser == null) return;
+    final controller = ref.read(followControllerProvider);
     try {
       if (currentlyFollowing) {
-        await _followService.unfollowUser(widget.userId);
+        await controller.unfollowUser(
+          currentUserId: currentUser.id,
+          targetUserId: widget.userId,
+        );
       } else {
-        await _followService.followUser(widget.userId);
+        await controller.followUser(
+          currentUserId: currentUser.id,
+          targetUserId: widget.userId,
+          targetUsername: targetUsername,
+        );
       }
       if (!mounted) return;
       _refreshProfile();
@@ -606,7 +617,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                         Expanded(
                           child: FollowButton(
                             isFollowing: isFollowing,
-                            onPressed: () => _toggleFollow(isFollowing),
+                            onPressed: () => _toggleFollow(isFollowing, targetUsername: displayName),
                           ),
                         ),
                       ],

@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../core/events/app_event.dart';
-import '../core/events/app_event_bus.dart';
 import '../services/moderation_service.dart';
 
 class FollowService {
@@ -131,75 +129,15 @@ class FollowService {
   }
 
   Future<void> followUser(String followedUserId) async {
-    final followerUserId = _auth.currentUser?.uid;
-    if (followerUserId == null ||
-        followerUserId == followedUserId ||
-        followedUserId.trim().isEmpty) {
-      return;
-    }
-
-    if (await _moderationService.hasBlockingRelationship(
-      followerUserId,
-      followedUserId,
-    )) {
-      throw Exception('You cannot follow this user.');
-    }
-
-    final targetSnapshot = await _firestore
-        .collection('users')
-        .doc(followedUserId)
-        .get();
-    if (!targetSnapshot.exists) {
-      throw Exception('User not found.');
-    }
-
-    final targetName = _asString(
-      (targetSnapshot.data() ?? const <String, dynamic>{})['username'],
-    );
-    final currentUserSnapshot = await _firestore
-        .collection('users')
-        .doc(followerUserId)
-        .get();
-    final actorName = _asString(
-      (currentUserSnapshot.data() ?? const <String, dynamic>{})['username'],
-    );
-
-    await _firestore
-        .collection('follows')
-        .doc(_followDocId(followerUserId, followedUserId))
-        .set({
-          'followerUserId': followerUserId,
-          'followedUserId': followedUserId,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-    AppEventBus.instance.emit(
-      FollowEvent(
-        id: 'follow:$followerUserId:$followedUserId',
-        timestamp: DateTime.now(),
-        sessionId: AppEventIds.socialSession(userId: followerUserId),
-        correlationId: AppEventIds.followCorrelation(
-          fromUserId: followerUserId,
-          toUserId: followedUserId,
-        ),
-        fromUserId: followerUserId,
-        toUserId: followedUserId,
-        fromUsername: actorName.isEmpty ? null : actorName,
-        toUsername: targetName.isEmpty ? followedUserId : targetName,
-      ),
+    throw UnsupportedError(
+      'FollowService.followUser is deprecated. Use FollowController.followUser for atomic follow writes.',
     );
   }
 
   Future<void> unfollowUser(String followedUserId) async {
-    final followerUserId = _auth.currentUser?.uid;
-    if (followerUserId == null || followedUserId.trim().isEmpty) {
-      return;
-    }
-
-    await _firestore
-        .collection('follows')
-        .doc(_followDocId(followerUserId, followedUserId))
-        .delete();
+    throw UnsupportedError(
+      'FollowService.unfollowUser is deprecated. Use FollowController.unfollowUser for atomic follow writes.',
+    );
   }
 
   Future<void> inviteUserToHostedRoom(String invitedUserId) async {

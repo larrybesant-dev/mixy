@@ -462,33 +462,9 @@ class SchemaMutationService {
     required String recipientId,
     Map<String, String> participantNames = const <String, String>{},
   }) async {
-    final sortedIds = ([initiatorId.trim(), recipientId.trim()]..sort());
-    final conversationId = '${sortedIds[0]}_${sortedIds[1]}';
-    final convRef = _firestore.collection('conversations').doc(conversationId);
-    final now = FieldValue.serverTimestamp();
-
-    await convRef.set(<String, dynamic>{
-      'participantIds': sortedIds,
-      'participantNames': participantNames,
-      'type': 'direct',
-      'status': 'active',
-      'isArchived': false,
-      'pinnedBy': <String>[],
-      'lastReadAt': <String, dynamic>{},
-      'createdAt': now,
-      'updatedAt': now,
-    }, SetOptions(merge: true));
-
-    _logEnforcementEvent(
-      action: 'message_conversation_created',
-      userId: initiatorId,
-      metadata: <String, Object?>{
-        'conversationId': conversationId,
-        'recipient': recipientId,
-      },
+    throw UnsupportedError(
+      'SchemaMutationService.createDirectConversation is deprecated. Use MessagingController.createDirectConversation.',
     );
-
-    return conversationId;
   }
 
   /// Sends a message to an existing conversation.
@@ -505,45 +481,8 @@ class SchemaMutationService {
     String messageType = 'text',
     String? mediaUrl,
   }) async {
-    _validatemessageText(text: text, userId: senderId);
-
-    final convRef = _firestore.collection('conversations').doc(conversationId);
-    final msgRef = convRef.collection('messages').doc();
-    final now = FieldValue.serverTimestamp();
-
-    final msgPayload = <String, dynamic>{
-      'senderId': senderId,
-      'text': text.trim(),
-      'sentAt': now,
-      'type': messageType,
-      'readBy': <String>[senderId],
-      if (mediaUrl != null && mediaUrl.isNotEmpty) 'mediaUrl': mediaUrl,
-    };
-
-    final preview = text.trim().length > 120
-        ? '${text.trim().substring(0, 120)}…'
-        : text.trim();
-    final convUpdate = <String, dynamic>{
-      'lastMessageAt': now,
-      'lastMessagePreview': preview,
-      'lastMessageSenderId': senderId,
-      'lastMessageId': msgRef.id,
-      'updatedAt': now,
-    };
-
-    final batch = _firestore.batch();
-    batch.set(msgRef, msgPayload);
-    batch.set(convRef, convUpdate, SetOptions(merge: true));
-    await batch.commit();
-
-    _logEnforcementEvent(
-      action: 'message_message_sent',
-      userId: senderId,
-      metadata: <String, Object?>{
-        'conversationId': conversationId,
-        'messageId': msgRef.id,
-        'messageType': messageType,
-      },
+    throw UnsupportedError(
+      'SchemaMutationService.sendmessage is deprecated. Use MessagingController.sendmessage.',
     );
   }
 
@@ -552,25 +491,9 @@ class SchemaMutationService {
     required String conversationId,
     required String userId,
   }) async {
-    final convRef = _firestore.collection('conversations').doc(conversationId);
-    await convRef.set(<String, dynamic>{
-      'lastReadAt': <String, dynamic>{userId: FieldValue.serverTimestamp()},
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-  }
-
-  void _validatemessageText({required String text, required String userId}) {
-    if (text.trim().isEmpty) {
-      _logEnforcementEvent(
-        level: 'warning',
-        action: 'message_empty_text_blocked',
-        userId: userId,
-        result: 'blocked',
-      );
-      throw StateError(
-        'SchemaMutationService: message text must not be empty.',
-      );
-    }
+    throw UnsupportedError(
+      'SchemaMutationService.markConversationRead is deprecated. Use MessagingController.markAsRead.',
+    );
   }
 
   // ── Shared helpers ────────────────────────────────────────────────────────

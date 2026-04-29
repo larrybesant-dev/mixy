@@ -524,6 +524,7 @@ class MessagingController {
         'lastReadAt': {
           actorUserId: Timestamp.fromDate(DateTime.now()),
         },
+        'participantIds': [actorUserId],
       }, SetOptions(merge: true));
     }
   }
@@ -559,10 +560,9 @@ class MessagingController {
         error: error,
         stackTrace: stackTrace,
       );
-      await conversationRef.set({
-        'isArchived': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      throw StateError(
+        'Cannot archive missing conversation: $conversationId',
+      );
     }
   }
 
@@ -598,10 +598,9 @@ class MessagingController {
         error: error,
         stackTrace: stackTrace,
       );
-      await conversationRef.set({
-        'status': 'active',
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      throw StateError(
+        'Cannot accept request for missing conversation: $conversationId',
+      );
     }
   }
 

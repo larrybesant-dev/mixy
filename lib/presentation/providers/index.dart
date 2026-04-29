@@ -7,4 +7,3 @@ export 'presence_provider.dart';
 export 'coin_transaction_provider.dart';
 export 'wallet_provider.dart';
 export 'referral_provider.dart';
-export 'follow_provider.dart';
