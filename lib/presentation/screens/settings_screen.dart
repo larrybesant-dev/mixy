@@ -68,8 +68,15 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _SettingsTile(
               icon: Icons.shield_outlined,
-              label: 'Privacy',
-              onTap: () => context.go('/legal/privacy'),
+              label: 'Privacy Controls',
+              sub: 'Manage profile visibility and account privacy preferences.',
+              onTap: () => context.go('/edit-profile?tab=0'),
+            ),
+            _SettingsTile(
+              icon: Icons.block_outlined,
+              label: 'Blocked Users',
+              sub: 'Use profile actions to block or unblock people.',
+              onTap: () => context.go('/search'),
             ),
             _SettingsTile(
               icon: Icons.verified_outlined,
@@ -262,6 +269,11 @@ class SettingsScreen extends ConsumerWidget {
                   ? 'Accepted v${settings.legalAcceptedVersion}'
                   : 'Not accepted',
               onTap: () => context.go('/legal/terms'),
+            ),
+            _SettingsTile(
+              icon: Icons.policy_outlined,
+              label: 'Privacy Policy',
+              onTap: () => context.go('/legal/privacy'),
             ),
             _SettingsTile(
               icon: Icons.info_outline,

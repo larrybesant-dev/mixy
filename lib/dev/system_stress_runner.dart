@@ -51,7 +51,7 @@ class MixVySystemStressRunner {
       });
 
       final deepLinks = <String>[
-        '/messages/thread-123',
+        '/chat/thread-123',
         '/profile/test-missing-user-404',
         '/settings',
       ];

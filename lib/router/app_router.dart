@@ -8,12 +8,17 @@ import 'package:mixvy/core/routing/redirect_trace.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/features/auth/register_screen.dart';
 import 'package:mixvy/features/auth/screens/login_screen.dart';
+import 'package:mixvy/features/auth/screens/forgot_password_screen.dart';
 import 'package:mixvy/features/beta/beta_feedback_screen.dart';
 import 'package:mixvy/features/friends/screens/friends_list_screen.dart';
 import 'package:mixvy/features/messaging/screens/chat_screen.dart';
 import 'package:mixvy/features/messaging/screens/create_group_chat_screen.dart';
 import 'package:mixvy/features/messaging/screens/new_message_screen.dart';
+import 'package:mixvy/features/bookmarks/screens/bookmarks_screen.dart';
+import 'package:mixvy/features/groups/screens/group_details_screen.dart';
+import 'package:mixvy/features/groups/screens/groups_screen.dart';
 import 'package:mixvy/features/posts/screens/create_post_screen.dart';
+import 'package:mixvy/features/posts/screens/post_comments_screen.dart';
 import 'package:mixvy/features/payments/payments_screen.dart';
 import 'package:mixvy/features/payments/vip_screen.dart';
 import 'package:mixvy/features/payments/screens/admin_entitlement_viewer_screen.dart';
@@ -28,6 +33,7 @@ import 'package:mixvy/features/room/screens/create_room_screen.dart';
 import 'package:mixvy/features/search/screens/search_screen.dart';
 import 'package:mixvy/features/stories/screens/create_story_screen.dart';
 import 'package:mixvy/features/stories/screens/story_viewer_screen.dart';
+import 'package:mixvy/features/trending/screens/trending_screen.dart';
 import 'package:mixvy/features/verification/screens/verification_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_age_gate_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_create_lounge_screen.dart';
@@ -43,6 +49,7 @@ import 'package:mixvy/presentation/screens/app_info_screen.dart';
 import 'package:mixvy/presentation/screens/feature_degraded_screen.dart';
 import 'package:mixvy/presentation/screens/legal_privacy_screen.dart';
 import 'package:mixvy/presentation/screens/legal_terms_screen.dart';
+import 'package:mixvy/presentation/screens/moderation_dashboard_screen.dart';
 import 'package:mixvy/features/onboarding/onboarding_screen.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/models/user_model.dart';
@@ -222,8 +229,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      GoRoute(
         path: '/friends',
         builder: (context, state) => const FriendListScreen(),
+      ),
+
+      GoRoute(
+        path: '/groups',
+        builder: (context, state) {
+          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          return GroupsScreen(userId: uid);
+        },
+      ),
+
+      GoRoute(
+        path: '/group/:id',
+        builder: (context, state) {
+          final groupId = state.pathParameters['id'] ?? '';
+          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          if (groupId.isEmpty) {
+            return const FeatureDegradedScreen(
+              title: 'Group unavailable',
+              message: 'Could not resolve a group id for this route.',
+              primaryLabel: 'Go home',
+              primaryRoute: '/home',
+              icon: Icons.error_outline,
+            );
+          }
+          return GroupDetailsScreen(groupId: groupId, userId: uid);
+        },
       ),
 
       GoRoute(
@@ -358,6 +396,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
+        path: '/bookmarks',
+        builder: (context, state) {
+          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          if (uid.isEmpty) {
+            return const FeatureDegradedScreen(
+              title: 'Not logged in',
+              message: 'Please log in to view bookmarks.',
+              primaryLabel: 'Go to login',
+              primaryRoute: '/auth',
+              icon: Icons.lock_outline,
+            );
+          }
+          return BookmarksScreen(userId: uid);
+        },
+      ),
+
+      GoRoute(
+        path: '/trending',
+        builder: (context, state) => const TrendingScreen(),
+      ),
+
+      GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
       ),
@@ -421,6 +481,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             username: user?.username ?? 'User',
             avatarUrl: user?.avatarUrl,
           );
+        },
+      ),
+
+      GoRoute(
+        path: '/post/:id/comments',
+        builder: (context, state) {
+          final postId = state.pathParameters['id'] ?? '';
+          if (postId.isEmpty) {
+            return const FeatureDegradedScreen(
+              title: 'Comments unavailable',
+              message: 'Could not resolve a post id for this route.',
+              primaryLabel: 'Go home',
+              primaryRoute: '/home',
+              icon: Icons.comment_bank_outlined,
+            );
+          }
+          return PostCommentsScreen(postId: postId);
         },
       ),
 
@@ -521,35 +598,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
+        path: '/moderation',
+        builder: (context, state) {
+          if (!refreshNotifier.isAdmin) {
+            return const FeatureDegradedScreen(
+              title: 'Admin only',
+              message: 'You do not have access to moderation tools.',
+              primaryLabel: 'Go home',
+              primaryRoute: '/home',
+              icon: Icons.lock_outline,
+            );
+          }
+          return const ModerationDashboardScreen();
+        },
+      ),
+
+      GoRoute(
         path: '/create-group',
         builder: (context, state) {
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
           return CreateGroupScreen(userId: uid);
         },
       ),
-
-      GoRoute(
-        path: '/fallback',
-        builder: (context, state) => const _MvpFallbackScreen(),
-      ),
     ],
   );
 });
-
-/// SAFETY FALLBACK SCREEN
-class _MvpFallbackScreen extends StatelessWidget {
-  const _MvpFallbackScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const FeatureDegradedScreen(
-      title: 'Unavailable right now',
-      message: 'This screen is temporarily unavailable. Return home and try again.',
-      primaryLabel: 'Go home',
-      primaryRoute: '/home',
-      secondaryLabel: 'Open profile',
-      secondaryRoute: '/home',
-      icon: Icons.error_outline,
-    );
-  }
-}
