@@ -28,7 +28,7 @@ class PresenceControllerState {
   final PresenceAppState appState;
   final String? inRoom;
 
-  bool get isAuthenticated => userId != null && userId!.trim().isNotEmpty;
+  bool get isAuthenticated => (userId ?? '').trim().isNotEmpty;
   bool get isOnline => status != UserStatus.offline;
 
   PresenceControllerState copyWith({

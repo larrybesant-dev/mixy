@@ -210,7 +210,8 @@ class SpeedDatingService {
         .snapshots()
         .map((doc) {
       if (!doc.exists) return null;
-      final data = doc.data()!;
+      final data = doc.data();
+      if (data == null) return null;
       return SpeedDatingQueueResult(
         matched: data['matched'] as bool? ?? false,
         sessionId: data['sessionId'] as String?,

@@ -163,5 +163,8 @@ Future<T> traceFirestoreWrite<T>({
     error: lastError,
     stackTrace: lastStack,
   );
-  Error.throwWithStackTrace(lastError!, lastStack!);
+  if (lastError != null && lastStack != null) {
+    Error.throwWithStackTrace(lastError, lastStack);
+  }
+  throw StateError('Firestore write failed without captured error state for $operation at $path');
 }

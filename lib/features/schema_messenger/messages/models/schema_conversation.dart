@@ -46,9 +46,12 @@ class SchemaConversation {
   bool get isPending => status == 'pending';
 
   bool hasUnreadFor(String userId) {
-    return lastMessageAt != null &&
-        (lastReadAt[userId] == null ||
-        lastReadAt[userId]!.isBefore(lastMessageAt!));
+    final latestMessageAt = lastMessageAt;
+    if (latestMessageAt == null) {
+      return false;
+    }
+    final readAt = lastReadAt[userId];
+    return readAt == null || readAt.isBefore(latestMessageAt);
   }
 
   bool isPinnedFor(String userId) => pinnedBy.contains(userId);

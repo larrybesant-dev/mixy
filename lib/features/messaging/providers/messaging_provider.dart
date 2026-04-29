@@ -120,7 +120,16 @@ final conversationDocProvider =
       .collection('conversations')
       .doc(conversationId)
       .snapshots()
-      .map((snap) => snap.exists ? Conversation.fromJson(snap.data()!, snap.id) : null);
+      .map((snap) {
+    if (!snap.exists) {
+      return null;
+    }
+    final data = snap.data();
+    if (data == null) {
+      return null;
+    }
+    return Conversation.fromJson(data, snap.id);
+  });
 });
 
 // Stream of message in a conversation
@@ -492,12 +501,31 @@ class MessagingController {
     required String userId,
   }) async {
     final actorUserId = _validatedMessagingActorId(userId);
-    await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .update({
-      'lastReadAt.$actorUserId': Timestamp.fromDate(DateTime.now()),
-    });
+    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+    try {
+      await conversationRef.update({
+        'lastReadAt.$actorUserId': Timestamp.fromDate(DateTime.now()),
+      });
+    } on FirebaseException catch (error, stackTrace) {
+      if (error.code != 'not-found') {
+        rethrow;
+      }
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'messaging',
+        action: 'mark_as_read_conversation_missing',
+        message: 'Conversation document missing while marking as read.',
+        roomId: conversationId,
+        userId: actorUserId,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await conversationRef.set({
+        'lastReadAt': {
+          actorUserId: Timestamp.fromDate(DateTime.now()),
+        },
+      }, SetOptions(merge: true));
+    }
   }
 
   Future<void> deletemessage({
@@ -512,13 +540,30 @@ class MessagingController {
   Future<void> archiveConversation({
     required String conversationId,
   }) async {
-    await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .update({
-      'isArchived': true,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+    try {
+      await conversationRef.update({
+        'isArchived': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (error, stackTrace) {
+      if (error.code != 'not-found') {
+        rethrow;
+      }
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'messaging',
+        action: 'archive_conversation_missing',
+        message: 'Conversation document missing while archiving.',
+        roomId: conversationId,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await conversationRef.set({
+        'isArchived': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
   }
 
   Future<void> setConversationPinned({
@@ -534,13 +579,30 @@ class MessagingController {
   Future<void> acceptmessageRequest({
     required String conversationId,
   }) async {
-    await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .update({
-      'status': 'active',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+    try {
+      await conversationRef.update({
+        'status': 'active',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (error, stackTrace) {
+      if (error.code != 'not-found') {
+        rethrow;
+      }
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'messaging',
+        action: 'accept_request_conversation_missing',
+        message: 'Conversation document missing while accepting request.',
+        roomId: conversationId,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await conversationRef.set({
+        'status': 'active',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
   }
 
   Future<void> toggleReaction({
@@ -591,9 +653,9 @@ class MessagingController {
         }
       }, SetOptions(merge: true));
     } else {
-      await docRef.update({
+      await docRef.set({
         'users.$actorUserId': FieldValue.delete(),
-      });
+      }, SetOptions(merge: true));
     }
   }
 }

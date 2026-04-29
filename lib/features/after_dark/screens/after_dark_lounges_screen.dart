@@ -84,10 +84,15 @@ class _AfterDarkLoungesScreenState
   @override
   Widget build(BuildContext context) {
     final roomsAsync = ref.watch(_adultRoomsProvider(_selectedCategory));
-    if (roomsAsync.hasValue) {
-      _lastResolvedRooms = roomsAsync.value ?? const <RoomModel>[];
+    final resolvedRooms = roomsAsync.when(
+      data: (rooms) => rooms,
+      loading: () => null,
+      error: (error, stackTrace) => null,
+    );
+    if (resolvedRooms != null) {
+      _lastResolvedRooms = resolvedRooms;
     }
-    final visibleRooms = roomsAsync.valueOrNull ?? _lastResolvedRooms;
+    final visibleRooms = resolvedRooms ?? _lastResolvedRooms;
 
     return AppPageScaffold(
       backgroundColor: EmberDark.surface,

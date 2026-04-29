@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -241,7 +240,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/groups',
         builder: (context, state) {
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
           return GroupsScreen(userId: uid);
         },
       ),
@@ -250,7 +249,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/group/:id',
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? '';
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
           if (groupId.isEmpty) {
             return const FeatureDegradedScreen(
               title: 'Group unavailable',
@@ -319,7 +318,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/new-message',
         builder: (context, state) {
           final user = refreshNotifier.currentUser;
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
 
           return NewMessageScreen(
             userId: user?.id ?? uid,
@@ -333,7 +332,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/create-group-chat',
         builder: (context, state) {
           final user = refreshNotifier.currentUser;
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
 
           return CreateGroupChatScreen(
             userId: user?.id ?? uid,
@@ -348,14 +347,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           final user = refreshNotifier.currentUser;
           final conversationId = state.pathParameters['id'] ?? '';
 
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
 
           return ChatScreen(
             conversationId: conversationId,
             userId: user?.id ?? uid,
-            username: user?.username ??
-                FirebaseAuth.instance.currentUser?.displayName ??
-                'Chat',
+            username: user?.username ?? 'Chat',
             avatarUrl: user?.avatarUrl,
           );
         },
@@ -398,7 +395,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/bookmarks',
         builder: (context, state) {
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
           if (uid.isEmpty) {
             return const FeatureDegradedScreen(
               title: 'Not logged in',
@@ -425,7 +422,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/stories',
         redirect: (context, state) {
-          final uid = FirebaseAuth.instance.currentUser?.uid;
+          final uid = refreshNotifier.authState.uid;
           return (uid == null || uid.isEmpty) ? '/home' : '/stories/$uid';
         },
       ),
@@ -442,7 +439,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/create-story',
         builder: (context, state) {
           final user = refreshNotifier.currentUser;
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
           final userId = user?.id ?? uid;
           if (userId.isEmpty) {
             return const FeatureDegradedScreen(
@@ -465,7 +462,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/create-post',
         builder: (context, state) {
           final user = refreshNotifier.currentUser;
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
           final userId = user?.id ?? uid;
           if (userId.isEmpty) {
             return const FeatureDegradedScreen(
@@ -616,7 +613,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create-group',
         builder: (context, state) {
-          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          final uid = refreshNotifier.authState.uid ?? '';
           return CreateGroupScreen(userId: uid);
         },
       ),

@@ -19,7 +19,7 @@ final schemaAuthUserIdProvider = StreamProvider<String?>((ref) {
 
 final schemaFriendLinksProvider =
     StreamProvider.autoDispose<List<SchemaFriendLink>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).value;
+  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
 
       if (userId == null || userId.isEmpty) {
         return const Stream<List<SchemaFriendLink>>.empty();
@@ -70,7 +70,7 @@ final schemaAcceptedFriendLinksProvider =
 final schemaAcceptedFriendIdsProvider = Provider.autoDispose<List<String>>((
   ref,
 ) {
-  final userId = ref.watch(schemaAuthUserIdProvider).value;
+  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
   final links = ref.watch(schemaAcceptedFriendLinksProvider);
   if (userId == null || userId.isEmpty) return const <String>[];
 
@@ -83,7 +83,7 @@ final schemaAcceptedFriendIdsProvider = Provider.autoDispose<List<String>>((
 
 final schemaIncomingFriendRequestsProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).value;
+  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
       final links =
           ref.watch(schemaFriendLinksProvider).valueOrNull ??
           const <SchemaFriendLink>[];
@@ -96,7 +96,7 @@ final schemaIncomingFriendRequestsProvider =
 
 final schemaOutgoingFriendRequestsProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).value;
+  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
       final links =
           ref.watch(schemaFriendLinksProvider).valueOrNull ??
           const <SchemaFriendLink>[];

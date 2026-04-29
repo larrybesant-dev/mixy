@@ -56,6 +56,24 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   final List<_Pendingmessage> _pendingmessage = <_Pendingmessage>[];
   late final DateTime _entryTime;
 
+  void _guardAsync(Future<void> future, {required String contextLabel}) {
+    unawaited(
+      future.catchError((error, stackTrace) {
+        AppTelemetry.logAction(
+          level: 'error',
+          domain: 'messaging',
+          action: 'guarded_async_failure',
+          message: 'Guarded async operation failed in chat pane.',
+          roomId: widget.conversationId,
+          userId: widget.userId,
+          metadata: <String, Object?>{'context': contextLabel},
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }),
+    );
+  }
+
   void _startHydrationWindow() {
     _hydrationTimer?.cancel();
     _hydrationTimer = null;
@@ -126,10 +144,13 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _messagingController.markAsRead(
-            conversationId: widget.conversationId,
-            userId: widget.userId,
-          );
+      _guardAsync(
+        _messagingController.markAsRead(
+          conversationId: widget.conversationId,
+          userId: widget.userId,
+        ),
+        contextLabel: 'mark_as_read_on_open',
+      );
     });
   }
 
@@ -151,11 +172,14 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     }
     if (!_isTyping) {
       _isTyping = true;
-      _messagingController.updateTypingStatus(
-            conversationId: widget.conversationId,
-            userId: widget.userId,
-            isTyping: true,
-          );
+      _guardAsync(
+        _messagingController.updateTypingStatus(
+          conversationId: widget.conversationId,
+          userId: widget.userId,
+          isTyping: true,
+        ),
+        contextLabel: 'typing_start',
+      );
     }
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 4), _clearTyping);
@@ -165,11 +189,14 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     _typingTimer?.cancel();
     if (_isTyping) {
       _isTyping = false;
-      _messagingController.updateTypingStatus(
-            conversationId: widget.conversationId,
-            userId: widget.userId,
-            isTyping: false,
-          );
+      _guardAsync(
+        _messagingController.updateTypingStatus(
+          conversationId: widget.conversationId,
+          userId: widget.userId,
+          isTyping: false,
+        ),
+        contextLabel: 'typing_stop',
+      );
     }
   }
 
@@ -772,7 +799,25 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                           senderName: widget.username,
                           senderAvatarUrl: widget.avatarUrl,
                           content: item.messageContent,
-                        ),
+                        )
+                        .catchError((error, stackTrace) {
+                          AppTelemetry.logAction(
+                            level: 'error',
+                            domain: 'messaging',
+                            action: 'emoji_send_failed',
+                            message: 'Emoji message send failed.',
+                            roomId: widget.conversationId,
+                            userId: widget.userId,
+                            error: error,
+                            stackTrace: stackTrace,
+                          );
+                          if (!mounted) return;
+                          ScaffoldMessenger.maybeOf(this.context)?.showSnackBar(
+                            SnackBar(
+                              content: Text('Could not send message: $error'),
+                            ),
+                          );
+                        }),
                   ),
                 ),
                 Expanded(
@@ -890,12 +935,15 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
               return GestureDetector(
                 onTap: () {
                   Navigator.of(context).pop();
-                  ref.read(messagingControllerProvider).toggleReaction(
-                        conversationId: widget.conversationId,
-                        messageId: messageId,
-                        currentUserId: widget.userId,
-                        emoji: emoji,
-                      );
+                  _guardAsync(
+                    ref.read(messagingControllerProvider).toggleReaction(
+                          conversationId: widget.conversationId,
+                          messageId: messageId,
+                          currentUserId: widget.userId,
+                          emoji: emoji,
+                        ),
+                    contextLabel: 'toggle_reaction',
+                  );
                 },
                 child: Text(emoji, style: const TextStyle(fontSize: 32)),
               );

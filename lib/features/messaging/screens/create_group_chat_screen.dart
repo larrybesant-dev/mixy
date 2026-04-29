@@ -135,8 +135,11 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
               itemCount: _searchResults.length,
               itemBuilder: (ctx, i) {
                 final user = _searchResults[i];
-                final id = user['id']!;
-                final name = user['name']!;
+                final id = user['id'] ?? '';
+                final name = user['name'] ?? id;
+                if (id.isEmpty) {
+                  return const SizedBox.shrink();
+                }
                 final isSelected = _selectedUserIds.contains(id);
                 return ListTile(
                   title: Text(name),

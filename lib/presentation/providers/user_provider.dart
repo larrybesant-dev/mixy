@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/controllers/auth_controller.dart';
@@ -77,8 +76,8 @@ String resolvePublicUsername({
 final userProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authControllerProvider);
   final profileState = ref.watch(profileControllerProvider);
-  final firebaseUser = FirebaseAuth.instance.currentUser;
-  final uid = authState.uid ?? firebaseUser?.uid;
+  // Use AuthController as the single source of truth for session identity.
+  final uid = authState.uid;
 
   if (uid == null) {
     return null;
@@ -87,18 +86,18 @@ final userProvider = Provider<UserModel?>((ref) {
   final resolvedUsername = resolvePublicUsername(
     uid: uid,
     profileUsername: profileState.username,
-    authDisplayName: firebaseUser?.displayName,
+    authDisplayName: null,
   );
 
   final profileAvatar =
       (profileState.userId == uid || profileState.userId == null) &&
           (profileState.avatarUrl?.isNotEmpty == true)
       ? profileState.avatarUrl
-      : firebaseUser?.photoURL;
+      : null;
 
   return UserModel(
     id: uid,
-    email: firebaseUser?.email ?? '',
+    email: profileState.email ?? '',
     username: resolvedUsername,
     avatarUrl: profileAvatar,
     createdAt: DateTime.now(),

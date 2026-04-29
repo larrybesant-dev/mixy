@@ -367,9 +367,10 @@ class AuthController extends Notifier<AuthState> {
     try {
       await _googleSignInHelper.completePendingRedirectSignIn();
       await _appleSignInHelper.completePendingRedirectSignIn();
-      final uid = _auth.currentUser?.uid;
-      if (uid != null) {
-        await _ensureUserDocument(_auth.currentUser!);
+      final currentUser = _auth.currentUser;
+      final uid = currentUser?.uid;
+      if (uid != null && currentUser != null) {
+        await _ensureUserDocument(currentUser);
         _setAuthState(state.copyWith(
           uid: uid,
           isLoading: false,
@@ -438,9 +439,10 @@ class AuthController extends Notifier<AuthState> {
         email: email,
         password: password,
       );
-      if (cred.user != null) {
+      final createdUser = cred.user;
+      if (createdUser != null) {
         await _ensureUserDocument(
-          cred.user!,
+          createdUser,
           preferredUsername: normalizedUsername,
         );
       }
@@ -511,8 +513,9 @@ class AuthController extends Notifier<AuthState> {
         email: normalizedEmail,
         password: password.trim(),
       );
-      if (cred.user != null) {
-        await _ensureUserDocument(cred.user!);
+      final signedInUser = cred.user;
+      if (signedInUser != null) {
+        await _ensureUserDocument(signedInUser);
       }
       _setAuthState(state.copyWith(
         isLoading: false,

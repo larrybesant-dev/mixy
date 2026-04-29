@@ -32,8 +32,12 @@ final bookmarkedPostsProvider =
       try {
         final postDoc = await firestore.collection('posts').doc(postId).get();
         if (postDoc.exists) {
+          final postData = postDoc.data();
+          if (postData == null) {
+            continue;
+          }
           bookmarks.add({
-            ...postDoc.data()!,
+            ...postData,
             'id': postDoc.id,
             'bookmarkId': doc.id,
           });

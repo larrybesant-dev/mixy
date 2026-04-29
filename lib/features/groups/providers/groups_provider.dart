@@ -24,7 +24,9 @@ final groupDetailsProvider =
       .snapshots()
       .map((snapshot) {
     if (!snapshot.exists) return null;
-    return Group.fromJson(snapshot.data()!, snapshot.id);
+    final data = snapshot.data();
+    if (data == null) return null;
+    return Group.fromJson(data, snapshot.id);
   });
 });
 

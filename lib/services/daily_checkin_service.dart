@@ -38,7 +38,7 @@ class DailyCheckinService {
     bool foundInWallet = false;
 
     if (walletSnap.exists && walletSnap.data() != null) {
-      data = walletSnap.data()!;
+      data = walletSnap.data() ?? const <String, dynamic>{};
       if (data.containsKey('lastCheckinDate')) {
         foundInWallet = true;
       }

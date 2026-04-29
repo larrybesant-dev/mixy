@@ -13,7 +13,7 @@ class SchemaFriendPresence {
   final String? roomId;
   final DateTime? lastActiveAt;
 
-  bool get isInRoom => roomId != null && roomId!.isNotEmpty;
+  bool get isInRoom => (roomId ?? '').isNotEmpty;
 
   SchemaFriendPresenceGroup get group {
     if (isInRoom) return SchemaFriendPresenceGroup.inRoom;

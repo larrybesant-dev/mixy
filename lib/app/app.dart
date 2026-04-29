@@ -156,9 +156,9 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
     _runtimeQueued = true;
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final uid = ref.read(authControllerProvider).uid;
 
-      if (user != null) {
+      if (uid != null && uid.isNotEmpty) {
         await ref.read(profileControllerProvider.notifier).loadCurrentProfile();
       }
 

@@ -91,7 +91,7 @@ final schemaParityMonitorProvider =
         mismatchDetails: result.unreadMismatches,
       );
     case 'friends':
-      final authUserId = ref.watch(schemaAuthUserIdProvider).value;
+      final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
       if (authUserId == null || authUserId.isEmpty) {
         return const SchemaParityMonitorReport(
           moduleId: 'friends',

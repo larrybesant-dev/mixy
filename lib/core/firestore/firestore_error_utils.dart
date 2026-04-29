@@ -17,7 +17,10 @@ class FirestoreErrorInfo {
 FirestoreErrorInfo parseFirestoreError(Object error) {
   if (error is FirebaseException) {
     final code = error.code.trim().isEmpty ? 'unknown' : error.code.trim();
-    final message = (error.message ?? '').trim().isEmpty ? 'No additional details provided.' : error.message!.trim();
+    final rawMessage = error.message?.trim();
+    final message = (rawMessage == null || rawMessage.isEmpty)
+        ? 'No additional details provided.'
+        : rawMessage;
     final normalized = code.toLowerCase();
     final isPermissionOrAuth =
         normalized == 'permission-denied' || normalized == 'unauthenticated' || normalized == 'unauthorized';

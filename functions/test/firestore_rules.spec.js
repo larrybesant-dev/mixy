@@ -205,4 +205,54 @@ describe("firestore rules", () => {
       joinedAt: Timestamp.now(),
     }));
   });
+
+  it("allows authenticated follow edge writes only on the caller-owned follower/following docs", async () => {
+    const followerDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-3").firestore();
+
+    await assertSucceeds(setDoc(doc(followerDb, "users", "user-1", "following", "user-2"), {
+      followedAt: Timestamp.now(),
+    }));
+    await assertSucceeds(setDoc(doc(followerDb, "users", "user-2", "followers", "user-1"), {
+      followedAt: Timestamp.now(),
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "users", "user-1", "following", "user-2"), {
+      followedAt: Timestamp.now(),
+    }));
+    await assertFails(setDoc(doc(otherDb, "users", "user-2", "followers", "user-1"), {
+      followedAt: Timestamp.now(),
+    }));
+  });
+
+  it("allows signed-in room message writes with the current client payload", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-chat-1"), {
+        hostId: "host-1",
+        ownerId: "host-1",
+        isLocked: false,
+      });
+    });
+
+    const senderDb = testEnv.authenticatedContext("user-1").firestore();
+
+    await assertSucceeds(setDoc(doc(senderDb, "rooms", "room-chat-1", "messages", "message-1"), {
+      id: "message-1",
+      senderId: "user-1",
+      roomId: "room-chat-1",
+      content: "hello room",
+      sentAt: Timestamp.now(),
+      clientSentAt: Timestamp.now(),
+    }));
+
+    await assertFails(setDoc(doc(senderDb, "rooms", "room-chat-1", "messages", "message-2"), {
+      id: "message-2",
+      senderId: "user-1",
+      roomId: "other-room",
+      content: "wrong room",
+      sentAt: Timestamp.now(),
+      clientSentAt: Timestamp.now(),
+    }));
+  });
 });

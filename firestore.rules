@@ -296,12 +296,18 @@ service cloud.firestore {
 
       match /followers/{followerId} {
         allow read: if signedIn();
-        allow create, update, delete: if false;
+          allow create, update: if signedIn()
+            && followerId == request.auth.uid
+            && request.resource.data.keys().hasOnly(['followedAt']);
+          allow delete: if signedIn() && followerId == request.auth.uid;
       }
 
       match /following/{followingId} {
         allow read: if signedIn();
-        allow create, update, delete: if false;
+          allow create, update: if isSelf(userId)
+            && followingId != request.auth.uid
+            && request.resource.data.keys().hasOnly(['followedAt']);
+          allow delete: if isSelf(userId) && followingId != request.auth.uid;
       }
     }
 
@@ -437,7 +443,19 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create: if signedIn()
           && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.createdAt == request.time; // Prevent timestamp spoofing
+          && request.resource.data.roomId == roomId
+          && request.resource.data.sentAt == request.time
+          && request.resource.data.keys().hasOnly([
+            'id',
+            'senderId',
+            'roomId',
+            'content',
+            'type',
+            'recipientUserId',
+            'recipientDisplayName',
+            'sentAt',
+            'clientSentAt'
+          ]);
         allow update, delete: if false; // Hardening: no editing/deleting for now
 
         match /reactions/{userId} {

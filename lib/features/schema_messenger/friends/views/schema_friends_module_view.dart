@@ -237,7 +237,7 @@ class _SchemaFriendsModuleViewState
       },
     );
 
-    final authUserId = ref.watch(schemaAuthUserIdProvider).value;
+    final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
     final linksAsync = ref.watch(schemaFriendLinksProvider);
     final selectedFriendId = ref.watch(effectiveSelectedSchemaFriendIdProvider);
     final groupedRosterAsync = ref.watch(schemaStickyGroupedFriendRosterProvider);

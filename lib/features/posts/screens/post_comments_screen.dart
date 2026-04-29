@@ -21,8 +21,16 @@ final _postDocProvider =
     .collection('posts')
     .doc(params.postId)
       .snapshots()
-      .map((doc) =>
-          doc.exists ? PostModel.fromDoc(doc.id, doc.data()!) : null);
+      .map((doc) {
+        if (!doc.exists) {
+          return null;
+        }
+        final data = doc.data();
+        if (data == null) {
+          return null;
+        }
+        return PostModel.fromDoc(doc.id, data);
+      });
 });
 
 class _Comment {

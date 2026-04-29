@@ -73,6 +73,7 @@ class RoomParticipantModel {
   }
 
   Map<String, dynamic> toMap() {
+    final expiresAt = micExpiresAt;
     return {
       'userId': userId,
       'role': role,
@@ -86,8 +87,7 @@ class RoomParticipantModel {
       if (photoUrl != null) 'photoUrl': photoUrl,
       'joinedAt': Timestamp.fromDate(joinedAt),
       'lastActiveAt': Timestamp.fromDate(lastActiveAt),
-      if (micExpiresAt != null)
-        'micExpiresAt': Timestamp.fromDate(micExpiresAt!),
+      if (expiresAt != null) 'micExpiresAt': Timestamp.fromDate(expiresAt),
     };
   }
 
