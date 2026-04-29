@@ -25,22 +25,28 @@ void main() {
 
       await controller.verifyUser(userId: 'user-1', verifiedBy: 'admin');
 
-      final doc = await firestore.collection('users').doc('user-1').get();
-      expect(doc.data()?['isVerified'], isTrue);
-      expect(doc.data()?['verifiedBy'], 'admin');
+      final verificationDoc = await firestore
+          .collection('verification')
+          .doc('user-1')
+          .get();
+      expect(verificationDoc.data()?['isVerified'], isTrue);
+      expect(verificationDoc.data()?['verifiedBy'], 'admin');
     });
 
     test('unverifyUser sets isVerified to false', () async {
-      await firestore.collection('users').doc('user-1').set({
-        'username': 'jazzfan',
+      await firestore.collection('verification').doc('user-1').set({
+        'userId': 'user-1',
         'isVerified': true,
         'verifiedBy': 'admin',
       });
 
       await controller.unverifyUser(userId: 'user-1');
 
-      final doc = await firestore.collection('users').doc('user-1').get();
-      expect(doc.data()?['isVerified'], isFalse);
+      final verificationDoc = await firestore
+          .collection('verification')
+          .doc('user-1')
+          .get();
+      expect(verificationDoc.data()?['isVerified'], isFalse);
     });
   });
 

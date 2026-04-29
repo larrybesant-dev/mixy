@@ -3,31 +3,55 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/routing/redirect_logic.dart';
 
+enum _TestAuthBootstrapPhase {
+  authenticatedStable,
+  unauthenticatedStable,
+}
+
+extension on _TestAuthBootstrapPhase {
+  bool get isRoutingStable =>
+      this == _TestAuthBootstrapPhase.authenticatedStable ||
+      this == _TestAuthBootstrapPhase.unauthenticatedStable;
+}
+
 class _RedirectHarness extends ChangeNotifier {
   _RedirectHarness({
     required this.uid,
-    required this.authLoading,
+    required this.phase,
     required this.legalStateResolved,
     required this.hasAcceptedLegal,
   });
 
   String? uid;
-  bool authLoading;
+  _TestAuthBootstrapPhase phase;
   bool legalStateResolved;
   bool hasAcceptedLegal;
 
+  bool get isRoutingStable => phase.isRoutingStable;
+
   void setState({
     String? uid,
-    bool? authLoading,
+    _TestAuthBootstrapPhase? phase,
     bool? legalStateResolved,
     bool? hasAcceptedLegal,
   }) {
     this.uid = uid ?? this.uid;
-    this.authLoading = authLoading ?? this.authLoading;
+    this.phase = phase ?? this.phase;
     this.legalStateResolved = legalStateResolved ?? this.legalStateResolved;
     this.hasAcceptedLegal = hasAcceptedLegal ?? this.hasAcceptedLegal;
     notifyListeners();
   }
+}
+
+Future<void> _waitForAuthStable(
+  WidgetTester tester,
+  _RedirectHarness state,
+) async {
+  while (!state.isRoutingStable) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -37,7 +61,7 @@ void main() {
     ) async {
       final state = _RedirectHarness(
         uid: 'user-1',
-        authLoading: false,
+        phase: _TestAuthBootstrapPhase.authenticatedStable,
         legalStateResolved: false,
         hasAcceptedLegal: false,
       );
@@ -49,7 +73,7 @@ void main() {
           return evaluateAppRedirect(
             matchedLocation: routerState.matchedLocation,
             uid: state.uid,
-            authLoading: state.authLoading,
+            authLoading: !state.isRoutingStable,
             legalStateResolved: state.legalStateResolved,
             hasAcceptedLegal: state.hasAcceptedLegal,
           );
@@ -71,12 +95,13 @@ void main() {
       );
 
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await tester.pumpAndSettle();
+        await _waitForAuthStable(tester, state);
 
       expect(find.text('Home Screen'), findsOneWidget);
       expect(find.text('Onboarding Screen'), findsNothing);
 
       state.setState(legalStateResolved: true, hasAcceptedLegal: true);
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.pumpAndSettle();
 
       expect(find.text('Home Screen'), findsOneWidget);
@@ -91,7 +116,7 @@ void main() {
     ) async {
       final state = _RedirectHarness(
         uid: 'user-1',
-        authLoading: false,
+        phase: _TestAuthBootstrapPhase.authenticatedStable,
         legalStateResolved: false,
         hasAcceptedLegal: false,
       );
@@ -103,7 +128,7 @@ void main() {
           return evaluateAppRedirect(
             matchedLocation: routerState.matchedLocation,
             uid: state.uid,
-            authLoading: state.authLoading,
+            authLoading: !state.isRoutingStable,
             legalStateResolved: state.legalStateResolved,
             hasAcceptedLegal: state.hasAcceptedLegal,
           );
@@ -125,12 +150,13 @@ void main() {
       );
 
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await tester.pumpAndSettle();
+      await _waitForAuthStable(tester, state);
 
       expect(find.text('Speed Dating Screen'), findsOneWidget);
       expect(find.text('Onboarding Screen'), findsNothing);
 
       state.setState(legalStateResolved: true, hasAcceptedLegal: false);
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.pumpAndSettle();
 
       expect(find.text('Onboarding Screen'), findsOneWidget);
@@ -144,7 +170,7 @@ void main() {
     ) async {
       final state = _RedirectHarness(
         uid: 'user-1',
-        authLoading: false,
+        phase: _TestAuthBootstrapPhase.authenticatedStable,
         legalStateResolved: true,
         hasAcceptedLegal: true,
       );
@@ -156,7 +182,7 @@ void main() {
           return evaluateAppRedirect(
             matchedLocation: routerState.matchedLocation,
             uid: state.uid,
-            authLoading: state.authLoading,
+            authLoading: !state.isRoutingStable,
             legalStateResolved: state.legalStateResolved,
             hasAcceptedLegal: state.hasAcceptedLegal,
           );
@@ -178,13 +204,14 @@ void main() {
       );
 
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await tester.pumpAndSettle();
+      await _waitForAuthStable(tester, state);
 
       expect(find.text('Home Screen'), findsOneWidget);
       expect(find.text('Auth Screen'), findsNothing);
       expect(find.text('Onboarding Screen'), findsNothing);
 
       state.setState(uid: '', legalStateResolved: true, hasAcceptedLegal: true);
+      await tester.pump(const Duration(milliseconds: 50));
       await tester.pumpAndSettle();
 
       expect(find.text('Auth Screen'), findsOneWidget);

@@ -26,7 +26,10 @@ class MessengerRouteState {
   static bool matches(GoRouterState state) {
     final path = _routePath(state);
     return path == '/friends' ||
-      (path.startsWith('/chat/') && path.length > '/chat/'.length);
+        path == '/messages' ||
+        path == '/messages/new' ||
+        (path.startsWith('/messages/') && path.length > '/messages/'.length) ||
+        (path.startsWith('/chat/') && path.length > '/chat/'.length);
   }
 
   static MessengerRouteState fromGoRouterState(GoRouterState state) {
@@ -34,6 +37,23 @@ class MessengerRouteState {
 
     if (path == '/friends') {
       return const MessengerRouteState._(kind: MessengerRouteKind.friends);
+    }
+    if (path == '/messages') {
+      return const MessengerRouteState._(kind: MessengerRouteKind.inbox);
+    }
+    if (path == '/messages/new') {
+      return const MessengerRouteState._(kind: MessengerRouteKind.compose);
+    }
+    if (path.startsWith('/messages/') && path.length > '/messages/'.length) {
+      final fromParams = state.pathParameters['conversationId'] ??
+          state.pathParameters['threadId'];
+      final fromPath = path.substring('/messages/'.length).split('/').first;
+      final conversationId =
+          (fromParams != null && fromParams.isNotEmpty) ? fromParams : fromPath;
+      return MessengerRouteState._(
+        kind: MessengerRouteKind.conversation,
+        conversationId: conversationId.isNotEmpty ? conversationId : null,
+      );
     }
     if (path.startsWith('/chat/') && path.length > '/chat/'.length) {
       // pathParameters may be empty at the ShellRoute level; extract the

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/dev/test_session_controller.dart';
 import 'package:mixvy/dev/load_simulator.dart';
-import 'package:mixvy/observability/event_timeline.dart';
 import 'package:mixvy/observability/runtime_telemetry.dart';
 
 void main() {
@@ -9,7 +8,7 @@ void main() {
     TestSessionController.startSession("ROOM_LOAD_VALIDATION");
 
     final ctx = TestSessionController.context!;
-    final sim = LoadSimulator(EventTimeline());
+    final sim = LoadSimulator(TestSessionController.timeline);
     sim.runTypingStorm("room_1", ctx);
     sim.runmessageBurst("room_1", ctx);
     sim.runPresenceFlap("user_1", ctx);
@@ -18,8 +17,8 @@ void main() {
 
     TestSessionController.endSession();
 
-    // Assertions can be added here to validate results
-    expect(RuntimeTelemetry.snapshotListeners().isNotEmpty, true);
-    expect(RuntimeTelemetry.snapshotRebuilds().isNotEmpty, true);
+    expect(RuntimeTelemetry.snapshotListeners(), isEmpty);
+    expect(RuntimeTelemetry.snapshotRebuilds(), isNotEmpty);
+    expect(TestSessionController.timeline.events, isNotEmpty);
   });
 }

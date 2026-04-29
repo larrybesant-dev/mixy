@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'runtime_telemetry.dart';
+import 'system_event_bus.dart';
 
 class EventTimeline {
   final List<Map<String, dynamic>> _events = [];
@@ -11,6 +12,16 @@ class EventTimeline {
       "phase": ctx.phase,
       "time": DateTime.now().millisecondsSinceEpoch,
     });
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: type,
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'source': source,
+          'phase': ctx.phase,
+        },
+      ),
+    );
     debugPrint("[${ctx.phase}] Event recorded: type=$type, source=$source");
   }
 

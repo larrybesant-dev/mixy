@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../observability/system_event_bus.dart';
+
 class RedirectTrace {
   RedirectTrace._();
 
@@ -18,6 +20,20 @@ class RedirectTrace {
   }) {
     _redirectIndex += 1;
     _reasonCounts[reason] = (_reasonCounts[reason] ?? 0) + 1;
+
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: 'ROUTE_REDIRECT',
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'from': from,
+          'to': to,
+          'reason': reason,
+          'index': _redirectIndex,
+          'sessionId': _sessionId,
+        },
+      ),
+    );
 
     final signature = '$from|$to|$reason';
     if (_lastSignature == signature) {

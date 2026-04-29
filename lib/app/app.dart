@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../core/services/app_settings_service.dart';
 import 'boot_state.dart';
@@ -29,6 +30,7 @@ import '../services/presence_controller.dart';
 import '../core/events/event_providers.dart';
 import '../observability/startup_timeline.dart';
 import '../firebase_options.dart';
+import '../dev/system_stress_runner.dart';
 
 final appBootstrapProvider = FutureProvider<void>((ref) async {
   final startup = StartupProfiler.instance;
@@ -107,6 +109,7 @@ class MixVyApp extends ConsumerStatefulWidget {
 class _MixVyAppState extends ConsumerState<MixVyApp> {
   bool _runtimeStarted = false;
   bool _runtimeQueued = false;
+  bool _stressRunnerQueued = false;
   int _bootHintIndex = 0;
   Timer? _bootHintTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -196,6 +199,30 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
       );
       ref.read(bootStateProvider.notifier).setFailed();
     }
+  }
+
+  void _queueStressRunnerIfEnabled({
+    required GoRouter router,
+    required AuthState authState,
+  }) {
+    if (!kEnableSystemStressRunner || _stressRunnerQueued) {
+      return;
+    }
+    if (!authState.isRoutingStable) {
+      return;
+    }
+
+    _stressRunnerQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        MixVySystemStressRunner.run(
+          ref: ref,
+          router: router,
+          authState: authState,
+        ),
+      );
+    });
   }
 
   Widget _buildBootShell({
@@ -387,9 +414,15 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
       return _buildBootShell();
     }
 
-    // Do not render routes until auth stream has emitted once.
-    if (!authState.hasResolvedSession) {
-      return _buildBootShell(message: 'Resolving your secure session...');
+    // Only route once auth bootstrap has reached a stable phase.
+    if (!authState.isRoutingStable) {
+      final statusMessage = switch (authState.phase) {
+        AuthBootstrapPhase.booting => 'Launching auth runtime...',
+        AuthBootstrapPhase.initializingAuth =>
+          'Resolving your secure session...',
+        _ => 'Preparing your connection and live state...',
+      };
+      return _buildBootShell(message: statusMessage);
     }
 
     return boot.when(
@@ -406,6 +439,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
         }
 
         final router = ref.watch(routerProvider);
+        _queueStressRunnerIfEnabled(router: router, authState: authState);
 
         final settings =
             ref.watch(appSettingsControllerProvider).valueOrNull ??

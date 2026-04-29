@@ -17,6 +17,7 @@ import '../../../widgets/emoji_pack/emoji_pack_picker.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../../../core/telemetry/app_telemetry.dart';
 import '../../../models/user_model.dart';
+import '../../../observability/system_event_bus.dart';
 import '../providers/messaging_provider.dart';
 
 class ChatPaneView extends ConsumerStatefulWidget {
@@ -43,15 +44,61 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   late TextEditingController _messageController;
   late ScrollController _scrollController;
   Timer? _typingTimer;
+  Timer? _hydrationTimer;
   bool _isTyping = false;
   bool _didAutoScrollInitialLoad = false;
+  bool _allowEmptyState = false;
+  bool _hydrationComplete = false;
   late final double? _savedScrollOffset;
   final List<_Pendingmessage> _pendingmessage = <_Pendingmessage>[];
   late final DateTime _entryTime;
 
+  void _startHydrationWindow() {
+    _hydrationTimer?.cancel();
+    _hydrationTimer = null;
+    _allowEmptyState = false;
+    _hydrationComplete = false;
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: 'HYDRATION_START',
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'conversationId': widget.conversationId,
+        },
+      ),
+    );
+    _hydrationTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      _hydrationTimer = null;
+      setState(() {
+        _allowEmptyState = true;
+      });
+    });
+  }
+
+  void _markHydrationComplete(String outcome) {
+    if (_hydrationComplete) {
+      return;
+    }
+    _hydrationTimer?.cancel();
+    _hydrationTimer = null;
+    _hydrationComplete = true;
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: 'HYDRATION_COMPLETE',
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'conversationId': widget.conversationId,
+          'outcome': outcome,
+        },
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    _startHydrationWindow();
     _entryTime = DateTime.now();
     final savedDraft =
         ref.read(draftCacheProvider.notifier).getDraft(widget.conversationId);
@@ -62,12 +109,31 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     _savedScrollOffset =
       ref.read(conversationScrollMemoryProvider)[widget.conversationId];
 
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: 'MESSAGE_STREAM_ATTACHED',
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'conversationId': widget.conversationId,
+        },
+      ),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(messagingControllerProvider).markAsRead(
             conversationId: widget.conversationId,
             userId: widget.userId,
           );
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatPaneView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.conversationId != widget.conversationId) {
+      _didAutoScrollInitialLoad = false;
+      _startHydrationWindow();
+    }
   }
 
   void _onTextChanged() {
@@ -172,6 +238,16 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         .setDraft(widget.conversationId, remainingDraft);
     _clearTyping();
     _typingTimer?.cancel();
+    _hydrationTimer?.cancel();
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: 'MESSAGE_STREAM_DISPOSE',
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'conversationId': widget.conversationId,
+        },
+      ),
+    );
     _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
@@ -239,25 +315,60 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     final messageAsync = ref.watch(messagestreamProvider(widget.conversationId));
     final paginatedState = ref.watch(paginatedmessageProvider(widget.conversationId));
     final conversationAsync = ref.watch(conversationDocProvider(widget.conversationId));
+    if (conversationAsync.hasError) {
+      _markHydrationComplete('conversation_error');
+      return AppErrorView(
+        error: friendlyFirestoremessage(
+          conversationAsync.error!,
+          fallbackContext: 'conversation',
+        ),
+        fallbackContext: 'Unable to load conversation.',
+      );
+    }
+
+    if (conversationAsync.isLoading && !_allowEmptyState) {
+      return const AppLoadingView(label: 'Connecting conversation');
+    }
+
     final conversation = conversationAsync.valueOrNull;
-    final otherUserId = conversation == null
-        ? ''
-        : conversation.participantIds.firstWhere(
-            (participantId) => participantId != widget.userId,
-            orElse: () => '',
-          );
+    if (conversation == null) {
+      if (!_allowEmptyState) {
+        return const AppLoadingView(label: 'Hydrating conversation');
+      }
+      _markHydrationComplete('conversation_unavailable');
+      SystemEventBus.instance.emit(
+        SystemEvent(
+          type: 'HYDRATION_EMPTY_STATE',
+          timestamp: DateTime.now(),
+          meta: <String, dynamic>{
+            'conversationId': widget.conversationId,
+            'reason': 'conversation_unavailable',
+          },
+        ),
+      );
+      return const AppEmptyView(
+        title: 'Conversation unavailable',
+        message: 'This thread may have been removed or access is no longer available.',
+        icon: Icons.forum_outlined,
+      );
+    }
+
+    final otherUserId = conversation.participantIds.firstWhere(
+      (participantId) => participantId != widget.userId,
+      orElse: () => '',
+    );
     final otherUserAsync = otherUserId.isEmpty
         ? const AsyncValue<UserModel?>.data(null)
         : ref.watch(feed_user.userProvider(otherUserId));
-    final displayName = conversation?.type == 'group'
-        ? (conversation?.groupName ?? 'Group Chat')
-        : (conversation?.getDisplayName(widget.userId).trim().isNotEmpty == true
-            ? conversation!.getDisplayName(widget.userId)
+    final displayName = conversation.type == 'group'
+      ? (conversation.groupName ?? 'Group Chat')
+      : (conversation.getDisplayName(widget.userId).trim().isNotEmpty
+        ? conversation.getDisplayName(widget.userId)
             : (otherUserAsync.valueOrNull?.username ?? 'Conversation'));
     final peerUser = otherUserAsync.valueOrNull;
     final displayAvatarUrl = sanitizeNetworkImageUrl(
-      conversation?.type == 'group'
-          ? conversation?.groupAvatarUrl
+      conversation.type == 'group'
+        ? conversation.groupAvatarUrl
         : peerUser?.avatarUrl,
     );
 
@@ -358,12 +469,28 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
               }
 
               if (allmessage.isEmpty) {
+                if (!_allowEmptyState) {
+                  return const AppLoadingView(label: 'Hydrating conversation');
+                }
+                _markHydrationComplete('no_messages');
+                SystemEventBus.instance.emit(
+                  SystemEvent(
+                    type: 'HYDRATION_EMPTY_STATE',
+                    timestamp: DateTime.now(),
+                    meta: <String, dynamic>{
+                      'conversationId': widget.conversationId,
+                      'reason': 'no_messages',
+                    },
+                  ),
+                );
                 return const AppEmptyView(
-                  title: 'No message yet',
+                  title: 'No messages yet',
                   message: 'Start the conversation.',
                   icon: Icons.chat_bubble_outline_rounded,
                 );
               }
+
+              _markHydrationComplete('data');
 
               return ListView.builder(
                 controller: _scrollController,
@@ -393,10 +520,10 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   final message =
                       allmessage[index - (paginatedState.hasMore ? 1 : 0)];
                   final isOwn = message.senderId == widget.userId;
-                    final isPending = message.clientmessageId != null &&
+                    final isPending =
                       pendingClientIds.contains(message.clientmessageId);
                   bool isReadByOther = false;
-                  if (isOwn && conversation != null) {
+                    if (isOwn) {
                     final otherIds =
                         conversation.participantIds.where((id) => id != widget.userId);
                     isReadByOther = otherIds.any((id) {

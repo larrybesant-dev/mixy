@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 
 import 'startup_timeline_runtime_sink.dart';
+import 'system_event_bus.dart';
 
 const bool kStartupDebug = true;
 
@@ -87,6 +88,18 @@ class StartupProfiler {
     if (kIsWeb) {
       emitStartupMessageToRuntime(message);
     }
+
+    SystemEventBus.instance.emit(
+      SystemEvent(
+        type: 'STARTUP_CHECKPOINT',
+        timestamp: DateTime.now(),
+        meta: <String, dynamic>{
+          'checkpoint': checkpoint.name,
+          'detail': detail,
+          'hasError': error != null,
+        },
+      ),
+    );
 
     developer.log(
       message,

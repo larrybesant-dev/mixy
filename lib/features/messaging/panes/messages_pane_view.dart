@@ -60,7 +60,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
       .toList();
 
   List<Conversation> _filterGroups(List<Conversation> convs) =>
-      convs.where((c) => c.type == 'group').toList();
+      convs.where((c) => c.status == 'active' && c.type == 'group').toList();
 
   List<Conversation> _applySearch(List<Conversation> convs) {
     if (_query.isEmpty) return convs;
@@ -130,7 +130,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                   ),
                 ),
                 FilledButton.icon(
-                  onPressed: () => GoRouter.of(context).push('/fallback'),
+                  onPressed: () => GoRouter.of(context).push('/new-message'),
                   icon: const Icon(Icons.add_comment_outlined),
                   label: const Text('New message'),
                 ),
@@ -498,7 +498,7 @@ class _ConversationsList extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: () => GoRouter.of(context).push('/fallback'),
+                onPressed: () => GoRouter.of(context).push('/new-message'),
                 child: Text(
                   'Start a conversation',
                   style: GoogleFonts.raleway(

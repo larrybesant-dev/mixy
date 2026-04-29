@@ -12,12 +12,21 @@ import '../../../presentation/screens/google_sign_in_helper.dart';
 import '../../../presentation/screens/apple_sign_in_helper.dart';
 import '../../../services/push_messaging_service.dart';
 import '../../../services/schema_mutation_service.dart';
+import '../../../observability/system_event_bus.dart';
+
+enum AuthBootstrapPhase {
+  booting,
+  initializingAuth,
+  authenticatedStable,
+  unauthenticatedStable,
+}
 
 class AuthState {
   final bool isLoading;
   final bool hasResolvedSession;
   final String? error;
   final String? uid;
+  final AuthBootstrapPhase phase;
 
   static const Object _unset = Object();
 
@@ -26,19 +35,32 @@ class AuthState {
     this.hasResolvedSession = false,
     this.error,
     this.uid,
+    this.phase = AuthBootstrapPhase.booting,
   });
+
+  bool get isRoutingStable =>
+      phase == AuthBootstrapPhase.authenticatedStable ||
+      phase == AuthBootstrapPhase.unauthenticatedStable;
+
+  bool get isAuthenticatedStable =>
+      phase == AuthBootstrapPhase.authenticatedStable;
+
+  bool get isUnauthenticatedStable =>
+      phase == AuthBootstrapPhase.unauthenticatedStable;
 
   AuthState copyWith({
     bool? isLoading,
     bool? hasResolvedSession,
     Object? error = _unset,
     Object? uid = _unset,
+    AuthBootstrapPhase? phase,
   }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
       hasResolvedSession: hasResolvedSession ?? this.hasResolvedSession,
       error: identical(error, _unset) ? this.error : error as String?,
       uid: identical(uid, _unset) ? this.uid : uid as String?,
+      phase: phase ?? this.phase,
     );
   }
 }
@@ -54,8 +76,46 @@ class AuthController extends Notifier<AuthState> {
 
   StreamSubscription<User?>? _authStateSubscription;
 
+  void _setAuthState(AuthState nextState, {required String source}) {
+    final previous = state;
+    state = nextState;
+
+    if (previous.phase != nextState.phase) {
+      SystemEventBus.instance.emit(
+        SystemEvent(
+          type: 'AUTH_PHASE_CHANGE',
+          timestamp: DateTime.now(),
+          meta: <String, dynamic>{
+            'from': previous.phase.name,
+            'to': nextState.phase.name,
+            'source': source,
+            'uid': nextState.uid,
+          },
+        ),
+      );
+
+      if (nextState.isRoutingStable) {
+        SystemEventBus.instance.emit(
+          SystemEvent(
+            type: 'AUTH_STABLE',
+            timestamp: DateTime.now(),
+            meta: <String, dynamic>{
+              'phase': nextState.phase.name,
+              'uid': nextState.uid,
+              'source': source,
+            },
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> signInWithGoogle() async {
-    state = state.copyWith(isLoading: true, error: null);
+    _setAuthState(state.copyWith(
+      isLoading: true,
+      error: null,
+      phase: AuthBootstrapPhase.initializingAuth,
+    ), source: 'google_sign_in_start');
     AppTelemetry.updateAuthState(
       userId: state.uid,
       isLoading: true,
@@ -70,11 +130,14 @@ class AuthController extends Notifier<AuthState> {
     );
     try {
       await _googleSignInHelper.signInWithGoogle();
-      state = state.copyWith(
+      _setAuthState(state.copyWith(
         isLoading: false,
         hasResolvedSession: true,
         uid: _auth.currentUser?.uid,
-      );
+        phase: _auth.currentUser?.uid == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'google_sign_in_success');
       AppTelemetry.updateAuthState(
         userId: _auth.currentUser?.uid,
         isLoading: false,
@@ -83,18 +146,27 @@ class AuthController extends Notifier<AuthState> {
     } on FirebaseAuthException catch (e, st) {
       _logAuthException(e, st, context: 'google-sign-in');
       final message = _getReadableError(e.code);
-      state = state.copyWith(
+      _setAuthState(state.copyWith(
         isLoading: false,
         hasResolvedSession: true,
         error: message,
-      );
+        phase: state.uid == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'google_sign_in_failure');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
         error: message,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        phase: state.uid == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'google_sign_in_error');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
@@ -123,6 +195,11 @@ class AuthController extends Notifier<AuthState> {
 
   @override
   AuthState build() {
+    SystemEventBus.instance.emitNow(
+      'AUTH_BOOT_START',
+      meta: <String, dynamic>{'source': 'auth_controller_build'},
+    );
+
     _authStateSubscription?.cancel();
     _authStateSubscription = _auth.authStateChanges().listen((user) {
       if (_isAnonymousUser(user)) {
@@ -130,12 +207,15 @@ class AuthController extends Notifier<AuthState> {
         return;
       }
 
-      state = state.copyWith(
+      _setAuthState(state.copyWith(
         uid: user?.uid,
         isLoading: false,
         hasResolvedSession: true,
         error: null,
-      );
+        phase: user == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'firebase_auth_state_change');
       AppTelemetry.updateAuthState(
         userId: user?.uid,
         isLoading: false,
@@ -165,6 +245,7 @@ class AuthController extends Notifier<AuthState> {
         isLoading: false,
         hasResolvedSession: true,
         error: 'Guest access is disabled. Please sign in with an account.',
+        phase: AuthBootstrapPhase.unauthenticatedStable,
       );
     }
 
@@ -178,6 +259,7 @@ class AuthController extends Notifier<AuthState> {
       // Hold routing decisions until authStateChanges emits at least once.
       hasResolvedSession: false,
       uid: currentUser?.uid,
+      phase: AuthBootstrapPhase.initializingAuth,
     );
   }
 
@@ -191,12 +273,13 @@ class AuthController extends Notifier<AuthState> {
       // Best-effort sign-out.
     }
 
-    state = state.copyWith(
+    _setAuthState(state.copyWith(
       isLoading: false,
       hasResolvedSession: true,
       uid: null,
       error: message,
-    );
+      phase: AuthBootstrapPhase.unauthenticatedStable,
+    ), source: 'reject_anonymous_session');
     AppTelemetry.updateAuthState(
       userId: null,
       isLoading: false,
@@ -242,11 +325,12 @@ class AuthController extends Notifier<AuthState> {
       _logAuthException(e, st, context: 'cached-session-validation');
       if (_isInvalidSessionError(e.code)) {
         await _auth.signOut();
-        state = state.copyWith(
+        _setAuthState(state.copyWith(
           uid: null,
           hasResolvedSession: true,
           error: null,
-        );
+          phase: AuthBootstrapPhase.unauthenticatedStable,
+        ), source: 'repair_invalid_cached_session');
       }
     } catch (e, st) {
       developer.log(
@@ -256,7 +340,12 @@ class AuthController extends Notifier<AuthState> {
         stackTrace: st,
       );
       await _auth.signOut();
-      state = state.copyWith(uid: null, hasResolvedSession: true, error: null);
+      _setAuthState(state.copyWith(
+        uid: null,
+        hasResolvedSession: true,
+        error: null,
+        phase: AuthBootstrapPhase.unauthenticatedStable,
+      ), source: 'repair_cached_session_error');
     }
   }
 
@@ -281,12 +370,13 @@ class AuthController extends Notifier<AuthState> {
       final uid = _auth.currentUser?.uid;
       if (uid != null) {
         await _ensureUserDocument(_auth.currentUser!);
-        state = state.copyWith(
+        _setAuthState(state.copyWith(
           uid: uid,
           isLoading: false,
           hasResolvedSession: true,
           error: null,
-        );
+          phase: AuthBootstrapPhase.authenticatedStable,
+        ), source: 'redirect_sign_in_success');
         AppTelemetry.updateAuthState(
           userId: uid,
           isLoading: false,
@@ -295,11 +385,14 @@ class AuthController extends Notifier<AuthState> {
       }
     } on FirebaseAuthException catch (e, st) {
       _logAuthException(e, st, context: 'redirect-result');
-      state = state.copyWith(
+      _setAuthState(state.copyWith(
         isLoading: false,
         hasResolvedSession: true,
         error: _getReadableError(e.code),
-      );
+        phase: state.uid == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'redirect_sign_in_failure');
     } catch (_) {
       // Ignore non-auth redirect completion errors to avoid noisy startup failures.
     }
@@ -308,11 +401,14 @@ class AuthController extends Notifier<AuthState> {
   Future<void> signup(String email, String password, String username) async {
     final normalizedUsername = username.trim();
     if (normalizedUsername.isEmpty) {
-      state = state.copyWith(
+      _setAuthState(state.copyWith(
         isLoading: false,
         hasResolvedSession: true,
         error: 'A username is required.',
-      );
+        phase: state.uid == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'signup_validation_failed');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
@@ -321,7 +417,11 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, error: null);
+    _setAuthState(state.copyWith(
+      isLoading: true,
+      error: null,
+      phase: AuthBootstrapPhase.initializingAuth,
+    ), source: 'signup_start');
     AppTelemetry.updateAuthState(
       userId: state.uid,
       isLoading: true,
@@ -344,7 +444,13 @@ class AuthController extends Notifier<AuthState> {
           preferredUsername: normalizedUsername,
         );
       }
-      state = state.copyWith(isLoading: false, uid: cred.user?.uid);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        uid: cred.user?.uid,
+        phase: cred.user?.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'signup_success');
       AppTelemetry.updateAuthState(
         userId: cred.user?.uid,
         isLoading: false,
@@ -353,14 +459,26 @@ class AuthController extends Notifier<AuthState> {
     } on FirebaseAuthException catch (e, st) {
       _logAuthException(e, st, context: 'signup');
       final errormessage = _getReadableError(e.code);
-      state = state.copyWith(isLoading: false, error: errormessage);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: errormessage,
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'signup_failure');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
         error: errormessage,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: "Unexpected error: $e");
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: "Unexpected error: $e",
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'signup_error');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
@@ -370,7 +488,11 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _setAuthState(state.copyWith(
+      isLoading: true,
+      error: null,
+      phase: AuthBootstrapPhase.initializingAuth,
+    ), source: 'login_start');
     AppTelemetry.updateAuthState(
       userId: state.uid,
       isLoading: true,
@@ -392,7 +514,13 @@ class AuthController extends Notifier<AuthState> {
       if (cred.user != null) {
         await _ensureUserDocument(cred.user!);
       }
-      state = state.copyWith(isLoading: false, uid: cred.user?.uid);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        uid: cred.user?.uid,
+        phase: cred.user?.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'login_success');
       AppTelemetry.updateAuthState(
         userId: cred.user?.uid,
         isLoading: false,
@@ -401,14 +529,26 @@ class AuthController extends Notifier<AuthState> {
     } on FirebaseAuthException catch (e, st) {
       _logAuthException(e, st, context: 'login');
       final message = _getReadableError(e.code);
-      state = state.copyWith(isLoading: false, error: message);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: message,
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'login_failure');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
         error: message,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: "Unexpected error: $e");
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: "Unexpected error: $e",
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'login_error');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
@@ -450,7 +590,11 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> signInWithApple() async {
-    state = state.copyWith(isLoading: true, error: null);
+    _setAuthState(state.copyWith(
+      isLoading: true,
+      error: null,
+      phase: AuthBootstrapPhase.initializingAuth,
+    ), source: 'apple_sign_in_start');
     AppTelemetry.updateAuthState(
       userId: state.uid,
       isLoading: true,
@@ -462,11 +606,14 @@ class AuthController extends Notifier<AuthState> {
       if (user != null) {
         await _ensureUserDocument(user);
       }
-      state = state.copyWith(
+      _setAuthState(state.copyWith(
         isLoading: false,
         hasResolvedSession: true,
         uid: user?.uid,
-      );
+        phase: user?.uid == null
+            ? AuthBootstrapPhase.unauthenticatedStable
+            : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'apple_sign_in_success');
       AppTelemetry.updateAuthState(
         userId: user?.uid,
         isLoading: false,
@@ -475,14 +622,26 @@ class AuthController extends Notifier<AuthState> {
     } on FirebaseAuthException catch (e, st) {
       _logAuthException(e, st, context: 'apple-sign-in');
       final message = _getReadableError(e.code);
-      state = state.copyWith(isLoading: false, error: message);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: message,
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'apple_sign_in_failure');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
         error: message,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'apple_sign_in_error');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
@@ -521,7 +680,13 @@ class AuthController extends Notifier<AuthState> {
       await _auth.signOut();
     }
 
-    state = state.copyWith(isLoading: false, uid: null, error: null);
+    _setAuthState(state.copyWith(
+      isLoading: false,
+      uid: null,
+      error: null,
+      hasResolvedSession: true,
+      phase: AuthBootstrapPhase.unauthenticatedStable,
+    ), source: 'cleanup_session');
     AppTelemetry.updateAuthState(userId: null, isLoading: false, error: null);
   }
 
@@ -565,7 +730,11 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> resetPassword(String email) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _setAuthState(state.copyWith(
+      isLoading: true,
+      error: null,
+      phase: AuthBootstrapPhase.initializingAuth,
+    ), source: 'reset_password_start');
     AppTelemetry.updateAuthState(
       userId: state.uid,
       isLoading: true,
@@ -573,7 +742,12 @@ class AuthController extends Notifier<AuthState> {
     );
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      state = state.copyWith(isLoading: false);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'reset_password_success');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
@@ -582,14 +756,26 @@ class AuthController extends Notifier<AuthState> {
     } on FirebaseAuthException catch (e, st) {
       _logAuthException(e, st, context: 'reset-password');
       final errormessage = _getReadableError(e.code);
-      state = state.copyWith(isLoading: false, error: errormessage);
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: errormessage,
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'reset_password_failure');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,
         error: errormessage,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: "Unexpected error: $e");
+      _setAuthState(state.copyWith(
+        isLoading: false,
+        error: "Unexpected error: $e",
+        phase: state.uid == null
+        ? AuthBootstrapPhase.unauthenticatedStable
+        : AuthBootstrapPhase.authenticatedStable,
+      ), source: 'reset_password_error');
       AppTelemetry.updateAuthState(
         userId: state.uid,
         isLoading: false,

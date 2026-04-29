@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/messaging/screens/messages_screen.dart';
@@ -29,6 +30,31 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   late int _index;
+
+  void _onDestinationSelected(int value) {
+    setState(() => _index = value);
+
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      return;
+    }
+
+    switch (value) {
+      case 0:
+        router.go('/home');
+      case 1:
+        router.go('/messages');
+      case 2:
+        router.go('/rooms');
+      case 3:
+        router.go('/speed-dating');
+      case 4:
+        final userId = ref.read(userProvider)?.id ?? '';
+        router.go(userId.isEmpty ? '/home?tab=4' : '/profile/$userId');
+      default:
+        router.go('/home');
+    }
+  }
 
   Widget _buildActivePage() {
     final user = ref.watch(userProvider);
@@ -96,7 +122,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             ),
           ],
           onDestinationSelected: (value) {
-            setState(() => _index = value);
+            _onDestinationSelected(value);
           },
         ),
       );
@@ -134,7 +160,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ],
         onDestinationSelected: (value) {
-          setState(() => _index = value);
+          _onDestinationSelected(value);
         },
       ),
     );

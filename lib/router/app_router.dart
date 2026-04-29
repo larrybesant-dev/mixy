@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +45,8 @@ import 'package:mixvy/presentation/screens/legal_privacy_screen.dart';
 import 'package:mixvy/presentation/screens/legal_terms_screen.dart';
 import 'package:mixvy/features/onboarding/onboarding_screen.dart';
 import 'package:mixvy/models/room_model.dart';
+import 'package:mixvy/models/user_model.dart';
+import 'package:mixvy/core/services/app_settings_service.dart';
 import 'package:mixvy/presentation/providers/app_settings_provider.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
@@ -55,33 +56,94 @@ import 'package:mixvy/shared/widgets/app_shell.dart';
 final GlobalKey<NavigatorState> rootNavigatorKey =
 GlobalKey<NavigatorState>(debugLabel: 'mixvy-root-navigator');
 
+class _RouterRefreshNotifier extends ChangeNotifier {
+  AuthState _authState = const AuthState();
+  AppSettings? _appSettings;
+  UserModel? _currentUser;
+  bool _isAdmin = false;
+
+  AuthState get authState => _authState;
+  AppSettings? get appSettings => _appSettings;
+  UserModel? get currentUser => _currentUser;
+  bool get isAdmin => _isAdmin;
+
+  void updateAuthState(AuthState value) {
+    _authState = value;
+    notifyListeners();
+  }
+
+  void updateAppSettings(AppSettings? value) {
+    _appSettings = value;
+    notifyListeners();
+  }
+
+  void updateCurrentUser(UserModel? value) {
+    _currentUser = value;
+    notifyListeners();
+  }
+
+  void updateIsAdmin(bool value) {
+    _isAdmin = value;
+    notifyListeners();
+  }
+}
+
+final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
+  final notifier = _RouterRefreshNotifier();
+
+  ref.listen<AuthState>(
+    authControllerProvider,
+    (_, next) => notifier.updateAuthState(next),
+    fireImmediately: true,
+  );
+
+  ref.listen<AsyncValue<AppSettings>>(
+    appSettingsControllerProvider,
+    (_, next) => notifier.updateAppSettings(next.valueOrNull),
+    fireImmediately: true,
+  );
+
+  ref.listen<UserModel?>(
+    userProvider,
+    (_, next) => notifier.updateCurrentUser(next),
+    fireImmediately: true,
+  );
+
+  ref.listen<AsyncValue<bool>>(
+    isAdminProvider,
+    (_, next) => notifier.updateIsAdmin(next.valueOrNull ?? false),
+    fireImmediately: true,
+  );
+
+  ref.onDispose(notifier.dispose);
+  return notifier;
+});
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
-  final currentUser = ref.watch(userProvider);
-  final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
-  final appSettingsAsync = ref.watch(appSettingsControllerProvider);
-  final appSettings = appSettingsAsync.valueOrNull;
+  final refreshNotifier = ref.read(_routerRefreshNotifierProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-
-    /// IMPORTANT: keep safe initial route.
-    /// On web, re-use the current browser URL so re-created router instances
-    /// don't discard the real path by starting at '/' every time.
-    initialLocation: kIsWeb
-        ? (Uri.base.path.isEmpty ? '/' : Uri.base.path)
-        : '/',
+    refreshListenable: refreshNotifier,
+    initialLocation: Uri.base.path.isEmpty ? '/' : Uri.base.path,
 
     redirect: (context, state) {
+      final authState = refreshNotifier.authState;
+      final appSettings = refreshNotifier.appSettings;
       final evaluation = evaluateAppRedirectWithReason(
         matchedLocation: state.matchedLocation,
         uid: authState.uid,
-        authLoading: !authState.hasResolvedSession,
+        authLoading: !authState.isRoutingStable,
         legalStateResolved: appSettings != null,
         hasAcceptedLegal: appSettings?.hasAcceptedCurrentLegal ?? false,
       );
 
       assert(() {
+        if (!authState.isRoutingStable && evaluation.redirectTo != null) {
+          throw FlutterError(
+            'Router redirect executed before auth bootstrap reached STABLE phase.',
+          );
+        }
         RedirectTrace.record(
           from: state.matchedLocation,
           to: evaluation.redirectTo ?? 'stay',
@@ -195,9 +257,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
+        path: '/messages',
+        builder: (context, state) => const AppShell(initialIndex: 1),
+      ),
+
+      GoRoute(
+        path: '/messages/new',
+        redirect: (context, state) => '/new-message',
+      ),
+
+      GoRoute(
+        path: '/messages/:threadId',
+        redirect: (context, state) {
+          final threadId = state.pathParameters['threadId'] ?? '';
+          if (threadId.isEmpty) {
+            return '/messages';
+          }
+          return '/chat/$threadId';
+        },
+      ),
+
+      GoRoute(
         path: '/new-message',
         builder: (context, state) {
-          final user = currentUser;
+          final user = refreshNotifier.currentUser;
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
           return NewMessageScreen(
@@ -211,7 +294,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create-group-chat',
         builder: (context, state) {
-          final user = currentUser;
+          final user = refreshNotifier.currentUser;
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
           return CreateGroupChatScreen(
@@ -224,7 +307,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/chat/:id',
         builder: (context, state) {
-          final user = currentUser;
+          final user = refreshNotifier.currentUser;
           final conversationId = state.pathParameters['id'] ?? '';
 
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -298,7 +381,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create-story',
         builder: (context, state) {
-          final user = currentUser;
+          final user = refreshNotifier.currentUser;
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
           final userId = user?.id ?? uid;
           if (userId.isEmpty) {
@@ -321,7 +404,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create-post',
         builder: (context, state) {
-          final user = currentUser;
+          final user = refreshNotifier.currentUser;
           final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
           final userId = user?.id ?? uid;
           if (userId.isEmpty) {
@@ -424,7 +507,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin-entitlements',
         builder: (context, state) {
-          if (!isAdmin) {
+          if (!refreshNotifier.isAdmin) {
             return const FeatureDegradedScreen(
               title: 'Admin only',
               message: 'You do not have access to entitlement support tools.',
