@@ -248,6 +248,18 @@ try {
     }
   }
 
+  Write-Stage 'Validate Firestore data integrity'
+  $firestoreValidateExitCode = Invoke-CommandWithExitCode -Name 'validate-firestore-truth' -Command {
+    & node functions/scripts/validate-firestore-truth.js
+  }
+  if ($firestoreValidateExitCode -ne 0) {
+    Write-Host "[stage-fail] Firestore truth validation failed (exit=$firestoreValidateExitCode)"
+    Write-Host "             Run: cd functions && npm run repair:all:apply"
+    Add-StageResult -Stage 'validate_firestore_truth' -Status 'failed' -ReasonCode 'data_violations' -ExitCode $firestoreValidateExitCode
+  } else {
+    Add-StageResult -Stage 'validate_firestore_truth' -Status 'success' -ReasonCode 'none' -ExitCode 0
+  }
+
   Write-Stage 'Build Flutter web'
   $buildExitCode = Invoke-CommandWithExitCode -Name 'flutter build web --release' -Command {
     & flutter build web --release
