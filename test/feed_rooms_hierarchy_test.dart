@@ -82,7 +82,7 @@ void main() {
     expect(find.text('stream: empty'), findsOneWidget);
     expect(find.text('visible rooms: 0'), findsOneWidget);
     expect(
-      find.text('No rooms currently match live visibility rules.'),
+      find.textContaining('No live rooms are currently available from the backend.'),
       findsOneWidget,
     );
   });

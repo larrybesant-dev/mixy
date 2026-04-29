@@ -73,8 +73,10 @@ function createFirestoreDouble(initialUsers = {}) {
   const referralCodes = new Map();
   const referrals = new Map();
   const rooms = new Map();
-  // Shared subcollection storage: "col/id/sub" → Map<subId, data>
-  const subcollections = new Map();
+  const profilePublic = new Map();
+  const preferences = new Map();
+  const verification = new Map();
+  const presence = new Map();
 
   function storeFor(name) {
     switch (name) {
@@ -82,8 +84,8 @@ function createFirestoreDouble(initialUsers = {}) {
         return users;
       case "wallets":
         return wallets;
-        case "wallet_ledger":
-          return walletLedger;
+      case "wallet_ledger":
+        return walletLedger;
       case "transactions":
         return transactions;
       case "logs":
@@ -102,6 +104,14 @@ function createFirestoreDouble(initialUsers = {}) {
         return referrals;
       case "rooms":
         return rooms;
+      case "profile_public":
+        return profilePublic;
+      case "preferences":
+        return preferences;
+      case "verification":
+        return verification;
+      case "presence":
+        return presence;
       default:
         throw new Error(`Unsupported collection ${name}`);
     }

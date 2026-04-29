@@ -49,8 +49,9 @@ final userVerificationProvider =
 final verifiedUsersProvider = StreamProvider<List<String>>((ref) {
   final firestore = ref.watch(firestoreProvider);
 
+  // Source-of-truth is now the 'verification' root collection
   return firestore
-      .collection('users')
+      .collection('verification')
       .where('isVerified', isEqualTo: true)
       .snapshots()
       .map((snapshot) =>

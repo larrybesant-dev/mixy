@@ -15,6 +15,9 @@ void main() {
   testWidgets(
     'LiveRoomScreen basic mount',
     (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       final firestore = FakeFirebaseFirestore();
       await firestore.collection('rooms').doc('room-a').set({
         'hostId': 'host-1',
@@ -63,6 +66,9 @@ void main() {
           child: const MaterialApp(home: LiveRoomScreen(roomId: 'room-a')),
         ),
       );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify that the screen actually mounts without crashing.
       expect(find.byType(LiveRoomScreen), findsOneWidget);

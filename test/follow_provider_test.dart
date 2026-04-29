@@ -97,12 +97,11 @@ void main() {
     });
 
     test('returns true after following', () async {
-      await firestore
-          .collection('users')
-          .doc('alice')
-          .collection('following')
-          .doc('bob')
-          .set({'followedAt': Timestamp.fromDate(DateTime.now())});
+      await firestore.collection('follows').doc('alice_bob').set({
+        'followerUserId': 'alice',
+        'followedUserId': 'bob',
+        'createdAt': Timestamp.fromDate(DateTime.now()),
+      });
 
       final result = await container.read(
         isFollowingProvider(
@@ -135,24 +134,21 @@ void main() {
     test('counts followers and following correctly', () async {
       final now = Timestamp.fromDate(DateTime.now());
       // alice has 2 followers and follows 1 user
-      await firestore
-          .collection('users')
-          .doc('alice')
-          .collection('followers')
-          .doc('carol')
-          .set({'followedAt': now});
-      await firestore
-          .collection('users')
-          .doc('alice')
-          .collection('followers')
-          .doc('dave')
-          .set({'followedAt': now});
-      await firestore
-          .collection('users')
-          .doc('alice')
-          .collection('following')
-          .doc('bob')
-          .set({'followedAt': now});
+      await firestore.collection('follows').doc('carol_alice').set({
+        'followerUserId': 'carol',
+        'followedUserId': 'alice',
+        'createdAt': now,
+      });
+      await firestore.collection('follows').doc('dave_alice').set({
+        'followerUserId': 'dave',
+        'followedUserId': 'alice',
+        'createdAt': now,
+      });
+      await firestore.collection('follows').doc('alice_bob').set({
+        'followerUserId': 'alice',
+        'followedUserId': 'bob',
+        'createdAt': now,
+      });
 
       final counts = await container.read(followCountProvider('alice').future);
       expect(counts.followers, 2);

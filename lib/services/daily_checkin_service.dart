@@ -30,11 +30,28 @@ class DailyCheckinService {
   final FirebaseFunctions _functions;
 
   Future<DailyCheckinStatus> getStatus(String uid) async {
-    final doc = await _db.collection('users').doc(uid).get();
-    if (!doc.exists) {
-      return const DailyCheckinStatus(claimed: false, streak: 0, reward: 10);
+    // Check wallet root collection first (new domain)
+    final walletRef = _db.collection('wallets').doc(uid);
+    final walletSnap = await walletRef.get();
+    
+    Map<String, dynamic> data = const <String, dynamic>{};
+    bool foundInWallet = false;
+
+    if (walletSnap.exists && walletSnap.data() != null) {
+      data = walletSnap.data()!;
+      if (data.containsKey('lastCheckinDate')) {
+        foundInWallet = true;
+      }
     }
-    final data = doc.data() ?? const <String, dynamic>{};
+
+    // Fallback to users doc if not found in wallet (legacy support)
+    if (!foundInWallet) {
+      final userDoc = await _db.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        data = userDoc.data() ?? const <String, dynamic>{};
+      }
+    }
+
     final raw = data['lastCheckinDate'];
     DateTime? lastDate;
     if (raw is Timestamp) {

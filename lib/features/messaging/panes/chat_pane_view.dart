@@ -43,6 +43,9 @@ class ChatPaneView extends ConsumerStatefulWidget {
 class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   late TextEditingController _messageController;
   late ScrollController _scrollController;
+  late final DraftCacheNotifier _draftCacheNotifier;
+  late final ConversationScrollMemoryNotifier _scrollMemoryNotifier;
+  late final MessagingController _messagingController;
   Timer? _typingTimer;
   Timer? _hydrationTimer;
   bool _isTyping = false;
@@ -100,8 +103,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     super.initState();
     _startHydrationWindow();
     _entryTime = DateTime.now();
+    _draftCacheNotifier = ref.read(draftCacheProvider.notifier);
+    _scrollMemoryNotifier = ref.read(conversationScrollMemoryProvider.notifier);
+    _messagingController = ref.read(messagingControllerProvider);
     final savedDraft =
-        ref.read(draftCacheProvider.notifier).getDraft(widget.conversationId);
+        _draftCacheNotifier.getDraft(widget.conversationId);
     _messageController = TextEditingController(text: savedDraft);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
@@ -120,7 +126,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(messagingControllerProvider).markAsRead(
+      _messagingController.markAsRead(
             conversationId: widget.conversationId,
             userId: widget.userId,
           );
@@ -138,16 +144,14 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
   void _onTextChanged() {
     // Persist draft on every keystroke so tab switches don't lose it.
-    ref
-        .read(draftCacheProvider.notifier)
-        .setDraft(widget.conversationId, _messageController.text);
+    _draftCacheNotifier.setDraft(widget.conversationId, _messageController.text);
     if (_messageController.text.isEmpty) {
       _clearTyping();
       return;
     }
     if (!_isTyping) {
       _isTyping = true;
-      ref.read(messagingControllerProvider).updateTypingStatus(
+      _messagingController.updateTypingStatus(
             conversationId: widget.conversationId,
             userId: widget.userId,
             isTyping: true,
@@ -161,7 +165,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     _typingTimer?.cancel();
     if (_isTyping) {
       _isTyping = false;
-      ref.read(messagingControllerProvider).updateTypingStatus(
+      _messagingController.updateTypingStatus(
             conversationId: widget.conversationId,
             userId: widget.userId,
             isTyping: false,
@@ -179,9 +183,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     }
     if (_scrollController.hasClients &&
         _scrollController.position.hasContentDimensions) {
-      ref
-          .read(conversationScrollMemoryProvider.notifier)
-          .setOffset(widget.conversationId, _scrollController.offset);
+      _scrollMemoryNotifier.setOffset(widget.conversationId, _scrollController.offset);
     }
   }
 
@@ -227,15 +229,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
     if (_scrollController.hasClients &&
         _scrollController.position.hasContentDimensions) {
-      ref
-          .read(conversationScrollMemoryProvider.notifier)
-          .setOffset(widget.conversationId, _scrollController.offset);
+      _scrollMemoryNotifier.setOffset(widget.conversationId, _scrollController.offset);
     }
     // Safety-net: persist any unsent draft that wasn't saved via _onTextChanged.
     final remainingDraft = _messageController.text;
-    ref
-        .read(draftCacheProvider.notifier)
-        .setDraft(widget.conversationId, remainingDraft);
+    _draftCacheNotifier.setDraft(widget.conversationId, remainingDraft);
     _clearTyping();
     _typingTimer?.cancel();
     _hydrationTimer?.cancel();
@@ -260,9 +258,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
     _clearTyping();
     // Clear draft — message is being sent.
-    ref
-        .read(draftCacheProvider.notifier)
-        .clearDraft(widget.conversationId);
+    _draftCacheNotifier.clearDraft(widget.conversationId);
     _messageController.clear();
 
     final pendingmessage = _Pendingmessage(
@@ -283,7 +279,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
 
     try {
-      await ref.read(messagingControllerProvider).sendmessage(
+      await _messagingController.sendmessage(
             conversationId: widget.conversationId,
             senderId: widget.userId,
             senderName: widget.username,

@@ -41,17 +41,19 @@ final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
       .snapshots();
 
   return docStream.asyncMap((walletDoc) async {
-    final userDoc = await firestore.collection('users').doc(userId).get();
-    final userData = userDoc.data();
     final walletData = walletDoc.data();
+    
+    // If wallet doc exists, use it as primary truth.
     if (walletData != null) {
       return WalletModel.fromJson({
         'userId': userId,
-        'balance': userData?['balance'],
-        'userCoinBalance': userData?['coinBalance'],
         ...walletData,
       });
     }
+
+    // Fallback to legacy balance in users doc if wallet doesn't exist yet
+    final userDoc = await firestore.collection('users').doc(userId).get();
+    final userData = userDoc.data();
 
     if (userData == null) {
       return WalletModel(userId: userId);

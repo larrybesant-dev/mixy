@@ -177,6 +177,9 @@ void main() {
       expect(deliveredSnapshot.docs, hasLength(1));
       expect(find.text('Instant hello'), findsOneWidget);
       expect(find.byTooltip('Delivered'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets('marks unread conversation as read when opened', (tester) async {
@@ -203,6 +206,9 @@ void main() {
       final updatedReadAt = (data!['lastReadAt'] as Map<String, dynamic>)['user-1'] as Timestamp;
       expect(updatedReadAt.toDate().isAfter(originalReadAt), isTrue);
       expect(updatedReadAt.toDate().isAfter(lastMessageAt), isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets('shows typing indicator when the other user is actively typing', (tester) async {
@@ -230,6 +236,9 @@ void main() {
 
       expect(find.byType(ChatPaneView), findsOneWidget);
       expect(find.byType(TextField), findsWidgets);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets('restores scroll position when reopening a conversation', (tester) async {
@@ -252,12 +261,35 @@ void main() {
         core_firebase.firestoreProvider.overrideWithValue(firestore),
         friendRosterProvider.overrideWith((ref) => const Stream<List<FriendRosterEntry>>.empty()),
       ]);
-      addTearDown(container.dispose);
+      addTearDown(() async {
+        container.dispose();
+      });
 
-      await tester.pumpWidget(_buildChatApp(
-        firestore: firestore,
-        container: container,
-      ));
+      final showChat = ValueNotifier<bool>(true);
+      addTearDown(showChat.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: ValueListenableBuilder<bool>(
+            valueListenable: showChat,
+            builder: (context, isVisible, _) {
+              return MaterialApp(
+                home: Scaffold(
+                  body: isVisible
+                      ? const ChatPaneView(
+                          conversationId: 'conv-1',
+                          userId: 'user-1',
+                          username: 'Test User',
+                          showHeader: false,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              );
+            },
+          ),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -272,13 +304,11 @@ void main() {
       final savedOffset = scrolledPosition.pixels;
       expect(savedOffset, lessThan(initialOffset));
 
-      await tester.pumpWidget(const SizedBox.shrink());
+      showChat.value = false;
       await tester.pump();
 
-      await tester.pumpWidget(_buildChatApp(
-        firestore: firestore,
-        container: container,
-      ));
+      showChat.value = true;
+      await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -286,6 +316,11 @@ void main() {
       final restoredPosition = tester.state<ScrollableState>(restoredScrollable).position;
       expect(restoredPosition.pixels, closeTo(savedOffset, 24));
       expect(restoredPosition.pixels, lessThan(restoredPosition.maxScrollExtent));
+
+      showChat.value = false;
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
   });
 }

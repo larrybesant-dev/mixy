@@ -138,9 +138,9 @@ void main() {
     });
 
     test('returns only verified user IDs', () async {
-      await firestore.collection('users').doc('user-1').set({'isVerified': true});
-      await firestore.collection('users').doc('user-2').set({'isVerified': false});
-      await firestore.collection('users').doc('user-3').set({'isVerified': true});
+      await firestore.collection('verification').doc('user-1').set({'isVerified': true});
+      await firestore.collection('verification').doc('user-2').set({'isVerified': false});
+      await firestore.collection('verification').doc('user-3').set({'isVerified': true});
 
       final ids = await container.read(verifiedUsersProvider.future);
       expect(ids, containsAll(['user-1', 'user-3']));

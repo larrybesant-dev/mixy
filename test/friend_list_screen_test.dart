@@ -162,9 +162,13 @@ void main() {
     expect(find.text('Back to my room'), findsOneWidget);
     expect(find.text('User Two'), findsOneWidget);
     expect(find.text('Room Friend'), findsOneWidget);
-    expect(find.text('Offline Friend'), findsOneWidget);
     expect(find.text('Invite'), findsOneWidget);
     expect(find.text('Join Room'), findsOneWidget);
+
+    await tester.tap(find.text('OFFLINE'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offline Friend'), findsOneWidget);
     expect(find.textContaining('Last seen'), findsOneWidget);
   });
 }

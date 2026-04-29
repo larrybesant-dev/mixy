@@ -1744,21 +1744,47 @@ async function cleanupDeletedUserData(uid, deps = {}) {
   }
 
   const userRef = firestore.collection("users").doc(uid);
+  const profilePublicRef = firestore.collection("profile_public").doc(uid);
+  const preferencesRef = firestore.collection("preferences").doc(uid);
+  const verificationRef = firestore.collection("verification").doc(uid);
+  const walletRef = firestore.collection("wallets").doc(uid);
+  const presenceRef = firestore.collection("presence").doc(uid);
   const connectRef = firestore.collection("stripe_connect_accounts").doc(uid);
 
-  // Delete all FCM / notification tokens before the user doc itself so the
-  // subcollection doesn't become orphaned and leak PII after account deletion.
-  const tokenSnap = await userRef.collection("notification_tokens").limit(200).get();
-  if (!tokenSnap.empty) {
-    const batch = firestore.batch();
-    tokenSnap.docs.forEach((doc) => batch.delete(doc.ref));
-    await batch.commit();
+  // 1. Delete user-specific subcollections that might leak PII
+  const subColls = [
+    "notification_tokens",
+    "adult_profile",
+    "privacy",
+    "bookmarks",
+    "verification",
+    "preferences",
+    "wallet",
+    "security",
+    "profile_public",
+  ];
+
+  for (const collName of subColls) {
+    const snap = await userRef.collection(collName).limit(500).get();
+    if (!snap.empty) {
+      const batch = firestore.batch();
+      snap.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+    }
   }
 
+  // 2. Delete the root domain documents
   await Promise.allSettled([
     userRef.delete(),
+    profilePublicRef.delete(),
+    preferencesRef.delete(),
+    verificationRef.delete(),
+    walletRef.delete(),
+    presenceRef.delete(),
     connectRef.delete(),
   ]);
+
+  logger.info(`Cleanup complete for deleted user: ${uid}`);
 }
 
 exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
