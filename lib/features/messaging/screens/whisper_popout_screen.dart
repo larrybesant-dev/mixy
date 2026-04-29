@@ -22,6 +22,7 @@ class WhisperPopoutScreen extends ConsumerStatefulWidget {
 
 class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
   String? _conversationId;
+  String? _currentUserId;
   String? _error;
   bool _loading = true;
 
@@ -35,19 +36,28 @@ class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
     try {
       final currentUser = ref.read(userProvider);
       if (currentUser == null) throw Exception('Not signed in.');
+      final currentUserId = currentUser.id.trim();
+      final targetUserId = widget.targetUserId.trim();
+      if (currentUserId.isEmpty) throw Exception('Not signed in.');
+      if (targetUserId.isEmpty) throw Exception('Missing whisper target user.');
+      if (targetUserId == currentUserId) {
+        throw Exception('Cannot open a whisper to yourself.');
+      }
+
       final conversationId = await ref
           .read(messagingControllerProvider)
           .createDirectConversation(
-            userId1: currentUser.id,
+            userId1: currentUserId,
             user1Name: currentUser.username,
             user1AvatarUrl: currentUser.avatarUrl,
-            userId2: widget.targetUserId,
+            userId2: targetUserId,
             user2Name: '',
             user2AvatarUrl: null,
           );
       if (mounted) {
         setState(() {
           _conversationId = conversationId;
+          _currentUserId = currentUserId;
           _loading = false;
         });
       }
@@ -78,8 +88,9 @@ class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
     }
     return ChatScreen(
       conversationId: _conversationId!,
-      userId: widget.targetUserId,
+      userId: _currentUserId ?? '',
       username: '',
     );
   }
 }
+

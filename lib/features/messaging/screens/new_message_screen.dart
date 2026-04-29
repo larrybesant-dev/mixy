@@ -7,6 +7,7 @@ import '../../../core/layout/app_layout.dart';
 import '../../../core/theme.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../controllers/messaging_search_controller.dart';
 import '../providers/messaging_provider.dart';
 
 class NewMessageScreen extends StatelessWidget {
@@ -56,9 +57,13 @@ class NewMessagePaneView extends ConsumerStatefulWidget {
 }
 
 class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
+  static const int _minSearchChars = 3;
+
   late TextEditingController _searchController;
+  late MessagingSearchController _messagingSearchController;
   List<Map<String, String>> _searchResults = [];
   bool _isSearching = false;
+  bool _isStartingConversation = false;
 
   String _asString(dynamic value, {String fallback = ''}) {
     if (value is String) {
@@ -74,10 +79,15 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _messagingSearchController = MessagingSearchController(
+      minChars: _minSearchChars,
+      debounceDuration: const Duration(milliseconds: 300),
+    );
   }
 
   @override
   void dispose() {
+    _messagingSearchController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -87,6 +97,14 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
     String otherUsername,
     String? otherAvatarUrl,
   ) async {
+    if (_isStartingConversation) {
+      return;
+    }
+
+    setState(() {
+      _isStartingConversation = true;
+    });
+
     try {
       final conversationId = await ref.read(messagingControllerProvider).createDirectConversation(
             userId1: widget.userId,
@@ -104,57 +122,72 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error starting conversation: $e')),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isStartingConversation = false;
+        });
+      }
     }
   }
 
-  Future<void> _searchUsers(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        _searchResults = [];
-      });
-      return;
-    }
+  void _onSearchChanged(String query) {
+    _messagingSearchController.search<Map<String, String>>(
+      query: query,
+      fetch: _searchUsers,
+      onThresholdNotMet: () {
+        if (!mounted) return;
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      },
+      onSearchStart: () {
+        if (!mounted) return;
+        setState(() {
+          _isSearching = true;
+        });
+      },
+      onSearchSuccess: (matches) {
+        if (!mounted) return;
+        setState(() {
+          _searchResults = matches;
+          _isSearching = false;
+        });
+      },
+      onSearchError: (error) {
+        if (!mounted) return;
+        setState(() {
+          _isSearching = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Search failed: $error')),
+        );
+      },
+    );
+  }
 
-    setState(() {
-      _isSearching = true;
-    });
+  Future<List<Map<String, String>>> _searchUsers(String query) async {
+    final normalized = query.trim();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: normalized)
+        .where('username', isLessThanOrEqualTo: '$normalized\uf8ff')
+        .limit(20)
+        .get();
 
-    try {
-      final normalized = query.trim();
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('username', isGreaterThanOrEqualTo: normalized)
-          .where('username', isLessThanOrEqualTo: '$normalized\uf8ff')
-          .limit(20)
-          .get();
-
-      final matches = snapshot.docs
-          .where((doc) => doc.id != widget.userId)
-          .map((doc) {
-            final data = doc.data();
-            final username = _asString(data['username']);
-            return {
-              'id': doc.id,
-              'name': username.isEmpty ? doc.id : username,
-              'avatar': _asString(data['avatarUrl']),
-            };
-          })
-          .toList(growable: false);
-
-      if (!mounted) return;
-      setState(() {
-        _searchResults = matches;
-        _isSearching = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isSearching = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Search failed: $e')),
-      );
-    }
+    return snapshot.docs
+        .where((doc) => doc.id != widget.userId)
+        .map((doc) {
+          final data = doc.data();
+          final username = _asString(data['username']);
+          return {
+            'id': doc.id,
+            'name': username.isEmpty ? doc.id : username,
+            'avatar': _asString(data['avatarUrl']),
+          };
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -196,13 +229,13 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search people...',
+                  hintText: 'Search people (min $_minSearchChars chars)...',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                onChanged: _searchUsers,
+                onChanged: _onSearchChanged,
               ),
             ],
           ),
@@ -212,7 +245,15 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
             padding: EdgeInsets.all(16),
             child: AppLoadingView(label: 'Searching users'),
           )
-        else if (_searchResults.isEmpty && _searchController.text.isNotEmpty)
+        else if (_searchController.text.trim().length < _minSearchChars)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: AppEmptyView(
+              title: 'Type at least 3 characters',
+              icon: Icons.short_text_rounded,
+            ),
+          )
+        else if (_searchResults.isEmpty)
           const Padding(
             padding: EdgeInsets.all(16),
             child: AppEmptyView(
@@ -235,8 +276,14 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
                     child: Text(safeName.substring(0, 1).toUpperCase()),
                   ),
                   title: Text(safeName),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: userId.isEmpty
+                  trailing: _isStartingConversation
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: userId.isEmpty || _isStartingConversation
                       ? null
                       : () => _startConversation(
                           userId,

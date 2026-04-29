@@ -25,6 +25,23 @@ String _effectiveMessagingUserId(String userId) {
   return userId.trim();
 }
 
+String _validatedMessagingActorId(String candidateUserId) {
+  final normalizedCandidate = candidateUserId.trim();
+  final authUid = FirebaseAuth.instance.currentUser?.uid.trim();
+
+  if (normalizedCandidate.isEmpty) {
+    throw Exception('Not signed in.');
+  }
+
+  if (authUid != null && authUid.isNotEmpty) {
+    if (normalizedCandidate != authUid) {
+      throw Exception('Identity mismatch for messaging actor.');
+    }
+  }
+
+  return normalizedCandidate;
+}
+
 // Single raw realtime stream for all conversation documents of a user.
 final rawConversationsStreamProvider =
     StreamProvider.autoDispose.family<List<Conversation>, String>((ref, userId) {
@@ -317,12 +334,14 @@ class MessagingController {
     required String content,
     String? clientmessageId,
   }) async {
+    final authoritativeSenderId = _validatedMessagingActorId(senderId);
+
     AppTelemetry.logAction(
       domain: 'messaging',
       action: 'send_message',
       message: 'Message send started.',
       roomId: conversationId,
-      userId: senderId,
+      userId: authoritativeSenderId,
       result: 'start',
     );
 
@@ -339,7 +358,7 @@ class MessagingController {
       // Add message to message subcollection
       await messageRef.set({
         'conversationId': conversationId,
-        'senderId': senderId,
+        'senderId': authoritativeSenderId,
         'senderName': senderName,
         'senderAvatarUrl': senderAvatarUrl,
         'content': content,
@@ -347,7 +366,7 @@ class MessagingController {
         'createdAt': Timestamp.fromDate(now),
         'expiresAt': Timestamp.fromDate(expiresAt),
         'isDeleted': false,
-        'readBy': [senderId],
+        'readBy': [authoritativeSenderId],
       });
 
       // Update conversation with last message info
@@ -355,7 +374,7 @@ class MessagingController {
       await convRef.update({
         'lastMessageId': messageRef.id,
         'lastMessagePreview': content,
-        'lastMessageSenderId': senderId,
+        'lastMessageSenderId': authoritativeSenderId,
         'lastMessageAt': Timestamp.fromDate(now),
         'lastMessageClientMessageId': resolvedClientmessageId,
       });
@@ -365,7 +384,7 @@ class MessagingController {
         action: 'send_message',
         message: 'Message send completed.',
         roomId: conversationId,
-        userId: senderId,
+        userId: authoritativeSenderId,
         result: 'success',
       );
     } catch (error, stackTrace) {
@@ -375,7 +394,7 @@ class MessagingController {
         action: 'send_message',
         message: 'Message send failed.',
         roomId: conversationId,
-        userId: senderId,
+        userId: authoritativeSenderId,
         result: 'failure',
         metadata: <String, Object?>{
           'client_message_id': resolvedClientmessageId,
@@ -395,20 +414,27 @@ class MessagingController {
     required String user2Name,
     required String? user2AvatarUrl,
   }) async {
+    final currentUserId = _validatedMessagingActorId(userId1);
+    final targetUserId = userId2.trim();
+    if (targetUserId.isEmpty) throw Exception('Target user is required.');
+    if (currentUserId == targetUserId) {
+      throw Exception('Cannot start a conversation with yourself.');
+    }
+
     // Prevent messaging blocked users.
-    final isBlocked = await ModerationService().hasBlockingRelationship(userId1, userId2);
+    final isBlocked = await ModerationService().hasBlockingRelationship(currentUserId, targetUserId);
     if (isBlocked) throw Exception('Cannot start a conversation with this user.');
 
     // Check if conversation already exists
     final existing = await _firestore
         .collection('conversations')
         .where('type', isEqualTo: 'direct')
-        .where('participantIds', arrayContains: userId1)
+      .where('participantIds', arrayContains: currentUserId)
         .get();
 
     for (final doc in existing.docs) {
       final conv = Conversation.fromJson(doc.data(), doc.id);
-      if (conv.participantIds.contains(userId2)) {
+      if (conv.participantIds.contains(targetUserId)) {
         return doc.id;
       }
     }
@@ -417,15 +443,15 @@ class MessagingController {
     final now = DateTime.now();
     final docRef = await _firestore.collection('conversations').add({
       'type': 'direct',
-      'participantIds': [userId1, userId2],
+      'participantIds': [currentUserId, targetUserId],
       'participantNames': {
-        userId1: user1Name,
-        userId2: user2Name,
+        currentUserId: user1Name,
+        targetUserId: user2Name,
       },
       'createdAt': Timestamp.fromDate(now),
       'lastReadAt': {
-        userId1: Timestamp.fromDate(now),
-        userId2: Timestamp.fromDate(now),
+        currentUserId: Timestamp.fromDate(now),
+        targetUserId: Timestamp.fromDate(now),
       },
       'isArchived': false,
       'status': 'active',
@@ -465,11 +491,12 @@ class MessagingController {
     required String conversationId,
     required String userId,
   }) async {
+    final actorUserId = _validatedMessagingActorId(userId);
     await _firestore
         .collection('conversations')
         .doc(conversationId)
         .update({
-      'lastReadAt.$userId': Timestamp.fromDate(DateTime.now()),
+      'lastReadAt.$actorUserId': Timestamp.fromDate(DateTime.now()),
     });
   }
 
@@ -522,13 +549,14 @@ class MessagingController {
     required String currentUserId,
     required String emoji,
   }) async {
+    final actorUserId = _validatedMessagingActorId(currentUserId);
     final reactionRef = _firestore
         .collection('conversations')
         .doc(conversationId)
         .collection('messages')
         .doc(messageId)
         .collection('reactions')
-        .doc(currentUserId);
+        .doc(actorUserId);
 
     final snap = await reactionRef.get();
     if (snap.exists && snap.data()?['emoji'] == emoji) {
@@ -549,6 +577,7 @@ class MessagingController {
     required String userId,
     required bool isTyping,
   }) async {
+    final actorUserId = _validatedMessagingActorId(userId);
     final docRef = _firestore
         .collection('conversations')
         .doc(conversationId)
@@ -558,12 +587,12 @@ class MessagingController {
     if (isTyping) {
       await docRef.set({
         'users': {
-          userId: FieldValue.serverTimestamp(),
+          actorUserId: FieldValue.serverTimestamp(),
         }
       }, SetOptions(merge: true));
     } else {
       await docRef.update({
-        'users.$userId': FieldValue.delete(),
+        'users.$actorUserId': FieldValue.delete(),
       });
     }
   }
