@@ -233,44 +233,47 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
         Expanded(
           child: Padding(
             padding: EdgeInsets.all(context.isExpandedLayout ? 48 : 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _logoText(size: 52),
-                const SizedBox(height: 32),
-                Text(
-                  'Where chemistry\nmeets connection.',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
-                    color: _onSurface,
-                    fontStyle: FontStyle.italic,
-                    height: 1.3,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _logoText(size: 52),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Where chemistry\nmeets connection.',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w600,
+                      color: _onSurface,
+                      fontStyle: FontStyle.italic,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Curated connections. Real chemistry.\nVIP lounge energy — wherever you are.',
-                  style: GoogleFonts.raleway(
-                    fontSize: 15,
-                    color: _onVariant,
-                    height: 1.7,
+                  const SizedBox(height: 16),
+                  Text(
+                    'Curated connections. Real chemistry.\nVIP lounge energy — wherever you are.',
+                    style: GoogleFonts.raleway(
+                      fontSize: 15,
+                      color: _onVariant,
+                      height: 1.7,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                // Preview cards
-                _brandingCards(),
-              ],
+                  const SizedBox(height: 40),
+                  // Preview cards
+                  _brandingCards(),
+                ],
+              ),
             ),
           ),
         ),
         // Right panel – auth card
         Container(
-          width: 440,
+          width: context.isExpandedLayout ? 440 : 380,
+          constraints: const BoxConstraints(maxWidth: 440),
           padding: EdgeInsets.symmetric(
-            horizontal: context.isExpandedLayout ? 40 : 28,
-            vertical: context.isExpandedLayout ? 56 : 40,
+            horizontal: context.isExpandedLayout ? 40 : 24,
+            vertical: context.isExpandedLayout ? 56 : 32,
           ),
           child: Center(child: _authCard(authState)),
         ),

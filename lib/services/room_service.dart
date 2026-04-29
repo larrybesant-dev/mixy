@@ -440,6 +440,10 @@ class RoomService {
       return '1 friend is here';
     }
 
+    if (_isTrendingFast(room)) {
+      return 'Trending fast';
+    }
+
     if (room.memberCount >= 25) {
       return 'Popular right now';
     }
@@ -468,6 +472,10 @@ class RoomService {
       return 'Friends';
     }
 
+    if (_isTrendingFast(room)) {
+      return 'Momentum';
+    }
+
     if (room.memberCount >= 25) {
       return 'Hot';
     }
@@ -479,6 +487,28 @@ class RoomService {
     }
 
     return 'Live';
+  }
+
+  bool _isTrendingFast(RoomModel room) {
+    final effectiveCount = room.memberCount > 0
+        ? room.memberCount
+        : room.stageUserIds.length + room.audienceUserIds.length;
+    if (effectiveCount < 4) {
+      return false;
+    }
+    return _growthRate(room) >= 1.25;
+  }
+
+  double _growthRate(RoomModel room) {
+    final createdAt = room.createdAt?.toDate();
+    if (createdAt == null) {
+      return 0;
+    }
+    final ageMinutes = math.max(1, DateTime.now().difference(createdAt).inMinutes);
+    final effectiveCount = room.memberCount > 0
+        ? room.memberCount
+        : room.stageUserIds.length + room.audienceUserIds.length;
+    return effectiveCount / ageMinutes;
   }
 
   double _scoreRoom(RoomModel room, Set<String> friendIds) {
@@ -498,12 +528,23 @@ class RoomService {
       recencyBonus = math.max(0, 18 - (minutesAgo / 8));
     }
 
+    // Momentum: listeners-per-minute since room started.
+    // Favors rooms filling up quickly over established rooms coasting on size.
+    double momentumBonus = 0;
+    final growthRate = _growthRate(room);
+    if (growthRate > 0) {
+      // Cap contribution at 20pts so a brand-new room with 1 listener
+      // doesn't fully outrank a popular established room.
+      momentumBonus = math.min(growthRate * 4.0, 20.0);
+    }
+
     final lockPenalty = room.isLocked ? -6.0 : 0.0;
 
     return memberCountScore +
         hostFriendBonus +
         friendPresenceBonus +
         recencyBonus +
+        momentumBonus +
         lockPenalty;
   }
 

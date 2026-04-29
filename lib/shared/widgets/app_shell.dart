@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/dashboard/dashboard_screen.dart';
-import '../../features/feed/screens/discovery_feed_screen.dart';
 import '../../features/messaging/screens/messages_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/user_profile_screen.dart';

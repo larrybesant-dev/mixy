@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/firestore/firestore_error_utils.dart';
@@ -90,6 +91,7 @@ class AppErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final info = parseFirestoreError(error);
     return Center(
       child: Padding(
         padding: context.pagePadding,
@@ -105,6 +107,16 @@ class AppErrorView extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
+              if (kDebugMode) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '[${info.code}] ${info.message}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               if (onRetry != null) ...[
                 SizedBox(height: context.sectionSpacing),
                 FilledButton(onPressed: onRetry, child: const Text('Try again')),

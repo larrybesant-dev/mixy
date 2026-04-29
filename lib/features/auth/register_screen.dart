@@ -72,8 +72,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     setState(() => _localError = null);
     final controller = ref.read(authControllerProvider.notifier);
     await controller.signup(email, password, username);
-    final authState = ref.read(authControllerProvider);
     if (!mounted) return;
+    final authState = ref.read(authControllerProvider);
     setState(() => _localError = authState.error);
     if (authState.error == null && authState.uid != null) {
       await AnalyticsService().logLogin(method: 'email_password');
@@ -83,8 +83,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   Future<void> _signInWithGoogle() async {
     final controller = ref.read(authControllerProvider.notifier);
     await controller.signInWithGoogle();
-    final authState = ref.read(authControllerProvider);
     if (!mounted) return;
+    final authState = ref.read(authControllerProvider);
     setState(() => _localError = authState.error);
     if (authState.error == null && authState.uid != null) {
       await AnalyticsService().logLogin(method: 'google');
@@ -94,8 +94,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   Future<void> _signInWithApple() async {
     final controller = ref.read(authControllerProvider.notifier);
     await controller.signInWithApple();
-    final authState = ref.read(authControllerProvider);
     if (!mounted) return;
+    final authState = ref.read(authControllerProvider);
     setState(() => _localError = authState.error);
     if (authState.error == null && authState.uid != null) {
       await AnalyticsService().logLogin(method: 'apple');

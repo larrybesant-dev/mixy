@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:async';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 
@@ -20,6 +21,8 @@ class ProfileMusicPlayer extends StatefulWidget {
 
 class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
   html.AudioElement? _audio;
+  final List<StreamSubscription<dynamic>> _subscriptions =
+      <StreamSubscription<dynamic>>[];
   bool _playing = false;
   bool _loading = false;
   String? _error;
@@ -37,6 +40,7 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
   void didUpdateWidget(ProfileMusicPlayer old) {
     super.didUpdateWidget(old);
     if (old.musicUrl != widget.musicUrl) {
+      _cancelSubscriptions();
       _audio?.pause();
       _audio = null;
       setState(() {
@@ -63,12 +67,12 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
       ..src = widget.musicUrl
       ..preload = 'metadata';
 
-    audio.onLoadedMetadata.listen((_) {
+    _subscriptions.add(audio.onLoadedMetadata.listen((_) {
       if (!mounted) return;
       setState(() => _duration = _fmt(audio.duration.toInt()));
-    });
+    }));
 
-    audio.onTimeUpdate.listen((_) {
+    _subscriptions.add(audio.onTimeUpdate.listen((_) {
       if (!mounted) return;
       final dur = audio.duration;
       final cur = audio.currentTime.toDouble();
@@ -76,27 +80,34 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
         _progress = dur > 0 ? (cur / dur).clamp(0.0, 1.0) : 0.0;
         _elapsed = _fmt(cur.toInt());
       });
-    });
+    }));
 
-    audio.onEnded.listen((_) {
+    _subscriptions.add(audio.onEnded.listen((_) {
       if (!mounted) return;
       setState(() {
         _playing = false;
         _progress = 0.0;
         _elapsed = '0:00';
       });
-    });
+    }));
 
-    audio.onError.listen((_) {
+    _subscriptions.add(audio.onError.listen((_) {
       if (!mounted) return;
       setState(() {
         _error = 'Could not load audio. Check the URL and CORS settings.';
         _playing = false;
         _loading = false;
       });
-    });
+    }));
 
     _audio = audio;
+  }
+
+  void _cancelSubscriptions() {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
   }
 
   String _fmt(int totalSeconds) {
@@ -143,6 +154,7 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
 
   @override
   void dispose() {
+    _cancelSubscriptions();
     _audio?.pause();
     _audio = null;
     super.dispose();

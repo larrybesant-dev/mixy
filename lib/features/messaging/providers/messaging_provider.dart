@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/firestore/firestore_error_utils.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
@@ -15,16 +17,30 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
+String _effectiveMessagingUserId(String userId) {
+  final authUid = FirebaseAuth.instance.currentUser?.uid.trim();
+  if (authUid != null && authUid.isNotEmpty) {
+    return authUid;
+  }
+  return userId.trim();
+}
+
 // Single raw realtime stream for all conversation documents of a user.
 final rawConversationsStreamProvider =
     StreamProvider.autoDispose.family<List<Conversation>, String>((ref, userId) {
   final firestore = ref.watch(firestoreProvider);
+  final resolvedUserId = _effectiveMessagingUserId(userId);
   return firestore
       .collection('conversations')
-      .where('participantIds', arrayContains: userId)
-      .where('isArchived', isEqualTo: false)
-      .orderBy('lastMessageAt', descending: true)
+      .where('participantIds', arrayContains: resolvedUserId)
       .snapshots()
+      .handleError((error, stackTrace) {
+        logFirestoreError(
+          context: 'messaging.rawConversationsStreamProvider',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      })
       .map(
         (snapshot) => snapshot.docs
             .map((doc) => Conversation.fromJson(doc.data(), doc.id))
@@ -38,9 +54,12 @@ final conversationsStreamProvider =
       ref,
       userId,
     ) {
+      final resolvedUserId = _effectiveMessagingUserId(userId);
       return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
-        final active = all.where((c) => c.status != 'pending').toList();
-        active.sort((left, right) => _compareConversationsForUser(left, right, userId));
+        final active = all
+            .where((c) => !c.isArchived && c.status != 'pending')
+            .toList();
+        active.sort((left, right) => _compareConversationsForUser(left, right, resolvedUserId));
         return active;
       });
     });
@@ -68,7 +87,9 @@ final requestsStreamProvider =
       userId,
     ) {
       return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
-        final pending = all.where((c) => c.status == 'pending').toList();
+        final pending = all
+            .where((c) => !c.isArchived && c.status == 'pending')
+            .toList();
         pending.sort((left, right) => right.createdAt.compareTo(left.createdAt));
         return pending;
       });

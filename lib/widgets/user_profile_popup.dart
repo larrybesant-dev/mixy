@@ -65,9 +65,15 @@ class _UserProfilePopupSheetState
   final _friendService = FriendService();
   final _moderationService = ModerationService();
 
+  String get _normalizedUserId => widget.userId.trim();
+
   @override
   void initState() {
     super.initState();
+    if (_normalizedUserId.isEmpty) {
+      _loading = false;
+      return;
+    }
     if (widget.preloadedUser != null) {
       _profile = widget.preloadedUser;
       _loading = false;
@@ -78,10 +84,14 @@ class _UserProfilePopupSheetState
   }
 
   Future<void> _loadProfile() async {
+    if (_normalizedUserId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(widget.userId)
+          .doc(_normalizedUserId)
           .get();
       if (doc.exists && mounted) {
         setState(() {
@@ -99,13 +109,13 @@ class _UserProfilePopupSheetState
 
   Future<void> _loadRelationship() async {
     final currentUser = ref.read(userProvider);
-    if (currentUser == null || widget.userId == currentUser.id) return;
+    if (currentUser == null || _normalizedUserId.isEmpty || _normalizedUserId == currentUser.id) return;
     try {
       final friendIds = await _friendService.getFriendIds(currentUser.id);
-      final blocked = await _moderationService.isBlocked(widget.userId);
+      final blocked = await _moderationService.isBlocked(_normalizedUserId);
       if (!mounted) return;
       setState(() {
-        _isFriend = friendIds.contains(widget.userId);
+        _isFriend = friendIds.contains(_normalizedUserId);
         _isBlocked = blocked;
       });
     } catch (e, stack) {
@@ -125,7 +135,7 @@ class _UserProfilePopupSheetState
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(userProvider);
-    final isSelf = currentUser?.id == widget.userId;
+    final isSelf = currentUser?.id == _normalizedUserId;
     final theme = Theme.of(context);
 
     return DraggableScrollableSheet(
@@ -236,8 +246,17 @@ class _UserProfilePopupSheetState
                 icon: Icons.person_outline,
                 label: 'View full profile',
                 onTap: () {
+                  if (_normalizedUserId.isEmpty) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('This profile is unavailable right now.'),
+                      ),
+                    );
+                    return;
+                  }
                   Navigator.of(context).pop();
-                  context.go('/profile');
+                  context.go('/profile/$_normalizedUserId');
                 },
               ),
               if (!_isBlocked)
@@ -248,8 +267,8 @@ class _UserProfilePopupSheetState
                       ? null
                       : () async {
                           final me = ref.read(userProvider);
-                          if (me == null) return;
-                          await _friendService.sendFriendRequest(me.id, widget.userId);
+                          if (me == null || _normalizedUserId.isEmpty) return;
+                          await _friendService.sendFriendRequest(me.id, _normalizedUserId);
                           if (mounted) setState(() => _requestPending = true);
                         },
                 ),
@@ -260,16 +279,16 @@ class _UserProfilePopupSheetState
                   onTap: () async {
                     final currentUser = ref.read(userProvider);
                     final profile = _profile;
-                    if (currentUser == null || profile == null) return;
+                    if (currentUser == null || profile == null || _normalizedUserId.isEmpty) return;
                     final conversationId = await ref
                         .read(messagingControllerProvider)
                         .createDirectConversation(
                           userId1: currentUser.id,
                           user1Name: currentUser.username,
                           user1AvatarUrl: currentUser.avatarUrl,
-                          userId2: widget.userId,
+                          userId2: _normalizedUserId,
                           user2Name: profile.username.isEmpty
-                              ? widget.userId
+                              ? _normalizedUserId
                               : profile.username,
                           user2AvatarUrl: profile.avatarUrl,
                         );
@@ -283,8 +302,17 @@ class _UserProfilePopupSheetState
                   icon: Icons.videocam_outlined,
                   label: 'Video call',
                   onTap: () {
+                    if (_normalizedUserId.isEmpty) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('This profile is unavailable right now.'),
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.of(context).pop();
-                    context.go('/cam?userId=${widget.userId}');
+                      context.go('/cam?userId=$_normalizedUserId');
                   },
                 ),
               if (!_isBlocked)
@@ -292,11 +320,20 @@ class _UserProfilePopupSheetState
                   icon: Icons.card_giftcard,
                   label: 'Send gift',
                   onTap: () {
+                    if (_normalizedUserId.isEmpty) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('This profile is unavailable right now.'),
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.of(context).pop();
                     GiftPickerSheet.show(
                       context,
                       ref,
-                      recipientId: widget.userId,
+                      recipientId: _normalizedUserId,
                       recipientName: profile.username.isEmpty ? 'user' : profile.username,
                     );
                   },
@@ -306,10 +343,11 @@ class _UserProfilePopupSheetState
                 label: _isBlocked ? 'Unblock user' : 'Block user',
                 destructive: !_isBlocked,
                 onTap: () async {
+                  if (_normalizedUserId.isEmpty) return;
                   if (_isBlocked) {
-                    await _moderationService.unblockUser(widget.userId);
+                    await _moderationService.unblockUser(_normalizedUserId);
                   } else {
-                    await _moderationService.blockUser(widget.userId);
+                    await _moderationService.blockUser(_normalizedUserId);
                   }
                   if (mounted) setState(() => _isBlocked = !_isBlocked);
                 },

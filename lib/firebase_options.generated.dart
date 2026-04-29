@@ -2,14 +2,23 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
+/// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.generated.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
     }
-
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
@@ -58,10 +67,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '980846719834',
     projectId: 'mix-and-mingle-v2',
     storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
-    androidClientId:
-        '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
-    iosClientId:
-        '980846719834-hsn70r4kaghfit4d6t1keohuvjfho9v9.apps.googleusercontent.com',
+    androidClientId: '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
+    iosClientId: '980846719834-hsn70r4kaghfit4d6t1keohuvjfho9v9.apps.googleusercontent.com',
     iosBundleId: 'com.example.mixvy',
   );
 

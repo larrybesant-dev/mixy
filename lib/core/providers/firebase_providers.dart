@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,10 +23,14 @@ final firebaseAuthProvider = Provider<FirebaseAuth>(
 final firebaseDatabaseProvider = Provider<FirebaseDatabase?>(
   (ref) {
     try {
-      // Accessing instance will throw or warn if databaseURL is missing/invalid
-      // on some platforms. We wrap it to allow the app to boot even if RTDB
-      // is misconfigured.
-      return FirebaseDatabase.instance;
+      // RTDB requires a configured databaseURL on web. If absent/invalid,
+      // gracefully disable presence instead of triggering runtime exceptions.
+      final app = Firebase.app();
+      final databaseUrl = app.options.databaseURL?.trim() ?? '';
+      if (!databaseUrl.startsWith('https://')) {
+        return null;
+      }
+      return FirebaseDatabase.instanceFor(app: app, databaseURL: databaseUrl);
     } catch (e) {
       return null;
     }

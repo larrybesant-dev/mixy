@@ -175,7 +175,8 @@ class AuthController extends Notifier<AuthState> {
     );
     return AuthState(
       isLoading: false,
-      hasResolvedSession: true,
+      // Hold routing decisions until authStateChanges emits at least once.
+      hasResolvedSession: false,
       uid: currentUser?.uid,
     );
   }

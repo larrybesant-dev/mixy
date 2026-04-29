@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -126,7 +127,16 @@ class _AppDebugOverlayState extends State<AppDebugOverlay> {
           });
         });
 
-    _rtdbSessionsSub = FirebaseDatabase.instance
+    final databaseUrl = Firebase.app().options.databaseURL?.trim() ?? '';
+    if (!databaseUrl.startsWith('https://')) {
+      _rtdbSessionsSub = null;
+      return;
+    }
+
+    _rtdbSessionsSub = FirebaseDatabase.instanceFor(
+          app: Firebase.app(),
+          databaseURL: databaseUrl,
+        )
         .ref('status/$uid/sessions')
         .onValue
         .listen((event) {

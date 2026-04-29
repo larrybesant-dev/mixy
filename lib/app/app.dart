@@ -23,6 +23,7 @@ import '../shared/widgets/app_debug_overlay.dart';
 import '../shared/widgets/incoming_call_overlay.dart';
 import '../features/after_dark/providers/after_dark_provider.dart';
 import '../features/after_dark/theme/after_dark_theme.dart';
+import '../features/auth/controllers/auth_controller.dart';
 import '../features/profile/profile_controller.dart';
 import '../services/presence_controller.dart';
 import '../core/events/event_providers.dart';
@@ -48,17 +49,28 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
   final auth = FirebaseAuth.instance;
 
   try {
-    await auth
-        .authStateChanges()
-        .timeout(
-          const Duration(seconds: 10),
-          onTimeout: (sink) {
-            sink.add(auth.currentUser);
-            sink.close();
-          },
-        )
-        .first;
-      await ref.read(appSettingsControllerProvider.notifier).load();
+    bool timeoutHit = false;
+    User? authUser;
+    try {
+      authUser = await auth
+          .authStateChanges()
+          .first
+          .timeout(const Duration(seconds: 10));
+    } on TimeoutException {
+      timeoutHit = true;
+      authUser = auth.currentUser;
+    }
+
+    if (timeoutHit && authUser == null) {
+      bootStateNotifier.setDegraded();
+      startup.markBootstrapResolved(
+        resolution: BootstrapResolution.degraded,
+        detail: 'reason=auth_timeout_without_user',
+      );
+      return;
+    }
+
+    await ref.read(appSettingsControllerProvider.notifier).load();
     // Auth check succeeded; boot is ready
     bootStateNotifier.setReady();
     startup.markBootstrapResolved(
@@ -369,9 +381,15 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
     }
 
     final boot = ref.watch(appBootstrapProvider);
+    final authState = ref.watch(authControllerProvider);
 
     if (bootState == BootState.loading || boot.isLoading) {
       return _buildBootShell();
+    }
+
+    // Do not render routes until auth stream has emitted once.
+    if (!authState.hasResolvedSession) {
+      return _buildBootShell(message: 'Resolving your secure session...');
     }
 
     return boot.when(

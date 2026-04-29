@@ -3,7 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -13,11 +15,15 @@ import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
 import 'firebase_options.dart';
+import 'router/app_router.dart';
+import 'services/push_messaging_service.dart';
 
 const String _appVersion = String.fromEnvironment(
   'APP_VERSION',
   defaultValue: 'dev-local',
 );
+
+SemanticsHandle? _webSemanticsHandle;
 
 Future<void> main() async {
   final startup = StartupProfiler.instance;
@@ -29,6 +35,7 @@ Future<void> main() async {
 
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
+    _webSemanticsHandle ??= SemanticsBinding.instance.ensureSemantics();
   }
 
   BootState initialBootState = BootState.loading;
@@ -58,6 +65,9 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    PushMessagingService.instance.setNavigatorKey(rootNavigatorKey);
+    await PushMessagingService.instance.initialize();
     initialBootState = BootState.loading;
     startup.markFirebaseReady(success: true);
   } catch (error, stackTrace) {

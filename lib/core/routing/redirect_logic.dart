@@ -30,10 +30,12 @@ RedirectEvaluation evaluateAppRedirectWithReason({
 
   // 1. Force unauthenticated users to /auth (unless skipping onboarding)
   if (!isAuth) {
-    if (matchedLocation == '/auth' || matchedLocation == '/onboarding') {
+    if (matchedLocation == '/auth' ||
+        matchedLocation == '/register' ||
+        matchedLocation == '/onboarding') {
       return const RedirectEvaluation(
         redirectTo: null,
-        reason: 'signed_out_allowed_auth_or_onboarding',
+        reason: 'signed_out_allowed_public_auth_routes',
       );
     }
     return const RedirectEvaluation(

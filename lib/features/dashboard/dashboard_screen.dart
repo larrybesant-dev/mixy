@@ -122,7 +122,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 // Current user avatar
                 GestureDetector(
-                  onTap: () => context.go('/profile'),
+                  onTap: () {
+                    final uid = currentUser?.id;
+                    if (uid != null && uid.isNotEmpty) {
+                      context.go('/profile/$uid');
+                    }
+                  },
                   child: Container(
                     width: 36,
                     height: 36,
@@ -1489,32 +1494,43 @@ class _BrandNavCards extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Row(
-        children: [
-          _NavCard(
-            label: 'MIX',
-            sub: 'Find your vibe',
-            icon: Icons.people_alt_rounded,
-            accent: VelvetNoir.primary,
-            onTap: () => context.go('/search'),
-          ),
-          const SizedBox(width: 10),
-          _NavCard(
-            label: 'CONNECT',
-            sub: 'Start something real',
-            icon: Icons.chat_bubble_outline_rounded,
-            accent: VelvetNoir.secondaryBright,
-            onTap: () => context.go('/home?tab=1'),
-          ),
-          const SizedBox(width: 10),
-          _NavCard(
-            label: 'INDULGE',
-            sub: 'Live rooms',
-            icon: Icons.mic_external_on_rounded,
-            accent: VelvetNoir.liveGlow,
-            onTap: () => context.go('/rooms'),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _NavCard(
+              label: 'MIX',
+              sub: 'Discover people',
+              icon: Icons.people_alt_rounded,
+              accent: VelvetNoir.primary,
+              onTap: () => context.go('/search'),
+            ),
+            const SizedBox(width: 10),
+            _NavCard(
+              label: 'CONNECT',
+              sub: 'Messages',
+              icon: Icons.chat_bubble_outline_rounded,
+              accent: VelvetNoir.secondaryBright,
+              onTap: () => context.go('/home?tab=1'),
+            ),
+            const SizedBox(width: 10),
+            _NavCard(
+              label: 'LIVE',
+              sub: 'Join live rooms',
+              icon: Icons.mic_external_on_rounded,
+              accent: VelvetNoir.liveGlow,
+              onTap: () => context.go('/rooms'),
+            ),
+            const SizedBox(width: 10),
+            _NavCard(
+              label: 'DATE',
+              sub: 'Speed dating',
+              icon: Icons.favorite_rounded,
+              accent: VelvetNoir.secondary,
+              onTap: () => context.go('/speed-dating'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1537,9 +1553,10 @@ class _NavCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 116,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(

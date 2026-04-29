@@ -243,7 +243,7 @@ class _MessengerSidebar extends ConsumerWidget {
                 unread: conversation?.hasUnreadmessage(currentUser.id) ?? false,
                 canInviteToRoom: currentRoomId != null && currentRoomId.isNotEmpty && currentRoomId != entry.roomId,
                 onOpenChat: () => _openConversation(context, currentUser, entry.user, conversation),
-                onViewProfile: () => context.go('/profile'),
+                onViewProfile: () => context.go('/profile/${entry.user.id}'),
                 onInviteToRoom: currentRoomId == null || currentRoomId.isEmpty
                     ? null
                     : () => _inviteToRoom(context, currentUser, entry.user, currentRoomId),

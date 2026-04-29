@@ -293,7 +293,7 @@ class _FriendTile extends ConsumerWidget {
       trailing: _MessageButton(friend: friend),
       onTap: () {
         Navigator.of(context).pop();
-        GoRouter.of(context).push('/profile');
+        GoRouter.of(context).push('/profile/${friend.id}');
       },
     );
   }

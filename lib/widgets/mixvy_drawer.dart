@@ -234,7 +234,9 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.person_rounded,
             title: 'Profile',
-            route: '/profile',
+            route: (userId != null && userId!.isNotEmpty)
+                ? '/profile/${userId!}'
+                : '/home',
           ),
           _sectionLabel(context, 'CREATE'),
           _navItem(

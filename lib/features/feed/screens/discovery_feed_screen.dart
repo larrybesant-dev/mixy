@@ -23,6 +23,9 @@ import '../../../widgets/brand_ui_kit.dart';
 import '../../../shared/state/tab_scroll_memory.dart';
 import '../../ads/ad_manager.dart';
 import '../../payments/premium_entitlement.dart';
+import '../../room/widgets/room_activity_badge.dart';
+import '../../room/widgets/room_avatar_stack.dart';
+import '../../room/widgets/room_identity_chip.dart';
 import '../../stories/widgets/stories_row.dart';
 import '../controllers/feed_controller.dart';
 import '../controllers/paginated_following_feed_controller.dart';
@@ -466,13 +469,13 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   String? _selectedCategory;
   String? _joiningRoomId;
 
-  void _joinRoom(String roomId) {
+  void _joinRoom(RoomModel room) {
     if (_joiningRoomId != null) return;
-    setState(() => _joiningRoomId = roomId);
-    context.go('/room/$roomId');
+    setState(() => _joiningRoomId = room.id);
+    context.go('/room/${room.id}', extra: room);
     
     // Hardening: Persist room ID so it can be recovered after crash
-    unawaited(SessionPersistence.saveLastRoom(roomId));
+    unawaited(SessionPersistence.saveLastRoom(room.id));
 
     // Clear the joining state after a short window so the button re-enables
     // if the user navigates back before the new screen mounts.
@@ -543,12 +546,24 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
       onRefresh: () => ref.read(feedControllerProvider.notifier).loadFeed(),
       child: CustomScrollView(
         slivers: [
+          // ── Live-state count bar ─────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _LiveStateBar(
+              liveRooms: feedState.liveRooms,
+              liveRoomCount: liveRoomCount,
+              activeListenerCount: activeListenerCount,
+            ),
+          ),
+
           // ── Hero CTA — "Join a Room" / "Start Your Own Room" ──────────
           SliverToBoxAdapter(
             child: _HeroJoinCard(
               firstRoom: filteredRooms.isNotEmpty ? filteredRooms[0] : null,
             ),
           ),
+
+          // ── Speed Date card — secondary CTA ───────────────────────────
+          const SliverToBoxAdapter(child: _SpeedDateCard()),
 
           SliverToBoxAdapter(
             child: HomeLivePulseSection(
@@ -636,7 +651,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                           reason:
                               feedState.roomReasons[room.id] ?? 'Active now',
                           joining: _joiningRoomId == room.id,
-                          onTap: () => _joinRoom(room.id),
+                          onTap: () => _joinRoom(room),
                         );
                       },
                       childCount: filteredRooms.length > 3
@@ -845,7 +860,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
               room: hero,
               reason: roomReasons[hero.id] ?? 'Active now',
               joining: _joiningRoomId == hero.id,
-              onTap: () => _joinRoom(hero.id),
+              onTap: () => _joinRoom(hero),
             ),
           ),
           const SizedBox(width: 8),
@@ -858,7 +873,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                     child: _BentoSmallCard(
                       room: secondary[0],
                       reason: roomReasons[secondary[0].id] ?? 'Active now',
-                      onTap: () => _joinRoom(secondary[0].id),
+                      onTap: () => _joinRoom(secondary[0]),
                     ),
                   ),
                 if (secondary.length > 1) ...[
@@ -867,7 +882,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                     child: _BentoSmallCard(
                       room: secondary[1],
                       reason: roomReasons[secondary[1].id] ?? 'Active now',
-                      onTap: () => _joinRoom(secondary[1].id),
+                      onTap: () => _joinRoom(secondary[1]),
                     ),
                   ),
                 ],
@@ -1114,7 +1129,18 @@ class _BentoHeroCard extends ConsumerWidget {
               ),
             ),
             Positioned(top: 12, left: 12, child: _LiveBadge()),
-            Positioned(top: 12, right: 12, child: _ReasonChip(label: reason)),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _ReasonChip(label: reason),
+                  const SizedBox(height: 6),
+                  RoomIdentityChip(room: room),
+                ],
+              ),
+            ),
             Positioned(
               bottom: 52,
               right: 12,
@@ -1160,16 +1186,19 @@ class _BentoHeroCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'Host',
-                        style: GoogleFonts.raleway(
-                          fontSize: 12,
-                          color: _npOnVariant,
-                        ),
-                      ),
+                      () {
+                        final rel = _relativeTime(room.createdAt?.toDate());
+                        return Text(
+                          rel.isNotEmpty ? rel : 'Host',
+                          style: GoogleFonts.raleway(
+                            fontSize: 12,
+                            color: _npOnVariant,
+                          ),
+                        );
+                      }(),
                       const Spacer(),
                       // Live stats
-                      _LiveStatPill(
+                      RoomActivityBadge(
                         icon: '🔥',
                         count: room.memberCount > 0
                             ? room.memberCount
@@ -1178,7 +1207,7 @@ class _BentoHeroCard extends ConsumerWidget {
                         label: 'listening',
                       ),
                       const SizedBox(width: 6),
-                      _LiveStatPill(
+                      RoomActivityBadge(
                         icon: '🎤',
                         count: room.stageUserIds.length,
                         label: 'speaking',
@@ -1275,7 +1304,14 @@ class _BentoSmallCard extends StatelessWidget {
             Positioned(
               top: 8,
               right: 8,
-              child: _ReasonChip(label: reason, small: true),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _ReasonChip(label: reason, small: true),
+                  const SizedBox(height: 4),
+                  RoomIdentityChip(room: room, small: true),
+                ],
+              ),
             ),
             Positioned(
               bottom: 8,
@@ -1342,7 +1378,14 @@ class _RoomGridCard extends ConsumerWidget {
                 children: [
                   _LiveBadge(small: true),
                   const Spacer(),
-                  _ReasonChip(label: reason, small: true),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _ReasonChip(label: reason, small: true),
+                      const SizedBox(height: 4),
+                      RoomIdentityChip(room: room, small: true),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -1386,9 +1429,9 @@ class _RoomGridCard extends ConsumerWidget {
               // Stats row
               Row(
                 children: [
-                  _LiveStatPill(icon: '🔥', count: listenerCount, label: ''),
+                  RoomActivityBadge(icon: '🔥', count: listenerCount),
                   const SizedBox(width: 4),
-                  _LiveStatPill(icon: '🎤', count: speakerCount, label: ''),
+                  RoomActivityBadge(icon: '🎤', count: speakerCount),
                 ],
               ),
               const SizedBox(height: 6),
@@ -1559,16 +1602,43 @@ class _ReasonChip extends StatelessWidget {
   }
 }
 
-class _LiveBadge extends StatelessWidget {
+class _LiveBadge extends StatefulWidget {
   const _LiveBadge({this.small = false});
   final bool small;
+
+  @override
+  State<_LiveBadge> createState() => _LiveBadgeState();
+}
+
+class _LiveBadgeState extends State<_LiveBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: small ? 6 : 8,
-        vertical: small ? 2 : 4,
+        horizontal: widget.small ? 6 : 8,
+        vertical: widget.small ? 2 : 4,
       ),
       decoration: BoxDecoration(
         color: _npError.withAlpha(230),
@@ -1576,19 +1646,36 @@ class _LiveBadge extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: _npError.withAlpha(80),
-            blurRadius: small ? 6 : 10,
+            blurRadius: widget.small ? 6 : 10,
             spreadRadius: 1,
           ),
         ],
       ),
-      child: Text(
-        '● LIVE',
-        style: GoogleFonts.raleway(
-          fontSize: small ? 9 : 10,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ScaleTransition(
+            scale: _scale,
+            child: Container(
+              width: widget.small ? 5 : 6,
+              height: widget.small ? 5 : 6,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SizedBox(width: widget.small ? 3 : 4),
+          Text(
+            'LIVE',
+            style: GoogleFonts.raleway(
+              fontSize: widget.small ? 9 : 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1623,42 +1710,6 @@ Widget _viewerPill(int count) {
       ),
     ),
   );
-}
-
-/// Compact stat pill used in room cards to show listener / speaker counts.
-class _LiveStatPill extends StatelessWidget {
-  const _LiveStatPill({
-    required this.icon,
-    required this.count,
-    required this.label,
-  });
-  final String icon;
-  final int count;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final display =
-        count > 999 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0x80161A21),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 10)),
-          const SizedBox(width: 3),
-          Text(
-            label.isEmpty ? display : '$display $label',
-            style: GoogleFonts.raleway(fontSize: 10, color: _npOnSurface),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ── Following feed tab ────────────────────────────────────────────────────────
@@ -1867,7 +1918,7 @@ class _LiveNowStrip extends ConsumerWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 14),
             itemBuilder: (ctx, i) => _LiveNowBubble(
               room: rooms[i],
-              onTap: () => context.go('/room/${rooms[i].id}'),
+              onTap: () => context.go('/room/${rooms[i].id}', extra: rooms[i]),
             ),
           ),
         ),
@@ -2023,6 +2074,275 @@ class _LiveNowBubble extends ConsumerWidget {
   }
 }
 
+// ── Live-state count bar ─────────────────────────────────────────────────────
+class _LiveStateBar extends StatelessWidget {
+  const _LiveStateBar({
+    required this.liveRooms,
+    required this.liveRoomCount,
+    required this.activeListenerCount,
+  });
+  final List<RoomModel> liveRooms;
+  final int liveRoomCount;
+  final int activeListenerCount;
+
+  // Gather up to 4 unique participant UIDs from the first few rooms.
+  List<String> _clusterUids() {
+    final seen = <String>{};
+    final uids = <String>[];
+    for (final room in liveRooms.take(4)) {
+      for (final uid in [...room.stageUserIds, ...room.audienceUserIds]) {
+        if (seen.add(uid)) {
+          uids.add(uid);
+          if (uids.length >= 4) return uids;
+        }
+      }
+      // Fallback: use hostId so we always have something
+      if (seen.add(room.hostId)) {
+        uids.add(room.hostId);
+        if (uids.length >= 4) return uids;
+      }
+    }
+    return uids;
+  }
+
+  // "3 rooms started in the last hour"
+  String _temporalSummary() {
+    final cutoff = DateTime.now().subtract(const Duration(hours: 1));
+    final recentCount = liveRooms.where((r) {
+      final ts = r.createdAt?.toDate();
+      return ts != null && ts.isAfter(cutoff);
+    }).length;
+    if (recentCount == 0) return '$liveRoomCount rooms live';
+    if (recentCount == liveRoomCount) {
+      return '$liveRoomCount rooms started this hour';
+    }
+    return '$recentCount of $liveRoomCount started this hour';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (liveRoomCount == 0) return const SizedBox.shrink();
+    final listeners = activeListenerCount > 999
+        ? '${(activeListenerCount / 1000).toStringAsFixed(1)}k'
+        : '$activeListenerCount';
+    final clusterUids = _clusterUids();
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        context.pageHorizontalPadding,
+        12,
+        context.pageHorizontalPadding,
+        0,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: _npError.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _npError.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          _AnimatedPulseDot(),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _temporalSummary(),
+                  style: GoogleFonts.raleway(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _npError,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$listeners listening now',
+                  style: GoogleFonts.raleway(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: _npOnVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _JoinEventTicker(liveRooms: liveRooms),
+              ],
+            ),
+          ),
+          if (clusterUids.isNotEmpty) ...
+            [
+              const SizedBox(width: 10),
+              RoomAvatarStack(
+                uids: clusterUids,
+                resolveAvatar: (ref, uid) => ref.watch(_hostAvatarProvider(uid)),
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Animated pulse dot (reusable) ─────────────────────────────────────────────
+class _AnimatedPulseDot extends StatefulWidget {
+  const _AnimatedPulseDot({this.size = 8.0});
+  final double size;
+
+  @override
+  State<_AnimatedPulseDot> createState() => _AnimatedPulseDotState();
+}
+
+class _AnimatedPulseDotState extends State<_AnimatedPulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.35, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _npError,
+          boxShadow: [
+            BoxShadow(
+              color: _npError.withValues(alpha: 0.55),
+              blurRadius: 6,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Speed Date card — secondary CTA ──────────────────────────────────────────
+class _SpeedDateCard extends StatelessWidget {
+  const _SpeedDateCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.pageHorizontalPadding,
+        10,
+        context.pageHorizontalPadding,
+        4,
+      ),
+      child: GestureDetector(
+        onTap: () => context.go('/speed-dating'),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2A0A14), Color(0xFF1A0A10), Color(0xFF0B0B0B)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _npSecondary.withValues(alpha: 0.25)),
+            boxShadow: [
+              BoxShadow(
+                color: _npSecondary.withValues(alpha: 0.10),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _npSecondary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _npSecondary.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: const Center(
+                  child: Text('❤️', style: TextStyle(fontSize: 22)),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Speed Dating',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: _npOnSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Jump into 3-min video rounds',
+                      style: GoogleFonts.raleway(
+                        fontSize: 12,
+                        color: _npOnVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: _npSecondary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: _npSecondary.withValues(alpha: 0.40),
+                  ),
+                ),
+                child: Text(
+                  'DATE',
+                  style: GoogleFonts.raleway(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: _npSecondary,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Hero Join / Start Room card ───────────────────────────────────────────────
 /// Dominant CTA card at the top of the Discover feed.
 /// Two actions: join the first live room (if any), or start your own room.
@@ -2033,6 +2353,12 @@ class _HeroJoinCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasLiveRoom = firstRoom != null;
+    final listenerCount = firstRoom == null
+        ? 0
+        : firstRoom!.memberCount > 0
+            ? firstRoom!.memberCount
+            : firstRoom!.stageUserIds.length +
+                firstRoom!.audienceUserIds.length;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.pageHorizontalPadding,
@@ -2049,10 +2375,16 @@ class _HeroJoinCard extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _npPrimary.withValues(alpha: 0.28)),
+          border: Border.all(
+            color: hasLiveRoom
+                ? _npPrimary.withValues(alpha: 0.38)
+                : _npSurfaceHighest.withValues(alpha: 0.6),
+          ),
           boxShadow: [
             BoxShadow(
-              color: _npError.withValues(alpha: 0.14),
+              color: hasLiveRoom
+                  ? _npError.withValues(alpha: 0.18)
+                  : Colors.black26,
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -2063,21 +2395,24 @@ class _HeroJoinCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _npError,
+                if (hasLiveRoom)
+                  _AnimatedPulseDot(size: 8)
+                else
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _npOnVariant,
+                    ),
                   ),
-                ),
                 const SizedBox(width: 7),
                 Text(
-                  '🎤  Live Now',
+                  hasLiveRoom ? '🎤  Live Now' : '🎤  Quiet right now',
                   style: GoogleFonts.raleway(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: _npError,
+                    color: hasLiveRoom ? _npError : _npOnVariant,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -2089,7 +2424,7 @@ class _HeroJoinCard extends StatelessWidget {
                   ? firstRoom!.name.isNotEmpty
                         ? firstRoom!.name
                         : 'Someone is live right now'
-                  : 'Be the first to go live',
+                  : 'No one is live yet — be first',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.playfairDisplay(
@@ -2098,13 +2433,56 @@ class _HeroJoinCard extends StatelessWidget {
                 color: _npOnSurface,
               ),
             ),
+            if (hasLiveRoom && listenerCount > 0) ...
+              [
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      '$listenerCount listening',
+                      style: GoogleFonts.raleway(
+                        fontSize: 12,
+                        color: _npOnVariant,
+                      ),
+                    ),
+                    () {
+                      final rel = _relativeTime(
+                        firstRoom!.createdAt?.toDate(),
+                      );
+                      if (rel.isEmpty) return const SizedBox.shrink();
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            margin:
+                                const EdgeInsets.symmetric(horizontal: 6),
+                            width: 3,
+                            height: 3,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _npOnVariant,
+                            ),
+                          ),
+                          Text(
+                            rel,
+                            style: GoogleFonts.raleway(
+                              fontSize: 12,
+                              color: _npOnVariant,
+                            ),
+                          ),
+                        ],
+                      );
+                    }(),
+                  ],
+                ),
+              ],
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: hasLiveRoom
-                    ? () => context.go('/room/${firstRoom!.id}')
-                    : null,
+                    ? () => context.go('/room/${firstRoom!.id}', extra: firstRoom!)
+                    : () => context.go('/create-room'),
                 style: FilledButton.styleFrom(
                   backgroundColor: _npPrimary,
                   foregroundColor: _npSurface,
@@ -2113,9 +2491,11 @@ class _HeroJoinCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                icon: const Icon(Icons.meeting_room_rounded),
+                icon: Icon(
+                  hasLiveRoom ? Icons.meeting_room_rounded : Icons.mic_rounded,
+                ),
                 label: Text(
-                  hasLiveRoom ? 'Join a Room' : 'No rooms live yet',
+                  hasLiveRoom ? 'Join a Room' : 'Start the Night',
                   style: GoogleFonts.raleway(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -2123,34 +2503,171 @@ class _HeroJoinCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.go('/create-room'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _npPrimary,
-                  side: BorderSide(color: _npPrimary.withValues(alpha: 0.6)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            if (hasLiveRoom) ...
+              [
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/create-room'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _npPrimary,
+                      side: BorderSide(
+                        color: _npPrimary.withValues(alpha: 0.6),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.mic_rounded),
+                    label: Text(
+                      'Start Your Own Room',
+                      style: GoogleFonts.raleway(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
-                icon: const Icon(Icons.mic_rounded),
-                label: Text(
-                  'Start Your Own Room',
-                  style: GoogleFonts.raleway(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
+              ],
           ],
         ),
       ),
     );
   }
+}
+
+// ── Join micro-event ticker ───────────────────────────────────────────────────
+/// Cycles through data-derived join signals every 4 seconds.
+/// Only shows when there are live rooms with recent activity.
+class _JoinEventTicker extends StatefulWidget {
+  const _JoinEventTicker({required this.liveRooms});
+  final List<RoomModel> liveRooms;
+
+  @override
+  State<_JoinEventTicker> createState() => _JoinEventTickerState();
+}
+
+class _JoinEventTickerState extends State<_JoinEventTicker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fade;
+  late final Animation<double> _opacity;
+  late List<String> _events;
+  int _index = 0;
+  Timer? _timer;
+
+  List<String> _buildEvents(List<RoomModel> rooms) {
+    final events = <String>[];
+    final now = DateTime.now();
+
+    for (final room in rooms) {
+      final updatedAt = room.updatedAt?.toDate();
+      if (updatedAt == null) continue;
+      final secAgo = now.difference(updatedAt).inSeconds;
+
+      if (secAgo <= 90) {
+        // Very fresh join signal
+        final name = room.name.length > 22
+            ? '${room.name.substring(0, 22)}…'
+            : room.name;
+        events.add('Someone joined $name');
+      } else if (secAgo <= 300) {
+        // 1-5 min old activity
+        final count = room.stageUserIds.length + room.audienceUserIds.length;
+        if (count > 1) {
+          events.add('Audience growing · ${room.name.length > 18 ? '${room.name.substring(0, 18)}…' : room.name}');
+        }
+      }
+    }
+
+    // Count rooms active in the last 2 minutes
+    final veryRecentCount = rooms.where((r) {
+      final ua = r.updatedAt?.toDate();
+      return ua != null && now.difference(ua).inSeconds <= 120;
+    }).length;
+    if (veryRecentCount >= 2) {
+      events.add('$veryRecentCount rooms had joins in the last 2 min');
+    }
+
+    return events.isEmpty ? const [] : events;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _events = _buildEvents(widget.liveRooms);
+    _fade = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+      value: 1.0,
+    );
+    _opacity = CurvedAnimation(parent: _fade, curve: Curves.easeInOut);
+
+    if (_events.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) => _advance());
+    }
+  }
+
+  void _advance() {
+    if (!mounted || _events.isEmpty) return;
+    _fade.reverse().then((_) {
+      if (!mounted) return;
+      setState(() => _index = (_index + 1) % _events.length);
+      _fade.forward();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_JoinEventTicker old) {
+    super.didUpdateWidget(old);
+    _events = _buildEvents(widget.liveRooms);
+    _index = _index.clamp(0, _events.isEmpty ? 0 : _events.length - 1);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_events.isEmpty) return const SizedBox.shrink();
+    return FadeTransition(
+      opacity: _opacity,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.arrow_upward_rounded,
+            size: 10,
+            color: _npOnVariant,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            _events[_index.clamp(0, _events.length - 1)],
+            style: GoogleFonts.raleway(
+              fontSize: 11,
+              color: _npOnVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Relative-time helper ─────────────────────────────────────────────────────────
+String _relativeTime(DateTime? dt) {
+  if (dt == null) return '';
+  final diff = DateTime.now().difference(dt);
+  if (diff.inSeconds < 60) return 'just started';
+  if (diff.inMinutes < 60) return 'started ${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return 'started ${diff.inHours}h ago';
+  return '';
 }
 
 // ── Emoji fallback avatar ─────────────────────────────────────────────────────
@@ -2274,7 +2791,7 @@ class _FriendsLiveSection extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 14),
                 itemBuilder: (ctx, i) => _LiveNowBubble(
                   room: friendRooms[i],
-                  onTap: () => context.go('/room/${friendRooms[i].id}'),
+                  onTap: () => context.go('/room/${friendRooms[i].id}', extra: friendRooms[i]),
                 ),
               ),
             ),

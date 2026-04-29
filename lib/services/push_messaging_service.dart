@@ -281,7 +281,7 @@ class PushMessagingService {
       case 'friend_request':
       case 'friend_accepted':
         final senderId = data['senderId'] as String? ?? '';
-        route = senderId.isNotEmpty ? '/profile' : '/fallback';
+        route = senderId.isNotEmpty ? '/profile/$senderId' : '/friends';
       case 'speed_dating_match':
         final roomId = data['roomId'] as String? ?? '';
         route = roomId.isNotEmpty ? '/room/$roomId' : '/speed-dating';
