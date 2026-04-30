@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/follow/providers/follow_provider.dart';
 
 DateTime _parseDateTime(dynamic value) {
@@ -128,10 +129,7 @@ class Story {
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
 
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
-
+// firestoreProvider is the canonical instance from core/providers/firebase_providers.dart
 final followingIdsProvider = rawFollowGraphStreamProvider;
 
 // Stream of stories from following users

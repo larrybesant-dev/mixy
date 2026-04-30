@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import '../models/group_model.dart';
 
 // Get all groups
@@ -135,8 +136,4 @@ class GroupsController {
 
 final groupsControllerProvider = Provider<GroupsController>((ref) {
   return GroupsController(firestore: ref.watch(firestoreProvider));
-});
-
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
 });

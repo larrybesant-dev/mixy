@@ -8,7 +8,7 @@ final hostControlsRepositoryProvider = Provider<HostControlsRepository>((ref) {
   return HostControlsRepository(ref.watch(firestoreProvider));
 });
 
-final roomStreamProvider = StreamProvider.family<RoomModel, String>((ref, roomId) {
+final feedRoomStreamProvider = StreamProvider.family<RoomModel, String>((ref, roomId) {
   return ref.read(roomServiceProvider).watchRoomById(roomId).map((room) {
     if (room != null) {
       return room;

@@ -9,13 +9,10 @@ import '../../../services/presence_repository.dart';
 import '../models/conversation_model.dart';
 import '../../../services/moderation_service.dart';
 import '../../../presentation/providers/user_provider.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 
 String _newClientmessageId() =>
   '${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().millisecondsSinceEpoch}';
-
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
 
 String _effectiveMessagingUserId(String userId) {
   final authUid = FirebaseAuth.instance.currentUser?.uid.trim();

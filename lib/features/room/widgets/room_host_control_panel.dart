@@ -262,7 +262,7 @@ class _RoomSettingsTab extends ConsumerWidget {
       liveRoomControllerProvider(roomId).notifier,
     );
     final roomPolicyAsync = ref.watch(roomPolicyProvider(roomId));
-    final roomAsync = ref.watch(roomStreamProvider(roomId));
+    final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
     final isLocked = roomAsync.valueOrNull?.isLocked ?? false;
     final currentName = roomAsync.valueOrNull?.name ?? '';
     final currentDescription = roomAsync.valueOrNull?.description ?? '';
@@ -1374,7 +1374,7 @@ class _ThemeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roomAsync = ref.watch(roomStreamProvider(roomId));
+    final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
     final roomController = ref.read(liveRoomControllerProvider(roomId).notifier);
     final currentTheme = roomAsync.valueOrNull?.theme;
     final preset = currentTheme?.vibePreset;
