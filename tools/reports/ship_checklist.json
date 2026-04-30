@@ -1,0 +1,198 @@
+{
+  "schemaVersion": "1.0.0",
+  "startedAt": "2026-04-30T00:09:49.504Z",
+  "finishedAt": "2026-04-30T00:09:55.518Z",
+  "durationMs": 6014,
+  "passed": false,
+  "failCount": 2,
+  "warnCount": 1,
+  "totalChecks": 31,
+  "checks": [
+    {
+      "category": "env",
+      "name": "Node ≥ 18",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "env",
+      "name": "Firestore reachable",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "env",
+      "name": "pubspec.yaml present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "env",
+      "name": "firebase.json present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "data",
+      "name": "Conversations sample (9 docs)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "data",
+      "name": "Messages sample (50 docs)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "data",
+      "name": "Rooms sample (19 docs)",
+      "status": "FAIL",
+      "detail": "9 violations — run npm run repair:rooms:apply"
+    },
+    {
+      "category": "data",
+      "name": "Follows sample (11 docs)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "arch",
+      "name": "firestoreProvider declared only once (canonical)",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "arch",
+      "name": "stream_registry.dart present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "arch",
+      "name": "stream_registry_test.dart present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "arch",
+      "name": "No raw FirebaseFirestore.instance in UI layer",
+      "status": "WARN",
+      "detail": "25 usages: lib\\features\\after_dark\\screens\\after_dark_create_lounge_screen.dart:102, lib\\features\\after_dark\\screens\\after_dark_home_screen.dart:16, lib\\features\\after_dark\\screens\\after_dark_lounges_screen.dart:27"
+    },
+    {
+      "category": "rules",
+      "name": "firestore.rules present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "rules",
+      "name": "Rules cover: users collection rule",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "rules",
+      "name": "Rules cover: conversations collection rule",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "rules",
+      "name": "Rules cover: rooms collection rule",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "rules",
+      "name": "Rules cover: follows collection rule",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "rules",
+      "name": "Rules cover: signedIn() helper",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "rules",
+      "name": "No open allow:true rules",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "deploy.ps1 runs Firestore validator",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "firebase.json predeploy includes validate",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "Repair script: repair-conversations.js",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "Repair script: repair-messages.js",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "Repair script: repair-rooms.js",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "Repair script: repair-follows.js",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "validate-firestore-truth.js present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "gates",
+      "name": "stress-test-harness.js present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "security",
+      "name": "storage.rules present",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "security",
+      "name": "No hardcoded secrets (AIza[0-9A-Za-z-_]{35…)",
+      "status": "FAIL",
+      "detail": "found in: lib\\firebase_options.generated.dart:47, lib\\firebase_options.generated.dart:57, lib\\firebase_options.generated.dart:65"
+    },
+    {
+      "category": "security",
+      "name": "Rules enforce adultModeEnabled for adult rooms",
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "security",
+      "name": "No eval() in Cloud Functions",
+      "status": "PASS",
+      "detail": null
+    }
+  ]
+}

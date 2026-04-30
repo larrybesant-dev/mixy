@@ -182,7 +182,7 @@ async function checkDataIntegrity() {
 function checkArchitecture() {
   // firestoreProvider must not be redeclared in feature files
   const duplicateProviders = grepLib("firestoreProvider = Provider<FirebaseFirestore>")
-    .filter((p) => !p.includes("core/providers/firebase_providers.dart"));
+    .filter((p) => !p.replace(/\\/g, "/").includes("core/providers/firebase_providers.dart"));
 
   addCheck("arch", "firestoreProvider declared only once (canonical)",
     duplicateProviders.length === 0 ? "PASS" : "FAIL",
@@ -260,7 +260,7 @@ function checkDeployGates() {
 
   // firebase.json predeploy includes validate
   addCheck("gates", "firebase.json predeploy includes validate",
-    fileContains("firebase.json", '"validate"') ? "PASS" : "FAIL");
+    fileContains("firebase.json", "run validate") ? "PASS" : "FAIL");
 
   // repair scripts exist
   const repairScripts = [
@@ -301,7 +301,8 @@ function checkSecurity() {
 
   let secretHits = 0;
   for (const pattern of secretPatterns) {
-    const hits = grepLib(pattern);
+    // Exclude firebase_options.dart — standard generated Flutter Firebase config
+    const hits = grepLib(pattern).filter((p) => !p.replace(/\\/g, "/").includes("lib/firebase_options.dart"));
     secretHits += hits.length;
     if (hits.length > 0) {
       addCheck("security", `No hardcoded secrets (${pattern.source.slice(0, 20)}…)`,
@@ -320,7 +321,7 @@ function checkSecurity() {
 
   // No eval / Function() in JS functions
   const evalHits = grepLib("eval(", {dir: FUNCTIONS_DIR, ext: ".js"})
-    .filter((p) => !p.includes("node_modules") && !p.includes("eslintrc"));
+    .filter((p) => !p.includes("node_modules") && !p.includes("eslintrc") && !p.replace(/\\/g, "/").includes("scripts/ship-checklist.js"));
   addCheck("security", "No eval() in Cloud Functions",
     evalHits.length === 0 ? "PASS" : "FAIL",
     evalHits.length > 0 ? evalHits.join(", ") : null);
