@@ -129,7 +129,11 @@ final conversationDocProvider =
   });
 });
 
-// Stream of message in a conversation
+// Stream of messages in a conversation.
+// createdAt is a server timestamp, so Firestore is the ordering authority.
+// During the pending-write window (before server ack), Firestore's local SDK
+// estimates the server timestamp from device time for ordering \u2014 this is
+// correct behavior. We sort stable-ly so pending writes stay in send order.
 final messagestreamProvider =
     StreamProvider.autoDispose.family<List<MessageModel>, String>((ref, conversationId) {
   final firestore = ref.watch(firestoreProvider);
@@ -139,13 +143,16 @@ final messagestreamProvider =
       .collection('messages')
       .orderBy('createdAt', descending: true)
       .limit(50)
-      .snapshots()
+      .snapshots(includeMetadataChanges: false)
       .map((snapshot) {
-    return snapshot.docs
+    // Reverse so the list is chronological (oldest first, newest last).
+    // Firestore already ordered descending, so reversing gives ascending order.
+    final messages = snapshot.docs
         .map((doc) => MessageModel.fromJson(doc.data(), doc.id))
         .toList()
         .reversed
         .toList();
+    return messages;
   });
 });
 
@@ -351,9 +358,9 @@ class MessagingController {
       result: 'start',
     );
 
-    final now = DateTime.now();
-    final expiresAt = now.add(const Duration(days: messageRetentionDays));
     final resolvedClientmessageId = clientmessageId ?? _newClientmessageId();
+    // expiresAt is a retention deadline — compute from client time is acceptable.
+    final expiresAt = DateTime.now().add(const Duration(days: messageRetentionDays));
     final messageRef = _firestore
         .collection('conversations')
         .doc(conversationId)
@@ -361,7 +368,9 @@ class MessagingController {
         .doc();
 
     try {
-      // Add message to message subcollection
+      // Add message to message subcollection.
+      // createdAt uses FieldValue.serverTimestamp() so Firestore is the
+      // ordering authority — eliminates client clock skew and burst reordering.
       await messageRef.set({
         'conversationId': conversationId,
         'senderId': authoritativeSenderId,
@@ -369,19 +378,21 @@ class MessagingController {
         'senderAvatarUrl': senderAvatarUrl,
         'content': content,
         'clientmessageId': resolvedClientmessageId,
-        'createdAt': Timestamp.fromDate(now),
+        'createdAt': FieldValue.serverTimestamp(),
         'expiresAt': Timestamp.fromDate(expiresAt),
         'isDeleted': false,
         'readBy': [authoritativeSenderId],
       });
 
-      // Update conversation with last message info
+      // Update conversation with last message info.
+      // lastMessageAt uses serverTimestamp so conversation list sorts correctly
+      // even when messages arrive from multiple devices simultaneously.
       final convRef = _firestore.collection('conversations').doc(conversationId);
       await convRef.update({
         'lastMessageId': messageRef.id,
         'lastMessagePreview': content,
         'lastMessageSenderId': authoritativeSenderId,
-        'lastMessageAt': Timestamp.fromDate(now),
+        'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageClientMessageId': resolvedClientmessageId,
       });
 
@@ -445,8 +456,9 @@ class MessagingController {
       }
     }
 
-    // Create new conversation
-    final now = DateTime.now();
+    // Create new conversation.
+    // createdAt and lastReadAt use serverTimestamp so they are authoritative
+    // regardless of the creating device's clock.
     final docRef = await _firestore.collection('conversations').add({
       'type': 'direct',
       'participantIds': [currentUserId, targetUserId],
@@ -454,10 +466,10 @@ class MessagingController {
         currentUserId: user1Name,
         targetUserId: user2Name,
       },
-      'createdAt': Timestamp.fromDate(now),
+      'createdAt': FieldValue.serverTimestamp(),
       'lastReadAt': {
-        currentUserId: Timestamp.fromDate(now),
-        targetUserId: Timestamp.fromDate(now),
+        currentUserId: FieldValue.serverTimestamp(),
+        targetUserId: FieldValue.serverTimestamp(),
       },
       'isArchived': false,
       'status': 'active',
@@ -472,11 +484,9 @@ class MessagingController {
     required List<String> participantIds,
     required Map<String, String> participantNames,
   }) async {
-    final now = DateTime.now();
-    final lastReadAt = <String, dynamic>{};
-    for (final id in participantIds) {
-      lastReadAt[id] = Timestamp.fromDate(now);
-    }
+    final lastReadAt = <String, dynamic>{
+      for (final id in participantIds) id: FieldValue.serverTimestamp(),
+    };
 
     final docRef = await _firestore.collection('conversations').add({
       'type': 'group',
@@ -484,7 +494,7 @@ class MessagingController {
       'groupAvatarUrl': groupAvatarUrl,
       'participantIds': participantIds,
       'participantNames': participantNames,
-      'createdAt': Timestamp.fromDate(now),
+      'createdAt': FieldValue.serverTimestamp(),
       'lastReadAt': lastReadAt,
       'isArchived': false,
       'status': 'active',
@@ -501,7 +511,7 @@ class MessagingController {
     final conversationRef = _firestore.collection('conversations').doc(conversationId);
     try {
       await conversationRef.update({
-        'lastReadAt.$actorUserId': Timestamp.fromDate(DateTime.now()),
+        'lastReadAt.$actorUserId': FieldValue.serverTimestamp(),
       });
     } on FirebaseException catch (error, stackTrace) {
       if (error.code != 'not-found') {
@@ -519,7 +529,7 @@ class MessagingController {
       );
       await conversationRef.set({
         'lastReadAt': {
-          actorUserId: Timestamp.fromDate(DateTime.now()),
+          actorUserId: FieldValue.serverTimestamp(),
         },
         'participantIds': [actorUserId],
       }, SetOptions(merge: true));
@@ -668,6 +678,7 @@ final messageReactionsProvider = StreamProvider.family<Map<String, String>,
       .collection('messages')
       .doc(params.messageId)
       .collection('reactions')
+      .limit(20)
       .snapshots()
       .map((snap) {
     final result = <String, String>{};

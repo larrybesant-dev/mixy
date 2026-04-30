@@ -110,20 +110,21 @@ class Cohost {
   const Cohost(this.id);
 }
 
-final coHostsProvider = StreamProvider.autoDispose.family<List<Cohost>, String>(
+/// Derived view of cohosts from the canonical [participantsStreamProvider].
+/// No separate Firestore query — filters client-side from the already-active
+/// participants stream.
+final coHostsProvider = Provider.autoDispose.family<List<Cohost>, String>(
   (ref, roomId) {
-    final firestore = ref.watch(roomFirestoreProvider);
-    return firestore
-        .collection('rooms')
-        .doc(roomId)
-        .collection('participants')
-        .where('role', isEqualTo: 'cohost')
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Cohost(doc.id))
-              .toList(growable: false),
-        );
+    final participants =
+        ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
+        const <RoomParticipantModel>[];
+    return participants
+        .where(
+          (p) =>
+              normalizeRoomRole(p.role, fallbackRole: '') == roomRoleCohost,
+        )
+        .map((p) => Cohost(p.userId))
+        .toList(growable: false);
   },
 );
 
@@ -199,22 +200,11 @@ final participantsStreamProvider = StreamProvider.autoDispose
       );
     });
 
-final participantCountProvider = StreamProvider.autoDispose.family<int, String>(
-  (ref, roomId) {
-    final firestore = ref.watch(roomFirestoreProvider);
-    return traceFirestoreStream<int>(
-      key: 'participant_count/$roomId',
-      query: 'rooms/$roomId/participants count',
-      roomId: roomId,
-      itemCount: (_) => 1,
-      stream: firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('participants')
-          .snapshots()
-          .map((snapshot) => _mapParticipants(snapshot).length),
-    );
-  },
+/// Derived participant count from [participantsStreamProvider].
+/// No separate Firestore query — counts the already-active stream.
+final participantCountProvider = Provider.autoDispose.family<int, String>(
+  (ref, roomId) =>
+      ref.watch(participantsStreamProvider(roomId)).valueOrNull?.length ?? 0,
 );
 
 final isHostProvider = Provider.autoDispose.family<bool, RoomParticipantModel?>(

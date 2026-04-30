@@ -20,6 +20,50 @@ class MockUser extends Mock implements User {}
 class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
 // Removed sealed class mocks for DocumentReference, DocumentSnapshot, and CollectionReference.
 
+/// Custom Firebase Core mock that includes plugin constants required by
+/// FirebaseCrashlytics (isCrashlyticsCollectionEnabled) so the Logger does
+/// not assert in widget/unit tests.
+class _MixvyFirebaseMock implements TestFirebaseCoreHostApi {
+  // pluginConstants is keyed by plugin channel name; Crashlytics reads
+  // its values from the sub-map at 'plugins.flutter.io/firebase_crashlytics'.
+  static const Map<String, Object> _pluginConstants = <String, Object>{
+    'plugins.flutter.io/firebase_crashlytics': <String, Object>{
+      'isCrashlyticsCollectionEnabled': true,
+    },
+  };
+
+  static CoreInitializeResponse _makeApp(String name) => CoreInitializeResponse(
+        name: name,
+        options: CoreFirebaseOptions(
+          apiKey: 'test-api-key',
+          appId: '1:12345:android:test',
+          messagingSenderId: '12345',
+          projectId: 'test-project',
+        ),
+        pluginConstants: _pluginConstants,
+      );
+
+  @override
+  Future<CoreInitializeResponse> initializeApp(
+    String appName,
+    CoreFirebaseOptions initializeAppRequest,
+  ) async =>
+      _makeApp(appName);
+
+  @override
+  Future<List<CoreInitializeResponse>> initializeCore() async =>
+      [_makeApp(defaultFirebaseAppName)];
+
+  @override
+  Future<CoreFirebaseOptions> optionsFromResource() async =>
+      CoreFirebaseOptions(
+        apiKey: 'test-api-key',
+        appId: '1:12345:android:test',
+        messagingSenderId: '12345',
+        projectId: 'test-project',
+      );
+}
+
 // Expose mocks for use in test files
 final mockUser = MockUser();
 final mockUserCredential = MockUserCredential();
@@ -38,8 +82,9 @@ Future<void> testSetup() async {
   // Removed unused local variable 'currentUser'
   // Removed unsupported StreamController and authStateController logic for test mocks
   TestWidgetsFlutterBinding.ensureInitialized();
-  // Register Pigeon-based Firebase Core mock (firebase_core >= 4.x).
-  setupFirebaseCoreMocks();
+  // Register Pigeon-based Firebase Core mock (firebase_core >= 4.x) with
+  // plugin constants required by FirebaseCrashlytics.
+  TestFirebaseCoreHostApi.setUp(_MixvyFirebaseMock());
   registerFallbackValue(MockFirebaseApp());
   registerFallbackValue(MockFirebaseAuth());
   registerFallbackValue(MockUserCredential());

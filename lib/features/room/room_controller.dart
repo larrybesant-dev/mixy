@@ -88,6 +88,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   Timer? _roomHeartbeatTimer;
   DateTime? _lastParticipantSyncAt;
 
+  bool _isDisposed = false;
+
   /// Tracks the most-recent `lastActiveAt` seen per user from Firestore.
   /// Any incoming participant doc with an older timestamp is stale and must
   /// not overwrite the role or snapshot we already accepted.
@@ -107,7 +109,6 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   // Values from the Room State Contract (docs/ROOM_STATE_CONTRACT.md §5, §8).
   static const Duration _kPendingRoleTtl = kRoomPendingRoleTtl;
-  static const Duration _kJoinStabilizationDelay = kRoomJoinStabilizationDelay;
 
   static const Duration _kRoomHeartbeatInterval = Duration(seconds: 20);
 
@@ -124,11 +125,13 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     // in ref.onDispose without triggering !_didChangeDependency.
     _cachedSessionService = ref.read(roomSessionServiceProvider);
     ref.onDispose(() {
+      _isDisposed = true;
       for (final t in _joinStabilizationTimers.values) {
         t.cancel();
       }
       _joinStabilizationTimers.clear();
       _roomHeartbeatTimer?.cancel();
+      _roomHeartbeatTimer = null;
       // Fire-and-forget: remove participant presence from Firestore when the
       // room controller is auto-disposed (widget unmount / navigation away).
       // leaveRoom() would throw accessing a disposed container, so we call
@@ -787,8 +790,9 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     // Cancel only this user's timer, preserving all other users' windows.
     _joinStabilizationTimers[normalizedUserId]?.cancel();
     _joinStabilizationTimers[normalizedUserId] = Timer(
-      _kJoinStabilizationDelay,
+      kRoomJoinStabilizationDelay,
       () {
+        if (_isDisposed) return;
         _joinStabilizationTimers.remove(normalizedUserId);
         _pendingUserIds.remove(normalizedUserId);
         _stableUserIds.add(normalizedUserId);
@@ -805,6 +809,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     }
 
     _roomHeartbeatTimer = Timer.periodic(_kRoomHeartbeatInterval, (_) {
+      if (_isDisposed) return;
       unawaited(_sendRoomHeartbeat());
     });
   }

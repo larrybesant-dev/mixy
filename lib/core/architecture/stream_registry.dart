@@ -34,7 +34,10 @@
 // | Follow graph     | rawFollowGraphStreamProvider              | features/follow/providers/follow_provider.dart       |
 // | Follower IDs     | rawFollowerIdsStreamProvider              | features/follow/providers/follow_provider.dart       |
 // | Room doc         | roomDocStreamProvider                     | features/room/providers/participant_providers.dart   |
+// | Room doc (typed) | feedRoomStreamProvider (derived)          | features/feed/providers/host_controls_providers.dart |
 // | Participants     | participantsStreamProvider                | features/room/providers/participant_providers.dart   |
+// | Cohosts          | coHostsProvider (derived)                 | features/room/providers/participant_providers.dart   |
+// | Participant cnt  | participantCountProvider (derived)        | features/room/providers/participant_providers.dart   |
 // | Live rooms list  | roomsStreamProvider                       | features/feed/providers/feed_providers.dart          |
 // | Presence         | presenceStreamProvider (RTDB)             | services/presence_repository.dart                   |
 // | Typing           | typingStreamProvider                      | features/feed/providers/typing_providers.dart        |
