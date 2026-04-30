@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,7 @@ import 'package:mixvy/features/friends/models/friend_roster_entry.dart';
 import 'package:mixvy/features/friends/providers/friends_providers.dart';
 import 'package:mixvy/features/messaging/panes/chat_pane_view.dart';
 import 'package:mixvy/features/messaging/providers/messaging_provider.dart' as messaging;
+import 'test_helpers.dart';
 
 class _DelayedMessagingController extends messaging.MessagingController {
   _DelayedMessagingController({
@@ -125,6 +127,11 @@ Future<void> _seedConversation(
 }
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+    await Firebase.initializeApp();
+  });
+
   group('ChatPaneView', () {
     testWidgets('renders sent message immediately before backend write finishes', (tester) async {
       final firestore = FakeFirebaseFirestore();

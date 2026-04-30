@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core_platform_interface/test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,8 @@ Future<void> testSetup() async {
   // Removed unused local variable 'currentUser'
   // Removed unsupported StreamController and authStateController logic for test mocks
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Register Pigeon-based Firebase Core mock (firebase_core >= 4.x).
+  setupFirebaseCoreMocks();
   registerFallbackValue(MockFirebaseApp());
   registerFallbackValue(MockFirebaseAuth());
   registerFallbackValue(MockUserCredential());

@@ -57,10 +57,15 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
       authUser = await auth
           .authStateChanges()
           .first
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 20));
     } on TimeoutException {
       timeoutHit = true;
+      // Fallback: use current user immediately available.
       authUser = auth.currentUser;
+      developer.log(
+        'Auth bootstrap stream timed out; using currentUser as fallback',
+        name: 'appBootstrapProvider',
+      );
     }
 
     if (timeoutHit && authUser == null) {

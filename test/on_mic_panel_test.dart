@@ -1,20 +1,41 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mixvy/features/room/controllers/room_state.dart';
 import 'package:mixvy/features/room/providers/participant_providers.dart';
+import 'package:mixvy/features/room/room_controller.dart';
 import 'package:mixvy/features/room/widgets/on_mic_panel.dart';
 import 'package:mixvy/models/room_participant_model.dart';
+import 'test_helpers.dart';
 
-// Helper: wraps [OnMicPanel] in a [MaterialApp] with the given provider
-// override so we don't need Firebase.
+/// Minimal fake notifier that returns a fixed [RoomState] with the given
+/// speakerIds so [OnMicPanel] gets its ordered speaker list without Firebase.
+class _FakeRoomController
+    extends AutoDisposeFamilyNotifier<RoomState, String> {
+  _FakeRoomController(this._speakerIds);
+  final List<String> _speakerIds;
+
+  @override
+  RoomState build(String arg) => RoomState(speakerIds: _speakerIds);
+}
+
+// Helper: wraps [OnMicPanel] in a [MaterialApp] with the correct provider
+// overrides that match what the widget actually reads.
 Widget _buildPanel({
   required List<RoomParticipantModel> participants,
   String roomId = 'room-1',
   String currentUserId = 'user-1',
 }) {
+  // All test participants are on-mic roles (host/stage/cohost).
+  final speakerIds = participants.map((p) => p.userId).toList();
+
   return ProviderScope(
     overrides: [
-      onMicParticipantsProvider(roomId).overrideWith(
+      roomControllerProvider(roomId).overrideWith(
+        () => _FakeRoomController(speakerIds),
+      ),
+      participantsStreamProvider(roomId).overrideWith(
         (ref) => Stream.value(participants),
       ),
     ],
@@ -48,6 +69,11 @@ RoomParticipantModel _makeParticipant({
 }
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+    await Firebase.initializeApp();
+  });
+
   group('OnMicPanel', () {
     testWidgets('renders an empty state when participant list is empty', (tester) async {
       await tester.pumpWidget(_buildPanel(participants: []));

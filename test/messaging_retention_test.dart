@@ -1,10 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
+import 'test_helpers.dart';
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+    await Firebase.initializeApp();
+  });
+
   group('Messaging retention', () {
     test('sendmessage writes expiresAt and updates conversation summary', () async {
       final firestore = FakeFirebaseFirestore();

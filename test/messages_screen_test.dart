@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
+import 'test_helpers.dart';
 
 Widget _buildApp({
   required FirebaseFirestore firestore,
@@ -39,6 +41,11 @@ Widget _buildApp({
 }
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+    await Firebase.initializeApp();
+  });
+
   group('messagescreen', () {
     testWidgets('renders Inbox AppBar and request action',
         (tester) async {

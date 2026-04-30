@@ -207,6 +207,13 @@ class AuthController extends Notifier<AuthState> {
         return;
       }
 
+      // If we are currently repairing or rejecting a session, do not emit
+      // a stable state from the auth stream until that logic concludes.
+      if (state.phase == AuthBootstrapPhase.initializingAuth &&
+          state.isLoading == true) {
+        return;
+      }
+
       _setAuthState(state.copyWith(
         uid: user?.uid,
         isLoading: false,
@@ -230,9 +237,13 @@ class AuthController extends Notifier<AuthState> {
       );
     });
 
-    unawaited(_configureWebPersistence());
-    unawaited(_repairInvalidCachedSession());
-    unawaited(_completeRedirectSignInIfNeeded());
+    // Run critical initialization/repairs.
+    // Use initializingAuth + isLoading to guard the stable phase emission.
+    Future(() async {
+      await _configureWebPersistence();
+      await _repairInvalidCachedSession();
+      await _completeRedirectSignInIfNeeded();
+    });
 
     ref.onDispose(() {
       _authStateSubscription?.cancel();
@@ -242,10 +253,9 @@ class AuthController extends Notifier<AuthState> {
     if (_isAnonymousUser(currentUser)) {
       unawaited(_rejectAnonymousSession());
       return const AuthState(
-        isLoading: false,
-        hasResolvedSession: true,
-        error: 'Guest access is disabled. Please sign in with an account.',
-        phase: AuthBootstrapPhase.unauthenticatedStable,
+        isLoading: true, // Keep loading while we reject
+        hasResolvedSession: false,
+        phase: AuthBootstrapPhase.initializingAuth,
       );
     }
 
@@ -255,8 +265,7 @@ class AuthController extends Notifier<AuthState> {
       error: null,
     );
     return AuthState(
-      isLoading: false,
-      // Hold routing decisions until authStateChanges emits at least once.
+      isLoading: currentUser != null, // If we have a user, we are initializing/validating
       hasResolvedSession: false,
       uid: currentUser?.uid,
       phase: AuthBootstrapPhase.initializingAuth,
