@@ -202,7 +202,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: VelvetNoir.onSurface,
                 ),
                 tooltip: 'Create',
-                onPressed: () => _showCreateMenu(context),
+                onPressed: () => _showCreateMenu(context, ref),
               ),
               IconButton(
                 icon: const Icon(
@@ -1303,7 +1303,7 @@ class _ProfileNudge extends StatelessWidget {
 // Create menu with NeonPulse bottom sheet
 // ─────────────────────────────────────────────────────────────────────────────
 
-void _showCreateMenu(BuildContext context) {
+void _showCreateMenu(BuildContext context, WidgetRef ref) {
   showModalBottomSheet(
     context: context,
     backgroundColor: VelvetNoir.surfaceContainer,

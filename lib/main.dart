@@ -16,8 +16,6 @@ import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
 import 'core/services/guest_session_service.dart';
-import 'core/providers/guest_mode_provider.dart';
-import 'core/services/guest_session_service.dart';
 import 'core/telemetry/telemetry_config.dart';
 import 'firebase_options.dart';
 import 'router/app_router.dart';

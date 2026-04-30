@@ -572,6 +572,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
           SliverToBoxAdapter(
             child: _HeroJoinCard(
               firstRoom: filteredRooms.isNotEmpty ? filteredRooms[0] : null,
+              onStartRoom: _startRoomCreation,
             ),
           ),
 
@@ -2450,8 +2451,9 @@ class _SpeedDateCard extends StatelessWidget {
 /// Dominant CTA card at the top of the Discover feed.
 /// Two actions: join the first live room (if any), or start your own room.
 class _HeroJoinCard extends StatelessWidget {
-  const _HeroJoinCard({this.firstRoom});
+  const _HeroJoinCard({this.firstRoom, this.onStartRoom});
   final RoomModel? firstRoom;
+  final VoidCallback? onStartRoom;
 
   @override
   Widget build(BuildContext context) {
@@ -2585,7 +2587,7 @@ class _HeroJoinCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: hasLiveRoom
                     ? () => context.go('/room/${firstRoom!.id}', extra: firstRoom!)
-                  : _startRoomCreation,
+                  : onStartRoom,
                 style: FilledButton.styleFrom(
                   backgroundColor: _npPrimary,
                   foregroundColor: _npSurface,
@@ -2612,7 +2614,7 @@ class _HeroJoinCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: _startRoomCreation,
+                    onPressed: onStartRoom,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _npPrimary,
                       side: BorderSide(
