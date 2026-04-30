@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/follow/providers/follow_provider.dart';
+import '../../../core/constants/query_policy.dart';
 
 DateTime _parseDateTime(dynamic value) {
   if (value is Timestamp) {
@@ -134,7 +135,7 @@ final followingIdsProvider = rawFollowGraphStreamProvider;
 
 // Stream of stories from following users
 final followingStoriesProvider =
-    StreamProvider.family<
+    StreamProvider.autoDispose.family<
       List<Story>,
       ({String userId, List<String> followingIds})
     >((ref, params) {
@@ -149,6 +150,7 @@ final followingStoriesProvider =
           )
           .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
           .orderBy('expiresAt', descending: true)
+          .limit(QueryPolicy.trendingPostsLimit)
           .snapshots()
           .map((snapshot) {
             return snapshot.docs
@@ -159,7 +161,7 @@ final followingStoriesProvider =
     });
 
 // Stream of user's own stories
-final myStoriesProvider = StreamProvider.family<List<Story>, String>((
+final myStoriesProvider = StreamProvider.autoDispose.family<List<Story>, String>((
   ref,
   userId,
 ) {

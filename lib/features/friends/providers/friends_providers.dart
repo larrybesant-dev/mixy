@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/friend_request_model.dart';
@@ -7,12 +6,12 @@ import '../../../models/user_model.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../services/friend_service.dart';
 import '../../../services/presence_repository.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../models/friend_roster_entry.dart';
 import '../models/friendship_model.dart';
 
-final friendFirestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
+// Route through the canonical provider so test overrides work.
+final friendFirestoreProvider = firestoreProvider;
 
 final friendServiceProvider = Provider<FriendService>((ref) {
   return FriendService(firestore: ref.watch(friendFirestoreProvider));
@@ -24,20 +23,48 @@ final currentFriendUserIdProvider = Provider<String?>((ref) {
 
 final friendSearchQueryProvider = StateProvider<String>((ref) => '');
 
+// ─── Canonical friendship streams ────────────────────────────────────────────
+// Riverpod deduplicates family instances by userId.
+// One userId = one Firestore subscription, regardless of how many derived
+// providers are mounted simultaneously.
+
+/// All-status friendship stream (accepted + pending + blocked).
+/// 3 Firestore listeners: friendships.userA, friendships.userB, friend_links.
+final rawAllFriendshipsStreamProvider =
+    StreamProvider.autoDispose.family<List<FriendshipModel>, String>(
+  (ref, userId) {
+    if (userId.isEmpty) return const Stream<List<FriendshipModel>>.empty();
+    return ref.watch(friendServiceProvider).watchFriendships(userId);
+  },
+);
+
+/// Accepted-only friendship stream (includes user-doc fallback for legacy data).
+/// 4 Firestore listeners: userA+accepted, userB+accepted, friend_links+accepted,
+/// plus the user-doc friends-array fallback stream.
+final rawAcceptedFriendshipsStreamProvider =
+    StreamProvider.autoDispose.family<List<FriendshipModel>, String>(
+  (ref, userId) {
+    if (userId.isEmpty) return const Stream<List<FriendshipModel>>.empty();
+    return ref.watch(friendServiceProvider).watchAcceptedFriendships(userId);
+  },
+);
+
+// ─── Derived providers ────────────────────────────────────────────────────────
+
+/// Derived: zero new Firestore streams — broadcasts rawAcceptedFriendshipsStreamProvider.
 final friendsProvider = StreamProvider.autoDispose<List<FriendshipModel>>((ref) {
-  final userId = ref.watch(currentFriendUserIdProvider);
-  if (userId == null) {
-    return const Stream<List<FriendshipModel>>.empty();
-  }
-  return ref.watch(friendServiceProvider).watchAcceptedFriendships(userId);
+  final userId = ref.watch(currentFriendUserIdProvider) ?? '';
+  return ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream);
 });
 
+/// Derived: shares the canonical accepted stream; opens user-docs + presence streams.
 final friendRosterProvider = StreamProvider.autoDispose<List<FriendRosterEntry>>((ref) {
-  final userId = ref.watch(currentFriendUserIdProvider);
-  if (userId == null) {
-    return const Stream<List<FriendRosterEntry>>.empty();
-  }
-  return ref.watch(friendServiceProvider).watchFriendRoster(userId);
+  final userId = ref.watch(currentFriendUserIdProvider) ?? '';
+  if (userId.isEmpty) return const Stream<List<FriendRosterEntry>>.empty();
+  return ref.watch(friendServiceProvider).watchFriendRosterFromFriendships(
+    userId,
+    ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream),
+  );
 });
 
 final onlineFriendsProvider = Provider.autoDispose<AsyncValue<List<FriendRosterEntry>>>((ref) {
@@ -89,10 +116,14 @@ final currentFriendIdsProvider = FutureProvider.autoDispose<List<String>>((ref) 
       .toList(growable: false);
 });
 
+/// Derived: shares canonical accepted stream; opens user-docs stream only.
 final friendsListProvider = StreamProvider.autoDispose<List<UserModel>>((ref) {
-  final userId = ref.watch(currentFriendUserIdProvider);
-  if (userId == null) return const Stream<List<UserModel>>.empty();
-  return ref.watch(friendServiceProvider).watchFriends(userId);
+  final userId = ref.watch(currentFriendUserIdProvider) ?? '';
+  if (userId.isEmpty) return const Stream<List<UserModel>>.empty();
+  return ref.watch(friendServiceProvider).watchFriendsFromFriendships(
+    userId,
+    ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream),
+  );
 });
 
 class IncomingFriendRequestEntry {
@@ -102,39 +133,69 @@ class IncomingFriendRequestEntry {
   final UserModel? fromUser;
 }
 
-final incomingFriendRequestsProvider = StreamProvider<List<IncomingFriendRequestEntry>>((ref) {
+/// Derived: shares canonical all-status stream — no new Firestore streams.
+final incomingFriendRequestsProvider =
+    StreamProvider.autoDispose<List<IncomingFriendRequestEntry>>((ref) {
   final userId = ref.watch(currentFriendUserIdProvider);
   if (userId == null) {
     return const Stream<List<IncomingFriendRequestEntry>>.empty();
   }
 
   final service = ref.watch(friendServiceProvider);
-  return service.incomingRequests(userId).asyncMap((requests) async {
-    final users = await service.getUsersByIds(
-      requests.map((request) => request.fromUserId).toList(growable: false),
-    );
-    final usersById = {for (final user in users) user.id: user};
-
-    return requests
-        .map(
-          (request) => IncomingFriendRequestEntry(
-            request: request,
-            fromUser: usersById[request.fromUserId],
-          ),
-        )
-        .toList(growable: false);
-  });
+  return ref
+      .watch(rawAllFriendshipsStreamProvider(userId).stream)
+      .map(
+        (friendships) =>
+            friendships
+                .where(
+                  (f) => f.status == 'pending' && f.requestedBy != userId,
+                )
+                .map(
+                  (f) => FriendRequestModel(
+                    id: f.id,
+                    fromUserId: f.requestedBy ?? f.userA,
+                    toUserId: userId,
+                    status: f.status,
+                    createdAt: f.createdAt,
+                  ),
+                )
+                .toList(growable: false)
+              ..sort((l, r) => r.createdAt.compareTo(l.createdAt)),
+      )
+      .asyncMap((requests) async {
+        final users = await service.getUsersByIds(
+          requests.map((r) => r.fromUserId).toList(growable: false),
+        );
+        final usersById = {for (final u in users) u.id: u};
+        return requests
+            .map(
+              (r) => IncomingFriendRequestEntry(
+                request: r,
+                fromUser: usersById[r.fromUserId],
+              ),
+            )
+            .toList(growable: false);
+      });
 });
 
-final pendingOutgoingFriendRequestIdsProvider = StreamProvider<Set<String>>((ref) {
+/// Derived: shares canonical all-status stream — no new Firestore streams.
+final pendingOutgoingFriendRequestIdsProvider =
+    StreamProvider.autoDispose<Set<String>>((ref) {
   final userId = ref.watch(currentFriendUserIdProvider);
   if (userId == null) {
     return const Stream<Set<String>>.empty();
   }
 
-  return ref.watch(friendServiceProvider).outgoingPendingRequestIds(userId).map(
-        (ids) => ids.toSet(),
-      );
+  return ref.watch(rawAllFriendshipsStreamProvider(userId).stream).map(
+    (friendships) =>
+        friendships
+            .where(
+              (f) => f.status == 'pending' && f.requestedBy == userId,
+            )
+            .map((f) => f.otherUserId(userId))
+            .where((id) => id.isNotEmpty)
+            .toSet(),
+  );
 });
 
 final friendCandidateSearchProvider = FutureProvider.autoDispose<List<UserModel>>((ref) async {

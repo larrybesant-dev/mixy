@@ -36,7 +36,7 @@ class _PromoBanner extends ConsumerWidget {
 
 Override _vipEntitlementOverride(bool hasVipEntitlement) {
   return vipEntitlementProvider.overrideWith(
-    (ref) => Stream<bool>.value(hasVipEntitlement),
+    (ref) => AsyncData(hasVipEntitlement),
   );
 }
 

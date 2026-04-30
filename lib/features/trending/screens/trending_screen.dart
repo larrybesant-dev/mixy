@@ -113,7 +113,10 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
             final tag = hashtags[index];
             final rank = index + 1;
             return GestureDetector(
-              onTap: () => _showHashtagPosts(tag['hashtag'] as String),
+              onTap: () {
+                final hashtag = tag['hashtag'];
+                if (hashtag is String) _showHashtagPosts(hashtag);
+              },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.symmetric(

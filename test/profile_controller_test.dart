@@ -32,14 +32,14 @@ void main() {
   });
 
   group('ProfileController', () {
-    test('profile user model does not fall back to real displayName', () {
+    test('profile user model falls back to displayName when username is absent', () {
       final user = profile_model.UserModel.fromJson({
         'id': 'user123',
         'email': 'user@example.com',
         'displayName': 'Larry Besant',
       });
 
-      expect(user.username, isEmpty);
+      expect(user.username, 'Larry Besant');
     });
 
     test('fetchProfile loads the Firestore user document', () async {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/config/schema_migration_flags.dart';
 import 'package:mixvy/services/schema_mutation_service.dart';
+import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 
 bool _asBool(dynamic value, {required bool fallback}) {
   if (value is bool) {
@@ -25,7 +26,7 @@ bool _asBool(dynamic value, {required bool fallback}) {
 
 // Check if user is verified
 final userVerificationProvider =
-    StreamProvider.family<bool, String>((ref, userId) {
+    StreamProvider.autoDispose.family<bool, String>((ref, userId) {
   final firestore = ref.watch(firestoreProvider);
   final verificationRef = firestore.collection('verification').doc(userId);
   final usersRef = firestore.collection('users').doc(userId);
@@ -45,17 +46,20 @@ final userVerificationProvider =
   });
 });
 
-// Get all verified users (for admin purposes)
-final verifiedUsersProvider = StreamProvider<List<String>>((ref) {
+// Get all verified users — ADMIN ONLY context. autoDispose so it releases
+// when the admin screen is closed. Hard-limited to 200 docs; use server-side
+// pagination for larger admin queries. Do NOT watch this from a user-facing
+// widget — it scans the entire verification collection.
+final verifiedUsersProvider = StreamProvider.autoDispose<List<String>>((ref) {
   final firestore = ref.watch(firestoreProvider);
 
-  // Source-of-truth is now the 'verification' root collection
   return firestore
       .collection('verification')
       .where('isVerified', isEqualTo: true)
+      .limit(200)
       .snapshots()
       .map((snapshot) =>
-          snapshot.docs.map((doc) => doc.id).toList());
+          snapshot.docs.map((doc) => doc.id).toList(growable: false));
 });
 
 // Verification controller (admin only)
@@ -87,3 +91,18 @@ class VerificationController {
 final verificationControllerProvider = Provider<VerificationController>((ref) {
   return VerificationController(firestore: ref.watch(firestoreProvider));
 });
+
+final verificationRequestProvider =
+    StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
+      final uid = ref.watch(authControllerProvider).uid;
+      if (uid == null || uid.trim().isEmpty) {
+        return Stream.value(null);
+      }
+
+      return ref
+          .watch(firestoreProvider)
+          .collection('verification_requests')
+          .doc(uid)
+          .snapshots()
+          .map((doc) => doc.exists ? doc.data() : null);
+    });

@@ -11,8 +11,9 @@ import 'test_helpers.dart';
 
 /// Minimal fake notifier that returns a fixed [RoomState] with the given
 /// speakerIds so [OnMicPanel] gets its ordered speaker list without Firebase.
-class _FakeRoomController
-    extends AutoDisposeFamilyNotifier<RoomState, String> {
+/// Extends [RoomController] so it is type-compatible with
+/// [roomControllerProvider.overrideWith].
+class _FakeRoomController extends RoomController {
   _FakeRoomController(this._speakerIds);
   final List<String> _speakerIds;
 
@@ -32,7 +33,9 @@ Widget _buildPanel({
 
   return ProviderScope(
     overrides: [
-      roomControllerProvider(roomId).overrideWith(
+      // Override the entire family so every call to roomControllerProvider
+      // gets the fake notifier regardless of the roomId argument.
+      roomControllerProvider.overrideWith(
         () => _FakeRoomController(speakerIds),
       ),
       participantsStreamProvider(roomId).overrideWith(

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../../core/layout/app_layout.dart';
 import '../../../models/room_model.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../providers/after_dark_provider.dart';
 import '../theme/after_dark_theme.dart';
 import '../widgets/after_dark_live_room_card.dart';
 
@@ -21,34 +21,6 @@ const List<({String label, String emoji, String? value})> _loungeCategories = [
   (label: 'Dating',    emoji: '❤️', value: 'dating'),
   (label: 'Party',     emoji: '🥂', value: 'party'),
 ];
-
-final _adultRoomsProvider = StreamProvider.autoDispose
-    .family<List<RoomModel>, String?>((ref, category) {
-  Query<Map<String, dynamic>> q = FirebaseFirestore.instance
-      .collection('rooms')
-      .where('isLive', isEqualTo: true)
-      .where('isAdult', isEqualTo: true)
-      .limit(50);
-
-  if (category != null) {
-    q = q.where('category', isEqualTo: category);
-  }
-
-  return q.snapshots().map(
-        (s) {
-          final rooms =
-              s.docs.map((d) => RoomModel.fromJson(d.data(), d.id)).toList();
-          rooms.sort((a, b) {
-            final aTs = a.createdAt?.seconds ?? 0;
-            final bTs = b.createdAt?.seconds ?? 0;
-            final byCreatedAt = bTs.compareTo(aTs);
-            if (byCreatedAt != 0) return byCreatedAt;
-            return a.id.compareTo(b.id);
-          });
-          return rooms;
-        },
-      );
-});
 
 /// After Dark lounges browser — lists all 18+ live rooms with category filter.
 class AfterDarkLoungesScreen extends ConsumerStatefulWidget {
@@ -83,7 +55,7 @@ class _AfterDarkLoungesScreenState
 
   @override
   Widget build(BuildContext context) {
-    final roomsAsync = ref.watch(_adultRoomsProvider(_selectedCategory));
+    final roomsAsync = ref.watch(adultRoomsProvider(_selectedCategory));
     final resolvedRooms = roomsAsync.when(
       data: (rooms) => rooms,
       loading: () => null,

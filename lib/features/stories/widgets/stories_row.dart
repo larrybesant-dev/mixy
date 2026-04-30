@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mixvy/core/providers/session_capabilities_provider.dart';
+import 'package:mixvy/shared/widgets/guest_auth_gate.dart';
 
 import '../providers/story_provider.dart';
 import '../../../core/utils/network_image_url.dart';
@@ -92,8 +94,13 @@ class _StoryBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final safeAvatarUrl = sanitizeNetworkImageUrl(avatarUrl);
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (isOwn && !hasStory) {
+          final allowed = await GuestAuthGate.requireCapabilityFromContext(
+            context,
+            SessionCapability.createStory,
+          );
+          if (!allowed || !context.mounted) return;
           context.go('/create-story');
         } else {
           context.go('/stories/$userId');

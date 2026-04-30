@@ -10,6 +10,49 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Capability parity with the client-side SessionCapabilities layer.
+    // Today guest users are unauthenticated, so most capabilities resolve to
+    // authenticated-session checks here.
+    function canSendMessage() {
+      return signedIn();
+    }
+
+    function canStartConversation() {
+      return signedIn();
+    }
+
+    function canFollowUser() {
+      return signedIn();
+    }
+
+    function canCreateRoom() {
+      return signedIn();
+    }
+
+    function canJoinRoom() {
+      return signedIn();
+    }
+
+    function canCreatePost() {
+      return signedIn();
+    }
+
+    function canCreateStory() {
+      return signedIn();
+    }
+
+    function canCreateGroup() {
+      return signedIn();
+    }
+
+    function canEditProfile(userId) {
+      return isSelf(userId);
+    }
+
+    function canInviteToRoom() {
+      return signedIn();
+    }
+
     function isSelf(userId) {
       return signedIn() && request.auth.uid == userId;
     }
@@ -176,6 +219,67 @@ service cloud.firestore {
         && participantDoc(roomId, request.auth.uid).data.userId == request.auth.uid;
     }
 
+    function validConversationCreate() {
+      return request.resource.data.keys().hasOnly([
+          'type',
+          'groupName',
+          'groupAvatarUrl',
+          'participantIds',
+          'participantNames',
+          'createdAt',
+          'lastReadAt',
+          'isArchived',
+          'status'
+        ])
+        && request.resource.data.type in ['direct', 'group']
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() >= 1
+        && request.resource.data.participantIds.size() <= 50
+        && request.resource.data.participantIds.hasAny([request.auth.uid])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.isArchived == false
+        && request.resource.data.status == 'active';
+    }
+
+    function validGroupCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'description',
+          'creatorId',
+          'adminId',
+          'memberIds',
+          'memberCount',
+          'createdAt'
+        ])
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.adminId == request.auth.uid
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds[0] == request.auth.uid
+        && request.resource.data.memberCount == 1
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validGroupMembershipMutation() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'memberIds',
+          'memberCount'
+        ])
+        && request.resource.data.memberIds is list
+        && (
+          (
+            !resource.data.memberIds.hasAny([request.auth.uid])
+            && request.resource.data.memberIds.hasAny([request.auth.uid])
+            && request.resource.data.memberCount == resource.data.memberCount + 1
+          )
+          || (
+            resource.data.memberIds.hasAny([request.auth.uid])
+            && !request.resource.data.memberIds.hasAny([request.auth.uid])
+            && request.resource.data.memberCount == resource.data.memberCount - 1
+          )
+        );
+    }
+
     match /users/{userId} {
       // Private profiles only readable by owner or followers.
       allow read: if signedIn()
@@ -193,8 +297,8 @@ service cloud.firestore {
 
       // Update: isSelf + strict field whitelist.
       // Adult-consent fields are allowed as a separate self-update path.
-      allow update: if (isSelf(userId) && onlyIdentityFieldsAllowed())
-        || (isSelf(userId) && onlyAdultConsentFieldsAllowed())
+      allow update: if (canEditProfile(userId) && onlyIdentityFieldsAllowed())
+        || (canEditProfile(userId) && onlyAdultConsentFieldsAllowed())
         || (signedIn() && isFriendLinkUpdate());
 
       // Delete: isSelf only.
@@ -276,9 +380,11 @@ service cloud.firestore {
 
       match /stories/{storyId} {
         allow read: if signedIn();
-        allow create: if isSelf(userId)
+        allow create: if canCreateStory()
+          && isSelf(userId)
           && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isSelf(userId)
+        allow update, delete: if canCreateStory()
+          && isSelf(userId)
           && resource.data.userId == request.auth.uid;
       }
 
@@ -348,7 +454,7 @@ service cloud.firestore {
           !resource.data.get('isAdult', false)
           || adultModeEnabled(request.auth.uid)
         );
-      allow create: if signedIn()
+      allow create: if canCreateRoom()
         && (
           request.resource.data.ownerId == request.auth.uid
           || request.resource.data.hostId == request.auth.uid
@@ -441,7 +547,9 @@ service cloud.firestore {
 
     match /messages/{messageId} {
         allow read: if signedIn();
-        allow create: if signedIn()
+        allow create: if canSendMessage()
+          && canJoinRoom()
+          && isRoomParticipant(roomId)
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.roomId == roomId
           && request.resource.data.sentAt == request.time
@@ -467,7 +575,10 @@ service cloud.firestore {
       // Support singular 'message' collection as used in some client tracing/debug calls.
       match /message/{messageId} {
         allow read: if signedIn();
-        allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
+        allow create: if canSendMessage()
+          && canJoinRoom()
+          && isRoomParticipant(roomId)
+          && request.resource.data.senderId == request.auth.uid;
         allow update, delete: if isRoomHost(roomId) || resource.data.senderId == request.auth.uid;
 
         match /reactions/{userId} {
@@ -674,10 +785,10 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow read: if signedIn();
-      allow create: if signedIn()
+      allow create: if canCreatePost()
         && (!('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid)
         && (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid)
-        && request.resource.data.createdAt == request.time;
+        && request.resource.data.createdAt is timestamp;
       allow update: if signedIn()
         && ((('authorId' in resource.data) && resource.data.authorId == request.auth.uid)
           || (('userId' in resource.data) && resource.data.userId == request.auth.uid))
@@ -807,7 +918,12 @@ service cloud.firestore {
         && request.resource.data.actorId is string
         && request.resource.data.type is string
         && request.resource.data.content is string
-        && request.resource.data.actorId == request.auth.uid;
+        && request.resource.data.actorId == request.auth.uid
+        // Room-invite notifications require the inviteToRoom capability.
+        // This binds canInviteToRoom() to an actual backend write enforcement path
+        // so the capability is not phantom. Any non-room_invite notification type
+        // is unaffected by this check.
+        && (request.resource.data.type != 'room_invite' || canInviteToRoom());
       allow update: if signedIn()
         && resource.data.userId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
@@ -816,12 +932,15 @@ service cloud.firestore {
 
     match /follows/{followId} {
       allow read: if signedIn();
-      allow create: if signedIn()
+      allow create: if canFollowUser()
         && request.resource.data.followerUserId == request.auth.uid
         && request.resource.data.followedUserId is string
-        && request.resource.data.followedUserId != request.auth.uid;
+        && request.resource.data.followedUserId != request.auth.uid
+        && request.resource.data.keys().hasOnly(['followerUserId', 'followedUserId', 'createdAt'])
+        && request.resource.data.createdAt == request.time
+        && followId == request.resource.data.followerUserId + '_' + request.resource.data.followedUserId;
       allow update: if false;
-      allow delete: if signedIn() && resource.data.followerUserId == request.auth.uid;
+      allow delete: if canFollowUser() && resource.data.followerUserId == request.auth.uid;
     }
 
     match /activity_feed/{activityId} {
@@ -980,10 +1099,8 @@ service cloud.firestore {
     match /conversations/{conversationId} {
       allow read: if signedIn()
         && resource.data.participantIds.hasAny([request.auth.uid]);
-      allow create: if signedIn()
-        && request.resource.data.participantIds.hasAny([request.auth.uid])
-        && request.resource.data.participantIds is list;
-      allow update: if signedIn()
+      allow create: if canStartConversation() && validConversationCreate();
+      allow update: if canSendMessage()
         && resource.data.participantIds.hasAny([request.auth.uid])
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['lastMessage', 'lastMessageId', 'lastMessagePreview',
@@ -1008,7 +1125,7 @@ service cloud.firestore {
         allow read: if signedIn()
           && get(/databases/$(database)/documents/conversations/$(conversationId))
               .data.participantIds.hasAny([request.auth.uid]);
-        allow create: if signedIn()
+        allow create: if canSendMessage()
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.conversationId == conversationId
           && request.resource.data.createdAt is timestamp
@@ -1032,16 +1149,19 @@ service cloud.firestore {
 
     match /groups/{groupId} {
       allow read: if signedIn();
-      allow create: if signedIn()
-        && request.resource.data.memberIds.hasAny([request.auth.uid]);
+      allow create: if canCreateGroup() && validGroupCreate();
       allow update: if signedIn()
-        && resource.data.memberIds.hasAny([request.auth.uid]);
-      allow delete: if signedIn()
+        && (
+          resource.data.creatorId == request.auth.uid
+          || resource.data.adminId == request.auth.uid
+          || validGroupMembershipMutation()
+        );
+      allow delete: if canCreateGroup()
         && resource.data.creatorId == request.auth.uid;
 
       match /posts/{postId} {
         allow read: if signedIn();
-        allow create: if signedIn()
+        allow create: if canCreatePost()
           && request.resource.data.authorId == request.auth.uid
           && get(/databases/$(database)/documents/groups/$(groupId))
               .data.memberIds.hasAny([request.auth.uid]);

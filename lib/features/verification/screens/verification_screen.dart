@@ -4,20 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../providers/verification_provider.dart';
-
-// Provider that streams the verification request doc for the current user
-final _verificationRequestProvider = StreamProvider<Map<String, dynamic>?>((ref) {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) return Stream.value(null);
-  return FirebaseFirestore.instance
-      .collection('verification_requests')
-      .doc(uid)
-      .snapshots()
-      .map((doc) => doc.exists ? doc.data() : null);
-});
 
 /// Screen where a user can submit a verification request and see its status.
 ///
@@ -51,7 +41,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     }
     setState(() => _submitting = true);
     try {
-      await FirebaseFirestore.instance
+      await ref.read(firestoreProvider)
           .collection('verification_requests')
           .doc(uid)
           .set({
@@ -81,7 +71,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isVerifiedAsync = ref.watch(userVerificationProvider(uid));
-    final requestAsync = ref.watch(_verificationRequestProvider);
+    final requestAsync = ref.watch(verificationRequestProvider);
     final theme = Theme.of(context);
 
     return AppPageScaffold(
@@ -152,7 +142,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   final note = request['reviewNote'] as String?;
                   return _ExistingRequestView(status: status, reviewNote: note,
                     onResubmit: status == 'rejected' ? () async {
-                      await FirebaseFirestore.instance
+                      await ref.read(firestoreProvider)
                           .collection('verification_requests')
                           .doc(uid)
                           .delete();

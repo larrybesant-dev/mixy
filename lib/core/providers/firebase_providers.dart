@@ -16,6 +16,31 @@ final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) => FirebaseFirestore.instance,
 );
 
+/// Canonical per-user Firestore document stream.
+///
+/// All user-domain feature providers should derive from this provider instead
+/// of opening their own `users/{uid}` snapshots streams.
+final userDocStreamProvider = StreamProvider
+    .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, userId) {
+      final normalizedUserId = userId.trim();
+      if (normalizedUserId.isEmpty) {
+        return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
+      }
+
+      return ref
+          .watch(firestoreProvider)
+          .collection('users')
+          .doc(normalizedUserId)
+          .snapshots();
+    });
+
+final userDataStreamProvider = Provider
+    .family<AsyncValue<Map<String, dynamic>?>, String>((ref, userId) {
+      return ref.watch(userDocStreamProvider(userId)).whenData(
+            (doc) => doc?.data(),
+          );
+    });
+
 final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
 );

@@ -18,16 +18,18 @@ import '../../core/theme.dart';
 import '../../models/presence_model.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../shared/widgets/guest_auth_gate.dart';
 import '../../widgets/brand_ui_kit.dart';
 import '../../widgets/follow_button.dart';
 import '../../widgets/gift_picker_sheet.dart';
 import '../../features/friends/providers/friends_providers.dart';
 import '../../features/messaging/models/conversation_model.dart';
 import '../../features/messaging/providers/messaging_provider.dart';
-import '../../features/feed/models/post_model.dart';
+import '../../features/feed/providers/feed_providers.dart';
 import '../../features/feed/widgets/post_card.dart';
 import '../../presentation/providers/friend_provider.dart';
 import '../../presentation/providers/user_provider.dart';
+import 'profile_view_providers.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_music_player_stub.dart'
     if (dart.library.html) 'widgets/profile_music_player_web.dart';
@@ -114,18 +116,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   Future<Map<String, dynamic>> _loadProfile() async {
-    final firestore = FirebaseFirestore.instance;
-    final userRef = firestore.collection('users').doc(widget.userId);
-    final userSnapshot = await userRef.get();
+    final basePayload = await ref.read(userProfileBaseProvider(widget.userId).future);
+    final userSnapshot = basePayload.userSnapshot;
+    final privacyData = basePayload.privacy;
     final viewerId = FirebaseAuth.instance.currentUser?.uid;
-    Map<String, dynamic> privacyData = const <String, dynamic>{};
-    if (viewerId == widget.userId) {
-      final privacySnapshot = await userRef
-          .collection('privacy')
-          .doc('settings')
-          .get();
-      privacyData = privacySnapshot.data() ?? const <String, dynamic>{};
-    }
 
     bool isBlocked = false;
     bool isFollowing = false;
@@ -189,6 +183,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     String peerName,
     String? peerAvatarUrl,
   ) async {
+    final allowed = await GuestAuthGate.requireConversationStart(context, ref);
+    if (!allowed) return;
+
     final currentUser = ref.read(userProvider);
     if (currentUser == null || currentUser.id == widget.userId) {
       return;
@@ -215,6 +212,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   Future<void> _toggleFollow(bool currentlyFollowing, {String targetUsername = ''}) async {
+    final allowed = await GuestAuthGate.requireFollow(context, ref);
+    if (!allowed) return;
+
     final currentUser = ref.read(userProvider);
     if (currentUser == null) return;
     final controller = ref.read(followControllerProvider);
@@ -249,6 +249,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   Future<void> _inviteToLiveRoom() async {
+    final allowed = await GuestAuthGate.requireRoomInvite(context, ref);
+    if (!allowed) return;
+
     try {
       await _followService.inviteUserToHostedRoom(widget.userId);
       if (!mounted) return;
@@ -645,7 +648,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () => context.push('/edit-profile'),
+                            onPressed: () async {
+                              final allowed =
+                                  await GuestAuthGate.requireProfileEdit(context, ref);
+                              if (!allowed || !context.mounted) return;
+                              context.push('/edit-profile');
+                            },
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Edit Profile'),
                           ),
@@ -864,34 +872,21 @@ class _UserPostsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final viewerId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final postsAsync = ref.watch(userPostsStreamProvider(userId));
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('posts')
-          .where('authorId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(30)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const AppLoadingView(label: 'Loading posts');
-        }
-        if (snapshot.hasError) {
-          return AppErrorView(
-            error: snapshot.error ?? 'Unknown error',
-            fallbackContext: 'Unable to load posts.',
-          );
-        }
-        final docs = snapshot.data?.docs ?? [];
-        if (docs.isEmpty) {
+    return postsAsync.when(
+      loading: () => const AppLoadingView(label: 'Loading posts'),
+      error: (error, _) => AppErrorView(
+        error: error,
+        fallbackContext: 'Unable to load posts.',
+      ),
+      data: (posts) {
+        if (posts.isEmpty) {
           return const AppEmptyView(
             title: 'No posts yet',
             icon: Icons.post_add_outlined,
           );
         }
-        final posts = docs
-            .map((d) => PostModel.fromDoc(d.id, d.data()))
-            .toList();
         return ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: posts.length,

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/telemetry/telemetry_config.dart';
+
 class SimulationContext {
   final String phase;
 
@@ -17,7 +19,9 @@ class RuntimeTelemetry {
 
   static void registerListener(String key) {
     _listenerCounts.update(key, (v) => v + 1, ifAbsent: () => 1);
-    debugPrint("Listener registered: $key, Total: ${_listenerCounts[key]}");
+    if (TelemetryConfig.allows(LogTier.debug)) {
+      debugPrint('[RuntimeTelemetry] registered: $key total=${_listenerCounts[key]}');
+    }
   }
 
   static void unregisterListener(String key) {
@@ -28,7 +32,9 @@ class RuntimeTelemetry {
       } else {
         _listenerCounts[key] = next;
       }
-      debugPrint("Listener unregistered: $key, Remaining: ${_listenerCounts[key] ?? 0}");
+      if (TelemetryConfig.allows(LogTier.debug)) {
+        debugPrint('[RuntimeTelemetry] unregistered: $key remaining=${_listenerCounts[key] ?? 0}');
+      }
     }
   }
 
@@ -41,8 +47,8 @@ class RuntimeTelemetry {
   static void recordRebuild(String widget, [SimulationContext? ctx]) {
     _rebuildCounts[widget] = (_rebuildCounts[widget] ?? 0) + 1;
     _lastEvent[widget] = DateTime.now();
-    if (ctx != null) {
-      debugPrint("[${ctx.phase}] Rebuild recorded for: $widget, Total: ${_rebuildCounts[widget]}");
+    if (ctx != null && TelemetryConfig.allows(LogTier.debug)) {
+      debugPrint('[${ctx.phase}] rebuild: $widget total=${_rebuildCounts[widget]}');
     }
   }
 

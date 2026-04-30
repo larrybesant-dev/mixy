@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mixvy/core/providers/guest_mode_provider.dart';
 import 'package:mixvy/core/services/first_run_service.dart';
+import 'package:mixvy/core/services/guest_session_service.dart';
 import 'package:mixvy/core/theme.dart';
 import 'package:mixvy/presentation/providers/app_settings_provider.dart';
 import 'package:mixvy/services/analytics_service.dart';
@@ -116,8 +118,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _skipOnboarding() async {
     if (_submitting) return;
     await FirstRunService.markOnboardingSeen();
+    // Enter guest-browse mode so the redirect guard lets /home through
+    // without a Firebase uid.
+    await GuestSessionService.enterAsGuest();
+    ref.read(guestModeProvider.notifier).state = true;
     if (!mounted) return;
-    context.go('/auth');
+    context.go('/home');
   }
 
   Future<void> _continue() async {

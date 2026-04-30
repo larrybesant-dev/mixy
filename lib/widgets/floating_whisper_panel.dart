@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
+import 'package:mixvy/shared/widgets/guest_auth_gate.dart';
 
 class FloatingWhisperPanel {
   static OverlayEntry? _entry;
@@ -64,6 +65,9 @@ class _FloatingWhisperPanelWidgetState
   final TextEditingController _controller = TextEditingController();
 
   Future<void> _sendmessage() async {
+    final allowed = await GuestAuthGate.requireMessaging(context, ref);
+    if (!allowed) return;
+
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 

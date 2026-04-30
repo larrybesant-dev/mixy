@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 import '../providers/messaging_provider.dart';
 import 'chat_screen.dart';
 
@@ -29,11 +30,27 @@ class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
   @override
   void initState() {
     super.initState();
-    _resolve();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _resolve();
+      }
+    });
   }
 
   Future<void> _resolve() async {
     try {
+      final allowed =
+          await GuestAuthGate.requireConversationStart(context, ref);
+      if (!allowed) {
+        if (mounted) {
+          setState(() {
+            _error = 'Please sign in to start a whisper.';
+            _loading = false;
+          });
+        }
+        return;
+      }
+
       final currentUser = ref.read(userProvider);
       if (currentUser == null) throw Exception('Not signed in.');
       final currentUserId = currentUser.id.trim();

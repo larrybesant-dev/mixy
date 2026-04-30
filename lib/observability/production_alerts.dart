@@ -1,3 +1,4 @@
+import '../core/telemetry/telemetry_config.dart';
 import 'runtime_telemetry.dart';
 
 enum AlertLevel { info, warning, critical }
@@ -41,6 +42,7 @@ class ProductionAlertSystem {
   // ─────────────────────────────
 
   static void checkListeners() {
+    if (!TelemetryConfig.allows(LogTier.operational)) return;
     final listeners = RuntimeTelemetry.listeners;
 
     listeners.forEach((key, count) {
@@ -65,6 +67,7 @@ class ProductionAlertSystem {
   // ─────────────────────────────
 
   static void checkRebuilds() {
+    if (!TelemetryConfig.allows(LogTier.operational)) return;
     final rebuilds = RuntimeTelemetry.rebuilds;
 
     rebuilds.forEach((key, count) {
@@ -95,5 +98,31 @@ class ProductionAlertSystem {
 
   static void reset() {
     _alerts.clear();
+  }
+
+  /// Fire an alert with a caller-supplied [id], [message], and [level].
+  /// Deduplicates by [id]: a second call with the same id within 10 seconds
+  /// is silently ignored to avoid alert storms.
+  static void fireCustomAlert({
+    required String id,
+    required String message,
+    required AlertLevel level,
+  }) {
+    const dedupSeconds = 10;
+    final now = DateTime.now();
+    final existing = _alerts.lastWhere(
+      (a) => a.id == id,
+      orElse: () => ProductionAlert(
+        id: '',
+        message: '',
+        level: AlertLevel.info,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+      ),
+    );
+    if (existing.id == id &&
+        now.difference(existing.timestamp).inSeconds < dedupSeconds) {
+      return;
+    }
+    _emit(id, message, level);
   }
 }

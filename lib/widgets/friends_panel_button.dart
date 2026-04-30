@@ -9,6 +9,7 @@ import '../core/utils/network_image_url.dart';
 import '../features/messaging/providers/messaging_provider.dart';
 import '../presentation/providers/friend_provider.dart';
 import '../presentation/providers/user_provider.dart';
+import '../shared/widgets/guest_auth_gate.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FriendsPanelButton
@@ -312,6 +313,9 @@ class _MessageButton extends ConsumerWidget {
       tooltip: 'message',
       icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
       onPressed: () async {
+        final allowed = await GuestAuthGate.requireConversationStart(context, ref);
+        if (!allowed) return;
+
         final navigator = Navigator.of(context);
         final router = GoRouter.of(context);
         final messenger = ScaffoldMessenger.of(context);

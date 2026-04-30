@@ -11,6 +11,7 @@ void main() {
       'lib/services/presence_repository.dart',
       'lib/services/presence_service.dart',
       'lib/shared/widgets/app_debug_overlay.dart',
+      'lib/presentation/providers/presence_provider.dart',
     };
 
     final violations = <String>[];

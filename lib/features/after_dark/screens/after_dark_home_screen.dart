@@ -1,37 +1,34 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../feed/providers/feed_providers.dart';
 import '../../../models/room_model.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../theme/after_dark_theme.dart';
 import '../widgets/after_dark_live_room_card.dart';
 
-// ── Live adult rooms provider ─────────────────────────────────────────────────
-final _liveAdultRoomsProvider =
-    StreamProvider.autoDispose<List<RoomModel>>((ref) {
-  return FirebaseFirestore.instance
-      .collection('rooms')
-      .where('isLive', isEqualTo: true)
-      .where('isAdult', isEqualTo: true)
-      .limit(20)
-      .snapshots()
-      .map((s) {
-        final rooms =
-            s.docs.map((d) => RoomModel.fromJson(d.data(), d.id)).toList();
-        rooms.sort((a, b) {
+// ── Derived adult rooms view (no direct Firestore access in UI layer) ───────
+final _liveAdultRoomsProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>(
+  (ref) {
+    return ref.watch(roomsStreamProvider).whenData((rooms) {
+      final filtered = rooms
+          .where((room) => room.isLive && room.isAdult)
+          .toList(growable: false)
+        ..sort((a, b) {
           final aTs = a.createdAt?.seconds ?? 0;
           final bTs = b.createdAt?.seconds ?? 0;
           final byCreatedAt = bTs.compareTo(aTs);
           if (byCreatedAt != 0) return byCreatedAt;
           return a.id.compareTo(b.id);
         });
-        return rooms;
-      });
-});
+
+      return filtered.take(20).toList(growable: false);
+    });
+  },
+);
 
 /// After Dark home screen — moody, crimson-themed live feed.
 class AfterDarkHomeScreen extends ConsumerWidget {

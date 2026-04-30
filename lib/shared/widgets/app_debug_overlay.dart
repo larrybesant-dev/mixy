@@ -2,33 +2,32 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../core/events/app_event_bus.dart';
 import '../../core/events/event_inspector.dart';
 import '../../core/telemetry/app_telemetry.dart';
+import '../../presentation/providers/presence_provider.dart';
 
-class AppDebugOverlay extends StatefulWidget {
+class AppDebugOverlay extends ConsumerStatefulWidget {
   const AppDebugOverlay({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<AppDebugOverlay> createState() => _AppDebugOverlayState();
+  ConsumerState<AppDebugOverlay> createState() => _AppDebugOverlayState();
 }
 
-class _AppDebugOverlayState extends State<AppDebugOverlay> {
+class _AppDebugOverlayState extends ConsumerState<AppDebugOverlay> {
   bool _isVisible = false;
   int _secretTapCount = 0;
   Timer? _secretTapTimer;
   Timer? _lastSeenTicker;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-  _firestorePresenceSub;
-  StreamSubscription<DatabaseEvent>? _rtdbSessionsSub;
+  StreamSubscription<Map<String, dynamic>?>? _firestorePresenceSub;
+  StreamSubscription<Map<dynamic, dynamic>>? _rtdbSessionsSub;
 
   String? _watchedUserId;
   Map<String, dynamic>? _firestorePresence;
@@ -85,13 +84,10 @@ class _AppDebugOverlayState extends State<AppDebugOverlay> {
       }
     });
 
-    _firestorePresenceSub = FirebaseFirestore.instance
-        .collection('presence')
-        .doc(uid)
-        .snapshots()
-        .listen((doc) {
+    _firestorePresenceSub = ref
+      .read(debugFirestorePresenceWatch(uid))
+      .listen((data) {
           final observedAt = DateTime.now();
-          final data = doc.data();
           final currentUpdatedAtMs = _asEpochMillis(data?['rtdbUpdatedAt']);
           final shouldUpdateRtdbDelay =
               currentUpdatedAtMs != null &&
@@ -127,21 +123,10 @@ class _AppDebugOverlayState extends State<AppDebugOverlay> {
           });
         });
 
-    final databaseUrl = Firebase.app().options.databaseURL?.trim() ?? '';
-    if (!databaseUrl.startsWith('https://')) {
-      _rtdbSessionsSub = null;
-      return;
-    }
-
-    _rtdbSessionsSub = FirebaseDatabase.instanceFor(
-          app: Firebase.app(),
-          databaseURL: databaseUrl,
-        )
-        .ref('status/$uid/sessions')
-        .onValue
-        .listen((event) {
+    _rtdbSessionsSub = ref
+      .read(debugRtdbSessionsWatch(uid))
+        .listen((raw) {
           final observedAt = DateTime.now();
-          final raw = event.snapshot.value;
           var sessionCount = 0;
           var anyOnline = false;
           var anyCamOn = false;
@@ -149,8 +134,8 @@ class _AppDebugOverlayState extends State<AppDebugOverlay> {
           String? anyInRoom;
           int? latestSeen;
 
-          if (raw is Map) {
-            for (final entry in raw.entries) {
+          // raw is always Map<dynamic,dynamic> per the provider's return type.
+          for (final entry in raw.entries) {
               final value = entry.value;
               if (value is! Map) {
                 continue;
@@ -179,7 +164,6 @@ class _AppDebugOverlayState extends State<AppDebugOverlay> {
                 }
               }
             }
-          }
 
           if (!mounted) {
             return;

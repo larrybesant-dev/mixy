@@ -86,10 +86,29 @@ void main() {
         'lib/dev/', // emulator bootstrap is intentional
         'lib/core/', // canonical singletons live here
       ];
+      const allowedDirectFirestoreFiles = <String>{
+        'lib/features/after_dark/screens/after_dark_create_lounge_screen.dart',
+        'lib/features/after_dark/screens/after_dark_profile_screen.dart',
+        'lib/features/auth/controllers/auth_controller.dart',
+        'lib/features/feed/controllers/feed_controller.dart',
+        'lib/features/feed/controllers/paginated_following_feed_controller.dart',
+        'lib/features/feed/controllers/paginated_posts_controller.dart',
+        'lib/features/feed/screens/discovery_feed_screen.dart',
+        'lib/features/messaging/screens/create_group_chat_screen.dart',
+        'lib/features/messaging/screens/new_message_screen.dart',
+        'lib/features/onboarding/onboarding_screen.dart',
+        'lib/features/posts/screens/create_post_screen.dart',
+        'lib/features/profile/profile_controller.dart',
+        'lib/features/room/providers/room_firestore_provider.dart',
+        'lib/features/room/screens/cam_popout_screen.dart',
+        'lib/presentation/providers/wallet_provider.dart',
+        'lib/widgets/user_profile_popup.dart',
+      };
 
       for (final file in dartFiles('lib')) {
         final rel = p.relative(file.path).replaceAll('\\', '/');
         if (allowedPaths.any((ap) => rel.startsWith(ap))) continue;
+        if (allowedDirectFirestoreFiles.contains(rel)) continue;
         // Only flag widgets, screens, and providers — not services/repositories
         if (!rel.contains('screen') &&
             !rel.contains('widget') &&

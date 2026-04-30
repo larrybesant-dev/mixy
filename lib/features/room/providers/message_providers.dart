@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/query_policy.dart';
 import '../../../core/firestore/firestore_debug_tracing.dart';
 import '../../../presentation/providers/user_provider.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import '../../../services/moderation_service.dart';
+import 'package:mixvy/features/feed/providers/typing_providers.dart';
 import 'room_firestore_provider.dart';
 
 bool _asBool(dynamic value, {required bool fallback}) {
@@ -36,6 +39,31 @@ String _asString(dynamic value, {String fallback = ''}) {
   return fallback;
 }
 
+final pendingDirectCallRoomProvider =
+    StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
+      final uid = ref.watch(authControllerProvider).uid;
+      if (uid == null || uid.trim().isEmpty) {
+        return Stream.value(null);
+      }
+
+      return ref
+          .watch(roomFirestoreProvider)
+          .collection('rooms')
+          .where('isDirectCall', isEqualTo: true)
+          .where('isLive', isEqualTo: true)
+          .where('calleeId', isEqualTo: uid)
+          .where('callDeclined', isEqualTo: false)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+            if (snapshot.docs.isEmpty) {
+              return null;
+            }
+            final doc = snapshot.docs.first;
+            return {'id': doc.id, ...doc.data()};
+          });
+    });
+
 final messagetreamProvider = StreamProvider.autoDispose
     .family<List<MessageModel>, String>((ref, roomId) {
       final firestore = ref.watch(roomFirestoreProvider);
@@ -50,6 +78,7 @@ final messagetreamProvider = StreamProvider.autoDispose
             .doc(roomId)
             .collection('messages')
             .orderBy('sentAt')
+            .limit(QueryPolicy.messagesLimit)
             .snapshots()
             .map((snapshot) {
               final visibleDocs = snapshot.docs
@@ -140,28 +169,12 @@ final messagetreamProvider = StreamProvider.autoDispose
     });
 
 final roomTypingUserIdsProvider = StreamProvider.autoDispose
-    .family<List<String>, String>((ref, roomId) {
-      final firestore = ref.watch(roomFirestoreProvider);
-      return traceFirestoreStream<List<String>>(
-        key: 'typing/$roomId',
-        query: 'rooms/$roomId/typing',
-        roomId: roomId,
-        itemCount: (value) => value.length,
-        stream: firestore
-            .collection('rooms')
-            .doc(roomId)
-            .collection('typing')
-            .snapshots()
-            .map((snapshot) {
-              return snapshot.docs
-                  .where(
-                    (doc) => _asBool(doc.data()['isTyping'], fallback: false),
-                  )
-                  .map((doc) => doc.id.trim())
-                  .where((userId) => userId.isNotEmpty)
-                  .toList(growable: false);
-            }),
-      );
+    .family<List<String>, String>((ref, roomId) async* {
+      // Forward the canonical typing provider — no duplicate Firestore subscription.
+      // ignore: deprecated_member_use
+      await for (final ids in ref.watch(typingUserIdsProvider(roomId).stream)) {
+        yield ids;
+      }
     });
 
 final sendmessageProvider = Provider.autoDispose

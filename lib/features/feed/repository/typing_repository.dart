@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/constants/query_policy.dart';
 
 class TypingRepository {
   final FirebaseFirestore _db;
@@ -28,6 +29,7 @@ class TypingRepository {
       .collection('rooms')
       .doc(roomId)
       .collection('typing')
+      .limit(QueryPolicy.typingUsersLimit)
       .snapshots()
       .map((snap) => {
         for (var doc in snap.docs)

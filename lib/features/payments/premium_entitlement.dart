@@ -1,28 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 
-final entitlementAuthProvider = Provider<FirebaseAuth>((ref) {
-  return FirebaseAuth.instance;
-});
-
-final entitlementFirestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
+final entitlementAuthProvider = firebaseAuthProvider;
 
 final entitlementUserIdProvider = Provider<String?>((ref) {
   return ref.watch(entitlementAuthProvider).currentUser?.uid;
 });
 
-final vipEntitlementProvider = StreamProvider<bool>((ref) {
+final vipEntitlementProvider = Provider<AsyncValue<bool>>((ref) {
   final uid = ref.watch(entitlementUserIdProvider);
   if (uid == null || uid.isEmpty) {
-    return Stream<bool>.value(false);
+    return const AsyncData(false);
   }
 
-  final firestore = ref.watch(entitlementFirestoreProvider);
-  return firestore.collection('users').doc(uid).snapshots().map((snapshot) {
-    return hasVipEntitlement(snapshot.data());
+  return ref.watch(userDataStreamProvider(uid)).whenData((userData) {
+    return hasVipEntitlement(userData);
   });
 });
 

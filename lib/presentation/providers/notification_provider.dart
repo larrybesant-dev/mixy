@@ -1,14 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/notification_model.dart';
 import '../../services/notification_service.dart';
+import '../../core/providers/firebase_providers.dart';
 import 'app_settings_provider.dart';
 import 'user_provider.dart';
 
-final notificationFirestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
+// Route through canonical provider so test overrides work.
+final notificationFirestoreProvider = firestoreProvider;
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(firestore: ref.watch(notificationFirestoreProvider));

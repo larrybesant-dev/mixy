@@ -10,6 +10,7 @@ import '../models/conversation_model.dart';
 import '../../../services/moderation_service.dart';
 import '../../../presentation/providers/user_provider.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import '../../../core/constants/query_policy.dart';
 
 String _newClientmessageId() =>
   '${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().millisecondsSinceEpoch}';
@@ -47,6 +48,8 @@ final rawConversationsStreamProvider =
   return firestore
       .collection('conversations')
       .where('participantIds', arrayContains: resolvedUserId)
+      .orderBy('lastMessageAt', descending: true)
+      .limit(QueryPolicy.conversationsLimit)
       .snapshots()
       .handleError((error, stackTrace) {
         logFirestoreError(
@@ -141,18 +144,38 @@ final messagestreamProvider =
       .collection('conversations')
       .doc(conversationId)
       .collection('messages')
-      .orderBy('createdAt', descending: true)
-      .limit(50)
-      .snapshots(includeMetadataChanges: false)
+      .orderBy('createdAt', descending: false)
+      .limit(QueryPolicy.messagesLimit)
+      .snapshots(includeMetadataChanges: true)
       .map((snapshot) {
-    // Reverse so the list is chronological (oldest first, newest last).
-    // Firestore already ordered descending, so reversing gives ascending order.
-    final messages = snapshot.docs
+    final docs = snapshot.docs.toList()
+      ..sort((a, b) {
+        final aData = a.data();
+        final bData = b.data();
+        final aCreatedAt = aData['createdAt'];
+        final bCreatedAt = bData['createdAt'];
+
+        // Primary sort: Server Timestamp.
+        if (aCreatedAt is Timestamp && bCreatedAt is Timestamp) {
+          final cmp = aCreatedAt.compareTo(bCreatedAt);
+          if (cmp != 0) return cmp;
+        }
+
+        // Secondary sort (Fallback for pending writes): Client side timestamp.
+        final aClient = aData['clientSentAt'];
+        final bClient = bData['clientSentAt'];
+        if (aClient is Timestamp && bClient is Timestamp) {
+          final cmp = aClient.compareTo(bClient);
+          if (cmp != 0) return cmp;
+        }
+
+        // Tertiary sort: Document ID stability.
+        return a.id.compareTo(b.id);
+      });
+
+    return docs
         .map((doc) => MessageModel.fromJson(doc.data(), doc.id))
-        .toList()
-        .reversed
-        .toList();
-    return messages;
+        .toList(growable: false);
   });
 });
 
@@ -379,6 +402,7 @@ class MessagingController {
         'content': content,
         'clientmessageId': resolvedClientmessageId,
         'createdAt': FieldValue.serverTimestamp(),
+        'clientSentAt': Timestamp.now(),
         'expiresAt': Timestamp.fromDate(expiresAt),
         'isDeleted': false,
         'readBy': [authoritativeSenderId],
@@ -669,7 +693,7 @@ class MessagingController {
 // ── Typing status ─────────────────────────────────────────────────────────
 
 /// Reactions on a message keyed by userId → emoji string.
-final messageReactionsProvider = StreamProvider.family<Map<String, String>,
+final messageReactionsProvider = StreamProvider.autoDispose.family<Map<String, String>,
     ({String conversationId, String messageId})>((ref, params) {
   final firestore = ref.watch(firestoreProvider);
   return firestore
@@ -678,7 +702,7 @@ final messageReactionsProvider = StreamProvider.family<Map<String, String>,
       .collection('messages')
       .doc(params.messageId)
       .collection('reactions')
-      .limit(20)
+      .limit(QueryPolicy.messageReactionsLimit)
       .snapshots()
       .map((snap) {
     final result = <String, String>{};

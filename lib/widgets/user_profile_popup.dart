@@ -12,6 +12,7 @@ import '../features/messaging/providers/messaging_provider.dart';
 import '../services/friend_service.dart';
 import '../services/moderation_service.dart';
 import '../presentation/providers/user_provider.dart';
+import '../shared/widgets/guest_auth_gate.dart';
 import 'gift_picker_sheet.dart';
 
 /// A bottom-sheet style profile popup usable anywhere in the app
@@ -277,6 +278,10 @@ class _UserProfilePopupSheetState
                   icon: Icons.message_outlined,
                   label: 'Send message',
                   onTap: () async {
+                    final allowed =
+                        await GuestAuthGate.requireConversationStart(context, ref);
+                    if (!allowed) return;
+
                     final currentUser = ref.read(userProvider);
                     final profile = _profile;
                     if (currentUser == null || profile == null || _normalizedUserId.isEmpty) return;

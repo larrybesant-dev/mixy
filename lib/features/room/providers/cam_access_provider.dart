@@ -115,25 +115,15 @@ final roomCamAccessRequestsProvider = StreamProvider.autoDispose.family<List<Cam
 });
 
 final myCamAccessRequestProvider = StreamProvider.autoDispose.family<CamAccessRequestModel?, ({String roomId, String requesterId})>((ref, params) {
-  final firestore = ref.watch(roomFirestoreProvider);
-  return firestore
-      .collection('rooms')
-      .doc(params.roomId)
-      .collection('cam_access_requests')
-      .where('requesterId', isEqualTo: params.requesterId)
-      .snapshots()
-      .map((snapshot) {
-        if (snapshot.docs.isEmpty) {
-          return null;
-        }
-        final requests = snapshot.docs
-            .map((doc) => CamAccessRequestModel.fromJson({'id': doc.id, ...doc.data()}))
-            .toList(growable: false)
-          ..sort((a, b) {
-            final aCreated = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bCreated = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bCreated.compareTo(aCreated);
-          });
-        return requests.first;
-      });
+  // Derive from canonical owner (no duplicate subscription)
+  // ignore: deprecated_member_use
+  return ref.watch(roomCamAccessRequestsProvider(params.roomId).stream).map((requests) {
+    final myRequests = requests
+        .where((request) => request.requesterId == params.requesterId)
+        .toList();
+    if (myRequests.isEmpty) {
+      return null;
+    }
+    return myRequests.first;
+  });
 });

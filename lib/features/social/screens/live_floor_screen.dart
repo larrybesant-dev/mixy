@@ -10,6 +10,7 @@ import 'package:mixvy/features/feed/providers/feed_providers.dart';
 import 'package:mixvy/features/social/widgets/social_room_card.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/shared/widgets/app_page_scaffold.dart';
+import 'package:mixvy/shared/widgets/guest_auth_gate.dart';
 import 'package:mixvy/shared/widgets/ui_stability_contract.dart';
 
 // ── Sort options ──────────────────────────────────────────────────────────────
@@ -188,6 +189,13 @@ class LiveFloorScreen extends ConsumerStatefulWidget {
 class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
   _FloorSort _sort = _FloorSort.mostSpeakers;
 
+  Future<void> _startRoomWithGate() async {
+    final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
+    if (!allowed) return;
+    if (!mounted) return;
+    context.go('/create-room');
+  }
+
   List<RoomModel> _sorted(List<RoomModel> rooms) {
     final list = List<RoomModel>.from(rooms);
     switch (_sort) {
@@ -295,7 +303,7 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                         color: VelvetNoir.primary,
                       ),
                       tooltip: 'Start a Room',
-                      onPressed: () => context.go('/create-room'),
+                      onPressed: _startRoomWithGate,
                     ),
                   ],
                 ),
@@ -317,9 +325,9 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                       context.go('/room/${previewRooms.first.id}');
                       return;
                     }
-                    context.go('/create-room');
+                    _startRoomWithGate();
                   },
-                  onStartRoom: () => context.go('/create-room'),
+                  onStartRoom: _startRoomWithGate,
                 ),
               ),
               controls: RoomsControlsSection(
@@ -420,7 +428,7 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                             return Padding(
                               padding: EdgeInsets.all(hp),
                               child: _EmptyFloor(
-                                onCreateRoom: () => context.go('/create-room'),
+                                onCreateRoom: _startRoomWithGate,
                               ),
                             );
                           }

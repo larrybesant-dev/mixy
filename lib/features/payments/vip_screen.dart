@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,14 +17,14 @@ const _vSecondary = Color(0xFF781E2B);
 const _vCream = Color(0xFFF7EDE2);
 const _vOutline = Color(0x22D4AF37);
 
-class VipScreen extends StatefulWidget {
+class VipScreen extends ConsumerStatefulWidget {
   const VipScreen({super.key});
 
   @override
-  State<VipScreen> createState() => _VipScreenState();
+  ConsumerState<VipScreen> createState() => _VipScreenState();
 }
 
-class _VipScreenState extends State<VipScreen> {
+class _VipScreenState extends ConsumerState<VipScreen> {
   bool _isYearly = false;
   bool _checkoutInProgress = false;
   // True while we are waiting for the webhook to confirm VIP after checkout.
@@ -106,6 +106,7 @@ class _VipScreenState extends State<VipScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isVip = ref.watch(vipEntitlementProvider).valueOrNull ?? false;
 
     return AppPageScaffold(
       backgroundColor: _vSurface,
@@ -139,13 +140,8 @@ class _VipScreenState extends State<VipScreen> {
       ),
       body: uid == null
           ? _SignInRequiredView(error: _checkoutError)
-          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                final isVip = hasVipEntitlement(snapshot.data?.data());
+          : Builder(
+              builder: (context) {
                 if (isVip) {
                   // Clear pending flag if webhook arrived.
                   if (_awaitingWebhookConfirmation) {
@@ -262,7 +258,7 @@ class _VipScreenState extends State<VipScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 20),
                   ],
                 );
               },

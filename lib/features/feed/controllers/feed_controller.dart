@@ -5,6 +5,7 @@ import '../../../models/room_model.dart';
 import '../../../models/user_model.dart';
 import '../../../services/moderation_service.dart';
 import '../../../services/room_service.dart';
+import '../../../services/room_discovery_service.dart';
 import '../../../core/firestore/firestore_error_utils.dart';
 
 class FeedState {
@@ -15,6 +16,12 @@ class FeedState {
   final Map<String, String> roomReasons;
   final Map<String, String> roomTiers;
   final List<UserModel> trendingUsers;
+  /// Friend IDs for the current viewer (empty when unauthenticated).
+  /// Stored in state so widgets can compute per-room friend presence counts
+  /// without additional Firestore reads.
+  final Set<String> friendIds;
+  /// Bucketed discovery sections derived from [liveRooms] + [friendIds].
+  final RoomDiscoverySections? discoverySections;
 
   const FeedState({
     this.isLoading = true,
@@ -24,6 +31,8 @@ class FeedState {
     this.roomReasons = const <String, String>{},
     this.roomTiers = const <String, String>{},
     this.trendingUsers = const [],
+    this.friendIds = const <String>{},
+    this.discoverySections,
   });
 
   FeedState copyWith({
@@ -34,6 +43,8 @@ class FeedState {
     Map<String, String>? roomReasons,
     Map<String, String>? roomTiers,
     List<UserModel>? trendingUsers,
+    Set<String>? friendIds,
+    RoomDiscoverySections? discoverySections,
   }) {
     return FeedState(
       isLoading: isLoading ?? this.isLoading,
@@ -43,6 +54,8 @@ class FeedState {
       roomReasons: roomReasons ?? this.roomReasons,
       roomTiers: roomTiers ?? this.roomTiers,
       trendingUsers: trendingUsers ?? this.trendingUsers,
+      friendIds: friendIds ?? this.friendIds,
+      discoverySections: discoverySections ?? this.discoverySections,
     );
   }
 }
@@ -161,6 +174,11 @@ class FeedController extends Notifier<FeedState> {
         roomReasons: roomReasons,
         roomTiers: roomTiers,
         trendingUsers: trendingUsers,
+        friendIds: viewerProfile.friendIds,
+        discoverySections: RoomDiscoveryService.buildSections(
+          rankedRooms: liveRooms,
+          friendIds: viewerProfile.friendIds,
+        ),
       );
     } on FirebaseException catch (e, stackTrace) {
       logFirestoreError(

@@ -59,6 +59,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   // Cached so it can be used inside ref.onDispose without calling ref.read
   // (which is illegal after a dependency has changed).
+  // ignore: unused_field
   RoomSessionService? _cachedSessionService;
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -86,7 +87,14 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   // _pendingUserIds permanently (ghost pending).
   final Map<String, Timer> _joinStabilizationTimers = <String, Timer>{};
   Timer? _roomHeartbeatTimer;
+  Timer? _graceWindowTimer;
   DateTime? _lastParticipantSyncAt;
+  KeepAliveLink? _keepAliveLink;
+  String? _activeSessionId;
+  bool _isInGraceWindow = false;
+
+  static final Map<String, String> _activeSessionByRoomUser =
+      <String, String>{};
 
   bool _isDisposed = false;
 
@@ -111,6 +119,80 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   static const Duration _kPendingRoleTtl = kRoomPendingRoleTtl;
 
   static const Duration _kRoomHeartbeatInterval = Duration(seconds: 20);
+  static const Duration _kLeaveGraceWindow = Duration(seconds: 2);
+
+  String _roomUserKey({required String roomId, required String userId}) {
+    return '${roomId.trim()}::${userId.trim()}';
+  }
+
+  String _newSessionId() {
+    return '${DateTime.now().microsecondsSinceEpoch}-${identityHashCode(this)}';
+  }
+
+  String _registerOwnership({required String roomId, required String userId}) {
+    final sessionId = _newSessionId();
+    _activeSessionByRoomUser[_roomUserKey(roomId: roomId, userId: userId)] =
+        sessionId;
+    _activeSessionId = sessionId;
+    return sessionId;
+  }
+
+  bool _isSessionOwner({
+    required String roomId,
+    required String userId,
+    required String? sessionId,
+  }) {
+    if (sessionId == null || sessionId.trim().isEmpty) {
+      return false;
+    }
+    final current =
+        _activeSessionByRoomUser[_roomUserKey(roomId: roomId, userId: userId)];
+    return current == sessionId;
+  }
+
+  void _releaseOwnership({
+    required String roomId,
+    required String userId,
+    required String? sessionId,
+  }) {
+    final key = _roomUserKey(roomId: roomId, userId: userId);
+    final current = _activeSessionByRoomUser[key];
+    if (current == null || current != sessionId) {
+      return;
+    }
+    _activeSessionByRoomUser.remove(key);
+    if (_activeSessionId == sessionId) {
+      _activeSessionId = null;
+    }
+  }
+
+  void _startLeaveGraceWindow() {
+    _isInGraceWindow = true;
+    _graceWindowTimer?.cancel();
+    _graceWindowTimer = Timer(_kLeaveGraceWindow, () {
+      _isInGraceWindow = false;
+    });
+  }
+
+  void _resetLocalSessionState() {
+    _phase = LiveRoomPhase.idle;
+    _currentUserId = null;
+    _joinedAt = null;
+    _errormessage = null;
+    _excludedUserIds = const <String>{};
+    _micRequested = false;
+    _hasMicPermission = true;
+    _pendingUserIds.clear();
+    _stableUserIds.clear();
+    _sessionSnapshotsByUser.clear();
+    _lastActiveAtByUser.clear();
+    _pendingRoleByUser.clear();
+    _pendingRoleSetAtByUser.clear();
+    _lifecycleState = RoomLifecycleState.ended;
+    state = const RoomState(lifecycleState: RoomLifecycleState.ended);
+    _keepAliveLink?.close();
+    _keepAliveLink = null;
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // REACTIVE SNAPSHOT  (build)
@@ -132,31 +214,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       _joinStabilizationTimers.clear();
       _roomHeartbeatTimer?.cancel();
       _roomHeartbeatTimer = null;
-      // Fire-and-forget: remove participant presence from Firestore when the
-      // room controller is auto-disposed (widget unmount / navigation away).
-      // leaveRoom() would throw accessing a disposed container, so we call
-      // the session service directly with the snapshot values we already hold.
-      final userId = _currentUserId?.trim();
-      if (userId != null && userId.isNotEmpty) {
-        final roomId = arg;
-        // Best-effort fire-and-forget — do not await.
-        _cachedSessionService?.leaveRoom(roomId: roomId, userId: userId).ignore();
-        unawaited(SessionPersistence.saveLastRoom(null));
-        AppEventBus.instance.emit(
-          RoomLeftEvent(
-            id:
-                'room-left:$roomId:$userId:${DateTime.now().millisecondsSinceEpoch}',
-            timestamp: DateTime.now(),
-            sessionId: AppEventIds.roomSession(roomId: roomId, userId: userId),
-            correlationId: AppEventIds.roomCorrelation(
-              roomId: roomId,
-              userId: userId,
-            ),
-            userId: userId,
-            roomId: roomId,
-          ),
-        );
-      }
+      _graceWindowTimer?.cancel();
+      _graceWindowTimer = null;
+      // Do not execute Firestore/persistence side-effects from onDispose.
+      // Auto-dispose can run during dependency churn; explicit leaveRoom()
+      // owns remote cleanup semantics.
     });
 
     final roomDoc = ref.watch(roomDocStreamProvider(roomId)).valueOrNull;
@@ -831,6 +893,20 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       return;
     }
 
+    if (_isInGraceWindow) {
+      return;
+    }
+
+    final sessionId = _activeSessionId;
+    if (sessionId != null &&
+        !_isSessionOwner(
+          roomId: arg,
+          userId: userId,
+          sessionId: sessionId,
+        )) {
+      return;
+    }
+
     try {
       _lastParticipantSyncAt = await _sessionService.heartbeat(
         roomId: arg,
@@ -842,7 +918,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         _errormessage = null;
         _emitState(state.copyWith(errormessage: null));
       }
-    } catch (_) {
+    } catch (error) {
+      final info = parseFirestoreError(error);
+      if (_isInGraceWindow || info.code.toLowerCase() == 'not-found') {
+        return;
+      }
       _errormessage = 'Room state is reconnecting. Try again in a moment.';
       _emitState(state.copyWith(errormessage: _errormessage));
     }
@@ -1072,12 +1152,20 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     String? displayName,
     String? avatarUrl,
   }) async {
+    _keepAliveLink ??= ref.keepAlive();
     final normalizedUserId = userId.trim();
     final normalizedDisplayName = displayName?.trim() ?? '';
 
-    // Kill switch check
-    final gates = ref.read(featureGateControllerProvider);
-    if (!gates.enableLiveRooms) {
+    // Kill switch check. During dependency churn, ref.read may assert that
+    // this provider is outdated; in that brief window, treat rooms as enabled
+    // and allow normal join gating to continue.
+    var enableLiveRooms = true;
+    try {
+      enableLiveRooms = ref.read(featureGateControllerProvider).enableLiveRooms;
+    } on AssertionError {
+      enableLiveRooms = true;
+    }
+    if (!enableLiveRooms) {
       return RoomJoinResult.failure(
         'Room creation and joining are currently paused for maintenance.',
       );
@@ -1099,6 +1187,9 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         excludedUserIds: state.excludedUserIds,
       );
     }
+
+    final sessionId = _registerOwnership(roomId: arg, userId: normalizedUserId);
+    _isInGraceWindow = false;
 
     _phase = LiveRoomPhase.joining;
     _currentUserId = normalizedUserId;
@@ -1146,6 +1237,18 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
           : 'Could not join room. Please try again.';
       result = RoomJoinResult.failure(message);
     }
+
+    if (!_isSessionOwner(
+      roomId: arg,
+      userId: normalizedUserId,
+      sessionId: sessionId,
+    )) {
+      return RoomJoinResult.success(
+        joinedAt: result.joinedAt ?? DateTime.now(),
+        excludedUserIds: result.excludedUserIds,
+      );
+    }
+
     if (!result.isSuccess) {
       AppTelemetry.logAction(
         level: 'error',
@@ -1180,6 +1283,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
             _sessionSnapshotsByUser,
           ),
         ),
+      );
+      _releaseOwnership(
+        roomId: arg,
+        userId: normalizedUserId,
+        sessionId: sessionId,
       );
       return result;
     }
@@ -1238,33 +1346,33 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   Future<void> leaveRoom() async {
     final userId = _currentUserId?.trim();
+    final sessionId = _activeSessionId;
+    _startLeaveGraceWindow();
     if (userId == null || userId.isEmpty) {
       _stopRoomHeartbeat();
-      _phase = LiveRoomPhase.idle;
-      _currentUserId = null;
-      _joinedAt = null;
-      _errormessage = null;
-      _excludedUserIds = const <String>{};
-      _micRequested = false;
-      _hasMicPermission = true;
-      _pendingUserIds.clear();
-      _stableUserIds.clear();
-      _sessionSnapshotsByUser.clear();
-      _lastActiveAtByUser.clear();
-      _pendingRoleByUser.clear();
-      _pendingRoleSetAtByUser.clear();
-      _lifecycleState = RoomLifecycleState.ended;
-      state = const RoomState(lifecycleState: RoomLifecycleState.ended);
+      _resetLocalSessionState();
       return;
     }
 
     _stopRoomHeartbeat();
     _phase = LiveRoomPhase.leaving;
     _emitState(state.copyWith(phase: _phase, errormessage: null));
-    await _sessionService.leaveRoom(roomId: arg, userId: userId);
+    final ownsSession =
+        sessionId == null ||
+        _isSessionOwner(
+          roomId: arg,
+          userId: userId,
+          sessionId: sessionId,
+        );
+    if (ownsSession) {
+      await _sessionService.leaveRoom(roomId: arg, userId: userId);
+    }
     
     // Hardening: Clear persisted room session on clean exit
-    unawaited(SessionPersistence.saveLastRoom(null));
+    if (ownsSession) {
+      unawaited(SessionPersistence.saveLastRoom(null));
+      _releaseOwnership(roomId: arg, userId: userId, sessionId: sessionId);
+    }
 
     AppEventBus.instance.emit(
       RoomLeftEvent(
@@ -1276,21 +1384,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         roomId: arg,
       ),
     );
-    _phase = LiveRoomPhase.idle;
-    _currentUserId = null;
-    _joinedAt = null;
-    _errormessage = null;
-    _excludedUserIds = const <String>{};
-    _micRequested = false;
-    _hasMicPermission = true;
-    _pendingUserIds.clear();
-    _stableUserIds.clear();
-    _sessionSnapshotsByUser.clear();
-    _lastActiveAtByUser.clear();
-    _pendingRoleByUser.clear();
-    _pendingRoleSetAtByUser.clear();
-    _lifecycleState = RoomLifecycleState.ended;
-    state = const RoomState(lifecycleState: RoomLifecycleState.ended);
+    _resetLocalSessionState();
   }
 
   Future<void> pausePresence() async {

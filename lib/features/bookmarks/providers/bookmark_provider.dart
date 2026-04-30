@@ -14,7 +14,7 @@ String _asString(dynamic value, {String fallback = ''}) {
 
 // Stream of all bookmarked posts for current user
 final bookmarkedPostsProvider =
-    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
+    StreamProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, userId) {
   final firestore = ref.watch(firestoreProvider);
   return firestore
       .collection('users')

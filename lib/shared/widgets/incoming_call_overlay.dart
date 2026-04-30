@@ -6,31 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
-import 'package:mixvy/features/auth/controllers/auth_controller.dart';
-
-// ── Stream provider ─────────────────────────────────────────────────────────
-
-/// Emits the first live direct-call room where the current user is the callee.
-/// Returns null if there is no pending call.
-final _pendingCallProvider =
-    StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
-  final uid = ref.watch(authControllerProvider).uid;
-  if (uid == null) return Stream.value(null);
-
-  return ref.watch(firestoreProvider)
-      .collection('rooms')
-      .where('isDirectCall', isEqualTo: true)
-      .where('isLive', isEqualTo: true)
-      .where('calleeId', isEqualTo: uid)
-      .where('callDeclined', isEqualTo: false)
-      .limit(1)
-      .snapshots()
-      .map((snap) {
-    if (snap.docs.isEmpty) return null;
-    final doc = snap.docs.first;
-    return {'id': doc.id, ...doc.data()};
-  });
-});
+import 'package:mixvy/features/room/providers/message_providers.dart';
 
 // ── Widget ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +28,7 @@ class _IncomingCallOverlayState extends ConsumerState<IncomingCallOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<Map<String, dynamic>?>>(_pendingCallProvider,
+    ref.listen<AsyncValue<Map<String, dynamic>?>>(pendingDirectCallRoomProvider,
         (_, next) {
       final callRoom = next.valueOrNull;
       if (callRoom == null) {

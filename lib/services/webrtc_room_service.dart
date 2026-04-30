@@ -11,6 +11,7 @@ import 'package:web/web.dart' as web;
 
 import 'agora_service.dart' show AgoraServiceException;
 import 'rtc_room_service.dart';
+import '../observability/webrtc_telemetry.dart';
 
 /// Browser-native WebRTC room service using Firestore for signaling.
 ///
@@ -400,6 +401,7 @@ class WebRtcRoomService extends RtcRoomService {
         .snapshots()
         .listen(_onIncomingCalls, onError: _onListenerError);
 
+    WebRtcTelemetry.beginSession(channelName);
     _log('joined roomId=$channelName uid=$uid');
   }
 
@@ -966,6 +968,7 @@ class WebRtcRoomService extends RtcRoomService {
     _broadcasterMode = false;
     _localVideoCapturing = false;
     _initialized = false;
+    WebRtcTelemetry.endSession();
     _log('disposed');
   }
 
@@ -1075,6 +1078,7 @@ class WebRtcRoomService extends RtcRoomService {
           _log(
             'stream refresh detected for broadcaster=$remoteBroadcasterId — reconnecting immediately',
           );
+          WebRtcTelemetry.recordStreamRefresh(broadcasterId: remoteBroadcasterId);
           _closePeer(remoteBroadcasterId);
           _uidToUserId[remoteUid] = remoteBroadcasterId;
           _userIdToUid[remoteBroadcasterId] = remoteUid;
@@ -1178,11 +1182,13 @@ class WebRtcRoomService extends RtcRoomService {
       onRemoteUserJoined?.call();
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
           state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        WebRtcTelemetry.recordPeerFailure(broadcasterId: broadcasterId);
         _closePeer(broadcasterId);
         // Retry: re-create viewer connection if broadcaster is still active.
         if (_isJoined && _roomId != null) {
           Future.delayed(const Duration(seconds: 2), () {
             if (_isJoined && !_peers.containsKey(broadcasterId)) {
+              WebRtcTelemetry.recordReconnect(broadcasterId: broadcasterId);
               _log('retrying viewer connection → broadcaster=$broadcasterId');
               _uidToUserId[broadcasterUid] = broadcasterId;
               _userIdToUid[broadcasterId] = broadcasterUid;
@@ -1204,6 +1210,7 @@ class WebRtcRoomService extends RtcRoomService {
     );
 
     final offer = await pc.createOffer();
+    WebRtcTelemetry.recordOfferSent();
     await pc.setLocalDescription(offer);
 
     final callId = '${_localUserId}_$broadcasterId';
@@ -1212,6 +1219,7 @@ class WebRtcRoomService extends RtcRoomService {
 
     // Gather ICE candidates and write them to Firestore
     pc.onIceCandidate = (RTCIceCandidate candidate) {
+      WebRtcTelemetry.recordIceCandidateSent();
       unawaited(
         _writeIceCandidate(
           callRef: callRef,
@@ -1239,13 +1247,16 @@ class WebRtcRoomService extends RtcRoomService {
       final callData = snap.data();
       final answerMap = callData?['answer'] as Map<String, dynamic>?;
       if (answerMap == null) return;
+      final sdp = answerMap['sdp'];
+      final type = answerMap['type'];
+      if (sdp is! String || type is! String) return;
       if (pc.signalingState ==
           RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
         try {
           await pc.setRemoteDescription(
             RTCSessionDescription(
-              answerMap['sdp'] as String,
-              answerMap['type'] as String,
+              sdp,
+              type,
             ),
           );
           _log('set remote answer from broadcaster=$broadcasterId');
@@ -1371,6 +1382,7 @@ class WebRtcRoomService extends RtcRoomService {
 
     // Gather broadcaster ICE candidates
     pc.onIceCandidate = (RTCIceCandidate candidate) {
+      WebRtcTelemetry.recordIceCandidateSent();
       unawaited(
         _writeIceCandidate(
           callRef: callRef,
@@ -1382,16 +1394,24 @@ class WebRtcRoomService extends RtcRoomService {
       );
     };
 
-    final offerMap = callData['offer'] as Map<String, dynamic>;
+    final offerRaw = callData['offer'];
+    final offerMap = offerRaw is Map<String, dynamic> ? offerRaw : null;
+    final offerSdp = offerMap?['sdp'];
+    final offerType = offerMap?['type'];
+    if (offerSdp is! String || offerType is! String) {
+      _log('answerViewerOffer callId=$callId — offer missing sdp/type, skipping');
+      return;
+    }
     await pc.setRemoteDescription(
       RTCSessionDescription(
-        offerMap['sdp'] as String,
-        offerMap['type'] as String,
+        offerSdp,
+        offerType,
       ),
     );
 
     final answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
+    WebRtcTelemetry.recordAnswerReceived();
 
     await callRef.update({
       'answer': {'type': answer.type, 'sdp': answer.sdp},

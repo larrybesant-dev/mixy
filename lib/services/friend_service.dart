@@ -414,7 +414,7 @@ class FriendService {
           return;
         }
 
-        usersSub = _watchUsersByIds(friendIds).listen((users) {
+        usersSub = watchUsersByIds(friendIds).listen((users) {
           final usersById = <String, UserModel>{
             for (final user in users) user.id: user,
           };
@@ -542,7 +542,7 @@ class FriendService {
           return;
         }
 
-        usersSub = _watchUsersByIds(friendIds).listen(
+        usersSub = watchUsersByIds(friendIds).listen(
           (users) {
             usersById = {for (final user in users) user.id: user};
             usersReady = true;
@@ -580,6 +580,237 @@ class FriendService {
 
       friendshipsSub = watchAcceptedFriendships(normalizedUserId).listen(
         (friendships) => rebindFriendData(friendships),
+        onError: (error, stackTrace) {
+          if (_isPermissionDenied(error)) {
+            latestFriendships = const <FriendshipModel>[];
+            usersById = const <String, UserModel>{};
+            presenceById = const <String, PresenceModel>{};
+            usersReady = true;
+            presenceReady = true;
+            emit();
+            return;
+          }
+          controller.addError(error, stackTrace);
+        },
+      );
+
+      controller.onCancel = () async {
+        await friendshipsSub?.cancel();
+        await usersSub?.cancel();
+        await presenceSub?.cancel();
+      };
+    });
+  }
+
+  // ─── Stream-injection variants ──────────────────────────────────────────────
+  // These accept a pre-built friendship stream so the caller can share one
+  // canonical Firestore subscription (via rawAcceptedFriendshipsStreamProvider)
+  // instead of opening a new watchAcceptedFriendships() subscription internally.
+
+  /// Like [watchFriends] but driven by a caller-supplied [friendships] stream.
+  Stream<List<UserModel>> watchFriendsFromFriendships(
+    String userId,
+    Stream<List<FriendshipModel>> friendships,
+  ) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return Stream.value(const <UserModel>[]);
+    }
+
+    return Stream.multi((controller) {
+      StreamSubscription<List<FriendshipModel>>? friendshipsSub;
+      StreamSubscription<List<UserModel>>? usersSub;
+
+      Future<void> bindUsers(List<FriendshipModel> latestFriendships) async {
+        final excludedIds = await _moderationService.getExcludedUserIds(
+          normalizedUserId,
+        );
+        final friendIds = latestFriendships
+            .map((f) => f.otherUserId(normalizedUserId))
+            .where(
+              (id) => id.isNotEmpty && !excludedIds.contains(id),
+            )
+            .toList(growable: false);
+
+        await usersSub?.cancel();
+        if (friendIds.isEmpty) {
+          controller.add(const <UserModel>[]);
+          return;
+        }
+
+        usersSub = watchUsersByIds(friendIds).listen(
+          (users) {
+            final usersById = <String, UserModel>{
+              for (final u in users) u.id: u,
+            };
+            final ordered = friendIds
+                .map((id) => usersById[id])
+                .whereType<UserModel>()
+                .toList(growable: false);
+            controller.add(ordered);
+          },
+          onError: controller.addError,
+        );
+      }
+
+      friendshipsSub = friendships.listen(
+        bindUsers,
+        onError: (error, stackTrace) {
+          if (_isPermissionDenied(error)) {
+            controller.add(const <UserModel>[]);
+            return;
+          }
+          controller.addError(error, stackTrace);
+        },
+      );
+
+      controller.onCancel = () async {
+        await friendshipsSub?.cancel();
+        await usersSub?.cancel();
+      };
+    });
+  }
+
+  /// Like [watchFriendRoster] but driven by a caller-supplied [friendships] stream.
+  Stream<List<FriendRosterEntry>> watchFriendRosterFromFriendships(
+    String userId,
+    Stream<List<FriendshipModel>> friendships,
+  ) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return Stream.value(const <FriendRosterEntry>[]);
+    }
+
+    return Stream.multi((controller) {
+      StreamSubscription<List<FriendshipModel>>? friendshipsSub;
+      StreamSubscription<List<UserModel>>? usersSub;
+      StreamSubscription<Map<String, PresenceModel>>? presenceSub;
+
+      List<FriendshipModel> latestFriendships = const <FriendshipModel>[];
+      Map<String, UserModel> usersById = const <String, UserModel>{};
+      Map<String, PresenceModel> presenceById = const <String, PresenceModel>{};
+      var usersReady = false;
+      var presenceReady = false;
+
+      void emit() {
+        if (latestFriendships.isNotEmpty && (!usersReady || !presenceReady)) {
+          return;
+        }
+        final entries = latestFriendships
+            .map((friendship) {
+              final friendId = friendship.otherUserId(normalizedUserId);
+              final user = usersById[friendId];
+              if (friendId.isEmpty || user == null) return null;
+              final presence =
+                  presenceById[friendId] ??
+                  PresenceModel(
+                    userId: friendId,
+                    isOnline: false,
+                    status: UserStatus.offline,
+                  );
+              return FriendRosterEntry(
+                friendship: friendship,
+                user: user,
+                presence: presence,
+              );
+            })
+            .whereType<FriendRosterEntry>()
+            .toList(growable: false)
+          ..sort(
+            (l, r) => l.user.username.toLowerCase().compareTo(
+              r.user.username.toLowerCase(),
+            ),
+          );
+        controller.add(entries);
+      }
+
+      void logPresenceTransitions(
+        Map<String, PresenceModel> nextPresenceById,
+      ) {
+        for (final entry in nextPresenceById.entries) {
+          final previous = presenceById[entry.key];
+          final previousOnline = previous?.isOnline == true;
+          final nextOnline = entry.value.isOnline == true;
+          if (previous != null && previousOnline != nextOnline) {
+            developer.log(
+              'friend_presence_changed userId=${entry.key} online=$nextOnline roomId=${entry.value.inRoom ?? '-'}',
+              name: 'FriendService',
+            );
+          }
+        }
+      }
+
+      Future<void> rebindFriendData(
+        List<FriendshipModel> incomingFriendships,
+      ) async {
+        final excludedIds = await _moderationService.getExcludedUserIds(
+          normalizedUserId,
+        );
+        final filteredFriendships = incomingFriendships
+            .where(
+              (f) =>
+                  !excludedIds.contains(f.otherUserId(normalizedUserId)),
+            )
+            .toList(growable: false);
+        final friendIds = filteredFriendships
+            .map((f) => f.otherUserId(normalizedUserId))
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
+
+        latestFriendships = filteredFriendships;
+
+        await usersSub?.cancel();
+        await presenceSub?.cancel();
+        usersReady = false;
+        presenceReady = false;
+
+        if (friendIds.isEmpty) {
+          usersById = const <String, UserModel>{};
+          presenceById = const <String, PresenceModel>{};
+          usersReady = true;
+          presenceReady = true;
+          emit();
+          return;
+        }
+
+        usersSub = watchUsersByIds(friendIds).listen(
+          (users) {
+            usersById = {for (final u in users) u.id: u};
+            usersReady = true;
+            emit();
+          },
+          onError: (error, stackTrace) {
+            if (_isPermissionDenied(error)) {
+              usersById = const <String, UserModel>{};
+              usersReady = true;
+              emit();
+              return;
+            }
+            controller.addError(error, stackTrace);
+          },
+        );
+
+        presenceSub = _watchPresenceByUserIds(friendIds).listen(
+          (presenceMap) {
+            logPresenceTransitions(presenceMap);
+            presenceById = presenceMap;
+            presenceReady = true;
+            emit();
+          },
+          onError: (error, stackTrace) {
+            if (_isPermissionDenied(error)) {
+              presenceById = const <String, PresenceModel>{};
+              presenceReady = true;
+              emit();
+              return;
+            }
+            controller.addError(error, stackTrace);
+          },
+        );
+      }
+
+      friendshipsSub = friendships.listen(
+        rebindFriendData,
         onError: (error, stackTrace) {
           if (_isPermissionDenied(error)) {
             latestFriendships = const <FriendshipModel>[];
@@ -1101,7 +1332,7 @@ class FriendService {
     return getUsersByIds(topIds);
   }
 
-  Stream<List<UserModel>> _watchUsersByIds(List<String> userIds) {
+  Stream<List<UserModel>> watchUsersByIds(List<String> userIds) {
     final normalizedIds = userIds.toSet().toList(growable: false);
     if (normalizedIds.isEmpty) {
       return Stream.value(const <UserModel>[]);

@@ -270,14 +270,12 @@ class RoomService {
   }
 
   int _compareStableLiveRooms(RoomModel a, RoomModel b) {
-    final createdA = a.createdAt?.toDate();
-    final createdB = b.createdAt?.toDate();
-    final createdCompare = (createdB ?? DateTime.fromMillisecondsSinceEpoch(0))
-        .compareTo(createdA ?? DateTime.fromMillisecondsSinceEpoch(0));
-    if (createdCompare != 0) {
-      return createdCompare;
-    }
-
+    // Score without friend context so the stable watch stream consistently
+    // surfaces active rooms over stale ones, regardless of viewer identity.
+    final scoreA = _scoreRoom(a, const <String>{});
+    final scoreB = _scoreRoom(b, const <String>{});
+    final scoreCompare = scoreB.compareTo(scoreA);
+    if (scoreCompare != 0) return scoreCompare;
     return a.id.compareTo(b.id);
   }
 

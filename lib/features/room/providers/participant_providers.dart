@@ -9,6 +9,7 @@ import '../../../presentation/providers/user_provider.dart';
 import '../controllers/room_state.dart';
 import '../repository/room_repository.dart';
 import 'room_firestore_provider.dart';
+import '../../../core/constants/query_policy.dart';
 
 /// Streams the raw room document map. Used outside of `currentParticipantAsync`
 /// so the host check resolves even before the participant document is written.
@@ -40,6 +41,7 @@ final roomMemberUserIdsProvider = StreamProvider.autoDispose
             .collection('rooms')
             .doc(roomId)
             .collection('members')
+            .limit(QueryPolicy.roomMembersLimit)
             .snapshots()
             .map((snapshot) {
               return snapshot.docs
@@ -195,6 +197,7 @@ final participantsStreamProvider = StreamProvider.autoDispose
             .doc(roomId)
             .collection('participants')
             .orderBy('joinedAt')
+            .limit(QueryPolicy.roomParticipantsLimit)
             .snapshots()
             .map(_mapParticipants),
       );
@@ -289,7 +292,7 @@ final modLogStreamProvider = StreamProvider.autoDispose
           .doc(roomId)
           .collection('mod_log')
           .orderBy('ts', descending: true)
-          .limit(20)
+          .limit(QueryPolicy.modLogLimit)
           .snapshots()
           .map(
             (snap) => snap.docs

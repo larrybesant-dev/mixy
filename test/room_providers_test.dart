@@ -53,7 +53,10 @@ void main() {
         'lastActiveAt': now,
       });
 
-      final count = await container.read(participantCountProvider('room-a').future);
+      // participantCountProvider is a sync Provider derived from the stream;
+      // await the stream first so the count is populated, then read sync.
+      await container.read(participantsStreamProvider('room-a').future);
+      final count = container.read(participantCountProvider('room-a'));
 
       expect(count, 2);
     });
@@ -77,7 +80,7 @@ void main() {
       });
 
       final participants = await container.read(participantsStreamProvider('room-a').future);
-      final count = await container.read(participantCountProvider('room-a').future);
+      final count = container.read(participantCountProvider('room-a'));
 
       expect(participants.map((p) => p.userId), ['user-1']);
       expect(count, 1);

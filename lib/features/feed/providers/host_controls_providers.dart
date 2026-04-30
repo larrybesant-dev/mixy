@@ -11,7 +11,7 @@ final hostControlsRepositoryProvider = Provider<HostControlsRepository>((ref) {
 /// Derives a [RoomModel] view of the room document from the canonical
 /// [roomDocStreamProvider]. No new Firestore subscription is opened here —
 /// this is a pure transformation of the already-active stream.
-final feedRoomStreamProvider = StreamProvider.family<RoomModel, String>((ref, roomId) {
+final feedRoomStreamProvider = StreamProvider.autoDispose.family<RoomModel, String>((ref, roomId) {
   return ref.watch(roomDocStreamProvider(roomId).stream).map((data) {
     if (data != null) {
       return RoomModel.fromJson(data, roomId);

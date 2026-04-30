@@ -51,7 +51,7 @@ void main() {
               (ref, roomId) => Stream.value([]),
             ),
             participantCountProvider.overrideWith(
-              (ref, roomId) => Stream.value(1),
+              (ref, roomId) => 1,
             ),
             messagetreamProvider.overrideWith(
               (ref, roomId) => Stream.value([]),
@@ -60,7 +60,7 @@ void main() {
               (ref, roomId) => Stream.value(Host('host-1')),
             ),
             coHostsProvider.overrideWith(
-              (ref, roomId) => Stream.value(const <Cohost>[]),
+              (ref, roomId) => const <Cohost>[],
             ),
           ],
           child: const MaterialApp(home: LiveRoomScreen(roomId: 'room-a')),

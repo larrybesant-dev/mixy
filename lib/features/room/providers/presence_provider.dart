@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/firestore/firestore_debug_tracing.dart';
 import '../../../models/room_participant_model.dart';
 import '../controllers/room_state.dart';
-import 'room_firestore_provider.dart';
+import 'participant_providers.dart';
 
 class RoomPresenceModel {
   const RoomPresenceModel({
@@ -93,28 +93,16 @@ bool _isRoomParticipantActive(
 
 final roomPresenceStreamProvider = StreamProvider.autoDispose
     .family<List<RoomPresenceModel>, String>((ref, roomId) {
-      final firestore = ref.watch(roomFirestoreProvider);
-
       return traceFirestoreStream<List<RoomPresenceModel>>(
         key: 'room_presence/$roomId',
         query: 'rooms/$roomId/participants (authoritative room presence)',
         roomId: roomId,
         itemCount: (value) => value.length,
-        stream: firestore
-            .collection('rooms')
-            .doc(roomId)
-            .collection('participants')
-            .snapshots()
-            .map((snapshot) {
+        stream: ref.watch(participantsStreamProvider(roomId).stream).map((participants) {
               final now = DateTime.now();
-              return snapshot.docs
-                  .map((doc) {
-                    final participant = RoomParticipantModel.fromMap(
-                      doc.data(),
-                    );
-                    final userId = participant.userId.isEmpty
-                        ? doc.id.trim()
-                        : participant.userId.trim();
+              return participants
+                  .map((participant) {
+                    final userId = participant.userId.trim();
                     final participantRoomMatch = _isRoomParticipantActive(
                       participant,
                       now: now,

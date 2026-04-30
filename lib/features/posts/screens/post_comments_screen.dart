@@ -7,79 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/layout/app_layout.dart';
 import '../../../core/firestore/firestore_error_utils.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 
-import '../../feed/models/post_model.dart';
 import '../../feed/widgets/post_card.dart';
-
-// ── Providers ────────────────────────────────────────────────────────────────
-
-final _postDocProvider =
-  StreamProvider.family<PostModel?, ({FirebaseFirestore firestore, String postId})>((ref, params) {
-  return params.firestore
-    .collection('posts')
-    .doc(params.postId)
-      .snapshots()
-      .map((doc) {
-        if (!doc.exists) {
-          return null;
-        }
-        final data = doc.data();
-        if (data == null) {
-          return null;
-        }
-        return PostModel.fromDoc(doc.id, data);
-      });
-});
-
-class _Comment {
-  const _Comment({
-    required this.id,
-    required this.authorId,
-    required this.authorName,
-    this.authorAvatarUrl,
-    required this.text,
-    required this.createdAt,
-  });
-
-  final String id;
-  final String authorId;
-  final String authorName;
-  final String? authorAvatarUrl;
-  final String text;
-  final DateTime createdAt;
-
-  factory _Comment.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data() ?? {};
-    return _Comment(
-      id: doc.id,
-      authorId: d['authorId'] as String? ?? '',
-      authorName: d['authorName'] as String? ?? 'User',
-      authorAvatarUrl: d['authorAvatarUrl'] as String?,
-      text: d['text'] as String? ?? '',
-      createdAt: _parseTs(d['createdAt']),
-    );
-  }
-
-  static DateTime _parseTs(dynamic v) {
-    if (v is Timestamp) return v.toDate();
-    if (v is DateTime) return v;
-    return DateTime.now();
-  }
-}
-
-final _commentsProvider =
-    StreamProvider.family<List<_Comment>, ({FirebaseFirestore firestore, String postId})>((ref, params) {
-  return params.firestore
-      .collection('posts')
-      .doc(params.postId)
-      .collection('comments')
-      .orderBy('createdAt')
-      .limit(100)
-      .snapshots()
-      .map((s) => s.docs.map(_Comment.fromDoc).toList());
-});
+import '../providers/post_comments_providers.dart';
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 
@@ -87,13 +20,10 @@ class PostCommentsScreen extends ConsumerStatefulWidget {
   PostCommentsScreen({
     super.key,
     required this.postId,
-    FirebaseFirestore? firestore,
     FirebaseAuth? auth,
-  })  : firestore = firestore ?? FirebaseFirestore.instance,
-        auth = auth ?? FirebaseAuth.instance;
+  }) : auth = auth ?? FirebaseAuth.instance;
 
   final String postId;
-  final FirebaseFirestore firestore;
   final FirebaseAuth auth;
 
   @override
@@ -129,7 +59,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
     setState(() => _submitting = true);
     try {
       final now = FieldValue.serverTimestamp();
-      final postRef = widget.firestore
+      final postRef = ref.read(firestoreProvider)
           .collection('posts')
           .doc(widget.postId);
 
@@ -159,9 +89,8 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final providerArgs = (firestore: widget.firestore, postId: widget.postId);
-    final postAsync = ref.watch(_postDocProvider(providerArgs));
-    final commentsAsync = ref.watch(_commentsProvider(providerArgs));
+    final postAsync = ref.watch(postDocProvider(widget.postId));
+    final commentsAsync = ref.watch(postCommentsProvider(widget.postId));
     final currentUser = widget.auth.currentUser;
 
     return AppPageScaffold(
@@ -264,7 +193,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
 class _CommentTile extends StatelessWidget {
   const _CommentTile({required this.comment});
 
-  final _Comment comment;
+  final PostCommentEntry comment;
 
   @override
   Widget build(BuildContext context) {

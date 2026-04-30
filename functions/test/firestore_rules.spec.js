@@ -19,6 +19,7 @@ const {
   deleteDoc,
   doc,
   getDoc,
+  serverTimestamp,
   setDoc,
   updateDoc,
 } = require("firebase/firestore");
@@ -90,6 +91,15 @@ beforeEach(async () => {
       authorName: "Author",
       text: "seed comment",
       createdAt: Timestamp.now(),
+    });
+
+    await setDoc(doc(db, "users", "user-1"), {
+      uid: "user-1",
+      username: "user-1",
+      email: "user-1@example.com",
+      bio: "hello",
+      isPrivate: false,
+      updatedAt: Timestamp.now(),
     });
   });
 });
@@ -225,7 +235,7 @@ describe("firestore rules", () => {
     }));
   });
 
-  it("allows signed-in room message writes with the current client payload", async () => {
+  it("allows room message writes only for participants and blocks non-participants", async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
       await setDoc(doc(db, "rooms", "room-chat-1"), {
@@ -233,16 +243,30 @@ describe("firestore rules", () => {
         ownerId: "host-1",
         isLocked: false,
       });
+      await setDoc(doc(db, "rooms", "room-chat-1", "participants", "user-1"), {
+        userId: "user-1",
+        role: "member",
+      });
     });
 
     const senderDb = testEnv.authenticatedContext("user-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-2").firestore();
 
     await assertSucceeds(setDoc(doc(senderDb, "rooms", "room-chat-1", "messages", "message-1"), {
       id: "message-1",
       senderId: "user-1",
       roomId: "room-chat-1",
       content: "hello room",
-      sentAt: Timestamp.now(),
+      sentAt: serverTimestamp(),
+      clientSentAt: Timestamp.now(),
+    }));
+
+    await assertFails(setDoc(doc(outsiderDb, "rooms", "room-chat-1", "messages", "message-unauthorized"), {
+      id: "message-unauthorized",
+      senderId: "user-2",
+      roomId: "room-chat-1",
+      content: "not in participants",
+      sentAt: serverTimestamp(),
       clientSentAt: Timestamp.now(),
     }));
 
@@ -251,8 +275,201 @@ describe("firestore rules", () => {
       senderId: "user-1",
       roomId: "other-room",
       content: "wrong room",
-      sentAt: Timestamp.now(),
+      sentAt: serverTimestamp(),
       clientSentAt: Timestamp.now(),
+    }));
+  });
+
+  it("enforces canonical follows edge writes", async () => {
+    const followerDb = testEnv.authenticatedContext("user-1").firestore();
+
+    await assertSucceeds(setDoc(doc(followerDb, "follows", "user-1_user-2"), {
+      followerUserId: "user-1",
+      followedUserId: "user-2",
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(followerDb, "follows", "wrong-id"), {
+      followerUserId: "user-1",
+      followedUserId: "user-2",
+      createdAt: serverTimestamp(),
+    }));
+  });
+
+  it("allows only self profile identity updates and blocks non-whitelisted fields", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(updateDoc(doc(selfDb, "users", "user-1"), {
+      bio: "updated bio",
+      updatedAt: Timestamp.now(),
+    }));
+
+    await assertFails(updateDoc(doc(otherDb, "users", "user-1"), {
+      bio: "malicious write",
+      updatedAt: Timestamp.now(),
+    }));
+
+    await assertFails(updateDoc(doc(selfDb, "users", "user-1"), {
+      membershipLevel: "vip",
+    }));
+  });
+
+  it("enforces constrained conversation creation payload", async () => {
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+
+    await assertSucceeds(setDoc(doc(userDb, "conversations", "conv-1"), {
+      type: "direct",
+      participantIds: ["user-1", "user-2"],
+      participantNames: {
+        "user-1": "User 1",
+        "user-2": "User 2",
+      },
+      createdAt: serverTimestamp(),
+      lastReadAt: {
+        "user-1": serverTimestamp(),
+        "user-2": serverTimestamp(),
+      },
+      isArchived: false,
+      status: "active",
+    }));
+
+    await assertFails(setDoc(doc(userDb, "conversations", "conv-invalid"), {
+      type: "direct",
+      participantIds: ["user-1", "user-2"],
+      participantNames: {
+        "user-1": "User 1",
+        "user-2": "User 2",
+      },
+      createdAt: serverTimestamp(),
+      lastReadAt: {
+        "user-1": serverTimestamp(),
+        "user-2": serverTimestamp(),
+      },
+      isArchived: false,
+      status: "active",
+      injected: true,
+    }));
+  });
+
+  it("enforces post creation identity and blocks guest writes", async () => {
+    const authorDb = testEnv.authenticatedContext("user-1").firestore();
+    const guestDb = testEnv.unauthenticatedContext().firestore();
+
+    await assertSucceeds(setDoc(doc(authorDb, "posts", "post-cap-1"), {
+      authorId: "user-1",
+      text: "hello",
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(authorDb, "posts", "post-cap-spoof"), {
+      authorId: "user-2",
+      text: "spoof",
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(guestDb, "posts", "post-cap-guest"), {
+      authorId: "guest",
+      text: "guest",
+      createdAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces story creation identity and blocks forged userId", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "users", "user-1", "stories", "story-1"), {
+      userId: "user-1",
+      text: "story",
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(selfDb, "users", "user-1", "stories", "story-spoof"), {
+      userId: "user-2",
+      text: "spoofed",
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "users", "user-1", "stories", "story-cross-user"), {
+      userId: "user-1",
+      text: "cross write",
+      createdAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces inviteToRoom capability on room_invite notifications", async () => {
+    const inviterDb = testEnv.authenticatedContext("user-1").firestore();
+    const guestDb = testEnv.unauthenticatedContext().firestore();
+
+    // Valid: authenticated user inviting a friend (actorId == uid).
+    await assertSucceeds(setDoc(doc(inviterDb, "notifications", "notif-invite-ok"), {
+      userId: "user-2",
+      actorId: "user-1",
+      type: "room_invite",
+      content: "user-1 invited you to join a room",
+      roomId: "room-1",
+      isRead: false,
+      createdAt: serverTimestamp(),
+    }));
+
+    // Blocked: guest (unauthenticated) cannot send a room invite.
+    await assertFails(setDoc(doc(guestDb, "notifications", "notif-invite-guest"), {
+      userId: "user-2",
+      actorId: "guest",
+      type: "room_invite",
+      content: "guest trying to invite",
+      roomId: "room-1",
+      isRead: false,
+      createdAt: serverTimestamp(),
+    }));
+
+    // Blocked: spoofed actorId — inviter claims to be a different user.
+    await assertFails(setDoc(doc(inviterDb, "notifications", "notif-invite-spoof"), {
+      userId: "user-3",
+      actorId: "user-99",
+      type: "room_invite",
+      content: "spoofed invite",
+      roomId: "room-1",
+      isRead: false,
+      createdAt: serverTimestamp(),
+    }));
+
+    // Allowed: non-room_invite notifications are unaffected by the capability check.
+    await assertSucceeds(setDoc(doc(inviterDb, "notifications", "notif-follow-ok"), {
+      userId: "user-2",
+      actorId: "user-1",
+      type: "follow",
+      content: "user-1 followed you",
+      isRead: false,
+      createdAt: serverTimestamp(),
+    }));
+  });
+
+  it("blocks participant spoof writes for other user IDs", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-participant-1"), {
+        hostId: "host-1",
+        ownerId: "host-1",
+        isLocked: false,
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+
+    await assertFails(setDoc(doc(userDb, "rooms", "room-participant-1", "participants", "user-2"), {
+      userId: "user-2",
+      role: "audience",
+      isBanned: false,
+      isMuted: false,
+    }));
+
+    await assertFails(setDoc(doc(userDb, "rooms", "room-participant-1", "participants", "user-1"), {
+      userId: "user-2",
+      role: "audience",
+      isBanned: false,
+      isMuted: false,
     }));
   });
 });

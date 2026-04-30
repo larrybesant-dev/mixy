@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/reaction_model.dart';
+import '../../../core/constants/query_policy.dart';
 
 class ReactionRepository {
   final FirebaseFirestore _db;
@@ -12,6 +13,7 @@ class ReactionRepository {
       .collection('messages')
       .doc(messageId)
       .collection('reactions')
+      .limit(QueryPolicy.messageReactionsLimit)
       .snapshots()
       .map((snap) => snap.docs.map((d) => ReactionModel.fromJson(d.data())).toList());
   }

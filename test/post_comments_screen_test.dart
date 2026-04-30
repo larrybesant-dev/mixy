@@ -45,7 +45,6 @@ void main() {
           child: MaterialApp(
             home: PostCommentsScreen(
               postId: 'post-1',
-              firestore: firestore,
               auth: auth,
             ),
           ),

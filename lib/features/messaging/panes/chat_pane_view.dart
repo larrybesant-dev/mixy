@@ -13,6 +13,7 @@ import '../../../features/feed/providers/user_providers.dart' as feed_user;
 import '../../../services/web_popout_service.dart';
 import '../../../widgets/safe_network_avatar.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 import '../../../widgets/emoji_pack/emoji_pack_picker.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../../../core/telemetry/app_telemetry.dart';
@@ -280,6 +281,9 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   }
 
   Future<void> _sendmessage() async {
+    final allowed = await GuestAuthGate.requireMessaging(context, ref);
+    if (!allowed) return;
+
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
 
@@ -788,37 +792,44 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                       color: VelvetNoir.onSurfaceVariant),
                   iconSize: 22,
                   padding: EdgeInsets.zero,
-                  onPressed: () => EmojiPackPicker.show(
-                    context,
-                    ref,
-                    onSelected: (item) => ref
-                        .read(messagingControllerProvider)
-                        .sendmessage(
-                          conversationId: widget.conversationId,
-                          senderId: widget.userId,
-                          senderName: widget.username,
-                          senderAvatarUrl: widget.avatarUrl,
-                          content: item.messageContent,
-                        )
-                        .catchError((error, stackTrace) {
-                          AppTelemetry.logAction(
-                            level: 'error',
-                            domain: 'messaging',
-                            action: 'emoji_send_failed',
-                            message: 'Emoji message send failed.',
-                            roomId: widget.conversationId,
-                            userId: widget.userId,
-                            error: error,
-                            stackTrace: stackTrace,
-                          );
-                          if (!mounted) return;
-                          ScaffoldMessenger.maybeOf(this.context)?.showSnackBar(
-                            SnackBar(
-                              content: Text('Could not send message: $error'),
-                            ),
-                          );
-                        }),
-                  ),
+                  onPressed: () async {
+                    final allowed =
+                        await GuestAuthGate.requireMessaging(context, ref);
+                    if (!allowed) return;
+                    if (!mounted) return;
+
+                    EmojiPackPicker.show(
+                      context,
+                      ref,
+                      onSelected: (item) => ref
+                          .read(messagingControllerProvider)
+                          .sendmessage(
+                            conversationId: widget.conversationId,
+                            senderId: widget.userId,
+                            senderName: widget.username,
+                            senderAvatarUrl: widget.avatarUrl,
+                            content: item.messageContent,
+                          )
+                          .catchError((error, stackTrace) {
+                            AppTelemetry.logAction(
+                              level: 'error',
+                              domain: 'messaging',
+                              action: 'emoji_send_failed',
+                              message: 'Emoji message send failed.',
+                              roomId: widget.conversationId,
+                              userId: widget.userId,
+                              error: error,
+                              stackTrace: stackTrace,
+                            );
+                            if (!mounted) return;
+                            ScaffoldMessenger.maybeOf(this.context)?.showSnackBar(
+                              SnackBar(
+                                content: Text('Could not send message: $error'),
+                              ),
+                            );
+                          }),
+                    );
+                  },
                 ),
                 Expanded(
                   child: TextField(

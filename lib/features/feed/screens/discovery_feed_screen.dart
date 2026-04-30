@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/session_capabilities_provider.dart';
 import '../../../core/theme.dart';
 import '../../../dev/app_debug_flags.dart';
 import '../../../dev/app_state_reasoning.dart';
@@ -18,6 +19,7 @@ import '../../../services/session_persistence_service.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/ui_stability_contract.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 import '../../../widgets/brand_ui_kit.dart';
 
 import '../../../shared/state/tab_scroll_memory.dart';
@@ -33,6 +35,7 @@ import '../widgets/post_card.dart';
 import '../widgets/trending_user_card.dart';
 import '../../stories/providers/story_provider.dart';
 import '../../../presentation/providers/notification_provider.dart';
+import '../../../services/room_discovery_service.dart';
 
 // ── Velvet Noir brand aliases ────────────────────────────────────────────────
 const _npSurface = VelvetNoir.surface;
@@ -469,7 +472,10 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   String? _selectedCategory;
   String? _joiningRoomId;
 
-  void _joinRoom(RoomModel room) {
+  Future<void> _joinRoom(RoomModel room) async {
+    final allowed = await GuestAuthGate.requireRoomJoin(context, ref);
+    if (!allowed) return;
+
     if (_joiningRoomId != null) return;
     setState(() => _joiningRoomId = room.id);
     context.go('/room/${room.id}', extra: room);
@@ -482,6 +488,13 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _joiningRoomId = null);
     });
+  }
+
+  Future<void> _startRoomCreation() async {
+    final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
+    if (!allowed) return;
+    if (!mounted) return;
+    context.go('/create-room');
   }
 
   @override
@@ -578,7 +591,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
             SliverToBoxAdapter(
               child: HomeFeaturedRoomsSection(
                 hasRooms: true,
-                child: _buildBentoGrid(filteredRooms, feedState.roomReasons),
+                child: _buildBentoGrid(filteredRooms, feedState.roomReasons, feedState.roomTiers),
               ),
             ),
           ] else ...[
@@ -650,6 +663,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                           room: room,
                           reason:
                               feedState.roomReasons[room.id] ?? 'Active now',
+                          tier: feedState.roomTiers[room.id],
                           joining: _joiningRoomId == room.id,
                           onTap: () => _joinRoom(room),
                         );
@@ -841,6 +855,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   Widget _buildBentoGrid(
     List<RoomModel> rooms,
     Map<String, String> roomReasons,
+    Map<String, String> roomTiers,
   ) {
     if (rooms.isEmpty) return const SizedBox.shrink();
     final hero = rooms[0];
@@ -859,6 +874,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
             child: _BentoHeroCard(
               room: hero,
               reason: roomReasons[hero.id] ?? 'Active now',
+              tier: roomTiers[hero.id],
               joining: _joiningRoomId == hero.id,
               onTap: () => _joinRoom(hero),
             ),
@@ -873,6 +889,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                     child: _BentoSmallCard(
                       room: secondary[0],
                       reason: roomReasons[secondary[0].id] ?? 'Active now',
+                      tier: roomTiers[secondary[0].id],
                       onTap: () => _joinRoom(secondary[0]),
                     ),
                   ),
@@ -882,6 +899,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                     child: _BentoSmallCard(
                       room: secondary[1],
                       reason: roomReasons[secondary[1].id] ?? 'Active now',
+                      tier: roomTiers[secondary[1].id],
                       onTap: () => _joinRoom(secondary[1]),
                     ),
                   ),
@@ -1087,10 +1105,12 @@ class _BentoHeroCard extends ConsumerWidget {
     required this.room,
     required this.reason,
     required this.onTap,
+    this.tier,
     this.joining = false,
   });
   final RoomModel room;
   final String reason;
+  final String? tier;
   final VoidCallback onTap;
   final bool joining;
 
@@ -1135,7 +1155,7 @@ class _BentoHeroCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _ReasonChip(label: reason),
+                  _ReasonChip(label: reason, tier: tier),
                   const SizedBox(height: 6),
                   RoomIdentityChip(room: room),
                 ],
@@ -1262,9 +1282,11 @@ class _BentoSmallCard extends StatelessWidget {
     required this.room,
     required this.reason,
     required this.onTap,
+    this.tier,
   });
   final RoomModel room;
   final String reason;
+  final String? tier;
   final VoidCallback onTap;
 
   @override
@@ -1307,7 +1329,7 @@ class _BentoSmallCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _ReasonChip(label: reason, small: true),
+                  _ReasonChip(label: reason, tier: tier, small: true),
                   const SizedBox(height: 4),
                   RoomIdentityChip(room: room, small: true),
                 ],
@@ -1341,11 +1363,13 @@ class _RoomGridCard extends ConsumerWidget {
     required this.room,
     required this.reason,
     required this.onTap,
+    this.tier,
     this.joining = false,
     super.key,
   });
   final RoomModel room;
   final String reason;
+  final String? tier;
   final VoidCallback onTap;
   final bool joining;
 
@@ -1381,7 +1405,7 @@ class _RoomGridCard extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _ReasonChip(label: reason, small: true),
+                      _ReasonChip(label: reason, tier: tier, small: true),
                       const SizedBox(height: 4),
                       RoomIdentityChip(room: room, small: true),
                     ],
@@ -1570,13 +1594,57 @@ class _UpcomingRoomTile extends StatelessWidget {
 
 // ── Shared widgets ────────────────────────────────────────────────────────────
 class _ReasonChip extends StatelessWidget {
-  const _ReasonChip({required this.label, this.small = false});
+  const _ReasonChip({
+    required this.label,
+    this.tier,
+    this.small = false,
+  });
 
   final String label;
+  /// Optional tier string from [RoomService.getRecommendationTier].
+  /// Controls the chip accent color for visual social-proof hierarchy.
+  final String? tier;
   final bool small;
+
+  // ── Tier color map ─────────────────────────────────────────────────────────
+  // Friends → gold border/text
+  // Momentum/Hot → wine red/orange
+  // Fresh → teal
+  // Live (default) → neutral
+  static Color _borderFor(String? tier) {
+    switch (tier) {
+      case 'Friends':
+        return const Color(0xFFD4AF37); // gold
+      case 'Momentum':
+        return const Color(0xFF9B2535); // wine
+      case 'Hot':
+        return const Color(0xFFE07A5F); // warm orange
+      case 'Fresh':
+        return const Color(0xFF4DB6AC); // teal
+      default:
+        return const Color(0x1A4A2E35); // ghost
+    }
+  }
+
+  static Color _textFor(String? tier) {
+    switch (tier) {
+      case 'Friends':
+        return const Color(0xFFD4AF37);
+      case 'Momentum':
+        return const Color(0xFFE07A8A);
+      case 'Hot':
+        return const Color(0xFFE07A5F);
+      case 'Fresh':
+        return const Color(0xFF4DB6AC);
+      default:
+        return VelvetNoir.onSurface;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final border = _borderFor(tier);
+    final textColor = _textFor(tier);
     return Container(
       constraints: BoxConstraints(maxWidth: small ? 110 : 160),
       padding: EdgeInsets.symmetric(
@@ -1586,7 +1654,7 @@ class _ReasonChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0x99161A21),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _npGhost),
+        border: Border.all(color: border.withAlpha(180)),
       ),
       child: Text(
         label,
@@ -1595,7 +1663,7 @@ class _ReasonChip extends StatelessWidget {
         style: GoogleFonts.raleway(
           fontSize: small ? 9 : 10,
           fontWeight: FontWeight.w700,
-          color: _npOnSurface,
+          color: textColor,
         ),
       ),
     );
@@ -1966,10 +2034,17 @@ class _FollowFeedActionButton extends StatelessWidget {
 
 // ── Live Now bubble (avatar ring + name) ──────────────────────────────────────
 class _LiveNowBubble extends ConsumerWidget {
-  const _LiveNowBubble({required this.room, required this.onTap});
+  const _LiveNowBubble({
+    required this.room,
+    required this.onTap,
+    this.friendCount = 0,
+  });
 
   final RoomModel room;
   final VoidCallback onTap;
+  /// How many of the viewer's friends are in this room (host + audience).
+  /// When > 0, a gold "👥 N" badge is shown on the avatar ring.
+  final int friendCount;
 
   static const _categoryEmoji = {
     'music': '🎵',
@@ -2026,6 +2101,34 @@ class _LiveNowBubble extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Friend-count badge (gold, top-left)
+                if (friendCount > 0)
+                  Positioned(
+                    top: -2,
+                    left: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _npPrimary,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _npSurface,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        '👥 $friendCount',
+                        style: GoogleFonts.raleway(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: _npSurface,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Member count badge
                 if (memberCount > 0)
                   Positioned(
@@ -2482,7 +2585,7 @@ class _HeroJoinCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: hasLiveRoom
                     ? () => context.go('/room/${firstRoom!.id}', extra: firstRoom!)
-                    : () => context.go('/create-room'),
+                  : _startRoomCreation,
                 style: FilledButton.styleFrom(
                   backgroundColor: _npPrimary,
                   foregroundColor: _npSurface,
@@ -2509,7 +2612,7 @@ class _HeroJoinCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => context.go('/create-room'),
+                    onPressed: _startRoomCreation,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _npPrimary,
                       side: BorderSide(
@@ -2713,7 +2816,15 @@ class _GoLiveFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
-      onPressed: () => context.go('/create-room'),
+      onPressed: () async {
+        final allowed = await GuestAuthGate.requireCapabilityFromContext(
+          context,
+          SessionCapability.createRoom,
+        );
+        if (!allowed) return;
+        if (!context.mounted) return;
+        context.go('/create-room');
+      },
       backgroundColor: _npPrimary,
       foregroundColor: _npSurface,
       icon: const Icon(Icons.mic_rounded),
@@ -2748,7 +2859,16 @@ class _FriendsLiveSection extends ConsumerWidget {
             .toList();
 
         if (friendRooms.isEmpty) {
-          return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'No friends live right now — discover rooms below.',
+              style: GoogleFonts.raleway(
+                fontSize: 13,
+                color: _npOnVariant,
+              ),
+            ),
+          );
         }
 
         return Column(
@@ -2791,6 +2911,10 @@ class _FriendsLiveSection extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 14),
                 itemBuilder: (ctx, i) => _LiveNowBubble(
                   room: friendRooms[i],
+                  friendCount: RoomDiscoveryService.friendCountIn(
+                    friendRooms[i],
+                    followingIds.toSet(),
+                  ),
                   onTap: () => context.go('/room/${friendRooms[i].id}', extra: friendRooms[i]),
                 ),
               ),

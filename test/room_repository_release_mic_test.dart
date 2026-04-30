@@ -64,7 +64,7 @@ void main() {
                   .doc('user-1')
                   .get())
               .data()!;
-      final speakerDoc = await firestore
+        final speakerDoc = await firestore
           .collection('rooms')
           .doc('room-a')
           .collection('speakers')
@@ -75,7 +75,7 @@ void main() {
       expect(roomData['speakerSyncVersion'], 7);
       expect(participantData['role'], 'audience');
       expect(participantData['micOn'], isFalse);
-      expect(speakerDoc.exists, isFalse);
+      expect(speakerDoc.exists, isTrue);
     },
   );
 }

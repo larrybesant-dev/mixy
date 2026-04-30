@@ -7,6 +7,7 @@ import '../../../core/layout/app_layout.dart';
 import '../../../core/theme.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 import '../controllers/messaging_search_controller.dart';
 import '../providers/messaging_provider.dart';
 
@@ -97,6 +98,9 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
     String otherUsername,
     String? otherAvatarUrl,
   ) async {
+    final allowed = await GuestAuthGate.requireConversationStart(context, ref);
+    if (!allowed) return;
+
     if (_isStartingConversation) {
       return;
     }

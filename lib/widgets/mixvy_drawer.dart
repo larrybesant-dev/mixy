@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mixvy/core/providers/session_capabilities_provider.dart';
+import 'package:mixvy/shared/widgets/guest_auth_gate.dart';
 
 import '../core/theme.dart';
 import '../features/auth/providers/admin_provider.dart';
@@ -10,6 +12,16 @@ import '../presentation/providers/notification_provider.dart';
 import 'brand_ui_kit.dart';
 
 class MixVyDrawer extends ConsumerWidget {
+  static const Map<String, SessionCapability> _routeCapabilities = {
+    '/messages': SessionCapability.startConversation,
+    '/groups': SessionCapability.createGroup,
+    '/create-post': SessionCapability.createPost,
+    '/create-story': SessionCapability.createStory,
+    '/create-group': SessionCapability.createGroup,
+    '/create-room': SessionCapability.createRoom,
+    '/edit-profile': SessionCapability.editProfile,
+  };
+
   final String? userId;
   final bool embedded;
   final VoidCallback? onClose;
@@ -59,7 +71,16 @@ class MixVyDrawer extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () {
+        onTap: () async {
+          final capability = _routeCapabilities[route];
+          if (capability != null) {
+            final allowed = await GuestAuthGate.requireCapabilityFromContext(
+              context,
+              capability,
+            );
+            if (!allowed) return;
+          }
+
           if (!embedded) {
             // Close the drawer, then navigate after the frame so the context
             // is still valid and the drawer animation doesn't compete.

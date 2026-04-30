@@ -7,6 +7,7 @@ import '../../widgets/safe_network_avatar.dart';
 import '../../core/layout/app_layout.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
+import '../../shared/widgets/guest_auth_gate.dart';
 import '../feed/controllers/paginated_posts_controller.dart';
 import '../feed/providers/feed_providers.dart';
 import '../feed/widgets/post_card.dart';
@@ -1333,7 +1334,9 @@ void _showCreateMenu(BuildContext context) {
             'New Post',
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
-          onTap: () {
+          onTap: () async {
+            final allowed = await GuestAuthGate.requirePostCreation(context, ref);
+            if (!allowed) return;
             Navigator.pop(context);
             context.go('/create-post');
           },
@@ -1347,7 +1350,9 @@ void _showCreateMenu(BuildContext context) {
             'New Story',
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
-          onTap: () {
+          onTap: () async {
+            final allowed = await GuestAuthGate.requireStoryCreation(context, ref);
+            if (!allowed) return;
             Navigator.pop(context);
             context.go('/create-story');
           },
@@ -1361,7 +1366,9 @@ void _showCreateMenu(BuildContext context) {
             'Host Room',
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
-          onTap: () {
+          onTap: () async {
+            final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
+            if (!allowed) return;
             Navigator.pop(context);
             context.go('/create-room');
           },
@@ -1375,7 +1382,9 @@ void _showCreateMenu(BuildContext context) {
             'New Group',
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
-          onTap: () {
+          onTap: () async {
+            final allowed = await GuestAuthGate.requireGroupCreation(context, ref);
+            if (!allowed) return;
             Navigator.pop(context);
             context.go('/create-group');
           },

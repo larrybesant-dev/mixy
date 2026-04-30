@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/models/room_model.dart';
 import '../../auth/controllers/auth_controller.dart';
 
 const _kEnabled   = 'after_dark_enabled';
@@ -23,6 +24,36 @@ final afterDarkEnabledProvider = FutureProvider<bool>((ref) async {
 final afterDarkControllerProvider = Provider<AfterDarkController>((ref) {
   return AfterDarkController(ref);
 });
+
+final adultRoomsProvider = StreamProvider.autoDispose
+    .family<List<RoomModel>, String?>((ref, category) {
+      Query<Map<String, dynamic>> query = ref
+          .watch(firestoreProvider)
+          .collection('rooms')
+          .where('isLive', isEqualTo: true)
+          .where('isAdult', isEqualTo: true)
+          .limit(50);
+
+      if (category != null) {
+        query = query.where('category', isEqualTo: category);
+      }
+
+      return query.snapshots().map((snapshot) {
+        final rooms = snapshot.docs
+            .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
+            .toList(growable: false);
+        rooms.sort((a, b) {
+          final aTs = a.createdAt?.seconds ?? 0;
+          final bTs = b.createdAt?.seconds ?? 0;
+          final byCreatedAt = bTs.compareTo(aTs);
+          if (byCreatedAt != 0) {
+            return byCreatedAt;
+          }
+          return a.id.compareTo(b.id);
+        });
+        return rooms;
+      });
+    });
 
 class AfterDarkController {
   AfterDarkController(this._ref);

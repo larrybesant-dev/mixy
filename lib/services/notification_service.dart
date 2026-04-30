@@ -58,26 +58,18 @@ class NotificationService {
   }
 
   Stream<List<NotificationModel>> notificationsForUser(String userId) {
+    // Limit to 50 most-recent notifications. Firestore already returns docs
+    // ordered by createdAt descending — the secondary client sort is removed
+    // (it was redundant dead code).
     return _firestore
         .collection('notifications')
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
+        .limit(50)
         .snapshots()
-        .map((snapshot) {
-          final docs = snapshot.docs.toList(growable: false)
-            ..sort((a, b) {
-              final aTs = a.data()['createdAt'];
-              final bTs = b.data()['createdAt'];
-              if (aTs is Timestamp && bTs is Timestamp) {
-                return bTs.compareTo(aTs);
-              }
-              return b.id.compareTo(a.id);
-            });
-
-          return docs
-              .map((doc) => NotificationModel.fromJson(doc.id, doc.data()))
-              .toList(growable: false);
-        });
+        .map((snapshot) => snapshot.docs
+            .map((doc) => NotificationModel.fromJson(doc.id, doc.data()))
+            .toList(growable: false));
   }
 
   Future<void> markAllRead(String userId) async {

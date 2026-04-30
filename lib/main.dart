@@ -9,14 +9,20 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
 import 'app/app.dart';
 import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
+import 'core/services/guest_session_service.dart';
+import 'core/providers/guest_mode_provider.dart';
+import 'core/services/guest_session_service.dart';
+import 'core/telemetry/telemetry_config.dart';
 import 'firebase_options.dart';
 import 'router/app_router.dart';
 import 'services/push_messaging_service.dart';
+import 'dev_tools/stream_linter_hook.dart';
 
 const String _appVersion = String.fromEnvironment(
   'APP_VERSION',
@@ -31,6 +37,7 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   startup.markBindingReady();
+  TelemetryConfig.initialize(); // standard in debug, off in release
   Logger.info('App startup version=$_appVersion');
 
   if (kIsWeb) {
@@ -62,6 +69,8 @@ Future<void> main() async {
 
   try {
     await dotenv.load(fileName: 'assets/.env');
+    // Restore guest session flag before routing begins.
+    await GuestSessionService.initialize();
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -87,6 +96,7 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
+      observers: [MixvyProviderObserver()],
       overrides: [
         bootStateProvider.overrideWith(
           (ref) => BootStateNotifier(initialState: initialBootState),
@@ -95,4 +105,8 @@ Future<void> main() async {
       child: const MixVyApp(),
     ),
   );
+
+  // Dev-only: scan for stream architecture violations in the background.
+  // Never blocks startup; zero cost in release builds.
+  StreamLinterHook.scheduleOnce();
 }

@@ -12,6 +12,7 @@ import '../../feed/providers/user_providers.dart' as feed_user;
 import '../controllers/live_room_media_controller.dart';
 import '../controllers/webrtc_controller.dart';
 import '../providers/message_providers.dart';
+import '../providers/room_render_selectors.dart';
 import '../repository/room_repository.dart';
 import '../providers/room_live_state_provider.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
@@ -20,6 +21,7 @@ import '../room_controller.dart';
 import '../../../dev/room_inspector_panel.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../services/rtc_room_service.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 
 // Wide-screen cap — prevents the chat from stretching across a 1440px monitor.
 const double _kMaxBodyWidth = 720;
@@ -780,27 +782,12 @@ class _RoomScaffold extends StatelessWidget {
               ),
               if (reconnecting) const _ReconnectingBanner(),
               Expanded(
-                child: _MessageList(message: roomState.message),
+                child: _MessageList(roomId: roomId),
               ),
-              _TypingIndicator(
-                typingUsers: roomState.typingUsers.keys.toList(),
-              ),
+              _TypingIndicator(roomId: roomId),
               _FirstThirtySecondsCoach(
                 key: ValueKey('coach-$roomId'),
-                roomTitle: roomState.title,
-                participantCount: roomState.participants.length,
-                messageCount: roomState.message.length,
-                typingCount: roomState.typingUsers.length,
-                hostActive: roomState.participants.any(
-                  (p) =>
-                      (p.role == 'host' || p.role == 'cohost') &&
-                      (p.micOn ||
-                          DateTime.now().difference(p.lastActiveAt).inSeconds <=
-                              25),
-                ),
-                onMicCount: roomState.participants
-                    .where((p) => roomParticipantCanBeShownAsTalking(p))
-                    .length,
+                roomId: roomId,
               ),
               _RoomActionBar(roomId: roomId),
             ],
@@ -928,12 +915,22 @@ class _JoinedRoomBanner extends StatelessWidget {
 // Shows an empty-state prompt when there are no message yet — never blank.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MessageList extends StatelessWidget {
-  final List<MessageModel> message;
-  const _MessageList({required this.message});
+// ─────────────────────────────────────────────────────────────────────────────
+// message LIST
+// Shows an empty-state prompt when there are no message yet — never blank.
+// Watches messagetreamProvider directly so it only rebuilds on message
+// changes, not on typing or presence events.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MessageList extends ConsumerWidget {
+  final String roomId;
+  const _MessageList({required this.roomId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final message =
+        ref.watch(messagetreamProvider(roomId)).valueOrNull ?? const <MessageModel>[];
+
     if (message.isEmpty) {
       return const Center(
         child: Padding(
@@ -963,19 +960,24 @@ class _MessageList extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPING INDICATOR
+// Watches the existing roomTypingUserIdsProvider (StreamProvider<List<String>>)
+// so it only rebuilds when the set of actively-typing users changes, not on
+// message or participant events.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TypingIndicator extends StatelessWidget {
-  final List<String> typingUsers;
-  const _TypingIndicator({required this.typingUsers});
+class _TypingIndicator extends ConsumerWidget {
+  final String roomId;
+  const _TypingIndicator({required this.roomId});
 
   @override
-  Widget build(BuildContext context) {
-    if (typingUsers.isEmpty) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typingIds =
+        ref.watch(roomTypingUserIdsProvider(roomId)).valueOrNull ?? const [];
+    if (typingIds.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Text(
-        '${typingUsers.join(", ")} typing…',
+        '${typingIds.join(', ')} typing…',
         style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
       ),
     );
@@ -986,30 +988,18 @@ enum _CoachActivityProfile { low, medium, high }
 
 enum _RoomMood { calm, social, chaotic, intimate }
 
-class _FirstThirtySecondsCoach extends StatefulWidget {
-  const _FirstThirtySecondsCoach({
-    super.key,
-    required this.roomTitle,
-    required this.participantCount,
-    required this.messageCount,
-    required this.typingCount,
-    required this.hostActive,
-    required this.onMicCount,
-  });
+class _FirstThirtySecondsCoach extends ConsumerStatefulWidget {
+  const _FirstThirtySecondsCoach({super.key, required this.roomId});
 
-  final String roomTitle;
-  final int participantCount;
-  final int messageCount;
-  final int typingCount;
-  final bool hostActive;
-  final int onMicCount;
+  final String roomId;
 
   @override
-  State<_FirstThirtySecondsCoach> createState() =>
+  ConsumerState<_FirstThirtySecondsCoach> createState() =>
       _FirstThirtySecondsCoachState();
 }
 
-class _FirstThirtySecondsCoachState extends State<_FirstThirtySecondsCoach> {
+class _FirstThirtySecondsCoachState
+    extends ConsumerState<_FirstThirtySecondsCoach> {
   Timer? _timer;
   int _elapsedSeconds = 0;
   late double _smoothedActivityScore;
@@ -1017,6 +1007,11 @@ class _FirstThirtySecondsCoachState extends State<_FirstThirtySecondsCoach> {
   late _RoomMood _stableMood;
   _RoomMood? _moodCandidate;
   int _moodCandidateSeconds = 0;
+
+  // Latest metrics from the provider — updated each build before the timer
+  // reads them. Safe to assign without setState because the timer calls
+  // setState itself on every tick.
+  RoomCoachMetrics _metrics = const RoomCoachMetrics.empty();
 
   static const double _smoothingAlpha = 0.28;
   static const int _moodMinHoldSeconds = 6;
@@ -1048,39 +1043,23 @@ class _FirstThirtySecondsCoachState extends State<_FirstThirtySecondsCoach> {
   }
 
   @override
-  void didUpdateWidget(covariant _FirstThirtySecondsCoach oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final instant = _instantActivityScore();
-    // Nudge toward new activity in-between timer ticks so profile changes
-    // feel smooth but responsive.
-    _smoothedActivityScore =
-        (_smoothedActivityScore * (1 - _smoothingAlpha)) +
-        (instant * _smoothingAlpha);
-    _profile = _resolveProfile(
-      _smoothedActivityScore,
-      current: _profile,
-    );
-    _applyMoodInertia(_instantMood());
-  }
-
-  @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
   }
 
   double _instantActivityScore() {
-    final participants = widget.participantCount.clamp(0, 30).toDouble();
-    final messages = widget.messageCount.clamp(0, 20).toDouble();
-    final typing = widget.typingCount.clamp(0, 6).toDouble();
-    final onMic = widget.onMicCount.clamp(0, 8).toDouble();
+    final participants = _metrics.participantCount.clamp(0, 30).toDouble();
+    final messages = _metrics.messageCount.clamp(0, 20).toDouble();
+    final typing = _metrics.typingCount.clamp(0, 6).toDouble();
+    final onMic = _metrics.onMicCount.clamp(0, 8).toDouble();
 
     // Host influence should anchor the early room tone, then hand off to
     // crowd dynamics as session evidence accumulates.
     final hostInfluenceScale = _elapsedSeconds <= 24
         ? (1.6 - ((_elapsedSeconds / 24) * 0.6))
         : 1.0;
-    final hostBonus = widget.hostActive ? hostInfluenceScale : 0.0;
+    final hostBonus = _metrics.hostActive ? hostInfluenceScale : 0.0;
 
     // Weighted signal: typing implies immediacy, messages imply motion,
     // participants imply density, host/on-mic imply conversational gravity.
@@ -1092,13 +1071,15 @@ class _FirstThirtySecondsCoachState extends State<_FirstThirtySecondsCoach> {
   }
 
   _RoomMood _instantMood() {
-    if (_isHighActivity && widget.onMicCount >= 3) {
+    if (_isHighActivity && _metrics.onMicCount >= 3) {
       return _RoomMood.chaotic;
     }
-    if (_isLowActivity && widget.participantCount <= 3) {
+    if (_isLowActivity && _metrics.participantCount <= 3) {
       return _RoomMood.intimate;
     }
-    if (widget.hostActive || widget.typingCount > 0 || widget.messageCount >= 2) {
+    if (_metrics.hostActive ||
+        _metrics.typingCount > 0 ||
+        _metrics.messageCount >= 2) {
       return _RoomMood.social;
     }
     return _RoomMood.calm;
@@ -1185,7 +1166,7 @@ class _FirstThirtySecondsCoachState extends State<_FirstThirtySecondsCoach> {
   }
 
   String _retentionFrame() {
-    final title = widget.roomTitle.trim();
+    final title = _metrics.roomTitle.trim();
     switch (_mood) {
       case _RoomMood.chaotic:
         return 'Fast room right now. Catch one full exchange before switching.';
@@ -1234,6 +1215,12 @@ class _FirstThirtySecondsCoachState extends State<_FirstThirtySecondsCoach> {
 
   @override
   Widget build(BuildContext context) {
+    // Update cached metrics before the timer reads them. This is a plain field
+    // assignment — no setState needed; the timer drives rebuilds on its own
+    // 1-second cadence. Provider equality (RoomCoachMetrics.operator==)
+    // ensures we only enter build() when the numbers actually changed.
+    _metrics = ref.watch(roomCoachMetricsProvider(widget.roomId));
+
     final maxWindow = _maxWindowSeconds;
     if (_elapsedSeconds >= maxWindow) {
       return const SizedBox.shrink();
@@ -1340,7 +1327,10 @@ class _MessageInputState extends ConsumerState<_MessageInput> {
     );
   }
 
-  void _send() {
+  Future<void> _send() async {
+    final allowed = await GuestAuthGate.requireMessaging(context, ref);
+    if (!allowed) return;
+
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();

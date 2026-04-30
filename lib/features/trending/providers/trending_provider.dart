@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/features/feed/providers/feed_providers.dart';
 
 DateTime _parseDateTime(dynamic value) {
   if (value is Timestamp) {
@@ -131,45 +132,70 @@ final trendingHashtagsProvider =
 
 // Get posts with specific hashtag
 final hashtagPostsProvider =
-    StreamProvider.family<List<TrendingPost>, String>((ref, hashtag) {
-  final firestore = ref.watch(firestoreProvider);
+    Provider.autoDispose.family<AsyncValue<List<TrendingPost>>, String>((
+  ref,
+  hashtag,
+) {
+  final needle = '#${hashtag.trim().toLowerCase()}';
+  return ref.watch(postsFeedProvider).whenData((posts) {
+    final mapped = posts
+        .where((post) => post.text.toLowerCase().contains(needle))
+        .map(
+          (post) => TrendingPost(
+            id: post.id,
+            authorId: post.userId,
+            authorName: post.authorName ?? 'User',
+            authorAvatarUrl: post.authorAvatarUrl,
+            content: post.text,
+            hashtags: const <String>[],
+            createdAt: post.createdAt,
+            likeCount: post.likeCount,
+            commentCount: post.commentCount,
+          ),
+        )
+        .toList(growable: false)
+      ..sort((left, right) => right.likeCount.compareTo(left.likeCount));
 
-  return firestore
-      .collection('posts')
-      .where('hashtags', arrayContains: hashtag)
-      .orderBy('likeCount', descending: true)
-      .limit(30)
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => TrendingPost.fromJson(doc.data(), doc.id))
-          .toList());
+    if (mapped.length <= 30) {
+      return mapped;
+    }
+    return mapped.sublist(0, 30);
+  });
 });
 
 // Get trending posts (top posts by engagement in last 7 days)
-final trendingPostsProvider = FutureProvider<List<TrendingPost>>((ref) {
-  final firestore = ref.watch(firestoreProvider);
+final trendingPostsProvider = Provider.autoDispose<AsyncValue<List<TrendingPost>>>(
+  (ref) {
   final sevenDaysAgo =
       DateTime.now().subtract(const Duration(days: 7));
 
-  return firestore
-      .collection('posts')
-      .where('createdAt', isGreaterThan: sevenDaysAgo)
-      .orderBy('createdAt', descending: true)
-      .orderBy('likeCount', descending: true)
-      .limit(50)
-      .get()
-      .then((snapshot) {
-    final posts = snapshot.docs
-        .map((doc) => TrendingPost.fromJson(doc.data(), doc.id))
-        .toList();
+  return ref.watch(postsFeedProvider).whenData((posts) {
+    final mapped = posts
+        .where((post) => post.createdAt.isAfter(sevenDaysAgo))
+        .map(
+          (post) => TrendingPost(
+            id: post.id,
+            authorId: post.userId,
+            authorName: post.authorName ?? 'User',
+            authorAvatarUrl: post.authorAvatarUrl,
+            content: post.text,
+            hashtags: const <String>[],
+            createdAt: post.createdAt,
+            likeCount: post.likeCount,
+            commentCount: post.commentCount,
+          ),
+        )
+        .toList(growable: false);
 
-    // Sort by engagement score
-    posts.sort((a, b) {
-      final aScore = (a.likeCount + a.commentCount) / 2;
-      final bScore = (b.likeCount + b.commentCount) / 2;
-      return bScore.compareTo(aScore);
+    mapped.sort((left, right) {
+      final leftScore = (left.likeCount + left.commentCount) / 2;
+      final rightScore = (right.likeCount + right.commentCount) / 2;
+      return rightScore.compareTo(leftScore);
     });
 
-    return posts.take(20).toList();
+    if (mapped.length <= 20) {
+      return mapped;
+    }
+    return mapped.sublist(0, 20);
   });
 });

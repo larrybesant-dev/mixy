@@ -3,6 +3,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/features/feed/providers/feed_providers.dart';
 import 'package:mixvy/features/trending/providers/trending_provider.dart';
 
 import 'test_helpers.dart';
@@ -26,7 +27,8 @@ void main() {
     tearDown(() => container.dispose());
 
     test('returns empty list when no posts exist', () async {
-      final posts = await container.read(trendingPostsProvider.future);
+      await container.read(postsFeedProvider.future);
+      final posts = container.read(trendingPostsProvider).value ?? [];
       expect(posts, isEmpty);
     });
 
@@ -42,7 +44,8 @@ void main() {
         'commentCount': 5,
       });
 
-      final posts = await container.read(trendingPostsProvider.future);
+      await container.read(postsFeedProvider.future);
+      final posts = container.read(trendingPostsProvider).value!;
       expect(posts.length, 1);
       expect(posts.first.id, 'recent-post');
       expect(posts.first.authorName, 'DJ Silk');
@@ -69,7 +72,8 @@ void main() {
         'commentCount': 20,
       });
 
-      final posts = await container.read(trendingPostsProvider.future);
+      await container.read(postsFeedProvider.future);
+      final posts = container.read(trendingPostsProvider).value!;
       // Provider sorts by engagement score descending
       expect(posts.first.id, 'high-engage');
     });

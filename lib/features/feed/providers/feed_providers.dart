@@ -35,7 +35,7 @@ final postsStreamProvider = FutureProvider.autoDispose<List<PostModel>>((ref) {
   return ref.read(feedRepositoryProvider).getPostsFeed();
 });
 
-final userPostsStreamProvider = StreamProvider.family<List<PostModel>, String>((
+final userPostsStreamProvider = StreamProvider.autoDispose.family<List<PostModel>, String>((
   ref,
   userId,
 ) {
@@ -53,7 +53,9 @@ final userPostsStreamProvider = StreamProvider.family<List<PostModel>, String>((
 });
 
 final roomsStreamProvider = StreamProvider.autoDispose<List<RoomModel>>((ref) {
-  return ref.read(roomServiceProvider).watchLiveRooms(limit: 50);
+  // ref.watch (not ref.read) so dependency tracking works correctly if
+  // roomServiceProvider is overridden in tests or re-initialized.
+  return ref.watch(roomServiceProvider).watchLiveRooms(limit: 50);
 });
 
 final eventsStreamProvider = FutureProvider.autoDispose<List<EventModel>>((

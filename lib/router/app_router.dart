@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:mixvy/core/routing/redirect_logic.dart';
 import 'package:mixvy/core/routing/redirect_trace.dart';
+import 'package:mixvy/core/providers/guest_mode_provider.dart';
+import 'package:mixvy/core/services/guest_session_service.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/features/auth/register_screen.dart';
 import 'package:mixvy/features/auth/screens/login_screen.dart';
@@ -73,8 +75,20 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isAdmin => _isAdmin;
 
+  bool _isGuestMode = GuestSessionService.isActive;
+  bool get isGuestMode => _isGuestMode;
+
   void updateAuthState(AuthState value) {
     _authState = value;
+    // Clear guest mode the moment a real Firebase uid arrives.
+    if (value.uid != null && value.uid!.isNotEmpty) {
+      _isGuestMode = false;
+    }
+    notifyListeners();
+  }
+
+  void updateGuestMode(bool value) {
+    _isGuestMode = value;
     notifyListeners();
   }
 
@@ -99,7 +113,24 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
 
   ref.listen<AuthState>(
     authControllerProvider,
-    (_, next) => notifier.updateAuthState(next),
+    (_, next) {
+      notifier.updateAuthState(next);
+      // Clear persisted guest session the moment a real account signs in.
+      if (next.uid != null && next.uid!.isNotEmpty) {
+        GuestSessionService.clearGuestSession();
+      }
+    },
+    fireImmediately: true,
+  );
+
+  ref.listen<bool>(
+    guestModeProvider,
+    (_, next) {
+      notifier.updateGuestMode(next);
+      if (!next) {
+        GuestSessionService.clearGuestSession();
+      }
+    },
     fireImmediately: true,
   );
 
@@ -139,9 +170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final evaluation = evaluateAppRedirectWithReason(
         matchedLocation: state.matchedLocation,
         uid: authState.uid,
-        authLoading: !authState.isRoutingStable,
-        legalStateResolved: appSettings != null,
-        hasAcceptedLegal: appSettings?.hasAcceptedCurrentLegal ?? false,
+          authLoading: !authState.isRoutingStable,
+          legalStateResolved: appSettings != null,
+          hasAcceptedLegal: appSettings?.hasAcceptedCurrentLegal ?? false,
+          isGuestMode: refreshNotifier.isGuestMode,
       );
 
       assert(() {

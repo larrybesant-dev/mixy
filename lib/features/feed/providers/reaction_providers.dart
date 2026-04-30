@@ -7,6 +7,6 @@ final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
   return ReactionRepository(ref.watch(firestoreProvider));
 });
 
-final reactionsStreamProvider = StreamProvider.family<List<ReactionModel>, ({String roomId, String messageId})>((ref, params) {
+final reactionsStreamProvider = StreamProvider.autoDispose.family<List<ReactionModel>, ({String roomId, String messageId})>((ref, params) {
   return ref.read(reactionRepositoryProvider).reactionsStream(params.roomId, params.messageId);
 });

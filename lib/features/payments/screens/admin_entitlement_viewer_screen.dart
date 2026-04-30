@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mixvy/core/layout/app_layout.dart';
 import 'package:mixvy/features/auth/providers/admin_provider.dart';
+import 'package:mixvy/features/payments/admin_entitlement_providers.dart';
 import 'package:mixvy/shared/widgets/app_page_scaffold.dart';
 
 class AdminEntitlementViewerScreen extends ConsumerStatefulWidget {
@@ -48,23 +49,7 @@ class _AdminEntitlementViewerScreenState
     });
 
     try {
-      final users = FirebaseFirestore.instance.collection('users');
-      String? userId;
-
-      if (rawInput.contains('@')) {
-        final emailMatch = await users
-            .where('email', isEqualTo: rawInput)
-            .limit(1)
-            .get();
-        if (emailMatch.docs.isNotEmpty) {
-          userId = emailMatch.docs.first.id;
-        }
-      } else {
-        final exactDoc = await users.doc(rawInput).get();
-        if (exactDoc.exists) {
-          userId = exactDoc.id;
-        }
-      }
+      final userId = await ref.read(entitlementLookupProvider(rawInput).future);
 
       if (!mounted) return;
       setState(() {
@@ -302,7 +287,7 @@ class _LookupCard extends StatelessWidget {
   }
 }
 
-class _ResolvedUserPanel extends StatelessWidget {
+class _ResolvedUserPanel extends ConsumerWidget {
   const _ResolvedUserPanel({
     required this.userId,
     required this.actionInProgress,
@@ -316,20 +301,16 @@ class _ResolvedUserPanel extends StatelessWidget {
   final VoidCallback onRevokeVip;
 
   @override
-  Widget build(BuildContext context) {
-    final userStream = FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
-    final eventsStream = FirebaseFirestore.instance
-        .collection('entitlement_events')
-        .where('userId', isEqualTo: userId)
-        .limit(25)
-        .snapshots();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userDocAsync = ref.watch(entitlementUserDocProvider(userId));
+    final eventsAsync = ref.watch(entitlementEventsProvider(userId));
 
     return Column(
       children: [
-        StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: userStream,
-          builder: (context, snapshot) {
-            final data = snapshot.data?.data();
+        userDocAsync.when(
+          loading: () => const LinearProgressIndicator(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (data) {
             final entitlements = data?['entitlements'] as Map<String, dynamic>?;
             final vip = entitlements?['vip'] as Map<String, dynamic>?;
             final isActive = vip?['active'] == true;
@@ -403,10 +384,11 @@ class _ResolvedUserPanel extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: eventsStream,
-          builder: (context, snapshot) {
-            final docs = [...?snapshot.data?.docs]
+        eventsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (eventDocs) {
+            final docs = [...eventDocs]
               ..sort((a, b) {
                 final aData = a.data();
                 final bData = b.data();

@@ -1,19 +1,30 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../messaging/providers/messaging_provider.dart';
+import '../../../messaging/models/conversation_model.dart';
 import '../models/schema_conversation.dart';
 
-// Re-use the auth provider already declared in the friends module to avoid
-// creating a duplicate FirebaseAuth stream. If the schema_messenger layer
-// ever gets a shared auth barrel, consolidate there.
 import '../../friends/providers/schema_friend_links_providers.dart'
     show schemaAuthUserIdProvider;
 
-final _schemaConversationsFirestoreProvider = Provider<FirebaseFirestore>((
-  ref,
-) {
-  return FirebaseFirestore.instance;
-});
+SchemaConversation _toSchemaConversation(Conversation conversation) {
+  return SchemaConversation(
+    id: conversation.id,
+    participantIds: conversation.participantIds,
+    type: conversation.type,
+    status: conversation.status,
+    createdAt: conversation.createdAt,
+    isArchived: conversation.isArchived,
+    pinnedBy: conversation.pinnedBy,
+    lastReadAt: conversation.lastReadAt,
+    lastMessageAt: conversation.lastMessageAt,
+    lastMessagePreview: conversation.lastMessagePreview,
+    lastMessageSenderId: conversation.lastMessageSenderId,
+    lastMessageId: conversation.lastMessageId,
+    groupName: conversation.groupName,
+    groupAvatarUrl: conversation.groupAvatarUrl,
+  );
+}
 
 /// Stream of all non-archived [SchemaConversation] documents for [userId],
 /// ordered by most-recent message activity.
@@ -23,18 +34,12 @@ final schemaConversationsProvider = StreamProvider.autoDispose
         return const Stream<List<SchemaConversation>>.empty();
       }
 
-      final firestore = ref.watch(_schemaConversationsFirestoreProvider);
-      return firestore
-          .collection('conversations')
-          .where('participantIds', arrayContains: userId)
-          .where('isArchived', isEqualTo: false)
-          .orderBy('lastMessageAt', descending: true)
-          .snapshots()
-          .map(
-            (snap) => snap.docs
-                .map(SchemaConversation.fromDoc)
-                .toList(growable: false),
-          );
+      return ref.watch(rawConversationsStreamProvider(userId).stream).map((all) {
+        return all
+            .where((c) => !c.isArchived)
+            .map(_toSchemaConversation)
+            .toList(growable: false);
+      });
     });
 
 /// Active (non-pending) conversations for [userId].

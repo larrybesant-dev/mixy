@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/firestore/firestore_error_utils.dart';
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/session_capabilities_provider.dart';
 import '../../../core/theme.dart';
 import '../../../models/room_model.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 import '../widgets/live_room_card.dart';
 import '../../../widgets/brand_ui_kit.dart';
 import '../../../services/room_service.dart';
@@ -252,7 +254,15 @@ class _GoLiveBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.go('/create-room'),
+      onTap: () async {
+        final allowed = await GuestAuthGate.requireCapabilityFromContext(
+          context,
+          SessionCapability.createRoom,
+        );
+        if (!allowed) return;
+        if (!context.mounted) return;
+        context.go('/create-room');
+      },
       child: Container(
         height: 88,
         decoration: BoxDecoration(
@@ -650,7 +660,12 @@ class _RoomListView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 20),
                       TextButton.icon(
-                        onPressed: () => context.go('/create-room'),
+                        onPressed: () async {
+                          final allowed =
+                              await GuestAuthGate.requireRoomCreation(context, ref);
+                          if (!allowed || !context.mounted) return;
+                          context.go('/create-room');
+                        },
                         icon: const Icon(
                           Icons.mic_rounded,
                           color: VelvetNoir.primary,

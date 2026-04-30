@@ -362,15 +362,6 @@ class HostControls {
     return snap.docs.map((d) => {'id': d.id, ...d.data()}).toList();
   }
 
-  /// Returns a stream of participant docs for the given room.
-  Stream<List<Map<String, dynamic>>> watchParticipants(String roomId) {
-    return _roomRef(roomId)
-        .collection('participants')
-        .orderBy('lastActiveAt', descending: true)
-        .snapshots()
-        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
-  }
-
   /// Marks the room as ended (isLive: false). Only the room owner should call
   /// this; access control is enforced by Firestore rules.
   Future<void> endRoom(String roomId) async {
