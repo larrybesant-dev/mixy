@@ -1,0 +1,205 @@
+{
+  "schemaVersion": "1.0.0",
+  "startedAt": "2026-04-30T00:11:54.853Z",
+  "finishedAt": "2026-04-30T00:12:02.069Z",
+  "durationMs": 7216,
+  "sampleSize": 500,
+  "totalScanned": 187,
+  "totalViolations": 31,
+  "passed": false,
+  "summary": {
+    "conversations": {
+      "scanned": 9,
+      "violations": 0
+    },
+    "messages": {
+      "scanned": 127,
+      "violations": 0
+    },
+    "rooms": {
+      "scanned": 19,
+      "violations": 9
+    },
+    "roomParticipants": {
+      "scanned": 21,
+      "violations": 0
+    },
+    "follows": {
+      "scanned": 11,
+      "violations": 0
+    },
+    "followersSymmetry": {
+      "violations": 11
+    },
+    "followingSymmetry": {
+      "violations": 11
+    }
+  },
+  "violations": {
+    "conversations": [],
+    "messages": [],
+    "rooms": [
+      {
+        "path": "rooms/79syG18NiuQ33ED8YMKY",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/8zqlrBO2dyzByzQxVjXI",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/N6yc2MBffYqaJ0oBgrkf",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/RmRMWPRjH4HSGG8elkQb",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/U4RXbISK7uu4Kbm2SyfY",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/ZM5g3vW3sfL6SDmCxDkZ",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/eUajUDWq5YFFwHcejRco",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/kDNbyLcrtj80I7uhkTZ6",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      },
+      {
+        "path": "rooms/pI11H1I5WzQPdrbiE2R6",
+        "rule": "missing_hostId_and_ownerId",
+        "details": null
+      }
+    ],
+    "roomParticipants": [],
+    "follows": [],
+    "followersSymmetry": [
+      {
+        "path": "users/5SOMFBMrZITEORghCuKZe26XCkE2/followers/69dUNbaMYeN8dJKCMieC8YJUfCm1",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/69dUNbaMYeN8dJKCMieC8YJUfCm1_5SOMFBMrZITEORghCuKZe26XCkE2"
+      },
+      {
+        "path": "users/5SOMFBMrZITEORghCuKZe26XCkE2/followers/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_5SOMFBMrZITEORghCuKZe26XCkE2"
+      },
+      {
+        "path": "users/yuhNjdZyYraM0xN78TGxGfSuUJl2/followers/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_yuhNjdZyYraM0xN78TGxGfSuUJl2"
+      },
+      {
+        "path": "users/uilXLBGCH7ZiOMkb8u5j6kYhAnd2/followers/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_uilXLBGCH7ZiOMkb8u5j6kYhAnd2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/followers/t0qlYn55VeYHyb7puPTkMlhm0Wc2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/t0qlYn55VeYHyb7puPTkMlhm0Wc2_m6UqL501Z8ZJ0mvEHxvz7oX2wkm2"
+      },
+      {
+        "path": "users/5SOMFBMrZITEORghCuKZe26XCkE2/followers/nmFaQQCUY2WMkB8FDKKM68bknY03",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/nmFaQQCUY2WMkB8FDKKM68bknY03_5SOMFBMrZITEORghCuKZe26XCkE2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/followers/nmFaQQCUY2WMkB8FDKKM68bknY03",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/nmFaQQCUY2WMkB8FDKKM68bknY03_m6UqL501Z8ZJ0mvEHxvz7oX2wkm2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/followers/yuhNjdZyYraM0xN78TGxGfSuUJl2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/yuhNjdZyYraM0xN78TGxGfSuUJl2_m6UqL501Z8ZJ0mvEHxvz7oX2wkm2"
+      },
+      {
+        "path": "users/3j73hccL1icxOxhztk8BOhNCqpD2/followers/yuhNjdZyYraM0xN78TGxGfSuUJl2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/yuhNjdZyYraM0xN78TGxGfSuUJl2_3j73hccL1icxOxhztk8BOhNCqpD2"
+      },
+      {
+        "path": "users/BF2u0toHqbaWvVSqNsu2yosSPqR2/followers/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_BF2u0toHqbaWvVSqNsu2yosSPqR2"
+      },
+      {
+        "path": "users/H0kaj7LGYdO1yV7KgJOpkUcuMny1/followers/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_follower_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_H0kaj7LGYdO1yV7KgJOpkUcuMny1"
+      }
+    ],
+    "followingSymmetry": [
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/following/5SOMFBMrZITEORghCuKZe26XCkE2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_5SOMFBMrZITEORghCuKZe26XCkE2"
+      },
+      {
+        "path": "users/69dUNbaMYeN8dJKCMieC8YJUfCm1/following/5SOMFBMrZITEORghCuKZe26XCkE2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/69dUNbaMYeN8dJKCMieC8YJUfCm1_5SOMFBMrZITEORghCuKZe26XCkE2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/following/uilXLBGCH7ZiOMkb8u5j6kYhAnd2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_uilXLBGCH7ZiOMkb8u5j6kYhAnd2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/following/yuhNjdZyYraM0xN78TGxGfSuUJl2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_yuhNjdZyYraM0xN78TGxGfSuUJl2"
+      },
+      {
+        "path": "users/t0qlYn55VeYHyb7puPTkMlhm0Wc2/following/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/t0qlYn55VeYHyb7puPTkMlhm0Wc2_m6UqL501Z8ZJ0mvEHxvz7oX2wkm2"
+      },
+      {
+        "path": "users/nmFaQQCUY2WMkB8FDKKM68bknY03/following/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/nmFaQQCUY2WMkB8FDKKM68bknY03_m6UqL501Z8ZJ0mvEHxvz7oX2wkm2"
+      },
+      {
+        "path": "users/nmFaQQCUY2WMkB8FDKKM68bknY03/following/5SOMFBMrZITEORghCuKZe26XCkE2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/nmFaQQCUY2WMkB8FDKKM68bknY03_5SOMFBMrZITEORghCuKZe26XCkE2"
+      },
+      {
+        "path": "users/yuhNjdZyYraM0xN78TGxGfSuUJl2/following/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/yuhNjdZyYraM0xN78TGxGfSuUJl2_m6UqL501Z8ZJ0mvEHxvz7oX2wkm2"
+      },
+      {
+        "path": "users/yuhNjdZyYraM0xN78TGxGfSuUJl2/following/3j73hccL1icxOxhztk8BOhNCqpD2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/yuhNjdZyYraM0xN78TGxGfSuUJl2_3j73hccL1icxOxhztk8BOhNCqpD2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/following/BF2u0toHqbaWvVSqNsu2yosSPqR2",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_BF2u0toHqbaWvVSqNsu2yosSPqR2"
+      },
+      {
+        "path": "users/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2/following/H0kaj7LGYdO1yV7KgJOpkUcuMny1",
+        "rule": "missing_following_entry",
+        "details": "follows doc: follows/m6UqL501Z8ZJ0mvEHxvz7oX2wkm2_H0kaj7LGYdO1yV7KgJOpkUcuMny1"
+      }
+    ]
+  }
+}
