@@ -66,7 +66,6 @@ Widget _buildChatApp({
 
   return ProviderScope(
     overrides: [
-      messaging.firestoreProvider.overrideWithValue(firestore),
       core_firebase.firestoreProvider.overrideWithValue(firestore),
       friendRosterProvider.overrideWith((ref) => const Stream<List<FriendRosterEntry>>.empty()),
       if (controller != null)
@@ -257,7 +256,6 @@ void main() {
       );
 
       final container = ProviderContainer(overrides: [
-        messaging.firestoreProvider.overrideWithValue(firestore),
         core_firebase.firestoreProvider.overrideWithValue(firestore),
         friendRosterProvider.overrideWith((ref) => const Stream<List<FriendRosterEntry>>.empty()),
       ]);

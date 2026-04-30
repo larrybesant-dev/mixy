@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
 
 Widget _buildApp({

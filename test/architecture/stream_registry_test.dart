@@ -1,11 +1,11 @@
-/// Architecture guardrail test — stream registry enforcement.
-///
-/// Verifies at test-time that:
-/// 1. `firestoreProvider` is not re-declared in feature files.
-/// 2. Each stream domain has exactly one canonical StreamProvider declaration.
-/// 3. Known illegal direct Firestore access patterns are absent from widget files.
-///
-/// Run: flutter test test/architecture/stream_registry_test.dart
+// Architecture guardrail test — stream registry enforcement.
+//
+// Verifies at test-time that:
+// 1. `firestoreProvider` is not re-declared in feature files.
+// 2. Each stream domain has exactly one canonical StreamProvider declaration.
+// 3. Known illegal direct Firestore access patterns are absent from widget files.
+//
+// Run: flutter test test/architecture/stream_registry_test.dart
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -94,7 +94,7 @@ void main() {
         if (!rel.contains('screen') &&
             !rel.contains('widget') &&
             !rel.contains('providers/') &&
-            !rel.contains('controller')) continue;
+            !rel.contains('controller')) { continue; }
 
         for (final match in grep(file, 'FirebaseFirestore.instance')) {
           violations.add('${p.relative(match.file)}:${match.line}  →  ${match.content}');
