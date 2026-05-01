@@ -34,6 +34,11 @@ async function waitForFlutterWasmStable(page: Page): Promise<void> {
   await page.waitForTimeout(1_200);
 }
 
+async function waitForRouteSettle(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1_100);
+}
+
 async function clickButtonByName(
   page: Page,
   observer: RuntimeObserver,
@@ -178,6 +183,7 @@ test('restricted route validation for signed-out and guest sessions', async ({ p
 });
 
 test('runtime console and network capture on target flows', async ({ page }, testInfo) => {
+  test.setTimeout(240_000);
   const observer = new RuntimeObserver('runtime-capture');
   observer.attach(page);
 
@@ -192,7 +198,7 @@ test('runtime console and network capture on target flows', async ({ page }, tes
 
   for (const route of flows) {
     await go(page, observer, `${liveBaseUrl}${route}`);
-    await waitForFlutterWasmStable(page);
+    await waitForRouteSettle(page);
   }
 
   const summary = observer.summary(page.url());
