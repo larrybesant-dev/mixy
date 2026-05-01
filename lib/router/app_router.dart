@@ -118,6 +118,11 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
       // Clear persisted guest session the moment a real account signs in.
       if (next.uid != null && next.uid!.isNotEmpty) {
         GuestSessionService.clearGuestSession();
+        // Also clear the Riverpod guest-mode flag so GuestAuthGate
+        // stops blocking authenticated users after a guest session.
+        if (ref.read(guestModeProvider)) {
+          ref.read(guestModeProvider.notifier).state = false;
+        }
       }
     },
     fireImmediately: true,
