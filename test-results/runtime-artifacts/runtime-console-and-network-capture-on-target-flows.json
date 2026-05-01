@@ -1,0 +1,1420 @@
+{
+  "flow": "runtime-capture",
+  "finalUrl": "http://127.0.0.1:9100/create-room?compiler=wasm",
+  "urlTransitions": [
+    "about:blank",
+    "http://127.0.0.1:9100/",
+    "http://127.0.0.1:9100/?compiler=wasm",
+    "http://127.0.0.1:9100/auth",
+    "http://127.0.0.1:9100/auth?compiler=wasm",
+    "http://127.0.0.1:9100/auth?compiler=wasm",
+    "http://127.0.0.1:9100/auth?compiler=wasm",
+    "http://127.0.0.1:9100/auth?compiler=wasm",
+    "http://127.0.0.1:9100/home",
+    "http://127.0.0.1:9100/home?compiler=wasm",
+    "http://127.0.0.1:9100/home?compiler=wasm",
+    "http://127.0.0.1:9100/home?compiler=wasm",
+    "http://127.0.0.1:9100/home?compiler=wasm",
+    "http://127.0.0.1:9100/profile/runtime-capture-profile",
+    "http://127.0.0.1:9100/room/runtime-capture-room",
+    "http://127.0.0.1:9100/create-room",
+    "http://127.0.0.1:9100/create-room?compiler=wasm",
+    "http://127.0.0.1:9100/create-room?compiler=wasm",
+    "http://127.0.0.1:9100/create-room?compiler=wasm",
+    "http://127.0.0.1:9100/create-room?compiler=wasm"
+  ],
+  "navigationLoopDetected": false,
+  "duplicateActions": [],
+  "actionCounts": {
+    "goto:http://127.0.0.1:9100/": 1,
+    "goto:http://127.0.0.1:9100/auth": 1,
+    "goto:http://127.0.0.1:9100/home": 1,
+    "goto:http://127.0.0.1:9100/profile/runtime-capture-profile": 1,
+    "goto:http://127.0.0.1:9100/room/runtime-capture-room": 1,
+    "goto:http://127.0.0.1:9100/create-room": 1
+  },
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "pageErrors": [
+    "Exception"
+  ],
+  "requestFailures": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/serveAvailableExtensions?packageRootUri",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-fuixjD",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Black.ttf",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/MaterialIcons-Regular.otf",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-s2adOD&messageId=0",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://docs.flutter.dev/f/devtools-releases.json",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604422565&gcd=13l3l3l3l1l1&npa=0&dma=0&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=7&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938465~115938468~116363097~118128922&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fauth%3Fcompiler%3Dwasm&dt=&en=main&_fv=1&_nsi=1&_ss=1&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1037",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://storage.googleapis.com/flutter-uxr/surveys/devtools-survey-metadata.json",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604422565&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&pscdl=noapi&rcb=7&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=2&tag_exp=0~115616986~115938465~115938468~116363097~118128922&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fauth%3Fcompiler%3Dwasm&dt=&_tu=QA&en=config&_ee=1&_et=3&tfd=1167",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-s2adOD",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.autoRefreshEnabled",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-vqfFKC&messageId=0",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&en=main&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1029",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=2&tag_exp=0~115938466~115938469~116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&_tu=QA&en=config&_ee=1&_et=1&tfd=1103",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=0&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=3&tag_exp=0~115938466~115938469~116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&en=home&_ee=1&ep.screen=home&ep.event_category=screen&ep.event_label=init&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&_et=72&tfd=1180",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-vqfFKC",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/MaterialIcons-Regular.otf",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-PMsvAC&messageId=0",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604427190&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=16&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~117884344&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fcreate-room%3Fcompiler%3Dwasm&dt=&en=main&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1044",
+      "errorText": "net::ERR_ABORTED"
+    }
+  ],
+  "failedSelectors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-69MPZE94D5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/devtools_analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/styles.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.mjs"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:9100/0ff08943-adaa-4012-bd6f-834859db66cf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Octicons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/favicon.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm.map"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/ping"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getFlutterGAEnabled"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-fuixjD"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDtdUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.darkMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.vmDeveloperMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=verboseLogging"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=cpuProfiler.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=DevToolsExtensionEvents.extensionScreenId.showOnlyEnabledExtensionsSetting"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.hoverEvalMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.legacyInspectorEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.autoRefreshEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.defaultDetailsViewType"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.retentionLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.detailsFormat"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.androidCollectionEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.showChart"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.refLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=network.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.framesChartVisibility"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.includeCpuSamplesInTimeline"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/serveAvailableExtensions?packageRootUri"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/auth"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/assets/dart_syntax.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-69MPZE94D5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/devtools_analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/styles.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/favicon.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.mjs"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/favicon.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:9100/123c46b0-8c2d-48f9-8cbe-379b5824d684"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Octicons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm.map"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/ping"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getFlutterGAEnabled"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-s2adOD"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDtdUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.darkMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.vmDeveloperMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=verboseLogging"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=cpuProfiler.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=DevToolsExtensionEvents.extensionScreenId.showOnlyEnabledExtensionsSetting"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.hoverEvalMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.legacyInspectorEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.autoRefreshEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.defaultDetailsViewType"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.retentionLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.detailsFormat"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.androidCollectionEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.showChart"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.refLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=network.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.framesChartVisibility"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.includeCpuSamplesInTimeline"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/serveAvailableExtensions?packageRootUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/extensionEnabledState?devtoolsOptionsUri=file%3A%2F%2F%2Fc%3A%2FMixVy%2Fdevtools_options.yaml&name=patrol"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/extensionEnabledState?devtoolsOptionsUri=file%3A%2F%2F%2Fc%3A%2FMixVy%2Fdevtools_options.yaml&name=shared_preferences"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/assets/dart_syntax.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsFirstRun"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604422565&gcd=13l3l3l3l1l1&npa=0&dma=0&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=7&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938465~115938468~116363097~118128922&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fauth%3Fcompiler%3Dwasm&dt=&en=main&_fv=1&_nsi=1&_ss=1&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1037"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getLastReleaseNotesVersion"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-s2adOD&messageId=0",
+      "postDataPreview": "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":\\\"0\\\",\\\"method\\\":\\\"currentPage\\\",\\\"params\\\":{\\\"id\\\":\\\"simple\\\",\\\"embedded\\\":false}}\""
+    },
+    {
+      "method": "GET",
+      "url": "https://storage.googleapis.com/flutter-uxr/surveys/devtools-survey-metadata.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://docs.flutter.dev/f/devtools-releases.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/devtools_extensions.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/home"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604422565&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&pscdl=noapi&rcb=7&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=2&tag_exp=0~115616986~115938465~115938468~116363097~118128922&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fauth%3Fcompiler%3Dwasm&dt=&_tu=QA&en=config&_ee=1&_et=3&tfd=1167"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604422565&gcd=13l3l3l3l1l1&npa=0&dma=0&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=7&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0%7E115616986%7E115938465%7E115938468%7E116363097%7E118128922&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fauth%3Fcompiler%3Dwasm&dt=&en=main&_fv=1&_nsi=1&_ss=1&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1037&gaf=1"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604422565&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&pscdl=noapi&rcb=7&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=2&tag_exp=0%7E115616986%7E115938465%7E115938468%7E116363097%7E118128922&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fauth%3Fcompiler%3Dwasm&dt=&_tu=QA&en=config&_ee=1&_et=3&tfd=1167&gaf=1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm.map"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-69MPZE94D5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/devtools_analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/styles.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/favicon.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.mjs"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/favicon.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:9100/b1a73c35-a702-4a0c-a458-118307d89fa0"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Octicons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm.map"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/ping"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getFlutterGAEnabled"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-vqfFKC"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDtdUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.darkMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.vmDeveloperMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=verboseLogging"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=cpuProfiler.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=DevToolsExtensionEvents.extensionScreenId.showOnlyEnabledExtensionsSetting"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.hoverEvalMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.legacyInspectorEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.autoRefreshEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.defaultDetailsViewType"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.retentionLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.detailsFormat"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.androidCollectionEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.showChart"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.refLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=network.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.framesChartVisibility"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.includeCpuSamplesInTimeline"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/serveAvailableExtensions?packageRootUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/extensionEnabledState?devtoolsOptionsUri=file%3A%2F%2F%2Fc%3A%2FMixVy%2Fdevtools_options.yaml&name=patrol"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/extensionEnabledState?devtoolsOptionsUri=file%3A%2F%2F%2Fc%3A%2FMixVy%2Fdevtools_options.yaml&name=shared_preferences"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/assets/dart_syntax.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsFirstRun"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&en=main&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1029"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getLastReleaseNotesVersion"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-vqfFKC&messageId=0",
+      "postDataPreview": "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":\\\"0\\\",\\\"method\\\":\\\"currentPage\\\",\\\"params\\\":{\\\"id\\\":\\\"home\\\",\\\"embedded\\\":false}}\""
+    },
+    {
+      "method": "GET",
+      "url": "https://storage.googleapis.com/flutter-uxr/surveys/devtools-survey-metadata.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "GET",
+      "url": "https://docs.flutter.dev/f/devtools-releases.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/devtools.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/performance.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/cpu_profiler.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/memory.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/network.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/app_size.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/deep_links.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/devtools_extensions.png"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=2&tag_exp=0~115938466~115938469~116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&_tu=QA&en=config&_ee=1&_et=1&tfd=1103"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/setActiveSurvey?value=2025-Q3"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getSurveyShownCount"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getSurveyActionTaken"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/profile/runtime-capture-profile"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=0&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=3&tag_exp=0~115938466~115938469~116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&en=home&_ee=1&ep.screen=home&ep.event_category=screen&ep.event_label=init&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&_et=72&tfd=1180"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604423722&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=0&pscdl=noapi&rcb=3&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=3&tag_exp=0%7E115938466%7E115938469%7E116363097&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fhome%3Fcompiler%3Dwasm&dt=&en=home&_ee=1&ep.screen=home&ep.event_category=screen&ep.event_label=init&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&_et=72&tfd=1180&gaf=1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/room/runtime-capture-room"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/create-room"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-69MPZE94D5"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/devtools_analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/styles.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.mjs"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/favicon.png"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "blob:http://127.0.0.1:9100/f59b4556-6040-4192-a788-92e1207a7164"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/fonts/Octicons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto/Roboto-Black.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Thin.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Light.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Medium.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/packages/devtools_app_shared/fonts/Roboto_Mono/RobotoMono-Bold.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/main.dart.wasm.map"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/canvaskit/skwasm.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/ping"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getFlutterGAEnabled"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-PMsvAC"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDtdUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.darkMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=ui.vmDeveloperMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=experiment.wasmOptOut"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=verboseLogging"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=cpuProfiler.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=DevToolsExtensionEvents.extensionScreenId.showOnlyEnabledExtensionsSetting"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.hoverEvalMode"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.legacyInspectorEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.autoRefreshEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=inspector.defaultDetailsViewType"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.retentionLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.detailsFormat"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=logging.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.androidCollectionEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.showChart"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=memory.refLimit"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=network.filter"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.framesChartVisibility"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getPreferenceValue?key=performance.includeCpuSamplesInTimeline"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/serveAvailableExtensions?packageRootUri"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/extensionEnabledState?devtoolsOptionsUri=file%3A%2F%2F%2Fc%3A%2FMixVy%2Fdevtools_options.yaml&name=patrol"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/extensionEnabledState?devtoolsOptionsUri=file%3A%2F%2F%2Fc%3A%2FMixVy%2Fdevtools_options.yaml&name=shared_preferences"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/assets/dart_syntax.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsEnabled"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getDevToolsFirstRun"
+    },
+    {
+      "method": "POST",
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-69MPZE94D5&gtm=45je64t1h1v9123827101za200zd9123827101&_p=1777604427190&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQ&are=1&cid=625303975.1777604423&frm=0&ni=1&pscdl=noapi&rcb=16&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0&uam=&uamb=0&uap=Windows&uapv=10.0&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~117884344&sid=1777604422&sct=1&seg=0&dl=http%3A%2F%2F127.0.0.1%2Fcreate-room%3Fcompiler%3Dwasm&dt=&en=main&_ee=1&ep.screen=main&ep.event_category=impression&ep.event_label=startingTheme-dark&epn.value=0&ep.user_app=&ep.user_build=&ep.user_platform=&ep.devtools_platform=Win32&ep.devtools_chrome=Chrome%2F147.0.7727.15&ep.devtools_version=2.54.1&ep.ide_launched=CLI&ep.flutter_client_id=&ep.is_external_build=true&ep.is_embedded=false&ep.g3_username=&ep.ide_launched_feature=&ep.is_wasm=true&ep.ui_duration_micros=&ep.raster_duration_micros=&ep.shader_compilation_duration_micros=&ep.cpu_sample_count=&ep.cpu_stack_depth=&ep.trace_event_count=&ep.heap_diff_objects_before=&ep.heap_diff_objects_after=&ep.heap_objects_total=&ep.root_set_count=&ep.row_count=&ep.inspector_tree_controller_id=&ep.android_app_id=&ep.ios_bundle_id=&ep.is_v2_inspector=&tfd=1044"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getLastReleaseNotesVersion"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/sse?sseClientId=DevToolsServer-PMsvAC&messageId=0",
+      "postDataPreview": "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":\\\"0\\\",\\\"method\\\":\\\"currentPage\\\",\\\"params\\\":{\\\"id\\\":\\\"simple\\\",\\\"embedded\\\":false}}\""
+    },
+    {
+      "method": "GET",
+      "url": "https://storage.googleapis.com/flutter-uxr/surveys/devtools-survey-metadata.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://docs.flutter.dev/f/devtools-releases.json"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/setActiveSurvey?value=2025-Q3"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:9100/assets/icons/app_bar/devtools_extensions.png"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getSurveyShownCount"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:9100/api/getSurveyActionTaken"
+    }
+  ],
+  "roomWriteSignals": 0
+}
