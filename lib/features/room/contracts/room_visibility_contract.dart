@@ -37,6 +37,7 @@ class RoomVisibilityDecision {
 class RoomVisibilityContract {
   const RoomVisibilityContract._();
 
+  static const Duration newRoomGraceWindow = Duration(minutes: 5);
   static const Duration liveVisibilityWindow = Duration(hours: 6);
 
   static RoomVisibilityDecision evaluate(
@@ -70,10 +71,18 @@ class RoomVisibilityContract {
       );
     }
 
-    if (createdAt.add(graceWindow).isAfter(resolvedNow)) {
+    final age = resolvedNow.difference(createdAt);
+    if (age <= newRoomGraceWindow) {
       return const RoomVisibilityDecision(
         visible: true,
         reasonCode: RoomVisibilityReasonCode.graceAllowed,
+      );
+    }
+
+    if (createdAt.add(graceWindow).isAfter(resolvedNow)) {
+      return const RoomVisibilityDecision(
+        visible: true,
+        reasonCode: RoomVisibilityReasonCode.structuralOk,
       );
     }
 
