@@ -1,6 +1,5 @@
 import 'dart:async';
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -56,9 +55,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   Future<void> _publishPost() async {
     final content = _contentController.text.trim();
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post cannot be empty')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Post cannot be empty')));
       return;
     }
 
@@ -67,7 +66,10 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     try {
       final tags = _tagsController.text.isEmpty
           ? <String>[]
-          : _tagsController.text.split(',').map((tag) => tag.trim().toLowerCase()).toList();
+          : _tagsController.text
+                .split(',')
+                .map((tag) => tag.trim().toLowerCase())
+                .toList();
 
       await FirebaseFirestore.instance.collection('posts').add({
         'authorId': widget.userId,
@@ -86,15 +88,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post published!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Post published!')));
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error publishing post: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error publishing post: $e')));
     } finally {
       if (mounted) {
         setState(() => _isPosting = false);
@@ -326,7 +328,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       ? null
                       : _pickVideo,
                 ),
-// Emoji picker intentionally hidden until implemented.
+                // Emoji picker intentionally hidden until implemented.
                 // IconButton(
                 //   icon: const Icon(Icons.emoji_emotions),
                 //   onPressed: null,

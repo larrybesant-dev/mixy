@@ -19,15 +19,25 @@ void main() {
       'MIXVY_ENABLE_AVATAR_LEGACY_WRITE',
     };
 
-    final envRegex = RegExp(r"bool\.fromEnvironment\(\s*'([^']+)'", multiLine: true);
+    final envRegex = RegExp(
+      r"bool\.fromEnvironment\(\s*'([^']+)'",
+      multiLine: true,
+    );
     final actualEnvKeys = envRegex
         .allMatches(content)
         .map((m) => m.group(1)!)
         .toSet();
 
-    expect(actualEnvKeys, equals(expectedEnvKeys), reason: 'Unexpected schema migration env flag drift.');
+    expect(
+      actualEnvKeys,
+      equals(expectedEnvKeys),
+      reason: 'Unexpected schema migration env flag drift.',
+    );
 
-    final fieldRegex = RegExp(r'static const bool\s+(\w+)\s*=\s*bool\.fromEnvironment\(', multiLine: true);
+    final fieldRegex = RegExp(
+      r'static const bool\s+(\w+)\s*=\s*bool\.fromEnvironment\(',
+      multiLine: true,
+    );
     final flagFields = fieldRegex
         .allMatches(content)
         .map((m) => m.group(1)!)
@@ -48,7 +58,9 @@ void main() {
         continue;
       }
       final fileContent = file.readAsStringSync();
-      final hasSchemaEnv = RegExp(r"bool\.fromEnvironment\(\s*'MIXVY_").hasMatch(fileContent);
+      final hasSchemaEnv = RegExp(
+        r"bool\.fromEnvironment\(\s*'MIXVY_",
+      ).hasMatch(fileContent);
       if (hasSchemaEnv) {
         directSchemaEnvOutsideConfig.add(normalized);
       }
@@ -84,7 +96,8 @@ void main() {
     expect(
       missingUsages,
       isEmpty,
-      reason: 'Found orphan schema flags not used in runtime code: $missingUsages',
+      reason:
+          'Found orphan schema flags not used in runtime code: $missingUsages',
     );
   });
 }

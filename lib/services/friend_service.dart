@@ -627,9 +627,7 @@ class FriendService {
         );
         final friendIds = latestFriendships
             .map((f) => f.otherUserId(normalizedUserId))
-            .where(
-              (id) => id.isNotEmpty && !excludedIds.contains(id),
-            )
+            .where((id) => id.isNotEmpty && !excludedIds.contains(id))
             .toList(growable: false);
 
         await usersSub?.cancel();
@@ -638,19 +636,14 @@ class FriendService {
           return;
         }
 
-        usersSub = watchUsersByIds(friendIds).listen(
-          (users) {
-            final usersById = <String, UserModel>{
-              for (final u in users) u.id: u,
-            };
-            final ordered = friendIds
-                .map((id) => usersById[id])
-                .whereType<UserModel>()
-                .toList(growable: false);
-            controller.add(ordered);
-          },
-          onError: controller.addError,
-        );
+        usersSub = watchUsersByIds(friendIds).listen((users) {
+          final usersById = <String, UserModel>{for (final u in users) u.id: u};
+          final ordered = friendIds
+              .map((id) => usersById[id])
+              .whereType<UserModel>()
+              .toList(growable: false);
+          controller.add(ordered);
+        }, onError: controller.addError);
       }
 
       friendshipsSub = friendships.listen(
@@ -696,37 +689,36 @@ class FriendService {
         if (latestFriendships.isNotEmpty && (!usersReady || !presenceReady)) {
           return;
         }
-        final entries = latestFriendships
-            .map((friendship) {
-              final friendId = friendship.otherUserId(normalizedUserId);
-              final user = usersById[friendId];
-              if (friendId.isEmpty || user == null) return null;
-              final presence =
-                  presenceById[friendId] ??
-                  PresenceModel(
-                    userId: friendId,
-                    isOnline: false,
-                    status: UserStatus.offline,
+        final entries =
+            latestFriendships
+                .map((friendship) {
+                  final friendId = friendship.otherUserId(normalizedUserId);
+                  final user = usersById[friendId];
+                  if (friendId.isEmpty || user == null) return null;
+                  final presence =
+                      presenceById[friendId] ??
+                      PresenceModel(
+                        userId: friendId,
+                        isOnline: false,
+                        status: UserStatus.offline,
+                      );
+                  return FriendRosterEntry(
+                    friendship: friendship,
+                    user: user,
+                    presence: presence,
                   );
-              return FriendRosterEntry(
-                friendship: friendship,
-                user: user,
-                presence: presence,
+                })
+                .whereType<FriendRosterEntry>()
+                .toList(growable: false)
+              ..sort(
+                (l, r) => l.user.username.toLowerCase().compareTo(
+                  r.user.username.toLowerCase(),
+                ),
               );
-            })
-            .whereType<FriendRosterEntry>()
-            .toList(growable: false)
-          ..sort(
-            (l, r) => l.user.username.toLowerCase().compareTo(
-              r.user.username.toLowerCase(),
-            ),
-          );
         controller.add(entries);
       }
 
-      void logPresenceTransitions(
-        Map<String, PresenceModel> nextPresenceById,
-      ) {
+      void logPresenceTransitions(Map<String, PresenceModel> nextPresenceById) {
         for (final entry in nextPresenceById.entries) {
           final previous = presenceById[entry.key];
           final previousOnline = previous?.isOnline == true;
@@ -748,8 +740,7 @@ class FriendService {
         );
         final filteredFriendships = incomingFriendships
             .where(
-              (f) =>
-                  !excludedIds.contains(f.otherUserId(normalizedUserId)),
+              (f) => !excludedIds.contains(f.otherUserId(normalizedUserId)),
             )
             .toList(growable: false);
         final friendIds = filteredFriendships

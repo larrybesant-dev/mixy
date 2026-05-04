@@ -13,7 +13,7 @@ class SchemaMigrationFlags {
 
   static const bool enableFriendLegacyWrite = bool.fromEnvironment(
     'MIXVY_ENABLE_FRIEND_LEGACY_WRITE',
-    defaultValue: true,
+    defaultValue: false,
   );
 
   static const bool enableVerificationLegacyRead = bool.fromEnvironment(

@@ -30,7 +30,8 @@ class AppPageScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content = body;
-    final scaffoldColor = backgroundColor ?? Theme.of(context).scaffoldBackgroundColor;
+    final scaffoldColor =
+        backgroundColor ?? Theme.of(context).scaffoldBackgroundColor;
 
     if (padContent) {
       content = Padding(
@@ -61,9 +62,7 @@ class AppPageScaffold extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(color: scaffoldColor),
-          ),
+          DecoratedBox(decoration: BoxDecoration(color: scaffoldColor)),
           IgnorePointer(
             child: Stack(
               children: [
@@ -114,9 +113,7 @@ class _BackdropOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, Colors.transparent],
-        ),
+        gradient: RadialGradient(colors: [color, Colors.transparent]),
       ),
     );
   }

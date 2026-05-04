@@ -7,11 +7,11 @@ enum LiveRoomMediaPhase { idle, connecting, ready, reconnecting, failed }
 /// RTC state machine - tracks the initialization and health of the RTC service.
 /// This is the single source of truth for RTC readiness.
 enum RtcState {
-  idle,       // RTC not yet initialized
-  initializing,  // RTC initialization in progress
-  ready,      // RTC fully initialized and ready for media actions
-  degraded,   // RTC partially initialized (some operations may fail)
-  failed,     // RTC initialization failed
+  idle, // RTC not yet initialized
+  initializing, // RTC initialization in progress
+  ready, // RTC fully initialized and ready for media actions
+  degraded, // RTC partially initialized (some operations may fail)
+  failed, // RTC initialization failed
 }
 
 class LiveRoomMediaState {

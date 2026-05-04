@@ -18,7 +18,9 @@ class TrendingUserCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 36,
-            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.2),
             child: profilePictureUrl == null
                 ? const Icon(Icons.person)
                 : ClipOval(
@@ -33,11 +35,14 @@ class TrendingUserCard extends StatelessWidget {
                           height: 36,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+                            valueColor: AlwaysStoppedAnimation(
+                              Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
                       ),
-                      errorWidget: (context, url, error) => const Icon(Icons.person),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.person),
                     ),
                   ),
           ),
@@ -45,16 +50,16 @@ class TrendingUserCard extends StatelessWidget {
           Text(
             user.username,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             '${user.coinBalance} coins',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ],
       ),

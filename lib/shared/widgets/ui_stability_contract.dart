@@ -71,11 +71,15 @@ class RoomLayoutV1 {
   ];
 
   static const Key heroKey = ValueKey<String>('rooms-layout-v1/hero');
-  static const Key quickJoinKey = ValueKey<String>('rooms-layout-v1/quick-join');
+  static const Key quickJoinKey = ValueKey<String>(
+    'rooms-layout-v1/quick-join',
+  );
   static const Key sortControlsKey = ValueKey<String>(
     'rooms-layout-v1/sort-controls',
   );
-  static const Key roomCardsKey = ValueKey<String>('rooms-layout-v1/room-cards');
+  static const Key roomCardsKey = ValueKey<String>(
+    'rooms-layout-v1/room-cards',
+  );
 
   static void debugAssertOrder(List<String> actual) {
     UiStabilityContract.debugAssertOrder(

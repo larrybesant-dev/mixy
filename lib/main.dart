@@ -16,11 +16,9 @@ import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
 import 'core/services/guest_session_service.dart';
-import 'core/telemetry/telemetry_config.dart';
-import 'firebase_options.dart';
 import 'router/app_router.dart';
 import 'services/push_messaging_service.dart';
-import 'dev_tools/stream_linter_hook.dart';
+import 'firebase_options.dart';
 
 const String _appVersion = String.fromEnvironment(
   'APP_VERSION',
@@ -35,7 +33,7 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   startup.markBindingReady();
-  TelemetryConfig.initialize(); // standard in debug, off in release
+  // TelemetryConfig.initialize(); // standard in debug, off in release
   Logger.info('App startup version=$_appVersion');
 
   if (kIsWeb) {
@@ -106,5 +104,5 @@ Future<void> main() async {
 
   // Dev-only: scan for stream architecture violations in the background.
   // Never blocks startup; zero cost in release builds.
-  StreamLinterHook.scheduleOnce();
+  // StreamLinterHook.scheduleOnce();
 }

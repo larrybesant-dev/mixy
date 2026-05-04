@@ -28,7 +28,8 @@ void main() {
       final relativePath = 'lib/$normalizedPath';
       final content = entity.readAsStringSync();
 
-      if (content.contains("collection('presence')") && !allowed.contains(relativePath)) {
+      if (content.contains("collection('presence')") &&
+          !allowed.contains(relativePath)) {
         violations.add(relativePath);
       }
     }
@@ -36,7 +37,8 @@ void main() {
     expect(
       violations,
       isEmpty,
-      reason: 'Only PresenceController/PresenceRepository/PresenceService may access the presence collection directly. Violations: ${violations.join(', ')}',
+      reason:
+          'Only PresenceController/PresenceRepository/PresenceService may access the presence collection directly. Violations: ${violations.join(', ')}',
     );
   });
 
@@ -65,11 +67,13 @@ void main() {
       final relativePath = 'lib/$normalizedPath';
       final content = entity.readAsStringSync();
 
-        final importsPresenceService = content.contains("/presence_service.dart") ||
+      final importsPresenceService =
+          content.contains("/presence_service.dart") ||
           content.contains("'presence_service.dart'") ||
           content.contains('"presence_service.dart"');
       final constructsPresenceService = content.contains('PresenceService(');
-      if ((importsPresenceService || constructsPresenceService) && !allowed.contains(relativePath)) {
+      if ((importsPresenceService || constructsPresenceService) &&
+          !allowed.contains(relativePath)) {
         violations.add(relativePath);
       }
     }
@@ -77,7 +81,8 @@ void main() {
     expect(
       violations,
       isEmpty,
-      reason: 'Production code must read presence through PresenceRepository and write through PresenceController. Violations: ${violations.join(', ')}',
+      reason:
+          'Production code must read presence through PresenceRepository and write through PresenceController. Violations: ${violations.join(', ')}',
     );
   });
 }

@@ -16,10 +16,12 @@ class FeedState {
   final Map<String, String> roomReasons;
   final Map<String, String> roomTiers;
   final List<UserModel> trendingUsers;
+
   /// Friend IDs for the current viewer (empty when unauthenticated).
   /// Stored in state so widgets can compute per-room friend presence counts
   /// without additional Firestore reads.
   final Set<String> friendIds;
+
   /// Bucketed discovery sections derived from [liveRooms] + [friendIds].
   final RoomDiscoverySections? discoverySections;
 

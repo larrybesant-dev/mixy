@@ -16,8 +16,9 @@ void main() {
     await testSetup();
   });
 
-  testWidgets('FriendListScreen renders online, in-room, and offline sections',
-      (tester) async {
+  testWidgets('FriendListScreen renders online, in-room, and offline sections', (
+    tester,
+  ) async {
     final now = DateTime.now();
     final roster = <FriendRosterEntry>[
       FriendRosterEntry(
@@ -143,8 +144,6 @@ void main() {
         ),
       ],
     );
-    addTearDown(container.dispose);
-
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -170,8 +169,9 @@ void main() {
 
     expect(find.text('Offline Friend'), findsOneWidget);
     expect(find.textContaining('Last seen'), findsOneWidget);
+    // Dispose container inside test body and pump to drain stream cancellation
+    // callbacks before the test completes, preventing "failed after completed".
+    container.dispose();
+    await tester.pump();
   });
 }
-
-
-

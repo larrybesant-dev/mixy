@@ -1,4 +1,3 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,9 +39,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return AppPageScaffold(
-      appBar: AppBar(
-        title: const Text('Search'),
-      ),
+      appBar: AppBar(title: const Text('Search')),
       body: Column(
         children: [
           Padding(
@@ -113,10 +110,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Trending Now',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('Trending Now', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           AppAsyncValueView<List<SearchHashtag>>(
             value: trendingAsync,
@@ -161,40 +155,40 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           message: 'Try a name, username, or explore the latest members.',
         ),
         data: (users) => ListView.separated(
-            itemCount: users.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return ListTile(
-                leading: SafeNetworkAvatar(
-                  radius: 20,
-                  avatarUrl: user.avatarUrl,
-                  fallbackText: user.username.isNotEmpty
-                      ? user.username[0].toUpperCase()
-                      : '?',
-                ),
-                title: Row(
-                  children: [
-                    Text(user.username),
-                    if (user.isVerified)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4),
-                        child: Icon(Icons.verified, size: 16, color: Colors.blue),
-                      ),
-                  ],
-                ),
-                subtitle: Text('${user.followerCount} followers'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _FriendRequestButton(targetUserId: user.id),
-                    _FollowButton(targetUserId: user.id),
-                  ],
-                ),
-                onTap: () => context.push('/profile/${user.id}'),
-              );
-            },
-          ),
+          itemCount: users.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final user = users[index];
+            return ListTile(
+              leading: SafeNetworkAvatar(
+                radius: 20,
+                avatarUrl: user.avatarUrl,
+                fallbackText: user.username.isNotEmpty
+                    ? user.username[0].toUpperCase()
+                    : '?',
+              ),
+              title: Row(
+                children: [
+                  Text(user.username),
+                  if (user.isVerified)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.verified, size: 16, color: Colors.blue),
+                    ),
+                ],
+              ),
+              subtitle: Text('${user.followerCount} followers'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _FriendRequestButton(targetUserId: user.id),
+                  _FollowButton(targetUserId: user.id),
+                ],
+              ),
+              onTap: () => context.push('/profile/${user.id}'),
+            );
+          },
+        ),
       );
     } else if (_selectedTab == 1) {
       final postsAsync = ref.watch(searchPostsProvider(_searchQuery));
@@ -207,25 +201,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           message: 'Try a broader keyword or switch tabs.',
         ),
         data: (posts) => ListView.separated(
-            itemCount: posts.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final post = posts[index];
-              final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-              return PostCard(
-                post: PostModel(
-                  id: post.id,
-                  userId: post.authorId,
-                  text: post.content,
-                  authorName: post.authorName,
-                  authorAvatarUrl: post.authorAvatarUrl,
-                  likeCount: post.likeCount,
-                  createdAt: post.createdAt,
-                ),
-                currentUserId: uid,
-              );
-            },
-          ),
+          itemCount: posts.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final post = posts[index];
+            final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+            return PostCard(
+              post: PostModel(
+                id: post.id,
+                userId: post.authorId,
+                text: post.content,
+                authorName: post.authorName,
+                authorAvatarUrl: post.authorAvatarUrl,
+                likeCount: post.likeCount,
+                createdAt: post.createdAt,
+              ),
+              currentUserId: uid,
+            );
+          },
+        ),
       );
     } else {
       final hashtagsAsync = ref.watch(searchHashtagsProvider(_searchQuery));
@@ -238,21 +232,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           message: 'Try a different hashtag or phrase.',
         ),
         data: (hashtags) => ListView.separated(
-            itemCount: hashtags.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final tag = hashtags[index];
-              return ListTile(
-                leading: const Icon(Icons.tag),
-                title: Text('#${tag.hashtag}'),
-                subtitle: Text('${tag.postCount} posts'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // Navigate to hashtag feed
-                },
-              );
-            },
-          ),
+          itemCount: hashtags.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final tag = hashtags[index];
+            return ListTile(
+              leading: const Icon(Icons.tag),
+              title: Text('#${tag.hashtag}'),
+              subtitle: Text('${tag.postCount} posts'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                // Navigate to hashtag feed
+              },
+            );
+          },
+        ),
       );
     }
   }
@@ -263,7 +257,8 @@ class _FriendRequestButton extends ConsumerStatefulWidget {
   const _FriendRequestButton({required this.targetUserId});
 
   @override
-  ConsumerState<_FriendRequestButton> createState() => _FriendRequestButtonState();
+  ConsumerState<_FriendRequestButton> createState() =>
+      _FriendRequestButtonState();
 }
 
 class _FriendRequestButtonState extends ConsumerState<_FriendRequestButton> {
@@ -276,8 +271,11 @@ class _FriendRequestButtonState extends ConsumerState<_FriendRequestButton> {
       return const SizedBox.shrink();
     }
 
-    final friendIds = ref.watch(currentFriendIdsProvider).valueOrNull ?? const [];
-    final pendingIds = ref.watch(pendingOutgoingFriendRequestIdsProvider).valueOrNull ?? const <String>{};
+    final friendIds =
+        ref.watch(currentFriendIdsProvider).valueOrNull ?? const [];
+    final pendingIds =
+        ref.watch(pendingOutgoingFriendRequestIdsProvider).valueOrNull ??
+        const <String>{};
 
     if (friendIds.contains(widget.targetUserId)) {
       return const SizedBox.shrink(); // already friends
@@ -298,10 +296,9 @@ class _FriendRequestButtonState extends ConsumerState<_FriendRequestButton> {
               setState(() => _busy = true);
               final messenger = ScaffoldMessenger.of(context);
               try {
-                await ref.read(friendServiceProvider).sendFriendRequest(
-                      currentUid,
-                      widget.targetUserId,
-                    );
+                await ref
+                    .read(friendServiceProvider)
+                    .sendFriendRequest(currentUid, widget.targetUserId);
                 ref.invalidate(pendingOutgoingFriendRequestIdsProvider);
                 if (mounted) {
                   messenger.showSnackBar(
@@ -341,10 +338,14 @@ class _FollowButtonState extends ConsumerState<_FollowButton> {
     }
 
     final isFollowingAsync = ref.watch(
-      isFollowingProvider((currentUserId: currentUid, targetUserId: widget.targetUserId)),
+      isFollowingProvider((
+        currentUserId: currentUid,
+        targetUserId: widget.targetUserId,
+      )),
     );
 
-    final isFollowing = _optimisticFollowing ?? isFollowingAsync.valueOrNull ?? false;
+    final isFollowing =
+        _optimisticFollowing ?? isFollowingAsync.valueOrNull ?? false;
 
     return TextButton(
       style: TextButton.styleFrom(

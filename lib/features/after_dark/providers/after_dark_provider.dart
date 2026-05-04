@@ -1,15 +1,16 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/models/room_model.dart';
 import '../../auth/controllers/auth_controller.dart';
 
-const _kEnabled   = 'after_dark_enabled';
+const _kEnabled = 'after_dark_enabled';
 const _kPinStored = 'after_dark_pin';
-const _kDobYes    = 'after_dark_dob_confirmed';
+const _kDobYes = 'after_dark_dob_confirmed';
 
 // ── Session state — cleared when app is closed ───────────────────────────────
 final afterDarkSessionProvider = StateProvider<bool>((ref) => false);
@@ -64,15 +65,30 @@ class AfterDarkController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kEnabled, true);
     await prefs.setBool(_kDobYes, true);
-    await prefs.setString(_kPinStored, _obfuscate(pin));
-    // Persist consent on Firestore user doc
-    final uid = _ref.read(authControllerProvider).uid;
-    if (uid != null) {
-      await _ref.read(firestoreProvider).collection('users').doc(uid).set({
-        'adultModeEnabled': true,
-        'adultConsentAccepted': true,
-        'adultModeEnabledAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+    final uid = _ref.read(authControllerProvider).uid ?? 'anonymous';
+    await prefs.setString(_kPinStored, _hashPin(pin, uid));
+    // SINGLE SOURCE OF TRUTH FOR ADULT CONSENT STATE:
+    // Adult mode consent flags (adultModeEnabled, adultConsentAccepted,
+    // adultModeEnabledAt) live ONLY in preferences/{uid}. They are merged into
+    // the user model by ProfileService.loadProfile() so that userProvider
+    // surfaces them correctly. Do NOT write these fields to users/{uid} or
+    // adult_profile/details — those collections have different purposes:
+    //   preferences/{uid}          → consent/toggle state  (this file)
+    //   adult_profile/details      → structured profile data (bio, intents, etc.)
+    // Fields (username, email, photoUrl, etc.) and would reject adultModeEnabled.
+    final firestoreUid = _ref.read(authControllerProvider).uid;
+    if (firestoreUid != null) {
+      await _ref
+          .read(firestoreProvider)
+          .collection('preferences')
+          .doc(firestoreUid)
+          .set({
+            'userId': firestoreUid,
+            'adultModeEnabled': true,
+            'adultConsentAccepted': true,
+            'adultModeEnabledAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     }
     _ref.invalidate(afterDarkEnabledProvider);
     _ref.read(afterDarkSessionProvider.notifier).state = true;
@@ -83,7 +99,8 @@ class AfterDarkController {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_kPinStored);
     if (stored == null) return false;
-    final valid = _obfuscate(pin) == stored;
+    final uid = _ref.read(authControllerProvider).uid ?? 'anonymous';
+    final valid = _hashPin(pin, uid) == stored;
     if (valid) {
       _ref.read(afterDarkSessionProvider.notifier).state = true;
     }
@@ -103,18 +120,26 @@ class AfterDarkController {
     await prefs.remove(_kDobYes);
     final uid = _ref.read(authControllerProvider).uid;
     if (uid != null) {
-      await _ref.read(firestoreProvider).collection('users').doc(uid).set({
-        'adultModeEnabled': false,
-      }, SetOptions(merge: true));
+      await _ref
+          .read(firestoreProvider)
+          .collection('preferences')
+          .doc(uid)
+          .set({
+            'userId': uid,
+            'adultModeEnabled': false,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     }
     _ref.invalidate(afterDarkEnabledProvider);
     _ref.read(afterDarkSessionProvider.notifier).state = false;
   }
 
-  // ── Simple obfuscation (prevents plain-text PIN in prefs) ────────────────
-  static String _obfuscate(String pin) {
-    const salt = 'mx_afterdark_2026';
-    final bytes = utf8.encode(pin + salt);
-    return base64Url.encode(bytes);
+  // ── SHA-256 PIN hash with per-user salt ─────────────────────────────────
+  // Using the user UID as salt ensures PINs cannot be pre-computed across
+  // users even if SharedPreferences is extracted from the device.
+  static String _hashPin(String pin, String uid) {
+    final saltedInput = utf8.encode('$uid:mx_afterdark:$pin');
+    final digest = sha256.convert(saltedInput);
+    return digest.toString();
   }
 }

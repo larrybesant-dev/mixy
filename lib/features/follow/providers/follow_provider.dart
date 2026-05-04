@@ -68,13 +68,13 @@ final followServiceProvider = Provider<FollowService>((ref) {
 });
 
 /// The only provider in the app allowed to open a follows `.snapshots()` stream.
-final rawFollowGraphStreamProvider =
-    StreamProvider.autoDispose.family<List<String>, String>((ref, userId) {
+final rawFollowGraphStreamProvider = StreamProvider.autoDispose
+    .family<List<String>, String>((ref, userId) {
       return ref.watch(followServiceProvider).watchFollowingIds(userId);
     });
 
-final rawFollowerIdsStreamProvider =
-    StreamProvider.autoDispose.family<List<String>, String>((ref, userId) {
+final rawFollowerIdsStreamProvider = StreamProvider.autoDispose
+    .family<List<String>, String>((ref, userId) {
       return ref.watch(followServiceProvider).watchFollowerIds(userId);
     });
 
@@ -107,102 +107,109 @@ Future<List<UserFollow>> _loadUserFollowsByIds({
   return users;
 }
 
-final _userFollowsByIdsKeyProvider =
-    FutureProvider.autoDispose.family<List<UserFollow>, String>((ref, key) async {
-  if (key.isEmpty) {
-    return const <UserFollow>[];
-  }
+final _userFollowsByIdsKeyProvider = FutureProvider.autoDispose
+    .family<List<UserFollow>, String>((ref, key) async {
+      if (key.isEmpty) {
+        return const <UserFollow>[];
+      }
 
-  final firestore = ref.watch(firestoreProvider);
-  final ids = key.split('|').where((id) => id.isNotEmpty).toList(growable: false);
-  return _loadUserFollowsByIds(firestore: firestore, ids: ids);
-});
+      final firestore = ref.watch(firestoreProvider);
+      final ids = key
+          .split('|')
+          .where((id) => id.isNotEmpty)
+          .toList(growable: false);
+      return _loadUserFollowsByIds(firestore: firestore, ids: ids);
+    });
 
 // Stream of followers
-final followersProvider = Provider.autoDispose.family<AsyncValue<List<UserFollow>>, String>((
-  ref,
-  userId,
-) {
-  if (userId.trim().isEmpty) {
-    return const AsyncValue.data(<UserFollow>[]);
-  }
+final followersProvider = Provider.autoDispose
+    .family<AsyncValue<List<UserFollow>>, String>((ref, userId) {
+      if (userId.trim().isEmpty) {
+        return const AsyncValue.data(<UserFollow>[]);
+      }
 
-  final idsAsync = ref.watch(rawFollowerIdsStreamProvider(userId));
-  if (idsAsync.hasError) {
-    return AsyncValue<List<UserFollow>>.error(
-      idsAsync.error!,
-      idsAsync.stackTrace!,
-    );
-  }
-  if (idsAsync.isLoading) {
-    return const AsyncValue.loading();
-  }
+      final idsAsync = ref.watch(rawFollowerIdsStreamProvider(userId));
+      if (idsAsync.hasError) {
+        return AsyncValue<List<UserFollow>>.error(
+          idsAsync.error!,
+          idsAsync.stackTrace!,
+        );
+      }
+      if (idsAsync.isLoading) {
+        return const AsyncValue.loading();
+      }
 
-  final ids = (idsAsync.valueOrNull ?? const <String>[])
-      .where((id) => id.isNotEmpty)
-      .toList(growable: false)
-    ..sort();
-  return ref.watch(_userFollowsByIdsKeyProvider(ids.join('|')));
-});
+      final ids =
+          (idsAsync.valueOrNull ?? const <String>[])
+              .where((id) => id.isNotEmpty)
+              .toList(growable: false)
+            ..sort();
+      return ref.watch(_userFollowsByIdsKeyProvider(ids.join('|')));
+    });
 
 // Stream of following
-final followingProvider = Provider.autoDispose.family<AsyncValue<List<UserFollow>>, String>((
-  ref,
-  userId,
-) {
-  if (userId.trim().isEmpty) {
-    return const AsyncValue.data(<UserFollow>[]);
-  }
+final followingProvider = Provider.autoDispose
+    .family<AsyncValue<List<UserFollow>>, String>((ref, userId) {
+      if (userId.trim().isEmpty) {
+        return const AsyncValue.data(<UserFollow>[]);
+      }
 
-  final idsAsync = ref.watch(rawFollowGraphStreamProvider(userId));
-  if (idsAsync.hasError) {
-    return AsyncValue<List<UserFollow>>.error(
-      idsAsync.error!,
-      idsAsync.stackTrace!,
-    );
-  }
-  if (idsAsync.isLoading) {
-    return const AsyncValue.loading();
-  }
+      final idsAsync = ref.watch(rawFollowGraphStreamProvider(userId));
+      if (idsAsync.hasError) {
+        return AsyncValue<List<UserFollow>>.error(
+          idsAsync.error!,
+          idsAsync.stackTrace!,
+        );
+      }
+      if (idsAsync.isLoading) {
+        return const AsyncValue.loading();
+      }
 
-  final ids = (idsAsync.valueOrNull ?? const <String>[])
-      .where((id) => id.isNotEmpty)
-      .toList(growable: false)
-    ..sort();
-  return ref.watch(_userFollowsByIdsKeyProvider(ids.join('|')));
-});
+      final ids =
+          (idsAsync.valueOrNull ?? const <String>[])
+              .where((id) => id.isNotEmpty)
+              .toList(growable: false)
+            ..sort();
+      return ref.watch(_userFollowsByIdsKeyProvider(ids.join('|')));
+    });
 
 // Follow count
 final followCountProvider =
-    FutureProvider.family<({int followers, int following}), String>((ref, userId) async {
-  final firestore = ref.watch(firestoreProvider);
-  final followersSnap = await firestore
-      .collection('follows')
-      .where('followedUserId', isEqualTo: userId)
-      .count()
-      .get();
-  final followingSnap = await firestore
-      .collection('follows')
-      .where('followerUserId', isEqualTo: userId)
-      .count()
-      .get();
+    FutureProvider.family<({int followers, int following}), String>((
+      ref,
+      userId,
+    ) async {
+      final firestore = ref.watch(firestoreProvider);
+      final followersSnap = await firestore
+          .collection('follows')
+          .where('followedUserId', isEqualTo: userId)
+          .count()
+          .get();
+      final followingSnap = await firestore
+          .collection('follows')
+          .where('followerUserId', isEqualTo: userId)
+          .count()
+          .get();
 
-  return (
-    followers: followersSnap.count ?? 0,
-    following: followingSnap.count ?? 0,
-  );
-});
+      return (
+        followers: followersSnap.count ?? 0,
+        following: followingSnap.count ?? 0,
+      );
+    });
 
 // Check if current user follows target user
 final isFollowingProvider =
-    FutureProvider.family<bool, ({String currentUserId, String targetUserId})>((ref, params) async {
-  final firestore = ref.watch(firestoreProvider);
-  final doc = await firestore
-      .collection('follows')
-      .doc('${params.currentUserId}_${params.targetUserId}')
-      .get();
-  return doc.exists;
-});
+    FutureProvider.family<bool, ({String currentUserId, String targetUserId})>((
+      ref,
+      params,
+    ) async {
+      final firestore = ref.watch(firestoreProvider);
+      final doc = await firestore
+          .collection('follows')
+          .doc('${params.currentUserId}_${params.targetUserId}')
+          .get();
+      return doc.exists;
+    });
 
 // Controller for follow operations
 final followControllerProvider = Provider<FollowController>((ref) {
@@ -213,7 +220,8 @@ final followControllerProvider = Provider<FollowController>((ref) {
 class FollowController {
   final FirebaseFirestore _firestore;
 
-  FollowController({required FirebaseFirestore firestore}) : _firestore = firestore;
+  FollowController({required FirebaseFirestore firestore})
+    : _firestore = firestore;
 
   Future<void> followUser({
     required String currentUserId,

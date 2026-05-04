@@ -64,7 +64,7 @@ void main() {
                   .doc('user-1')
                   .get())
               .data()!;
-        final speakerDoc = await firestore
+      final speakerDoc = await firestore
           .collection('rooms')
           .doc('room-a')
           .collection('speakers')

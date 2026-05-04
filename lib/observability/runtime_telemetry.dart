@@ -20,7 +20,9 @@ class RuntimeTelemetry {
   static void registerListener(String key) {
     _listenerCounts.update(key, (v) => v + 1, ifAbsent: () => 1);
     if (TelemetryConfig.allows(LogTier.debug)) {
-      debugPrint('[RuntimeTelemetry] registered: $key total=${_listenerCounts[key]}');
+      debugPrint(
+        '[RuntimeTelemetry] registered: $key total=${_listenerCounts[key]}',
+      );
     }
   }
 
@@ -33,7 +35,9 @@ class RuntimeTelemetry {
         _listenerCounts[key] = next;
       }
       if (TelemetryConfig.allows(LogTier.debug)) {
-        debugPrint('[RuntimeTelemetry] unregistered: $key remaining=${_listenerCounts[key] ?? 0}');
+        debugPrint(
+          '[RuntimeTelemetry] unregistered: $key remaining=${_listenerCounts[key] ?? 0}',
+        );
       }
     }
   }
@@ -48,7 +52,9 @@ class RuntimeTelemetry {
     _rebuildCounts[widget] = (_rebuildCounts[widget] ?? 0) + 1;
     _lastEvent[widget] = DateTime.now();
     if (ctx != null && TelemetryConfig.allows(LogTier.debug)) {
-      debugPrint('[${ctx.phase}] rebuild: $widget total=${_rebuildCounts[widget]}');
+      debugPrint(
+        '[${ctx.phase}] rebuild: $widget total=${_rebuildCounts[widget]}',
+      );
     }
   }
 

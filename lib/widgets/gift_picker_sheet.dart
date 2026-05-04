@@ -70,8 +70,9 @@ class _GiftPickerSheetContentState
     });
 
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('sendDirectGift');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'sendDirectGift',
+      );
       await callable.call<Map<String, dynamic>>({
         'receiverId': widget.recipientId,
         'giftId': gift.id,
@@ -110,7 +111,9 @@ class _GiftPickerSheetContentState
           ),
           Text(
             'Send a gift to ${widget.recipientName}',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           // Gift grid
@@ -187,9 +190,11 @@ class _GiftPickerSheetContentState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.card_giftcard),
-              label: Text(_selected == null
-                  ? 'Pick a gift'
-                  : 'Send ${_selected!.displayName} for ${_selected!.coinCost} coins'),
+              label: Text(
+                _selected == null
+                    ? 'Pick a gift'
+                    : 'Send ${_selected!.displayName} for ${_selected!.coinCost} coins',
+              ),
             ),
           ),
         ],

@@ -102,8 +102,9 @@ abstract final class RoomDiscoveryService {
       if (friendPresent.length >= 5) break;
       if (prioritised.contains(room.id)) continue;
       final members = [...room.stageUserIds, ...room.audienceUserIds];
-      final hasFriendInAudience =
-          members.any((id) => friendIds.contains(id) && id != room.hostId);
+      final hasFriendInAudience = members.any(
+        (id) => friendIds.contains(id) && id != room.hostId,
+      );
       if (hasFriendInAudience) {
         friendPresent.add(room);
         prioritised.add(room.id);
@@ -173,7 +174,8 @@ abstract final class RoomDiscoveryService {
   static bool isNew(RoomModel room) {
     final createdAt = room.createdAt?.toDate();
     if (createdAt == null) return false;
-    return DateTime.now().difference(createdAt).inMinutes <= newRoomMaxAgeMinutes;
+    return DateTime.now().difference(createdAt).inMinutes <=
+        newRoomMaxAgeMinutes;
   }
 
   // ─── Internal helpers ─────────────────────────────────────────────────────
@@ -181,13 +183,15 @@ abstract final class RoomDiscoveryService {
   static double _growthRate(RoomModel room) {
     final createdAt = room.createdAt?.toDate();
     if (createdAt == null) return 0;
-    final ageMinutes =
-        math.max(1, DateTime.now().difference(createdAt).inMinutes);
+    final ageMinutes = math.max(
+      1,
+      DateTime.now().difference(createdAt).inMinutes,
+    );
     return _effectiveListeners(room) / ageMinutes;
   }
 
   static int _effectiveListeners(RoomModel room) => math.max(
-        room.memberCount,
-        room.stageUserIds.length + room.audienceUserIds.length,
-      );
+    room.memberCount,
+    room.stageUserIds.length + room.audienceUserIds.length,
+  );
 }

@@ -27,8 +27,9 @@ class HomeFeedService {
       if (_isRoomScopedActivity(activity)) {
         final key = _roomKeyFromActivity(activity);
         if (key.isNotEmpty) {
-          roomSignals.putIfAbsent(key, () => _RoomSignal(key: key))
-            .applyActivity(activity);
+          roomSignals
+              .putIfAbsent(key, () => _RoomSignal(key: key))
+              .applyActivity(activity);
           continue;
         }
       }

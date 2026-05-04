@@ -38,24 +38,29 @@ class MessageSchemaBridgeView extends ConsumerWidget {
             mode: mode,
             health: health,
             isDesktop: isDesktop,
-            interpretationLabel: _interpretationLabel(interpretation.classification),
-            onModeChanged:
-                ref.read(messagePaneRenderModeProvider.notifier).setMode,
+            interpretationLabel: _interpretationLabel(
+              interpretation.classification,
+            ),
+            onModeChanged: ref
+                .read(messagePaneRenderModeProvider.notifier)
+                .setMode,
           ),
           const Divider(height: 1, color: VelvetNoir.outlineVariant),
         ],
         Expanded(
           child: switch (mode) {
             MessagePaneRenderMode.legacy => MessagesPaneView(
-                userId: userId,
-                username: username,
-                showHeader: false,
-              ),
-            MessagePaneRenderMode.schema =>
-              SchemamessageModuleView(userId: userId),
-            MessagePaneRenderMode.dual => isDesktop
-                ? _DualmessagePanes(userId: userId, username: username)
-                : SchemamessageModuleView(userId: userId),
+              userId: userId,
+              username: username,
+              showHeader: false,
+            ),
+            MessagePaneRenderMode.schema => SchemamessageModuleView(
+              userId: userId,
+            ),
+            MessagePaneRenderMode.dual =>
+              isDesktop
+                  ? _DualmessagePanes(userId: userId, username: username)
+                  : SchemamessageModuleView(userId: userId),
           },
         ),
       ],
@@ -67,8 +72,7 @@ class MessageSchemaBridgeView extends ConsumerWidget {
       DriftClassification.acceptableNoise => 'Interpretation: ACCEPTABLE',
       DriftClassification.structuralWarning =>
         'Interpretation: STRUCTURAL WARNING',
-      DriftClassification.behavioralDrift =>
-        'Interpretation: BEHAVIORAL DRIFT',
+      DriftClassification.behavioralDrift => 'Interpretation: BEHAVIORAL DRIFT',
     };
   }
 }
@@ -98,7 +102,10 @@ class _GovernanceHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              _HealthStatus(score: health.compositeScore, isHealthy: health.parityMatch),
+              _HealthStatus(
+                score: health.compositeScore,
+                isHealthy: health.parityMatch,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -229,16 +236,16 @@ class _HealthChips extends StatelessWidget {
   }
 
   String _trendLabel(MigrationHealthTrend trend) => switch (trend) {
-        MigrationHealthTrend.improving => 'Improving',
-        MigrationHealthTrend.stable => 'Stable',
-        MigrationHealthTrend.degrading => 'Degrading',
-      };
+    MigrationHealthTrend.improving => 'Improving',
+    MigrationHealthTrend.stable => 'Stable',
+    MigrationHealthTrend.degrading => 'Degrading',
+  };
 
   Color _trendColor(MigrationHealthTrend trend) => switch (trend) {
-        MigrationHealthTrend.improving => Colors.green,
-        MigrationHealthTrend.stable => Colors.amber,
-        MigrationHealthTrend.degrading => Colors.red,
-      };
+    MigrationHealthTrend.improving => Colors.green,
+    MigrationHealthTrend.stable => Colors.amber,
+    MigrationHealthTrend.degrading => Colors.red,
+  };
 }
 
 class _DualmessagePanes extends StatelessWidget {

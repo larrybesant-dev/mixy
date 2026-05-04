@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum MixVyRoomVisibility {
-  public,
-  private,
-  password,
-}
+enum MixVyRoomVisibility { public, private, password }
 
 DateTime? _parseFirestoreDateTime(dynamic value) {
   if (value == null) {
@@ -51,21 +47,9 @@ bool _asBool(dynamic value, {bool fallback = false}) {
   return fallback;
 }
 
-enum MixVyRoomRole {
-  owner,
-  admin,
-  moderator,
-  vip,
-  member,
-  banned,
-}
+enum MixVyRoomRole { owner, admin, moderator, vip, member, banned }
 
-enum CamViewPolicy {
-  everyone,
-  friendsOnly,
-  approvedOnly,
-  nobody,
-}
+enum CamViewPolicy { everyone, friendsOnly, approvedOnly, nobody }
 
 class RoomPolicyModel {
   const RoomPolicyModel({
@@ -88,6 +72,7 @@ class RoomPolicyModel {
   final int minimumAge;
   final int camLimit;
   final int micLimit;
+
   /// Seconds a stage user may hold the mic before being auto-demoted.
   /// null = unlimited.
   final int? micTimerSeconds;
@@ -183,7 +168,10 @@ class CamAccessRequestModel {
       requesterId: _asString(json['requesterId']),
       broadcasterId: _asString(json['broadcasterId']),
       status: _asString(json['status'], fallback: 'pending'),
-      decisionScope: _asString(json['decisionScope'], fallback: 'single_session'),
+      decisionScope: _asString(
+        json['decisionScope'],
+        fallback: 'single_session',
+      ),
       createdAt: _parseFirestoreDateTime(json['createdAt']),
       updatedAt: _parseFirestoreDateTime(json['updatedAt']),
     );

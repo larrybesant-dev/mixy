@@ -31,12 +31,17 @@ class ProfileAvatar extends StatelessWidget {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                        valueColor: AlwaysStoppedAnimation(
+                          theme.colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
-                  errorWidget: (context, url, error) =>
-                      Icon(Icons.person, color: theme.colorScheme.primary, size: 32),
+                  errorWidget: (context, url, error) => Icon(
+                    Icons.person,
+                    color: theme.colorScheme.primary,
+                    size: 32,
+                  ),
                 ),
               )
             : Icon(Icons.person, color: theme.colorScheme.primary, size: 32),

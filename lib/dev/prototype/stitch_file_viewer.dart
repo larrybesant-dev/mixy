@@ -24,8 +24,6 @@ class _StitchFileViewerState extends State<StitchFileViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: WebViewWidget(controller: controller),
-    );
+    return Scaffold(body: WebViewWidget(controller: controller));
   }
 }

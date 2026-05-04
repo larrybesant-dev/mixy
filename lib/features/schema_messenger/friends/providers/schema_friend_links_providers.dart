@@ -18,7 +18,10 @@ final schemaFriendFirestoreProvider = firestoreProvider;
 /// Streams the authenticated user's UID. Uses the canonical [firebaseAuthProvider]
 /// so there is only ONE authStateChanges() listener per session.
 final schemaAuthUserIdProvider = StreamProvider<String?>((ref) {
-  return ref.watch(firebaseAuthProvider).authStateChanges().map((user) => user?.uid);
+  return ref
+      .watch(firebaseAuthProvider)
+      .authStateChanges()
+      .map((user) => user?.uid);
 });
 
 /// Derived: shares the canonical [rawAllFriendshipsStreamProvider] with the
@@ -27,41 +30,42 @@ final schemaAuthUserIdProvider = StreamProvider<String?>((ref) {
 /// userId, Riverpod's family deduplication guarantees ONE underlying stream.
 final schemaFriendLinksProvider =
     StreamProvider.autoDispose<List<SchemaFriendLink>>((ref) {
-  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull ?? '';
-  if (userId.isEmpty) {
-    return const Stream<List<SchemaFriendLink>>.empty();
-  }
+      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull ?? '';
+      if (userId.isEmpty) {
+        return const Stream<List<SchemaFriendLink>>.empty();
+      }
 
-  return ref.watch(rawAllFriendshipsStreamProvider(userId).stream).map(
-    (friendships) {
-      final links = friendships
-          .map(
-            (friendship) => SchemaFriendLink(
-              id: friendship.id,
-              users: <String>[friendship.userA, friendship.userB],
-              status: friendship.status,
-              requestedBy: friendship.requestedBy ?? friendship.userA,
-              createdAt: friendship.createdAt,
-              updatedAt: friendship.updatedAt,
-            ),
-          )
-          .where((link) => link.includesUser(userId))
-          .toList(growable: false)
-        ..sort((a, b) {
-          final right =
-              b.updatedAt ??
-              b.createdAt ??
-              DateTime.fromMillisecondsSinceEpoch(0);
-          final left =
-              a.updatedAt ??
-              a.createdAt ??
-              DateTime.fromMillisecondsSinceEpoch(0);
-          return right.compareTo(left);
-        });
-      return links;
-    },
-  );
-});
+      return ref.watch(rawAllFriendshipsStreamProvider(userId).stream).map((
+        friendships,
+      ) {
+        final links =
+            friendships
+                .map(
+                  (friendship) => SchemaFriendLink(
+                    id: friendship.id,
+                    users: <String>[friendship.userA, friendship.userB],
+                    status: friendship.status,
+                    requestedBy: friendship.requestedBy ?? friendship.userA,
+                    createdAt: friendship.createdAt,
+                    updatedAt: friendship.updatedAt,
+                  ),
+                )
+                .where((link) => link.includesUser(userId))
+                .toList(growable: false)
+              ..sort((a, b) {
+                final right =
+                    b.updatedAt ??
+                    b.createdAt ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
+                final left =
+                    a.updatedAt ??
+                    a.createdAt ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
+                return right.compareTo(left);
+              });
+        return links;
+      });
+    });
 
 final schemaAcceptedFriendLinksProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
@@ -87,7 +91,7 @@ final schemaAcceptedFriendIdsProvider = Provider.autoDispose<List<String>>((
 
 final schemaIncomingFriendRequestsProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
-  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
       final links =
           ref.watch(schemaFriendLinksProvider).valueOrNull ??
           const <SchemaFriendLink>[];
@@ -100,7 +104,7 @@ final schemaIncomingFriendRequestsProvider =
 
 final schemaOutgoingFriendRequestsProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
-  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
       final links =
           ref.watch(schemaFriendLinksProvider).valueOrNull ??
           const <SchemaFriendLink>[];
@@ -172,14 +176,17 @@ final schemaFriendIdentityProvider = StreamProvider.autoDispose
 
 final schemaFriendPresenceProvider = StreamProvider.autoDispose
     .family<SchemaFriendPresence, String>((ref, friendId) {
-      return ref.watch(presenceRepositoryProvider).watchUserPresence(friendId).map(
-        (presence) => SchemaFriendPresence(
-          friendId: friendId,
-          isOnline: presence.isOnline == true,
-          roomId: presence.roomId,
-          lastActiveAt: presence.lastSeen,
-        ),
-      );
+      return ref
+          .watch(presenceRepositoryProvider)
+          .watchUserPresence(friendId)
+          .map(
+            (presence) => SchemaFriendPresence(
+              friendId: friendId,
+              isOnline: presence.isOnline == true,
+              roomId: presence.roomId,
+              lastActiveAt: presence.lastSeen,
+            ),
+          );
     });
 
 final schemaFriendPresenceMapProvider =
@@ -190,17 +197,20 @@ final schemaFriendPresenceMapProvider =
         return Stream.value(const <String, SchemaFriendPresence>{});
       }
 
-      return ref.watch(presenceRepositoryProvider).watchUsersPresence(friendIds).map(
-        (presenceById) => {
-          for (final friendId in friendIds)
-            friendId: SchemaFriendPresence(
-              friendId: friendId,
-              isOnline: presenceById[friendId]?.isOnline == true,
-              roomId: presenceById[friendId]?.roomId,
-              lastActiveAt: presenceById[friendId]?.lastSeen,
-            ),
-        },
-      );
+      return ref
+          .watch(presenceRepositoryProvider)
+          .watchUsersPresence(friendIds)
+          .map(
+            (presenceById) => {
+              for (final friendId in friendIds)
+                friendId: SchemaFriendPresence(
+                  friendId: friendId,
+                  isOnline: presenceById[friendId]?.isOnline == true,
+                  roomId: presenceById[friendId]?.roomId,
+                  lastActiveAt: presenceById[friendId]?.lastSeen,
+                ),
+            },
+          );
     });
 
 class SchemaFriendLinksController {

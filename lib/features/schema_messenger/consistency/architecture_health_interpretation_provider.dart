@@ -4,11 +4,7 @@ import 'architecture_health_interpretation_contract.dart';
 import '../core/schema_engine/schema_module_health_provider.dart';
 import 'cross_module_equivalence_provider.dart';
 
-enum DriftClassification {
-  acceptableNoise,
-  structuralWarning,
-  behavioralDrift,
-}
+enum DriftClassification { acceptableNoise, structuralWarning, behavioralDrift }
 
 class ArchitectureHealthInterpretationReport {
   const ArchitectureHealthInterpretationReport({
@@ -51,101 +47,106 @@ class ArchitectureHealthInterpretationReport {
 /// It translates existing signal providers into a stable semantic category.
 final architectureHealthInterpretationProvider =
     Provider.autoDispose<ArchitectureHealthInterpretationReport>((ref) {
-  final friendHealth = ref.watch(schemaModuleHealthProvider('friends'));
-  final messageHealth = ref.watch(schemaModuleHealthProvider('message'));
-  final equivalence = ref.watch(crossModuleEquivalenceProvider);
+      final friendHealth = ref.watch(schemaModuleHealthProvider('friends'));
+      final messageHealth = ref.watch(schemaModuleHealthProvider('message'));
+      final equivalence = ref.watch(crossModuleEquivalenceProvider);
 
-  final reasons = <String>[];
+      final reasons = <String>[];
 
-  final isLoadingNoise = !friendHealth.comparable || !messageHealth.comparable;
-  if (isLoadingNoise) {
-    reasons.add(ArchitectureHealthInterpretationContract.reasonLoadingNoise);
-    return ArchitectureHealthInterpretationReport(
-      policyVersion: ArchitectureHealthInterpretationContract.version,
-      advisoryOnly: true,
-      classification: DriftClassification.acceptableNoise,
-      summary: ArchitectureHealthInterpretationContract.summaryLoadingNoise,
-      reasons: reasons,
-      friendCompositeScore: friendHealth.compositeScore,
-      messageCompositeScore: messageHealth.compositeScore,
-      crossModuleEquivalent: equivalence.isEquivalent,
-      friendComparable: friendHealth.comparable,
-      messageComparable: messageHealth.comparable,
-      friendParityMatch: friendHealth.parityMatch,
-      messageParityMatch: messageHealth.parityMatch,
-      friendTrend: friendHealth.trend.name,
-      messageTrend: messageHealth.trend.name,
-    );
-  }
+      final isLoadingNoise =
+          !friendHealth.comparable || !messageHealth.comparable;
+      if (isLoadingNoise) {
+        reasons.add(
+          ArchitectureHealthInterpretationContract.reasonLoadingNoise,
+        );
+        return ArchitectureHealthInterpretationReport(
+          policyVersion: ArchitectureHealthInterpretationContract.version,
+          advisoryOnly: true,
+          classification: DriftClassification.acceptableNoise,
+          summary: ArchitectureHealthInterpretationContract.summaryLoadingNoise,
+          reasons: reasons,
+          friendCompositeScore: friendHealth.compositeScore,
+          messageCompositeScore: messageHealth.compositeScore,
+          crossModuleEquivalent: equivalence.isEquivalent,
+          friendComparable: friendHealth.comparable,
+          messageComparable: messageHealth.comparable,
+          friendParityMatch: friendHealth.parityMatch,
+          messageParityMatch: messageHealth.parityMatch,
+          friendTrend: friendHealth.trend.name,
+          messageTrend: messageHealth.trend.name,
+        );
+      }
 
-  if (!equivalence.isEquivalent) {
-    reasons.addAll(
-      equivalence.violations
-          .map((violation) => 'structural:$violation'),
-    );
-    return ArchitectureHealthInterpretationReport(
-      policyVersion: ArchitectureHealthInterpretationContract.version,
-      advisoryOnly: true,
-      classification: DriftClassification.structuralWarning,
-      summary: ArchitectureHealthInterpretationContract.summaryStructuralWarning,
-      reasons: reasons,
-      friendCompositeScore: friendHealth.compositeScore,
-      messageCompositeScore: messageHealth.compositeScore,
-      crossModuleEquivalent: equivalence.isEquivalent,
-      friendComparable: friendHealth.comparable,
-      messageComparable: messageHealth.comparable,
-      friendParityMatch: friendHealth.parityMatch,
-      messageParityMatch: messageHealth.parityMatch,
-      friendTrend: friendHealth.trend.name,
-      messageTrend: messageHealth.trend.name,
-    );
-  }
+      if (!equivalence.isEquivalent) {
+        reasons.addAll(
+          equivalence.violations.map((violation) => 'structural:$violation'),
+        );
+        return ArchitectureHealthInterpretationReport(
+          policyVersion: ArchitectureHealthInterpretationContract.version,
+          advisoryOnly: true,
+          classification: DriftClassification.structuralWarning,
+          summary:
+              ArchitectureHealthInterpretationContract.summaryStructuralWarning,
+          reasons: reasons,
+          friendCompositeScore: friendHealth.compositeScore,
+          messageCompositeScore: messageHealth.compositeScore,
+          crossModuleEquivalent: equivalence.isEquivalent,
+          friendComparable: friendHealth.comparable,
+          messageComparable: messageHealth.comparable,
+          friendParityMatch: friendHealth.parityMatch,
+          messageParityMatch: messageHealth.parityMatch,
+          friendTrend: friendHealth.trend.name,
+          messageTrend: messageHealth.trend.name,
+        );
+      }
 
-  final hasBehaviorDrift = !friendHealth.parityMatch || !messageHealth.parityMatch;
-  if (hasBehaviorDrift) {
-    reasons.add(
-      'behavior:friendParity=${friendHealth.parityMatch};messageParity=${messageHealth.parityMatch}',
-    );
-    if (friendHealth.trend.name == 'degrading' ||
-        messageHealth.trend.name == 'degrading') {
-      reasons.add(
-        'behavior:degrading_trend '
-        'friend=${friendHealth.trend.name} message=${messageHealth.trend.name}',
+      final hasBehaviorDrift =
+          !friendHealth.parityMatch || !messageHealth.parityMatch;
+      if (hasBehaviorDrift) {
+        reasons.add(
+          'behavior:friendParity=${friendHealth.parityMatch};messageParity=${messageHealth.parityMatch}',
+        );
+        if (friendHealth.trend.name == 'degrading' ||
+            messageHealth.trend.name == 'degrading') {
+          reasons.add(
+            'behavior:degrading_trend '
+            'friend=${friendHealth.trend.name} message=${messageHealth.trend.name}',
+          );
+        }
+        return ArchitectureHealthInterpretationReport(
+          policyVersion: ArchitectureHealthInterpretationContract.version,
+          advisoryOnly: true,
+          classification: DriftClassification.behavioralDrift,
+          summary:
+              ArchitectureHealthInterpretationContract.summaryBehavioralDrift,
+          reasons: reasons,
+          friendCompositeScore: friendHealth.compositeScore,
+          messageCompositeScore: messageHealth.compositeScore,
+          crossModuleEquivalent: equivalence.isEquivalent,
+          friendComparable: friendHealth.comparable,
+          messageComparable: messageHealth.comparable,
+          friendParityMatch: friendHealth.parityMatch,
+          messageParityMatch: messageHealth.parityMatch,
+          friendTrend: friendHealth.trend.name,
+          messageTrend: messageHealth.trend.name,
+        );
+      }
+
+      reasons.add(ArchitectureHealthInterpretationContract.reasonAligned);
+      return ArchitectureHealthInterpretationReport(
+        policyVersion: ArchitectureHealthInterpretationContract.version,
+        advisoryOnly: true,
+        classification: DriftClassification.acceptableNoise,
+        summary: ArchitectureHealthInterpretationContract.summaryAligned,
+        reasons: reasons,
+        friendCompositeScore: friendHealth.compositeScore,
+        messageCompositeScore: messageHealth.compositeScore,
+        crossModuleEquivalent: equivalence.isEquivalent,
+        friendComparable: friendHealth.comparable,
+        messageComparable: messageHealth.comparable,
+        friendParityMatch: friendHealth.parityMatch,
+        messageParityMatch: messageHealth.parityMatch,
+        friendTrend: friendHealth.trend.name,
+        messageTrend: messageHealth.trend.name,
       );
-    }
-    return ArchitectureHealthInterpretationReport(
-      policyVersion: ArchitectureHealthInterpretationContract.version,
-      advisoryOnly: true,
-      classification: DriftClassification.behavioralDrift,
-      summary: ArchitectureHealthInterpretationContract.summaryBehavioralDrift,
-      reasons: reasons,
-      friendCompositeScore: friendHealth.compositeScore,
-      messageCompositeScore: messageHealth.compositeScore,
-      crossModuleEquivalent: equivalence.isEquivalent,
-      friendComparable: friendHealth.comparable,
-      messageComparable: messageHealth.comparable,
-      friendParityMatch: friendHealth.parityMatch,
-      messageParityMatch: messageHealth.parityMatch,
-      friendTrend: friendHealth.trend.name,
-      messageTrend: messageHealth.trend.name,
-    );
-  }
-
-  reasons.add(ArchitectureHealthInterpretationContract.reasonAligned);
-  return ArchitectureHealthInterpretationReport(
-    policyVersion: ArchitectureHealthInterpretationContract.version,
-    advisoryOnly: true,
-    classification: DriftClassification.acceptableNoise,
-    summary: ArchitectureHealthInterpretationContract.summaryAligned,
-    reasons: reasons,
-    friendCompositeScore: friendHealth.compositeScore,
-    messageCompositeScore: messageHealth.compositeScore,
-    crossModuleEquivalent: equivalence.isEquivalent,
-    friendComparable: friendHealth.comparable,
-    messageComparable: messageHealth.comparable,
-    friendParityMatch: friendHealth.parityMatch,
-    messageParityMatch: messageHealth.parityMatch,
-    friendTrend: friendHealth.trend.name,
-    messageTrend: messageHealth.trend.name,
-  );
-});
+    });

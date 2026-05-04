@@ -80,7 +80,8 @@ const List<_StitchEntry> _stitches = <_StitchEntry>[
     slug: 'live_room_interior_desktop',
     title: 'Live Room Interior Desktop',
     family: _StitchFamily.live,
-    summary: 'Interior room treatment focused on host framing and stage presence.',
+    summary:
+        'Interior room treatment focused on host framing and stage presence.',
     platforms: <String>['Desktop'],
   ),
   _StitchEntry(
@@ -262,27 +263,30 @@ class _StitchPrototypeViewerState extends State<StitchPrototypeViewer> {
 
   List<_StitchEntry> get _filteredStitches {
     final query = _searchController.text.trim().toLowerCase();
-    return _stitches.where((_StitchEntry stitch) {
-      final familyMatches =
-          _selectedFamily == _StitchFamily.all || stitch.family == _selectedFamily;
-      if (!familyMatches) {
-        return false;
-      }
+    return _stitches
+        .where((_StitchEntry stitch) {
+          final familyMatches =
+              _selectedFamily == _StitchFamily.all ||
+              stitch.family == _selectedFamily;
+          if (!familyMatches) {
+            return false;
+          }
 
-      if (query.isEmpty) {
-        return true;
-      }
+          if (query.isEmpty) {
+            return true;
+          }
 
-      final haystack = <String>[
-        stitch.title,
-        stitch.slug,
-        stitch.summary,
-        ...stitch.platforms,
-        _familyLabel(stitch.family),
-      ].join(' ').toLowerCase();
+          final haystack = <String>[
+            stitch.title,
+            stitch.slug,
+            stitch.summary,
+            ...stitch.platforms,
+            _familyLabel(stitch.family),
+          ].join(' ').toLowerCase();
 
-      return haystack.contains(query);
-    }).toList(growable: false);
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -353,31 +357,38 @@ class _StitchPrototypeViewerState extends State<StitchPrototypeViewer> {
                       Wrap(
                         spacing: 10,
                         runSpacing: 10,
-                        children: _StitchFamily.values.map((_StitchFamily family) {
-                          final selected = _selectedFamily == family;
-                          return FilterChip(
-                            selected: selected,
-                            label: Text(_familyLabel(family)),
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedFamily = family;
-                              });
-                            },
-                            selectedColor: VelvetNoir.primary.withValues(alpha: 0.16),
-                            checkmarkColor: VelvetNoir.primary,
-                            labelStyle: theme.textTheme.labelLarge?.copyWith(
-                              color: selected
-                                  ? VelvetNoir.primary
-                                  : VelvetNoir.onSurface,
-                            ),
-                            side: BorderSide(
-                              color: selected
-                                  ? VelvetNoir.primary.withValues(alpha: 0.45)
-                                  : VelvetNoir.outlineVariant,
-                            ),
-                            backgroundColor: VelvetNoir.surfaceHigh,
-                          );
-                        }).toList(growable: false),
+                        children: _StitchFamily.values
+                            .map((_StitchFamily family) {
+                              final selected = _selectedFamily == family;
+                              return FilterChip(
+                                selected: selected,
+                                label: Text(_familyLabel(family)),
+                                onSelected: (_) {
+                                  setState(() {
+                                    _selectedFamily = family;
+                                  });
+                                },
+                                selectedColor: VelvetNoir.primary.withValues(
+                                  alpha: 0.16,
+                                ),
+                                checkmarkColor: VelvetNoir.primary,
+                                labelStyle: theme.textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: selected
+                                          ? VelvetNoir.primary
+                                          : VelvetNoir.onSurface,
+                                    ),
+                                side: BorderSide(
+                                  color: selected
+                                      ? VelvetNoir.primary.withValues(
+                                          alpha: 0.45,
+                                        )
+                                      : VelvetNoir.outlineVariant,
+                                ),
+                                backgroundColor: VelvetNoir.surfaceHigh,
+                              );
+                            })
+                            .toList(growable: false),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -424,20 +435,21 @@ class _StitchPrototypeViewerState extends State<StitchPrototypeViewer> {
                       final crossAxisCount = width >= 1200
                           ? 3
                           : width >= 760
-                              ? 2
-                              : 1;
+                          ? 2
+                          : 1;
 
                       return SliverGrid(
-                        delegate: SliverChildBuilderDelegate(
-                          (BuildContext context, int index) {
-                            final stitch = stitches[index];
-                            return _StitchCard(
-                              stitch: stitch,
-                              onCopyPath: () => _copyPath(context, stitch.relativePath),
-                            );
-                          },
-                          childCount: stitches.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((
+                          BuildContext context,
+                          int index,
+                        ) {
+                          final stitch = stitches[index];
+                          return _StitchCard(
+                            stitch: stitch,
+                            onCopyPath: () =>
+                                _copyPath(context, stitch.relativePath),
+                          );
+                        }, childCount: stitches.length),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
                           mainAxisSpacing: 16,
@@ -461,9 +473,9 @@ class _StitchPrototypeViewerState extends State<StitchPrototypeViewer> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Copied $path')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Copied $path')));
   }
 }
 
@@ -489,7 +501,9 @@ class _HeroPanel extends StatelessWidget {
             Color(0xFF0F0B0D),
           ],
         ),
-        border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.7)),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.7),
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: VelvetNoir.secondaryBright.withValues(alpha: 0.16),
@@ -511,7 +525,9 @@ class _HeroPanel extends StatelessWidget {
               ),
               child: Text(
                 'Velvet Noir Stitch Workspace',
-                style: theme.textTheme.labelLarge?.copyWith(color: VelvetNoir.primary),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: VelvetNoir.primary,
+                ),
               ),
             ),
             const SizedBox(height: 18),
@@ -564,7 +580,9 @@ class _MetricTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: VelvetNoir.surface.withValues(alpha: 0.56),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.6),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -606,7 +624,9 @@ class _StitchCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: <Color>[VelvetNoir.surfaceHigh, VelvetNoir.surfaceContainer],
         ),
-        border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.72)),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.72),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -638,7 +658,10 @@ class _StitchCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: VelvetNoir.secondary.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(14),
@@ -663,9 +686,11 @@ class _StitchCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: stitch.platforms.map((String platform) {
-                return _Badge(label: platform, accent: VelvetNoir.primary);
-              }).toList(growable: false),
+              children: stitch.platforms
+                  .map((String platform) {
+                    return _Badge(label: platform, accent: VelvetNoir.primary);
+                  })
+                  .toList(growable: false),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -674,11 +699,15 @@ class _StitchCard extends StatelessWidget {
               children: <Widget>[
                 _Badge(
                   label: stitch.hasHtml ? 'HTML source' : 'No HTML',
-                  accent: stitch.hasHtml ? VelvetNoir.secondaryBright : VelvetNoir.onSurfaceVariant,
+                  accent: stitch.hasHtml
+                      ? VelvetNoir.secondaryBright
+                      : VelvetNoir.onSurfaceVariant,
                 ),
                 _Badge(
                   label: stitch.hasImage ? 'PNG preview' : 'No PNG',
-                  accent: stitch.hasImage ? VelvetNoir.primary : VelvetNoir.onSurfaceVariant,
+                  accent: stitch.hasImage
+                      ? VelvetNoir.primary
+                      : VelvetNoir.onSurfaceVariant,
                 ),
               ],
             ),
@@ -705,7 +734,9 @@ class _StitchCard extends StatelessWidget {
                   IconButton.filledTonal(
                     onPressed: onCopyPath,
                     style: IconButton.styleFrom(
-                      backgroundColor: VelvetNoir.primary.withValues(alpha: 0.14),
+                      backgroundColor: VelvetNoir.primary.withValues(
+                        alpha: 0.14,
+                      ),
                       foregroundColor: VelvetNoir.primary,
                     ),
                     icon: const Icon(Icons.content_copy_rounded, size: 18),

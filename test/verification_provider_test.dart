@@ -20,34 +20,35 @@ void main() {
       controller = VerificationController(firestore: firestore);
     });
 
-    test('verifyUser sets isVerified to true', () async {
-      await firestore.collection('users').doc('user-1').set({'username': 'jazzfan'});
+    test(
+      'verifyUser is blocked on client and must use Cloud Functions',
+      () async {
+        await firestore.collection('users').doc('user-1').set({
+          'username': 'jazzfan',
+        });
 
-      await controller.verifyUser(userId: 'user-1', verifiedBy: 'admin');
+        expect(
+          () => controller.verifyUser(userId: 'user-1', verifiedBy: 'admin'),
+          throwsA(isA<UnsupportedError>()),
+        );
+      },
+    );
 
-      final verificationDoc = await firestore
-          .collection('verification')
-          .doc('user-1')
-          .get();
-      expect(verificationDoc.data()?['isVerified'], isTrue);
-      expect(verificationDoc.data()?['verifiedBy'], 'admin');
-    });
+    test(
+      'unverifyUser is blocked on client and must use Cloud Functions',
+      () async {
+        await firestore.collection('verification').doc('user-1').set({
+          'userId': 'user-1',
+          'isVerified': true,
+          'verifiedBy': 'admin',
+        });
 
-    test('unverifyUser sets isVerified to false', () async {
-      await firestore.collection('verification').doc('user-1').set({
-        'userId': 'user-1',
-        'isVerified': true,
-        'verifiedBy': 'admin',
-      });
-
-      await controller.unverifyUser(userId: 'user-1');
-
-      final verificationDoc = await firestore
-          .collection('verification')
-          .doc('user-1')
-          .get();
-      expect(verificationDoc.data()?['isVerified'], isFalse);
-    });
+        expect(
+          () => controller.unverifyUser(userId: 'user-1'),
+          throwsA(isA<UnsupportedError>()),
+        );
+      },
+    );
   });
 
   group('userVerificationProvider', () {
@@ -64,19 +65,20 @@ void main() {
     tearDown(() => container.dispose());
 
     test('returns false when user document does not exist', () async {
-      final value = await container
-          .read(userVerificationProvider('ghost-user').future);
+      final value = await container.read(
+        userVerificationProvider('ghost-user').future,
+      );
       expect(value, isFalse);
     });
 
     test('returns false when isVerified is not set', () async {
-      await firestore
-          .collection('users')
-          .doc('user-1')
-          .set({'username': 'jazzfan'});
+      await firestore.collection('users').doc('user-1').set({
+        'username': 'jazzfan',
+      });
 
-      final value = await container
-          .read(userVerificationProvider('user-1').future);
+      final value = await container.read(
+        userVerificationProvider('user-1').future,
+      );
       expect(value, isFalse);
     });
 
@@ -86,8 +88,9 @@ void main() {
         'isVerified': true,
       });
 
-      final value = await container
-          .read(userVerificationProvider('user-1').future);
+      final value = await container.read(
+        userVerificationProvider('user-1').future,
+      );
       expect(value, isTrue);
     });
 
@@ -98,23 +101,24 @@ void main() {
       });
 
       // First read — unverified
-      final before = await container
-          .read(userVerificationProvider('user-1').future);
+      final before = await container.read(
+        userVerificationProvider('user-1').future,
+      );
       expect(before, isFalse);
 
       // Update the document, then read via a fresh container
-      await firestore
-          .collection('users')
-          .doc('user-1')
-          .update({'isVerified': true});
+      await firestore.collection('users').doc('user-1').update({
+        'isVerified': true,
+      });
 
       final freshContainer = ProviderContainer(
         overrides: [firestoreProvider.overrideWithValue(firestore)],
       );
       addTearDown(freshContainer.dispose);
 
-      final after = await freshContainer
-          .read(userVerificationProvider('user-1').future);
+      final after = await freshContainer.read(
+        userVerificationProvider('user-1').future,
+      );
       expect(after, isTrue);
     });
   });
@@ -138,9 +142,15 @@ void main() {
     });
 
     test('returns only verified user IDs', () async {
-      await firestore.collection('verification').doc('user-1').set({'isVerified': true});
-      await firestore.collection('verification').doc('user-2').set({'isVerified': false});
-      await firestore.collection('verification').doc('user-3').set({'isVerified': true});
+      await firestore.collection('verification').doc('user-1').set({
+        'isVerified': true,
+      });
+      await firestore.collection('verification').doc('user-2').set({
+        'isVerified': false,
+      });
+      await firestore.collection('verification').doc('user-3').set({
+        'isVerified': true,
+      });
 
       final ids = await container.read(verifiedUsersProvider.future);
       expect(ids, containsAll(['user-1', 'user-3']));

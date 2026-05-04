@@ -461,9 +461,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 )
               else if (postsState.posts.isEmpty)
                 const SliverToBoxAdapter(
-                  child: _EmptyPill(
-                    label: 'No posts yet — be the first!',
-                  ),
+                  child: _EmptyPill(label: 'No posts yet — be the first!'),
                 )
               else
                 SliverList.builder(
@@ -1335,8 +1333,11 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
           onTap: () async {
-            final allowed = await GuestAuthGate.requirePostCreation(context, ref);
-            if (!allowed) return;
+            final allowed = await GuestAuthGate.requirePostCreation(
+              context,
+              ref,
+            );
+            if (!allowed || !context.mounted) return;
             Navigator.pop(context);
             context.go('/create-post');
           },
@@ -1351,8 +1352,11 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
           onTap: () async {
-            final allowed = await GuestAuthGate.requireStoryCreation(context, ref);
-            if (!allowed) return;
+            final allowed = await GuestAuthGate.requireStoryCreation(
+              context,
+              ref,
+            );
+            if (!allowed || !context.mounted) return;
             Navigator.pop(context);
             context.go('/create-story');
           },
@@ -1367,8 +1371,11 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
           onTap: () async {
-            final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
-            if (!allowed) return;
+            final allowed = await GuestAuthGate.requireRoomCreation(
+              context,
+              ref,
+            );
+            if (!allowed || !context.mounted) return;
             Navigator.pop(context);
             context.go('/create-room');
           },
@@ -1383,8 +1390,11 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             style: TextStyle(color: VelvetNoir.onSurface),
           ),
           onTap: () async {
-            final allowed = await GuestAuthGate.requireGroupCreation(context, ref);
-            if (!allowed) return;
+            final allowed = await GuestAuthGate.requireGroupCreation(
+              context,
+              ref,
+            );
+            if (!allowed || !context.mounted) return;
             Navigator.pop(context);
             context.go('/create-group');
           },

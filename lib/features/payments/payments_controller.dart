@@ -8,7 +8,11 @@ abstract class PaymentGateway {
 
   Future<void> sendPayment(String receiverId, double amount);
 
-  Future<void> requestPayment(String requesterId, String targetId, double amount);
+  Future<void> requestPayment(
+    String requesterId,
+    String targetId,
+    double amount,
+  );
 }
 
 class PaymentApiGateway implements PaymentGateway {
@@ -21,7 +25,11 @@ class PaymentApiGateway implements PaymentGateway {
   }
 
   @override
-  Future<void> requestPayment(String requesterId, String targetId, double amount) {
+  Future<void> requestPayment(
+    String requesterId,
+    String targetId,
+    double amount,
+  ) {
     return PaymentApi.requestPayment(requesterId, targetId, amount);
   }
 }
@@ -64,7 +72,7 @@ class PaymentState {
 
 class PaymentController extends Notifier<PaymentState> {
   PaymentController({PaymentGateway? gateway})
-      : _gateway = gateway ?? PaymentApiGateway();
+    : _gateway = gateway ?? PaymentApiGateway();
 
   final PaymentGateway _gateway;
 
@@ -138,6 +146,7 @@ class PaymentController extends Notifier<PaymentState> {
   }
 }
 
-final paymentControllerProvider = NotifierProvider<PaymentController, PaymentState>(
-  () => PaymentController(),
-);
+final paymentControllerProvider =
+    NotifierProvider<PaymentController, PaymentState>(
+      () => PaymentController(),
+    );

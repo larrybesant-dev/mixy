@@ -31,7 +31,9 @@ class TestSessionController {
 
     debugPrint("📊 EVENT TIMELINE:");
     for (final e in _timeline.events) {
-      debugPrint("${e['time']} | ${e['type']} | ${e['source']} | Phase: ${e['phase']}");
+      debugPrint(
+        "${e['time']} | ${e['type']} | ${e['source']} | Phase: ${e['phase']}",
+      );
     }
 
     _activeSession = null;

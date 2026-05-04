@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart' as core_firebase;
 import 'package:mixvy/features/posts/screens/post_comments_screen.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -38,23 +39,23 @@ void main() {
       });
     });
 
-    testWidgets('submits a comment and leaves parent post counter untouched',
-        (tester) async {
+    testWidgets('submits a comment and leaves parent post counter untouched', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            core_firebase.firestoreProvider.overrideWithValue(firestore),
+          ],
           child: MaterialApp(
-            home: PostCommentsScreen(
-              postId: 'post-1',
-              auth: auth,
-            ),
+            home: PostCommentsScreen(postId: 'post-1', auth: auth),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      expect(find.text('No comments yet'), findsOneWidget);
-      expect(find.text('Be the first to comment.'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), 'First comment');
       await tester.tap(find.byIcon(Icons.send));

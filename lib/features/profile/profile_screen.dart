@@ -112,7 +112,8 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   bool _showRelationshipStatus = false;
   bool _adultModeEnabled = false;
   bool _adultConsentAccepted = false;
-  final Set<AdultRelationshipIntent> _adultLookingFor = <AdultRelationshipIntent>{};
+  final Set<AdultRelationshipIntent> _adultLookingFor =
+      <AdultRelationshipIntent>{};
 
   bool _isUploadingPhoto = false;
   bool _isUploadingCover = false;
@@ -154,7 +155,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(profileControllerProvider.notifier).loadCurrentProfile());
+    Future.microtask(
+      () => ref.read(profileControllerProvider.notifier).loadCurrentProfile(),
+    );
   }
 
   @override
@@ -198,10 +201,12 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   String _mapStorageError(FirebaseException e, {required String kind}) {
     final code = e.code.toLowerCase();
     return switch (code) {
-      'unauthenticated' || 'permission-denied' || 'unauthorized' => 'Upload blocked by auth permissions. Please sign out and sign in again.',
+      'unauthenticated' || 'permission-denied' || 'unauthorized' =>
+        'Upload blocked by auth permissions. Please sign out and sign in again.',
       'quota-exceeded' => 'Storage quota exceeded. Please try again later.',
       'cancelled' => 'Upload was cancelled.',
-      'retry-limit-exceeded' => 'Upload timed out. Check your network and retry.',
+      'retry-limit-exceeded' =>
+        'Upload timed out. Check your network and retry.',
       'object-not-found' => 'Storage path missing. Please retry.',
       _ => '$kind upload failed (${e.code}): ${e.message ?? 'unknown error'}',
     };
@@ -223,9 +228,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     final uri = Uri.tryParse(url);
     if (uri == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid intro video URL.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invalid intro video URL.')));
       return;
     }
 
@@ -241,17 +246,24 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   /// Target dimensions: 1200x525 (16:7 ratio) for optimal quality vs file size.
   Uint8List _resizeCoverPhoto(Uint8List bytes) {
     try {
-      developer.log('Starting cover photo resize. Original size: ${bytes.lengthInBytes} bytes', 
-        name: 'ProfileUpload');
-      
+      developer.log(
+        'Starting cover photo resize. Original size: ${bytes.lengthInBytes} bytes',
+        name: 'ProfileUpload',
+      );
+
       final image = img.decodeImage(bytes);
       if (image == null) {
-        developer.log('Failed to decode image, returning original', name: 'ProfileUpload');
+        developer.log(
+          'Failed to decode image, returning original',
+          name: 'ProfileUpload',
+        );
         return bytes;
       }
 
-      developer.log('Image decoded. Dimensions: ${image.width}x${image.height}', 
-        name: 'ProfileUpload');
+      developer.log(
+        'Image decoded. Dimensions: ${image.width}x${image.height}',
+        name: 'ProfileUpload',
+      );
 
       final targetAspect = 16 / 7;
       final currentAspect = image.width / image.height;
@@ -275,8 +287,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
         cropY = ((image.height - cropHeight) / 2).toInt();
       }
 
-      developer.log('Crop: $cropWidth x $cropHeight at ($cropX, $cropY)', 
-        name: 'ProfileUpload');
+      developer.log(
+        'Crop: $cropWidth x $cropHeight at ($cropX, $cropY)',
+        name: 'ProfileUpload',
+      );
 
       // Crop to 16:7 ratio
       final cropped = img.copyCrop(
@@ -288,16 +302,27 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       );
 
       // Resize to target dimensions (1200x525)
-      final resized = img.copyResize(cropped, width: 1200, height: 525, interpolation: img.Interpolation.linear);
+      final resized = img.copyResize(
+        cropped,
+        width: 1200,
+        height: 525,
+        interpolation: img.Interpolation.linear,
+      );
 
       // Encode as JPEG with quality 85 for smaller file size
       final encoded = Uint8List.fromList(img.encodeJpg(resized, quality: 85));
-      developer.log('Resize complete. New size: ${encoded.lengthInBytes} bytes', 
-        name: 'ProfileUpload');
+      developer.log(
+        'Resize complete. New size: ${encoded.lengthInBytes} bytes',
+        name: 'ProfileUpload',
+      );
       return encoded;
     } catch (e, st) {
-      developer.log('Error resizing cover photo: $e', 
-        name: 'ProfileUpload', error: e, stackTrace: st);
+      developer.log(
+        'Error resizing cover photo: $e',
+        name: 'ProfileUpload',
+        error: e,
+        stackTrace: st,
+      );
       return bytes; // Return original if resize fails
     }
   }
@@ -331,7 +356,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       }
     } on FirebaseException catch (e) {
       final code = e.code.toLowerCase();
-      final shouldRetry = code == 'unauthenticated' || code == 'permission-denied' || code == 'unauthorized';
+      final shouldRetry =
+          code == 'unauthenticated' ||
+          code == 'permission-denied' ||
+          code == 'unauthorized';
       if (!shouldRetry) rethrow;
       await FirebaseAuth.instance.currentUser?.getIdToken(true);
       if (kIsWeb && isImage) {
@@ -409,20 +437,31 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     if (userId == null || userId.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your session expired. Please sign in again to upload.')),
+        const SnackBar(
+          content: Text(
+            'Your session expired. Please sign in again to upload.',
+          ),
+        ),
       );
       return;
     }
 
     try {
       final picker = ImagePicker();
-      final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 88);
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 88,
+      );
       if (file == null) return;
-      final bytes = await file.readAsBytes().timeout(const Duration(seconds: 20));
+      final bytes = await file.readAsBytes().timeout(
+        const Duration(seconds: 20),
+      );
       if (bytes.lengthInBytes > _maxPhotoBytes) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Photo is too large. Choose one under 20MB.')),
+          const SnackBar(
+            content: Text('Photo is too large. Choose one under 20MB.'),
+          ),
         );
         return;
       }
@@ -448,7 +487,11 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
         if (uploadBytes.lengthInBytes > inlineLimit) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image is too large for web upload. Please choose a smaller file.')),
+            const SnackBar(
+              content: Text(
+                'Image is too large for web upload. Please choose a smaller file.',
+              ),
+            ),
           );
           return;
         }
@@ -469,7 +512,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       controller.updateDraft(next);
       await controller.updateProfile(next);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successmessage)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successmessage)));
     } on FirebaseException catch (e) {
       developer.log(
         'Firebase upload error',
@@ -495,7 +540,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     } on TimeoutException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo upload timed out. Please try again.')),
+        const SnackBar(
+          content: Text('Photo upload timed out. Please try again.'),
+        ),
       );
     } catch (e) {
       developer.log(
@@ -505,7 +552,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
         stackTrace: StackTrace.current,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
     } finally {
       if (mounted) {
         setState(() => setBusy(false));
@@ -560,21 +609,30 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     if (userId == null || userId.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your session expired. Please sign in again to upload.')),
+        const SnackBar(
+          content: Text(
+            'Your session expired. Please sign in again to upload.',
+          ),
+        ),
       );
       return;
     }
 
     try {
       final picker = ImagePicker();
-      final file = await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 45));
+      final file = await picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(seconds: 45),
+      );
       if (file == null) return;
 
       final bytes = await file.readAsBytes();
       if (bytes.lengthInBytes > _maxVideoBytes) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video is too large. Choose one under 120MB.')),
+          const SnackBar(
+            content: Text('Video is too large. Choose one under 120MB.'),
+          ),
         );
         return;
       }
@@ -592,9 +650,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       final current = ref.read(profileControllerProvider);
       await controller.updateProfile(current.copyWith(introVideoUrl: videoUrl));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Intro video uploaded.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Intro video uploaded.')));
     } on FirebaseException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -602,7 +660,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Video upload failed: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Video upload failed: $e')));
     } finally {
       if (mounted) {
         setState(() => _isUploadingVideo = false);
@@ -620,13 +680,17 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   }
 
   void _addInterestSuggestion(String suggestion) {
-    final interests = _parseList(_interestsController.text).toList(growable: true);
+    final interests = _parseList(
+      _interestsController.text,
+    ).toList(growable: true);
     if (interests.contains(suggestion) || interests.length >= 8) {
       return;
     }
     interests.add(suggestion);
     _interestsController.text = interests.join(', ');
-    _interestsController.selection = TextSelection.collapsed(offset: _interestsController.text.length);
+    _interestsController.selection = TextSelection.collapsed(
+      offset: _interestsController.text.length,
+    );
     setState(() {});
   }
 
@@ -678,7 +742,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     }
     if (_adultModeEnabled && !_adultConsentAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Confirm you are 18+ before enabling adult mode.')),
+        const SnackBar(
+          content: Text('Confirm you are 18+ before enabling adult mode.'),
+        ),
       );
       return;
     }
@@ -734,7 +800,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     if (!mounted) return;
     final state = ref.read(profileControllerProvider);
     if (state.error == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
       context.go('/');
     }
   }
@@ -747,7 +815,11 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     final guidedItems = ProfileCompletion.guidedSetupItems(state);
     final isSetupComplete = requiredItems.isEmpty;
     final profileStrength = ProfileCompletion.completeness(state);
-    final hasPendingUploads = _isUploadingPhoto || _isUploadingCover || _isUploadingGallery || _isUploadingVideo;
+    final hasPendingUploads =
+        _isUploadingPhoto ||
+        _isUploadingCover ||
+        _isUploadingGallery ||
+        _isUploadingVideo;
 
     if (state.isLoading && state.userId == null) {
       return const Center(child: CircularProgressIndicator());
@@ -769,16 +841,23 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                     padding: const EdgeInsets.all(14),
                     margin: const EdgeInsets.only(bottom: 14),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.errorContainer.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.35)),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Finish setup to unlock all pages',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 6),
                         ...requiredItems.map(
@@ -786,7 +865,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Row(
                               children: [
-                                const Icon(Icons.radio_button_unchecked, size: 16),
+                                const Icon(
+                                  Icons.radio_button_unchecked,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 6),
                                 Expanded(child: Text(item)),
                               ],
@@ -822,8 +904,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                     subtitle: 'Everything you have shared.',
                     child: Consumer(
                       builder: (context, ref, _) {
-                        final postsAsync =
-                            ref.watch(userPostsStreamProvider(state.userId!));
+                        final postsAsync = ref.watch(
+                          userPostsStreamProvider(state.userId!),
+                        );
                         return postsAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
@@ -843,10 +926,12 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                                 )
                               : Column(
                                   children: posts
-                                      .map((p) => PostCard(
-                                            post: p,
-                                            currentUserId: state.userId!,
-                                          ))
+                                      .map(
+                                        (p) => PostCard(
+                                          post: p,
+                                          currentUserId: state.userId!,
+                                        ),
+                                      )
                                       .toList(growable: false),
                                 ),
                         );
@@ -863,9 +948,16 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                   child: guidedItems.isEmpty
                       ? Row(
                           children: [
-                            Icon(Icons.verified_rounded, color: Theme.of(context).colorScheme.primary),
+                            Icon(
+                              Icons.verified_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                             const SizedBox(width: 8),
-                            const Expanded(child: Text('Profile basics complete. Great start.')),
+                            const Expanded(
+                              child: Text(
+                                'Profile basics complete. Great start.',
+                              ),
+                            ),
                           ],
                         )
                       : Column(
@@ -875,7 +967,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                                 (item) => ListTile(
                                   contentPadding: EdgeInsets.zero,
                                   dense: true,
-                                  leading: const Icon(Icons.radio_button_unchecked, size: 18),
+                                  leading: const Icon(
+                                    Icons.radio_button_unchecked,
+                                    size: 18,
+                                  ),
                                   title: Text(item),
                                 ),
                               )
@@ -890,8 +985,12 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                     children: [
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(labelText: 'Display name'),
-                        validator: (value) => (value ?? '').trim().length < 2 ? 'Enter at least 2 characters' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Display name',
+                        ),
+                        validator: (value) => (value ?? '').trim().length < 2
+                            ? 'Enter at least 2 characters'
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -902,7 +1001,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _aboutMeController,
-                        decoration: const InputDecoration(labelText: 'About me'),
+                        decoration: const InputDecoration(
+                          labelText: 'About me',
+                        ),
                         maxLines: 4,
                       ),
                       const SizedBox(height: 12),
@@ -912,18 +1013,28 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             child: TextFormField(
                               controller: _ageController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Age'),
+                              decoration: const InputDecoration(
+                                labelText: 'Age',
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: _selectedGender,
-                              decoration: const InputDecoration(labelText: 'Gender'),
+                              decoration: const InputDecoration(
+                                labelText: 'Gender',
+                              ),
                               items: _genderOptions
-                                  .map((value) => DropdownMenuItem<String>(value: value, child: Text(value)))
+                                  .map(
+                                    (value) => DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    ),
+                                  )
                                   .toList(growable: false),
-                              onChanged: (value) => setState(() => _selectedGender = value),
+                              onChanged: (value) =>
+                                  setState(() => _selectedGender = value),
                             ),
                           ),
                         ],
@@ -931,16 +1042,26 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _locationController,
-                        decoration: const InputDecoration(labelText: 'Location'),
+                        decoration: const InputDecoration(
+                          labelText: 'Location',
+                        ),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedRelationshipStatus,
-                        decoration: const InputDecoration(labelText: 'Relationship status'),
+                        decoration: const InputDecoration(
+                          labelText: 'Relationship status',
+                        ),
                         items: _relationshipOptions
-                            .map((value) => DropdownMenuItem<String>(value: value, child: Text(value)))
+                            .map(
+                              (value) => DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
                             .toList(growable: false),
-                        onChanged: (value) => setState(() => _selectedRelationshipStatus = value),
+                        onChanged: (value) =>
+                            setState(() => _selectedRelationshipStatus = value),
                       ),
                     ],
                   ),
@@ -948,7 +1069,8 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                 const SizedBox(height: 18),
                 _SectionCard(
                   title: 'Privacy and cam control',
-                  subtitle: 'Choose what stays public and how camera access should be handled later in live contexts.',
+                  subtitle:
+                      'Choose what stays public and how camera access should be handled later in live contexts.',
                   child: Column(
                     children: [
                       SwitchListTile(
@@ -958,23 +1080,28 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       ),
                       SwitchListTile(
                         value: _showGender,
-                        onChanged: (value) => setState(() => _showGender = value),
+                        onChanged: (value) =>
+                            setState(() => _showGender = value),
                         title: const Text('Show gender'),
                       ),
                       SwitchListTile(
                         value: _showLocation,
-                        onChanged: (value) => setState(() => _showLocation = value),
+                        onChanged: (value) =>
+                            setState(() => _showLocation = value),
                         title: const Text('Show location'),
                       ),
                       SwitchListTile(
                         value: _showRelationshipStatus,
-                        onChanged: (value) => setState(() => _showRelationshipStatus = value),
+                        onChanged: (value) =>
+                            setState(() => _showRelationshipStatus = value),
                         title: const Text('Show relationship status'),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<CamViewPolicy>(
                         initialValue: _selectedCamViewPolicy,
-                        decoration: const InputDecoration(labelText: 'Who can view my cam'),
+                        decoration: const InputDecoration(
+                          labelText: 'Who can view my cam',
+                        ),
                         items: CamViewPolicy.values
                             .map(
                               (value) => DropdownMenuItem<CamViewPolicy>(
@@ -996,11 +1123,15 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                 // ── Appearance ───────────────────────────────────────────
                 _SectionCard(
                   title: 'Appearance',
-                  subtitle: 'Pick a profile theme, custom gradient, and accent colour.',
+                  subtitle:
+                      'Pick a profile theme, custom gradient, and accent colour.',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Theme', style: Theme.of(context).textTheme.labelLarge),
+                      Text(
+                        'Theme',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                       const SizedBox(height: 8),
                       // Visual theme swatches
                       Wrap(
@@ -1009,7 +1140,8 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                         children: _ProfileTheme.all.map((t) {
                           final selected = _selectedThemeId == t.id;
                           return GestureDetector(
-                            onTap: () => setState(() => _selectedThemeId = t.id),
+                            onTap: () =>
+                                setState(() => _selectedThemeId = t.id),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1026,25 +1158,34 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                                     borderRadius: BorderRadius.circular(10),
                                     border: selected
                                         ? Border.all(
-                                            color: Theme.of(context).colorScheme.primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                             width: 2.5,
                                           )
                                         : Border.all(
-                                            color: Colors.white.withValues(alpha: 0.12),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.12,
+                                            ),
                                           ),
                                     boxShadow: selected
                                         ? [
                                             BoxShadow(
-                                              color: t.gradientStart.withValues(alpha: 0.4),
+                                              color: t.gradientStart.withValues(
+                                                alpha: 0.4,
+                                              ),
                                               blurRadius: 8,
-                                            )
+                                            ),
                                           ]
                                         : [],
                                   ),
                                   child: selected
                                       ? const Center(
-                                          child: Icon(Icons.check_rounded,
-                                              color: Colors.white, size: 18),
+                                          child: Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                         )
                                       : null,
                                 ),
@@ -1055,7 +1196,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                                     fontSize: 10,
                                     color: selected
                                         ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                     fontWeight: selected
                                         ? FontWeight.w700
                                         : FontWeight.w400,
@@ -1068,12 +1211,16 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       ),
                       const SizedBox(height: 18),
                       // Accent / font colour
-                      Text('Accent colour', style: Theme.of(context).textTheme.labelLarge),
+                      Text(
+                        'Accent colour',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Used for text highlights on your profile.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _ColorSwatchRow(
@@ -1083,12 +1230,16 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       ),
                       const SizedBox(height: 18),
                       // Custom background gradient
-                      Text('Custom background gradient', style: Theme.of(context).textTheme.labelLarge),
+                      Text(
+                        'Custom background gradient',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Overrides the theme gradient on your profile card.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -1097,12 +1248,16 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Start', style: Theme.of(context).textTheme.bodySmall),
+                                Text(
+                                  'Start',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                                 const SizedBox(height: 4),
                                 _ColorSwatchRow(
                                   selectedHex: _profileBgGradientStart,
                                   onSelected: (hex) => setState(
-                                      () => _profileBgGradientStart = hex),
+                                    () => _profileBgGradientStart = hex,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1112,12 +1267,16 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('End', style: Theme.of(context).textTheme.bodySmall),
+                                Text(
+                                  'End',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                                 const SizedBox(height: 4),
                                 _ColorSwatchRow(
                                   selectedHex: _profileBgGradientEnd,
                                   onSelected: (hex) => setState(
-                                      () => _profileBgGradientEnd = hex),
+                                    () => _profileBgGradientEnd = hex,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1143,9 +1302,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                               child: Text(
                                 'Preview',
                                 style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600),
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -1159,18 +1319,20 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                           icon: const Icon(Icons.clear, size: 14),
                           label: const Text('Clear custom gradient'),
                           style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                // ── Profile Music ──────────────────────────────────────── 
+                // ── Profile Music ────────────────────────────────────────
                 const SizedBox(height: 18),
                 _SectionCard(
                   title: 'Profile music',
-                  subtitle: 'Add a track that plays when people visit your profile — MySpace style.',
+                  subtitle:
+                      'Add a track that plays when people visit your profile — MySpace style.',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1212,30 +1374,45 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                     children: [
                       TextFormField(
                         controller: _interestsController,
-                        decoration: const InputDecoration(labelText: 'Interests', hintText: 'Comma-separated interests'),
+                        decoration: const InputDecoration(
+                          labelText: 'Interests',
+                          hintText: 'Comma-separated interests',
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: _interestSuggestions
-                            .map((suggestion) => ActionChip(label: Text(suggestion), onPressed: () => _addInterestSuggestion(suggestion)))
+                            .map(
+                              (suggestion) => ActionChip(
+                                label: Text(suggestion),
+                                onPressed: () =>
+                                    _addInterestSuggestion(suggestion),
+                              ),
+                            )
                             .toList(growable: false),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _vibeController,
-                        decoration: const InputDecoration(labelText: 'Tonight vibe'),
+                        decoration: const InputDecoration(
+                          labelText: 'Tonight vibe',
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _firstDateController,
-                        decoration: const InputDecoration(labelText: 'First date move'),
+                        decoration: const InputDecoration(
+                          labelText: 'First date move',
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _musicTasteController,
-                        decoration: const InputDecoration(labelText: 'Music taste'),
+                        decoration: const InputDecoration(
+                          labelText: 'Music taste',
+                        ),
                       ),
                     ],
                   ),
@@ -1244,23 +1421,28 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                 // ── Device settings ───────────────────────────────────────
                 _SectionCard(
                   title: 'Devices',
-                  subtitle: 'Choose which camera and microphone to use in live rooms.',
+                  subtitle:
+                      'Choose which camera and microphone to use in live rooms.',
                   child: const DeviceSettingsPanel(),
                 ),
                 const SizedBox(height: 18),
                 _SectionCard(
                   title: 'Adult mode',
-                  subtitle: 'Stored separately and reserved for adult-only contexts. It is not shown on the public profile page.',
+                  subtitle:
+                      'Stored separately and reserved for adult-only contexts. It is not shown on the public profile page.',
                   child: Column(
                     children: [
                       SwitchListTile(
                         value: _adultModeEnabled,
-                        onChanged: (value) => setState(() => _adultModeEnabled = value),
+                        onChanged: (value) =>
+                            setState(() => _adultModeEnabled = value),
                         title: const Text('Enable naughty side'),
                       ),
                       CheckboxListTile(
                         value: _adultConsentAccepted,
-                        onChanged: (value) => setState(() => _adultConsentAccepted = value ?? false),
+                        onChanged: (value) => setState(
+                          () => _adultConsentAccepted = value ?? false,
+                        ),
                         title: const Text('I confirm I am 18+'),
                       ),
                       if (_adultModeEnabled) ...[
@@ -1271,17 +1453,24 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _adultPreferencesController,
-                          decoration: const InputDecoration(labelText: 'Preferences'),
+                          decoration: const InputDecoration(
+                            labelText: 'Preferences',
+                          ),
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _adultBoundariesController,
-                          decoration: const InputDecoration(labelText: 'Boundaries'),
+                          decoration: const InputDecoration(
+                            labelText: 'Boundaries',
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: Text('Looking for', style: Theme.of(context).textTheme.titleSmall),
+                          child: Text(
+                            'Looking for',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -1316,14 +1505,20 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                     leading: const Icon(Icons.play_circle_outline),
                     title: const Text('Intro video ready'),
                     trailing: TextButton(
-                      onPressed: () => _openIntroVideo(state.introVideoUrl!.trim()),
+                      onPressed: () =>
+                          _openIntroVideo(state.introVideoUrl!.trim()),
                       child: const Text('Open'),
                     ),
                   ),
                 ],
                 if (state.error != null) ...[
                   const SizedBox(height: 12),
-                  Text(state.error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  Text(
+                    state.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 18),
                 SizedBox(
@@ -1331,7 +1526,11 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                   child: FilledButton.icon(
                     onPressed: state.isLoading ? null : _saveProfile,
                     icon: state.isLoading
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.save_outlined),
                     label: const Text('Save profile'),
                   ),
@@ -1410,7 +1609,9 @@ class _HeroCard extends StatelessWidget {
         );
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile Picture upload failed. Please try again.')),
+          const SnackBar(
+            content: Text('Profile Picture upload failed. Please try again.'),
+          ),
         );
       }
     }
@@ -1420,7 +1621,11 @@ class _HeroCard extends StatelessWidget {
       side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+      textStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
     );
 
     return Container(
@@ -1433,7 +1638,9 @@ class _HeroCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.28)),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.28),
+        ),
       ),
       child: Column(
         children: [
@@ -1444,12 +1651,15 @@ class _HeroCard extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     child: (state.coverPhotoUrl ?? '').trim().isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: state.coverPhotoUrl!.trim(),
                             fit: BoxFit.cover,
-                            errorWidget: (_, _, _) => const Icon(Icons.landscape_rounded, size: 40),
+                            errorWidget: (_, _, _) =>
+                                const Icon(Icons.landscape_rounded, size: 40),
                           )
                         : const Icon(Icons.landscape_rounded, size: 40),
                   ),
@@ -1476,7 +1686,10 @@ class _HeroCard extends StatelessWidget {
                 right: 12,
                 bottom: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.45),
                     borderRadius: BorderRadius.circular(999),
@@ -1491,16 +1704,19 @@ class _HeroCard extends StatelessWidget {
                           value: profileStrength,
                           strokeWidth: 2.6,
                           backgroundColor: Colors.white.withValues(alpha: 0.28),
-                          valueColor: const AlwaysStoppedAnimation(Colors.white),
+                          valueColor: const AlwaysStoppedAnimation(
+                            Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '${(100 * profileStrength).round()}% ready',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -1511,43 +1727,52 @@ class _HeroCard extends StatelessWidget {
           Transform.translate(
             offset: const Offset(0, -24),
             child: GestureDetector(
-              onTap: isUploadingPhoto ? null : () => safeRunUpload(onUploadAvatar),
+              onTap: isUploadingPhoto
+                  ? null
+                  : () => safeRunUpload(onUploadAvatar),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   CircleAvatar(
                     radius: 42,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     child: isUploadingPhoto
                         ? SizedBox(
                             width: 42,
                             height: 42,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+                              valueColor: AlwaysStoppedAnimation(
+                                Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           )
                         : (state.avatarUrl ?? '').trim().isNotEmpty
-                            ? ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: state.avatarUrl!.trim(),
-                                  width: 84,
-                                  height: 84,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Center(
-                                    child: SizedBox(
-                                      width: 42,
-                                      height: 42,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
-                                      ),
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: state.avatarUrl!.trim(),
+                              width: 84,
+                              height: 84,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Center(
+                                child: SizedBox(
+                                  width: 42,
+                                  height: 42,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
-                                  errorWidget: (_, _, _) => const Icon(Icons.person, size: 32),
                                 ),
-                              )
-                            : const Icon(Icons.person, size: 32),
+                              ),
+                              errorWidget: (_, _, _) =>
+                                  const Icon(Icons.person, size: 32),
+                            ),
+                          )
+                        : const Icon(Icons.person, size: 32),
                   ),
                   Positioned(
                     bottom: 0,
@@ -1567,8 +1792,12 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
           Text(
-            (state.username ?? '').trim().isEmpty ? 'Your profile' : state.username!.trim(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            (state.username ?? '').trim().isEmpty
+                ? 'Your profile'
+                : state.username!.trim(),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1576,13 +1805,23 @@ class _HeroCard extends StatelessWidget {
             runSpacing: 8,
             alignment: WrapAlignment.center,
             children: [
-              if ((state.age?.toString() ?? '').isNotEmpty) _FactChip(icon: Icons.cake_outlined, text: '${state.age}'),
+              if ((state.age?.toString() ?? '').isNotEmpty)
+                _FactChip(icon: Icons.cake_outlined, text: '${state.age}'),
               if ((state.location ?? '').trim().isNotEmpty)
-                _FactChip(icon: Icons.place_outlined, text: state.location!.trim()),
+                _FactChip(
+                  icon: Icons.place_outlined,
+                  text: state.location!.trim(),
+                ),
               if ((state.gender ?? '').trim().isNotEmpty)
-                _FactChip(icon: Icons.person_outline, text: state.gender!.trim()),
+                _FactChip(
+                  icon: Icons.person_outline,
+                  text: state.gender!.trim(),
+                ),
               if ((state.relationshipStatus ?? '').trim().isNotEmpty)
-                _FactChip(icon: Icons.favorite_border, text: state.relationshipStatus!.trim()),
+                _FactChip(
+                  icon: Icons.favorite_border,
+                  text: state.relationshipStatus!.trim(),
+                ),
             ],
           ),
           const SizedBox(height: 6),
@@ -1635,25 +1874,33 @@ class _HeroCard extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               OutlinedButton.icon(
-                onPressed: isUploadingPhoto ? null : () => safeRunUpload(onUploadAvatar),
+                onPressed: isUploadingPhoto
+                    ? null
+                    : () => safeRunUpload(onUploadAvatar),
                 icon: const Icon(Icons.photo_camera_back_outlined, size: 16),
                 label: Text(isUploadingPhoto ? 'Uploading...' : 'Profile Pic'),
                 style: vnUploadBtn,
               ),
               OutlinedButton.icon(
-                onPressed: isUploadingCover ? null : () => safeRunUpload(onUploadCover),
+                onPressed: isUploadingCover
+                    ? null
+                    : () => safeRunUpload(onUploadCover),
                 icon: const Icon(Icons.image_outlined, size: 16),
                 label: Text(isUploadingCover ? 'Uploading...' : 'Cover'),
                 style: vnUploadBtn,
               ),
               OutlinedButton.icon(
-                onPressed: isUploadingGallery ? null : () => safeRunUpload(onUploadGallery),
+                onPressed: isUploadingGallery
+                    ? null
+                    : () => safeRunUpload(onUploadGallery),
                 icon: const Icon(Icons.collections_outlined, size: 16),
                 label: Text(isUploadingGallery ? 'Uploading...' : 'Gallery'),
                 style: vnUploadBtn,
               ),
               OutlinedButton.icon(
-                onPressed: isUploadingVideo ? null : () => safeRunUpload(onUploadVideo),
+                onPressed: isUploadingVideo
+                    ? null
+                    : () => safeRunUpload(onUploadVideo),
                 icon: const Icon(Icons.videocam_outlined, size: 16),
                 label: Text(isUploadingVideo ? 'Uploading...' : 'Intro video'),
                 style: vnUploadBtn,
@@ -1678,9 +1925,14 @@ class _HeroCard extends StatelessWidget {
                         imageUrl: url,
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) => Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           alignment: Alignment.center,
-                          child: const Icon(Icons.broken_image_outlined, size: 18),
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
@@ -1716,7 +1968,11 @@ class _ProfileActionBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         children: [
@@ -1726,11 +1982,15 @@ class _ProfileActionBar extends StatelessWidget {
               children: [
                 Text(
                   'Profile readiness ${(profileStrength * 100).round()}%',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  hasPendingUploads ? 'Uploads in progress. You can still save now.' : 'Keep editing until everything feels true to you.',
+                  hasPendingUploads
+                      ? 'Uploads in progress. You can still save now.'
+                      : 'Keep editing until everything feels true to you.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -1743,9 +2003,16 @@ class _ProfileActionBar extends StatelessWidget {
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D0A0C)),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF0D0A0C),
+                    ),
                   )
-                : const Icon(Icons.publish_outlined, color: Color(0xFF0D0A0C), size: 18),
+                : const Icon(
+                    Icons.publish_outlined,
+                    color: Color(0xFF0D0A0C),
+                    size: 18,
+                  ),
             label: Text(
               isLoading ? 'Saving...' : 'Publish',
               style: const TextStyle(
@@ -1758,7 +2025,9 @@ class _ProfileActionBar extends StatelessWidget {
               backgroundColor: const Color(0xFFD4AF37),
               foregroundColor: const Color(0xFF0D0A0C),
               disabledBackgroundColor: Color(0xFFD4AF37),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
           ),
@@ -1781,14 +2050,21 @@ class _FactChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1416),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.22)),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.22),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: const Color(0xFFD4AF37)),
           const SizedBox(width: 6),
-          Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFFF7EDE2))),
+          Text(
+            text,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFFF7EDE2)),
+          ),
         ],
       ),
     );
@@ -1796,7 +2072,11 @@ class _FactChip extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.subtitle, required this.child});
+  const _SectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   final String title;
   final String subtitle;
@@ -1810,12 +2090,20 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1416),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.16)),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.16),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFFD4AF37))),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFD4AF37),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 12),
@@ -1839,13 +2127,26 @@ class _StatTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1416),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.20)),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.20),
+        ),
       ),
       child: Column(
         children: [
-          Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFFD4AF37))),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFD4AF37),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFFAD9585))),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFFAD9585)),
+          ),
         ],
       ),
     );
@@ -1871,45 +2172,53 @@ class _ProfileTheme {
 
   static const all = <_ProfileTheme>[
     _ProfileTheme(
-        id: 'midnight',
-        label: 'Midnight',
-        gradientStart: Color(0xFF1A1A2E),
-        gradientEnd: Color(0xFF16213E)),
+      id: 'midnight',
+      label: 'Midnight',
+      gradientStart: Color(0xFF1A1A2E),
+      gradientEnd: Color(0xFF16213E),
+    ),
     _ProfileTheme(
-        id: 'sunset',
-        label: 'Sunset',
-        gradientStart: Color(0xFFFF6B6B),
-        gradientEnd: Color(0xFFFFE66D)),
+      id: 'sunset',
+      label: 'Sunset',
+      gradientStart: Color(0xFFFF6B6B),
+      gradientEnd: Color(0xFFFFE66D),
+    ),
     _ProfileTheme(
-        id: 'emerald',
-        label: 'Emerald',
-        gradientStart: Color(0xFF134E5E),
-        gradientEnd: Color(0xFF71B280)),
+      id: 'emerald',
+      label: 'Emerald',
+      gradientStart: Color(0xFF134E5E),
+      gradientEnd: Color(0xFF71B280),
+    ),
     _ProfileTheme(
-        id: 'neon',
-        label: 'Neon',
-        gradientStart: Color(0xFF0F0C29),
-        gradientEnd: Color(0xFF302B63)),
+      id: 'neon',
+      label: 'Neon',
+      gradientStart: Color(0xFF0F0C29),
+      gradientEnd: Color(0xFF302B63),
+    ),
     _ProfileTheme(
-        id: 'rose',
-        label: 'Rose',
-        gradientStart: Color(0xFF833AB4),
-        gradientEnd: Color(0xFFFD1D1D)),
+      id: 'rose',
+      label: 'Rose',
+      gradientStart: Color(0xFF833AB4),
+      gradientEnd: Color(0xFFFD1D1D),
+    ),
     _ProfileTheme(
-        id: 'ocean',
-        label: 'Ocean',
-        gradientStart: Color(0xFF1A6B8A),
-        gradientEnd: Color(0xFF00C6FF)),
+      id: 'ocean',
+      label: 'Ocean',
+      gradientStart: Color(0xFF1A6B8A),
+      gradientEnd: Color(0xFF00C6FF),
+    ),
     _ProfileTheme(
-        id: 'gold',
-        label: 'Gold',
-        gradientStart: Color(0xFF7B4F00),
-        gradientEnd: Color(0xFFFFD700)),
+      id: 'gold',
+      label: 'Gold',
+      gradientStart: Color(0xFF7B4F00),
+      gradientEnd: Color(0xFFFFD700),
+    ),
     _ProfileTheme(
-        id: 'noir',
-        label: 'Noir',
-        gradientStart: Color(0xFF0D0D0D),
-        gradientEnd: Color(0xFF2C2C2C)),
+      id: 'noir',
+      label: 'Noir',
+      gradientStart: Color(0xFF0D0D0D),
+      gradientEnd: Color(0xFF2C2C2C),
+    ),
   ];
 }
 
@@ -1918,10 +2227,7 @@ class _ProfileTheme {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ColorSwatchRow extends StatelessWidget {
-  const _ColorSwatchRow({
-    required this.selectedHex,
-    required this.onSelected,
-  });
+  const _ColorSwatchRow({required this.selectedHex, required this.onSelected});
 
   final String? selectedHex;
   final ValueChanged<String?> onSelected;
@@ -1966,7 +2272,8 @@ class _ColorSwatchRow extends StatelessWidget {
             ),
             child: selectedHex == null
                 ? const Center(
-                    child: Icon(Icons.close, size: 14, color: Colors.white54))
+                    child: Icon(Icons.close, size: 14, color: Colors.white54),
+                  )
                 : null,
           ),
         ),
@@ -1989,12 +2296,18 @@ class _ColorSwatchRow extends StatelessWidget {
                   width: isSelected ? 2.5 : 1,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6)]
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ]
                     : [],
               ),
               child: isSelected
                   ? const Center(
-                      child: Icon(Icons.check, size: 14, color: Colors.white))
+                      child: Icon(Icons.check, size: 14, color: Colors.white),
+                    )
                   : null,
             ),
           );

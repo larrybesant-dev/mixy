@@ -110,10 +110,7 @@ class RoomInspectorPanel extends ConsumerWidget {
                     data: (s) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _KV(
-                          'title',
-                          s.title.isEmpty ? '(empty)' : s.title,
-                        ),
+                        _KV('title', s.title.isEmpty ? '(empty)' : s.title),
                         _KV('message', '${s.message.length}'),
                         _KV('participants', '${s.participants.length}'),
                         _KV('typing', '${s.typingUsers.length}'),
@@ -130,45 +127,41 @@ class RoomInspectorPanel extends ConsumerWidget {
             const SizedBox(height: 4),
 
             // ── Last Diff ────────────────────────────────────────────────────
-            const _SectionHeader(
-              label: 'LAST DIFF',
-              color: Color(0xFFCE93D8),
-            ),
-            Builder(builder: (context) {
-              final diff = RoomContractGuard.lastDiff;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _KV(
-                    'summary',
-                    diff.summary,
-                    valueColor: diff.hasChanges
-                        ? const Color(0xFFCE93D8)
-                        : null,
-                  ),
-                  _KV(
-                    'msg\u0394',
-                    _deltaStr(diff.messageCountDelta),
-                    valueColor: _deltaColor(diff.messageCountDelta),
-                  ),
-                  _KV(
-                    'part\u0394',
-                    _deltaStr(diff.participantCountDelta),
-                    valueColor: _deltaColor(diff.participantCountDelta),
-                  ),
-                  _KV(
-                    'typ\u0394',
-                    _deltaStr(diff.typingCountDelta),
-                    valueColor: _deltaColor(diff.typingCountDelta),
-                  ),
-                  if (diff.titleChanged)
-                    const _Pill(
-                      'title changed',
-                      color: Color(0xFFCE93D8),
+            const _SectionHeader(label: 'LAST DIFF', color: Color(0xFFCE93D8)),
+            Builder(
+              builder: (context) {
+                final diff = RoomContractGuard.lastDiff;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _KV(
+                      'summary',
+                      diff.summary,
+                      valueColor: diff.hasChanges
+                          ? const Color(0xFFCE93D8)
+                          : null,
                     ),
-                ],
-              );
-            }),
+                    _KV(
+                      'msg\u0394',
+                      _deltaStr(diff.messageCountDelta),
+                      valueColor: _deltaColor(diff.messageCountDelta),
+                    ),
+                    _KV(
+                      'part\u0394',
+                      _deltaStr(diff.participantCountDelta),
+                      valueColor: _deltaColor(diff.participantCountDelta),
+                    ),
+                    _KV(
+                      'typ\u0394',
+                      _deltaStr(diff.typingCountDelta),
+                      valueColor: _deltaColor(diff.typingCountDelta),
+                    ),
+                    if (diff.titleChanged)
+                      const _Pill('title changed', color: Color(0xFFCE93D8)),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 8),
 
             // ── Policy ──────────────────────────────────────────────────────
@@ -338,8 +331,8 @@ class RoomInspectorPanel extends ConsumerWidget {
 
   static Color _deltaColor(int delta) {
     if (delta > 0) return const Color(0xFFA5D6A7); // green
-    if (delta < 0) return Colors.orangeAccent;     // orange
-    return const Color(0xFF78909C);                 // grey
+    if (delta < 0) return Colors.orangeAccent; // orange
+    return const Color(0xFF78909C); // grey
   }
 
   static String _fmtTs(dynamic value) {

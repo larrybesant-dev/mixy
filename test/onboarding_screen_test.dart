@@ -14,10 +14,7 @@ Widget _buildApp() {
   final router = GoRouter(
     initialLocation: '/onboarding',
     routes: [
-      GoRoute(
-        path: '/onboarding',
-        builder: (_, _) => const OnboardingScreen(),
-      ),
+      GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(
         path: '/legal/terms',
         builder: (_, _) => const Scaffold(body: Text('Terms')),
@@ -33,9 +30,7 @@ Widget _buildApp() {
     ],
   );
 
-  return ProviderScope(
-    child: MaterialApp.router(routerConfig: router),
-  );
+  return ProviderScope(child: MaterialApp.router(routerConfig: router));
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +60,10 @@ void main() {
       await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Meet people who match your energy fast.'), findsOneWidget);
+      expect(
+        find.text('Meet people who match your energy fast.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('advances through all pages to final page', (tester) async {
@@ -100,11 +98,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Checkbox), findsOneWidget);
-      expect(find.text('I agree to the Terms of Service and Privacy Policy.'), findsOneWidget);
+      expect(
+        find.text('I agree to the Terms of Service and Privacy Policy.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('ENTER MIXVY is disabled until legal checkbox is ticked',
-        (tester) async {
+    testWidgets('ENTER MIXVY is disabled until legal checkbox is ticked', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
@@ -117,25 +119,31 @@ void main() {
       await tester.pumpAndSettle();
 
       InkWell ctaInkWell() => tester.widget<InkWell>(
-            find
-                .ancestor(
-                  of: find.text('ENTER MIXVY'),
-                  matching: find.byType(InkWell),
-                )
-                .first,
-          );
+        find
+            .ancestor(
+              of: find.text('ENTER MIXVY'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
 
-      expect(ctaInkWell().onTap, isNull,
-          reason: 'CTA should be disabled before legal accepted');
+      expect(
+        ctaInkWell().onTap,
+        isNull,
+        reason: 'CTA should be disabled before legal accepted',
+      );
 
       // Tick the legal checkbox
-        await tester.ensureVisible(find.byType(Checkbox));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(Checkbox), warnIfMissed: false);
-        await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Checkbox), warnIfMissed: false);
+      await tester.pumpAndSettle();
 
-      expect(ctaInkWell().onTap, isNotNull,
-          reason: 'CTA should be enabled after legal accepted');
+      expect(
+        ctaInkWell().onTap,
+        isNotNull,
+        reason: 'CTA should be enabled after legal accepted',
+      );
     });
 
     testWidgets('Terms link is tappable on final page', (tester) async {

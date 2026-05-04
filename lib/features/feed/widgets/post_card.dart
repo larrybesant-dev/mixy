@@ -10,11 +10,7 @@ import '../providers/feed_providers.dart';
 /// A feed post card with author info, like button, and comment count.
 /// [currentUserId] is required for optimistic like toggling.
 class PostCard extends ConsumerStatefulWidget {
-  const PostCard({
-    super.key,
-    required this.post,
-    required this.currentUserId,
-  });
+  const PostCard({super.key, required this.post, required this.currentUserId});
 
   final PostModel post;
   final String currentUserId;
@@ -30,7 +26,9 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (_toggling) return;
     setState(() => _toggling = true);
     try {
-      await ref.read(feedRepositoryProvider).toggleLike(
+      await ref
+          .read(feedRepositoryProvider)
+          .toggleLike(
             widget.post.id,
             widget.currentUserId,
             widget.post.isLikedBy(widget.currentUserId),
@@ -51,7 +49,9 @@ class _PostCardState extends ConsumerState<PostCard> {
     final post = widget.post;
     final liked = post.isLikedBy(widget.currentUserId);
     final authorInitial =
-        (post.authorName?.trim().isNotEmpty == true ? post.authorName! : post.userId)[0]
+        (post.authorName?.trim().isNotEmpty == true
+                ? post.authorName!
+                : post.userId)[0]
             .toUpperCase();
 
     return Card(
@@ -86,10 +86,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                       ),
                       Text(
                         _formatTime(post.createdAt),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: Colors.grey),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -134,9 +133,16 @@ class _PostCardState extends ConsumerState<PostCard> {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.play_circle_fill, size: 48, color: Colors.white70),
+                      Icon(
+                        Icons.play_circle_fill,
+                        size: 48,
+                        color: Colors.white70,
+                      ),
                       SizedBox(height: 8),
-                      Text('Watch Video', style: TextStyle(color: Colors.white)),
+                      Text(
+                        'Watch Video',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ],
                   ),
                 ),
@@ -173,12 +179,18 @@ class _PostCardState extends ConsumerState<PostCard> {
                   onTap: () => context.push('/post/${post.id}/comments'),
                   child: Row(
                     children: [
-                      const Icon(Icons.chat_bubble_outline,
-                          size: 20, color: Colors.grey),
+                      const Icon(
+                        Icons.chat_bubble_outline,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${post.commentCount}',
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -186,7 +198,11 @@ class _PostCardState extends ConsumerState<PostCard> {
                 const Spacer(),
                 // Share button
                 IconButton(
-                  icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
+                  icon: const Icon(
+                    Icons.share_outlined,
+                    size: 20,
+                    color: Colors.grey,
+                  ),
                   onPressed: () {
                     // Simple share logic using existing metadata
                     ScaffoldMessenger.of(context).showSnackBar(

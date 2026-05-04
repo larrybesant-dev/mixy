@@ -44,7 +44,10 @@ void main() {
 
         expect(requests.docs, hasLength(2));
         expect(statuses.where((status) => status == 'pending'), hasLength(1));
-        expect(statuses.where((status) => status == 'superseded'), hasLength(1));
+        expect(
+          statuses.where((status) => status == 'superseded'),
+          hasLength(1),
+        );
         expect(notifications.docs, hasLength(2));
         expect(
           notifications.docs.last.data()['content'],

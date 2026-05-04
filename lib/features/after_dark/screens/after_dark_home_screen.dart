@@ -11,24 +11,24 @@ import '../theme/after_dark_theme.dart';
 import '../widgets/after_dark_live_room_card.dart';
 
 // ── Derived adult rooms view (no direct Firestore access in UI layer) ───────
-final _liveAdultRoomsProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>(
-  (ref) {
-    return ref.watch(roomsStreamProvider).whenData((rooms) {
-      final filtered = rooms
-          .where((room) => room.isLive && room.isAdult)
-          .toList(growable: false)
-        ..sort((a, b) {
-          final aTs = a.createdAt?.seconds ?? 0;
-          final bTs = b.createdAt?.seconds ?? 0;
-          final byCreatedAt = bTs.compareTo(aTs);
-          if (byCreatedAt != 0) return byCreatedAt;
-          return a.id.compareTo(b.id);
-        });
+final _liveAdultRoomsProvider =
+    Provider.autoDispose<AsyncValue<List<RoomModel>>>((ref) {
+      return ref.watch(roomsStreamProvider).whenData((rooms) {
+        final filtered =
+            rooms
+                .where((room) => room.isLive && room.isAdult)
+                .toList(growable: false)
+              ..sort((a, b) {
+                final aTs = a.createdAt?.seconds ?? 0;
+                final bTs = b.createdAt?.seconds ?? 0;
+                final byCreatedAt = bTs.compareTo(aTs);
+                if (byCreatedAt != 0) return byCreatedAt;
+                return a.id.compareTo(b.id);
+              });
 
-      return filtered.take(20).toList(growable: false);
+        return filtered.take(20).toList(growable: false);
+      });
     });
-  },
-);
 
 /// After Dark home screen — moody, crimson-themed live feed.
 class AfterDarkHomeScreen extends ConsumerWidget {
@@ -44,9 +44,7 @@ class AfterDarkHomeScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           // ── Hero banner ───────────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: _HeroBanner(),
-          ),
+          SliverToBoxAdapter(child: _HeroBanner()),
 
           // ── Quick actions ─────────────────────────────────────────────────
           SliverToBoxAdapter(
@@ -62,9 +60,7 @@ class AfterDarkHomeScreen extends ConsumerWidget {
           ),
 
           // ── Live Lounges section header ───────────────────────────────────
-          const SliverToBoxAdapter(
-            child: SizedBox.shrink(),
-          ),
+          const SliverToBoxAdapter(child: SizedBox.shrink()),
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -98,8 +94,10 @@ class AfterDarkHomeScreen extends ConsumerWidget {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text('Unable to load lounges.',
-                      style: TextStyle(color: EmberDark.onSurfaceVariant)),
+                  child: Text(
+                    'Unable to load lounges.',
+                    style: TextStyle(color: EmberDark.onSurfaceVariant),
+                  ),
                 ),
               ),
             ),
@@ -113,8 +111,8 @@ class AfterDarkHomeScreen extends ConsumerWidget {
                   final crossAxisCount = width >= 1100
                       ? 4
                       : width >= 760
-                          ? 3
-                          : 2;
+                      ? 3
+                      : 2;
                   return SliverPadding(
                     padding: EdgeInsets.symmetric(
                       horizontal: context.pageHorizontalPadding,
@@ -176,8 +174,8 @@ class _AfterDarkRoomGridSkeleton extends StatelessWidget {
           final crossAxisCount = width >= 1100
               ? 4
               : width >= 760
-                  ? 3
-                  : 2;
+              ? 3
+              : 2;
           return SliverGrid(
             delegate: SliverChildBuilderDelegate(
               (context, index) => DecoratedBox(
@@ -206,7 +204,9 @@ class _AfterDarkRoomGridSkeleton extends StatelessWidget {
                         height: 12,
                         width: 96,
                         decoration: BoxDecoration(
-                          color: EmberDark.surfaceHighest.withValues(alpha: 0.45),
+                          color: EmberDark.surfaceHighest.withValues(
+                            alpha: 0.45,
+                          ),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -217,7 +217,9 @@ class _AfterDarkRoomGridSkeleton extends StatelessWidget {
                         height: 10,
                         width: 72,
                         decoration: BoxDecoration(
-                          color: EmberDark.surfaceHighest.withValues(alpha: 0.32),
+                          color: EmberDark.surfaceHighest.withValues(
+                            alpha: 0.32,
+                          ),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -246,72 +248,77 @@ class _HeroBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return _AfterDarkReveal(
       child: Container(
-      height: 200,
-      decoration: const BoxDecoration(gradient: EmberDark.velvetGradient),
-      child: Stack(
-        children: [
-          // Glow overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.3),
-                  radius: 0.8,
-                  colors: [
-                    EmberDark.secondary.withValues(alpha: 0.12),
-                    Colors.transparent,
-                  ],
+        height: 200,
+        decoration: const BoxDecoration(gradient: EmberDark.velvetGradient),
+        child: Stack(
+          children: [
+            // Glow overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.3),
+                    radius: 0.8,
+                    colors: [
+                      EmberDark.secondary.withValues(alpha: 0.12),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 40, 24, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: EmberDark.secondary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: EmberDark.secondary.withValues(alpha: 0.18)),
-                  ),
-                  child: Text(
-                    '18+ VERIFIED ONLY',
-                    style: GoogleFonts.raleway(
-                      color: EmberDark.secondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.6,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: EmberDark.secondary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: EmberDark.secondary.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: Text(
+                      '18+ VERIFIED ONLY',
+                      style: GoogleFonts.raleway(
+                        color: EmberDark.secondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.6,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Velvet lounges for chemistry, flirtation, and late-night energy.',
-                  style: GoogleFonts.playfairDisplay(
-                    color: EmberDark.onSurface,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    height: 1.05,
+                  const SizedBox(height: 10),
+                  Text(
+                    'Velvet lounges for chemistry, flirtation, and late-night energy.',
+                    style: GoogleFonts.playfairDisplay(
+                      color: EmberDark.onSurface,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      height: 1.05,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Curated for adults who want a moodier, more intimate side of MixVy.',
-                  style: GoogleFonts.raleway(
-                    color: EmberDark.onSurface.withValues(alpha: 0.72),
-                    fontSize: 13,
-                    height: 1.4,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Curated for adults who want a moodier, more intimate side of MixVy.',
+                    style: GoogleFonts.raleway(
+                      color: EmberDark.onSurface.withValues(alpha: 0.72),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -325,7 +332,11 @@ class _QuickActions extends StatelessWidget {
       (Icons.nightlife_rounded, 'Lounges', '/after-dark/lounges'),
       (Icons.favorite_outline_rounded, 'Speed Date', '/speed-dating'),
       (Icons.person_add_alt_1_outlined, 'My Profile', '/after-dark/profile'),
-      (Icons.add_circle_outline_rounded, 'Go Live', '/after-dark/create-lounge'),
+      (
+        Icons.add_circle_outline_rounded,
+        'Go Live',
+        '/after-dark/create-lounge',
+      ),
     ];
 
     return SizedBox(
@@ -341,29 +352,30 @@ class _QuickActions extends StatelessWidget {
             child: GestureDetector(
               onTap: () => context.go(route),
               child: Container(
-              width: 80,
-              decoration: BoxDecoration(
-                color: EmberDark.surfaceHigh,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: EmberDark.outlineVariant.withValues(alpha: 0.5)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: EmberDark.primary, size: 22),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: GoogleFonts.raleway(
-                      color: EmberDark.onSurfaceVariant,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
+                width: 80,
+                decoration: BoxDecoration(
+                  color: EmberDark.surfaceHigh,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: EmberDark.outlineVariant.withValues(alpha: 0.5),
                   ),
-                ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: EmberDark.primary, size: 22),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style: GoogleFonts.raleway(
+                        color: EmberDark.onSurfaceVariant,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
           );
         },
@@ -383,12 +395,16 @@ class _EmptyLounge extends StatelessWidget {
         color: EmberDark.surfaceHigh,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: EmberDark.outlineVariant.withValues(alpha: 0.5)),
+          color: EmberDark.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         children: [
-          const Icon(Icons.nightlife_outlined,
-              color: EmberDark.onSurfaceVariant, size: 48),
+          const Icon(
+            Icons.nightlife_outlined,
+            color: EmberDark.onSurfaceVariant,
+            size: 48,
+          ),
           const SizedBox(height: 12),
           const Text(
             'The room is quiet right now',
@@ -412,7 +428,8 @@ class _EmptyLounge extends StatelessWidget {
               backgroundColor: EmberDark.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999)),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
           ),
         ],
@@ -428,76 +445,78 @@ class _ComingSoonCard extends StatelessWidget {
     return _AfterDarkReveal(
       delay: 180,
       child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            EmberDark.primaryDim.withValues(alpha: 0.3),
-            EmberDark.surfaceHigh,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              EmberDark.primaryDim.withValues(alpha: 0.3),
+              EmberDark.surfaceHigh,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: EmberDark.primary.withValues(alpha: 0.25)),
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: EmberDark.primary.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: EmberDark.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.lock_outline_rounded,
-                color: EmberDark.secondary, size: 24),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Creator Subscriptions',
-                  style: TextStyle(
-                    color: EmberDark.onSurface,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Private rooms, premium access, and closer connections are coming soon.',
-                  style: TextStyle(
-                    color: EmberDark.onSurfaceVariant,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: EmberDark.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                  color: EmberDark.primary.withValues(alpha: 0.35)),
-            ),
-            child: const Text(
-              'Soon',
-              style: TextStyle(
-                color: EmberDark.primary,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: EmberDark.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: EmberDark.secondary,
+                size: 24,
               ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Creator Subscriptions',
+                    style: TextStyle(
+                      color: EmberDark.onSurface,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Private rooms, premium access, and closer connections are coming soon.',
+                    style: TextStyle(
+                      color: EmberDark.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: EmberDark.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: EmberDark.primary.withValues(alpha: 0.35),
+                ),
+              ),
+              child: const Text(
+                'Soon',
+                style: TextStyle(
+                  color: EmberDark.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

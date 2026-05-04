@@ -54,9 +54,7 @@ class _AdminEntitlementViewerScreenState
       if (!mounted) return;
       setState(() {
         _resolvedUserId = userId;
-        _lookupError = userId == null
-            ? 'No user matched "$rawInput".'
-            : null;
+        _lookupError = userId == null ? 'No user matched "$rawInput".' : null;
       });
     } catch (error) {
       if (!mounted) return;
@@ -83,7 +81,9 @@ class _AdminEntitlementViewerScreenState
     });
 
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('adminSetEntitlement');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'adminSetEntitlement',
+      );
       await callable.call<Map<String, dynamic>>({
         'userId': userId,
         'active': active,
@@ -166,8 +166,10 @@ class _AdminEntitlementViewerScreenState
                   _ResolvedUserPanel(
                     userId: _resolvedUserId!,
                     actionInProgress: _actionInProgress,
-                    onGrantVip: () => _setVipState(userId: _resolvedUserId!, active: true),
-                    onRevokeVip: () => _setVipState(userId: _resolvedUserId!, active: false),
+                    onGrantVip: () =>
+                        _setVipState(userId: _resolvedUserId!, active: true),
+                    onRevokeVip: () =>
+                        _setVipState(userId: _resolvedUserId!, active: false),
                   ),
                 ],
               ],
@@ -316,7 +318,9 @@ class _ResolvedUserPanel extends ConsumerWidget {
             final isActive = vip?['active'] == true;
             final email = (data?['email'] as String?)?.trim();
             final username = (data?['username'] as String?)?.trim();
-            final reason = (vip?['reason'] as String?) ?? (vip?['revokeReason'] as String?);
+            final reason =
+                (vip?['reason'] as String?) ??
+                (vip?['revokeReason'] as String?);
             final source = vip?['source'] as String?;
 
             return Container(
@@ -370,7 +374,9 @@ class _ResolvedUserPanel extends ConsumerWidget {
                     children: [
                       OutlinedButton(
                         onPressed: actionInProgress ? null : onGrantVip,
-                        child: Text(actionInProgress ? 'Working...' : 'Grant VIP'),
+                        child: Text(
+                          actionInProgress ? 'Working...' : 'Grant VIP',
+                        ),
                       ),
                       OutlinedButton(
                         onPressed: actionInProgress ? null : onRevokeVip,
@@ -547,7 +553,8 @@ class _EventTile extends StatelessWidget {
               [
                 if (paymentStatus != null) 'payment=$paymentStatus',
                 if (reason != null && reason.isNotEmpty) 'reason=$reason',
-                if (sessionId != null && sessionId.isNotEmpty) 'session=$sessionId',
+                if (sessionId != null && sessionId.isNotEmpty)
+                  'session=$sessionId',
               ].join(' • '),
               style: GoogleFonts.raleway(
                 color: const Color(0xFFF7EDE2).withValues(alpha: 0.82),

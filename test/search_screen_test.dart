@@ -8,11 +8,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: SearchScreen(),
-        ),
-      ),
+      const ProviderScope(child: MaterialApp(home: SearchScreen())),
     );
 
     await tester.pump();

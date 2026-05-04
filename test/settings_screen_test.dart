@@ -15,11 +15,7 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: SettingsScreen(),
-        ),
-      ),
+      const ProviderScope(child: MaterialApp(home: SettingsScreen())),
     );
 
     await tester.pump();

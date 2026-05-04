@@ -18,6 +18,28 @@ const {
 
 admin.initializeApp();
 
+// firebase-tools may provide FIREBASE_CONFIG without databaseURL in some
+// deploy/analyze contexts. RTDB trigger registration requires this value.
+(() => {
+  try {
+    const rawConfig = process.env.FIREBASE_CONFIG || "{}";
+    const parsedConfig = JSON.parse(rawConfig);
+    const projectId = parsedConfig.projectId || process.env.GCLOUD_PROJECT;
+    if (!parsedConfig.databaseURL && projectId) {
+      parsedConfig.databaseURL =
+        `https://${projectId}-default-rtdb.firebaseio.com`;
+      process.env.FIREBASE_CONFIG = JSON.stringify(parsedConfig);
+    }
+  } catch (error) {
+    logger.warn("Unable to normalize FIREBASE_CONFIG for RTDB triggers", {
+      error: String(error),
+    });
+  }
+})();
+
+const ENABLE_RTDB_PRESENCE_SYNC =
+  String(process.env.ENABLE_RTDB_PRESENCE_SYNC || "").toLowerCase() === "true";
+
 const DEFAULT_ICE_SERVERS = [
   {
     urls: [
@@ -2425,9 +2447,10 @@ exports.cleanupExpiredMessages = onSchedule("every 6 hours", async () => {
 // ── RTDB presence -> Firestore aggregate sync ───────────────────────────────
 // Keeps Firestore `presence/{userId}` truthful using RTDB onDisconnect-driven
 // session state. This is the canonical bridge from transport truth to UI truth.
-exports.syncPresenceFromRtdbSessions = functionsV1.database
-  .ref("/status/{userId}/sessions/{sessionId}")
-  .onWrite(async (change, context) => {
+if (ENABLE_RTDB_PRESENCE_SYNC) {
+  exports.syncPresenceFromRtdbSessions = functionsV1.database
+    .ref("/status/{userId}/sessions/{sessionId}")
+    .onWrite(async (change, context) => {
     const userId = context.params && context.params.userId;
     if (!userId) return;
 
@@ -2491,27 +2514,32 @@ exports.syncPresenceFromRtdbSessions = functionsV1.database
       }
     }
 
-    await presenceRef.set(
-      {
-        isOnline,
-        online: isOnline,
-        status: isOnline ? "online" : "offline",
-        userStatus: isOnline ? "online" : "offline",
-        appState: isOnline ? "foreground" : "detached",
-        inRoom,
-        roomId: inRoom,
-        camOn,
-        micOn,
-        rtdbActiveSessionCount: activeSessionCount,
-        rtdbUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastSeen: latestSeenMs > 0
-          ? admin.firestore.Timestamp.fromMillis(latestSeenMs)
-          : admin.firestore.FieldValue.serverTimestamp(),
-        lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      {merge: true},
-    );
-  });
+      await presenceRef.set(
+        {
+          isOnline,
+          online: isOnline,
+          status: isOnline ? "online" : "offline",
+          userStatus: isOnline ? "online" : "offline",
+          appState: isOnline ? "foreground" : "detached",
+          inRoom,
+          roomId: inRoom,
+          camOn,
+          micOn,
+          rtdbActiveSessionCount: activeSessionCount,
+          rtdbUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastSeen: latestSeenMs > 0
+            ? admin.firestore.Timestamp.fromMillis(latestSeenMs)
+            : admin.firestore.FieldValue.serverTimestamp(),
+          lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true},
+      );
+    });
+} else {
+  logger.warn(
+    "RTDB presence sync is disabled (ENABLE_RTDB_PRESENCE_SYNC != true).",
+  );
+}
 
 // ── Friend-online notification ────────────────────────────────────────────────
 // Triggers whenever a presence document is written.  When ``isOnline`` flips

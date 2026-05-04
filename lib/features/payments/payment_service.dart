@@ -1,3 +1,3 @@
 class PaymentService {
-	Future<void> processPayment(double amount) async {}
+  Future<void> processPayment(double amount) async {}
 }

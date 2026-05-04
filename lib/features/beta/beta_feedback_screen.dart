@@ -43,9 +43,7 @@ class _CheckItem {
   BetaItemStatus status;
   String note;
 
-  _CheckItem(this.label)
-      : status = BetaItemStatus.untested,
-        note = '';
+  _CheckItem(this.label) : status = BetaItemStatus.untested, note = '';
 }
 
 class _Section {
@@ -53,7 +51,7 @@ class _Section {
   final List<_CheckItem> items;
 
   _Section(this.title, List<String> labels)
-      : items = labels.map(_CheckItem.new).toList();
+    : items = labels.map(_CheckItem.new).toList();
 }
 
 // ---------------------------------------------------------------------------
@@ -174,9 +172,9 @@ class _BetaFeedbackScreenState extends ConsumerState<BetaFeedbackScreen> {
         };
       }).toList();
 
-      await FirebaseFunctions.instance
-          .httpsCallable('submitBetaFeedback')
-          .call({'sections': payload});
+      await FirebaseFunctions.instance.httpsCallable('submitBetaFeedback').call(
+        {'sections': payload},
+      );
 
       if (mounted) setState(() => _submitted = true);
     } on FirebaseFunctionsException catch (e) {
@@ -450,7 +448,9 @@ class _StatusButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: active ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: active
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),

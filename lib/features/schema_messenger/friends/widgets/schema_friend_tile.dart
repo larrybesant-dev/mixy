@@ -4,10 +4,7 @@ import '../../../../core/theme.dart';
 import '../models/schema_friend_identity.dart';
 import '../models/schema_friend_presence.dart';
 
-enum FriendRowDensity {
-  dense,
-  compact,
-}
+enum FriendRowDensity { dense, compact }
 
 class SchemaFriendTile extends StatelessWidget {
   const SchemaFriendTile({
@@ -30,7 +27,8 @@ class SchemaFriendTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _parseColor(identity.accentColor) ?? VelvetNoir.primary;
-    final selectionColor = presence.roomId != null && presence.roomId!.isNotEmpty
+    final selectionColor =
+        presence.roomId != null && presence.roomId!.isNotEmpty
         ? VelvetNoir.primary
         : (presence.isOnline ? const Color(0xFF34D399) : accent);
     final avatarRadius = density == FriendRowDensity.dense ? 18.0 : 21.0;
@@ -41,12 +39,15 @@ class SchemaFriendTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         decoration: BoxDecoration(
           color: density == FriendRowDensity.dense
               ? (isSelected
-                  ? VelvetNoir.surfaceHighest.withValues(alpha: 0.92)
-                  : VelvetNoir.surfaceHigh.withValues(alpha: 0.22))
+                    ? VelvetNoir.surfaceHighest.withValues(alpha: 0.92)
+                    : VelvetNoir.surfaceHigh.withValues(alpha: 0.22))
               : VelvetNoir.surfaceHigh.withValues(alpha: 0.34),
           borderRadius: BorderRadius.circular(10),
           border: Border(
@@ -95,9 +96,14 @@ class SchemaFriendTile extends StatelessWidget {
                     width: density == FriendRowDensity.dense ? 10 : 11,
                     height: density == FriendRowDensity.dense ? 10 : 11,
                     decoration: BoxDecoration(
-                      color: presence.isOnline ? const Color(0xFF34D399) : const Color(0xFF71717A),
+                      color: presence.isOnline
+                          ? const Color(0xFF34D399)
+                          : const Color(0xFF71717A),
                       shape: BoxShape.circle,
-                      border: Border.all(color: VelvetNoir.surfaceHigh, width: 1.4),
+                      border: Border.all(
+                        color: VelvetNoir.surfaceHigh,
+                        width: 1.4,
+                      ),
                     ),
                   ),
                 ),
@@ -158,7 +164,11 @@ class SchemaFriendTile extends StatelessWidget {
   }
 
   String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList(growable: false);
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList(growable: false);
     if (parts.isEmpty) return 'U';
     if (parts.length == 1) return parts.first[0].toUpperCase();
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();

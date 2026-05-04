@@ -84,7 +84,8 @@ final class MixvyProviderObserver extends ProviderObserver {
     if (count == _criticalThreshold) {
       ProductionAlertSystem.fireCustomAlert(
         id: 'hot_provider_critical_$name',
-        message: 'HOT PROVIDER [$name]: $count rebuilds in ${_burstWindowSeconds}s',
+        message:
+            'HOT PROVIDER [$name]: $count rebuilds in ${_burstWindowSeconds}s',
         level: AlertLevel.critical,
       );
       debugPrint(
@@ -93,7 +94,8 @@ final class MixvyProviderObserver extends ProviderObserver {
     } else if (count == _warnThreshold) {
       ProductionAlertSystem.fireCustomAlert(
         id: 'hot_provider_warn_$name',
-        message: 'Frequent provider [$name]: $count rebuilds in ${_burstWindowSeconds}s',
+        message:
+            'Frequent provider [$name]: $count rebuilds in ${_burstWindowSeconds}s',
         level: AlertLevel.warning,
       );
       debugPrint(

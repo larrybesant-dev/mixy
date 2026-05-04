@@ -183,7 +183,7 @@ Win32Window::MessageModelHandler(HWND hwnd,
       window_handle_ = nullptr;
       Destroy();
       if (quit_on_close_) {
-        PostQuitMessageModel(0);
+        PostQuitMessage(0);
       }
       return 0;
 

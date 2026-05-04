@@ -55,7 +55,11 @@ class WalletModel {
   factory WalletModel.fromJson(Map<String, dynamic> json) {
     return WalletModel(
       userId: _asString(json['userId']),
-      coinBalance: ((json['balance'] ?? json['coinBalance'] ?? json['userCoinBalance']) as num?)?.toInt() ?? 0,
+      coinBalance:
+          ((json['balance'] ?? json['coinBalance'] ?? json['userCoinBalance'])
+                  as num?)
+              ?.toInt() ??
+          0,
       cashBalance: (json['cashBalance'] as num?)?.toDouble() ?? 0,
       referralEarnings: (json['referralEarnings'] as num?)?.toDouble() ?? 0,
       roomEarnings: (json['roomEarnings'] as num?)?.toDouble() ?? 0,
@@ -112,7 +116,9 @@ class WalletLedgerEntry {
       currency: _asString(json['currency'], fallback: 'usd'),
       status: _asString(json['status'], fallback: 'pending'),
       referenceId: _asNullableString(json['referenceId']),
-      metadata: Map<String, dynamic>.from(json['metadata'] ?? const <String, dynamic>{}),
+      metadata: Map<String, dynamic>.from(
+        json['metadata'] ?? const <String, dynamic>{},
+      ),
       createdAt: _parseDateTime(json['createdAt']),
     );
   }

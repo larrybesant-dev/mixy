@@ -1,0 +1,448 @@
+{
+  "uniqueWritePaths": 73,
+  "totalWrites": 326,
+  "paths": [
+    "(unknown)",
+    "activity_feed/{id}",
+    "blocks/{id}",
+    "blocks/{id}/blocks/{id}",
+    "blocks/{id}/blocks/{id}/reports/{id}",
+    "conversations/{id}",
+    "conversations/{id}/conversations/{id}",
+    "conversations/{id}/ephemeral/{id}",
+    "conversations/{id}/messages/{id}",
+    "conversations/{id}/messages/{id}/reactions/{id}",
+    "events/{id}/posts/{id}",
+    "followers/{id}/follows/{id}/users/{id}/following/{id}",
+    "following/{id}/users/{id}/followers/{id}/follows/{id}",
+    "follows/{id}",
+    "friend_links/{id}",
+    "groups/{id}/groups/{id}",
+    "groups/{id}/groups/{id}/groups/{id}",
+    "groups/{id}/groups/{id}/groups/{id}/posts/{id}",
+    "groups/{id}/groups/{id}/posts/{id}/groups/{id}",
+    "groups/{id}/posts/{id}/groups/{id}",
+    "messages/{id}/reactions/{id}/rooms/{id}/messages/{id}/reactions/{id}/rooms/{id}/messages/{id}/reactions/{id}",
+    "mod_log/{id}/mod_log/{id}",
+    "notifications/{id}",
+    "notifications/{id}/notifications/{id}",
+    "notifications/{id}/notifications/{id}/notifications/{id}",
+    "participants/{id}/mod_log/{id}",
+    "participants/{id}/rooms/{id}/typing/{id}",
+    "posts/{id}",
+    "posts/{id}/comments/{id}",
+    "presence/{id}",
+    "reports/{id}/reports/{id}",
+    "rooms/{id}",
+    "rooms/{id}/buzz_events/{id}",
+    "rooms/{id}/cam_access_requests/{id}",
+    "rooms/{id}/members/{id}",
+    "rooms/{id}/messages/{id}",
+    "rooms/{id}/messages/{id}/reactions/{id}/rooms/{id}/messages/{id}/reactions/{id}",
+    "rooms/{id}/mic_access_requests/{id}",
+    "rooms/{id}/participants/{id}",
+    "rooms/{id}/participants/{id}/rooms/{id}/typing/{id}",
+    "rooms/{id}/policies/{id}",
+    "rooms/{id}/rooms/{id}",
+    "rooms/{id}/rooms/{id}/messages/{id}",
+    "rooms/{id}/rooms/{id}/rooms/{id}",
+    "rooms/{id}/rooms/{id}/rooms/{id}/rooms/{id}",
+    "rooms/{id}/rooms/{id}/rooms/{id}/rooms/{id}/rooms/{id}",
+    "rooms/{id}/rooms/{id}/rooms/{id}/rooms/{id}/rooms/{id}/rooms/{id}",
+    "rooms/{id}/typing/{id}/rooms/{id}",
+    "rooms/{id}/typing/{id}/rooms/{id}/typing/{id}",
+    "rooms/{id}/webrtc_peers/{id}/rooms/{id}/webrtc_calls/{id}",
+    "slots/{id}",
+    "slots/{id}/participants/{id}",
+    "speakers/{id}",
+    "speed_dating_actions/{id}",
+    "speed_dating_matches/{id}/rooms/{id}",
+    "speed_dating_matches/{id}/speed_dating_actions/{id}",
+    "userCamPermissions/{id}",
+    "userCamPermissions/{id}/userCamPermissions/{id}",
+    "userCamPermissions/{id}/userCamPermissions/{id}/userCamPermissions/{id}",
+    "users/{id}",
+    "users/{id}/bookmarks/{id}",
+    "users/{id}/bookmarks/{id}/posts/{id}",
+    "users/{id}/bookmarks/{id}/users/{id}/bookmarks/{id}",
+    "users/{id}/following/{id}",
+    "users/{id}/following/{id}/users/{id}/followers/{id}",
+    "users/{id}/notifications/{id}",
+    "users/{id}/rooms/{id}",
+    "users/{id}/stories/{id}",
+    "users/{id}/stories/{id}/users/{id}/stories/{id}",
+    "users/{id}/users/{id}",
+    "verification/{id}/users/{id}",
+    "verification_requests/{id}",
+    "wallets/{id}/cash_out_requests/{id}/cash_out_requests/{id}"
+  ],
+  "missingLikelyManifest": [
+    "(unknown)",
+    "blocks/{id}",
+    "blocks/{id}/blocks/{id}",
+    "blocks/{id}/blocks/{id}/reports/{id}",
+    "conversations/{id}",
+    "conversations/{id}/conversations/{id}",
+    "conversations/{id}/ephemeral/{id}",
+    "conversations/{id}/messages/{id}",
+    "conversations/{id}/messages/{id}/reactions/{id}",
+    "participants/{id}/mod_log/{id}",
+    "presence/{id}",
+    "reports/{id}/reports/{id}",
+    "speakers/{id}",
+    "speed_dating_actions/{id}",
+    "speed_dating_matches/{id}/speed_dating_actions/{id}",
+    "wallets/{id}/cash_out_requests/{id}/cash_out_requests/{id}"
+  ],
+  "missingDetailed": [
+    {
+      "path": "(unknown)",
+      "samples": [
+        {
+          "file": "lib/services/agora_service.dart",
+          "line": 574,
+          "operation": "add",
+          "collections": [],
+          "inferredPath": "(unknown)"
+        },
+        {
+          "file": "lib/services/agora_service.dart",
+          "line": 599,
+          "operation": "add",
+          "collections": [],
+          "inferredPath": "(unknown)"
+        },
+        {
+          "file": "lib/services/friend_service.dart",
+          "line": 100,
+          "operation": "add",
+          "collections": [],
+          "inferredPath": "(unknown)"
+        },
+        {
+          "file": "lib/services/friend_service.dart",
+          "line": 182,
+          "operation": "add",
+          "collections": [],
+          "inferredPath": "(unknown)"
+        },
+        {
+          "file": "lib/services/friend_service.dart",
+          "line": 314,
+          "operation": "add",
+          "collections": [],
+          "inferredPath": "(unknown)"
+        }
+      ]
+    },
+    {
+      "path": "blocks/{id}",
+      "samples": [
+        {
+          "file": "lib/services/moderation_service.dart",
+          "line": 56,
+          "operation": "set",
+          "collections": [
+            "blocks"
+          ],
+          "inferredPath": "blocks/{id}"
+        }
+      ]
+    },
+    {
+      "path": "blocks/{id}/blocks/{id}",
+      "samples": [
+        {
+          "file": "lib/services/moderation_service.dart",
+          "line": 62,
+          "operation": "delete",
+          "collections": [
+            "blocks",
+            "blocks"
+          ],
+          "inferredPath": "blocks/{id}/blocks/{id}"
+        }
+      ]
+    },
+    {
+      "path": "blocks/{id}/blocks/{id}/reports/{id}",
+      "samples": [
+        {
+          "file": "lib/services/moderation_service.dart",
+          "line": 89,
+          "operation": "set",
+          "collections": [
+            "blocks",
+            "blocks",
+            "reports"
+          ],
+          "inferredPath": "blocks/{id}/blocks/{id}/reports/{id}"
+        }
+      ]
+    },
+    {
+      "path": "conversations/{id}",
+      "samples": [
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 486,
+          "operation": "set",
+          "collections": [
+            "conversations"
+          ],
+          "inferredPath": "conversations/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 515,
+          "operation": "add",
+          "collections": [
+            "conversations"
+          ],
+          "inferredPath": "conversations/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 554,
+          "operation": "set",
+          "collections": [
+            "conversations"
+          ],
+          "inferredPath": "conversations/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 577,
+          "operation": "update",
+          "collections": [
+            "conversations"
+          ],
+          "inferredPath": "conversations/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 615,
+          "operation": "update",
+          "collections": [
+            "conversations"
+          ],
+          "inferredPath": "conversations/{id}"
+        }
+      ]
+    },
+    {
+      "path": "conversations/{id}/conversations/{id}",
+      "samples": [
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 537,
+          "operation": "update",
+          "collections": [
+            "conversations",
+            "conversations"
+          ],
+          "inferredPath": "conversations/{id}/conversations/{id}"
+        }
+      ]
+    },
+    {
+      "path": "conversations/{id}/ephemeral/{id}",
+      "samples": [
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 680,
+          "operation": "set",
+          "collections": [
+            "conversations",
+            "ephemeral"
+          ],
+          "inferredPath": "conversations/{id}/ephemeral/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 686,
+          "operation": "set",
+          "collections": [
+            "conversations",
+            "ephemeral"
+          ],
+          "inferredPath": "conversations/{id}/ephemeral/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 687,
+          "operation": "delete",
+          "collections": [
+            "conversations",
+            "ephemeral"
+          ],
+          "inferredPath": "conversations/{id}/ephemeral/{id}"
+        }
+      ]
+    },
+    {
+      "path": "conversations/{id}/messages/{id}",
+      "samples": [
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 405,
+          "operation": "set",
+          "collections": [
+            "conversations",
+            "messages"
+          ],
+          "inferredPath": "conversations/{id}/messages/{id}"
+        }
+      ]
+    },
+    {
+      "path": "conversations/{id}/messages/{id}/reactions/{id}",
+      "samples": [
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 655,
+          "operation": "delete",
+          "collections": [
+            "conversations",
+            "messages",
+            "reactions"
+          ],
+          "inferredPath": "conversations/{id}/messages/{id}/reactions/{id}"
+        },
+        {
+          "file": "lib/features/messaging/providers/messaging_provider.dart",
+          "line": 657,
+          "operation": "set",
+          "collections": [
+            "conversations",
+            "messages",
+            "reactions"
+          ],
+          "inferredPath": "conversations/{id}/messages/{id}/reactions/{id}"
+        }
+      ]
+    },
+    {
+      "path": "participants/{id}/mod_log/{id}",
+      "samples": [
+        {
+          "file": "lib/features/room/providers/host_controls_provider.dart",
+          "line": 322,
+          "operation": "add",
+          "collections": [
+            "participants",
+            "mod_log"
+          ],
+          "inferredPath": "participants/{id}/mod_log/{id}"
+        }
+      ]
+    },
+    {
+      "path": "presence/{id}",
+      "samples": [
+        {
+          "file": "lib/services/presence_repository.dart",
+          "line": 56,
+          "operation": "add",
+          "collections": [
+            "presence"
+          ],
+          "inferredPath": "presence/{id}"
+        },
+        {
+          "file": "lib/services/presence_repository.dart",
+          "line": 271,
+          "operation": "add",
+          "collections": [
+            "presence"
+          ],
+          "inferredPath": "presence/{id}"
+        }
+      ]
+    },
+    {
+      "path": "reports/{id}/reports/{id}",
+      "samples": [
+        {
+          "file": "lib/services/moderation_service.dart",
+          "line": 117,
+          "operation": "set",
+          "collections": [
+            "reports",
+            "reports"
+          ],
+          "inferredPath": "reports/{id}/reports/{id}"
+        }
+      ]
+    },
+    {
+      "path": "speakers/{id}",
+      "samples": [
+        {
+          "file": "lib/features/room/providers/host_controls_provider.dart",
+          "line": 176,
+          "operation": "set",
+          "collections": [
+            "speakers"
+          ],
+          "inferredPath": "speakers/{id}"
+        }
+      ]
+    },
+    {
+      "path": "speed_dating_actions/{id}",
+      "samples": [
+        {
+          "file": "lib/features/speed_dating/services/speed_dating_service.dart",
+          "line": 112,
+          "operation": "set",
+          "collections": [
+            "speed_dating_actions"
+          ],
+          "inferredPath": "speed_dating_actions/{id}"
+        }
+      ]
+    },
+    {
+      "path": "speed_dating_matches/{id}/speed_dating_actions/{id}",
+      "samples": [
+        {
+          "file": "lib/features/speed_dating/services/speed_dating_service.dart",
+          "line": 68,
+          "operation": "set",
+          "collections": [
+            "speed_dating_matches",
+            "speed_dating_actions"
+          ],
+          "inferredPath": "speed_dating_matches/{id}/speed_dating_actions/{id}"
+        },
+        {
+          "file": "lib/features/speed_dating/services/speed_dating_service.dart",
+          "line": 104,
+          "operation": "set",
+          "collections": [
+            "speed_dating_matches",
+            "speed_dating_actions"
+          ],
+          "inferredPath": "speed_dating_matches/{id}/speed_dating_actions/{id}"
+        }
+      ]
+    },
+    {
+      "path": "wallets/{id}/cash_out_requests/{id}/cash_out_requests/{id}",
+      "samples": [
+        {
+          "file": "lib/services/cash_out_service.dart",
+          "line": 70,
+          "operation": "add",
+          "collections": [
+            "wallets",
+            "cash_out_requests",
+            "cash_out_requests"
+          ],
+          "inferredPath": "wallets/{id}/cash_out_requests/{id}/cash_out_requests/{id}"
+        }
+      ]
+    }
+  ]
+}

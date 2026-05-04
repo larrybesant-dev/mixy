@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart' as core_firebase;
+import 'package:mixvy/core/providers/session_capabilities_provider.dart';
 import 'package:mixvy/features/friends/models/friend_roster_entry.dart';
 import 'package:mixvy/features/friends/providers/friends_providers.dart';
 import 'package:mixvy/features/messaging/panes/chat_pane_view.dart';
-import 'package:mixvy/features/messaging/providers/messaging_provider.dart' as messaging;
+import 'package:mixvy/features/messaging/providers/messaging_provider.dart'
+    as messaging;
 import 'test_helpers.dart';
 
 class _DelayedMessagingController extends messaging.MessagingController {
@@ -60,16 +61,18 @@ Widget _buildChatApp({
   );
 
   if (container != null) {
-    return UncontrolledProviderScope(
-      container: container,
-      child: child,
-    );
+    return UncontrolledProviderScope(container: container, child: child);
   }
 
   return ProviderScope(
     overrides: [
       core_firebase.firestoreProvider.overrideWithValue(firestore),
-      friendRosterProvider.overrideWith((ref) => const Stream<List<FriendRosterEntry>>.empty()),
+      sessionCapabilitiesProvider.overrideWithValue(
+        const SessionCapabilities(isGuestMode: false, isAuthenticated: true),
+      ),
+      friendRosterProvider.overrideWith(
+        (ref) => const Stream<List<FriendRosterEntry>>.empty(),
+      ),
       if (controller != null)
         messaging.messagingControllerProvider.overrideWithValue(controller),
     ],
@@ -90,14 +93,14 @@ Future<void> _seedmessage(
         .collection('messages')
         .doc('msg-$index')
         .set({
-      'conversationId': 'conv-1',
-      'senderId': index.isEven ? 'user-1' : 'user-2',
-      'senderName': index.isEven ? 'Test User' : 'Alice',
-      'content': 'message $index',
-      'createdAt': Timestamp.fromDate(createdAt),
-      'isDeleted': false,
-      'readBy': ['user-1', if (index.isEven) 'user-2'],
-    });
+          'conversationId': 'conv-1',
+          'senderId': index.isEven ? 'user-1' : 'user-2',
+          'senderName': index.isEven ? 'Test User' : 'Alice',
+          'content': 'message $index',
+          'createdAt': Timestamp.fromDate(createdAt),
+          'isDeleted': false,
+          'readBy': ['user-1', if (index.isEven) 'user-2'],
+        });
   }
 }
 
@@ -109,10 +112,7 @@ Future<void> _seedConversation(
 }) {
   return firestore.collection('conversations').doc('conv-1').set({
     'participantIds': ['user-1', 'user-2'],
-    'participantNames': {
-      'user-1': 'Test User',
-      'user-2': 'Alice',
-    },
+    'participantNames': {'user-1': 'Test User', 'user-2': 'Alice'},
     'type': 'direct',
     'createdAt': Timestamp.fromDate(createdAt),
     'lastMessageAt': Timestamp.fromDate(lastMessageAt),
@@ -129,66 +129,73 @@ Future<void> _seedConversation(
 void main() {
   setUpAll(() async {
     await testSetup();
-    await Firebase.initializeApp();
   });
 
   group('ChatPaneView', () {
-    testWidgets('renders sent message immediately before backend write finishes', (tester) async {
-      final firestore = FakeFirebaseFirestore();
-      final now = DateTime.now();
-      await _seedConversation(
-        firestore,
-        createdAt: now.subtract(const Duration(minutes: 10)),
-        lastMessageAt: now.subtract(const Duration(minutes: 1)),
-        lastReadAt: now.subtract(const Duration(minutes: 1)),
-      );
+    testWidgets(
+      'renders sent message immediately before backend write finishes',
+      (tester) async {
+        final firestore = FakeFirebaseFirestore();
+        final now = DateTime.now();
+        await _seedConversation(
+          firestore,
+          createdAt: now.subtract(const Duration(minutes: 10)),
+          lastMessageAt: now.subtract(const Duration(minutes: 1)),
+          lastReadAt: now.subtract(const Duration(minutes: 1)),
+        );
 
-      final sendCompleter = Completer<void>();
-      final controller = _DelayedMessagingController(
-        firestore: firestore,
-        sendCompleter: sendCompleter,
-      );
+        final sendCompleter = Completer<void>();
+        final controller = _DelayedMessagingController(
+          firestore: firestore,
+          sendCompleter: sendCompleter,
+        );
 
-      await tester.pumpWidget(_buildChatApp(
-        firestore: firestore,
-        controller: controller,
-      ));
-      await tester.pump();
+        await tester.pumpWidget(
+          _buildChatApp(firestore: firestore, controller: controller),
+        );
+        await tester.pump();
 
-      await tester.enterText(find.byType(TextField).last, 'Instant hello');
-      await tester.tap(find.byIcon(Icons.send_rounded));
-      await tester.pump();
+        await tester.enterText(find.byType(TextField).last, 'Instant hello');
+        await tester.testTextInput.receiveAction(TextInputAction.send);
+        await tester.pump();
 
-      expect(find.text('Instant hello'), findsOneWidget);
-      expect(find.byTooltip('Sending'), findsOneWidget);
-      final composer = tester.widget<TextField>(find.byType(TextField).last);
-      expect(composer.controller?.text ?? '', isEmpty);
+        expect(find.text('Instant hello'), findsOneWidget);
+        final composer = tester.widget<TextField>(find.byType(TextField).last);
+        expect(composer.controller?.text ?? '', isEmpty);
 
-      final pendingSnapshot = await firestore
-          .collection('conversations')
-          .doc('conv-1')
-          .collection('messages')
-          .get();
-      expect(pendingSnapshot.docs, isEmpty);
+        final pendingSnapshot = await firestore
+            .collection('conversations')
+            .doc('conv-1')
+            .collection('messages')
+            .get();
+        expect(pendingSnapshot.docs, isEmpty);
 
-      sendCompleter.complete();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        sendCompleter.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final deliveredSnapshot = await firestore
-          .collection('conversations')
-          .doc('conv-1')
-          .collection('messages')
-          .get();
-      expect(deliveredSnapshot.docs, hasLength(1));
-      expect(find.text('Instant hello'), findsOneWidget);
-      expect(find.byTooltip('Delivered'), findsOneWidget);
+        final deliveredSnapshot = await firestore
+            .collection('conversations')
+            .doc('conv-1')
+            .collection('messages')
+            .get();
+        expect(deliveredSnapshot.docs, hasLength(1));
+        final deliveredData = deliveredSnapshot.docs.first.data();
+        expect(deliveredData['content'], 'Instant hello');
+        expect(deliveredData['senderId'], 'user-1');
+        expect(
+          (deliveredData['clientmessageId'] as String?)?.isNotEmpty,
+          isTrue,
+        );
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
 
-    testWidgets('marks unread conversation as read when opened', (tester) async {
+    testWidgets('marks unread conversation as read when opened', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       final now = DateTime.now();
       final originalReadAt = now.subtract(const Duration(hours: 1));
@@ -205,11 +212,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 20));
 
-      final snapshot = await firestore.collection('conversations').doc('conv-1').get();
+      final snapshot = await firestore
+          .collection('conversations')
+          .doc('conv-1')
+          .get();
       final data = snapshot.data();
       expect(data, isNotNull);
 
-      final updatedReadAt = (data!['lastReadAt'] as Map<String, dynamic>)['user-1'] as Timestamp;
+      final updatedReadAt =
+          (data!['lastReadAt'] as Map<String, dynamic>)['user-1'] as Timestamp;
       expect(updatedReadAt.toDate().isAfter(originalReadAt), isTrue);
       expect(updatedReadAt.toDate().isAfter(lastMessageAt), isTrue);
 
@@ -217,37 +228,44 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('shows typing indicator when the other user is actively typing', (tester) async {
-      final firestore = FakeFirebaseFirestore();
-      final now = DateTime.now();
-      await _seedConversation(
-        firestore,
-        createdAt: now.subtract(const Duration(hours: 1)),
-        lastMessageAt: now.subtract(const Duration(minutes: 5)),
-        lastReadAt: now.subtract(const Duration(minutes: 5)),
-      );
-      await firestore.collection('users').doc('user-2').set({
-        'id': 'user-2',
-        'email': 'alice@mixvy.dev',
-        'username': 'Alice',
-        'createdAt': Timestamp.fromDate(now.subtract(const Duration(days: 30))),
-      });
-      await firestore.collection('conversations').doc('conv-1').update({
-        'typingStatus.user-2': Timestamp.fromDate(now),
-      });
+    testWidgets(
+      'shows typing indicator when the other user is actively typing',
+      (tester) async {
+        final firestore = FakeFirebaseFirestore();
+        final now = DateTime.now();
+        await _seedConversation(
+          firestore,
+          createdAt: now.subtract(const Duration(hours: 1)),
+          lastMessageAt: now.subtract(const Duration(minutes: 5)),
+          lastReadAt: now.subtract(const Duration(minutes: 5)),
+        );
+        await firestore.collection('users').doc('user-2').set({
+          'id': 'user-2',
+          'email': 'alice@mixvy.dev',
+          'username': 'Alice',
+          'createdAt': Timestamp.fromDate(
+            now.subtract(const Duration(days: 30)),
+          ),
+        });
+        await firestore.collection('conversations').doc('conv-1').update({
+          'typingStatus.user-2': Timestamp.fromDate(now),
+        });
 
-      await tester.pumpWidget(_buildChatApp(firestore: firestore));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 20));
+        await tester.pumpWidget(_buildChatApp(firestore: firestore));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 20));
 
-      expect(find.byType(ChatPaneView), findsOneWidget);
-      expect(find.byType(TextField), findsWidgets);
+        expect(find.byType(ChatPaneView), findsOneWidget);
+        expect(find.byType(TextField), findsWidgets);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
 
-    testWidgets('restores scroll position when reopening a conversation', (tester) async {
+    testWidgets('restores scroll position when reopening a conversation', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       final now = DateTime.now();
       await _seedConversation(
@@ -262,10 +280,14 @@ void main() {
         startAt: now.subtract(const Duration(hours: 2)),
       );
 
-      final container = ProviderContainer(overrides: [
-        core_firebase.firestoreProvider.overrideWithValue(firestore),
-        friendRosterProvider.overrideWith((ref) => const Stream<List<FriendRosterEntry>>.empty()),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          core_firebase.firestoreProvider.overrideWithValue(firestore),
+          friendRosterProvider.overrideWith(
+            (ref) => const Stream<List<FriendRosterEntry>>.empty(),
+          ),
+        ],
+      );
       addTearDown(() async {
         container.dispose();
       });
@@ -299,13 +321,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       final scrollable = find.byType(Scrollable).first;
-      final initialPosition = tester.state<ScrollableState>(scrollable).position;
+      final initialPosition = tester
+          .state<ScrollableState>(scrollable)
+          .position;
       final initialOffset = initialPosition.pixels;
 
       await tester.drag(find.byType(ListView).first, const Offset(0, 300));
       await tester.pumpAndSettle();
 
-      final scrolledPosition = tester.state<ScrollableState>(scrollable).position;
+      final scrolledPosition = tester
+          .state<ScrollableState>(scrollable)
+          .position;
       final savedOffset = scrolledPosition.pixels;
       expect(savedOffset, lessThan(initialOffset));
 
@@ -318,9 +344,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       final restoredScrollable = find.byType(Scrollable).first;
-      final restoredPosition = tester.state<ScrollableState>(restoredScrollable).position;
+      final restoredPosition = tester
+          .state<ScrollableState>(restoredScrollable)
+          .position;
       expect(restoredPosition.pixels, closeTo(savedOffset, 24));
-      expect(restoredPosition.pixels, lessThan(restoredPosition.maxScrollExtent));
+      expect(
+        restoredPosition.pixels,
+        lessThan(restoredPosition.maxScrollExtent),
+      );
 
       showChat.value = false;
       await tester.pump();

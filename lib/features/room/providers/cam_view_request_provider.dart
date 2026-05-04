@@ -83,15 +83,17 @@ class CamViewRequestController {
       return;
     }
 
-    final existingSnapshot = await _col(normalizedRoomId)
-        .where('targetId', isEqualTo: normalizedTargetId)
-        .get();
-    final pendingToSupersede = existingSnapshot.docs.where((doc) {
-      final data = doc.data();
-      final requester = (data['requesterId'] as String? ?? '').trim();
-      final status = (data['status'] as String? ?? '').trim().toLowerCase();
-      return requester == normalizedRequesterId && status == 'pending';
-    }).toList(growable: false);
+    final existingSnapshot = await _col(
+      normalizedRoomId,
+    ).where('targetId', isEqualTo: normalizedTargetId).get();
+    final pendingToSupersede = existingSnapshot.docs
+        .where((doc) {
+          final data = doc.data();
+          final requester = (data['requesterId'] as String? ?? '').trim();
+          final status = (data['status'] as String? ?? '').trim().toLowerCase();
+          return requester == normalizedRequesterId && status == 'pending';
+        })
+        .toList(growable: false);
 
     final requestRef = _col(normalizedRoomId).doc();
     final batch = _db.batch();
@@ -179,11 +181,12 @@ final pendingCamViewRequestsProvider = StreamProvider.autoDispose
           .where('targetId', isEqualTo: params.targetId)
           .snapshots()
           .map((qs) {
-            final requests = qs.docs
-                .map(CamViewRequest.fromDoc)
-                .where((r) => r.isPending)
-                .toList(growable: true)
-              ..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+            final requests =
+                qs.docs
+                    .map(CamViewRequest.fromDoc)
+                    .where((r) => r.isPending)
+                    .toList(growable: true)
+                  ..sort((a, b) => b.sortTime.compareTo(a.sortTime));
             return requests.toList(growable: false);
           });
     });

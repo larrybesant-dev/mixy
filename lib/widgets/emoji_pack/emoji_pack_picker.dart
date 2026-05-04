@@ -50,8 +50,7 @@ class _EmojiPackPickerSheet extends ConsumerStatefulWidget {
       _EmojiPackPickerSheetState();
 }
 
-class _EmojiPackPickerSheetState
-    extends ConsumerState<_EmojiPackPickerSheet>
+class _EmojiPackPickerSheetState extends ConsumerState<_EmojiPackPickerSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _searchController = TextEditingController();
@@ -62,8 +61,7 @@ class _EmojiPackPickerSheetState
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: _categories.length, vsync: this);
+    _tabController = TabController(length: _categories.length, vsync: this);
     _searchController.addListener(() {
       setState(() => _query = _searchController.text);
     });
@@ -78,8 +76,7 @@ class _EmojiPackPickerSheetState
 
   @override
   Widget build(BuildContext context) {
-    final adultEnabled =
-        ref.watch(userProvider)?.adultModeEnabled ?? false;
+    final adultEnabled = ref.watch(userProvider)?.adultModeEnabled ?? false;
     final isSearching = _query.trim().isNotEmpty;
 
     final sheetHeight = MediaQuery.of(context).size.height * 0.58;
@@ -91,9 +88,7 @@ class _EmojiPackPickerSheetState
         decoration: const BoxDecoration(
           color: Color(0xFF110D0F),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(
-            top: BorderSide(color: Color(0x40D4AF37), width: 1),
-          ),
+          border: Border(top: BorderSide(color: Color(0x40D4AF37), width: 1)),
         ),
         child: Column(
           children: [
@@ -164,9 +159,11 @@ class _EmojiPackPickerSheetState
                   ),
                   suffixIcon: isSearching
                       ? IconButton(
-                          icon: const Icon(Icons.close,
-                              size: 16,
-                              color: VelvetNoir.onSurfaceVariant),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: VelvetNoir.onSurfaceVariant,
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             FocusScope.of(context).unfocus();
@@ -176,8 +173,7 @@ class _EmojiPackPickerSheetState
                       : null,
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
             ),
@@ -198,26 +194,30 @@ class _EmojiPackPickerSheetState
       indicatorWeight: 2,
       labelColor: VelvetNoir.primary,
       unselectedLabelColor: VelvetNoir.onSurfaceVariant,
-      labelStyle:
-          const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       dividerColor: Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      tabs: _categories.map((cat) {
-        final locked = cat.isAdultOnly && !adultEnabled;
-        return Tab(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(cat.label),
-              if (locked) ...[
-                const SizedBox(width: 4),
-                const Icon(Icons.lock_outline, size: 12,
-                    color: VelvetNoir.onSurfaceVariant),
-              ],
-            ],
-          ),
-        );
-      }).toList(growable: false),
+      tabs: _categories
+          .map((cat) {
+            final locked = cat.isAdultOnly && !adultEnabled;
+            return Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(cat.label),
+                  if (locked) ...[
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.lock_outline,
+                      size: 12,
+                      color: VelvetNoir.onSurfaceVariant,
+                    ),
+                  ],
+                ],
+              ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -226,13 +226,15 @@ class _EmojiPackPickerSheetState
   Widget _buildTabViews(bool adultEnabled) {
     return TabBarView(
       controller: _tabController,
-      children: _categories.map((cat) {
-        if (cat.isAdultOnly && !adultEnabled) {
-          return _buildAgeLock(cat);
-        }
-        final items = EmojiPackCatalog.byCategory(cat);
-        return _buildGrid(items);
-      }).toList(growable: false),
+      children: _categories
+          .map((cat) {
+            if (cat.isAdultOnly && !adultEnabled) {
+              return _buildAgeLock(cat);
+            }
+            final items = EmojiPackCatalog.byCategory(cat);
+            return _buildGrid(items);
+          })
+          .toList(growable: false),
     );
   }
 
@@ -241,9 +243,7 @@ class _EmojiPackPickerSheetState
   Widget _buildSearchGrid(String query, bool adultEnabled) {
     var results = EmojiPackCatalog.search(query);
     if (!adultEnabled) {
-      results = results
-          .where((e) => !e.isAdultOnly)
-          .toList(growable: false);
+      results = results.where((e) => !e.isAdultOnly).toList(growable: false);
     }
     if (results.isEmpty) {
       return Center(
@@ -296,8 +296,11 @@ class _EmojiPackPickerSheetState
                   width: 1.5,
                 ),
               ),
-              child: const Icon(Icons.lock_outline,
-                  color: VelvetNoir.secondaryBright, size: 26),
+              child: const Icon(
+                Icons.lock_outline,
+                color: VelvetNoir.secondaryBright,
+                size: 26,
+              ),
             ),
             const SizedBox(height: 14),
             Text(

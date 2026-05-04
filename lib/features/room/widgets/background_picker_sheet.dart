@@ -149,7 +149,10 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
     setState(() {
-      _draft = _draft.copyWith(backgroundUrl: url, vibePreset: RoomVibePreset.none);
+      _draft = _draft.copyWith(
+        backgroundUrl: url,
+        vibePreset: RoomVibePreset.none,
+      );
     });
   }
 
@@ -198,8 +201,7 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    const Icon(Icons.palette_rounded,
-                        color: gold, size: 20),
+                    const Icon(Icons.palette_rounded, color: gold, size: 20),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -225,8 +227,14 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                 indicatorColor: gold,
                 indicatorSize: TabBarIndicatorSize.tab,
                 tabs: const [
-                  Tab(icon: Icon(Icons.grid_view_rounded, size: 18), text: 'Presets'),
-                  Tab(icon: Icon(Icons.link_rounded, size: 18), text: 'Custom URL'),
+                  Tab(
+                    icon: Icon(Icons.grid_view_rounded, size: 18),
+                    text: 'Presets',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.link_rounded, size: 18),
+                    text: 'Custom URL',
+                  ),
                 ],
               ),
               const Divider(height: 1, color: Color(0xFF2A2D3A)),
@@ -240,11 +248,11 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                       padding: const EdgeInsets.all(16),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.85,
-                      ),
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.85,
+                          ),
                       itemCount: _kPresets.length,
                       itemBuilder: (context, index) {
                         final entry = _kPresets[index];
@@ -272,9 +280,11 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(entry.icon,
-                                    color: isSelected ? gold : Colors.white70,
-                                    size: 28),
+                                Icon(
+                                  entry.icon,
+                                  color: isSelected ? gold : Colors.white70,
+                                  size: 28,
+                                ),
                                 const SizedBox(height: 6),
                                 Text(
                                   entry.label,
@@ -323,31 +333,34 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                           ],
                           decoration: InputDecoration(
                             labelText: 'Background image URL',
-                            labelStyle:
-                                const TextStyle(color: textMuted),
+                            labelStyle: const TextStyle(color: textMuted),
                             hintText: 'https://example.com/image.jpg',
-                            hintStyle:
-                                const TextStyle(color: Color(0xFF5A5D6A)),
+                            hintStyle: const TextStyle(
+                              color: Color(0xFF5A5D6A),
+                            ),
                             filled: true,
                             fillColor: const Color(0xFF1A1D2A),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  const BorderSide(color: Color(0xFF3A3D4A)),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF3A3D4A),
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  const BorderSide(color: Color(0xFF3A3D4A)),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF3A3D4A),
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  const BorderSide(color: gold),
+                              borderSide: const BorderSide(color: gold),
                             ),
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.check_rounded,
-                                  color: gold),
+                              icon: const Icon(
+                                Icons.check_rounded,
+                                color: gold,
+                              ),
                               onPressed: _applyCustomUrl,
                             ),
                           ),
@@ -393,17 +406,24 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                     // Reset to default
                     OutlinedButton.icon(
                       onPressed: _reset,
-                      icon: const Icon(Icons.refresh_rounded,
-                          size: 16, color: textMuted),
-                      label: const Text('Reset',
-                          style: TextStyle(color: textMuted)),
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        size: 16,
+                        color: textMuted,
+                      ),
+                      label: const Text(
+                        'Reset',
+                        style: TextStyle(color: textMuted),
+                      ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF3A3D4A)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),

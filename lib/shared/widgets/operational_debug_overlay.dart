@@ -34,7 +34,8 @@ class _OperationalDebugOverlayState
 
   void _registerTap() {
     final now = DateTime.now();
-    if (_firstTapAt == null || now.difference(_firstTapAt!) > const Duration(seconds: 3)) {
+    if (_firstTapAt == null ||
+        now.difference(_firstTapAt!) > const Duration(seconds: 3)) {
       _firstTapAt = now;
       _tapCount = 0;
     }
@@ -75,7 +76,8 @@ class _OperationalDebugOverlayState
         : now.difference(lastUpdatedAt);
 
     final hasRecentError =
-        lastError != null && now.difference(lastError.occurredAt) < const Duration(minutes: 5);
+        lastError != null &&
+        now.difference(lastError.occurredAt) < const Duration(minutes: 5);
     final staleConfig = updateAge > const Duration(minutes: 5);
     final limitedMode = !gates.enableLiveRooms || !gates.enableMessaging;
 
@@ -156,7 +158,9 @@ class _OperationalDebugOverlayState
                   decoration: BoxDecoration(
                     color: const Color(0xEE0B0B0B),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.35)),
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
@@ -172,7 +176,10 @@ class _OperationalDebugOverlayState
                             : '${snapshot.message} (${snapshot.errorType ?? 'error'})';
 
                         return DefaultTextStyle(
-                          style: const TextStyle(color: Color(0xFFF7EDE2), fontSize: 12),
+                          style: const TextStyle(
+                            color: Color(0xFFF7EDE2),
+                            fontSize: 12,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
@@ -220,7 +227,9 @@ class _OperationalDebugOverlayState
                               ),
                               const SizedBox(height: 8),
                               Text('Version: $_appVersion'),
-                              Text('Environment: ${_environmentLabel()}${kReleaseMode ? ' (release)' : ''}'),
+                              Text(
+                                'Environment: ${_environmentLabel()}${kReleaseMode ? ' (release)' : ''}',
+                              ),
                               Text('User: ${_maskedUserId(userId)}'),
                               const SizedBox(height: 6),
                               const Text(
@@ -230,21 +239,56 @@ class _OperationalDebugOverlayState
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Text('enable_live_rooms: ${gates.enableLiveRooms}'),
-                              Text('enable_messaging: ${gates.enableMessaging}'),
-                              Text('enable_speed_dating: ${gates.enableSpeedDating}'),
-                              Text('feed_refresh_rate: ${gates.feedRefreshRateSeconds}s'),
+                              Text(
+                                'enable_live_rooms: ${gates.enableLiveRooms}',
+                              ),
+                              Text(
+                                'enable_messaging: ${gates.enableMessaging}',
+                              ),
+                              Text(
+                                'enable_speed_dating: ${gates.enableSpeedDating}',
+                              ),
+                              Text(
+                                'enable_push_notifications: ${gates.enablePushNotifications}',
+                              ),
+                              Text(
+                                'feed_refresh_rate: ${gates.feedRefreshRateSeconds}s',
+                              ),
                               Text('rooms_mode: ${gates.liveRoomsMode.name}'),
-                              Text('messaging_mode: ${gates.messagingMode.name}'),
+                              Text(
+                                'messaging_mode: ${gates.messagingMode.name}',
+                              ),
+                              Text(
+                                'push_mode: ${gates.pushNotificationsMode.name}',
+                              ),
                               Text('config_source: ${gates.source}'),
-                              Text('remote_live_rooms: ${gates.remoteEnableLiveRooms}'),
-                              Text('remote_messaging: ${gates.remoteEnableMessaging}'),
-                              Text('local_override_source: ${gates.localOverrideSource ?? 'none'}'),
-                              Text('local_override_at: ${_formatRelative(gates.localOverrideUpdatedAt)}'),
-                              Text('operator_override_active: ${gates.hasOperatorOverrides}'),
-                              Text('operator_override_source: ${gates.operatorOverrideSource ?? 'none'}'),
-                              Text('operator_override_at: ${_formatRelative(gates.operatorOverrideUpdatedAt)}'),
-                              Text('last_update: ${_formatRelative(gates.lastUpdatedAt)}'),
+                              Text(
+                                'remote_live_rooms: ${gates.remoteEnableLiveRooms}',
+                              ),
+                              Text(
+                                'remote_messaging: ${gates.remoteEnableMessaging}',
+                              ),
+                              Text(
+                                'remote_push_notifications: ${gates.remoteEnablePushNotifications}',
+                              ),
+                              Text(
+                                'local_override_source: ${gates.localOverrideSource ?? 'none'}',
+                              ),
+                              Text(
+                                'local_override_at: ${_formatRelative(gates.localOverrideUpdatedAt)}',
+                              ),
+                              Text(
+                                'operator_override_active: ${gates.hasOperatorOverrides}',
+                              ),
+                              Text(
+                                'operator_override_source: ${gates.operatorOverrideSource ?? 'none'}',
+                              ),
+                              Text(
+                                'operator_override_at: ${_formatRelative(gates.operatorOverrideUpdatedAt)}',
+                              ),
+                              Text(
+                                'last_update: ${_formatRelative(gates.lastUpdatedAt)}',
+                              ),
                               const SizedBox(height: 6),
                               const Text(
                                 'Auto Response',
@@ -253,14 +297,30 @@ class _OperationalDebugOverlayState
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Text('messaging_failures_5m: ${autoResponse.messagingFailures5m}'),
-                              Text('room_join_failures_5m: ${autoResponse.roomJoinFailures5m}'),
-                              Text('auth_failures_5m: ${autoResponse.authFailures5m}'),
-                              Text('auto_messaging_mode: ${autoResponse.messagingMode.name}'),
-                              Text('auto_rooms_mode: ${autoResponse.roomsMode.name}'),
-                              Text('auth_recovery_recommended: ${autoResponse.authRecoveryRecommended}'),
-                              Text('last_auto_action: ${autoResponse.lastAction ?? 'none'}'),
-                              Text('last_auto_action_at: ${_formatRelative(autoResponse.lastActionAt)}'),
+                              Text(
+                                'messaging_failures_5m: ${autoResponse.messagingFailures5m}',
+                              ),
+                              Text(
+                                'room_join_failures_5m: ${autoResponse.roomJoinFailures5m}',
+                              ),
+                              Text(
+                                'auth_failures_5m: ${autoResponse.authFailures5m}',
+                              ),
+                              Text(
+                                'auto_messaging_mode: ${autoResponse.messagingMode.name}',
+                              ),
+                              Text(
+                                'auto_rooms_mode: ${autoResponse.roomsMode.name}',
+                              ),
+                              Text(
+                                'auth_recovery_recommended: ${autoResponse.authRecoveryRecommended}',
+                              ),
+                              Text(
+                                'last_auto_action: ${autoResponse.lastAction ?? 'none'}',
+                              ),
+                              Text(
+                                'last_auto_action_at: ${_formatRelative(autoResponse.lastActionAt)}',
+                              ),
                               const SizedBox(height: 6),
                               const Text(
                                 'Beta Observability',
@@ -269,11 +329,21 @@ class _OperationalDebugOverlayState
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Text('active_feed: ${betaMetrics.activeUsersFeed}'),
-                              Text('active_rooms: ${betaMetrics.activeUsersRooms}'),
-                              Text('active_chat: ${betaMetrics.activeUsersChat}'),
-                              Text('match_success: ${betaMetrics.matchSuccessCount}'),
-                              Text('avg_room_mins: ${betaMetrics.avgRoomDurationMinutes.toStringAsFixed(1)}'),
+                              Text(
+                                'active_feed: ${betaMetrics.activeUsersFeed}',
+                              ),
+                              Text(
+                                'active_rooms: ${betaMetrics.activeUsersRooms}',
+                              ),
+                              Text(
+                                'active_chat: ${betaMetrics.activeUsersChat}',
+                              ),
+                              Text(
+                                'match_success: ${betaMetrics.matchSuccessCount}',
+                              ),
+                              Text(
+                                'avg_room_mins: ${betaMetrics.avgRoomDurationMinutes.toStringAsFixed(1)}',
+                              ),
                               const SizedBox(height: 6),
                               const Text(
                                 'Last Error',

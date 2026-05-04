@@ -31,10 +31,11 @@ class FloatingCamWindowData {
 }
 
 /// Provider that holds the set of currently detached cam windows.
-final floatingCamWindowsProvider = StateNotifierProvider<
-    FloatingCamWindowsNotifier, List<FloatingCamWindowData>>(
-  (_) => FloatingCamWindowsNotifier(),
-);
+final floatingCamWindowsProvider =
+    StateNotifierProvider<
+      FloatingCamWindowsNotifier,
+      List<FloatingCamWindowData>
+    >((_) => FloatingCamWindowsNotifier());
 
 class FloatingCamWindowsNotifier
     extends StateNotifier<List<FloatingCamWindowData>> {

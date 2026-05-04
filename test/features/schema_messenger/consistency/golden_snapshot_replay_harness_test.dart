@@ -188,14 +188,8 @@ void main() {
           messageSnapshot: MessageSnapshot(
             legacyConversationIds: <String>['c_1', 'c_2'],
             schemaConversationIds: <String>['c_1', 'c_2'],
-            legacyUnreadByConversation: <String, int>{
-              'c_1': 0,
-              'c_2': 1,
-            },
-            schemaUnreadByConversation: <String, int>{
-              'c_1': 0,
-              'c_2': 1,
-            },
+            legacyUnreadByConversation: <String, int>{'c_1': 0, 'c_2': 1},
+            schemaUnreadByConversation: <String, int>{'c_1': 0, 'c_2': 1},
             legacyReady: true,
             schemaReady: true,
           ),
@@ -220,137 +214,176 @@ void main() {
         final friendResult = evaluateFriendParity(frame.friendSnapshot);
         final messageResult = contract.evaluate(frame.messageSnapshot);
 
-        expect(friendResult.isComparable, frame.expectedFriend.isComparable,
-            reason: '${frame.id} friend comparability mismatch');
-        expect(friendResult.isMatch, frame.expectedFriend.isMatch,
-            reason: '${frame.id} friend parity mismatch');
-        expect(friendResult.missingInSchema, frame.expectedFriend.missingInSchema,
-            reason: '${frame.id} friend missingInSchema mismatch');
-        expect(friendResult.missingInLegacy, frame.expectedFriend.missingInLegacy,
-            reason: '${frame.id} friend missingInLegacy mismatch');
-        expect(friendResult.statusMismatches, frame.expectedFriend.statusMismatches,
-            reason: '${frame.id} friend status mismatch');
-
-        expect(messageResult.isComparable, frame.expectedmessage.isComparable,
-            reason: '${frame.id} message comparability mismatch');
-        expect(messageResult.isMatch, frame.expectedmessage.isMatch,
-            reason: '${frame.id} message parity mismatch');
-        expect(messageResult.missingInSchema, frame.expectedmessage.missingInSchema,
-            reason: '${frame.id} message missingInSchema mismatch');
-        expect(messageResult.missingInLegacy, frame.expectedmessage.missingInLegacy,
-            reason: '${frame.id} message missingInLegacy mismatch');
-        expect(messageResult.unreadMismatches, frame.expectedmessage.unreadMismatches,
-            reason: '${frame.id} message unread mismatch');
-      }
-    });
-
-    test('drift replay gate suppresses cold-load noise and emits only stable signals', () {
-      const contract = MessageConsistencyContract();
-
-      final replay = <_GateInput>[
-        _GateInput(
-          id: 'loading-1',
-          result: _ParityResultAdapter.frommessage(
-            contract.evaluate(
-              MessageSnapshot(
-                legacyConversationIds: <String>[],
-                schemaConversationIds: <String>[],
-                legacyUnreadByConversation: <String, int>{},
-                schemaUnreadByConversation: <String, int>{},
-                legacyReady: false,
-                schemaReady: false,
-              ),
-            ),
-          ),
-        ),
-        _GateInput(
-          id: 'loading-2',
-          result: _ParityResultAdapter.frommessage(
-            contract.evaluate(
-              MessageSnapshot(
-                legacyConversationIds: <String>[],
-                schemaConversationIds: <String>[],
-                legacyUnreadByConversation: <String, int>{},
-                schemaUnreadByConversation: <String, int>{},
-                legacyReady: false,
-                schemaReady: false,
-              ),
-            ),
-          ),
-        ),
-        _GateInput(
-          id: 'mismatch-1',
-          result: _ParityResultAdapter.frommessage(
-            contract.evaluate(
-              MessageSnapshot(
-                legacyConversationIds: <String>['c_1', 'c_2'],
-                schemaConversationIds: <String>['c_1'],
-                legacyUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
-                schemaUnreadByConversation: <String, int>{'c_1': 0},
-                legacyReady: true,
-                schemaReady: true,
-              ),
-            ),
-          ),
-        ),
-        _GateInput(
-          id: 'mismatch-2-stable',
-          result: _ParityResultAdapter.frommessage(
-            contract.evaluate(
-              MessageSnapshot(
-                legacyConversationIds: <String>['c_1', 'c_2'],
-                schemaConversationIds: <String>['c_1'],
-                legacyUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
-                schemaUnreadByConversation: <String, int>{'c_1': 0},
-                legacyReady: true,
-                schemaReady: true,
-              ),
-            ),
-          ),
-        ),
-        _GateInput(
-          id: 'restored',
-          result: _ParityResultAdapter.frommessage(
-            contract.evaluate(
-              MessageSnapshot(
-                legacyConversationIds: <String>['c_1', 'c_2'],
-                schemaConversationIds: <String>['c_1', 'c_2'],
-                legacyUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
-                schemaUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
-                legacyReady: true,
-                schemaReady: true,
-              ),
-            ),
-          ),
-        ),
-      ];
-
-      var state = ConsistencyGateState.empty;
-      var reactiveMismatchEmits = 0;
-      var restoreEmits = 0;
-
-      for (final step in replay) {
-        final decision = evaluateConsistencyGate<_ParityResultAdapter>(
-          result: step.result,
-          state: state,
-          stableMismatchThreshold: 2,
-          isPeriodicReconcile: false,
+        expect(
+          friendResult.isComparable,
+          frame.expectedFriend.isComparable,
+          reason: '${frame.id} friend comparability mismatch',
         );
-        state = decision.nextState;
+        expect(
+          friendResult.isMatch,
+          frame.expectedFriend.isMatch,
+          reason: '${frame.id} friend parity mismatch',
+        );
+        expect(
+          friendResult.missingInSchema,
+          frame.expectedFriend.missingInSchema,
+          reason: '${frame.id} friend missingInSchema mismatch',
+        );
+        expect(
+          friendResult.missingInLegacy,
+          frame.expectedFriend.missingInLegacy,
+          reason: '${frame.id} friend missingInLegacy mismatch',
+        );
+        expect(
+          friendResult.statusMismatches,
+          frame.expectedFriend.statusMismatches,
+          reason: '${frame.id} friend status mismatch',
+        );
 
-        if (decision.emitReactiveMismatch) {
-          reactiveMismatchEmits += 1;
-        }
-        if (decision.emitRestore) {
-          restoreEmits += 1;
-        }
+        expect(
+          messageResult.isComparable,
+          frame.expectedmessage.isComparable,
+          reason: '${frame.id} message comparability mismatch',
+        );
+        expect(
+          messageResult.isMatch,
+          frame.expectedmessage.isMatch,
+          reason: '${frame.id} message parity mismatch',
+        );
+        expect(
+          messageResult.missingInSchema,
+          frame.expectedmessage.missingInSchema,
+          reason: '${frame.id} message missingInSchema mismatch',
+        );
+        expect(
+          messageResult.missingInLegacy,
+          frame.expectedmessage.missingInLegacy,
+          reason: '${frame.id} message missingInLegacy mismatch',
+        );
+        expect(
+          messageResult.unreadMismatches,
+          frame.expectedmessage.unreadMismatches,
+          reason: '${frame.id} message unread mismatch',
+        );
       }
-
-      expect(reactiveMismatchEmits, 1,
-          reason: 'Only one stable mismatch emission is allowed.');
-      expect(restoreEmits, 1,
-          reason: 'A single restore emission should follow recovery.');
     });
+
+    test(
+      'drift replay gate suppresses cold-load noise and emits only stable signals',
+      () {
+        const contract = MessageConsistencyContract();
+
+        final replay = <_GateInput>[
+          _GateInput(
+            id: 'loading-1',
+            result: _ParityResultAdapter.frommessage(
+              contract.evaluate(
+                MessageSnapshot(
+                  legacyConversationIds: <String>[],
+                  schemaConversationIds: <String>[],
+                  legacyUnreadByConversation: <String, int>{},
+                  schemaUnreadByConversation: <String, int>{},
+                  legacyReady: false,
+                  schemaReady: false,
+                ),
+              ),
+            ),
+          ),
+          _GateInput(
+            id: 'loading-2',
+            result: _ParityResultAdapter.frommessage(
+              contract.evaluate(
+                MessageSnapshot(
+                  legacyConversationIds: <String>[],
+                  schemaConversationIds: <String>[],
+                  legacyUnreadByConversation: <String, int>{},
+                  schemaUnreadByConversation: <String, int>{},
+                  legacyReady: false,
+                  schemaReady: false,
+                ),
+              ),
+            ),
+          ),
+          _GateInput(
+            id: 'mismatch-1',
+            result: _ParityResultAdapter.frommessage(
+              contract.evaluate(
+                MessageSnapshot(
+                  legacyConversationIds: <String>['c_1', 'c_2'],
+                  schemaConversationIds: <String>['c_1'],
+                  legacyUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
+                  schemaUnreadByConversation: <String, int>{'c_1': 0},
+                  legacyReady: true,
+                  schemaReady: true,
+                ),
+              ),
+            ),
+          ),
+          _GateInput(
+            id: 'mismatch-2-stable',
+            result: _ParityResultAdapter.frommessage(
+              contract.evaluate(
+                MessageSnapshot(
+                  legacyConversationIds: <String>['c_1', 'c_2'],
+                  schemaConversationIds: <String>['c_1'],
+                  legacyUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
+                  schemaUnreadByConversation: <String, int>{'c_1': 0},
+                  legacyReady: true,
+                  schemaReady: true,
+                ),
+              ),
+            ),
+          ),
+          _GateInput(
+            id: 'restored',
+            result: _ParityResultAdapter.frommessage(
+              contract.evaluate(
+                MessageSnapshot(
+                  legacyConversationIds: <String>['c_1', 'c_2'],
+                  schemaConversationIds: <String>['c_1', 'c_2'],
+                  legacyUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
+                  schemaUnreadByConversation: <String, int>{'c_1': 1, 'c_2': 0},
+                  legacyReady: true,
+                  schemaReady: true,
+                ),
+              ),
+            ),
+          ),
+        ];
+
+        var state = ConsistencyGateState.empty;
+        var reactiveMismatchEmits = 0;
+        var restoreEmits = 0;
+
+        for (final step in replay) {
+          final decision = evaluateConsistencyGate<_ParityResultAdapter>(
+            result: step.result,
+            state: state,
+            stableMismatchThreshold: 2,
+            isPeriodicReconcile: false,
+          );
+          state = decision.nextState;
+
+          if (decision.emitReactiveMismatch) {
+            reactiveMismatchEmits += 1;
+          }
+          if (decision.emitRestore) {
+            restoreEmits += 1;
+          }
+        }
+
+        expect(
+          reactiveMismatchEmits,
+          1,
+          reason: 'Only one stable mismatch emission is allowed.',
+        );
+        expect(
+          restoreEmits,
+          1,
+          reason: 'A single restore emission should follow recovery.',
+        );
+      },
+    );
 
     test('friend replay is compatible with shared gate semantics', () {
       final sequence = <_ParityResultAdapter>[
@@ -411,8 +444,12 @@ void main() {
         }
       }
 
-      expect(mismatchEmits, 1,
-          reason: 'Friends parity remains compatible with canonical gate semantics.');
+      expect(
+        mismatchEmits,
+        1,
+        reason:
+            'Friends parity remains compatible with canonical gate semantics.',
+      );
     });
   });
 }

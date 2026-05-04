@@ -16,10 +16,7 @@ class EventTimeline {
       SystemEvent(
         type: type,
         timestamp: DateTime.now(),
-        meta: <String, dynamic>{
-          'source': source,
-          'phase': ctx.phase,
-        },
+        meta: <String, dynamic>{'source': source, 'phase': ctx.phase},
       ),
     );
     debugPrint("[${ctx.phase}] Event recorded: type=$type, source=$source");

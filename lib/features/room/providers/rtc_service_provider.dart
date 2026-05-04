@@ -8,7 +8,5 @@ import '../../../services/rtc_room_service.dart';
 /// Auto-disposed when the room UI goes away so stale services do not leak
 /// across sessions.
 /// Keyed by roomId so concurrent rooms (future feature) stay isolated.
-final rtcServiceProvider =
-        StateProvider.autoDispose.family<RtcRoomService?, String>(
-            (ref, roomId) => null,
-        );
+final rtcServiceProvider = StateProvider.autoDispose
+    .family<RtcRoomService?, String>((ref, roomId) => null);

@@ -19,7 +19,8 @@ class _PromoBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasVipEntitlement = ref.watch(vipEntitlementProvider).valueOrNull ?? false;
+    final hasVipEntitlement =
+        ref.watch(vipEntitlementProvider).valueOrNull ?? false;
     if (!AdManager.shouldShowAds(hasVipEntitlement: hasVipEntitlement)) {
       return const SizedBox.shrink();
     }
@@ -69,7 +70,9 @@ void main() {
   });
 
   group('DiscoveryFeedContent -- promo banner', () {
-    testWidgets('shows banner when VIP entitlement is inactive', (tester) async {
+    testWidgets('shows banner when VIP entitlement is inactive', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildWidget([
           _vipEntitlementOverride(false),
@@ -83,7 +86,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('Upgrade to MixVy Premium'), findsOneWidget);
-      expect(find.text('Remove ads and unlock exclusive features.'), findsOneWidget);
+      expect(
+        find.text('Remove ads and unlock exclusive features.'),
+        findsOneWidget,
+      );
       expect(find.text('Upgrade'), findsOneWidget);
     });
 
@@ -103,22 +109,22 @@ void main() {
       expect(find.text('Upgrade to MixVy Premium'), findsNothing);
     });
 
-    testWidgets('shows banner when profile membership is null and entitlement is inactive',
-        (tester) async {
-      await tester.pumpWidget(
-        _buildWidget([
-          _vipEntitlementOverride(false),
-          profileControllerProvider.overrideWith(
-            () => _StubProfileController(
-              const ProfileState(followers: []),
+    testWidgets(
+      'shows banner when profile membership is null and entitlement is inactive',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildWidget([
+            _vipEntitlementOverride(false),
+            profileControllerProvider.overrideWith(
+              () => _StubProfileController(const ProfileState(followers: [])),
             ),
-          ),
-        ]),
-      );
-      await tester.pump();
+          ]),
+        );
+        await tester.pump();
 
-      expect(find.text('Upgrade to MixVy Premium'), findsOneWidget);
-    });
+        expect(find.text('Upgrade to MixVy Premium'), findsOneWidget);
+      },
+    );
   });
 }
 
@@ -128,7 +134,7 @@ void main() {
 class _StubProfileController extends ProfileController {
   final ProfileState _state;
   _StubProfileController(this._state)
-      : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
+    : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
 
   @override
   ProfileState build() => _state;

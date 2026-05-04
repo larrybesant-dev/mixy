@@ -57,7 +57,7 @@ class MessageConsistencyContract
   String get moduleId => 'message';
 
   @override
-    String get canonicalReference => SchemaGovernanceContract.canonicalModel;
+  String get canonicalReference => SchemaGovernanceContract.canonicalModel;
 
   @override
   int get stableMismatchThreshold =>
@@ -146,7 +146,9 @@ class MessageConsistencyContract
     ].join('|');
 
     final isMatch =
-        missingInSchema.isEmpty && missingInLegacy.isEmpty && unreadMismatches.isEmpty;
+        missingInSchema.isEmpty &&
+        missingInLegacy.isEmpty &&
+        unreadMismatches.isEmpty;
 
     return MessageParityResult(
       isComparable: true,
@@ -159,7 +161,8 @@ class MessageConsistencyContract
   }
 }
 
-final messageConsistencyContractProvider =
-    Provider<MessageConsistencyContract>((ref) {
-  return const MessageConsistencyContract();
-});
+final messageConsistencyContractProvider = Provider<MessageConsistencyContract>(
+  (ref) {
+    return const MessageConsistencyContract();
+  },
+);

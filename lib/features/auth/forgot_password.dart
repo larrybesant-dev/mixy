@@ -11,7 +11,12 @@ class ForgotPasswordScreen extends StatelessWidget {
       body: Center(
         child: Semantics(
           label: 'Forgot Password Screen',
-          child: Text('Forgot Password Screen', style: TextStyle(fontSize: MediaQuery.of(context).size.width > 400 ? 20 : 18)),
+          child: Text(
+            'Forgot Password Screen',
+            style: TextStyle(
+              fontSize: MediaQuery.of(context).size.width > 400 ? 20 : 18,
+            ),
+          ),
         ),
       ),
     );

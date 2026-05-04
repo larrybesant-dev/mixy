@@ -46,12 +46,12 @@ class RoomCoachMetrics {
   });
 
   const RoomCoachMetrics.empty()
-      : roomTitle = '',
-        participantCount = 0,
-        messageCount = 0,
-        typingCount = 0,
-        hostActive = false,
-        onMicCount = 0;
+    : roomTitle = '',
+      participantCount = 0,
+      messageCount = 0,
+      typingCount = 0,
+      hostActive = false,
+      onMicCount = 0;
 
   @override
   bool operator ==(Object other) {
@@ -67,13 +67,13 @@ class RoomCoachMetrics {
 
   @override
   int get hashCode => Object.hash(
-        roomTitle,
-        participantCount,
-        messageCount,
-        typingCount,
-        hostActive,
-        onMicCount,
-      );
+    roomTitle,
+    participantCount,
+    messageCount,
+    typingCount,
+    hostActive,
+    onMicCount,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,42 +84,45 @@ class RoomCoachMetrics {
 // will only notify the coach widget when the numbers actually change.
 // ─────────────────────────────────────────────────────────────────────────────
 
-final roomCoachMetricsProvider =
-    Provider.autoDispose.family<RoomCoachMetrics, String>((ref, roomId) {
-  final roomDoc = ref.watch(roomDocStreamProvider(roomId)).valueOrNull ?? {};
-  final participants =
-      ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
+final roomCoachMetricsProvider = Provider.autoDispose
+    .family<RoomCoachMetrics, String>((ref, roomId) {
+      final roomDoc =
+          ref.watch(roomDocStreamProvider(roomId)).valueOrNull ?? {};
+      final participants =
+          ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
           const <RoomParticipantModel>[];
-  final messages =
-      ref.watch(messagetreamProvider(roomId)).valueOrNull ?? const <dynamic>[];
-  // Watch typingStreamProvider directly — bypasses the participant-hydration
-  // gate in roomActivityStateProvider so typing is visible immediately.
-  final typingMap =
-      ref.watch(typingStreamProvider(roomId)).valueOrNull ?? const {};
+      final messages =
+          ref.watch(messagetreamProvider(roomId)).valueOrNull ??
+          const <dynamic>[];
+      // Watch typingStreamProvider directly — bypasses the participant-hydration
+      // gate in roomActivityStateProvider so typing is visible immediately.
+      final typingMap =
+          ref.watch(typingStreamProvider(roomId)).valueOrNull ?? const {};
 
-  final typingCount =
-      typingMap.values.where((v) => v == true).length;
+      final typingCount = typingMap.values.where((v) => v == true).length;
 
-  final hostActive = participants.any(
-    (p) =>
-        (p.role == 'host' || p.role == 'cohost') &&
-        (p.micOn ||
-            DateTime.now().difference(p.lastActiveAt).inSeconds <= 25),
-  );
+      final hostActive = participants.any(
+        (p) =>
+            (p.role == 'host' || p.role == 'cohost') &&
+            (p.micOn ||
+                DateTime.now().difference(p.lastActiveAt).inSeconds <= 25),
+      );
 
-  final onMicCount =
-      participants.where((p) => roomParticipantCanBeShownAsTalking(p)).length;
+      final onMicCount = participants
+          .where((p) => roomParticipantCanBeShownAsTalking(p))
+          .length;
 
-  // Prefer 'name' (room doc field) then 'title' as fallback.
-  final rawTitle =
-      (roomDoc['name'] ?? roomDoc['title'] ?? '').toString().trim();
+      // Prefer 'name' (room doc field) then 'title' as fallback.
+      final rawTitle = (roomDoc['name'] ?? roomDoc['title'] ?? '')
+          .toString()
+          .trim();
 
-  return RoomCoachMetrics(
-    roomTitle: rawTitle,
-    participantCount: participants.length,
-    messageCount: messages.length,
-    typingCount: typingCount,
-    hostActive: hostActive,
-    onMicCount: onMicCount,
-  );
-});
+      return RoomCoachMetrics(
+        roomTitle: rawTitle,
+        participantCount: participants.length,
+        messageCount: messages.length,
+        typingCount: typingCount,
+        hostActive: hostActive,
+        onMicCount: onMicCount,
+      );
+    });

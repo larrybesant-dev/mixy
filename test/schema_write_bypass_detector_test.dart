@@ -44,7 +44,8 @@ void main() {
     expect(
       violations,
       isEmpty,
-      reason: 'Found direct users writes outside SchemaMutationService boundary: $violations',
+      reason:
+          'Found direct users writes outside SchemaMutationService boundary: $violations',
     );
   });
 }

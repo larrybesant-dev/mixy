@@ -33,7 +33,9 @@ Iterable<({String file, int line, String content})> grep(
   final lines = file.readAsLinesSync();
   for (var i = 0; i < lines.length; i++) {
     final trimmed = lines[i].trim();
-    if (trimmed.contains(pattern) && !trimmed.startsWith('//') && !trimmed.startsWith('*')) {
+    if (trimmed.contains(pattern) &&
+        !trimmed.startsWith('//') &&
+        !trimmed.startsWith('*')) {
       yield (file: file.path, line: i + 1, content: trimmed);
     }
   }
@@ -56,28 +58,36 @@ const List<String> _featureDirs = [
 void main() {
   group('StreamRegistry architecture guardrails', () {
     // ── 1. firestoreProvider single declaration ────────────────────────────
-    test('firestoreProvider is declared only in core/providers/firebase_providers.dart', () {
-      final violations = <String>[];
+    test(
+      'firestoreProvider is declared only in core/providers/firebase_providers.dart',
+      () {
+        final violations = <String>[];
 
-      for (final dir in _featureDirs) {
-        for (final file in dartFiles(dir)) {
-          // Skip the canonical file itself.
-          if (file.path.contains(_canonicalFirestoreProvider)) continue;
+        for (final dir in _featureDirs) {
+          for (final file in dartFiles(dir)) {
+            // Skip the canonical file itself.
+            if (file.path.contains(_canonicalFirestoreProvider)) continue;
 
-          for (final match in grep(file, 'firestoreProvider = Provider<FirebaseFirestore>')) {
-            violations.add('${p.relative(match.file)}:${match.line}  →  ${match.content}');
+            for (final match in grep(
+              file,
+              'firestoreProvider = Provider<FirebaseFirestore>',
+            )) {
+              violations.add(
+                '${p.relative(match.file)}:${match.line}  →  ${match.content}',
+              );
+            }
           }
         }
-      }
 
-      if (violations.isNotEmpty) {
-        fail(
-          'firestoreProvider is re-declared outside its canonical location.\n'
-          'Remove these declarations and import from core/providers/firebase_providers.dart:\n\n'
-          '${violations.join('\n')}',
-        );
-      }
-    });
+        if (violations.isNotEmpty) {
+          fail(
+            'firestoreProvider is re-declared outside its canonical location.\n'
+            'Remove these declarations and import from core/providers/firebase_providers.dart:\n\n'
+            '${violations.join('\n')}',
+          );
+        }
+      },
+    );
 
     // ── 2. No raw FirebaseFirestore.instance usage in widgets/screens ─────
     test('Widgets and screens do not call FirebaseFirestore.instance directly', () {
@@ -113,10 +123,14 @@ void main() {
         if (!rel.contains('screen') &&
             !rel.contains('widget') &&
             !rel.contains('providers/') &&
-            !rel.contains('controller')) { continue; }
+            !rel.contains('controller')) {
+          continue;
+        }
 
         for (final match in grep(file, 'FirebaseFirestore.instance')) {
-          violations.add('${p.relative(match.file)}:${match.line}  →  ${match.content}');
+          violations.add(
+            '${p.relative(match.file)}:${match.line}  →  ${match.content}',
+          );
         }
       }
 
@@ -170,23 +184,28 @@ void main() {
     // chat_providers.dart's messagetreamProvider is a legacy typo-named provider
     // that routes through ChatRepository. It is allowed ONLY as a thin delegating
     // wrapper — not as a direct .snapshots() call.
-    test('chat_providers messagetreamProvider delegates through repository, not direct snapshots', () {
-      const targetFile = 'lib/features/feed/providers/chat_providers.dart';
-      final file = File(targetFile);
-      if (!file.existsSync()) return; // file was removed — nothing to check
+    test(
+      'chat_providers messagetreamProvider delegates through repository, not direct snapshots',
+      () {
+        const targetFile = 'lib/features/feed/providers/chat_providers.dart';
+        final file = File(targetFile);
+        if (!file.existsSync()) return; // file was removed — nothing to check
 
-      final violations = <String>[];
-      for (final match in grep(file, '.snapshots()')) {
-        violations.add('${p.relative(match.file)}:${match.line}  →  ${match.content}');
-      }
+        final violations = <String>[];
+        for (final match in grep(file, '.snapshots()')) {
+          violations.add(
+            '${p.relative(match.file)}:${match.line}  →  ${match.content}',
+          );
+        }
 
-      if (violations.isNotEmpty) {
-        fail(
-          'chat_providers.dart must not call .snapshots() directly. '
-          'It must delegate through ChatRepository:\n\n'
-          '${violations.join('\n')}',
-        );
-      }
-    });
+        if (violations.isNotEmpty) {
+          fail(
+            'chat_providers.dart must not call .snapshots() directly. '
+            'It must delegate through ChatRepository:\n\n'
+            '${violations.join('\n')}',
+          );
+        }
+      },
+    );
   });
 }

@@ -33,26 +33,26 @@ class _MixvyFirebaseMock implements TestFirebaseCoreHostApi {
   };
 
   static CoreInitializeResponse _makeApp(String name) => CoreInitializeResponse(
-        name: name,
-        options: CoreFirebaseOptions(
-          apiKey: 'test-api-key',
-          appId: '1:12345:android:test',
-          messagingSenderId: '12345',
-          projectId: 'test-project',
-        ),
-        pluginConstants: _pluginConstants,
-      );
+    name: name,
+    options: CoreFirebaseOptions(
+      apiKey: 'test-api-key',
+      appId: '1:12345:android:test',
+      messagingSenderId: '12345',
+      projectId: 'test-project',
+    ),
+    pluginConstants: _pluginConstants,
+  );
 
   @override
   Future<CoreInitializeResponse> initializeApp(
     String appName,
     CoreFirebaseOptions initializeAppRequest,
-  ) async =>
-      _makeApp(appName);
+  ) async => _makeApp(appName);
 
   @override
-  Future<List<CoreInitializeResponse>> initializeCore() async =>
-      [_makeApp(defaultFirebaseAppName)];
+  Future<List<CoreInitializeResponse>> initializeCore() async => [
+    _makeApp(defaultFirebaseAppName),
+  ];
 
   @override
   Future<CoreFirebaseOptions> optionsFromResource() async =>
@@ -137,8 +137,9 @@ Future<void> testSetup() async {
             case 'setDouble':
             case 'setString':
             case 'setStringList':
-              final arguments =
-                  Map<Object?, Object?>.from(methodCall.arguments as Map);
+              final arguments = Map<Object?, Object?>.from(
+                methodCall.arguments as Map,
+              );
               final key = arguments['key'] as String;
               final value = arguments['value'];
               _sharedPrefsStore[key] = value;
@@ -213,6 +214,28 @@ Future<void> testSetup() async {
         }
         return null;
       });
+  // Mock Firebase Analytics channel so unawaited logEvent() calls in
+  // AppTelemetry resolve synchronously in tests and don't fire callbacks
+  // after the test has completed (preventing "failed after completed" errors).
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/firebase_analytics'),
+        (MethodCall methodCall) async => null,
+      );
+  // Mock Pigeon-based FirebaseAuth channels (firebase_auth >= 5.x) so that
+  // calls to FirebaseAuth.currentUser from within unit tests (e.g. messaging
+  // actor validation) don't throw channel-error and fire post-test callbacks.
+  for (final channelName in const <String>[
+    'dev.flutter.pigeon.firebase_auth_platform_interface.FirebaseAuthHostApi.registerIdTokenListener',
+    'dev.flutter.pigeon.firebase_auth_platform_interface.FirebaseAuthHostApi.registerAuthStateListener',
+  ]) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler(channelName, (ByteData? message) async {
+          // Return an empty/null encoded response so the channel resolves
+          // synchronously rather than erroring out.
+          return null;
+        });
+  }
 }
 
 /// Utility to wrap widget tests in ProviderScope

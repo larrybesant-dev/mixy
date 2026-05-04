@@ -103,8 +103,10 @@ class SchemaConversation {
   static List<String> _asStringList(dynamic value) {
     if (value is List) {
       return value
-          .map((item) =>
-              item is String ? item.trim() : item?.toString().trim() ?? '')
+          .map(
+            (item) =>
+                item is String ? item.trim() : item?.toString().trim() ?? '',
+          )
           .where((item) => item.isNotEmpty)
           .toList(growable: false);
     }

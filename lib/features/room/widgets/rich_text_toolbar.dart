@@ -38,7 +38,9 @@ class RichTextParser {
     for (final match in matches) {
       // Plain text before this tag
       if (match.start > cursor) {
-        out.add(TextSpan(text: input.substring(cursor, match.start), style: style));
+        out.add(
+          TextSpan(text: input.substring(cursor, match.start), style: style),
+        );
       }
       cursor = match.end;
 
@@ -70,7 +72,9 @@ class RichTextParser {
       } else {
         // [color=...] tag
         if (colorValue != null) {
-          final hex = colorValue.startsWith('#') ? colorValue.substring(1) : colorValue;
+          final hex = colorValue.startsWith('#')
+              ? colorValue.substring(1)
+              : colorValue;
           final parsed = int.tryParse(hex, radix: 16);
           if (parsed != null) {
             nextStyle = style.copyWith(color: Color(0xFF000000 | parsed));
@@ -311,7 +315,11 @@ class _ToolBtn extends StatelessWidget {
 }
 
 class _ColorSwatch extends StatelessWidget {
-  const _ColorSwatch({required this.hex, required this.onTap, this.selected = false});
+  const _ColorSwatch({
+    required this.hex,
+    required this.onTap,
+    this.selected = false,
+  });
   final String hex;
   final VoidCallback onTap;
   final bool selected;
@@ -331,7 +339,9 @@ class _ColorSwatch extends StatelessWidget {
             color: color,
             shape: BoxShape.circle,
             border: Border.all(
-              color: selected ? Colors.white : Colors.white.withValues(alpha: 0.25),
+              color: selected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.25),
               width: selected ? 2 : 1,
             ),
           ),

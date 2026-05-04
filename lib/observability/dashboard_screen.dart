@@ -111,7 +111,10 @@ class _ModeChip extends StatelessWidget {
         onSelected: (m) => TelemetryConfig.setRuntimeOverride(m),
         itemBuilder: (_) => [
           const PopupMenuItem(value: TelemetryMode.off, child: Text('Off')),
-          const PopupMenuItem(value: TelemetryMode.standard, child: Text('Standard')),
+          const PopupMenuItem(
+            value: TelemetryMode.standard,
+            child: Text('Standard'),
+          ),
           const PopupMenuItem(value: TelemetryMode.debug, child: Text('Debug')),
         ],
       ),
@@ -132,10 +135,15 @@ class _OffPanel extends StatelessWidget {
         children: [
           Icon(Icons.visibility_off, size: 48, color: Colors.grey),
           SizedBox(height: 12),
-          Text('Telemetry is OFF', style: TextStyle(fontSize: 16, color: Colors.grey)),
+          Text(
+            'Telemetry is OFF',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
           SizedBox(height: 4),
-          Text('Tap the mode chip in the AppBar to enable.',
-              style: TextStyle(color: Colors.grey)),
+          Text(
+            'Tap the mode chip in the AppBar to enable.',
+            style: TextStyle(color: Colors.grey),
+          ),
         ],
       ),
     );
@@ -164,10 +172,16 @@ class _SessionDrillDown extends StatelessWidget {
         _StatRow('Offers sent', '${session.offersSent}'),
         _StatRow('Answers received', '${session.answersReceived}'),
         _StatRow('ICE candidates (sampled)', '${session.iceCandidatesSent}'),
-        _StatRow('Reconnects', '${session.reconnectAttempts}',
-            alert: session.reconnectAttempts >= 5),
-        _StatRow('Peer failures', '${session.peerFailures}',
-            alert: session.peerFailures > 0),
+        _StatRow(
+          'Reconnects',
+          '${session.reconnectAttempts}',
+          alert: session.reconnectAttempts >= 5,
+        ),
+        _StatRow(
+          'Peer failures',
+          '${session.peerFailures}',
+          alert: session.peerFailures > 0,
+        ),
         _StatRow('Stream refreshes', '${session.streamRefreshes}'),
       ],
     );
@@ -228,8 +242,8 @@ class _RebuildPanel extends StatelessWidget {
       children: rebuilds.isEmpty
           ? [const _EmptyState('No rebuild activity recorded.')]
           : rebuilds.entries
-              .map((e) => _StatRow(e.key, 'x${e.value}', alert: e.value > 80))
-              .toList(),
+                .map((e) => _StatRow(e.key, 'x${e.value}', alert: e.value > 80))
+                .toList(),
     );
   }
 }
@@ -249,8 +263,8 @@ class _ListenerPanel extends StatelessWidget {
       children: listeners.isEmpty
           ? [const _EmptyState('No active listeners.')]
           : listeners.entries
-              .map((e) => _StatRow(e.key, 'x${e.value}', alert: e.value > 20))
-              .toList(),
+                .map((e) => _StatRow(e.key, 'x${e.value}', alert: e.value > 20))
+                .toList(),
     );
   }
 }
@@ -270,31 +284,34 @@ class _AlertsPanel extends StatelessWidget {
       children: alerts.isEmpty
           ? [const _EmptyState('No alerts — system is clean.')]
           : alerts.reversed
-              .take(20)
-              .map(
-                (a) => ListTile(
-                  dense: true,
-                  leading: Icon(
-                    a.level == AlertLevel.critical
-                        ? Icons.error
-                        : a.level == AlertLevel.warning
-                            ? Icons.warning
-                            : Icons.info_outline,
-                    color: a.level == AlertLevel.critical
-                        ? Colors.red
-                        : a.level == AlertLevel.warning
-                            ? Colors.orange
-                            : Colors.blue,
-                    size: 18,
+                .take(20)
+                .map(
+                  (a) => ListTile(
+                    dense: true,
+                    leading: Icon(
+                      a.level == AlertLevel.critical
+                          ? Icons.error
+                          : a.level == AlertLevel.warning
+                          ? Icons.warning
+                          : Icons.info_outline,
+                      color: a.level == AlertLevel.critical
+                          ? Colors.red
+                          : a.level == AlertLevel.warning
+                          ? Colors.orange
+                          : Colors.blue,
+                      size: 18,
+                    ),
+                    title: Text(
+                      a.message,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    subtitle: Text(
+                      '${a.level.name} · ${_ago(a.timestamp)}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
                   ),
-                  title: Text(a.message, style: const TextStyle(fontSize: 12)),
-                  subtitle: Text(
-                    '${a.level.name} · ${_ago(a.timestamp)}',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                ),
-              )
-              .toList(),
+                )
+                .toList(),
     );
   }
 
@@ -327,8 +344,10 @@ class _Panel extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: ExpansionTile(
         leading: Icon(icon, color: color, size: 20),
-        title: Text(title,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
         initiallyExpanded: true,
         children: children,
       ),
@@ -387,8 +406,10 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(message,
-          style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+      child: Text(
+        message,
+        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+      ),
     );
   }
 }

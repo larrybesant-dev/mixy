@@ -26,26 +26,24 @@ class TypingRepository {
 
   Stream<Map<String, bool>> typingStream(String roomId) {
     return _db
-      .collection('rooms')
-      .doc(roomId)
-      .collection('typing')
-      .limit(QueryPolicy.typingUsersLimit)
-      .snapshots()
-      .map((snap) => {
-        for (var doc in snap.docs)
-          doc.id: _asBool(doc.data()['typing'])
-      });
+        .collection('rooms')
+        .doc(roomId)
+        .collection('typing')
+        .limit(QueryPolicy.typingUsersLimit)
+        .snapshots()
+        .map(
+          (snap) => {
+            for (var doc in snap.docs) doc.id: _asBool(doc.data()['typing']),
+          },
+        );
   }
 
   Future<void> setTyping(String roomId, String userId, bool typing) async {
     await _db
-      .collection('rooms')
-      .doc(roomId)
-      .collection('typing')
-      .doc(userId)
-      .set({
-        'typing': typing,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+        .collection('rooms')
+        .doc(roomId)
+        .collection('typing')
+        .doc(userId)
+        .set({'typing': typing, 'timestamp': FieldValue.serverTimestamp()});
   }
 }

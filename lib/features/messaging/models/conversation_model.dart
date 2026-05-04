@@ -53,7 +53,10 @@ bool _asBool(dynamic value, {bool fallback = false}) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
+        .map(
+          (item) =>
+              item is String ? item.trim() : item?.toString().trim() ?? '',
+        )
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
@@ -155,7 +158,9 @@ class Conversation {
       'lastMessageId': lastMessageId,
       'lastMessagePreview': lastMessagePreview,
       'lastMessageSenderId': lastMessageSenderId,
-      'lastMessageAt': lastMessageAt != null ? Timestamp.fromDate(lastMessageAt!) : null,
+      'lastMessageAt': lastMessageAt != null
+          ? Timestamp.fromDate(lastMessageAt!)
+          : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastReadAt': lastReadAt.map(
         (key, value) => MapEntry(key, Timestamp.fromDate(value)),

@@ -2,7 +2,10 @@ $ErrorActionPreference = 'Stop'
 
 function Get-JavaMajorVersion {
   try {
-    $output = (& java -version 2>&1 | Out-String)
+    # java -version writes to stderr on many distributions, and with
+    # ErrorActionPreference=Stop that can throw in PowerShell. Use cmd.exe
+    # to capture output robustly as plain text.
+    $output = (& cmd /c "java -version 2>&1" | Out-String)
   } catch {
     return $null
   }
@@ -30,5 +33,8 @@ if ($javaMajor -lt 21) {
   exit 1
 }
 
-Write-Host "Java $javaMajor detected. Running Firestore rules tests..." -ForegroundColor Green
+Write-Host "Java $javaMajor detected. Running Firestore contract coverage gate..." -ForegroundColor Green
+node tools/firestore_contract_compiler.mjs
+
+Write-Host "Coverage gate passed. Running Firestore rules tests..." -ForegroundColor Green
 npm --prefix functions run test:rules

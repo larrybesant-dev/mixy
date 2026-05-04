@@ -37,7 +37,7 @@ class PaginatedPostsState {
 
 class PaginatedPostsController extends StateNotifier<PaginatedPostsState> {
   PaginatedPostsController(this._firestore, this._ref)
-      : super(PaginatedPostsState());
+    : super(PaginatedPostsState());
 
   final FirebaseFirestore _firestore;
   final Ref _ref;
@@ -93,6 +93,9 @@ class PaginatedPostsController extends StateNotifier<PaginatedPostsState> {
 }
 
 final paginatedPostsProvider =
-    StateNotifierProvider.autoDispose<PaginatedPostsController, PaginatedPostsState>((ref) {
-  return PaginatedPostsController(FirebaseFirestore.instance, ref);
-});
+    StateNotifierProvider.autoDispose<
+      PaginatedPostsController,
+      PaginatedPostsState
+    >((ref) {
+      return PaginatedPostsController(FirebaseFirestore.instance, ref);
+    });

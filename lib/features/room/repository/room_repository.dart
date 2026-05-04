@@ -310,20 +310,14 @@ class RoomRepository {
     // This ensures rate limiting, policy enforcement, and transaction isolation.
     final functions = _functions;
     if (functions == null) {
-      throw StateError(
-        'Live media backend is unavailable. Please try again.',
-      );
+      throw StateError('Live media backend is unavailable. Please try again.');
     }
 
     try {
       final callable = functions.httpsCallable('grabMic');
-      await callable.call<Map<String, dynamic>>({
-        'roomId': roomId,
-      });
+      await callable.call<Map<String, dynamic>>({'roomId': roomId});
     } catch (e) {
-      throw StateError(
-        'Failed to take the mic: ${e.toString()}',
-      );
+      throw StateError('Failed to take the mic: ${e.toString()}');
     }
   }
 

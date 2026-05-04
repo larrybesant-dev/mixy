@@ -23,7 +23,9 @@ class SchemaFriendIdentity {
       userId: userId,
       username: _asString(userData['username'], fallback: 'Unknown user'),
       email: _asNullableString(userData['email']),
-      avatarUrl: _asNullableString(profileData['avatarUrl']) ?? _asNullableString(userData['avatarUrl']),
+      avatarUrl:
+          _asNullableString(profileData['avatarUrl']) ??
+          _asNullableString(userData['avatarUrl']),
       accentColor: _asNullableString(profileData['profileAccentColor']),
     );
   }

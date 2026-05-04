@@ -23,7 +23,9 @@ final walletUserIdProvider = Provider<String?>((ref) {
 final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
   final userId = ref.watch(walletUserIdProvider);
   if (userId == null || userId.isEmpty) {
-    return Stream<WalletModel>.value(const WalletModel(userId: '', coinBalance: 0));
+    return Stream<WalletModel>.value(
+      const WalletModel(userId: '', coinBalance: 0),
+    );
   }
 
   // Admin accounts are treated as having unlimited balance.
@@ -35,20 +37,14 @@ final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
   }
 
   final firestore = ref.watch(walletFirestoreProvider);
-  final docStream = firestore
-      .collection('wallets')
-      .doc(userId)
-      .snapshots();
+  final docStream = firestore.collection('wallets').doc(userId).snapshots();
 
   return docStream.asyncMap((walletDoc) async {
     final walletData = walletDoc.data();
-    
+
     // If wallet doc exists, use it as primary truth.
     if (walletData != null) {
-      return WalletModel.fromJson({
-        'userId': userId,
-        ...walletData,
-      });
+      return WalletModel.fromJson({'userId': userId, ...walletData});
     }
 
     // Fallback to legacy balance in users doc if wallet doesn't exist yet
@@ -61,13 +57,17 @@ final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
 
     return WalletModel(
       userId: userId,
-      coinBalance: ((userData['balance'] ?? userData['coinBalance']) as num?)?.toInt() ?? 0,
+      coinBalance:
+          ((userData['balance'] ?? userData['coinBalance']) as num?)?.toInt() ??
+          0,
     );
   });
 });
 
 final walletProvider = StreamProvider<double>((ref) {
-  return ref.watch(walletDetailsProvider).when(
+  return ref
+      .watch(walletDetailsProvider)
+      .when(
         data: (wallet) => Stream<double>.value(wallet.coinBalance.toDouble()),
         loading: () => const Stream<double>.empty(),
         error: (_, _) => const Stream<double>.empty(),

@@ -65,7 +65,8 @@ class ProfilePrivacyModel {
       showAge: showAge ?? this.showAge,
       showGender: showGender ?? this.showGender,
       showLocation: showLocation ?? this.showLocation,
-      showRelationshipStatus: showRelationshipStatus ?? this.showRelationshipStatus,
+      showRelationshipStatus:
+          showRelationshipStatus ?? this.showRelationshipStatus,
     );
   }
 }

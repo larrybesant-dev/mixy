@@ -2,98 +2,132 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helper Functions
-    // ─────────────────────────────────────────────────────────────────────────
+    // ---------------------------------------------------------------------
+    // Core helpers (zero-trust defaults)
+    // ---------------------------------------------------------------------
 
     function signedIn() {
       return request.auth != null;
     }
 
-    // Capability parity with the client-side SessionCapabilities layer.
-    // Today guest users are unauthenticated, so most capabilities resolve to
-    // authenticated-session checks here.
-    function canSendMessage() {
-      return signedIn();
-    }
-
-    function canStartConversation() {
-      return signedIn();
-    }
-
-    function canFollowUser() {
-      return signedIn();
-    }
-
-    function canCreateRoom() {
-      return signedIn();
-    }
-
-    function canJoinRoom() {
-      return signedIn();
-    }
-
-    function canCreatePost() {
-      return signedIn();
-    }
-
-    function canCreateStory() {
-      return signedIn();
-    }
-
-    function canCreateGroup() {
-      return signedIn();
-    }
-
-    function canEditProfile(userId) {
-      return isSelf(userId);
-    }
-
-    function canInviteToRoom() {
-      return signedIn();
+    function uid() {
+      return request.auth.uid;
     }
 
     function isSelf(userId) {
-      return signedIn() && request.auth.uid == userId;
+      return signedIn() && uid() == userId;
     }
 
-    function isFriendParticipant(data) {
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function verificationDoc(userId) {
+      return get(/databases/$(database)/documents/verification/$(userId));
+    }
+
+    function roomDoc(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId));
+    }
+
+    function conversationDoc(conversationId) {
+      return get(/databases/$(database)/documents/conversations/$(conversationId));
+    }
+
+    // Server-trusted admin authority:
+    // 1) custom claim: request.auth.token.admin == true
+    // 2) roles/admins/<uid> doc maintained server-side only
+    function isAdminClaim() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isAdminRoleDoc() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/roles/admins/$(uid()));
+    }
+
+    function isAdmin() {
+      return isAdminClaim() || isAdminRoleDoc();
+    }
+
+    // Adult verification must come from server-managed verification doc.
+    // Client-side flags (routing/providers/local state) are never trusted.
+    function isAdultVerified(userId) {
       return signedIn()
-        && data.userA is string
-        && data.userB is string
-        && (data.userA == request.auth.uid || data.userB == request.auth.uid);
+        && exists(/databases/$(database)/documents/verification/$(userId))
+        && verificationDoc(userId).data.isAdultVerified == true
+        && verificationDoc(userId).data.verificationStatus == 'verified';
     }
 
-    function canonicalFriendId(otherUserId) {
-      return request.auth.uid < otherUserId
-        ? request.auth.uid + '_' + otherUserId
-        : otherUserId + '_' + request.auth.uid;
+    function roomAllowsGuest(roomData) {
+      return roomData.get('allowGuestAccess', false) == true;
     }
 
-    function isAcceptedFriend(userId) {
-      return signedIn() && (
-        (
-          exists(/databases/$(database)/documents/friend_links/$(canonicalFriendId(userId)))
-          && get(/databases/$(database)/documents/friend_links/$(canonicalFriendId(userId))).data.status == 'accepted'
+    function roomReadableByRequester(roomData) {
+      return (
+          signedIn()
+          && (
+            !roomData.get('isAdult', false)
+            || isAdultVerified(uid())
+          )
         )
         || (
-          exists(/databases/$(database)/documents/friendships/$(canonicalFriendId(userId)))
-          && get(/databases/$(database)/documents/friendships/$(canonicalFriendId(userId))).data.status == 'accepted'
-        )
-      );
-    }
-
-    function isFriendLinkUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends', 'updatedAt'])
-        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['friends'])
-        && (
-          request.resource.data.friends.hasAny([request.auth.uid])
-          || resource.data.friends.hasAny([request.auth.uid])
+          !signedIn()
+          && roomAllowsGuest(roomData)
+          && !roomData.get('isAdult', false)
         );
     }
 
-    function onlyIdentityFieldsAllowed() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+    function canReadRoomById(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId))
+        && roomReadableByRequester(roomDoc(roomId).data);
+    }
+
+    function isRoomParticipant(roomId, userId) {
+      return exists(
+        /databases/$(database)/documents/rooms/$(roomId)/participants/$(userId)
+      );
+    }
+
+    function isConversationParticipant(convData) {
+      return signedIn()
+        && convData.participantIds is list
+        && convData.participantIds.hasAny([uid()]);
+    }
+
+    function canAccessConversationById(conversationId) {
+      return exists(/databases/$(database)/documents/conversations/$(conversationId))
+        && isConversationParticipant(conversationDoc(conversationId).data);
+    }
+
+    // ---------------------------------------------------------------------
+    // Users + profile hardening
+    // ---------------------------------------------------------------------
+
+    function restrictedUserFields() {
+      return [
+        'admin',
+        'isAdmin',
+        'role',
+        'roles',
+        'membershipLevel',
+        'coins',
+        'coinBalance',
+        'cashBalance',
+        'wallet',
+        'security',
+        'isVerified',
+        'isAdultVerified',
+        'adultVerified',
+        'verificationStatus',
+        'adultModeEnabled',
+        'adultConsentAccepted',
+        'adultModeEnabledAt'
+      ];
+    }
+
+    function allowedSelfUserFields() {
+      return [
         'uid',
         'id',
         'username',
@@ -105,118 +139,555 @@ service cloud.firestore {
         'bio',
         'isPrivate',
         'isComplete',
-        'updatedAt'
-      ]);
+        'followers',
+        'following',
+        'createdAt',
+        'updatedAt',
+        'favoriteFriendIds'
+      ];
     }
 
-    // Adult-mode consent fields are self-managed by the user.
-    // Separated from identity fields to keep the whitelist narrow.
-    function onlyAdultConsentFieldsAllowed() {
+    function userCreateValid(userId) {
+      return request.resource.data.keys().hasOnly(allowedSelfUserFields())
+        && request.resource.data.uid == userId
+        && request.resource.data.uid == uid()
+        && request.resource.data.keys().hasAny(['createdAt', 'updatedAt'])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && !request.resource.data.keys().hasAny(restrictedUserFields());
+    }
+
+    function userUpdateValid() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedSelfUserFields())
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(restrictedUserFields())
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == uid();
+    }
+
+    match /users/{userId} {
+      // Keep read authenticated; tighten further with profile projection if needed.
+      allow read: if signedIn();
+
+      // Client can manage only non-privileged profile identity fields.
+      allow create: if isSelf(userId) && userCreateValid();
+      allow update: if isSelf(userId) && userUpdateValid();
+      allow delete: if isSelf(userId);
+
+      // Server-only security/verification/wallet internals.
+      match /wallet/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      match /verification/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      match /security/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      // After Dark profile data: readable only by verified adults.
+      // Writes are owner-only and limited to non-authoritative profile content.
+      match /adult_content/{docId} {
+        // Owners can always manage their own adult profile data.
+        // Other users must be verified adults on both sides.
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && isAdultVerified(uid())
+            && isAdultVerified(userId)
+          );
+        allow create, update, delete: if isSelf(userId);
+      }
+
+      match /adult_profile/{docId} {
+        // Owners can always manage their own adult profile data.
+        // Other users must be verified adults on both sides.
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && isAdultVerified(uid())
+            && isAdultVerified(userId)
+          );
+        allow create, update, delete: if isSelf(userId);
+      }
+
+      match /stories/{storyId} {
+        allow read: if signedIn();
+        allow create: if isSelf(userId)
+          && request.resource.data.userId == uid();
+        allow update: if isSelf(userId)
+          && resource.data.userId == uid()
+          && request.resource.data.userId == uid();
+        allow delete: if isSelf(userId)
+          && resource.data.userId == uid();
+      }
+
+      match /following/{docId} {
+        allow read, create, delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /followers/{docId} {
+        allow read: if isSelf(userId);
+        allow create, delete: if signedIn() && docId == uid();
+        allow update: if false;
+      }
+
+      match /bookmarks/{bookmarkId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.postId is string;
+        allow delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /privacy/{docId} {
+        allow read: if isSelf(userId);
+        allow create, update: if isSelf(userId);
+        allow delete: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Server-managed verification source of truth
+    // ---------------------------------------------------------------------
+
+    match /verification/{userId} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /verification_requests/{requestId} {
+      allow read: if signedIn() && (requestId == uid() || isAdmin());
+      allow create: if signedIn()
+        && requestId == uid()
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'reason',
+          'status',
+          'submittedAt',
+          'reviewedAt',
+          'reviewNote'
+        ])
+        && request.resource.data.userId == uid()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.submittedAt == request.time
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.reviewNote == null;
+      allow update: if false;
+      allow delete: if signedIn()
+        && requestId == uid()
+        && resource.data.userId == uid()
+        && resource.data.status == 'rejected';
+    }
+
+    // ---------------------------------------------------------------------
+    // Rooms: auth/adult gating + strict mutation controls
+    // ---------------------------------------------------------------------
+
+    function validRoomCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'hostId',
+          'isLive',
+          'isAdult',
+          'allowGuestAccess',
+          'thumbnailUrl',
+          'createdAt',
+          'updatedAt',
+          'stageUserIds',
+          'audienceUserIds',
+          'memberCount',
+          'category',
+          'tags',
+          'coHosts',
+          'isLocked',
+          'slowModeSeconds',
+          'scheduledAt',
+          'maxBroadcasters',
+          'maxSpeakers',
+          'speakerSyncVersion',
+          'theme',
+          'expiresAt'
+        ])
+        && request.resource.data.hostId == uid()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.isLive is bool
+        && request.resource.data.isAdult is bool
+        && (!request.resource.data.isAdult || isAdultVerified(uid()))
+        && request.resource.data.memberCount is int
+        && request.resource.data.memberCount >= 0
+        && request.resource.data.audienceUserIds is list
+        && request.resource.data.stageUserIds is list
+        && (request.resource.data.audienceUserIds.hasAny([uid()])
+          || request.resource.data.category == 'speed_dating')
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validHostRoomUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'adultModeEnabled',
-        'adultConsentAccepted',
-        'adultModeEnabledAt',
-        'updatedAt'
-      ]);
+          'name',
+          'description',
+          'rules',
+          'isLive',
+          'thumbnailUrl',
+          'updatedAt',
+          'isLocked',
+          'slowModeSeconds',
+          'category',
+          'tags',
+          'coHosts',
+          'scheduledAt',
+          'maxBroadcasters',
+          'maxSpeakers',
+          'speakerSyncVersion',
+          'theme',
+          'mutedUsers',
+          'bannedUsers',
+          'endedAt',
+          'spotlightUserId',
+          'isDirectCall',
+          'calleeId',
+          'ownerName'
+        ])
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.isAdult == resource.data.isAdult;
     }
 
-    function onlyProfilePublicFieldsAllowed() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'userId',
-        'avatarUrl',
-        'coverPhotoUrl',
-        'galleryUrls',
-        'introVideoUrl',
-        'bio',
-        'aboutMe',
-        'age',
-        'gender',
-        'location',
-        'relationshipStatus',
-        'vibePrompt',
-        'firstDatePrompt',
-        'musicTastePrompt',
-        'interests',
-        'profileAccentColor',
-        'isPrivate',
-        'updatedAt'
-      ]);
-    }
+    match /rooms/{roomId} {
+      // Room reads are source-of-truth authorization gates.
+      allow read: if roomReadableByRequester(resource.data);
 
-    function onlyPreferencesFieldsAllowed() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'userId',
-        'themeId',
-        'backgroundColor',
-        'profileMusicUrl',
-        'profileMusicTitle',
-        'profileBgGradientStart',
-        'profileBgGradientEnd',
-        'camViewPolicy',
-        'updatedAt'
-      ]);
-    }
+      // Signed-in host can create a room. Adult rooms require server-verified adult status.
+      allow create: if signedIn() && validRoomCreate();
 
-    function onlyVerificationSettingsFieldsAllowed() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'userId',
-        'adultModeEnabled',
-        'adultConsentAccepted',
-        'updatedAt'
-      ]);
-    }
+      // Host controls mutable room metadata; cannot rewrite ownership or adult flag.
+      allow update: if signedIn()
+        && resource.data.hostId == uid()
+        && validHostRoomUpdate();
 
-    function userDoc(userId) {
-      return get(/databases/$(database)/documents/users/$(userId));
-    }
+      // Delete restricted to host/admin.
+      allow delete: if signedIn() && (resource.data.hostId == uid() || isAdmin());
 
-    function adultModeEnabled(userId) {
-      return userDoc(userId).data.adultModeEnabled == true
-        && userDoc(userId).data.adultConsentAccepted == true;
-    }
+      // Participant roster
+      match /participants/{participantId} {
+        allow read: if canReadRoomById(roomId);
 
-    function canReadSharedAdultProfile(userId) {
-      return signedIn() && adultModeEnabled(request.auth.uid) && adultModeEnabled(userId);
-    }
+        // Self-only participant heartbeat/mic state updates.
+        // Role elevation is blocked client-side to prevent spoofing.
+        allow create: if signedIn()
+          && participantId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'role',
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'isBanned',
+            'userStatus',
+            'displayName',
+            'photoUrl',
+            'joinedAt',
+            'lastActiveAt',
+            'updatedAt'
+          ])
+          && request.resource.data.userId == uid()
+          && (
+            request.resource.data.role == 'audience'
+            || roomDoc(roomId).data.hostId == uid()
+            || isAdmin()
+          );
 
-    function roomDoc(roomId) {
-      return get(/databases/$(database)/documents/rooms/$(roomId));
-    }
+        allow update: if signedIn()
+          && participantId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.userId == uid()
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'userStatus',
+            'displayName',
+            'photoUrl',
+            'lastActiveAt',
+            'updatedAt'
+          ]);
 
-    function isRoomHost(roomId) {
-      return signedIn() && (
-        roomDoc(roomId).data.ownerId == request.auth.uid
-        || roomDoc(roomId).data.hostId == request.auth.uid
-      );
-    }
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin())
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'role',
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'isBanned',
+            'userStatus',
+            'lastActiveAt',
+            'updatedAt'
+          ]);
 
-    function participantDoc(roomId, userId) {
-      return get(/databases/$(database)/documents/rooms/$(roomId)/participants/$(userId));
-    }
+        allow delete: if signedIn() && (participantId == uid() || isAdmin());
+      }
 
-    function participantRole(roomId, userId) {
-      return participantDoc(roomId, userId).data.role;
-    }
+      match /members/{memberId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && memberId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'role',
+            'joinedAt',
+            'displayName',
+            'photoUrl',
+            'lastActiveAt',
+            'updatedAt'
+          ])
+          && request.resource.data.userId == uid();
+        allow delete: if signedIn() && (memberId == uid() || isAdmin());
+      }
 
-    function isRoomModerator(roomId) {
-      return signedIn() && participantRole(roomId, request.auth.uid) == 'moderator';
-    }
+      // WebRTC peer presence
+      match /webrtc_peers/{peerId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && peerId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'isBroadcasting',
+            'cameraActive',
+            'joinedAt',
+            'lastHeartbeatAt',
+            'streamRefreshAt',
+            'createdAt',
+            'updatedAt'
+          ]);
+        allow delete: if signedIn() && (peerId == uid() || isAdmin());
+      }
 
-    function isRoomCohost(roomId) {
-      return signedIn() && participantRole(roomId, request.auth.uid) == 'cohost';
-    }
+      match /messages/{messageId} {
+        allow read: if signedIn() && canReadRoomById(roomId);
 
-    function isTrustedSpeaker(roomId) {
-      return signedIn() && participantRole(roomId, request.auth.uid) == 'trusted_speaker';
-    }
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && isRoomParticipant(roomId, uid())
+          && request.resource.data.senderId == uid()
+          && request.resource.data.roomId == roomId
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0;
 
-    function isRoomStaff(roomId) {
-      return isRoomHost(roomId) || isRoomCohost(roomId) || isRoomModerator(roomId);
-    }
+        allow update, delete: if false;
 
-    function isRoomParticipant(roomId) {
-      return signedIn()
-        && participantDoc(roomId, request.auth.uid).data.userId == request.auth.uid;
+        match /reactions/{reactionId} {
+          allow read: if signedIn() && canReadRoomById(roomId);
+          allow create, update: if signedIn()
+            && canReadRoomById(roomId)
+            && isRoomParticipant(roomId, uid())
+            && reactionId == uid()
+            && request.resource.data.userId == uid()
+            && request.resource.data.keys().hasOnly(['userId', 'emoji', 'timestamp']);
+          allow delete: if signedIn()
+            && canReadRoomById(roomId)
+            && reactionId == uid();
+        }
+      }
+
+      match /typing/{typingUserId} {
+        allow read: if signedIn() && canReadRoomById(roomId);
+
+        allow create, update: if signedIn()
+          && typingUserId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'isTyping',
+            'typing',
+            'updatedAt',
+            'timestamp'
+          ])
+          && (
+            !('userId' in request.resource.data)
+            || request.resource.data.userId == uid()
+          );
+
+        allow delete: if signedIn() && typingUserId == uid();
+      }
+
+      // WebRTC call signaling
+      match /webrtc_calls/{callId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+
+        // Viewer starts call offer.
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'viewerId',
+            'broadcasterId',
+            'viewerUid',
+            'broadcasterUid',
+            'offer',
+            'createdAt'
+          ])
+          && request.resource.data.viewerId == uid();
+
+        // Broadcaster may only attach answer payload.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && resource.data.broadcasterId == uid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'answer',
+            'updatedAt'
+          ]);
+
+        allow delete: if signedIn()
+          && (
+            resource.data.viewerId == uid()
+            || resource.data.broadcasterId == uid()
+            || isAdmin()
+          );
+
+        match /viewer_ice/{iceId} {
+          allow read: if canReadRoomById(roomId) && signedIn();
+          allow create: if signedIn()
+            && get(/databases/$(database)/documents/rooms/$(roomId)/webrtc_calls/$(callId)).data.viewerId == uid()
+            && request.resource.data.keys().hasOnly([
+              'candidate',
+              'sdpMid',
+              'sdpMLineIndex',
+              'createdAt'
+            ]);
+          allow update, delete: if false;
+        }
+
+        match /broadcaster_ice/{iceId} {
+          allow read: if canReadRoomById(roomId) && signedIn();
+          allow create: if signedIn()
+            && get(/databases/$(database)/documents/rooms/$(roomId)/webrtc_calls/$(callId)).data.broadcasterId == uid()
+            && request.resource.data.keys().hasOnly([
+              'candidate',
+              'sdpMid',
+              'sdpMLineIndex',
+              'createdAt'
+            ]);
+          allow update, delete: if false;
+        }
+      }
+
+      match /speakers/{speakerId} {
+        // Explicitly server-only to prevent role/mic spoofing.
+        allow read: if canReadRoomById(roomId);
+        allow create, update, delete: if false;
+      }
+
+      match /cam_access_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        allow update, delete: if false;
+      }
+
+      match /mod_log/{entryId} {
+        allow read: if canReadRoomById(roomId);
+        allow create: if signedIn()
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin());
+        allow update, delete: if false;
+      }
+
+      match /cam_view_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (
+            // Requester supersedes their own pending request.
+            (
+              resource.data.requesterId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'supersededBy', 'updatedAt'])
+            )
+            ||
+            // Target (camera owner) resolves the request.
+            (
+              resource.data.targetId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'resolvedAt', 'updatedAt'])
+            )
+          );
+        allow delete: if false;
+      }
+
+      match /mic_access_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        // Host manages all requests; requester manages their own.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (
+            resource.data.requesterId == uid()
+            || roomDoc(roomId).data.hostId == uid()
+            || isAdmin()
+          );
+        allow delete: if false;
+      }
+
+      match /policies/{docId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin());
+        allow delete: if false;
+      }
+
+      match /slots/{slotId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.userId == uid();
+        allow delete: if signedIn()
+          && (resource.data.userId == uid() || isAdmin());
+      }
+
+      match /buzz_events/{eventId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.fromUserId == uid();
+        allow update, delete: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
     }
 
     function validConversationCreate() {
@@ -233,848 +704,359 @@ service cloud.firestore {
         ])
         && request.resource.data.type in ['direct', 'group']
         && request.resource.data.participantIds is list
-        && request.resource.data.participantIds.size() >= 1
+        && request.resource.data.participantIds.size() >= 2
         && request.resource.data.participantIds.size() <= 50
-        && request.resource.data.participantIds.hasAny([request.auth.uid])
+        && request.resource.data.participantIds.hasAny([uid()])
         && request.resource.data.createdAt == request.time
         && request.resource.data.isArchived == false
         && request.resource.data.status == 'active';
     }
 
-    function validGroupCreate() {
-      return request.resource.data.keys().hasOnly([
-          'name',
-          'description',
-          'creatorId',
-          'adminId',
-          'memberIds',
-          'memberCount',
+    function validConversationUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastReadAt',
+          'isArchived',
+          'updatedAt',
+          'lastMessageId',
+          'lastMessagePreview',
+          'lastMessageSenderId',
+          'lastMessageAt',
+          'lastMessageClientMessageId',
+          'status'
+        ])
+        // Membership is immutable from client writes.
+        && request.resource.data.participantIds == resource.data.participantIds
+        && request.resource.data.type == resource.data.type
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isConversationParticipant(resource.data);
+      allow create: if signedIn() && validConversationCreate();
+      allow update: if signedIn()
+        && isConversationParticipant(resource.data)
+        && validConversationUpdate();
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if canAccessConversationById(conversationId);
+
+        allow create: if signedIn()
+          && canAccessConversationById(conversationId)
+          && request.resource.data.keys().hasOnly([
+            'conversationId',
+            'senderId',
+            'senderName',
+            'senderAvatarUrl',
+            'content',
+            'clientMessageId',
+            'clientmessageId',
+            'createdAt',
+            'clientSentAt',
+            'expiresAt',
+            'isDeleted',
+            'readBy'
+          ])
+          && request.resource.data.conversationId == conversationId
+          && request.resource.data.senderId == uid()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.isDeleted == false
+          && request.resource.data.readBy is list
+          && request.resource.data.readBy.hasAny([uid()]);
+
+        allow update, delete: if false;
+
+        match /reactions/{reactionUserId} {
+          allow read: if canAccessConversationById(conversationId);
+          allow create, update: if signedIn()
+            && canAccessConversationById(conversationId)
+            && reactionUserId == uid()
+            && request.resource.data.keys().hasOnly(['emoji', 'updatedAt']);
+          allow delete: if signedIn()
+            && canAccessConversationById(conversationId)
+            && reactionUserId == uid();
+        }
+      }
+
+      match /ephemeral/{ephemeralId} {
+        allow read: if canAccessConversationById(conversationId);
+        // Typing indicators: conversation participants only, scoped to the
+        // shared 'typing' doc. Clients write their own userId key only.
+        allow create, update: if signedIn()
+          && canAccessConversationById(conversationId)
+          && ephemeralId == 'typing';
+        allow delete: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Moderation
+    // ---------------------------------------------------------------------
+
+    match /blocks/{blockId} {
+      allow read: if signedIn()
+        && (
+          resource.data.blockerUserId == uid()
+          || resource.data.blockedUserId == uid()
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'blockerUserId',
+          'blockedUserId',
           'createdAt'
         ])
-        && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.adminId == request.auth.uid
-        && request.resource.data.memberIds is list
-        && request.resource.data.memberIds.size() == 1
-        && request.resource.data.memberIds[0] == request.auth.uid
-        && request.resource.data.memberCount == 1
-        && request.resource.data.createdAt == request.time;
+        && request.resource.data.blockerUserId == uid()
+        && request.resource.data.blockedUserId is string
+        && request.resource.data.blockedUserId != uid();
+
+      allow delete: if signedIn() && resource.data.blockerUserId == uid();
+      allow update: if false;
     }
 
-    function validGroupMembershipMutation() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'memberIds',
-          'memberCount'
-        ])
-        && request.resource.data.memberIds is list
-        && (
-          (
-            !resource.data.memberIds.hasAny([request.auth.uid])
-            && request.resource.data.memberIds.hasAny([request.auth.uid])
-            && request.resource.data.memberCount == resource.data.memberCount + 1
-          )
-          || (
-            resource.data.memberIds.hasAny([request.auth.uid])
-            && !request.resource.data.memberIds.hasAny([request.auth.uid])
-            && request.resource.data.memberCount == resource.data.memberCount - 1
-          )
-        );
-    }
+    match /reports/{reportId} {
+      // Only admin/staff can read or action reports.
+      allow read: if isAdmin();
 
-    match /users/{userId} {
-      // Private profiles only readable by owner or followers.
-      allow read: if signedIn()
-        && (
-          isSelf(userId)
-          || isAcceptedFriend(userId)
-          || !resource.data.get('isPrivate', false)
-          || request.auth.uid in resource.data.get('followers', [])
-        );
-
-      // Create: isSelf + membershipLevel guard.
-      allow create: if isSelf(userId)
-        && (!('membershipLevel' in request.resource.data)
-          || request.resource.data.membershipLevel == 'basic');
-
-      // Update: isSelf + strict field whitelist.
-      // Adult-consent fields are allowed as a separate self-update path.
-      allow update: if (canEditProfile(userId) && onlyIdentityFieldsAllowed())
-        || (canEditProfile(userId) && onlyAdultConsentFieldsAllowed())
-        || (signedIn() && isFriendLinkUpdate());
-
-      // Delete: isSelf only.
-      allow delete: if isSelf(userId);
-
-      // ───────────────────────────────────────────────────────────────────────
-      // DOMAIN 2: Profile Public (users/<uid>/profile_public)
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /profile_public/{document=**} {
-        allow read: if signedIn();
-        allow create: if isSelf(userId);
-        allow update: if isSelf(userId) && onlyProfilePublicFieldsAllowed();
-        allow delete: if false; // Maintain history.
-      }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // DOMAIN 3: Wallet (users/<uid>/wallet) — Server Only
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /wallet/{document=**} {
-        allow read: if isSelf(userId);
-        // All writes server-only. Client cannot write coins/streaks.
-        allow create, update, delete: if false;
-      }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // DOMAIN 4: Preferences (users/<uid>/preferences)
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /preferences/{document=**} {
-        allow read: if isSelf(userId);
-        allow create: if isSelf(userId);
-        allow update: if isSelf(userId) && onlyPreferencesFieldsAllowed();
-        allow delete: if false; // Maintain history.
-      }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // DOMAIN 5: Verification (users/<uid>/verification) — Server Only
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /verification/{document=**} {
-        // Only owner can read their own verification status.
-        allow read: if isSelf(userId);
-        // Client may update only self-managed adult/privacy consent flags.
-        allow create, update: if isSelf(userId) && onlyVerificationSettingsFieldsAllowed();
-        allow delete: if false;
-      }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // DOMAIN 6: Security (users/<uid>/security) — Server Only
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /security/{document=**} {
-        // Only owner can read (not even friends).
-        allow read: if isSelf(userId);
-        // All writes server-only. Client cannot manipulate security state.
-        allow create, update, delete: if false;
-      }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // DOMAIN 7: Adult Content (users/<uid>/adult_content) — Keep Existing
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /adult_content/{documentId} {
-        allow read: if isSelf(userId)
-          || (canReadSharedAdultProfile(userId)
-            && resource.data.visibility == 'optedInAdultsOnly');
-        allow create, update, delete: if isSelf(userId);
-      }
-
-      match /adult_profile/{documentId} {
-        allow read, create, update, delete: if isSelf(userId);
-      }
-
-      // ───────────────────────────────────────────────────────────────────────
-      // Independent Subcollections (Unchanged)
-      // ───────────────────────────────────────────────────────────────────────
-
-      match /stories/{storyId} {
-        allow read: if signedIn();
-        allow create: if canCreateStory()
-          && isSelf(userId)
-          && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if canCreateStory()
-          && isSelf(userId)
-          && resource.data.userId == request.auth.uid;
-      }
-
-      match /privacy/{documentId} {
-        allow read, create, update, delete: if isSelf(userId);
-      }
-
-      match /bookmarks/{bookmarkId} {
-        allow read: if isSelf(userId);
-        allow create: if isSelf(userId)
-          && request.resource.data.postId is string;
-        allow delete: if isSelf(userId);
-        allow update: if false;
-      }
-
-      match /followers/{followerId} {
-        allow read: if signedIn();
-          allow create, update: if signedIn()
-            && followerId == request.auth.uid
-            && request.resource.data.keys().hasOnly(['followedAt']);
-          allow delete: if signedIn() && followerId == request.auth.uid;
-      }
-
-      match /following/{followingId} {
-        allow read: if signedIn();
-          allow create, update: if isSelf(userId)
-            && followingId != request.auth.uid
-            && request.resource.data.keys().hasOnly(['followedAt']);
-          allow delete: if isSelf(userId) && followingId != request.auth.uid;
-      }
-    }
-
-    match /profile_public/{userId} {
-      allow read: if signedIn();
-      allow create: if isSelf(userId)
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if isSelf(userId)
-        && request.resource.data.userId == resource.data.userId
-        && onlyProfilePublicFieldsAllowed();
-      allow delete: if false;
-    }
-
-    match /preferences/{userId} {
-      allow read: if isSelf(userId);
-      allow create: if isSelf(userId)
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if isSelf(userId)
-        && request.resource.data.userId == resource.data.userId
-        && onlyPreferencesFieldsAllowed();
-      allow delete: if false;
-    }
-
-    match /verification/{userId} {
-      allow read: if isSelf(userId);
-      allow create: if isSelf(userId)
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if isSelf(userId)
-        && request.resource.data.userId == resource.data.userId
-        && onlyVerificationSettingsFieldsAllowed();
-      allow delete: if false;
-    }
-
-    match /rooms/{roomId} {
-      // Non-adult rooms: any signed-in user. Adult rooms: 18+ verified users only.
-      allow read: if signedIn()
-        && (
-          !resource.data.get('isAdult', false)
-          || adultModeEnabled(request.auth.uid)
-        );
-      allow create: if canCreateRoom()
-        && (
-          request.resource.data.ownerId == request.auth.uid
-          || request.resource.data.hostId == request.auth.uid
-        )
-        && (
-          !request.resource.data.get('isAdult', false)
-          || adultModeEnabled(request.auth.uid)
-        );
-      // Host can update/delete; callee can decline an incoming direct call;
-      // co-host can update only the theme sub-map.
-      allow update: if isRoomHost(roomId)
-        || (signedIn()
-          && resource.data.isDirectCall == true
-          && resource.data.calleeId == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['callDeclined', 'callDeclinedAt']))
-        || (isRoomCohost(roomId)
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['theme', 'updatedAt']));
-      allow delete: if isRoomHost(roomId);
-
-      match /members/{memberId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
-          && memberId == request.auth.uid
-          && request.resource.data.userId == request.auth.uid
-          && request.resource.data.role in ['owner', 'mod', 'member'];
-        allow update: if memberId == request.auth.uid || isRoomHost(roomId);
-        allow delete: if memberId == request.auth.uid || isRoomHost(roomId);
-      }
-
-      match /participants/{participantId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
-          && participantId == request.auth.uid
-          && request.resource.data.userId == request.auth.uid
-          && request.resource.data.role in ['audience', 'host', 'cohost', 'moderator', 'trusted_speaker', 'stage', 'owner', 'mod', 'member']
-          && request.resource.data.isBanned == false
-          && request.resource.data.isMuted == false;
-        allow update: if isRoomHost(roomId)
-          || (isRoomCohost(roomId)
-            && participantId != request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['role', 'lastActiveAt'])
-            && !(resource.data.role in ['host', 'owner', 'cohost'])
-            && request.resource.data.role in ['moderator', 'trusted_speaker', 'stage', 'audience']
-          )
-          || (
-            participantId == request.auth.uid
-            && request.resource.data.userId == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['userId', 'lastActiveAt', 'camOn', 'micOn', 'isMuted', 'customStatus', 'userStatus', 'displayName', 'photoUrl', 'joinedAt', 'updatedAt'])
-          )
-          || (
-            participantId == request.auth.uid
-            && request.resource.data.userId == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['userId', 'lastActiveAt', 'camOn', 'micOn', 'isMuted', 'customStatus', 'userStatus', 'displayName', 'photoUrl', 'joinedAt', 'updatedAt', 'role'])
-            && (
-              (resource.data.role == 'stage'
-                && request.resource.data.role in ['member', 'audience'])
-              || (resource.data.role == 'trusted_speaker'
-                && request.resource.data.role == 'audience')
-              || (resource.data.role == 'member'
-                && request.resource.data.role == 'audience')
-            )
-          );
-        allow delete: if isRoomHost(roomId) || participantId == request.auth.uid;
-      }
-
-      match /speakers/{speakerId} {
-        // READ: Room participants can see speakers (public stage state).
-        allow read: if signedIn() && isRoomParticipant(roomId);
-
-        // WRITE: Blocked for all clients. Mic authority is exclusively granted
-        // through the guarded grabMic and inviteToMic Cloud Functions.
-        // Only server-side writes (via admin SDK) are permitted.
-        allow create, update, delete: if false;
-      }
-
-      match /presence/{userId} {
-        allow read: if signedIn();
-        allow create, update, delete: if isRoomHost(roomId) || userId == request.auth.uid;
-      }
-
-      match /typing/{userId} {
-        allow read: if signedIn();
-        allow create, update, delete: if userId == request.auth.uid;
-      }
-
-    match /messages/{messageId} {
-        allow read: if signedIn();
-        allow create: if canSendMessage()
-          && canJoinRoom()
-          && isRoomParticipant(roomId)
-          && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.roomId == roomId
-          && request.resource.data.sentAt == request.time
-          && request.resource.data.keys().hasOnly([
-            'id',
-            'senderId',
-            'roomId',
-            'content',
-            'type',
-            'recipientUserId',
-            'recipientDisplayName',
-            'sentAt',
-            'clientSentAt'
-          ]);
-        allow update, delete: if false; // Hardening: no editing/deleting for now
-
-        match /reactions/{userId} {
-          allow read: if signedIn();
-          allow create, update, delete: if userId == request.auth.uid;
-        }
-      }
-
-      // Support singular 'message' collection as used in some client tracing/debug calls.
-      match /message/{messageId} {
-        allow read: if signedIn();
-        allow create: if canSendMessage()
-          && canJoinRoom()
-          && isRoomParticipant(roomId)
-          && request.resource.data.senderId == request.auth.uid;
-        allow update, delete: if isRoomHost(roomId) || resource.data.senderId == request.auth.uid;
-
-        match /reactions/{userId} {
-          allow read: if signedIn();
-          allow create, update, delete: if userId == request.auth.uid;
-        }
-      }
-
-      match /policies/{documentId} {
-        allow read: if signedIn();
-        allow create, update, delete: if isRoomHost(roomId);
-      }
-
-      // Moderation audit log — append-only by room staff; readable by staff.
-      match /mod_log/{entryId} {
-        allow read: if isRoomHost(roomId)
-          || isRoomCohost(roomId)
-          || isRoomModerator(roomId);
-        allow create: if isRoomHost(roomId)
-          || isRoomCohost(roomId)
-          || isRoomModerator(roomId);
-        allow update, delete: if false;
-      }
-
-      match /gift_events/{giftEventId} {
-        allow read: if signedIn() && isRoomParticipant(roomId);
-        allow create, update, delete: if false;
-      }
-
-      match /cam_view_requests/{requestId} {
-        allow read: if signedIn()
-          && (resource.data.requesterId == request.auth.uid
-            || resource.data.targetId == request.auth.uid
-            || isRoomParticipant(roomId));
-        allow create: if signedIn()
-          && request.resource.data.requesterId == request.auth.uid
-          && request.resource.data.targetId is string
-          && request.resource.data.roomId == roomId
-          && request.resource.data.status == 'pending';
-        allow update: if signedIn()
-          && resource.data.targetId == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['status', 'updatedAt'])
-          && request.resource.data.status in ['approved', 'denied'];
-        allow delete: if false;
-      }
-
-      match /cam_access_requests/{requestId} {
-        allow read: if signedIn()
-          && (resource.data.requesterId == request.auth.uid
-            || resource.data.broadcasterId == request.auth.uid
-            || isRoomStaff(roomId)
-            || isRoomParticipant(roomId));
-        allow create: if signedIn()
-          && request.resource.data.requesterId == request.auth.uid
-          && request.resource.data.broadcasterId is string
-          && request.resource.data.roomId == roomId
-          && request.resource.data.status == 'pending';
-        allow update: if signedIn()
-          && (resource.data.broadcasterId == request.auth.uid || isRoomStaff(roomId));
-        allow delete: if false;
-      }
-
-      match /mic_access_requests/{requestId} {
-        allow read: if signedIn()
-          && (resource.data.requesterId == request.auth.uid
-            || resource.data.hostId == request.auth.uid
-            || isRoomStaff(roomId)
-            || isRoomParticipant(roomId));
-        allow create: if signedIn()
-          && request.resource.data.requesterId == request.auth.uid
-          && request.resource.data.hostId is string
-          && request.resource.data.roomId == roomId
-          && request.resource.data.status == 'pending'
-          && request.resource.data.priority is int
-          && request.resource.data.priority >= 0
-          && request.resource.data.expiresAt is timestamp;
-        allow update: if (signedIn() && isRoomStaff(roomId))
-          || (signedIn()
-            && resource.data.requesterId == request.auth.uid
-            && (
-              // Re-queue own expired/denied/cancelled request with valid new data.
-              (request.resource.data.requesterId == request.auth.uid
-                && request.resource.data.hostId is string
-                && request.resource.data.roomId == roomId
-                && request.resource.data.status == 'pending'
-                && request.resource.data.priority is int
-                && request.resource.data.priority >= 0
-                && request.resource.data.expiresAt is timestamp)
-              // Self-expire or cancel own request.
-              || (request.resource.data.diff(resource.data).affectedKeys()
-                    .hasOnly(['status', 'updatedAt', 'expiresAt'])
-                  && request.resource.data.status in ['expired', 'cancelled'])
-            ));
-        allow delete: if false;
-      }
-
-      // Camera broadcaster slots.
-      // Slots are single-field docs: { userId: string }.
-      // A vacant slot has no document or an empty userId.
-      match /slots/{slotId} {
-        // Any signed-in user in a room can read the slot list (drives CameraWall).
-        allow read: if signedIn();
-
-        // Claim a vacant slot: only the requesting user can set their own userId.
-        allow create: if signedIn()
-          && request.resource.data.keys().hasOnly(['userId'])
-          && request.resource.data.userId == request.auth.uid;
-
-        // Update: re-confirm own slot (same userId) OR take a genuinely vacant
-        // slot (existing userId is absent or empty).  Host may also clear slots.
-        allow update: if isRoomHost(roomId)
-          || (signedIn()
-            && request.resource.data.keys().hasOnly(['userId'])
-            && request.resource.data.userId == request.auth.uid
-            && (
-              !('userId' in resource.data)
-              || resource.data.userId == ''
-              || resource.data.userId == request.auth.uid
-            ));
-
-        // Release (delete): only the slot owner or the room host.
-        allow delete: if signedIn()
-          && (resource.data.userId == request.auth.uid || isRoomHost(roomId));
-      }
-      // Audit log — all moderation/role actions are written by Cloud Functions only.
-      // Client-side reads are allowed for host/cohost; writes are server-only.
-      match /audit_log/{entryId} {
-        allow read: if isRoomHost(roomId) || isRoomCohost(roomId);
-        allow create, update, delete: if false;
-      }
-
-      // WebRTC signaling — peer presence and P2P call documents.
-      match /webrtc_peers/{userId} {
-        allow read: if signedIn();
-        allow create: if signedIn() && userId == request.auth.uid;
-        allow update: if signedIn() && userId == request.auth.uid;
-        allow delete: if signedIn() && userId == request.auth.uid;
-      }
-
-      match /webrtc_calls/{callId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
-          && request.resource.data.viewerId == request.auth.uid;
-        allow update: if signedIn()
-          && (resource.data.broadcasterId == request.auth.uid
-            || resource.data.viewerId == request.auth.uid);
-        allow delete: if signedIn()
-          && (resource.data.viewerId == request.auth.uid || isRoomHost(roomId));
-
-        match /viewer_ice/{docId} {
-          allow read, write: if signedIn();
-        }
-
-        match /broadcaster_ice/{docId} {
-          allow read, write: if signedIn();
-        }
-      }
-    }
-
-    match /presence/{userId} {
-      allow read: if signedIn();
-      allow create, update: if isSelf(userId)
+      // Reporter can submit, but cannot self-resolve/update.
+      allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
-          'isOnline',
-          'online',
+          'id',
+          'reporterUserId',
+          'targetId',
+          'targetType',
+          'reason',
+          'details',
           'status',
-          'userStatus',
-          'appState',
-          'lastSeen',
-          'lastActiveAt',
-          'inRoom',
-          'roomId',
-          'lastOnlineNotifiedAt'
+          'createdAt'
         ])
-        && (!('isOnline' in request.resource.data)
-          || request.resource.data.isOnline is bool)
-        && (!('online' in request.resource.data)
-          || request.resource.data.online is bool)
-        && (!('status' in request.resource.data)
-          || request.resource.data.status is string)
-        && (!('userStatus' in request.resource.data)
-          || request.resource.data.userStatus is string)
-        && (!('appState' in request.resource.data)
-          || request.resource.data.appState is string)
-        && (!('inRoom' in request.resource.data)
-          || request.resource.data.inRoom == null
-          || request.resource.data.inRoom is string)
-        && (!('roomId' in request.resource.data)
-          || request.resource.data.roomId == null
-          || request.resource.data.roomId is string)
-        && (!('lastActiveAt' in request.resource.data)
-          || request.resource.data.lastActiveAt is timestamp);
-      allow delete: if isSelf(userId);
+        && request.resource.data.reporterUserId == uid()
+        && request.resource.data.targetId is string
+        && request.resource.data.targetType is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 3;
+
+      allow update, delete: if isAdmin();
     }
 
-    match /userCamPermissions/{userId} {
-      allow read: if isSelf(userId);
-      allow create, update: if isSelf(userId)
-        && request.resource.data.keys().hasOnly(['allowedViewers', 'updatedAt'])
-        && request.resource.data.allowedViewers is list;
-      allow delete: if isSelf(userId);
-    }
+    // ---------------------------------------------------------------------
+    // Payments / coins: server authority only for balances & ledger
+    // ---------------------------------------------------------------------
 
-    match /posts/{postId} {
-      allow read: if signedIn();
-      allow create: if canCreatePost()
-        && (!('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid)
-        && (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid)
-        && request.resource.data.createdAt is timestamp;
-      allow update: if signedIn()
-        && ((('authorId' in resource.data) && resource.data.authorId == request.auth.uid)
-          || (('userId' in resource.data) && resource.data.userId == request.auth.uid))
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'content', 'imageUrl', 'videoUrl', 'tags', 'updatedAt']);
-      allow delete: if signedIn()
-        && ((('authorId' in resource.data) && resource.data.authorId == request.auth.uid)
-          || (('userId' in resource.data) && resource.data.userId == request.auth.uid));
-
-      match /comments/{commentId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
-          && request.resource.data.authorId == request.auth.uid
-          && request.resource.data.authorName is string
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.createdAt is timestamp;
-        allow update, delete: if signedIn()
-          && resource.data.authorId == request.auth.uid;
-      }
-    }
-
-    match /events/{eventId} {
-      allow read: if signedIn();
-      allow create: if signedIn();
-      allow update, delete: if signedIn()
-        && ((('hostId' in resource.data) && resource.data.hostId == request.auth.uid)
-          || (('ownerId' in resource.data) && resource.data.ownerId == request.auth.uid)
-          || (('userId' in resource.data) && resource.data.userId == request.auth.uid));
+    match /wallets/{userId} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /transactions/{transactionId} {
       allow read: if signedIn()
-        && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      // Transactions are an append-only ledger. Only Cloud Functions (admin SDK) may write.
-      allow create, update, delete: if false;
-    }
-
-    match /friendships/{friendshipId} {
-      allow read: if isFriendParticipant(resource.data);
-      allow create: if isFriendParticipant(request.resource.data)
-        && request.resource.data.keys().hasOnly([
-          'userA',
-          'userB',
-          'status',
-          'requestedBy',
-          'createdAt',
-          'updatedAt'
-        ])
-        && request.resource.data.userA is string
-        && request.resource.data.userB is string
-        && request.resource.data.userA < request.resource.data.userB
-        && friendshipId == request.resource.data.userA + '_' + request.resource.data.userB
-        && request.resource.data.status == 'pending'
-        && request.resource.data.requestedBy == request.auth.uid;
-      allow update: if isFriendParticipant(resource.data)
-        && request.resource.data.userA == resource.data.userA
-        && request.resource.data.userB == resource.data.userB
-        && request.resource.data.requestedBy == resource.data.requestedBy
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.keys().hasOnly([
-          'userA',
-          'userB',
-          'status',
-          'requestedBy',
-          'createdAt',
-          'updatedAt'
-        ])
         && (
-          (resource.data.status == 'pending' && request.resource.data.status == 'accepted')
-          || request.resource.data.status == 'blocked'
-          || (resource.data.status == 'blocked' && request.resource.data.status == 'accepted')
+          (resource.data.participants is list
+            && resource.data.participants.hasAny([uid()]))
+          || resource.data.userId == uid()
+          || resource.data.fromUserId == uid()
+          || resource.data.toUserId == uid()
         );
-      allow delete: if isFriendParticipant(resource.data);
-    }
-
-    match /friend_links/{linkId} {
-      allow read: if signedIn()
-        && resource.data.users is list
-        && resource.data.users.hasAny([request.auth.uid]);
-      allow create: if signedIn()
-        && request.resource.data.users is list
-        && request.resource.data.users.hasAny([request.auth.uid])
-        && request.resource.data.users.size() == 2
-        && request.resource.data.status == 'pending'
-        && request.resource.data.requestedBy == request.auth.uid
-        && request.resource.data.keys().hasOnly([
-          'users',
-          'status',
-          'requestedBy',
-          'createdAt',
-          'updatedAt'
-        ]);
-      allow update: if signedIn()
-        && resource.data.users is list
-        && resource.data.users.hasAny([request.auth.uid])
-        && request.resource.data.users == resource.data.users
-        && request.resource.data.requestedBy == resource.data.requestedBy
-        && request.resource.data.keys().hasOnly([
-          'users',
-          'status',
-          'requestedBy',
-          'createdAt',
-          'updatedAt'
-        ]);
-      allow delete: if signedIn()
-        && resource.data.users is list
-        && resource.data.users.hasAny([request.auth.uid]);
-    }
-
-    match /friend_requests/{requestId} {
-      allow read: if signedIn()
-        && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.fromUserId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.toUserId == request.auth.uid;
-    }
-
-    match /friends/{friendId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    match /notifications/{notificationId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId is string
-        && request.resource.data.actorId is string
-        && request.resource.data.type is string
-        && request.resource.data.content is string
-        && request.resource.data.actorId == request.auth.uid
-        // Room-invite notifications require the inviteToRoom capability.
-        // This binds canInviteToRoom() to an actual backend write enforcement path
-        // so the capability is not phantom. Any non-room_invite notification type
-        // is unaffected by this check.
-        && (request.resource.data.type != 'room_invite' || canInviteToRoom());
-      allow update: if signedIn()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
-      allow delete: if false;
-    }
-
-    match /follows/{followId} {
-      allow read: if signedIn();
-      allow create: if canFollowUser()
-        && request.resource.data.followerUserId == request.auth.uid
-        && request.resource.data.followedUserId is string
-        && request.resource.data.followedUserId != request.auth.uid
-        && request.resource.data.keys().hasOnly(['followerUserId', 'followedUserId', 'createdAt'])
-        && request.resource.data.createdAt == request.time
-        && followId == request.resource.data.followerUserId + '_' + request.resource.data.followedUserId;
-      allow update: if false;
-      allow delete: if canFollowUser() && resource.data.followerUserId == request.auth.uid;
-    }
-
-    match /activity_feed/{activityId} {
-      allow read: if signedIn();
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type is string;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /refund_requests/{requestId} {
       allow read: if signedIn()
-        && (resource.data.requesterId == request.auth.uid
-          || resource.data.senderId == request.auth.uid
-          || resource.data.receiverId == request.auth.uid);
-      allow create, update, delete: if false;
-    }
+        && (
+          resource.data.requesterId == uid()
+          || isAdmin()
+        );
 
-    match /cash_out_requests/{requestId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.amount is number
-        && request.resource.data.amount > 0
-        && request.resource.data.status == 'pending';
-      allow update, delete: if false;
-    }
-
-    match /stripe_connect_accounts/{userId} {
-      allow read: if isSelf(userId);
-      allow create, update, delete: if false;
-    }
-
-    match /wallets/{userId} {
-      allow read: if isSelf(userId);
-      allow create, update, delete: if false;
-    }
-
-    match /wallet_ledger/{entryId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create, update, delete: if false;
-    }
-
-    match /referral_codes/{code} {
-      allow read: if signedIn();
-      allow create, update, delete: if false;
-    }
-
-    match /referrals/{referralId} {
-      allow read: if signedIn()
-        && (resource.data.referrerUserId == request.auth.uid
-          || resource.data.referredUserId == request.auth.uid);
-      allow create, update, delete: if false;
-    }
-
-    match /referral_earnings/{earningId} {
-      allow read: if signedIn() && resource.data.beneficiaryUserId == request.auth.uid;
-      allow create, update, delete: if false;
-    }
-
-    match /blocks/{blockId} {
-      allow read: if signedIn()
-        && (resource.data.blockerUserId == request.auth.uid
-          || resource.data.blockedUserId == request.auth.uid);
-      allow create: if signedIn()
-        && request.resource.data.blockerUserId == request.auth.uid
-        && request.resource.data.blockedUserId is string;
-      allow update: if false;
-      allow delete: if signedIn() && resource.data.blockerUserId == request.auth.uid;
-    }
-
-    match /reports/{reportId} {
-      allow read: if signedIn() && resource.data.reporterUserId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.reporterUserId == request.auth.uid
-        && request.resource.data.targetId is string
-        && request.resource.data.targetType is string
-        && request.resource.data.reason is string;
-      allow update, delete: if false;
-    }
-
-    match /beta_feedback/{feedbackId} {
+      // Request submission only; fulfillment fields are server-only.
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
-          'category',
-          'message',
-          'route',
-          'uid',
-          'email',
-          'platform',
-          'isWeb',
+          'requesterId',
+          'transactionId',
+          'reason',
           'status',
           'createdAt'
         ])
-        && request.resource.data.category in ['bug', 'ux', 'performance', 'feature-request']
-        && request.resource.data.message is string
-        && request.resource.data.message.size() > 0
-        && request.resource.data.message.size() <= 4000
-        && request.resource.data.route is string
-        && request.resource.data.route.size() > 0
-        && request.resource.data.route.size() <= 500
-        && request.resource.data.uid == request.auth.uid
-        && (
-          !('email' in request.resource.data)
-          || request.resource.data.email == null
-          || request.resource.data.email is string
-        )
-        && request.resource.data.platform is string
-        && request.resource.data.isWeb is bool
-        && request.resource.data.status == 'new'
+        && request.resource.data.requesterId == uid()
+        && request.resource.data.transactionId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 10
+        && request.resource.data.status == 'pending'
         && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
+
+      allow update, delete: if false;
     }
 
-    match /speed_dating_actions/{actionId} {
+    match /cash_out_requests/{requestId} {
       allow read: if signedIn()
-        && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
-      allow create, update: if signedIn()
-        && request.resource.data.fromUserId == request.auth.uid
-        && request.resource.data.toUserId is string
-        && request.resource.data.decision in ['like', 'pass'];
-      allow delete: if false;
+        && (
+          resource.data.userId == uid()
+          || isAdmin()
+        );
+
+      // Optional client request record. Processing remains server-only.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'amount',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.userId == uid()
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
     }
 
-    match /speed_dating_matches/{matchId} {
-      allow read: if signedIn() && resource.data.participantIds.hasAny([request.auth.uid]);
+    match /entitlement_events/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Presence
+    // ---------------------------------------------------------------------
+
+    match /presence/{userId} {
+      allow read: if signedIn();
+
+      allow create, update: if isSelf(userId)
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'isOnline',
+          'online',
+          'status',
+          'lastSeen',
+          'lastActiveAt',
+          'lastHeartbeatAt',
+          'inRoom',
+          'roomId',
+          'appState',
+          'rtdbActiveSessionCount',
+          'updatedAt'
+        ])
+        && (
+          !('userId' in request.resource.data)
+          || request.resource.data.userId == uid()
+        )
+        && (
+          !('status' in request.resource.data)
+          || request.resource.data.status in ['online', 'away', 'dnd', 'offline']
+        )
+        && (
+          !('appState' in request.resource.data)
+          || request.resource.data.appState in ['foreground', 'background', 'detached', 'unknown']
+        );
+
+      allow delete: if isSelf(userId) || isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read: if signedIn()
+        && (resource.data.userId == uid() || isAdmin());
+
       allow create: if signedIn()
-        && request.resource.data.participantIds is list
-        && request.resource.data.participantIds.size() == 2
-        && request.resource.data.participantIds.hasAny([request.auth.uid]);
+        && request.resource.data.userId is string
+        && request.resource.data.actorId is string
+        && request.resource.data.actorId == uid()
+        && request.resource.data.createdAt is timestamp;
+
       allow update: if signedIn()
-        && resource.data.participantIds.hasAny([request.auth.uid])
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestRoomId', 'updatedAt', 'lastActionBy', 'createdAt', 'participantIds']);
-      allow delete: if false;
+        && (resource.data.userId == uid() || isAdmin())
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['isRead', 'readAt']);
+
+      allow delete: if signedIn()
+        && (resource.data.userId == uid() || isAdmin());
+    }
+
+    match /profile_public/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.userId == uid();
+      allow delete: if signedIn()
+        && userId == uid()
+        && resource.data.userId == uid();
+    }
+
+    match /preferences/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.userId == uid();
+      allow delete: if signedIn()
+        && userId == uid()
+        && resource.data.userId == uid();
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.followerUserId == uid()
+        && followId == (
+          request.resource.data.followerUserId + '_' + request.resource.data.followedUserId
+        );
+
+      allow delete: if signedIn()
+        && resource.data.followerUserId == uid();
+
+      allow update: if false;
+    }
+
+    match /friend_links/{id} {
+      allow read: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+
+      allow create: if signedIn()
+        && request.resource.data.users is list
+        && request.resource.data.users.hasAny([uid()]);
+
+      // Update must be anchored to the EXISTING document's user list,
+      // not the incoming payload, to prevent takeover of stranger friendships.
+      allow update: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+
+      allow delete: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+    }
+
+    match /friendships/{id} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && (
+          (request.resource.data.users is list
+            && request.resource.data.users.hasAny([uid()]))
+          || request.resource.data.userA == uid()
+          || request.resource.data.userB == uid()
+        );
+
+      // Update must verify actor is in the EXISTING document, not the payload,
+      // to prevent a bad actor from overwriting stranger-to-stranger friendships.
+      allow update: if signedIn()
+        && (
+          (resource.data.users is list
+            && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
+
+      allow delete: if signedIn()
+        && (
+          (resource.data.users is list
+            && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
     }
 
     match /speed_dating_queue/{userId} {
@@ -1084,119 +1066,142 @@ service cloud.firestore {
 
     match /speed_dating_sessions/{sessionId} {
       allow read: if signedIn()
-        && resource.data.participantIds.hasAny([request.auth.uid]);
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()]);
       allow create, update, delete: if false;
     }
 
-    match /admin/{document=**} {
-      allow read, write: if false;
-    }
-
-    match /logs/{logId} {
-      allow read, write: if false;
-    }
-
-    match /conversations/{conversationId} {
+    // Speed-dating decision actions (own decisions only)
+    match /speed_dating_actions/{actionId} {
       allow read: if signedIn()
-        && resource.data.participantIds.hasAny([request.auth.uid]);
-      allow create: if canStartConversation() && validConversationCreate();
-      allow update: if canSendMessage()
-        && resource.data.participantIds.hasAny([request.auth.uid])
+        && (resource.data.fromUserId == uid() || resource.data.toUserId == uid());
+      allow create, update: if signedIn()
+        && request.resource.data.fromUserId == uid()
+        && request.resource.data.toUserId is string
+        && request.resource.data.toUserId != uid()
+        && request.resource.data.decision in ['like', 'pass'];
+      allow delete: if false;
+    }
+
+    // Speed-dating mutual matches (read by participants; write server-only except via transactions)
+    match /speed_dating_matches/{matchId} {
+      allow read: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()]);
+      allow create: if signedIn()
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.hasAny([uid()]);
+      // Participants may attach a latestRoomId once a live date room is created.
+      allow update: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()])
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['lastMessage', 'lastMessageId', 'lastMessagePreview',
-                'lastMessageSenderId', 'lastMessageAt', 'lastMessageClientMessageId',
-                'updatedAt', 'isArchived', 'unreadCounts', 'lastReadAt',
-                'status']);
+              .hasOnly(['latestRoomId', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == uid();
+      // Allow only like/unlike field mutations from the client.
+      // All other post mutations are server-only.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['likes', 'likeCount']);
       allow delete: if false;
 
-      // Lightweight ephemeral subcollection for typing indicators.
-      // Isolated from the parent doc so message sends do not trigger
-      // the typing stream.
-      match /ephemeral/{docId} {
-        allow read: if signedIn()
-          && get(/databases/$(database)/documents/conversations/$(conversationId))
-              .data.participantIds.hasAny([request.auth.uid]);
-        allow write: if signedIn()
-          && get(/databases/$(database)/documents/conversations/$(conversationId))
-              .data.participantIds.hasAny([request.auth.uid]);
-      }
-
-      match /messages/{messageId} {
-        allow read: if signedIn()
-          && get(/databases/$(database)/documents/conversations/$(conversationId))
-              .data.participantIds.hasAny([request.auth.uid]);
-        allow create: if canSendMessage()
-          && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.conversationId == conversationId
-          && request.resource.data.createdAt is timestamp
-          && request.resource.data.expiresAt is timestamp
-          && get(/databases/$(database)/documents/conversations/$(conversationId))
-              .data.participantIds.hasAny([request.auth.uid]);
-        allow update, delete: if false;
-
-        match /reactions/{reactionUserId} {
-          allow read: if signedIn()
-            && get(/databases/$(database)/documents/conversations/$(conversationId))
-                .data.participantIds.hasAny([request.auth.uid]);
-          allow create, update: if signedIn()
-            && reactionUserId == request.auth.uid
-            && get(/databases/$(database)/documents/conversations/$(conversationId))
-                .data.participantIds.hasAny([request.auth.uid]);
-          allow delete: if signedIn() && reactionUserId == request.auth.uid;
-        }
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.authorId == uid();
+        allow update: if false;
+        allow delete: if signedIn()
+          && resource.data.authorId == uid();
       }
     }
+
+    // ---------------------------------------------------------------------
+    // Activity feed (self-generated activity events)
+    // ---------------------------------------------------------------------
+
+    match /activity_feed/{activityId} {
+      allow read: if signedIn()
+        && resource.data.userId == uid();
+      allow create: if signedIn()
+        && request.resource.data.userId == uid()
+        && request.resource.data.type is string
+        && request.resource.data.type.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Groups
+    // ---------------------------------------------------------------------
 
     match /groups/{groupId} {
       allow read: if signedIn();
-      allow create: if canCreateGroup() && validGroupCreate();
+      allow create: if signedIn()
+        && request.resource.data.creatorId == uid()
+        && request.resource.data.adminId == uid()
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.hasAny([uid()]);
+      // Group admin can update all fields; members can only add/remove themselves.
       allow update: if signedIn()
         && (
-          resource.data.creatorId == request.auth.uid
-          || resource.data.adminId == request.auth.uid
-          || validGroupMembershipMutation()
+          resource.data.adminId == uid()
+          || isAdmin()
+          || (
+            // Self-join: caller is not yet a member and is adding themselves.
+            !resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['memberIds', 'memberCount'])
+          )
+          || (
+            // Self-leave: caller is currently a member and is removing themselves.
+            resource.data.memberIds.hasAny([uid()])
+            && !request.resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['memberIds', 'memberCount'])
+          )
         );
-      allow delete: if canCreateGroup()
-        && resource.data.creatorId == request.auth.uid;
+      allow delete: if signedIn()
+        && (resource.data.adminId == uid() || resource.data.creatorId == uid() || isAdmin());
 
       match /posts/{postId} {
         allow read: if signedIn();
-        allow create: if canCreatePost()
-          && request.resource.data.authorId == request.auth.uid
-          && get(/databases/$(database)/documents/groups/$(groupId))
-              .data.memberIds.hasAny([request.auth.uid]);
-        allow update, delete: if signedIn()
-          && resource.data.authorId == request.auth.uid;
+        allow create: if signedIn()
+          && request.resource.data.authorId == uid()
+          && request.resource.data.groupId == groupId;
+        allow update, delete: if false;
       }
     }
 
-    match /hashtags/{hashtag} {
+    // ---------------------------------------------------------------------
+    // Per-user camera viewer permissions (owner manages their own list)
+    // ---------------------------------------------------------------------
+
+    match /userCamPermissions/{userId} {
       allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.keys().hasOnly(['allowedViewers', 'updatedAt']);
+      allow delete: if isSelf(userId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Server-trusted admin role docs (immutable from clients)
+    // ---------------------------------------------------------------------
+
+    match /roles/admins/{adminUid} {
+      allow read: if isAdmin() || isSelf(adminUid);
       allow create, update, delete: if false;
     }
 
-    match /verification_requests/{requestId} {
-      // Users can submit and read their own verification request.
-      // Use requestId (doc ID == uid) instead of resource.data.userId so
-      // the rule works even when the document does not yet exist.
-      allow read: if signedIn() && requestId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.reason is string
-        && request.resource.data.reason.size() > 0
-        && request.resource.data.reason.size() <= 2000
-        && request.resource.data.status == 'pending';
-      // Only Cloud Functions / admin can update status.
-      allow update: if false;
-      // User may delete their own request to allow resubmission after rejection.
-      allow delete: if signedIn() && requestId == request.auth.uid;
-    }
-
-    match /vip_waitlist/{entryId} {
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if false;
-    }
+    // ---------------------------------------------------------------------
+    // Default deny
+    // ---------------------------------------------------------------------
 
     match /{document=**} {
       allow read, write: if false;

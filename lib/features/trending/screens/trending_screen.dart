@@ -18,7 +18,6 @@ class TrendingScreen extends ConsumerStatefulWidget {
 }
 
 class _TrendingScreenState extends ConsumerState<TrendingScreen> {
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -38,10 +37,7 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
           ),
         ),
         body: TabBarView(
-          children: [
-            _buildTrendingPosts(),
-            _buildTrendingHashtags(),
-          ],
+          children: [_buildTrendingPosts(), _buildTrendingHashtags()],
         ),
       ),
     );
@@ -60,25 +56,25 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
         message: 'Trending content will appear here once posts gain momentum.',
       ),
       data: (posts) => ListView.builder(
-          padding: const EdgeInsets.only(top: 4, bottom: 80),
-          itemCount: posts.length,
-          itemBuilder: (context, index) {
-            final post = posts[index];
-            final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-            return PostCard(
-              post: PostModel(
-                id: post.id,
-                userId: post.authorId,
-                text: post.content,
-                authorName: post.authorName,
-                authorAvatarUrl: post.authorAvatarUrl,
-                likeCount: post.likeCount,
-                commentCount: post.commentCount,
-                createdAt: post.createdAt,
-              ),
-              currentUserId: uid,
-            );
-          },
+        padding: const EdgeInsets.only(top: 4, bottom: 80),
+        itemCount: posts.length,
+        itemBuilder: (context, index) {
+          final post = posts[index];
+          final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+          return PostCard(
+            post: PostModel(
+              id: post.id,
+              userId: post.authorId,
+              text: post.content,
+              authorName: post.authorName,
+              authorAvatarUrl: post.authorAvatarUrl,
+              likeCount: post.likeCount,
+              commentCount: post.commentCount,
+              createdAt: post.createdAt,
+            ),
+            currentUserId: uid,
+          );
+        },
       ),
     );
   }
@@ -100,7 +96,8 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
       empty: const AppEmptyView(
         icon: Icons.tag_outlined,
         title: 'No trending hashtags yet',
-        message: 'Popular hashtags will appear here when conversations build up.',
+        message:
+            'Popular hashtags will appear here when conversations build up.',
       ),
       data: (hashtags) {
         return ListView.builder(
@@ -120,12 +117,15 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
               child: Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: VelvetNoir.surfaceContainer,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: VelvetNoir.outlineVariant.withValues(alpha: 0.5)),
+                    color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -170,8 +170,11 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right,
-                        color: VelvetNoir.onSurfaceVariant, size: 18),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: VelvetNoir.onSurfaceVariant,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -235,7 +238,8 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
                         title: 'No posts with this hashtag',
                       ),
                       data: (posts) {
-                        final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+                        final uid =
+                            FirebaseAuth.instance.currentUser?.uid ?? '';
                         return ListView.builder(
                           controller: scrollController,
                           itemCount: posts.length,
@@ -267,6 +271,4 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
       ),
     );
   }
-
 }
-

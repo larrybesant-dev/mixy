@@ -484,7 +484,8 @@ class WebRtcRoomService extends RtcRoomService {
       // Stop only video tracks. If the mic is still active (audio track
       // is enabled), keep the local stream and broadcaster mode alive so
       // Harley's P2P connection is not torn down mid-audio.
-      for (final track in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
+      for (final track
+          in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
         unawaited(track.stop());
       }
       _localVideoCapturing = false;
@@ -519,7 +520,8 @@ class WebRtcRoomService extends RtcRoomService {
     // started with no mic active) — in that case all audio tracks in
     // _localStream are system audio and there is nothing mic-only to mute.
     final sysIds = <String>{
-      for (final t in (_systemAudioStream?.getAudioTracks() ?? <MediaStreamTrack>[]))
+      for (final t
+          in (_systemAudioStream?.getAudioTracks() ?? <MediaStreamTrack>[]))
         if (t.id != null) t.id!,
     };
     for (final track in stream.getAudioTracks()) {
@@ -571,7 +573,8 @@ class WebRtcRoomService extends RtcRoomService {
 
   @override
   Future<void> publishLocalVideoStream(bool enabled) async {
-    for (final track in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
+    for (final track
+        in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
       track.enabled = enabled;
     }
   }
@@ -1078,7 +1081,9 @@ class WebRtcRoomService extends RtcRoomService {
           _log(
             'stream refresh detected for broadcaster=$remoteBroadcasterId — reconnecting immediately',
           );
-          WebRtcTelemetry.recordStreamRefresh(broadcasterId: remoteBroadcasterId);
+          WebRtcTelemetry.recordStreamRefresh(
+            broadcasterId: remoteBroadcasterId,
+          );
           _closePeer(remoteBroadcasterId);
           _uidToUserId[remoteUid] = remoteBroadcasterId;
           _userIdToUid[remoteBroadcasterId] = remoteUid;
@@ -1253,12 +1258,7 @@ class WebRtcRoomService extends RtcRoomService {
       if (pc.signalingState ==
           RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
         try {
-          await pc.setRemoteDescription(
-            RTCSessionDescription(
-              sdp,
-              type,
-            ),
-          );
+          await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
           _log('set remote answer from broadcaster=$broadcasterId');
         } catch (e) {
           _log(
@@ -1399,15 +1399,12 @@ class WebRtcRoomService extends RtcRoomService {
     final offerSdp = offerMap?['sdp'];
     final offerType = offerMap?['type'];
     if (offerSdp is! String || offerType is! String) {
-      _log('answerViewerOffer callId=$callId — offer missing sdp/type, skipping');
+      _log(
+        'answerViewerOffer callId=$callId — offer missing sdp/type, skipping',
+      );
       return;
     }
-    await pc.setRemoteDescription(
-      RTCSessionDescription(
-        offerSdp,
-        offerType,
-      ),
-    );
+    await pc.setRemoteDescription(RTCSessionDescription(offerSdp, offerType));
 
     final answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
@@ -1859,7 +1856,10 @@ class _VadMonitor {
     try {
       _ctx?.close();
     } catch (e) {
-      developer.log('VAD AudioContext close failed (non-fatal): $e', name: 'WebRTC');
+      developer.log(
+        'VAD AudioContext close failed (non-fatal): $e',
+        name: 'WebRTC',
+      );
     }
     _ctx = null;
     _analyser = null;

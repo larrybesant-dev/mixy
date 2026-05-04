@@ -7,11 +7,7 @@ import '../../friends/providers/schema_friend_render_mode_provider.dart';
 import '../../messages/providers/messages_render_mode_provider.dart';
 import 'schema_parity_monitor.dart';
 
-enum MigrationHealthTrend {
-  improving,
-  stable,
-  degrading,
-}
+enum MigrationHealthTrend { improving, stable, degrading }
 
 /// Unified schema health model for all modules.
 /// Replaces module-specific health classes.
@@ -48,8 +44,8 @@ class SchemaModuleHealth {
 /// Replaces:
 /// - friendModuleHealthProvider
 /// - messageModuleHealthProvider
-final schemaModuleHealthProvider =
-    Provider.autoDispose.family<SchemaModuleHealth, String>((ref, moduleId) {
+final schemaModuleHealthProvider = Provider.autoDispose
+    .family<SchemaModuleHealth, String>((ref, moduleId) {
       final normalizedModuleId = moduleId.trim().toLowerCase();
 
       switch (normalizedModuleId) {
@@ -202,7 +198,8 @@ int _computeStructuralScore({
   final readyCount = readinessSignals.where((signal) => signal).length;
   int score = (60 + ((readyCount / readinessSignals.length) * 40)).round();
 
-  if (bootMetrics != null && bootMetrics.duration > const Duration(seconds: 3)) {
+  if (bootMetrics != null &&
+      bootMetrics.duration > const Duration(seconds: 3)) {
     score -= 5;
   }
 

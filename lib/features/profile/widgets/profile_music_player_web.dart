@@ -67,38 +67,46 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
       ..src = widget.musicUrl
       ..preload = 'metadata';
 
-    _subscriptions.add(audio.onLoadedMetadata.listen((_) {
-      if (!mounted) return;
-      setState(() => _duration = _fmt(audio.duration.toInt()));
-    }));
+    _subscriptions.add(
+      audio.onLoadedMetadata.listen((_) {
+        if (!mounted) return;
+        setState(() => _duration = _fmt(audio.duration.toInt()));
+      }),
+    );
 
-    _subscriptions.add(audio.onTimeUpdate.listen((_) {
-      if (!mounted) return;
-      final dur = audio.duration;
-      final cur = audio.currentTime.toDouble();
-      setState(() {
-        _progress = dur > 0 ? (cur / dur).clamp(0.0, 1.0) : 0.0;
-        _elapsed = _fmt(cur.toInt());
-      });
-    }));
+    _subscriptions.add(
+      audio.onTimeUpdate.listen((_) {
+        if (!mounted) return;
+        final dur = audio.duration;
+        final cur = audio.currentTime.toDouble();
+        setState(() {
+          _progress = dur > 0 ? (cur / dur).clamp(0.0, 1.0) : 0.0;
+          _elapsed = _fmt(cur.toInt());
+        });
+      }),
+    );
 
-    _subscriptions.add(audio.onEnded.listen((_) {
-      if (!mounted) return;
-      setState(() {
-        _playing = false;
-        _progress = 0.0;
-        _elapsed = '0:00';
-      });
-    }));
+    _subscriptions.add(
+      audio.onEnded.listen((_) {
+        if (!mounted) return;
+        setState(() {
+          _playing = false;
+          _progress = 0.0;
+          _elapsed = '0:00';
+        });
+      }),
+    );
 
-    _subscriptions.add(audio.onError.listen((_) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Could not load audio. Check the URL and CORS settings.';
-        _playing = false;
-        _loading = false;
-      });
-    }));
+    _subscriptions.add(
+      audio.onError.listen((_) {
+        if (!mounted) return;
+        setState(() {
+          _error = 'Could not load audio. Check the URL and CORS settings.';
+          _playing = false;
+          _loading = false;
+        });
+      }),
+    );
 
     _audio = audio;
   }
@@ -127,21 +135,24 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
         _loading = false;
       });
     } else {
-      audio.play().then((_) {
-        if (!mounted) return;
-        setState(() {
-          _playing = true;
-          _loading = false;
-          _error = null;
-        });
-      }).catchError((e) {
-        if (!mounted) return;
-        setState(() {
-          _error = 'Playback blocked. Tap play to start.';
-          _playing = false;
-          _loading = false;
-        });
-      });
+      audio
+          .play()
+          .then((_) {
+            if (!mounted) return;
+            setState(() {
+              _playing = true;
+              _loading = false;
+              _error = null;
+            });
+          })
+          .catchError((e) {
+            if (!mounted) return;
+            setState(() {
+              _error = 'Playback blocked. Tap play to start.';
+              _playing = false;
+              _loading = false;
+            });
+          });
     }
   }
 
@@ -163,8 +174,9 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final title =
-        widget.musicTitle.isNotEmpty ? widget.musicTitle : 'Profile music';
+    final title = widget.musicTitle.isNotEmpty
+        ? widget.musicTitle
+        : 'Profile music';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -196,14 +208,16 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.15),
                     border: Border.all(
-                        color: scheme.primary.withValues(alpha: 0.6)),
+                      color: scheme.primary.withValues(alpha: 0.6),
+                    ),
                   ),
                   child: _loading
                       ? Padding(
                           padding: const EdgeInsets.all(10),
                           child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: scheme.primary),
+                            strokeWidth: 2,
+                            color: scheme.primary,
+                          ),
                         )
                       : Icon(
                           _playing
@@ -222,8 +236,11 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.music_note_rounded,
-                            size: 13, color: Color(0xFFD4A853)),
+                        const Icon(
+                          Icons.music_note_rounded,
+                          size: 13,
+                          color: Color(0xFFD4A853),
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -244,14 +261,18 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
                       Text(
                         '$_elapsed / $_duration',
                         style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF7B7E87)),
+                          fontSize: 11,
+                          color: Color(0xFF7B7E87),
+                        ),
                       ),
                     ] else ...[
                       const SizedBox(height: 2),
                       Text(
                         _error!,
                         style: const TextStyle(
-                            fontSize: 11, color: Color(0xFFFF6E84)),
+                          fontSize: 11,
+                          color: Color(0xFFFF6E84),
+                        ),
                       ),
                     ],
                   ],
@@ -264,21 +285,14 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 trackHeight: 3,
-                thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape:
-                    const RoundSliderOverlayShape(overlayRadius: 12),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                 activeTrackColor: scheme.primary,
                 inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
                 thumbColor: scheme.primary,
                 overlayColor: scheme.primary.withValues(alpha: 0.2),
               ),
-              child: Slider(
-                value: _progress,
-                min: 0,
-                max: 1,
-                onChanged: _seek,
-              ),
+              child: Slider(value: _progress, min: 0, max: 1, onChanged: _seek),
             ),
           ],
         ],

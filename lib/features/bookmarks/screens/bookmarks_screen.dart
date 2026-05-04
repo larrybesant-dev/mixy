@@ -11,10 +11,7 @@ import '../../../shared/widgets/async_state_view.dart';
 class BookmarksScreen extends ConsumerWidget {
   final String userId;
 
-  const BookmarksScreen({
-    super.key,
-    required this.userId,
-  });
+  const BookmarksScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,9 +19,7 @@ class BookmarksScreen extends ConsumerWidget {
     final viewerId = ref.watch(authControllerProvider).uid ?? '';
 
     return AppPageScaffold(
-      appBar: AppBar(
-        title: const Text('Bookmarks'),
-      ),
+      appBar: AppBar(title: const Text('Bookmarks')),
       body: AppAsyncValueView<List<Map<String, dynamic>>>(
         value: bookmarksAsync,
         fallbackContext: 'bookmarks',

@@ -115,8 +115,11 @@ class SystemTraceAnalyzer {
 
       if (event.type == 'HYDRATION_EMPTY_STATE') {
         final conversationId = (meta['conversationId'] ?? '').toString();
-        if (conversationId.isNotEmpty && !hydrationComplete.contains(conversationId)) {
-          anomalies.add('empty-state rendered before HYDRATION_COMPLETE for $conversationId');
+        if (conversationId.isNotEmpty &&
+            !hydrationComplete.contains(conversationId)) {
+          anomalies.add(
+            'empty-state rendered before HYDRATION_COMPLETE for $conversationId',
+          );
         }
       }
 

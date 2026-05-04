@@ -1,0 +1,20 @@
+Analyzing MixVy...                                              
+
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\feed\providers\chat_providers.dart:8:60 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\feed\providers\host_controls_providers.dart:15:50 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\friends\providers\friends_providers.dart:57:65 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\friends\providers\friends_providers.dart:66:60 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\friends\providers\friends_providers.dart:125:60 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\friends\providers\friends_providers.dart:146:54 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\friends\providers\friends_providers.dart:189:60 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\features\messaging\providers\messaging_provider.dart:545:7 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\features\payments\screens\admin_entitlement_viewer_screen.dart:312:22 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\payments\screens\admin_entitlement_viewer_screen.dart:389:22 - unnecessary_underscores
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\room\providers\presence_provider.dart:101:62 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\schema_messenger\friends\providers\schema_friend_links_providers.dart:35:60 - deprecated_member_use
+   info - 'stream' is deprecated and shouldn't be used. .stream will be removed in 3.0.0. As a replacement, either listen to the provider itself (AsyncValue) or .future - lib\features\schema_messenger\messages\providers\schema_conversations_providers.dart:37:63 - deprecated_member_use
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\stories\screens\create_story_screen.dart:120:25 - unawaited_futures
+   info - The import of 'package:mixvy/features/room/controllers/room_state.dart' is unnecessary because all of the used elements are also provided by the import of 'package:mixvy/features/room/room_controller.dart' - test\on_mic_panel_test.dart:5:8 - unnecessary_import
+   info - The imported package 'firebase_core_platform_interface' isn't a dependency of the importing package - test\test_helpers.dart:6:8 - depend_on_referenced_packages
+
+16 issues found. (ran in 10.1s)

@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/firestore/firestore_error_utils.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
+import 'package:mixvy/core/services/feature_gate_service.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../../../services/presence_repository.dart';
@@ -12,11 +14,20 @@ import '../../../presentation/providers/user_provider.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import '../../../core/constants/query_policy.dart';
 
-String _newClientmessageId() =>
-  '${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().millisecondsSinceEpoch}';
+// Include userId and a random suffix to prevent cross-user collisions when
+// two senders hit the same microsecond (e.g. in FloatingWhisperPanel paths).
+String _newClientmessageId(String userId) {
+  final rnd = math.Random().nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0');
+  return '${DateTime.now().microsecondsSinceEpoch}-${userId.hashCode.toUnsigned(32).toRadixString(16)}-$rnd';
+}
 
 String _effectiveMessagingUserId(String userId) {
-  final authUid = FirebaseAuth.instance.currentUser?.uid.trim();
+  String? authUid;
+  try {
+    authUid = FirebaseAuth.instance.currentUser?.uid.trim();
+  } catch (_) {
+    // Auth platform unavailable (e.g. unit test environment).
+  }
   if (authUid != null && authUid.isNotEmpty) {
     return authUid;
   }
@@ -25,7 +36,12 @@ String _effectiveMessagingUserId(String userId) {
 
 String _validatedMessagingActorId(String candidateUserId) {
   final normalizedCandidate = candidateUserId.trim();
-  final authUid = FirebaseAuth.instance.currentUser?.uid.trim();
+  String? authUid;
+  try {
+    authUid = FirebaseAuth.instance.currentUser?.uid.trim();
+  } catch (_) {
+    // Auth platform unavailable (e.g. unit test environment).
+  }
 
   if (normalizedCandidate.isEmpty) {
     throw Exception('Not signed in.');
@@ -41,42 +57,42 @@ String _validatedMessagingActorId(String candidateUserId) {
 }
 
 // Single raw realtime stream for all conversation documents of a user.
-final rawConversationsStreamProvider =
-    StreamProvider.autoDispose.family<List<Conversation>, String>((ref, userId) {
-  final firestore = ref.watch(firestoreProvider);
-  final resolvedUserId = _effectiveMessagingUserId(userId);
-  return firestore
-      .collection('conversations')
-      .where('participantIds', arrayContains: resolvedUserId)
-      .orderBy('lastMessageAt', descending: true)
-      .limit(QueryPolicy.conversationsLimit)
-      .snapshots()
-      .handleError((error, stackTrace) {
-        logFirestoreError(
-          context: 'messaging.rawConversationsStreamProvider',
-          error: error,
-          stackTrace: stackTrace,
-        );
-      })
-      .map(
-        (snapshot) => snapshot.docs
-            .map((doc) => Conversation.fromJson(doc.data(), doc.id))
-            .toList(growable: false),
-      );
-});
+final rawConversationsStreamProvider = StreamProvider.autoDispose
+    .family<List<Conversation>, String>((ref, userId) {
+      final firestore = ref.watch(firestoreProvider);
+      final resolvedUserId = _effectiveMessagingUserId(userId);
+      return firestore
+          .collection('conversations')
+          .where('participantIds', arrayContains: resolvedUserId)
+          .orderBy('lastMessageAt', descending: true)
+          .limit(QueryPolicy.conversationsLimit)
+          .snapshots()
+          .handleError((error, stackTrace) {
+            logFirestoreError(
+              context: 'messaging.rawConversationsStreamProvider',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          })
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => Conversation.fromJson(doc.data(), doc.id))
+                .toList(growable: false),
+          );
+    });
 
 // Active conversations derived from the single raw stream.
-final conversationsStreamProvider =
-    Provider.autoDispose.family<AsyncValue<List<Conversation>>, String>((
-      ref,
-      userId,
-    ) {
+final conversationsStreamProvider = Provider.autoDispose
+    .family<AsyncValue<List<Conversation>>, String>((ref, userId) {
       final resolvedUserId = _effectiveMessagingUserId(userId);
       return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
         final active = all
             .where((c) => !c.isArchived && c.status != 'pending')
             .toList();
-        active.sort((left, right) => _compareConversationsForUser(left, right, resolvedUserId));
+        active.sort(
+          (left, right) =>
+              _compareConversationsForUser(left, right, resolvedUserId),
+        );
         return active;
       });
     });
@@ -98,86 +114,85 @@ int _compareConversationsForUser(
 }
 
 // Stream of pending message requests for the current user.
-final requestsStreamProvider =
-    Provider.autoDispose.family<AsyncValue<List<Conversation>>, String>((
-      ref,
-      userId,
-    ) {
+final requestsStreamProvider = Provider.autoDispose
+    .family<AsyncValue<List<Conversation>>, String>((ref, userId) {
       return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
         final pending = all
             .where((c) => !c.isArchived && c.status == 'pending')
             .toList();
-        pending.sort((left, right) => right.createdAt.compareTo(left.createdAt));
+        pending.sort(
+          (left, right) => right.createdAt.compareTo(left.createdAt),
+        );
         return pending;
       });
     });
 
 // Stream of a single conversation document (used for read receipt tracking)
-final conversationDocProvider =
-    StreamProvider.autoDispose.family<Conversation?, String>((ref, conversationId) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('conversations')
-      .doc(conversationId)
-      .snapshots()
-      .map((snap) {
-    if (!snap.exists) {
-      return null;
-    }
-    final data = snap.data();
-    if (data == null) {
-      return null;
-    }
-    return Conversation.fromJson(data, snap.id);
-  });
-});
+final conversationDocProvider = StreamProvider.autoDispose
+    .family<Conversation?, String>((ref, conversationId) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .snapshots()
+          .map((snap) {
+            if (!snap.exists) {
+              return null;
+            }
+            final data = snap.data();
+            if (data == null) {
+              return null;
+            }
+            return Conversation.fromJson(data, snap.id);
+          });
+    });
 
 // Stream of messages in a conversation.
 // createdAt is a server timestamp, so Firestore is the ordering authority.
 // During the pending-write window (before server ack), Firestore's local SDK
 // estimates the server timestamp from device time for ordering \u2014 this is
 // correct behavior. We sort stable-ly so pending writes stay in send order.
-final messagestreamProvider =
-    StreamProvider.autoDispose.family<List<MessageModel>, String>((ref, conversationId) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('conversations')
-      .doc(conversationId)
-      .collection('messages')
-      .orderBy('createdAt', descending: false)
-      .limit(QueryPolicy.messagesLimit)
-      .snapshots(includeMetadataChanges: true)
-      .map((snapshot) {
-    final docs = snapshot.docs.toList()
-      ..sort((a, b) {
-        final aData = a.data();
-        final bData = b.data();
-        final aCreatedAt = aData['createdAt'];
-        final bCreatedAt = bData['createdAt'];
+final messagestreamProvider = StreamProvider.autoDispose
+    .family<List<MessageModel>, String>((ref, conversationId) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .orderBy('createdAt', descending: false)
+          .limit(QueryPolicy.messagesLimit)
+          .snapshots(includeMetadataChanges: true)
+          .map((snapshot) {
+            final docs = snapshot.docs.toList()
+              ..sort((a, b) {
+                final aData = a.data();
+                final bData = b.data();
+                final aCreatedAt = aData['createdAt'];
+                final bCreatedAt = bData['createdAt'];
 
-        // Primary sort: Server Timestamp.
-        if (aCreatedAt is Timestamp && bCreatedAt is Timestamp) {
-          final cmp = aCreatedAt.compareTo(bCreatedAt);
-          if (cmp != 0) return cmp;
-        }
+                // Primary sort: Server Timestamp.
+                if (aCreatedAt is Timestamp && bCreatedAt is Timestamp) {
+                  final cmp = aCreatedAt.compareTo(bCreatedAt);
+                  if (cmp != 0) return cmp;
+                }
 
-        // Secondary sort (Fallback for pending writes): Client side timestamp.
-        final aClient = aData['clientSentAt'];
-        final bClient = bData['clientSentAt'];
-        if (aClient is Timestamp && bClient is Timestamp) {
-          final cmp = aClient.compareTo(bClient);
-          if (cmp != 0) return cmp;
-        }
+                // Secondary sort (Fallback for pending writes): Client side timestamp.
+                final aClient = aData['clientSentAt'];
+                final bClient = bData['clientSentAt'];
+                if (aClient is Timestamp && bClient is Timestamp) {
+                  final cmp = aClient.compareTo(bClient);
+                  if (cmp != 0) return cmp;
+                }
 
-        // Tertiary sort: Document ID stability.
-        return a.id.compareTo(b.id);
-      });
+                // Tertiary sort: Document ID stability.
+                return a.id.compareTo(b.id);
+              });
 
-    return docs
-        .map((doc) => MessageModel.fromJson(doc.data(), doc.id))
-        .toList(growable: false);
-  });
-});
+            return docs
+                .map((doc) => MessageModel.fromJson(doc.data(), doc.id))
+                .toList(growable: false);
+          });
+    });
 
 // ── Paginated message history ──────────────────────────────────────────────
 // Loads older message on demand (load-more). The live stream above covers the
@@ -214,10 +229,9 @@ class _Paginatedmessagestate {
   }
 }
 
-class _PaginatedmessageNotifier
-    extends StateNotifier<_Paginatedmessagestate> {
+class _PaginatedmessageNotifier extends StateNotifier<_Paginatedmessagestate> {
   _PaginatedmessageNotifier(this._firestore, this._conversationId)
-      : super(const _Paginatedmessagestate());
+    : super(const _Paginatedmessagestate());
 
   final FirebaseFirestore _firestore;
   final String _conversationId;
@@ -249,7 +263,9 @@ class _PaginatedmessageNotifier
         oldermessage: [...fetched, ...state.oldermessage],
         isLoading: false,
         hasMore: snapshot.docs.length == _kmessagePageSize,
-        oldestDoc: snapshot.docs.isNotEmpty ? snapshot.docs.last : state.oldestDoc,
+        oldestDoc: snapshot.docs.isNotEmpty
+            ? snapshot.docs.last
+            : state.oldestDoc,
       );
     } catch (_) {
       state = state.copyWith(isLoading: false);
@@ -259,17 +275,25 @@ class _PaginatedmessageNotifier
 
 final paginatedmessageProvider = StateNotifierProvider.autoDispose
     .family<_PaginatedmessageNotifier, _Paginatedmessagestate, String>(
-  (ref, conversationId) => _PaginatedmessageNotifier(
-    ref.watch(firestoreProvider),
-    conversationId,
-  ),
-);
+      (ref, conversationId) => _PaginatedmessageNotifier(
+        ref.watch(firestoreProvider),
+        conversationId,
+      ),
+    );
 
 // Controller for sending message
-final messagingControllerProvider =
-    Provider<MessagingController>((ref) {
+final messagingControllerProvider = Provider<MessagingController>((ref) {
   final firestore = ref.watch(firestoreProvider);
-  return MessagingController(firestore: firestore);
+  return MessagingController(
+    firestore: firestore,
+    isMessagingEnabled: () {
+      try {
+        return ref.read(featureGateControllerProvider).enableMessaging;
+      } on AssertionError {
+        return true;
+      }
+    },
+  );
 });
 
 class ConversationScrollMemoryNotifier
@@ -277,51 +301,50 @@ class ConversationScrollMemoryNotifier
   ConversationScrollMemoryNotifier() : super(const <String, double>{});
 
   void setOffset(String conversationId, double offset) {
-    state = <String, double>{
-      ...state,
-      conversationId: offset,
-    };
+    state = <String, double>{...state, conversationId: offset};
   }
 }
 
-final conversationScrollMemoryProvider = StateNotifierProvider<
-    ConversationScrollMemoryNotifier, Map<String, double>>(
-  (ref) => ConversationScrollMemoryNotifier(),
-);
+final conversationScrollMemoryProvider =
+    StateNotifierProvider<
+      ConversationScrollMemoryNotifier,
+      Map<String, double>
+    >((ref) => ConversationScrollMemoryNotifier());
 
 String buildPresenceBatchKey(Iterable<String> userIds) {
-  final normalized = userIds
-      .map((id) => id.trim())
-      .where((id) => id.isNotEmpty)
-      .toSet()
-      .toList(growable: false)
-    ..sort();
+  final normalized =
+      userIds
+          .map((id) => id.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList(growable: false)
+        ..sort();
   return normalized.join('|');
 }
 
 final batchedPresenceProvider = StreamProvider.autoDispose
     .family<Map<String, PresenceModel>, String>((ref, batchKey) {
-  if (batchKey.trim().isEmpty) {
-    return Stream<Map<String, PresenceModel>>.value(
-      const <String, PresenceModel>{},
-    );
-  }
+      if (batchKey.trim().isEmpty) {
+        return Stream<Map<String, PresenceModel>>.value(
+          const <String, PresenceModel>{},
+        );
+      }
 
-  final userIds = batchKey
-      .split('|')
-      .map((id) => id.trim())
-      .where((id) => id.isNotEmpty)
-      .toSet()
-      .toList(growable: false);
+      final userIds = batchKey
+          .split('|')
+          .map((id) => id.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList(growable: false);
 
-  if (userIds.isEmpty) {
-    return Stream<Map<String, PresenceModel>>.value(
-      const <String, PresenceModel>{},
-    );
-  }
+      if (userIds.isEmpty) {
+        return Stream<Map<String, PresenceModel>>.value(
+          const <String, PresenceModel>{},
+        );
+      }
 
-  return ref.watch(presenceRepositoryProvider).watchUsersPresence(userIds);
-});
+      return ref.watch(presenceRepositoryProvider).watchUsersPresence(userIds);
+    });
 
 // ── Draft message cache ───────────────────────────────────────────────────────
 // Persists unsent message text keyed by conversationId across tab switches.
@@ -353,14 +376,32 @@ class DraftCacheNotifier extends StateNotifier<Map<String, String>> {
 
 final draftCacheProvider =
     StateNotifierProvider<DraftCacheNotifier, Map<String, String>>(
-  (ref) => DraftCacheNotifier(),
-);
+      (ref) => DraftCacheNotifier(),
+    );
 
 class MessagingController {
   static const int messageRetentionDays = 90;
   final FirebaseFirestore _firestore;
+  final bool Function()? _isMessagingEnabled;
 
-  MessagingController({required FirebaseFirestore firestore}) : _firestore = firestore;
+  MessagingController({
+    required FirebaseFirestore firestore,
+    bool Function()? isMessagingEnabled,
+  }) : _firestore = firestore,
+       _isMessagingEnabled = isMessagingEnabled;
+
+  bool _messagingEnabled() {
+    final resolver = _isMessagingEnabled;
+    if (resolver == null) {
+      return true;
+    }
+
+    try {
+      return resolver();
+    } on AssertionError {
+      return true;
+    }
+  }
 
   Future<void> sendmessage({
     required String conversationId,
@@ -370,6 +411,20 @@ class MessagingController {
     required String content,
     String? clientmessageId,
   }) async {
+    if (!_messagingEnabled()) {
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'control_plane',
+        action: 'feature_blocked',
+        message: 'Messaging send blocked by runtime gate.',
+        roomId: conversationId,
+        userId: senderId,
+        result: 'blocked',
+        metadata: <String, Object?>{'feature': 'messaging'},
+      );
+      throw StateError('Messaging is temporarily disabled for maintenance.');
+    }
+
     final authoritativeSenderId = _validatedMessagingActorId(senderId);
 
     AppTelemetry.logAction(
@@ -381,20 +436,25 @@ class MessagingController {
       result: 'start',
     );
 
-    final resolvedClientmessageId = clientmessageId ?? _newClientmessageId();
+    final resolvedClientmessageId =
+        clientmessageId ?? _newClientmessageId(authoritativeSenderId);
     // expiresAt is a retention deadline — compute from client time is acceptable.
-    final expiresAt = DateTime.now().add(const Duration(days: messageRetentionDays));
-    final messageRef = _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
-        .doc();
+    final expiresAt = DateTime.now().add(
+      const Duration(days: messageRetentionDays),
+    );
+    final convRef = _firestore.collection('conversations').doc(conversationId);
+    final messageRef = convRef.collection('messages').doc();
 
     try {
+      // Atomic batch: message write + conversation metadata update in one commit.
+      // If either write fails the entire operation is rolled back, preventing
+      // orphaned message documents with a stale conversation lastMessageAt.
+      final batch = _firestore.batch();
+
       // Add message to message subcollection.
       // createdAt uses FieldValue.serverTimestamp() so Firestore is the
       // ordering authority — eliminates client clock skew and burst reordering.
-      await messageRef.set({
+      batch.set(messageRef, {
         'conversationId': conversationId,
         'senderId': authoritativeSenderId,
         'senderName': senderName,
@@ -411,14 +471,15 @@ class MessagingController {
       // Update conversation with last message info.
       // lastMessageAt uses serverTimestamp so conversation list sorts correctly
       // even when messages arrive from multiple devices simultaneously.
-      final convRef = _firestore.collection('conversations').doc(conversationId);
-      await convRef.update({
+      batch.update(convRef, {
         'lastMessageId': messageRef.id,
         'lastMessagePreview': content,
         'lastMessageSenderId': authoritativeSenderId,
         'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageClientMessageId': resolvedClientmessageId,
       });
+
+      await batch.commit();
 
       AppTelemetry.logAction(
         domain: 'messaging',
@@ -455,6 +516,19 @@ class MessagingController {
     required String user2Name,
     required String? user2AvatarUrl,
   }) async {
+    if (!_messagingEnabled()) {
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'control_plane',
+        action: 'feature_blocked',
+        message: 'Direct conversation creation blocked by runtime gate.',
+        userId: userId1,
+        result: 'blocked',
+        metadata: <String, Object?>{'feature': 'messaging'},
+      );
+      throw StateError('Messaging is temporarily disabled for maintenance.');
+    }
+
     final currentUserId = _validatedMessagingActorId(userId1);
     final targetUserId = userId2.trim();
     if (targetUserId.isEmpty) throw Exception('Target user is required.');
@@ -463,33 +537,25 @@ class MessagingController {
     }
 
     // Prevent messaging blocked users.
-    final isBlocked = await ModerationService().hasBlockingRelationship(currentUserId, targetUserId);
-    if (isBlocked) throw Exception('Cannot start a conversation with this user.');
+    final isBlocked = await ModerationService().hasBlockingRelationship(
+      currentUserId,
+      targetUserId,
+    );
+    if (isBlocked)
+      throw Exception('Cannot start a conversation with this user.');
 
-    // Check if conversation already exists
-    final existing = await _firestore
-        .collection('conversations')
-        .where('type', isEqualTo: 'direct')
-      .where('participantIds', arrayContains: currentUserId)
-        .get();
+    // Deterministic conversation ID: sort participant UIDs so both orderings
+    // produce the same document path. Using set() with merge:true makes this
+    // fully idempotent — concurrent calls from different devices cannot create
+    // duplicate conversation documents (eliminates the prior TOCTOU race).
+    final sortedIds = ([currentUserId, targetUserId]..sort());
+    final deterministicId = 'dm_${sortedIds[0]}_${sortedIds[1]}';
+    final convRef = _firestore.collection('conversations').doc(deterministicId);
 
-    for (final doc in existing.docs) {
-      final conv = Conversation.fromJson(doc.data(), doc.id);
-      if (conv.participantIds.contains(targetUserId)) {
-        return doc.id;
-      }
-    }
-
-    // Create new conversation.
-    // createdAt and lastReadAt use serverTimestamp so they are authoritative
-    // regardless of the creating device's clock.
-    final docRef = await _firestore.collection('conversations').add({
+    await convRef.set({
       'type': 'direct',
       'participantIds': [currentUserId, targetUserId],
-      'participantNames': {
-        currentUserId: user1Name,
-        targetUserId: user2Name,
-      },
+      'participantNames': {currentUserId: user1Name, targetUserId: user2Name},
       'createdAt': FieldValue.serverTimestamp(),
       'lastReadAt': {
         currentUserId: FieldValue.serverTimestamp(),
@@ -497,9 +563,9 @@ class MessagingController {
       },
       'isArchived': false,
       'status': 'active',
-    });
+    }, SetOptions(merge: true));
 
-    return docRef.id;
+    return deterministicId;
   }
 
   Future<String> createGroupConversation({
@@ -508,6 +574,18 @@ class MessagingController {
     required List<String> participantIds,
     required Map<String, String> participantNames,
   }) async {
+    if (!_messagingEnabled()) {
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'control_plane',
+        action: 'feature_blocked',
+        message: 'Group conversation creation blocked by runtime gate.',
+        result: 'blocked',
+        metadata: <String, Object?>{'feature': 'messaging'},
+      );
+      throw StateError('Messaging is temporarily disabled for maintenance.');
+    }
+
     final lastReadAt = <String, dynamic>{
       for (final id in participantIds) id: FieldValue.serverTimestamp(),
     };
@@ -532,7 +610,9 @@ class MessagingController {
     required String userId,
   }) async {
     final actorUserId = _validatedMessagingActorId(userId);
-    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+    final conversationRef = _firestore
+        .collection('conversations')
+        .doc(conversationId);
     try {
       await conversationRef.update({
         'lastReadAt.$actorUserId': FieldValue.serverTimestamp(),
@@ -552,9 +632,7 @@ class MessagingController {
         stackTrace: stackTrace,
       );
       await conversationRef.set({
-        'lastReadAt': {
-          actorUserId: FieldValue.serverTimestamp(),
-        },
+        'lastReadAt': {actorUserId: FieldValue.serverTimestamp()},
         'participantIds': [actorUserId],
       }, SetOptions(merge: true));
     }
@@ -569,10 +647,10 @@ class MessagingController {
     return;
   }
 
-  Future<void> archiveConversation({
-    required String conversationId,
-  }) async {
-    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+  Future<void> archiveConversation({required String conversationId}) async {
+    final conversationRef = _firestore
+        .collection('conversations')
+        .doc(conversationId);
     try {
       await conversationRef.update({
         'isArchived': true,
@@ -591,9 +669,7 @@ class MessagingController {
         error: error,
         stackTrace: stackTrace,
       );
-      throw StateError(
-        'Cannot archive missing conversation: $conversationId',
-      );
+      throw StateError('Cannot archive missing conversation: $conversationId');
     }
   }
 
@@ -607,10 +683,10 @@ class MessagingController {
     return;
   }
 
-  Future<void> acceptmessageRequest({
-    required String conversationId,
-  }) async {
-    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+  Future<void> acceptmessageRequest({required String conversationId}) async {
+    final conversationRef = _firestore
+        .collection('conversations')
+        .doc(conversationId);
     try {
       await conversationRef.update({
         'status': 'active',
@@ -678,9 +754,7 @@ class MessagingController {
 
     if (isTyping) {
       await docRef.set({
-        'users': {
-          actorUserId: FieldValue.serverTimestamp(),
-        }
+        'users': {actorUserId: FieldValue.serverTimestamp()},
       }, SetOptions(merge: true));
     } else {
       await docRef.set({
@@ -693,33 +767,38 @@ class MessagingController {
 // ── Typing status ─────────────────────────────────────────────────────────
 
 /// Reactions on a message keyed by userId → emoji string.
-final messageReactionsProvider = StreamProvider.autoDispose.family<Map<String, String>,
-    ({String conversationId, String messageId})>((ref, params) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('conversations')
-      .doc(params.conversationId)
-      .collection('messages')
-      .doc(params.messageId)
-      .collection('reactions')
-      .limit(QueryPolicy.messageReactionsLimit)
-      .snapshots()
-      .map((snap) {
-    final result = <String, String>{};
-    for (final doc in snap.docs) {
-      final emoji = doc.data()['emoji'] as String?;
-      if (emoji != null) result[doc.id] = emoji;
-    }
-    return result;
-  });
-});
+final messageReactionsProvider = StreamProvider.autoDispose
+    .family<Map<String, String>, ({String conversationId, String messageId})>((
+      ref,
+      params,
+    ) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('conversations')
+          .doc(params.conversationId)
+          .collection('messages')
+          .doc(params.messageId)
+          .collection('reactions')
+          .limit(QueryPolicy.messageReactionsLimit)
+          .snapshots()
+          .map((snap) {
+            final result = <String, String>{};
+            for (final doc in snap.docs) {
+              final emoji = doc.data()['emoji'] as String?;
+              if (emoji != null) result[doc.id] = emoji;
+            }
+            return result;
+          });
+    });
 
 /// Emits the set of user IDs that are currently typing in [conversationId].
 /// Subscribes to the lightweight `ephemeral/typing` subcollection doc so
 /// message sends (which mutate the parent conversation doc) do not trigger
 /// unnecessary re-emits here.
-final typingUsersProvider =
-    StreamProvider.autoDispose.family<Set<String>, String>((ref, conversationId) {
+final typingUsersProvider = StreamProvider.autoDispose.family<Set<String>, String>((
+  ref,
+  conversationId,
+) {
   final firestore = ref.watch(firestoreProvider);
   return firestore
       .collection('conversations')
@@ -728,22 +807,22 @@ final typingUsersProvider =
       .doc('typing')
       .snapshots()
       .map((doc) {
-    final raw = doc.data()?['users'] as Map<String, dynamic>?;
-    if (raw == null) return <String>{};
-    final now = DateTime.now();
-    return raw.entries
-        .where((e) {
-          final ts = e.value;
-          if (ts is Timestamp) {
-            // Write timeout is 4 s + up to ~2 s network round-trip.
-            // Read TTL must be > write timeout to prevent premature flicker.
-            return now.difference(ts.toDate()).inSeconds < 10;
-          }
-          return false;
-        })
-        .map((e) => e.key)
-        .toSet();
-  });
+        final raw = doc.data()?['users'] as Map<String, dynamic>?;
+        if (raw == null) return <String>{};
+        final now = DateTime.now();
+        return raw.entries
+            .where((e) {
+              final ts = e.value;
+              if (ts is Timestamp) {
+                // Write timeout is 4 s + up to ~2 s network round-trip.
+                // Read TTL must be > write timeout to prevent premature flicker.
+                return now.difference(ts.toDate()).inSeconds < 10;
+              }
+              return false;
+            })
+            .map((e) => e.key)
+            .toSet();
+      });
 });
 
 /// Count of conversations that have at least one unread message for the current
@@ -752,42 +831,48 @@ final unreadmessageCountProvider = Provider.autoDispose<int>((ref) {
   final user = ref.watch(userProvider);
   if (user == null) return 0;
   return ref
-      .watch(conversationsStreamProvider(user.id))
-      .whenData(
-        (convs) => convs.where((c) => c.hasUnreadmessage(user.id)).length,
-      )
-      .valueOrNull ??
+          .watch(conversationsStreamProvider(user.id))
+          .whenData(
+            (convs) => convs.where((c) => c.hasUnreadmessage(user.id)).length,
+          )
+          .valueOrNull ??
       0;
 });
 
 /// Optimized provider that filters conversations by the user's block list.
 /// Hardening: separates the raw Firestore stream from the expensive moderation logic.
-final filteredConversationsProvider =
-    FutureProvider.autoDispose.family<List<Conversation>, String>((ref, userId) async {
-  final allConversations = await ref.watch(rawConversationsStreamProvider(userId).future);
-  final activeConversations = allConversations
-      .where((conversation) => conversation.status != 'pending')
-      .toList(growable: false);
-  
-  try {
-    final moderationService = ModerationService();
-    final excludedIds = await moderationService.getExcludedUserIds(userId);
-    
-    if (excludedIds.isEmpty) {
-      final sorted = List<Conversation>.from(activeConversations);
-      sorted.sort((left, right) => _compareConversationsForUser(left, right, userId));
-      return sorted;
-    }
-    
-    final visibleConversations = activeConversations.where((conv) {
-      final others = conv.participantIds.where((id) => id != userId);
-      return !others.any((id) => excludedIds.contains(id));
-    }).toList();
-    
-    visibleConversations.sort((left, right) => _compareConversationsForUser(left, right, userId));
-    return visibleConversations;
-  } catch (e) {
-    // Fail safe: return all conversations if moderation check fails
-    return activeConversations;
-  }
-});
+final filteredConversationsProvider = FutureProvider.autoDispose
+    .family<List<Conversation>, String>((ref, userId) async {
+      final allConversations = await ref.watch(
+        rawConversationsStreamProvider(userId).future,
+      );
+      final activeConversations = allConversations
+          .where((conversation) => conversation.status != 'pending')
+          .toList(growable: false);
+
+      try {
+        final moderationService = ModerationService();
+        final excludedIds = await moderationService.getExcludedUserIds(userId);
+
+        if (excludedIds.isEmpty) {
+          final sorted = List<Conversation>.from(activeConversations);
+          sorted.sort(
+            (left, right) => _compareConversationsForUser(left, right, userId),
+          );
+          return sorted;
+        }
+
+        final visibleConversations = activeConversations.where((conv) {
+          final others = conv.participantIds.where((id) => id != userId);
+          return !others.any((id) => excludedIds.contains(id));
+        }).toList();
+
+        visibleConversations.sort(
+          (left, right) => _compareConversationsForUser(left, right, userId),
+        );
+        return visibleConversations;
+      } catch (e) {
+        // Fail safe: return all conversations if moderation check fails
+        return activeConversations;
+      }
+    });

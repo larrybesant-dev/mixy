@@ -43,30 +43,29 @@ class PostCommentEntry {
 
 final postCommentsFirestoreProvider = firestoreProvider;
 
-final postDocProvider =
-    Provider.autoDispose.family<AsyncValue<PostModel?>, String>((ref, postId) {
-  return ref.watch(postsFeedProvider).whenData((posts) {
-    for (final post in posts) {
-      if (post.id == postId) {
-        return post;
-      }
-    }
-    return null;
-  });
-});
+final postDocProvider = Provider.autoDispose
+    .family<AsyncValue<PostModel?>, String>((ref, postId) {
+      return ref.watch(postsFeedProvider).whenData((posts) {
+        for (final post in posts) {
+          if (post.id == postId) {
+            return post;
+          }
+        }
+        return null;
+      });
+    });
 
-final postCommentsProvider =
-    StreamProvider.autoDispose.family<List<PostCommentEntry>, String>((
-  ref,
-  postId,
-) {
-  final firestore = ref.watch(postCommentsFirestoreProvider);
-  return firestore
-      .collection('posts')
-      .doc(postId)
-      .collection('comments')
-      .orderBy('createdAt')
-      .limit(100)
-      .snapshots()
-      .map((s) => s.docs.map(PostCommentEntry.fromDoc).toList(growable: false));
-});
+final postCommentsProvider = StreamProvider.autoDispose
+    .family<List<PostCommentEntry>, String>((ref, postId) {
+      final firestore = ref.watch(postCommentsFirestoreProvider);
+      return firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .orderBy('createdAt')
+          .limit(100)
+          .snapshots()
+          .map(
+            (s) => s.docs.map(PostCommentEntry.fromDoc).toList(growable: false),
+          );
+    });

@@ -84,8 +84,7 @@ class _FriendsPanelSheetState extends ConsumerState<_FriendsPanelSheet> {
         return DecoratedBox(
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -106,11 +105,12 @@ class _FriendsPanelSheetState extends ConsumerState<_FriendsPanelSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
                 child: Row(
                   children: [
-                    Icon(Icons.people_alt_rounded,
-                        color: cs.primary, size: 22),
+                    Icon(Icons.people_alt_rounded, color: cs.primary, size: 22),
                     const SizedBox(width: 8),
-                    Text('Friends',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Friends',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const Spacer(),
                     TextButton.icon(
                       onPressed: () {
@@ -144,8 +144,7 @@ class _FriendsPanelSheetState extends ConsumerState<_FriendsPanelSheet> {
                     ),
                     filled: true,
                     fillColor: cs.surfaceContainerHighest,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
@@ -161,14 +160,17 @@ class _FriendsPanelSheetState extends ConsumerState<_FriendsPanelSheet> {
                     final filtered = _query.isEmpty
                         ? friends
                         : friends
-                            .where((f) => f.username
-                                .toLowerCase()
-                                .contains(_query))
-                            .toList();
+                              .where(
+                                (f) =>
+                                    f.username.toLowerCase().contains(_query),
+                              )
+                              .toList();
 
                     if (filtered.isEmpty) {
                       return _EmptyState(
-                          hasQuery: _query.isNotEmpty, query: _query);
+                        hasQuery: _query.isNotEmpty,
+                        query: _query,
+                      );
                     }
 
                     return ListView.builder(
@@ -202,8 +204,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.people_outline,
-              size: 52, color: cs.onSurface.withValues(alpha: 0.3)),
+          Icon(
+            Icons.people_outline,
+            size: 52,
+            color: cs.onSurface.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 12),
           Text(
             hasQuery ? 'No results for "$query"' : 'No friends yet',
@@ -240,8 +245,7 @@ class _FriendTile extends ConsumerWidget {
     final safeAvatarUrl = sanitizeNetworkImageUrl(friend.avatarUrl);
 
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -249,7 +253,7 @@ class _FriendTile extends ConsumerWidget {
             radius: 22,
             backgroundColor: cs.primaryContainer,
             backgroundImage: safeAvatarUrl != null
-              ? NetworkImage(safeAvatarUrl)
+                ? NetworkImage(safeAvatarUrl)
                 : null,
             child: safeAvatarUrl == null
                 ? Text(
@@ -267,9 +271,7 @@ class _FriendTile extends ConsumerWidget {
               width: 13,
               height: 13,
               decoration: BoxDecoration(
-                color: isOnline
-                    ? const Color(0xFFC45E7A)
-                    : cs.outlineVariant,
+                color: isOnline ? const Color(0xFFC45E7A) : cs.outlineVariant,
                 shape: BoxShape.circle,
                 border: Border.all(color: cs.surface, width: 2),
               ),
@@ -277,19 +279,21 @@ class _FriendTile extends ConsumerWidget {
           ),
         ],
       ),
-      title: Text(friend.username,
-          style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(
+        friend.username,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: isOnline
           ? Text(
               inRoom != null ? '🎙 In a room' : 'Online',
-              style: const TextStyle(
-                  color: Color(0xFFC45E7A), fontSize: 12),
+              style: const TextStyle(color: Color(0xFFC45E7A), fontSize: 12),
             )
           : Text(
               'Offline',
               style: TextStyle(
-                  color: cs.onSurface.withValues(alpha: 0.45),
-                  fontSize: 12),
+                color: cs.onSurface.withValues(alpha: 0.45),
+                fontSize: 12,
+              ),
             ),
       trailing: _MessageButton(friend: friend),
       onTap: () {
@@ -313,14 +317,19 @@ class _MessageButton extends ConsumerWidget {
       tooltip: 'message',
       icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
       onPressed: () async {
-        final allowed = await GuestAuthGate.requireConversationStart(context, ref);
-        if (!allowed) return;
+        final allowed = await GuestAuthGate.requireConversationStart(
+          context,
+          ref,
+        );
+        if (!allowed || !context.mounted) return;
 
         final navigator = Navigator.of(context);
         final router = GoRouter.of(context);
         final messenger = ScaffoldMessenger.of(context);
         try {
-          final conversationId = await ref.read(messagingControllerProvider).createDirectConversation(
+          final conversationId = await ref
+              .read(messagingControllerProvider)
+              .createDirectConversation(
                 userId1: currentUser.id,
                 user1Name: currentUser.username,
                 user1AvatarUrl: currentUser.avatarUrl,

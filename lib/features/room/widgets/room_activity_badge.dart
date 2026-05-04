@@ -17,8 +17,9 @@ class RoomActivityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final display =
-        count > 999 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count';
+    final display = count > 999
+        ? '${(count / 1000).toStringAsFixed(1)}k'
+        : '$count';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

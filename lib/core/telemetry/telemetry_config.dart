@@ -52,7 +52,8 @@ abstract final class TelemetryConfig {
   /// * [TelemetryMode.standard] in debug builds (`kDebugMode == true`)
   /// * [TelemetryMode.off] in release builds
   static void initialize([TelemetryMode? forcedMode]) {
-    _base = forcedMode ?? (kDebugMode ? TelemetryMode.standard : TelemetryMode.off);
+    _base =
+        forcedMode ?? (kDebugMode ? TelemetryMode.standard : TelemetryMode.off);
     _runtimeOverride = null;
   }
 

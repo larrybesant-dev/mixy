@@ -22,7 +22,9 @@ Widget _buildApp({required String path}) {
 
 void main() {
   group('NotFoundScreen', () {
-    testWidgets('renders page-not-found title and unknown path', (tester) async {
+    testWidgets('renders page-not-found title and unknown path', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildApp(path: '/some/unknown/path'));
       await tester.pumpAndSettle();
 

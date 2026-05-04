@@ -55,7 +55,11 @@ class AppEmptyView extends StatelessWidget {
             children: [
               Icon(icon, size: 52, color: theme.colorScheme.primary),
               SizedBox(height: context.sectionSpacing),
-              Text(title, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+              Text(
+                title,
+                style: theme.textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
               if (message != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -100,10 +104,17 @@ class AppErrorView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 52, color: theme.colorScheme.error),
+              Icon(
+                Icons.error_outline,
+                size: 52,
+                color: theme.colorScheme.error,
+              ),
               SizedBox(height: context.sectionSpacing),
               Text(
-                friendlyFirestoremessage(error, fallbackContext: fallbackContext),
+                friendlyFirestoremessage(
+                  error,
+                  fallbackContext: fallbackContext,
+                ),
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -119,7 +130,10 @@ class AppErrorView extends StatelessWidget {
               ],
               if (onRetry != null) ...[
                 SizedBox(height: context.sectionSpacing),
-                FilledButton(onPressed: onRetry, child: const Text('Try again')),
+                FilledButton(
+                  onPressed: onRetry,
+                  child: const Text('Try again'),
+                ),
               ],
             ],
           ),

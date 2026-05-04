@@ -13,14 +13,19 @@ class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
   final String? senderLabel;
+
   /// VIP level for the sender. Level ≥1 shows a bronze/silver/gold name colour.
   final int senderVipLevel;
+
   /// Optional avatar URL for the sender's profile picture.
   final String? senderAvatarUrl;
+
   /// Whether the sender currently has cam enabled in the room.
   final bool senderCamOn;
+
   /// Called when the user taps the avatar or sender name. Receives the senderId.
   final void Function(String senderId)? onTapSender;
+
   /// Called when the user taps the sender cam indicator.
   final void Function(String senderId)? onTapCam;
 
@@ -57,7 +62,12 @@ class MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         child: Row(
           children: [
-            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.10), height: 1)),
+            Expanded(
+              child: Divider(
+                color: Colors.white.withValues(alpha: 0.10),
+                height: 1,
+              ),
+            ),
             const SizedBox(width: 8),
             Text(
               message.content,
@@ -68,7 +78,12 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.10), height: 1)),
+            Expanded(
+              child: Divider(
+                color: Colors.white.withValues(alpha: 0.10),
+                height: 1,
+              ),
+            ),
           ],
         ),
       );
@@ -86,7 +101,11 @@ class MessageBubble extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.campaign_outlined, color: Color(0xFFD4A853), size: 16),
+            const Icon(
+              Icons.campaign_outlined,
+              color: Color(0xFFD4A853),
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -122,7 +141,9 @@ class MessageBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    senderLabel?.trim().isNotEmpty == true ? senderLabel!.trim() : message.senderId,
+                    senderLabel?.trim().isNotEmpty == true
+                        ? senderLabel!.trim()
+                        : message.senderId,
                     style: const TextStyle(
                       color: Color(0xFFD4A853),
                       fontWeight: FontWeight.w700,
@@ -155,8 +176,8 @@ class MessageBubble extends StatelessWidget {
     final Color nameColor = (senderVipLevel > 0 && vipC != Colors.transparent)
         ? vipC
         : (isMe
-            ? const Color(0xFF9B8FFF) // soft purple for own message
-            : Colors.white.withValues(alpha: 0.90));
+              ? const Color(0xFF9B8FFF) // soft purple for own message
+              : Colors.white.withValues(alpha: 0.90));
 
     // Subtle left-border tint for own message, none for others.
     final Color? rowTint = isMe
@@ -171,12 +192,14 @@ class MessageBubble extends StatelessWidget {
         children: [
           // Avatar — tappable to view profile
           GestureDetector(
-            onTap: onTapSender != null ? () => onTapSender!(message.senderId) : null,
+            onTap: onTapSender != null
+                ? () => onTapSender!(message.senderId)
+                : null,
             child: CircleAvatar(
               radius: 16,
               backgroundColor: Colors.grey.shade800,
-              backgroundImage: (senderAvatarUrl != null &&
-                      senderAvatarUrl!.isNotEmpty)
+              backgroundImage:
+                  (senderAvatarUrl != null && senderAvatarUrl!.isNotEmpty)
                   ? NetworkImage(senderAvatarUrl!)
                   : null,
               child: (senderAvatarUrl == null || senderAvatarUrl!.isEmpty)
@@ -205,7 +228,9 @@ class MessageBubble extends StatelessWidget {
                   children: [
                     Flexible(
                       child: GestureDetector(
-                        onTap: onTapSender != null ? () => onTapSender!(message.senderId) : null,
+                        onTap: onTapSender != null
+                            ? () => onTapSender!(message.senderId)
+                            : null,
                         child: Text(
                           resolvedSenderLabel,
                           overflow: TextOverflow.ellipsis,
@@ -225,8 +250,8 @@ class MessageBubble extends StatelessWidget {
                         onTap: onTapCam != null
                             ? () => onTapCam!(message.senderId)
                             : (onTapSender != null
-                                ? () => onTapSender!(message.senderId)
-                                : null),
+                                  ? () => onTapSender!(message.senderId)
+                                  : null),
                         child: const Padding(
                           padding: EdgeInsets.all(2),
                           child: Icon(
@@ -277,4 +302,3 @@ class MessageBubble extends StatelessWidget {
     return Text(content, style: baseStyle);
   }
 }
-

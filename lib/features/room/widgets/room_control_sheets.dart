@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../models/room_participant_model.dart';
@@ -188,7 +187,9 @@ class RoomRosterSheet extends StatelessWidget {
                   final presentation =
                       presentationByUserId[participant.userId] ??
                       RoomUserPresentation(
-                        displayName: resolvePublicUsername(uid: participant.userId),
+                        displayName: resolvePublicUsername(
+                          uid: participant.userId,
+                        ),
                       );
                   final role = normalizeRoomRole(
                     participant.role,
@@ -270,7 +271,6 @@ class RoomRosterSheet extends StatelessWidget {
     }
     return 4;
   }
-
 }
 
 class _RoleChip extends StatelessWidget {

@@ -39,8 +39,10 @@ class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
 
   Future<void> _resolve() async {
     try {
-      final allowed =
-          await GuestAuthGate.requireConversationStart(context, ref);
+      final allowed = await GuestAuthGate.requireConversationStart(
+        context,
+        ref,
+      );
       if (!allowed) {
         if (mounted) {
           setState(() {
@@ -110,4 +112,3 @@ class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
     );
   }
 }
-

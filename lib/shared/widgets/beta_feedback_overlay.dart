@@ -113,8 +113,14 @@ class _BetaFeedbackSheetState extends ConsumerState<BetaFeedbackSheet> {
             items: const [
               DropdownMenuItem(value: 'bug', child: Text('Bug')),
               DropdownMenuItem(value: 'ux', child: Text('UX Issue')),
-              DropdownMenuItem(value: 'performance', child: Text('Performance')),
-              DropdownMenuItem(value: 'feature-request', child: Text('Feature request')),
+              DropdownMenuItem(
+                value: 'performance',
+                child: Text('Performance'),
+              ),
+              DropdownMenuItem(
+                value: 'feature-request',
+                child: Text('Feature request'),
+              ),
             ],
             onChanged: _submitting
                 ? null

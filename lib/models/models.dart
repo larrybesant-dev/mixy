@@ -36,7 +36,8 @@ class UserProfile {
   });
 
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
-    final data = (doc.data() as Map<String, dynamic>?) ?? const <String, dynamic>{};
+    final data =
+        (doc.data() as Map<String, dynamic>?) ?? const <String, dynamic>{};
     return UserProfile(
       uid: doc.id,
       name: data['name'] ?? '',
@@ -78,7 +79,8 @@ class MixEvent {
   });
 
   factory MixEvent.fromFirestore(DocumentSnapshot doc) {
-    final data = (doc.data() as Map<String, dynamic>?) ?? const <String, dynamic>{};
+    final data =
+        (doc.data() as Map<String, dynamic>?) ?? const <String, dynamic>{};
     return MixEvent(
       id: doc.id,
       title: data['title'] ?? '',

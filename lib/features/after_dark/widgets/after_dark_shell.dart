@@ -34,15 +34,17 @@ class AfterDarkShell extends ConsumerWidget {
     final tabIndex = path.startsWith('/after-dark/lounges')
         ? 1
         : path.startsWith('/after-dark/profile')
-            ? 2
-            : 0;
+        ? 2
+        : 0;
 
     return Scaffold(
       backgroundColor: _edSurface,
-      appBar: _AfterDarkTopBar(onExit: () {
-        ref.read(afterDarkControllerProvider).lock();
-        context.go('/');
-      }),
+      appBar: _AfterDarkTopBar(
+        onExit: () {
+          ref.read(afterDarkControllerProvider).lock();
+          context.go('/');
+        },
+      ),
       body: child,
       bottomNavigationBar: _AfterDarkTabBar(
         currentIndex: tabIndex,
@@ -96,14 +98,18 @@ class _AfterDarkTopBar extends StatelessWidget implements PreferredSizeWidget {
           message: 'Exit After Dark',
           child: TextButton.icon(
             onPressed: onExit,
-            icon: const Icon(Icons.wb_sunny_outlined,
-                size: 16, color: EmberDark.onSurfaceVariant),
+            icon: const Icon(
+              Icons.wb_sunny_outlined,
+              size: 16,
+              color: EmberDark.onSurfaceVariant,
+            ),
             label: Text(
               'Exit',
               style: GoogleFonts.raleway(
-                  fontSize: 12,
-                  color: EmberDark.onSurfaceVariant,
-                  fontWeight: FontWeight.w600),
+                fontSize: 12,
+                color: EmberDark.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),

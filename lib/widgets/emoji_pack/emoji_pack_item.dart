@@ -6,12 +6,12 @@ enum EmojiCategory {
   gesture;
 
   String get label => switch (this) {
-        EmojiCategory.flirty => '😏 Flirty',
-        EmojiCategory.party => '🎉 Party',
-        EmojiCategory.meme => '😂 Meme',
-        EmojiCategory.romantic => '💕 Romantic',
-        EmojiCategory.gesture => '🙌 Gestures',
-      };
+    EmojiCategory.flirty => '😏 Flirty',
+    EmojiCategory.party => '🎉 Party',
+    EmojiCategory.meme => '😂 Meme',
+    EmojiCategory.romantic => '💕 Romantic',
+    EmojiCategory.gesture => '🙌 Gestures',
+  };
 
   /// Categories that require adult mode to be enabled.
   bool get isAdultOnly =>
@@ -44,9 +44,9 @@ class EmojiPackItem {
     this.gifQuery,
     this.isGif = false,
   }) : assert(
-          isGif ? gifQuery != null : path != null,
-          'Provide path for asset items and gifQuery for GIF items.',
-        );
+         isGif ? gifQuery != null : path != null,
+         'Provide path for asset items and gifQuery for GIF items.',
+       );
 
   bool get isAsset => !isGif;
   bool get isAdultOnly => category.isAdultOnly;

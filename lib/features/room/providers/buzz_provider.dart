@@ -28,11 +28,7 @@ class BuzzController {
     required String fromUserId,
     required String toUserId,
   }) async {
-    await _db
-        .collection('rooms')
-        .doc(roomId)
-        .collection('buzz_events')
-        .add({
+    await _db.collection('rooms').doc(roomId).collection('buzz_events').add({
       'fromUserId': fromUserId,
       'toUserId': toUserId,
       'sentAt': FieldValue.serverTimestamp(),
@@ -46,29 +42,34 @@ final buzzControllerProvider = Provider<BuzzController>((ref) {
 
 /// Stream of buzz events sent TO [currentUserId] in [roomId].
 final incomingBuzzStreamProvider = StreamProvider.autoDispose
-    .family<List<BuzzEvent>, ({String roomId, String currentUserId})>(
-  (ref, params) {
-    final firestore = ref.watch(roomFirestoreProvider);
-    // Only listen to buzzes from the last 60 seconds so we don't replay old ones.
-    final since = DateTime.now().subtract(const Duration(seconds: 60));
-    return firestore
-        .collection('rooms')
-        .doc(params.roomId)
-        .collection('buzz_events')
-        .where('toUserId', isEqualTo: params.currentUserId)
-        .where('sentAt', isGreaterThan: Timestamp.fromDate(since))
-        .snapshots()
-        .map(
-          (snap) => snap.docs.map((doc) {
-            final data = doc.data();
-            final sentAt = data['sentAt'];
-            return BuzzEvent(
-              id: doc.id,
-              fromUserId: data['fromUserId'] as String? ?? '',
-              toUserId: data['toUserId'] as String? ?? '',
-              sentAt: sentAt is Timestamp ? sentAt.toDate() : DateTime.now(),
-            );
-          }).toList(growable: false),
-        );
-  },
-);
+    .family<List<BuzzEvent>, ({String roomId, String currentUserId})>((
+      ref,
+      params,
+    ) {
+      final firestore = ref.watch(roomFirestoreProvider);
+      // Only listen to buzzes from the last 60 seconds so we don't replay old ones.
+      final since = DateTime.now().subtract(const Duration(seconds: 60));
+      return firestore
+          .collection('rooms')
+          .doc(params.roomId)
+          .collection('buzz_events')
+          .where('toUserId', isEqualTo: params.currentUserId)
+          .where('sentAt', isGreaterThan: Timestamp.fromDate(since))
+          .snapshots()
+          .map(
+            (snap) => snap.docs
+                .map((doc) {
+                  final data = doc.data();
+                  final sentAt = data['sentAt'];
+                  return BuzzEvent(
+                    id: doc.id,
+                    fromUserId: data['fromUserId'] as String? ?? '',
+                    toUserId: data['toUserId'] as String? ?? '',
+                    sentAt: sentAt is Timestamp
+                        ? sentAt.toDate()
+                        : DateTime.now(),
+                  );
+                })
+                .toList(growable: false),
+          );
+    });

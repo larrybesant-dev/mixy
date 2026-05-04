@@ -23,10 +23,16 @@ class RoomModel {
   final bool isLocked;
   final int? slowModeSeconds;
   final int maxBroadcasters;
+
   /// When the room is scheduled to start (null = not scheduled / already live).
   final Timestamp? scheduledAt;
+
   /// Whether this is an 18+ After Dark room.
   final bool isAdult;
+
+  /// Denormalized host info to avoid N+1 lookups in discovery feed.
+  final String? hostUsername;
+  final String? hostAvatarUrl;
 
   /// Optional visual theme applied to the live room.
   final RoomTheme theme;
@@ -52,14 +58,13 @@ class RoomModel {
     this.maxBroadcasters = 4,
     this.scheduledAt,
     this.isAdult = false,
+    this.hostUsername,
+    this.hostAvatarUrl,
     this.theme = RoomTheme.defaultTheme,
   });
 
   /// Combined members list (used by UI)
-  List<String> get members => [
-        ...stageUserIds,
-        ...audienceUserIds,
-      ];
+  List<String> get members => [...stageUserIds, ...audienceUserIds];
 
   static String _asString(dynamic value, {String fallback = ''}) {
     if (value is String) {
@@ -116,7 +121,9 @@ class RoomModel {
     return RoomModel(
       id: documentId,
       name: _asString(json['name'], fallback: 'Untitled Room'),
-      description: json['description'] is String ? json['description'] as String : null,
+      description: json['description'] is String
+          ? json['description'] as String
+          : null,
       rules: json['rules'] is String ? json['rules'] as String : null,
       hostId: _asString(json['hostId']),
       isLive: _asBool(json['isLive']),
@@ -132,10 +139,16 @@ class RoomModel {
       tags: _asStringList(json['tags']),
       coHosts: _asStringList(json['coHosts']),
       isLocked: _asBool(json['isLocked']),
-      slowModeSeconds: json['slowModeSeconds'] is num ? (json['slowModeSeconds'] as num).toInt() : null,
-      maxBroadcasters: json['maxBroadcasters'] is num ? (json['maxBroadcasters'] as num).toInt() : 4,
+      slowModeSeconds: json['slowModeSeconds'] is num
+          ? (json['slowModeSeconds'] as num).toInt()
+          : null,
+      maxBroadcasters: json['maxBroadcasters'] is num
+          ? (json['maxBroadcasters'] as num).toInt()
+          : 4,
       scheduledAt: _asTimestamp(json['scheduledAt']),
       isAdult: _asBool(json['isAdult']),
+      hostUsername: json['hostUsername'] as String?,
+      hostAvatarUrl: json['hostAvatarUrl'] as String?,
       theme: RoomTheme.fromJson(
         json['theme'] is Map<String, dynamic>
             ? json['theme'] as Map<String, dynamic>
@@ -165,6 +178,8 @@ class RoomModel {
       'maxBroadcasters': maxBroadcasters,
       'scheduledAt': scheduledAt,
       'isAdult': isAdult,
+      'hostUsername': hostUsername,
+      'hostAvatarUrl': hostAvatarUrl,
       'theme': theme.toJson(),
     };
   }
@@ -190,6 +205,8 @@ class RoomModel {
     int? maxBroadcasters,
     Timestamp? scheduledAt,
     bool? isAdult,
+    String? hostUsername,
+    String? hostAvatarUrl,
     RoomTheme? theme,
   }) {
     return RoomModel(
@@ -213,6 +230,8 @@ class RoomModel {
       maxBroadcasters: maxBroadcasters ?? this.maxBroadcasters,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       isAdult: isAdult ?? this.isAdult,
+      hostUsername: hostUsername ?? this.hostUsername,
+      hostAvatarUrl: hostAvatarUrl ?? this.hostAvatarUrl,
       theme: theme ?? this.theme,
     );
   }

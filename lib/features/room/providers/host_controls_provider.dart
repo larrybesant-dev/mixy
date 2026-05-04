@@ -100,44 +100,96 @@ class HostControls {
     await policyRef.set({'allowGifts': !currentValue}, SetOptions(merge: true));
   }
 
-  Future<void> muteUser(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> muteUser(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'isMuted': true});
     _modLog(roomId, action: 'mute', actorId: actorId, targetId: userId);
   }
 
-  Future<void> unmuteUser(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> unmuteUser(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'isMuted': false});
     _modLog(roomId, action: 'unmute', actorId: actorId, targetId: userId);
   }
 
-  Future<void> banUser(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> banUser(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'isBanned': true});
     _modLog(roomId, action: 'ban', actorId: actorId, targetId: userId);
   }
 
-  Future<void> unbanUser(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> unbanUser(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'isBanned': false});
     _modLog(roomId, action: 'unban', actorId: actorId, targetId: userId);
   }
 
-  Future<void> promoteToCohost(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> promoteToCohost(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'role': 'cohost'});
-    _modLog(roomId, action: 'promote_cohost', actorId: actorId, targetId: userId);
+    _modLog(
+      roomId,
+      action: 'promote_cohost',
+      actorId: actorId,
+      targetId: userId,
+    );
   }
 
-  Future<void> promoteToModerator(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> promoteToModerator(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'role': 'moderator'});
-    _modLog(roomId, action: 'promote_moderator', actorId: actorId, targetId: userId);
+    _modLog(
+      roomId,
+      action: 'promote_moderator',
+      actorId: actorId,
+      targetId: userId,
+    );
   }
 
-  Future<void> promoteToTrustedSpeaker(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> promoteToTrustedSpeaker(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'role': 'trusted_speaker'});
-    _modLog(roomId, action: 'promote_trusted_speaker', actorId: actorId, targetId: userId);
+    _modLog(
+      roomId,
+      action: 'promote_trusted_speaker',
+      actorId: actorId,
+      targetId: userId,
+    );
   }
 
-  Future<void> demoteToAudience(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> demoteToAudience(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).update({'role': 'audience'});
-    _modLog(roomId, action: 'demote_audience', actorId: actorId, targetId: userId);
+    _modLog(
+      roomId,
+      action: 'demote_audience',
+      actorId: actorId,
+      targetId: userId,
+    );
   }
 
   /// Pushes [userId] onto the shared speaker list for the room.
@@ -221,10 +273,19 @@ class HostControls {
       'lastActiveAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
     await batch.commit();
-    _modLog(roomId, action: 'force_release_mic', actorId: '', targetId: normalizedUserId);
+    _modLog(
+      roomId,
+      action: 'force_release_mic',
+      actorId: '',
+      targetId: normalizedUserId,
+    );
   }
 
-  Future<void> removeUser(String roomId, String userId, {String actorId = ''}) async {
+  Future<void> removeUser(
+    String roomId,
+    String userId, {
+    String actorId = '',
+  }) async {
     await _participantRef(roomId, userId).delete();
     _modLog(roomId, action: 'kick', actorId: actorId, targetId: userId);
   }

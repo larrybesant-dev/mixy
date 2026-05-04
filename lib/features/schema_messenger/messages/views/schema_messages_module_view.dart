@@ -16,10 +16,7 @@ import '../messages_consistency_contract.dart';
 /// Forbidden Fields: wallet/security/verification writes, role mutation, legacy
 /// friends arrays
 class SchemamessageModuleView extends ConsumerWidget {
-  const SchemamessageModuleView({
-    super.key,
-    required this.userId,
-  });
+  const SchemamessageModuleView({super.key, required this.userId});
 
   final String userId;
 
@@ -38,7 +35,9 @@ class SchemamessageModuleView extends ConsumerWidget {
         _MetricCard(
           label: 'Compliance',
           value: compliance.isCompliant ? 'PASS' : 'FAIL',
-          tone: compliance.isCompliant ? const Color(0xFF34D399) : const Color(0xFFF87171),
+          tone: compliance.isCompliant
+              ? const Color(0xFF34D399)
+              : const Color(0xFFF87171),
           details: compliance.violations.isEmpty
               ? 'Template contract matched.'
               : compliance.violations.join(' | '),
@@ -62,17 +61,21 @@ class SchemamessageModuleView extends ConsumerWidget {
           details:
               '${architecture.summary} | friend=${architecture.friendCompositeScore}% '
               'message=${architecture.messageCompositeScore}% '
-            'policy=${architecture.policyVersion} '
-            'advisory=${architecture.advisoryOnly} '
+              'policy=${architecture.policyVersion} '
+              'advisory=${architecture.advisoryOnly} '
               '${architecture.reasons.join(' | ')}',
         ),
         const SizedBox(height: 12),
         _MetricCard(
           label: 'Parity',
-          value: parity.isComparable ? (parity.isMatch ? 'MATCH' : 'MISMATCH') : 'LOADING',
+          value: parity.isComparable
+              ? (parity.isMatch ? 'MATCH' : 'MISMATCH')
+              : 'LOADING',
           tone: !parity.isComparable
               ? const Color(0xFFFBBF24)
-              : (parity.isMatch ? const Color(0xFF34D399) : const Color(0xFFF87171)),
+              : (parity.isMatch
+                    ? const Color(0xFF34D399)
+                    : const Color(0xFFF87171)),
           details:
               'legacy=${snapshot.legacyConversationIds.length} schema=${snapshot.schemaConversationIds.length}',
         ),
@@ -80,25 +83,31 @@ class SchemamessageModuleView extends ConsumerWidget {
         Text(
           'Schema Conversation Snapshot',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: VelvetNoir.onSurface,
-                fontWeight: FontWeight.w700,
-              ),
+            color: VelvetNoir.onSurface,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 8),
         if (snapshot.schemaConversationIds.isEmpty)
           const _EmptyCard(label: 'No schema conversations to display.')
         else
           ...snapshot.schemaConversationIds.map((conversationId) {
-            final unread = snapshot.schemaUnreadByConversation[conversationId] ?? 0;
+            final unread =
+                snapshot.schemaUnreadByConversation[conversationId] ?? 0;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Container(
                 decoration: BoxDecoration(
                   color: VelvetNoir.surfaceHigh,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: VelvetNoir.outlineVariant.withValues(alpha: 0.3),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -116,7 +125,9 @@ class SchemamessageModuleView extends ConsumerWidget {
                     Text(
                       unread > 0 ? 'Unread' : 'Read',
                       style: TextStyle(
-                        color: unread > 0 ? const Color(0xFFFBBF24) : VelvetNoir.onSurfaceVariant,
+                        color: unread > 0
+                            ? const Color(0xFFFBBF24)
+                            : VelvetNoir.onSurfaceVariant,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -219,7 +230,9 @@ class _EmptyCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       padding: const EdgeInsets.all(12),
       child: Text(

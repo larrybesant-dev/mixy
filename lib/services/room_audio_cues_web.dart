@@ -44,7 +44,10 @@ class RoomAudioCues {
       final now = ctx.currentTime;
       osc.start(now);
       // Exponential ramp to silence avoids a click artefact.
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + durationMs / 1000);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        now + durationMs / 1000,
+      );
       osc.stop(now + durationMs / 1000 + 0.05);
     } catch (_) {
       // AudioContext unavailable — degrade gracefully.
@@ -70,7 +73,10 @@ class RoomAudioCues {
   void _hapticDouble() {
     if (kIsWeb) return;
     HapticFeedback.lightImpact();
-    Future.delayed(const Duration(milliseconds: 120), HapticFeedback.lightImpact);
+    Future.delayed(
+      const Duration(milliseconds: 120),
+      HapticFeedback.lightImpact,
+    );
   }
 
   /// Plays a double-tone chord for a richer sound.
@@ -162,11 +168,22 @@ class RoomAudioCues {
   /// Buzz/nudge: a low-frequency vibrato burst.
   void playBuzz() {
     if (kIsWeb) {
-      _playTone(frequency: 120.0, durationMs: 300, type: 'sawtooth', gain: 0.22);
+      _playTone(
+        frequency: 120.0,
+        durationMs: 300,
+        type: 'sawtooth',
+        gain: 0.22,
+      );
     } else {
       HapticFeedback.heavyImpact();
-      Future.delayed(const Duration(milliseconds: 120), HapticFeedback.heavyImpact);
-      Future.delayed(const Duration(milliseconds: 240), HapticFeedback.heavyImpact);
+      Future.delayed(
+        const Duration(milliseconds: 120),
+        HapticFeedback.heavyImpact,
+      );
+      Future.delayed(
+        const Duration(milliseconds: 240),
+        HapticFeedback.heavyImpact,
+      );
     }
   }
 

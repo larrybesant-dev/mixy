@@ -5,8 +5,8 @@ import '../models/referral_model.dart';
 
 class ReferralService {
   ReferralService({FirebaseFirestore? firestore, FirebaseFunctions? functions})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _functions = functions ?? FirebaseFunctions.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
@@ -64,7 +64,10 @@ class ReferralService {
 
     final result = await _functions
         .httpsCallable('redeemReferralCode')
-        .call<Map<String, dynamic>>(<String, dynamic>{'code': normalizedCode, 'userId': userId});
+        .call<Map<String, dynamic>>(<String, dynamic>{
+          'code': normalizedCode,
+          'userId': userId,
+        });
     final data = Map<String, dynamic>.from(result.data);
     return _asBool(data['redeemed'], fallback: false);
   }
@@ -80,7 +83,9 @@ class ReferralService {
         .where('isActive', isEqualTo: true)
         .limit(1)
         .snapshots()
-        .map((snapshot) => snapshot.docs.isEmpty ? null : snapshot.docs.first.id);
+        .map(
+          (snapshot) => snapshot.docs.isEmpty ? null : snapshot.docs.first.id,
+        );
   }
 
   Stream<double> referralEarningsTotalStream(String userId) {
@@ -93,18 +98,20 @@ class ReferralService {
         .where('beneficiaryUserId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-      var total = 0.0;
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        total += (data['amount'] as num?)?.toDouble() ?? 0;
-      }
-      return total;
-    });
+          var total = 0.0;
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            total += (data['amount'] as num?)?.toDouble() ?? 0;
+          }
+          return total;
+        });
   }
 
   Stream<List<ReferralAttributionModel>> referralsForUserStream(String userId) {
     if (userId.trim().isEmpty) {
-      return Stream<List<ReferralAttributionModel>>.value(<ReferralAttributionModel>[]);
+      return Stream<List<ReferralAttributionModel>>.value(
+        <ReferralAttributionModel>[],
+      );
     }
 
     return _firestore
@@ -112,8 +119,15 @@ class ReferralService {
         .where('referrerUserId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReferralAttributionModel.fromJson({'id': doc.id, ...doc.data()}))
-            .toList(growable: false));
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => ReferralAttributionModel.fromJson({
+                  'id': doc.id,
+                  ...doc.data(),
+                }),
+              )
+              .toList(growable: false),
+        );
   }
 }

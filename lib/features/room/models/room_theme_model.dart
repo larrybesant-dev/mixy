@@ -2,15 +2,7 @@ import 'package:mixvy/core/utils/network_image_url.dart';
 
 /// Vibe preset keys. Used to drive animated/gradient backgrounds when no
 /// custom image URL is set. New presets can be added without schema changes.
-enum RoomVibePreset {
-  none,
-  club,
-  lounge,
-  neon,
-  hype,
-  space,
-  ocean,
-}
+enum RoomVibePreset { none, club, lounge, neon, hype, space, ocean }
 
 /// Per-room visual theme stored under `rooms/{roomId}.theme` in Firestore.
 ///
@@ -39,21 +31,25 @@ class RoomTheme {
 
   bool get hasBackground => backgroundUrl != null && backgroundUrl!.isNotEmpty;
   bool get hasAccent => accentColor != null && accentColor!.isNotEmpty;
-  bool get isDefault => !hasBackground && !hasAccent && vibePreset == RoomVibePreset.none;
+  bool get isDefault =>
+      !hasBackground && !hasAccent && vibePreset == RoomVibePreset.none;
 
   factory RoomTheme.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
       return const RoomTheme();
     }
-    final rawUrl =
-        json['backgroundUrl'] is String ? json['backgroundUrl'] as String : null;
+    final rawUrl = json['backgroundUrl'] is String
+        ? json['backgroundUrl'] as String
+        : null;
     final sanitizedUrl = sanitizeNetworkImageUrl(rawUrl);
-    final rawPreset =
-        json['vibePreset'] is String ? json['vibePreset'] as String : null;
+    final rawPreset = json['vibePreset'] is String
+        ? json['vibePreset'] as String
+        : null;
     return RoomTheme(
       backgroundUrl: sanitizedUrl,
-      accentColor:
-          json['accentColor'] is String ? json['accentColor'] as String : null,
+      accentColor: json['accentColor'] is String
+          ? json['accentColor'] as String
+          : null,
       vibePreset: _parseVibePreset(rawPreset),
     );
   }

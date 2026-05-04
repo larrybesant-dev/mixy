@@ -12,25 +12,22 @@ import 'package:mixvy/services/room_service.dart';
 
 /// Live rooms where the users that [userId] follows are currently hosting.
 /// Reuses the shared live-rooms stream to avoid opening a second rooms listener.
-final followingHostIdsProvider =
-    Provider.autoDispose.family<AsyncValue<Set<String>>, String>((ref, userId) {
+final followingHostIdsProvider = Provider.autoDispose
+    .family<AsyncValue<Set<String>>, String>((ref, userId) {
       if (userId.isEmpty) {
         return const AsyncValue.data(<String>{});
       }
 
-      return ref.watch(rawFollowGraphStreamProvider(userId)).whenData(
-        (ids) => ids
-            .map((id) => id.trim())
-            .where((id) => id.isNotEmpty)
-            .toSet(),
-      );
+      return ref
+          .watch(rawFollowGraphStreamProvider(userId))
+          .whenData(
+            (ids) =>
+                ids.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet(),
+          );
     });
 
-final followingLiveRoomsProvider =
-    Provider.autoDispose.family<AsyncValue<List<RoomModel>>, String>((
-      ref,
-      userId,
-    ) {
+final followingLiveRoomsProvider = Provider.autoDispose
+    .family<AsyncValue<List<RoomModel>>, String>((ref, userId) {
       if (userId.isEmpty) {
         return const AsyncValue.data(<RoomModel>[]);
       }
@@ -59,75 +56,77 @@ final followingLiveRoomsProvider =
       final filtered = followedIds.isEmpty
           ? const <RoomModel>[]
           : rooms
-              .where((room) => followedIds.contains(room.hostId))
-              .take(12)
-              .toList(growable: false);
+                .where((room) => followedIds.contains(room.hostId))
+                .take(12)
+                .toList(growable: false);
       return AsyncValue.data(filtered);
     });
 
 // ── Following users list ──────────────────────────────────────────────────────
 
 /// User profiles of everyone that [userId] follows (max 50).
-final _followingUsersByKeyProvider =
-    FutureProvider.autoDispose.family<List<UserModel>, String>((ref, key) async {
-  if (key.isEmpty) {
-    return const <UserModel>[];
-  }
-
-  final firestore = ref.watch(firestoreProvider);
-  final ids = key.split('|').where((id) => id.isNotEmpty).toList(growable: false);
-  if (ids.isEmpty) {
-    return const <UserModel>[];
-  }
-
-  final users = <UserModel>[];
-  for (var i = 0; i < ids.length; i += 10) {
-    final batch = ids.sublist(i, (i + 10).clamp(0, ids.length));
-    try {
-      final userSnap = await firestore
-          .collection('users')
-          .where(FieldPath.documentId, whereIn: batch)
-          .get();
-      for (final doc in userSnap.docs) {
-        final data = Map<String, dynamic>.from(doc.data());
-        data['id'] = doc.id;
-        users.add(UserModel.fromJson(data));
+final _followingUsersByKeyProvider = FutureProvider.autoDispose
+    .family<List<UserModel>, String>((ref, key) async {
+      if (key.isEmpty) {
+        return const <UserModel>[];
       }
-    } on FirebaseException {
-      continue;
-    }
-  }
 
-  return users;
-});
+      final firestore = ref.watch(firestoreProvider);
+      final ids = key
+          .split('|')
+          .where((id) => id.isNotEmpty)
+          .toList(growable: false);
+      if (ids.isEmpty) {
+        return const <UserModel>[];
+      }
 
-final followingUsersProvider = Provider.autoDispose.family<AsyncValue<List<UserModel>>, String>((
-  ref,
-  userId,
-) {
-  if (userId.isEmpty) {
-    return const AsyncValue.data(<UserModel>[]);
-  }
+      final users = <UserModel>[];
+      for (var i = 0; i < ids.length; i += 10) {
+        final batch = ids.sublist(i, (i + 10).clamp(0, ids.length));
+        try {
+          final userSnap = await firestore
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: batch)
+              .get();
+          for (final doc in userSnap.docs) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            users.add(UserModel.fromJson(data));
+          }
+        } on FirebaseException {
+          continue;
+        }
+      }
 
-  final followingIdsAsync = ref.watch(rawFollowGraphStreamProvider(userId));
-  if (followingIdsAsync.hasError) {
-    return AsyncValue<List<UserModel>>.error(
-      followingIdsAsync.error!,
-      followingIdsAsync.stackTrace!,
-    );
-  }
-  if (followingIdsAsync.isLoading) {
-    return const AsyncValue.loading();
-  }
+      return users;
+    });
 
-  final ids = (followingIdsAsync.valueOrNull ?? const <String>[])
-      .where((id) => id.isNotEmpty)
-      .take(50)
-      .toList(growable: false)
-    ..sort();
-  final key = ids.join('|');
-  return ref.watch(_followingUsersByKeyProvider(key));
-});
+final followingUsersProvider = Provider.autoDispose
+    .family<AsyncValue<List<UserModel>>, String>((ref, userId) {
+      if (userId.isEmpty) {
+        return const AsyncValue.data(<UserModel>[]);
+      }
+
+      final followingIdsAsync = ref.watch(rawFollowGraphStreamProvider(userId));
+      if (followingIdsAsync.hasError) {
+        return AsyncValue<List<UserModel>>.error(
+          followingIdsAsync.error!,
+          followingIdsAsync.stackTrace!,
+        );
+      }
+      if (followingIdsAsync.isLoading) {
+        return const AsyncValue.loading();
+      }
+
+      final ids =
+          (followingIdsAsync.valueOrNull ?? const <String>[])
+              .where((id) => id.isNotEmpty)
+              .take(50)
+              .toList(growable: false)
+            ..sort();
+      final key = ids.join('|');
+      return ref.watch(_followingUsersByKeyProvider(key));
+    });
 
 // ── For-You rooms ─────────────────────────────────────────────────────────────
 
@@ -213,10 +212,10 @@ final forYouRoomsProvider = FutureProvider.family
 // ── New live rooms (recent) ───────────────────────────────────────────────────
 
 /// Stream of live rooms ordered by creation time (newest first).
-final newLiveRoomsProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>(
-  (ref) {
-    return ref.watch(roomsStreamProvider).whenData(
-      (rooms) => rooms.take(20).toList(growable: false),
-    );
-  },
-);
+final newLiveRoomsProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>((
+  ref,
+) {
+  return ref
+      .watch(roomsStreamProvider)
+      .whenData((rooms) => rooms.take(20).toList(growable: false));
+});

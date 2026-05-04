@@ -49,7 +49,9 @@ class FriendTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        onLongPress: actions.isNotEmpty ? () => _showActionSheet(context) : null,
+        onLongPress: actions.isNotEmpty
+            ? () => _showActionSheet(context)
+            : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
@@ -216,7 +218,10 @@ class _StatusRow extends StatelessWidget {
             width: 7,
             height: 7,
             margin: const EdgeInsets.only(right: 4, top: 1),
-            decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
           ),
         ],
         Flexible(
@@ -274,10 +279,7 @@ class _CompactChip extends StatelessWidget {
 
 /// Bottom sheet shown on long-press with the full list of friend actions.
 class _ActionSheet extends StatelessWidget {
-  const _ActionSheet({
-    required this.username,
-    required this.actions,
-  });
+  const _ActionSheet({required this.username, required this.actions});
 
   final String username;
   final List<FriendTileAction> actions;
@@ -314,7 +316,10 @@ class _ActionSheet extends StatelessWidget {
               leading: Icon(action.icon, color: VelvetNoir.primary),
               title: Text(
                 action.label,
-                style: const TextStyle(color: VelvetNoir.onSurface, fontSize: 15),
+                style: const TextStyle(
+                  color: VelvetNoir.onSurface,
+                  fontSize: 15,
+                ),
               ),
               onTap: () {
                 Navigator.of(context).pop();

@@ -67,26 +67,46 @@ class NotificationService {
         .orderBy('createdAt', descending: true)
         .limit(50)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => NotificationModel.fromJson(doc.id, doc.data()))
-            .toList(growable: false));
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => NotificationModel.fromJson(doc.id, doc.data()))
+              .toList(growable: false),
+        );
   }
 
   Future<void> markAllRead(String userId) async {
-    final snapshot = await _firestore
-        .collection('notifications')
-        .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false)
-        .get();
+    // Firestore batch writes are capped at 500 operations. Paginate through
+    // unread notifications in pages of 500 to avoid a hard crash when a user
+    // has accumulated many notifications.
+    const int batchSize = 500;
+    QueryDocumentSnapshot? lastDoc;
 
-    final batch = _firestore.batch();
-    for (final doc in snapshot.docs) {
-      batch.update(doc.reference, {
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-      });
+    while (true) {
+      Query query = _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .limit(batchSize);
+
+      if (lastDoc != null) {
+        query = query.startAfterDocument(lastDoc);
+      }
+
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) break;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+
+      if (snapshot.docs.length < batchSize) break;
+      lastDoc = snapshot.docs.last;
     }
-    await batch.commit();
   }
 
   Future<void> markRead(String userId, String notificationId) async {

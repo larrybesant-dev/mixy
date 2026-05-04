@@ -1,10 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum MessagePaneRenderMode {
-  legacy,
-  schema,
-  dual,
-}
+enum MessagePaneRenderMode { legacy, schema, dual }
 
 class MessagePaneRenderModeController extends Notifier<MessagePaneRenderMode> {
   @override
@@ -17,5 +13,5 @@ class MessagePaneRenderModeController extends Notifier<MessagePaneRenderMode> {
 
 final messagePaneRenderModeProvider =
     NotifierProvider<MessagePaneRenderModeController, MessagePaneRenderMode>(
-  MessagePaneRenderModeController.new,
-);
+      MessagePaneRenderModeController.new,
+    );

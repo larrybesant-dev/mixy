@@ -21,11 +21,7 @@ class SchemaConversationBootTarget {
   final String friendId;
 }
 
-enum SchemaConversationBootSource {
-  appStart,
-  authSwitch,
-  unknown,
-}
+enum SchemaConversationBootSource { appStart, authSwitch, unknown }
 
 class SchemaConversationBootExecutionContext {
   const SchemaConversationBootExecutionContext({
@@ -104,11 +100,11 @@ class SchemaConversationBootStateNotifier
   int _bootGeneration = 0;
 
   SchemaConversationBootStateNotifier()
-      : super(
-          const SchemaConversationBootState(
-            phase: SchemaConversationBootPhase.idle,
-          ),
-        );
+    : super(
+        const SchemaConversationBootState(
+          phase: SchemaConversationBootPhase.idle,
+        ),
+      );
 
   void reset() {
     state = const SchemaConversationBootState(
@@ -122,7 +118,8 @@ class SchemaConversationBootStateNotifier
   }) {
     _bootGeneration += 1;
     final context = SchemaConversationBootExecutionContext(
-      bootId: 'schema-boot-$_bootGeneration-${DateTime.now().microsecondsSinceEpoch}',
+      bootId:
+          'schema-boot-$_bootGeneration-${DateTime.now().microsecondsSinceEpoch}',
       source: source,
       createdAt: DateTime.now(),
       target: target,
@@ -183,10 +180,11 @@ class SchemaConversationBootStateNotifier
   }
 }
 
-final schemaConversationBootStateProvider = StateNotifierProvider<
-    SchemaConversationBootStateNotifier, SchemaConversationBootState>(
-  (ref) => SchemaConversationBootStateNotifier(),
-);
+final schemaConversationBootStateProvider =
+    StateNotifierProvider<
+      SchemaConversationBootStateNotifier,
+      SchemaConversationBootState
+    >((ref) => SchemaConversationBootStateNotifier());
 
 final schemaConversationBootConsumedProvider = Provider<bool>((ref) {
   return ref.watch(schemaConversationBootStateProvider).phase ==
@@ -272,8 +270,7 @@ class SchemaConversationBootEngine {
       return;
     }
 
-    final notifier =
-        _ref.read(schemaConversationBootStateProvider.notifier);
+    final notifier = _ref.read(schemaConversationBootStateProvider.notifier);
     final writeGuard = _ref.read(schemaBootScopedWriteGuardProvider);
 
     final bootContext = notifier.beginBoot(target: target, source: source);
@@ -292,7 +289,11 @@ class SchemaConversationBootEngine {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final afterResolve = _ref.read(schemaConversationBootStateProvider);
-      if (!_isActiveBoot(afterResolve, bootContext.bootId, SchemaConversationBootPhase.resolving)) {
+      if (!_isActiveBoot(
+        afterResolve,
+        bootContext.bootId,
+        SchemaConversationBootPhase.resolving,
+      )) {
         _recordTimeline(
           bootId: bootContext.bootId,
           source: bootContext.source,
@@ -351,7 +352,11 @@ class SchemaConversationBootEngine {
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final beforeRoute = _ref.read(schemaConversationBootStateProvider);
-        if (!_isActiveBoot(beforeRoute, bootContext.bootId, SchemaConversationBootPhase.anchoring)) {
+        if (!_isActiveBoot(
+          beforeRoute,
+          bootContext.bootId,
+          SchemaConversationBootPhase.anchoring,
+        )) {
           _recordTimeline(
             bootId: bootContext.bootId,
             source: bootContext.source,
@@ -456,7 +461,9 @@ class SchemaConversationBootEngine {
       return;
     }
 
-    _ref.read(schemaBootTimelineProvider.notifier).record(
+    _ref
+        .read(schemaBootTimelineProvider.notifier)
+        .record(
           SchemaBootTimelineEvent(
             timestamp: DateTime.now(),
             bootId: bootId,
@@ -478,42 +485,45 @@ class SchemaConversationBootEngine {
   }
 }
 
-final schemaConversationBootEngineProvider = Provider<SchemaConversationBootEngine>(
-  (ref) => SchemaConversationBootEngine(ref),
-);
+final schemaConversationBootEngineProvider =
+    Provider<SchemaConversationBootEngine>(
+      (ref) => SchemaConversationBootEngine(ref),
+    );
 
 final schemaConversationFirstBootTargetProvider =
     Provider.autoDispose<SchemaConversationBootTarget?>((ref) {
-  final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
-  if (authUserId == null || authUserId.isEmpty) {
-    return null;
-  }
-
-  final conversations =
-      ref.watch(schemaMyConversationsProvider).valueOrNull ?? const [];
-
-  for (final conversation in conversations) {
-    if (!conversation.isDirect || !conversation.isActive) {
-      continue;
-    }
-    if (conversation.id.isEmpty) {
-      continue;
-    }
-
-    for (final participantId in conversation.participantIds) {
-      if (participantId != authUserId && participantId.isNotEmpty) {
-        return SchemaConversationBootTarget(
-          conversationId: conversation.id,
-          friendId: participantId,
-        );
+      final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      if (authUserId == null || authUserId.isEmpty) {
+        return null;
       }
-    }
-  }
 
-  return null;
-});
+      final conversations =
+          ref.watch(schemaMyConversationsProvider).valueOrNull ?? const [];
 
-final effectiveSelectedSchemaFriendIdProvider = Provider.autoDispose<String?>((ref) {
+      for (final conversation in conversations) {
+        if (!conversation.isDirect || !conversation.isActive) {
+          continue;
+        }
+        if (conversation.id.isEmpty) {
+          continue;
+        }
+
+        for (final participantId in conversation.participantIds) {
+          if (participantId != authUserId && participantId.isNotEmpty) {
+            return SchemaConversationBootTarget(
+              conversationId: conversation.id,
+              friendId: participantId,
+            );
+          }
+        }
+      }
+
+      return null;
+    });
+
+final effectiveSelectedSchemaFriendIdProvider = Provider.autoDispose<String?>((
+  ref,
+) {
   final explicitSelection = ref.watch(selectedSchemaFriendIdProvider);
   if (explicitSelection != null && explicitSelection.isNotEmpty) {
     return explicitSelection;
@@ -529,7 +539,8 @@ final effectiveSelectedSchemaFriendIdProvider = Provider.autoDispose<String?>((r
     return null;
   }
 
-  final conversations = ref.watch(schemaMyConversationsProvider).valueOrNull ?? const [];
+  final conversations =
+      ref.watch(schemaMyConversationsProvider).valueOrNull ?? const [];
   for (final conversation in conversations) {
     if (!conversation.isDirect || !conversation.isActive) {
       continue;

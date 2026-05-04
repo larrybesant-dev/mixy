@@ -12,66 +12,57 @@ import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
 
 void main() {
-  testWidgets(
-    'LiveRoomScreen basic mount',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1440, 2200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  testWidgets('LiveRoomScreen basic mount', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('rooms').doc('room-a').set({
-        'hostId': 'host-1',
-        'isLocked': false,
-        'slowModeSeconds': 0,
-      });
+    final firestore = FakeFirebaseFirestore();
+    await firestore.collection('rooms').doc('room-a').set({
+      'hostId': 'host-1',
+      'isLocked': false,
+      'slowModeSeconds': 0,
+    });
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            roomFirestoreProvider.overrideWithValue(firestore),
-            userProvider.overrideWithValue(
-              UserModel(
-                id: 'user-1',
-                email: 'user1@mixvy.com',
-                username: 'User One',
-                createdAt: DateTime(2026, 1, 1),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          roomFirestoreProvider.overrideWithValue(firestore),
+          userProvider.overrideWithValue(
+            UserModel(
+              id: 'user-1',
+              email: 'user1@mixvy.com',
+              username: 'User One',
+              createdAt: DateTime(2026, 1, 1),
+            ),
+          ),
+          currentParticipantProvider.overrideWith(
+            (ref, params) => Stream.value(
+              RoomParticipantModel(
+                userId: 'user-1',
+                role: 'audience',
+                joinedAt: DateTime(2026, 1, 1),
+                lastActiveAt: DateTime(2026, 1, 1),
               ),
             ),
-            currentParticipantProvider.overrideWith(
-              (ref, params) => Stream.value(
-                RoomParticipantModel(
-                  userId: 'user-1',
-                  role: 'audience',
-                  joinedAt: DateTime(2026, 1, 1),
-                  lastActiveAt: DateTime(2026, 1, 1),
-                ),
-              ),
-            ),
-            participantsStreamProvider.overrideWith(
-              (ref, roomId) => Stream.value([]),
-            ),
-            participantCountProvider.overrideWith(
-              (ref, roomId) => 1,
-            ),
-            messagetreamProvider.overrideWith(
-              (ref, roomId) => Stream.value([]),
-            ),
-            hostProvider.overrideWith(
-              (ref, roomId) => Stream.value(Host('host-1')),
-            ),
-            coHostsProvider.overrideWith(
-              (ref, roomId) => const <Cohost>[],
-            ),
-          ],
-          child: const MaterialApp(home: LiveRoomScreen(roomId: 'room-a')),
-        ),
-      );
+          ),
+          participantsStreamProvider.overrideWith(
+            (ref, roomId) => Stream.value([]),
+          ),
+          participantCountProvider.overrideWith((ref, roomId) => 1),
+          messagetreamProvider.overrideWith((ref, roomId) => Stream.value([])),
+          hostProvider.overrideWith(
+            (ref, roomId) => Stream.value(Host('host-1')),
+          ),
+          coHostsProvider.overrideWith((ref, roomId) => const <Cohost>[]),
+        ],
+        child: const MaterialApp(home: LiveRoomScreen(roomId: 'room-a')),
+      ),
+    );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-      // Verify that the screen actually mounts without crashing.
-      expect(find.byType(LiveRoomScreen), findsOneWidget);
-    },
-  );
+    // Verify that the screen actually mounts without crashing.
+    expect(find.byType(LiveRoomScreen), findsOneWidget);
+  });
 }

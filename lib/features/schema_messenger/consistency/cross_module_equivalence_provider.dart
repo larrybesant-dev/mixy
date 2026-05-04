@@ -26,10 +26,13 @@ class CrossModuleEquivalenceReport {
   final List<String> violations;
 }
 
-final crossModuleEquivalenceProvider =
-    Provider<CrossModuleEquivalenceReport>((ref) {
+final crossModuleEquivalenceProvider = Provider<CrossModuleEquivalenceReport>((
+  ref,
+) {
   final messageContract = ref.watch(messageConsistencyContractProvider);
-  final messageCompliance = ref.watch(schemaComplianceCheckerProvider('message'));
+  final messageCompliance = ref.watch(
+    schemaComplianceCheckerProvider('message'),
+  );
 
   final violations = <String>[];
 
@@ -39,7 +42,8 @@ final crossModuleEquivalenceProvider =
     violations.add('reference_mismatch:$moduleReference!=$expectedReference');
   }
 
-  final expectedStableThreshold = SchemaGovernanceContract.stableMismatchThreshold;
+  final expectedStableThreshold =
+      SchemaGovernanceContract.stableMismatchThreshold;
   final moduleStableThreshold = messageContract.stableMismatchThreshold;
   if (expectedStableThreshold != moduleStableThreshold) {
     violations.add(
@@ -47,7 +51,8 @@ final crossModuleEquivalenceProvider =
     );
   }
 
-  final expectedReconcileMinutes = SchemaGovernanceContract.reconcileEveryMinutes;
+  final expectedReconcileMinutes =
+      SchemaGovernanceContract.reconcileEveryMinutes;
   final moduleReconcileMinutes = messageContract.reconcileEveryMinutes;
   if (expectedReconcileMinutes != moduleReconcileMinutes) {
     violations.add(

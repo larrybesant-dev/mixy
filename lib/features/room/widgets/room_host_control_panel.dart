@@ -901,9 +901,7 @@ class _ParticipantTile extends ConsumerWidget {
       ),
       title: Row(
         children: [
-          Flexible(
-            child: Text(displayName, overflow: TextOverflow.ellipsis),
-          ),
+          Flexible(child: Text(displayName, overflow: TextOverflow.ellipsis)),
           if (isSelf)
             Container(
               margin: const EdgeInsets.only(left: 6),
@@ -1088,10 +1086,9 @@ class _ModeratorsTab extends ConsumerWidget {
                 ),
               )
             else
-              ...mods.map(
-                (p) {
-                  final displayName = resolvePublicUsername(uid: p.userId);
-                  return Card(
+              ...mods.map((p) {
+                final displayName = resolvePublicUsername(uid: p.userId);
+                return Card(
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor:
@@ -1184,13 +1181,14 @@ class _ModeratorsTab extends ConsumerWidget {
                 ),
               )
             else
-              ...eligible.map(
-                (p) {
-                  final displayName = resolvePublicUsername(uid: p.userId);
-                  return ListTile(
+              ...eligible.map((p) {
+                final displayName = resolvePublicUsername(uid: p.userId);
+                return ListTile(
                   leading: CircleAvatar(
                     child: Text(
-                      displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : '?',
                     ),
                   ),
                   title: Text(displayName),
@@ -1364,10 +1362,7 @@ extension _LetExt<T> on T {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ThemeTab extends ConsumerWidget {
-  const _ThemeTab({
-    required this.roomId,
-    required this.scrollController,
-  });
+  const _ThemeTab({required this.roomId, required this.scrollController});
 
   final String roomId;
   final ScrollController scrollController;
@@ -1375,7 +1370,9 @@ class _ThemeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
-    final roomController = ref.read(liveRoomControllerProvider(roomId).notifier);
+    final roomController = ref.read(
+      liveRoomControllerProvider(roomId).notifier,
+    );
     final currentTheme = roomAsync.valueOrNull?.theme;
     final preset = currentTheme?.vibePreset;
     final hasCustomBg = currentTheme?.hasBackground ?? false;
@@ -1403,8 +1400,11 @@ class _ThemeTab extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                const Icon(Icons.palette_rounded,
-                    color: Color(0xFFD4A853), size: 22),
+                const Icon(
+                  Icons.palette_rounded,
+                  color: Color(0xFFD4A853),
+                  size: 22,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -1422,7 +1422,9 @@ class _ThemeTab extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 12, color: Colors.grey),
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         )
                       else
                         const Text(
@@ -1473,7 +1475,11 @@ class _ThemeTab extends ConsumerWidget {
             child: Row(
               children: [
                 const SizedBox(width: 4),
-                const Icon(Icons.open_in_new, size: 14, color: Color(0xFFD4A853)),
+                const Icon(
+                  Icons.open_in_new,
+                  size: 14,
+                  color: Color(0xFFD4A853),
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Open theme picker',

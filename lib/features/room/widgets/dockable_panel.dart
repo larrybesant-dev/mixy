@@ -24,6 +24,7 @@ class DockablePanel extends StatefulWidget {
   final double minWidth;
   final bool initiallyMinimized;
   final List<Widget> actions;
+
   /// Called when the user clicks the "detach" button. If null, no detach
   /// button is shown.
   final VoidCallback? onDetach;
@@ -121,8 +122,7 @@ class _DockablePanelState extends State<DockablePanel> {
             ),
           ),
           // ── Content ────────────────────────────────────────────────────
-          if (!_minimized)
-            Expanded(child: widget.child),
+          if (!_minimized) Expanded(child: widget.child),
         ],
       ),
     );
@@ -242,84 +242,86 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
           child: Stack(
             children: [
               Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Draggable title bar ───────────────────────────────────
-              GestureDetector(
-                onDoubleTap: () => setState(() => _minimized = !_minimized),
-                onPanUpdate: (details) {
-                  setState(() {
-                    _position += details.delta;
-                  });
-                },
-                child: Container(
-                  height: headerHeight,
-                  decoration: BoxDecoration(
-                    color: widget.headerColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(8),
-                      topRight: const Radius.circular(8),
-                      bottomLeft: _minimized
-                          ? const Radius.circular(8)
-                          : Radius.zero,
-                      bottomRight: _minimized
-                          ? const Radius.circular(8)
-                          : Radius.zero,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Draggable title bar ───────────────────────────────────
+                  GestureDetector(
+                    onDoubleTap: () => setState(() => _minimized = !_minimized),
+                    onPanUpdate: (details) {
+                      setState(() {
+                        _position += details.delta;
+                      });
+                    },
+                    child: Container(
+                      height: headerHeight,
+                      decoration: BoxDecoration(
+                        color: widget.headerColor,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(8),
+                          topRight: const Radius.circular(8),
+                          bottomLeft: _minimized
+                              ? const Radius.circular(8)
+                              : Radius.zero,
+                          bottomRight: _minimized
+                              ? const Radius.circular(8)
+                              : Radius.zero,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.drag_indicator,
+                            color: npOnVariant,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          if (widget.icon != null) ...[
+                            Icon(widget.icon, color: npPrimary, size: 14),
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              widget.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          ...widget.actions,
+                          if (widget.onReattach != null)
+                            _HeaderIconButton(
+                              tooltip: 'Dock panel',
+                              icon: Icons.picture_in_picture_alt,
+                              onTap: widget.onReattach!,
+                            ),
+                          _HeaderIconButton(
+                            tooltip: _minimized ? 'Restore' : 'Minimize',
+                            icon: _minimized
+                                ? Icons.keyboard_arrow_down
+                                : Icons.keyboard_arrow_up,
+                            color: npOnVariant,
+                            onTap: () =>
+                                setState(() => _minimized = !_minimized),
+                          ),
+                          if (widget.onClose != null)
+                            _HeaderIconButton(
+                              tooltip: 'Close',
+                              icon: Icons.close,
+                              color: const Color(0xFFFF6E84),
+                              onTap: widget.onClose!,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.drag_indicator,
-                          color: npOnVariant, size: 14),
-                      const SizedBox(width: 4),
-                      if (widget.icon != null) ...[
-                        Icon(widget.icon, color: npPrimary, size: 14),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      ...widget.actions,
-                      if (widget.onReattach != null)
-                        _HeaderIconButton(
-                          tooltip: 'Dock panel',
-                          icon: Icons.picture_in_picture_alt,
-                          onTap: widget.onReattach!,
-                        ),
-                      _HeaderIconButton(
-                        tooltip: _minimized ? 'Restore' : 'Minimize',
-                        icon: _minimized
-                            ? Icons.keyboard_arrow_down
-                            : Icons.keyboard_arrow_up,
-                        color: npOnVariant,
-                        onTap: () =>
-                            setState(() => _minimized = !_minimized),
-                      ),
-                      if (widget.onClose != null)
-                        _HeaderIconButton(
-                          tooltip: 'Close',
-                          icon: Icons.close,
-                          color: const Color(0xFFFF6E84),
-                          onTap: widget.onClose!,
-                        ),
-                    ],
-                  ),
-                ),
+                  // ── Content ───────────────────────────────────────────────
+                  if (!_minimized) Expanded(child: widget.child),
+                ],
               ),
-              // ── Content ───────────────────────────────────────────────
-              if (!_minimized)
-                Expanded(child: widget.child),
-            ],
-          ),
               // ── Resize handle (bottom-right corner) ─────────────────
               if (!_minimized)
                 Positioned(
@@ -329,8 +331,14 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
                     behavior: HitTestBehavior.opaque,
                     onPanUpdate: (details) {
                       setState(() {
-                        _width = (_width + details.delta.dx).clamp(200.0, 800.0);
-                        _height = (_height + details.delta.dy).clamp(150.0, 600.0);
+                        _width = (_width + details.delta.dx).clamp(
+                          200.0,
+                          800.0,
+                        );
+                        _height = (_height + details.delta.dy).clamp(
+                          150.0,
+                          600.0,
+                        );
                       });
                     },
                     child: MouseRegion(

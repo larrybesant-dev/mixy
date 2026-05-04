@@ -1,5 +1,1 @@
-enum MediaTier {
-  fullVideo,
-  lowVideo,
-  audioOnly,
-}
+enum MediaTier { fullVideo, lowVideo, audioOnly }

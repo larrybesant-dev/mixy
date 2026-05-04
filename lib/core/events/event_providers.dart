@@ -11,12 +11,20 @@ final appEventBusProvider = Provider<AppEventBus>((ref) {
   return AppEventBus.instance;
 });
 
+final socialActivityServiceProvider = Provider<SocialActivityService>((ref) {
+  final service = SocialActivityService(
+    firestore: ref.watch(firestoreProvider),
+  );
+  ref.onDispose(() {
+    service.dispose();
+  });
+  return service;
+});
+
 final eventPipelineProvider = Provider<EventPipeline>((ref) {
   final pipeline = EventPipeline(
     eventBus: ref.watch(appEventBusProvider),
-    socialActivityService: SocialActivityService(
-      firestore: ref.watch(firestoreProvider),
-    ),
+    socialActivityService: ref.watch(socialActivityServiceProvider),
     notificationService: NotificationService(
       firestore: ref.watch(firestoreProvider),
     ),

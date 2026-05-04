@@ -1,11 +1,7 @@
 import 'dart:async';
 
 class SystemEvent {
-  const SystemEvent({
-    required this.type,
-    required this.timestamp,
-    this.meta,
-  });
+  const SystemEvent({required this.type, required this.timestamp, this.meta});
 
   final String type;
   final DateTime timestamp;

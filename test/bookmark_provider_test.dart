@@ -52,10 +52,7 @@ void main() {
 
     test('removeBookmark deletes the document', () async {
       await controller.savePost(userId: 'user-1', postId: 'post-del');
-      await controller.removeBookmark(
-        userId: 'user-1',
-        bookmarkId: 'post-del',
-      );
+      await controller.removeBookmark(userId: 'user-1', bookmarkId: 'post-del');
       final result = await controller.isBookmarked(
         userId: 'user-1',
         postId: 'post-del',
@@ -63,14 +60,17 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('bookmarks are user-scoped: user-2 cannot see user-1 bookmark', () async {
-      await controller.savePost(userId: 'user-1', postId: 'post-1');
-      final result = await controller.isBookmarked(
-        userId: 'user-2',
-        postId: 'post-1',
-      );
-      expect(result, isFalse);
-    });
+    test(
+      'bookmarks are user-scoped: user-2 cannot see user-1 bookmark',
+      () async {
+        await controller.savePost(userId: 'user-1', postId: 'post-1');
+        final result = await controller.isBookmarked(
+          userId: 'user-2',
+          postId: 'post-1',
+        );
+        expect(result, isFalse);
+      },
+    );
   });
 
   group('bookmarkedPostsProvider', () {
@@ -80,9 +80,7 @@ void main() {
     setUp(() {
       firestore = FakeFirebaseFirestore();
       container = ProviderContainer(
-        overrides: [
-          firestoreProvider.overrideWithValue(firestore),
-        ],
+        overrides: [firestoreProvider.overrideWithValue(firestore)],
       );
     });
 
@@ -91,8 +89,9 @@ void main() {
     });
 
     test('returns empty list when user has no bookmarks', () async {
-      final result =
-          await container.read(bookmarkedPostsProvider('user-1').future);
+      final result = await container.read(
+        bookmarkedPostsProvider('user-1').future,
+      );
       expect(result, isEmpty);
     });
 
@@ -110,12 +109,13 @@ void main() {
           .collection('bookmarks')
           .doc('post-1')
           .set({
-        'postId': 'post-1',
-        'savedAt': Timestamp.fromDate(DateTime(2026, 1, 1)),
-      });
+            'postId': 'post-1',
+            'savedAt': Timestamp.fromDate(DateTime(2026, 1, 1)),
+          });
 
-      final result =
-          await container.read(bookmarkedPostsProvider('user-1').future);
+      final result = await container.read(
+        bookmarkedPostsProvider('user-1').future,
+      );
       expect(result.length, 1);
       expect(result.first['id'], 'post-1');
       expect(result.first['content'], 'Hello world');
@@ -129,12 +129,13 @@ void main() {
           .collection('bookmarks')
           .doc('ghost-post')
           .set({
-        'postId': 'ghost-post',
-        'savedAt': Timestamp.fromDate(DateTime(2026, 1, 1)),
-      });
+            'postId': 'ghost-post',
+            'savedAt': Timestamp.fromDate(DateTime(2026, 1, 1)),
+          });
 
-      final result =
-          await container.read(bookmarkedPostsProvider('user-1').future);
+      final result = await container.read(
+        bookmarkedPostsProvider('user-1').future,
+      );
       expect(result, isEmpty);
     });
   });

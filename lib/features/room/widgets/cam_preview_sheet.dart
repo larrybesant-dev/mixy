@@ -77,10 +77,12 @@ class _CamPreviewSheetState extends State<CamPreviewSheet> {
       setState(() {
         _cameras = cameras;
         _mics = mics;
-        _selectedCameraId = (savedCam != null && cameras.any((c) => c.deviceId == savedCam))
+        _selectedCameraId =
+            (savedCam != null && cameras.any((c) => c.deviceId == savedCam))
             ? savedCam
             : (cameras.isNotEmpty ? cameras.first.deviceId : null);
-        _selectedMicId = (savedMic != null && mics.any((m) => m.deviceId == savedMic))
+        _selectedMicId =
+            (savedMic != null && mics.any((m) => m.deviceId == savedMic))
             ? savedMic
             : (mics.isNotEmpty ? mics.first.deviceId : null);
         _devicesLoading = false;
@@ -143,13 +145,18 @@ class _CamPreviewSheetState extends State<CamPreviewSheet> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.videocam_off,
-                                  color: Color(0xFFB09080), size: 32),
+                              Icon(
+                                Icons.videocam_off,
+                                color: Color(0xFFB09080),
+                                size: 32,
+                              ),
                               SizedBox(height: 6),
                               Text(
                                 'Camera not started yet',
                                 style: TextStyle(
-                                    color: Color(0xFFB09080), fontSize: 12),
+                                  color: Color(0xFFB09080),
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -171,12 +178,15 @@ class _CamPreviewSheetState extends State<CamPreviewSheet> {
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFFD4A853)),
+                        strokeWidth: 2,
+                        color: Color(0xFFD4A853),
+                      ),
                     ),
                     SizedBox(width: 8),
-                    Text('Loading devices…',
-                        style:
-                            TextStyle(color: Color(0xFFB09080), fontSize: 12)),
+                    Text(
+                      'Loading devices…',
+                      style: TextStyle(color: Color(0xFFB09080), fontSize: 12),
+                    ),
                   ],
                 ),
               )
@@ -286,8 +296,10 @@ class _DeviceRow extends StatelessWidget {
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF10131A),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFF3A3E47)),

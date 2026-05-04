@@ -26,9 +26,7 @@ class NewMessageScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPageScaffold(
-      appBar: AppBar(
-        title: const Text('New message'),
-      ),
+      appBar: AppBar(title: const Text('New message')),
       body: NewMessagePaneView(
         userId: userId,
         username: username,
@@ -110,7 +108,9 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
     });
 
     try {
-      final conversationId = await ref.read(messagingControllerProvider).createDirectConversation(
+      final conversationId = await ref
+          .read(messagingControllerProvider)
+          .createDirectConversation(
             userId1: widget.userId,
             user1Name: widget.username,
             user1AvatarUrl: widget.avatarUrl,
@@ -164,9 +164,9 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
         setState(() {
           _isSearching = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Search failed: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Search failed: $error')));
       },
     );
   }
@@ -210,10 +210,7 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'New message',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
               ),
             ),
           ),

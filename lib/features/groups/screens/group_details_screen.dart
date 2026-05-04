@@ -26,7 +26,8 @@ class GroupDetailsScreen extends ConsumerWidget {
 
     return AppPageScaffold(
       appBar: AppBar(
-        title: groupAsync.whenOrNull(
+        title:
+            groupAsync.whenOrNull(
               data: (g) => g == null
                   ? null
                   : Text(
@@ -42,7 +43,9 @@ class GroupDetailsScreen extends ConsumerWidget {
             const Text(
               'Group',
               style: TextStyle(
-                  color: VelvetNoir.onSurface, fontWeight: FontWeight.w700),
+                color: VelvetNoir.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
             ),
       ),
       body: AppAsyncValueView(
@@ -78,22 +81,24 @@ class GroupDetailsScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (resolvedGroup.description.isNotEmpty) ...
-                      [
-                        const SizedBox(height: 6),
-                        Text(
-                          resolvedGroup.description,
-                          style: const TextStyle(
-                            color: VelvetNoir.onSurfaceVariant,
-                            fontSize: 14,
-                          ),
+                    if (resolvedGroup.description.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        resolvedGroup.description,
+                        style: const TextStyle(
+                          color: VelvetNoir.onSurfaceVariant,
+                          fontSize: 14,
                         ),
-                      ],
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        const Icon(Icons.people_outline,
-                            color: VelvetNoir.onSurfaceVariant, size: 16),
+                        const Icon(
+                          Icons.people_outline,
+                          color: VelvetNoir.onSurfaceVariant,
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${resolvedGroup.memberCount} members',
@@ -127,7 +132,9 @@ class GroupDetailsScreen extends ConsumerWidget {
                                 : VelvetNoir.primaryDim,
                             foregroundColor: VelvetNoir.onSurface,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 8),
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
@@ -140,8 +147,9 @@ class GroupDetailsScreen extends ConsumerWidget {
                 ),
               ),
               Divider(
-                  height: 1,
-                  color: VelvetNoir.outlineVariant.withValues(alpha: 0.5)),
+                height: 1,
+                color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
+              ),
               // Posts section label
               Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -167,26 +175,28 @@ class GroupDetailsScreen extends ConsumerWidget {
                   value: postsAsync,
                   fallbackContext: 'posts',
                   isEmpty: (posts) => posts.isEmpty,
-                  empty: const AppEmptyView(title: 'No posts in this group yet'),
+                  empty: const AppEmptyView(
+                    title: 'No posts in this group yet',
+                  ),
                   data: (posts) => ListView.builder(
-                      itemCount: posts.length,
-                      itemBuilder: (context, index) {
-                        final post = posts[index];
-                        return PostCard(
-                          post: PostModel(
-                            id: post.id,
-                            userId: post.authorId,
-                            text: post.content,
-                            authorName: post.authorName,
-                            authorAvatarUrl: post.authorAvatarUrl,
-                            likeCount: post.likeCount,
-                            likedBy: post.likedBy,
-                            createdAt: post.createdAt,
-                          ),
-                          currentUserId: userId,
-                        );
-                      },
-                    ),
+                    itemCount: posts.length,
+                    itemBuilder: (context, index) {
+                      final post = posts[index];
+                      return PostCard(
+                        post: PostModel(
+                          id: post.id,
+                          userId: post.authorId,
+                          text: post.content,
+                          authorName: post.authorName,
+                          authorAvatarUrl: post.authorAvatarUrl,
+                          likeCount: post.likeCount,
+                          likedBy: post.likedBy,
+                          createdAt: post.createdAt,
+                        ),
+                        currentUserId: userId,
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
@@ -196,4 +206,3 @@ class GroupDetailsScreen extends ConsumerWidget {
     );
   }
 }
-

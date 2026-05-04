@@ -104,6 +104,30 @@ class LiveRoomCard extends StatelessWidget {
                   else
                     _FallbackThumbnail(category: room.category),
 
+                  // Host avatar bottom-left of thumbnail
+                  if (room.hostAvatarUrl != null)
+                    Positioned(
+                      bottom: 4,
+                      left: 4,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: VelvetNoir.surface,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: room.hostAvatarUrl!,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+
                   // LIVE badge top-left
                   const Positioned(
                     top: 8,
@@ -192,6 +216,20 @@ class LiveRoomCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (room.hostUsername != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          'by ${room.hostUsername}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: VelvetNoir.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     if (room.description?.isNotEmpty == true) ...[
                       const SizedBox(height: 3),
                       Text(

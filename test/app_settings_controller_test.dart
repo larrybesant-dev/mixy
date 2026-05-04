@@ -22,7 +22,9 @@ void main() {
       addTearDown(container.dispose);
 
       await container.read(appSettingsControllerProvider.notifier).load();
-      final settings = container.read(appSettingsControllerProvider).valueOrNull;
+      final settings = container
+          .read(appSettingsControllerProvider)
+          .valueOrNull;
 
       expect(settings, isNotNull);
       expect(settings!.themeMode, ThemeMode.system);
@@ -64,13 +66,18 @@ void main() {
       await controller.load();
       await controller.acceptCurrentLegal();
 
-      final settings = container.read(appSettingsControllerProvider).valueOrNull;
+      final settings = container
+          .read(appSettingsControllerProvider)
+          .valueOrNull;
       final prefs = await SharedPreferences.getInstance();
 
       expect(settings, isNotNull);
       expect(settings!.hasAcceptedCurrentLegal, isTrue);
       expect(prefs.getBool('app.legal_accepted'), isTrue);
-      expect(prefs.getString('app.legal_accepted_version'), AppSettings.currentLegalVersion);
+      expect(
+        prefs.getString('app.legal_accepted_version'),
+        AppSettings.currentLegalVersion,
+      );
       expect(prefs.getString('app.legal_accepted_at'), isNotEmpty);
     });
   });

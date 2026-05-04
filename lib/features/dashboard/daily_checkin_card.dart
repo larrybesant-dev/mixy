@@ -8,8 +8,9 @@ import '../../services/daily_checkin_service.dart';
 
 final _checkinServiceProvider = Provider((_) => DailyCheckinService());
 
-final dailyCheckinProvider =
-    FutureProvider.autoDispose<DailyCheckinStatus>((ref) async {
+final dailyCheckinProvider = FutureProvider.autoDispose<DailyCheckinStatus>((
+  ref,
+) async {
   final uid = ref.watch(authControllerProvider).uid;
   if (uid == null) {
     return const DailyCheckinStatus(claimed: true, streak: 0, reward: 0);
@@ -74,10 +75,7 @@ class _CheckinContentState extends ConsumerState<_CheckinContent> {
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              VelvetNoir.surfaceHigh,
-              VelvetNoir.surfaceHighest,
-            ],
+            colors: [VelvetNoir.surfaceHigh, VelvetNoir.surfaceHighest],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -100,22 +98,26 @@ class _CheckinContentState extends ConsumerState<_CheckinContent> {
                 Text(
                   'Daily Check-in',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: VelvetNoir.onSurface,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.1,
-                      ),
+                    color: VelvetNoir.onSurface,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
+                  ),
                 ),
                 const Spacer(),
                 // Streak badge
                 if (streak > 1)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: VelvetNoir.primaryDim.withAlpha(80),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: VelvetNoir.primary.withAlpha(100), width: 0.6),
+                        color: VelvetNoir.primary.withAlpha(100),
+                        width: 0.6,
+                      ),
                     ),
                     child: Text(
                       '$streak-day streak',
@@ -152,8 +154,11 @@ class _CheckinContentState extends ConsumerState<_CheckinContent> {
             if (claimed)
               Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded,
-                      size: 16, color: VelvetNoir.primary),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 16,
+                    color: VelvetNoir.primary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Claimed! Come back tomorrow',
@@ -172,7 +177,8 @@ class _CheckinContentState extends ConsumerState<_CheckinContent> {
                     backgroundColor: VelvetNoir.primary,
                     foregroundColor: VelvetNoir.surface,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 11),
                   ),
                   onPressed: _claiming ? null : _claim,
@@ -242,8 +248,8 @@ class _DayPip extends StatelessWidget {
             color: done
                 ? VelvetNoir.primaryDim.withAlpha(180)
                 : isToday
-                    ? VelvetNoir.primaryDim.withAlpha(60)
-                    : VelvetNoir.surfaceBright.withAlpha(120),
+                ? VelvetNoir.primaryDim.withAlpha(60)
+                : VelvetNoir.surfaceBright.withAlpha(120),
             border: Border.all(
               color: done || isToday
                   ? VelvetNoir.primary
@@ -253,8 +259,11 @@ class _DayPip extends StatelessWidget {
           ),
           child: Center(
             child: done
-                ? const Icon(Icons.check_rounded,
-                    size: 16, color: VelvetNoir.primary)
+                ? const Icon(
+                    Icons.check_rounded,
+                    size: 16,
+                    color: VelvetNoir.primary,
+                  )
                 : Text(
                     'D$day',
                     style: TextStyle(

@@ -3,10 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/routing/redirect_logic.dart';
 
-enum _TestAuthBootstrapPhase {
-  authenticatedStable,
-  unauthenticatedStable,
-}
+enum _TestAuthBootstrapPhase { authenticatedStable, unauthenticatedStable }
 
 extension on _TestAuthBootstrapPhase {
   bool get isRoutingStable =>
@@ -56,169 +53,180 @@ Future<void> _waitForAuthStable(
 
 void main() {
   group('startup redirect stability', () {
-    testWidgets('holds current route while legal state is unknown for signed-in users', (
-      tester,
-    ) async {
-      final state = _RedirectHarness(
-        uid: 'user-1',
-        phase: _TestAuthBootstrapPhase.authenticatedStable,
-        legalStateResolved: false,
-        hasAcceptedLegal: false,
-      );
+    testWidgets(
+      'holds current route while legal state is unknown for signed-in users',
+      (tester) async {
+        final state = _RedirectHarness(
+          uid: 'user-1',
+          phase: _TestAuthBootstrapPhase.authenticatedStable,
+          legalStateResolved: false,
+          hasAcceptedLegal: false,
+        );
 
-      final router = GoRouter(
-        initialLocation: '/home',
-        refreshListenable: state,
-        redirect: (context, routerState) {
-          return evaluateAppRedirect(
-            matchedLocation: routerState.matchedLocation,
-            uid: state.uid,
-            authLoading: !state.isRoutingStable,
-            legalStateResolved: state.legalStateResolved,
-            hasAcceptedLegal: state.hasAcceptedLegal,
-          );
-        },
-        routes: [
-          GoRoute(
-            path: '/home',
-            builder: (_, _) => const Scaffold(body: Text('Home Screen')),
-          ),
-          GoRoute(
-            path: '/onboarding',
-            builder: (_, _) => const Scaffold(body: Text('Onboarding Screen')),
-          ),
-          GoRoute(
-            path: '/auth',
-            builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
-          ),
-        ],
-      );
+        final router = GoRouter(
+          initialLocation: '/home',
+          refreshListenable: state,
+          redirect: (context, routerState) {
+            return evaluateAppRedirect(
+              matchedLocation: routerState.matchedLocation,
+              uid: state.uid,
+              authLoading: !state.isRoutingStable,
+              legalStateResolved: state.legalStateResolved,
+              hasAcceptedLegal: state.hasAcceptedLegal,
+            );
+          },
+          routes: [
+            GoRoute(
+              path: '/home',
+              builder: (_, _) => const Scaffold(body: Text('Home Screen')),
+            ),
+            GoRoute(
+              path: '/onboarding',
+              builder: (_, _) =>
+                  const Scaffold(body: Text('Onboarding Screen')),
+            ),
+            GoRoute(
+              path: '/auth',
+              builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
+            ),
+          ],
+        );
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
         await _waitForAuthStable(tester, state);
 
-      expect(find.text('Home Screen'), findsOneWidget);
-      expect(find.text('Onboarding Screen'), findsNothing);
+        expect(find.text('Home Screen'), findsOneWidget);
+        expect(find.text('Onboarding Screen'), findsNothing);
 
-      state.setState(legalStateResolved: true, hasAcceptedLegal: true);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pumpAndSettle();
+        state.setState(legalStateResolved: true, hasAcceptedLegal: true);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Home Screen'), findsOneWidget);
-      expect(find.text('Onboarding Screen'), findsNothing);
+        expect(find.text('Home Screen'), findsOneWidget);
+        expect(find.text('Onboarding Screen'), findsNothing);
 
-      router.dispose();
-      state.dispose();
-    });
+        router.dispose();
+        state.dispose();
+      },
+    );
 
-    testWidgets('redirects to onboarding only after legal state resolves as not accepted', (
-      tester,
-    ) async {
-      final state = _RedirectHarness(
-        uid: 'user-1',
-        phase: _TestAuthBootstrapPhase.authenticatedStable,
-        legalStateResolved: false,
-        hasAcceptedLegal: false,
-      );
+    testWidgets(
+      'redirects to onboarding only after legal state resolves as not accepted',
+      (tester) async {
+        final state = _RedirectHarness(
+          uid: 'user-1',
+          phase: _TestAuthBootstrapPhase.authenticatedStable,
+          legalStateResolved: false,
+          hasAcceptedLegal: false,
+        );
 
-      final router = GoRouter(
-        initialLocation: '/speed-dating',
-        refreshListenable: state,
-        redirect: (context, routerState) {
-          return evaluateAppRedirect(
-            matchedLocation: routerState.matchedLocation,
-            uid: state.uid,
-            authLoading: !state.isRoutingStable,
-            legalStateResolved: state.legalStateResolved,
-            hasAcceptedLegal: state.hasAcceptedLegal,
-          );
-        },
-        routes: [
-          GoRoute(
-            path: '/speed-dating',
-            builder: (_, _) => const Scaffold(body: Text('Speed Dating Screen')),
-          ),
-          GoRoute(
-            path: '/onboarding',
-            builder: (_, _) => const Scaffold(body: Text('Onboarding Screen')),
-          ),
-          GoRoute(
-            path: '/auth',
-            builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
-          ),
-        ],
-      );
+        final router = GoRouter(
+          initialLocation: '/speed-dating',
+          refreshListenable: state,
+          redirect: (context, routerState) {
+            return evaluateAppRedirect(
+              matchedLocation: routerState.matchedLocation,
+              uid: state.uid,
+              authLoading: !state.isRoutingStable,
+              legalStateResolved: state.legalStateResolved,
+              hasAcceptedLegal: state.hasAcceptedLegal,
+            );
+          },
+          routes: [
+            GoRoute(
+              path: '/speed-dating',
+              builder: (_, _) =>
+                  const Scaffold(body: Text('Speed Dating Screen')),
+            ),
+            GoRoute(
+              path: '/onboarding',
+              builder: (_, _) =>
+                  const Scaffold(body: Text('Onboarding Screen')),
+            ),
+            GoRoute(
+              path: '/auth',
+              builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
+            ),
+          ],
+        );
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await _waitForAuthStable(tester, state);
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await _waitForAuthStable(tester, state);
 
-      expect(find.text('Speed Dating Screen'), findsOneWidget);
-      expect(find.text('Onboarding Screen'), findsNothing);
+        expect(find.text('Speed Dating Screen'), findsOneWidget);
+        expect(find.text('Onboarding Screen'), findsNothing);
 
-      state.setState(legalStateResolved: true, hasAcceptedLegal: false);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pumpAndSettle();
+        state.setState(legalStateResolved: true, hasAcceptedLegal: false);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Onboarding Screen'), findsOneWidget);
+        expect(find.text('Onboarding Screen'), findsOneWidget);
 
-      router.dispose();
-      state.dispose();
-    });
+        router.dispose();
+        state.dispose();
+      },
+    );
 
-    testWidgets('redirects to auth when auth state flips signed-out after first stable route', (
-      tester,
-    ) async {
-      final state = _RedirectHarness(
-        uid: 'user-1',
-        phase: _TestAuthBootstrapPhase.authenticatedStable,
-        legalStateResolved: true,
-        hasAcceptedLegal: true,
-      );
+    testWidgets(
+      'redirects to auth when auth state flips signed-out after first stable route',
+      (tester) async {
+        final state = _RedirectHarness(
+          uid: 'user-1',
+          phase: _TestAuthBootstrapPhase.authenticatedStable,
+          legalStateResolved: true,
+          hasAcceptedLegal: true,
+        );
 
-      final router = GoRouter(
-        initialLocation: '/home',
-        refreshListenable: state,
-        redirect: (context, routerState) {
-          return evaluateAppRedirect(
-            matchedLocation: routerState.matchedLocation,
-            uid: state.uid,
-            authLoading: !state.isRoutingStable,
-            legalStateResolved: state.legalStateResolved,
-            hasAcceptedLegal: state.hasAcceptedLegal,
-          );
-        },
-        routes: [
-          GoRoute(
-            path: '/home',
-            builder: (_, _) => const Scaffold(body: Text('Home Screen')),
-          ),
-          GoRoute(
-            path: '/onboarding',
-            builder: (_, _) => const Scaffold(body: Text('Onboarding Screen')),
-          ),
-          GoRoute(
-            path: '/auth',
-            builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
-          ),
-        ],
-      );
+        final router = GoRouter(
+          initialLocation: '/home',
+          refreshListenable: state,
+          redirect: (context, routerState) {
+            return evaluateAppRedirect(
+              matchedLocation: routerState.matchedLocation,
+              uid: state.uid,
+              authLoading: !state.isRoutingStable,
+              legalStateResolved: state.legalStateResolved,
+              hasAcceptedLegal: state.hasAcceptedLegal,
+            );
+          },
+          routes: [
+            GoRoute(
+              path: '/home',
+              builder: (_, _) => const Scaffold(body: Text('Home Screen')),
+            ),
+            GoRoute(
+              path: '/onboarding',
+              builder: (_, _) =>
+                  const Scaffold(body: Text('Onboarding Screen')),
+            ),
+            GoRoute(
+              path: '/auth',
+              builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
+            ),
+          ],
+        );
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await _waitForAuthStable(tester, state);
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await _waitForAuthStable(tester, state);
 
-      expect(find.text('Home Screen'), findsOneWidget);
-      expect(find.text('Auth Screen'), findsNothing);
-      expect(find.text('Onboarding Screen'), findsNothing);
+        expect(find.text('Home Screen'), findsOneWidget);
+        expect(find.text('Auth Screen'), findsNothing);
+        expect(find.text('Onboarding Screen'), findsNothing);
 
-      state.setState(uid: '', legalStateResolved: true, hasAcceptedLegal: true);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pumpAndSettle();
+        state.setState(
+          uid: '',
+          legalStateResolved: true,
+          hasAcceptedLegal: true,
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Auth Screen'), findsOneWidget);
-      expect(find.text('Onboarding Screen'), findsNothing);
+        expect(find.text('Auth Screen'), findsOneWidget);
+        expect(find.text('Onboarding Screen'), findsNothing);
 
-      router.dispose();
-      state.dispose();
-    });
+        router.dispose();
+        state.dispose();
+      },
+    );
   });
 }

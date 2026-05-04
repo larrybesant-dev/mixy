@@ -30,8 +30,10 @@ class PaginatedFollowingFeedState {
   }
 }
 
-class PaginatedFollowingFeedController extends StateNotifier<PaginatedFollowingFeedState> {
-  PaginatedFollowingFeedController(this._firestore, this._userId) : super(PaginatedFollowingFeedState());
+class PaginatedFollowingFeedController
+    extends StateNotifier<PaginatedFollowingFeedState> {
+  PaginatedFollowingFeedController(this._firestore, this._userId)
+    : super(PaginatedFollowingFeedState());
 
   final FirebaseFirestore _firestore;
   final String _userId;
@@ -98,6 +100,13 @@ class PaginatedFollowingFeedController extends StateNotifier<PaginatedFollowingF
 }
 
 final paginatedFollowingFeedProvider = StateNotifierProvider.autoDispose
-    .family<PaginatedFollowingFeedController, PaginatedFollowingFeedState, String>((ref, userId) {
-  return PaginatedFollowingFeedController(FirebaseFirestore.instance, userId);
-});
+    .family<
+      PaginatedFollowingFeedController,
+      PaginatedFollowingFeedState,
+      String
+    >((ref, userId) {
+      return PaginatedFollowingFeedController(
+        FirebaseFirestore.instance,
+        userId,
+      );
+    });

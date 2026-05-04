@@ -82,19 +82,16 @@ void main() {
   group('TrendingPost.fromJson', () {
     test('maps all fields correctly', () {
       final now = DateTime(2026, 4, 1, 22, 0);
-      final post = TrendingPost.fromJson(
-        {
-          'authorId': 'u1',
-          'authorName': 'DJ Noir',
-          'authorAvatarUrl': 'https://example.com/dj.jpg',
-          'content': 'Smooth vibes only',
-          'hashtags': ['velvet', 'noir'],
-          'createdAt': now.toIso8601String(),
-          'likeCount': 88,
-          'commentCount': 22,
-        },
-        'post-1',
-      );
+      final post = TrendingPost.fromJson({
+        'authorId': 'u1',
+        'authorName': 'DJ Noir',
+        'authorAvatarUrl': 'https://example.com/dj.jpg',
+        'content': 'Smooth vibes only',
+        'hashtags': ['velvet', 'noir'],
+        'createdAt': now.toIso8601String(),
+        'likeCount': 88,
+        'commentCount': 22,
+      }, 'post-1');
 
       expect(post.id, 'post-1');
       expect(post.authorId, 'u1');

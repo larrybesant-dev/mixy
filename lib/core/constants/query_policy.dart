@@ -4,7 +4,8 @@ class QueryPolicy {
   const QueryPolicy._();
 
   // ── Messaging ──────────────────────────────────────────────────────────────
-  static const int conversationsLimit = 100;
+  static const int conversationsLimit =
+      50; // reduced from 100: fewer realtime docs per snapshot
   static const int messagesLimit = 50;
   static const int messageReactionsLimit = 20;
   static const int typingUsersLimit = 10;

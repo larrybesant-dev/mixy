@@ -59,7 +59,10 @@ void main() {
 
       expect(report.classification, DriftClassification.acceptableNoise);
       expect(report.advisoryOnly, isTrue);
-      expect(report.policyVersion, ArchitectureHealthInterpretationContract.version);
+      expect(
+        report.policyVersion,
+        ArchitectureHealthInterpretationContract.version,
+      );
     });
 
     test('prioritizes structural warning over behavioral drift', () {
@@ -112,62 +115,69 @@ void main() {
       final report = container.read(architectureHealthInterpretationProvider);
 
       expect(report.classification, DriftClassification.structuralWarning);
-      expect(report.summary,
-          ArchitectureHealthInterpretationContract.summaryStructuralWarning);
-    });
-
-    test('returns behavioral drift when structure is aligned but parity drifts', () {
-      final container = ProviderContainer(
-        overrides: [
-          schemaModuleHealthProvider('friends').overrideWithValue(
-            const SchemaModuleHealth(
-              moduleId: 'friends',
-              compositeScore: 82,
-              structuralScore: 92,
-              enforcementScore: 90,
-              parityScore: 70,
-              trend: MigrationHealthTrend.degrading,
-              comparable: true,
-              parityMatch: false,
-              mismatchCount: 2,
-              reasons: <String>['status_mismatch:2'],
-            ),
-          ),
-          schemaModuleHealthProvider('message').overrideWithValue(
-            const SchemaModuleHealth(
-              moduleId: 'message',
-              compositeScore: 84,
-              structuralScore: 94,
-              parityScore: 72,
-              enforcementScore: 90,
-              trend: MigrationHealthTrend.stable,
-              comparable: true,
-              parityMatch: true,
-              mismatchCount: 0,
-              reasons: <String>[],
-            ),
-          ),
-          crossModuleEquivalenceProvider.overrideWithValue(
-            const CrossModuleEquivalenceReport(
-              isEquivalent: true,
-              expectedReference: 'schema_v1',
-              moduleReference: 'schema_v1',
-              expectedStableThreshold: 2,
-              moduleStableThreshold: 2,
-              expectedReconcileMinutes: 5,
-              moduleReconcileMinutes: 5,
-              violations: <String>[],
-            ),
-          ),
-        ],
+      expect(
+        report.summary,
+        ArchitectureHealthInterpretationContract.summaryStructuralWarning,
       );
-      addTearDown(container.dispose);
-
-      final report = container.read(architectureHealthInterpretationProvider);
-
-      expect(report.classification, DriftClassification.behavioralDrift);
-      expect(report.summary,
-          ArchitectureHealthInterpretationContract.summaryBehavioralDrift);
     });
+
+    test(
+      'returns behavioral drift when structure is aligned but parity drifts',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            schemaModuleHealthProvider('friends').overrideWithValue(
+              const SchemaModuleHealth(
+                moduleId: 'friends',
+                compositeScore: 82,
+                structuralScore: 92,
+                enforcementScore: 90,
+                parityScore: 70,
+                trend: MigrationHealthTrend.degrading,
+                comparable: true,
+                parityMatch: false,
+                mismatchCount: 2,
+                reasons: <String>['status_mismatch:2'],
+              ),
+            ),
+            schemaModuleHealthProvider('message').overrideWithValue(
+              const SchemaModuleHealth(
+                moduleId: 'message',
+                compositeScore: 84,
+                structuralScore: 94,
+                parityScore: 72,
+                enforcementScore: 90,
+                trend: MigrationHealthTrend.stable,
+                comparable: true,
+                parityMatch: true,
+                mismatchCount: 0,
+                reasons: <String>[],
+              ),
+            ),
+            crossModuleEquivalenceProvider.overrideWithValue(
+              const CrossModuleEquivalenceReport(
+                isEquivalent: true,
+                expectedReference: 'schema_v1',
+                moduleReference: 'schema_v1',
+                expectedStableThreshold: 2,
+                moduleStableThreshold: 2,
+                expectedReconcileMinutes: 5,
+                moduleReconcileMinutes: 5,
+                violations: <String>[],
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final report = container.read(architectureHealthInterpretationProvider);
+
+        expect(report.classification, DriftClassification.behavioralDrift);
+        expect(
+          report.summary,
+          ArchitectureHealthInterpretationContract.summaryBehavioralDrift,
+        );
+      },
+    );
   });
 }

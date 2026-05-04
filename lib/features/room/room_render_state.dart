@@ -160,18 +160,16 @@ RoomRenderState deriveRoomRenderState({
 /// 2. Stream presence is still read from its authoritative source.
 /// 3. The provider is still testable for the media-state axis alone.
 final roomRenderStateProvider = Provider.family
-    .autoDispose<RoomRenderState, _RoomRenderStateArgs>(
-      (ref, args) {
-        final mediaState = ref.watch(
-          liveRoomMediaControllerProvider(args.roomId),
-        );
-        return deriveRoomRenderState(
-          mediaState: mediaState,
-          hasRtcService: args.hasRtcService,
-          hasVideoStreams: args.hasVideoStreams,
-        );
-      },
-    );
+    .autoDispose<RoomRenderState, _RoomRenderStateArgs>((ref, args) {
+      final mediaState = ref.watch(
+        liveRoomMediaControllerProvider(args.roomId),
+      );
+      return deriveRoomRenderState(
+        mediaState: mediaState,
+        hasRtcService: args.hasRtcService,
+        hasVideoStreams: args.hasVideoStreams,
+      );
+    });
 
 /// Arguments for [roomRenderStateProvider].
 ///

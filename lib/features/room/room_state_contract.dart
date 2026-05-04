@@ -46,10 +46,7 @@ const Duration kRoomJoinStabilizationDelay = Duration(milliseconds: 350);
 
 // ─── Contract §1: Role authority sets ───────────────────────────────────────
 /// Roles that grant full room management authority (host equivalent).
-const Set<String> kRoomHostLikeRoles = <String>{
-  roomRoleHost,
-  roomRoleOwner,
-};
+const Set<String> kRoomHostLikeRoles = <String>{roomRoleHost, roomRoleOwner};
 
 /// Roles that grant stage management authority (can promote/demote mic seats).
 const Set<String> kRoomStageManagementRoles = <String>{
@@ -146,8 +143,7 @@ abstract final class RoomStateContract {
     final ghostSpeakers = state.speakerIds
         .where(
           (id) =>
-              !state.userIds.contains(id) &&
-              id.trim() != state.hostId.trim(),
+              !state.userIds.contains(id) && id.trim() != state.hostId.trim(),
         )
         .toList(growable: false);
     if (ghostSpeakers.isNotEmpty) {
@@ -227,10 +223,8 @@ abstract final class RoomStateContract {
       kRoomHostLikeRoles.contains(normalizeRoomRole(role, fallbackRole: ''));
 
   /// Returns true if [role] grants stage management authority (cohost tier+).
-  static bool isStageAuthority(String role) =>
-      kRoomStageManagementRoles.contains(
-        normalizeRoomRole(role, fallbackRole: ''),
-      );
+  static bool isStageAuthority(String role) => kRoomStageManagementRoles
+      .contains(normalizeRoomRole(role, fallbackRole: ''));
 
   /// Returns true if [role] grants moderation authority (moderator tier+).
   static bool isModerationAuthority(String role) =>

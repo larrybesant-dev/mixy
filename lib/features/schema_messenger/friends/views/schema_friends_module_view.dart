@@ -25,7 +25,12 @@ class SchemaFriendsModuleView extends ConsumerStatefulWidget {
     this.onOpenRoom,
   });
 
-  final void Function(String friendUserId, String friendUsername, String? friendAvatarUrl)? onStartChat;
+  final void Function(
+    String friendUserId,
+    String friendUsername,
+    String? friendAvatarUrl,
+  )?
+  onStartChat;
   final void Function(String friendUserId)? onOpenProfile;
   final void Function(String roomId)? onOpenRoom;
 
@@ -50,7 +55,9 @@ class _SchemaFriendsModuleViewState
   @override
   void initState() {
     super.initState();
-    final initialOffset = ref.read(schemaFriendFocusAnchorProvider).scrollOffset;
+    final initialOffset = ref
+        .read(schemaFriendFocusAnchorProvider)
+        .scrollOffset;
     _scrollController = ScrollController(initialScrollOffset: initialOffset);
     _scrollController.addListener(_persistScrollOffset);
   }
@@ -89,7 +96,9 @@ class _SchemaFriendsModuleViewState
 
   void _updateSelection(String friendId) {
     ref.read(selectedSchemaFriendIdProvider.notifier).state = friendId;
-    ref.read(schemaFriendFocusAnchorProvider.notifier).setFocusedFriend(friendId);
+    ref
+        .read(schemaFriendFocusAnchorProvider.notifier)
+        .setFocusedFriend(friendId);
   }
 
   void _queueAnchorSync(String? friendId) {
@@ -108,9 +117,7 @@ class _SchemaFriendsModuleViewState
     _syncViewportAnchor(friendId);
   }
 
-  Future<void> _runSystemScroll(
-    Future<void> Function() action,
-  ) async {
+  Future<void> _runSystemScroll(Future<void> Function() action) async {
     if (!mounted || _systemScrollInFlight) {
       return;
     }
@@ -160,7 +167,9 @@ class _SchemaFriendsModuleViewState
       if (!mounted || !_scrollController.hasClients) {
         return;
       }
-      final savedOffset = ref.read(schemaFriendFocusAnchorProvider).scrollOffset;
+      final savedOffset = ref
+          .read(schemaFriendFocusAnchorProvider)
+          .scrollOffset;
       final maxExtent = _scrollController.position.maxScrollExtent;
       _runSystemScroll(() async {
         _scrollController.jumpTo(savedOffset.clamp(0, maxExtent));
@@ -188,7 +197,9 @@ class _SchemaFriendsModuleViewState
         if (!mounted || !_scrollController.hasClients) {
           return;
         }
-        final savedOffset = ref.read(schemaFriendFocusAnchorProvider).scrollOffset;
+        final savedOffset = ref
+            .read(schemaFriendFocusAnchorProvider)
+            .scrollOffset;
         final maxExtent = _scrollController.position.maxScrollExtent;
         _runSystemScroll(() async {
           _scrollController.jumpTo(savedOffset.clamp(0, maxExtent));
@@ -225,22 +236,21 @@ class _SchemaFriendsModuleViewState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<String?>(
-      effectiveSelectedSchemaFriendIdProvider,
-      (_, next) {
-        if (next != null && next.isNotEmpty) {
-          ref
-              .read(schemaFriendFocusAnchorProvider.notifier)
-              .setFocusedFriend(next, updateInteractionTime: false);
-        }
-        _syncViewportAnchor(next);
-      },
-    );
+    ref.listen<String?>(effectiveSelectedSchemaFriendIdProvider, (_, next) {
+      if (next != null && next.isNotEmpty) {
+        ref
+            .read(schemaFriendFocusAnchorProvider.notifier)
+            .setFocusedFriend(next, updateInteractionTime: false);
+      }
+      _syncViewportAnchor(next);
+    });
 
     final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
     final linksAsync = ref.watch(schemaFriendLinksProvider);
     final selectedFriendId = ref.watch(effectiveSelectedSchemaFriendIdProvider);
-    final groupedRosterAsync = ref.watch(schemaStickyGroupedFriendRosterProvider);
+    final groupedRosterAsync = ref.watch(
+      schemaStickyGroupedFriendRosterProvider,
+    );
 
     if (authUserId == null || authUserId.isEmpty) {
       return const Center(
@@ -252,7 +262,9 @@ class _SchemaFriendsModuleViewState
     }
 
     return linksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: VelvetNoir.primary)),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: VelvetNoir.primary),
+      ),
       error: (error, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -264,10 +276,17 @@ class _SchemaFriendsModuleViewState
         ),
       ),
       data: (links) {
-        final incoming = links.where((l) => l.isPending && l.requestedBy != authUserId).toList(growable: false);
-        final outgoing = links.where((l) => l.isPending && l.requestedBy == authUserId).toList(growable: false);
-        final accepted = links.where((l) => l.isAccepted).toList(growable: false);
-        final groupedRoster = groupedRosterAsync.valueOrNull ??
+        final incoming = links
+            .where((l) => l.isPending && l.requestedBy != authUserId)
+            .toList(growable: false);
+        final outgoing = links
+            .where((l) => l.isPending && l.requestedBy == authUserId)
+            .toList(growable: false);
+        final accepted = links
+            .where((l) => l.isAccepted)
+            .toList(growable: false);
+        final groupedRoster =
+            groupedRosterAsync.valueOrNull ??
             SchemaGroupedFriendRoster(
               inRooms: const <SchemaResolvedFriendEntry>[],
               online: const <SchemaResolvedFriendEntry>[],
@@ -305,10 +324,15 @@ class _SchemaFriendsModuleViewState
                   currentUserId: authUserId,
                   density: FriendRowDensity.compact,
                   actionBuilder: (identity, presence) => TextButton(
-                    onPressed: () => ref.read(schemaFriendLinksControllerProvider).acceptRequest(linkId: link.id),
+                    onPressed: () => ref
+                        .read(schemaFriendLinksControllerProvider)
+                        .acceptRequest(linkId: link.id),
                     style: TextButton.styleFrom(
                       foregroundColor: VelvetNoir.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -336,7 +360,10 @@ class _SchemaFriendsModuleViewState
                     padding: EdgeInsets.only(right: 8),
                     child: Text(
                       'Pending',
-                      style: TextStyle(color: VelvetNoir.onSurfaceVariant, fontSize: 12),
+                      style: TextStyle(
+                        color: VelvetNoir.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   onOpenProfile: widget.onOpenProfile,
@@ -428,7 +455,12 @@ class _ResolvedFriendRow extends StatelessWidget {
   final FriendRowDensity density;
   final bool isSelected;
   final VoidCallback onSelected;
-  final void Function(String friendUserId, String friendUsername, String? friendAvatarUrl)? onStartChat;
+  final void Function(
+    String friendUserId,
+    String friendUsername,
+    String? friendAvatarUrl,
+  )?
+  onStartChat;
   final void Function(String friendUserId)? onOpenProfile;
   final void Function(String roomId)? onOpenRoom;
 
@@ -440,7 +472,9 @@ class _ResolvedFriendRow extends StatelessWidget {
     final friendAvatarUrl = entry.identity.avatarUrl;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: density == FriendRowDensity.dense ? 2 : 4),
+      padding: EdgeInsets.only(
+        bottom: density == FriendRowDensity.dense ? 2 : 4,
+      ),
       child: SchemaFriendTile(
         identity: entry.identity,
         presence: entry.presence,
@@ -510,7 +544,11 @@ class _FriendLinkRow extends ConsumerWidget {
 
   final SchemaFriendLink link;
   final String currentUserId;
-  final Widget Function(SchemaFriendIdentity identity, SchemaFriendPresence presence) actionBuilder;
+  final Widget Function(
+    SchemaFriendIdentity identity,
+    SchemaFriendPresence presence,
+  )
+  actionBuilder;
   final FriendRowDensity density;
   final void Function(String friendUserId)? onOpenProfile;
   final void Function(String roomId)? onOpenRoom;
@@ -519,7 +557,9 @@ class _FriendLinkRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final friendUserId = link.otherUserId(currentUserId);
     final identityAsync = ref.watch(schemaFriendIdentityProvider(friendUserId));
-    final presenceAsync = ref.watch(schemaStableFriendPresenceProvider(friendUserId));
+    final presenceAsync = ref.watch(
+      schemaStableFriendPresenceProvider(friendUserId),
+    );
 
     final identity = identityAsync.valueOrNull;
     final presence = presenceAsync.valueOrNull;
@@ -541,7 +581,9 @@ class _FriendLinkRow extends ConsumerWidget {
     }
 
     return Padding(
-      padding: EdgeInsets.only(bottom: density == FriendRowDensity.dense ? 6 : 8),
+      padding: EdgeInsets.only(
+        bottom: density == FriendRowDensity.dense ? 6 : 8,
+      ),
       child: SchemaFriendTile(
         identity: identity,
         presence: presence,
@@ -581,17 +623,35 @@ class _CompactSummaryBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceHigh,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.25),
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
         children: [
-          _SummaryChip(label: 'Friends', value: totalFriends.toString(), color: VelvetNoir.primary),
-          _SummaryChip(label: 'Live', value: liveFriends.toString(), color: const Color(0xFF34D399)),
-          _SummaryChip(label: 'Rooms', value: inRoomsFriends.toString(), color: VelvetNoir.secondary),
-          _SummaryChip(label: 'Requests', value: pendingIncoming.toString(), color: VelvetNoir.secondary),
+          _SummaryChip(
+            label: 'Friends',
+            value: totalFriends.toString(),
+            color: VelvetNoir.primary,
+          ),
+          _SummaryChip(
+            label: 'Live',
+            value: liveFriends.toString(),
+            color: const Color(0xFF34D399),
+          ),
+          _SummaryChip(
+            label: 'Rooms',
+            value: inRoomsFriends.toString(),
+            color: VelvetNoir.secondary,
+          ),
+          _SummaryChip(
+            label: 'Requests',
+            value: pendingIncoming.toString(),
+            color: VelvetNoir.secondary,
+          ),
         ],
       ),
     );
@@ -688,9 +748,9 @@ class _EmptyRosterState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 20),
       child: Text(
         'No accepted friends yet.',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: VelvetNoir.onSurfaceVariant,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: VelvetNoir.onSurfaceVariant),
       ),
     );
   }
@@ -708,11 +768,10 @@ class _RosterSyncingRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Text(
         'Syncing $loadingCount $label...',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: VelvetNoir.onSurfaceVariant,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: VelvetNoir.onSurfaceVariant),
       ),
     );
   }
 }
-

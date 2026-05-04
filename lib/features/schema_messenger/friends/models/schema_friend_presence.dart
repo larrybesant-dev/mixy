@@ -41,7 +41,9 @@ class SchemaFriendPresence {
       friendId: friendId ?? this.friendId,
       isOnline: isOnline ?? this.isOnline,
       roomId: clearRoomId ? null : (roomId ?? this.roomId),
-      lastActiveAt: clearLastActiveAt ? null : (lastActiveAt ?? this.lastActiveAt),
+      lastActiveAt: clearLastActiveAt
+          ? null
+          : (lastActiveAt ?? this.lastActiveAt),
     );
   }
 
@@ -67,17 +69,22 @@ class SchemaFriendPresence {
       final lastActive = _asDateTime(data['lastActiveAt']);
       final roomId = doc.reference.parent.parent?.id;
 
-      if (lastActive != null && (latestSeen == null || lastActive.isAfter(latestSeen))) {
+      if (lastActive != null &&
+          (latestSeen == null || lastActive.isAfter(latestSeen))) {
         latestSeen = lastActive;
         activeRoomId = roomId;
       }
 
-      if (userStatus == 'online' || _asBool(data['camOn']) || _asBool(data['micOn'])) {
+      if (userStatus == 'online' ||
+          _asBool(data['camOn']) ||
+          _asBool(data['micOn'])) {
         hasLiveSignal = true;
       }
     }
 
-    final isRecentlyActive = latestSeen != null && DateTime.now().difference(latestSeen).inMinutes <= 5;
+    final isRecentlyActive =
+        latestSeen != null &&
+        DateTime.now().difference(latestSeen).inMinutes <= 5;
 
     return SchemaFriendPresence(
       friendId: friendId,
@@ -112,8 +119,4 @@ class SchemaFriendPresence {
   }
 }
 
-enum SchemaFriendPresenceGroup {
-  inRoom,
-  online,
-  offline,
-}
+enum SchemaFriendPresenceGroup { inRoom, online, offline }

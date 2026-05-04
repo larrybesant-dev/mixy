@@ -10,7 +10,9 @@ import 'user_provider.dart';
 final notificationFirestoreProvider = firestoreProvider;
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
-  return NotificationService(firestore: ref.watch(notificationFirestoreProvider));
+  return NotificationService(
+    firestore: ref.watch(notificationFirestoreProvider),
+  );
 });
 
 final currentNotificationUserIdProvider = Provider<String?>((ref) {
@@ -18,10 +20,16 @@ final currentNotificationUserIdProvider = Provider<String?>((ref) {
 });
 
 final notificationsEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(appSettingsControllerProvider).valueOrNull?.notificationsEnabled ?? true;
+  return ref
+          .watch(appSettingsControllerProvider)
+          .valueOrNull
+          ?.notificationsEnabled ??
+      true;
 });
 
-final notificationsStreamProvider = StreamProvider<List<NotificationModel>>((ref) {
+final notificationsStreamProvider = StreamProvider<List<NotificationModel>>((
+  ref,
+) {
   final userId = ref.watch(currentNotificationUserIdProvider);
   if (userId == null) {
     return const Stream<List<NotificationModel>>.empty();
@@ -34,9 +42,8 @@ final notificationsStreamProvider = StreamProvider<List<NotificationModel>>((ref
 /// notifications stream so it stays live without an extra Firestore query.
 final unreadNotificationCountProvider = Provider<int>((ref) {
   return ref
-      .watch(notificationsStreamProvider)
-      .whenData(
-        (list) => list.where((n) => !n.isRead).length,
-      )
-      .valueOrNull ?? 0;
+          .watch(notificationsStreamProvider)
+          .whenData((list) => list.where((n) => !n.isRead).length)
+          .valueOrNull ??
+      0;
 });

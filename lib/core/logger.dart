@@ -30,8 +30,8 @@ class Logger {
       <String, DateTime>{};
   static int _escalationCount = 0;
 
-  static final ValueNotifier<LoggerErrorSnapshot?>
-  lastCapturedErrorNotifier = ValueNotifier<LoggerErrorSnapshot?>(null);
+  static final ValueNotifier<LoggerErrorSnapshot?> lastCapturedErrorNotifier =
+      ValueNotifier<LoggerErrorSnapshot?>(null);
 
   static void setEnabled(bool enabled) {
     _enabled = enabled;
@@ -53,7 +53,12 @@ class Logger {
     _recordToCrashlytics(message, error: error, stackTrace: stackTrace);
   }
 
-  static void error(String message, {Object? error, StackTrace? stackTrace, bool fatal = false}) {
+  static void error(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    bool fatal = false,
+  }) {
     _write('ERROR', message, error: error, stackTrace: stackTrace);
     _captureLastError(message, error: error);
     _recordToCrashlytics(
@@ -62,14 +67,15 @@ class Logger {
       stackTrace: stackTrace,
       fatal: fatal,
     );
-    _maybeEscalateRepeatedError(
-      message,
-      error: error,
-      stackTrace: stackTrace,
-    );
+    _maybeEscalateRepeatedError(message, error: error, stackTrace: stackTrace);
   }
 
-  static void _write(String level, String message, {Object? error, StackTrace? stackTrace}) {
+  static void _write(
+    String level,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
     if (!_enabled) {
       return;
     }
@@ -129,9 +135,7 @@ class Logger {
         if (samples.isEmpty) {
           return true;
         }
-        final latest = samples.reduce(
-          (a, b) => a.isAfter(b) ? a : b,
-        );
+        final latest = samples.reduce((a, b) => a.isAfter(b) ? a : b);
         return now.difference(latest) > _repeatWindow;
       });
     }

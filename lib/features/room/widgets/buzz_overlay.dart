@@ -34,9 +34,10 @@ class BuzzOverlayState extends State<BuzzOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _opacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
   }
 
   @override

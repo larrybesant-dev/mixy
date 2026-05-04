@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../../../widgets/safe_network_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,10 +34,10 @@ class LeaderboardStrip extends ConsumerWidget {
                   Text(
                     'Hall of Fame',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: VelvetNoir.onSurface,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
-                        ),
+                      color: VelvetNoir.onSurface,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ],
               ),
@@ -74,10 +73,10 @@ class _LeaderCard extends StatelessWidget {
     final rankColor = rank == 1
         ? const Color(0xFFFFD700) // gold
         : rank == 2
-            ? const Color(0xFFCFD8DC) // silver
-            : rank == 3
-                ? const Color(0xFFBF8970) // bronze
-                : VelvetNoir.onSurfaceVariant;
+        ? const Color(0xFFCFD8DC) // silver
+        : rank == 3
+        ? const Color(0xFFBF8970) // bronze
+        : VelvetNoir.onSurfaceVariant;
 
     return GestureDetector(
       onTap: () => context.push('/profile/${user.id}'),
@@ -108,8 +107,9 @@ class _LeaderCard extends StatelessWidget {
                   fallbackText: user.username.isNotEmpty
                       ? user.username[0].toUpperCase()
                       : '?',
-                  fallbackTextStyle:
-                      const TextStyle(color: VelvetNoir.onSurfaceVariant),
+                  fallbackTextStyle: const TextStyle(
+                    color: VelvetNoir.onSurfaceVariant,
+                  ),
                 ),
                 if (rank <= 3)
                   Container(

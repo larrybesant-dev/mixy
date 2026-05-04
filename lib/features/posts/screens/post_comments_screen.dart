@@ -17,18 +17,14 @@ import '../providers/post_comments_providers.dart';
 // ── Screen ───────────────────────────────────────────────────────────────────
 
 class PostCommentsScreen extends ConsumerStatefulWidget {
-  PostCommentsScreen({
-    super.key,
-    required this.postId,
-    FirebaseAuth? auth,
-  }) : auth = auth ?? FirebaseAuth.instance;
+  PostCommentsScreen({super.key, required this.postId, FirebaseAuth? auth})
+    : auth = auth ?? FirebaseAuth.instance;
 
   final String postId;
   final FirebaseAuth auth;
 
   @override
-  ConsumerState<PostCommentsScreen> createState() =>
-      _PostCommentsScreenState();
+  ConsumerState<PostCommentsScreen> createState() => _PostCommentsScreenState();
 }
 
 class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
@@ -59,7 +55,8 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
     setState(() => _submitting = true);
     try {
       final now = FieldValue.serverTimestamp();
-      final postRef = ref.read(firestoreProvider)
+      final postRef = ref
+          .read(firestoreProvider)
           .collection('posts')
           .doc(widget.postId);
 
@@ -101,10 +98,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
           postAsync.when(
             data: (post) => post == null
                 ? const SizedBox.shrink()
-                : PostCard(
-                    post: post,
-                    currentUserId: currentUser?.uid ?? '',
-                  ),
+                : PostCard(post: post, currentUserId: currentUser?.uid ?? ''),
             loading: () => const LinearProgressIndicator(),
             error: (_, _) => const SizedBox.shrink(),
           ),
@@ -123,17 +117,16 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
                 return ListView.builder(
                   controller: _scroll,
                   padding: const EdgeInsets.symmetric(
-                      vertical: 8, horizontal: 12),
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
                   itemCount: comments.length,
                   itemBuilder: (ctx, i) => _CommentTile(comment: comments[i]),
                 );
               },
               loading: () => const AppLoadingView(label: 'Loading comments'),
               error: (e, _) => AppErrorView(
-                error: friendlyFirestoremessage(
-                  e,
-                  fallbackContext: 'comments',
-                ),
+                error: friendlyFirestoremessage(e, fallbackContext: 'comments'),
                 fallbackContext: 'Unable to load comments.',
               ),
             ),
@@ -210,8 +203,7 @@ class _CommentTile extends StatelessWidget {
             backgroundImage: comment.authorAvatarUrl != null
                 ? NetworkImage(comment.authorAvatarUrl!)
                 : null,
-            child:
-                comment.authorAvatarUrl == null ? Text(initial) : null,
+            child: comment.authorAvatarUrl == null ? Text(initial) : null,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -223,15 +215,16 @@ class _CommentTile extends StatelessWidget {
                     Text(
                       comment.authorName,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 13),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       _fmt(comment.createdAt),
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Colors.grey),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                     ),
                   ],
                 ),

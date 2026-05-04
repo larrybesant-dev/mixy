@@ -39,10 +39,13 @@ import 'dart:io';
 enum _Severity {
   /// Always fails CI regardless of path, --strict, or any flag.
   critical,
+
   /// Fails CI when file is in an _errorPath.
   high,
+
   /// Fails CI only in --strict mode.
   medium,
+
   /// Never fails CI — informational only.
   low,
 }
@@ -111,7 +114,8 @@ const _domainLocks = <String, _DomainLock>{
     rule: 'FSL-003',
     domain: 'Friend',
     canonicalFile: 'lib/features/friends/providers/friends_providers.dart',
-    fix: 'All friendship streams MUST originate from rawAllFriendshipsStreamProvider '
+    fix:
+        'All friendship streams MUST originate from rawAllFriendshipsStreamProvider '
         'or rawAcceptedFriendshipsStreamProvider in friends_providers.dart. '
         'Delete this .snapshots() call and derive from the canonical provider. '
         'See FRIEND_SYSTEM_LOCK rule.',
@@ -121,20 +125,23 @@ const _domainLocks = <String, _DomainLock>{
     domain: 'Friend',
     canonicalFile:
         'lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart',
-    fix: 'friend_links streams must derive from rawAllFriendshipsStreamProvider.',
+    fix:
+        'friend_links streams must derive from rawAllFriendshipsStreamProvider.',
   ),
   'participants': _DomainLock(
     rule: 'FSL-004',
     domain: 'Room',
     canonicalFile: 'lib/features/room/providers/participant_providers.dart',
-    fix: 'All participant streams MUST come from participantsStreamProvider '
+    fix:
+        'All participant streams MUST come from participantsStreamProvider '
         'in participant_providers.dart. Derive — do not re-subscribe.',
   ),
   'conversations': _DomainLock(
     rule: 'FSL-005',
     domain: 'Messaging',
     canonicalFile: 'lib/features/messaging/providers/messaging_provider.dart',
-    fix: 'All conversation streams MUST come from rawConversationsStreamProvider '
+    fix:
+        'All conversation streams MUST come from rawConversationsStreamProvider '
         'in messaging_provider.dart. Schema layers must derive, not re-subscribe.',
   ),
 };
@@ -163,8 +170,7 @@ class _Violation {
   final bool isError;
 
   bool get alwaysFails =>
-      severity == _Severity.critical ||
-      (severity == _Severity.high && isError);
+      severity == _Severity.critical || (severity == _Severity.high && isError);
 
   String formatted(bool noColor) {
     if (severity == _Severity.critical) {
@@ -200,8 +206,9 @@ class _Violation {
   }
 
   String compact() {
-    final label =
-        severity == _Severity.critical ? 'CRITICAL' : severity.name.toUpperCase();
+    final label = severity == _Severity.critical
+        ? 'CRITICAL'
+        : severity.name.toUpperCase();
     return '[$label] $ruleId $file:$line — $issue';
   }
 }
@@ -253,7 +260,8 @@ final _lineRules = <_LineRule>[
     id: 'FSL-001',
     severity: _Severity.critical,
     description: 'StreamProvider.family declared without autoDispose',
-    fix: 'Change to StreamProvider.autoDispose.family<...>. '
+    fix:
+        'Change to StreamProvider.autoDispose.family<...>. '
         'Per-user/per-id StreamProviders MUST autoDispose — without it, '
         'stale listeners accumulate as users navigate between rooms/profiles. '
         'Exceptions: auth, presence heartbeat, notification badge (explicitly documented).',
@@ -267,7 +275,8 @@ final _lineRules = <_LineRule>[
     id: 'FCI-001',
     severity: _Severity.high,
     description: 'Direct Firestore .snapshots() call in feature layer',
-    fix: 'Replace with a canonical StreamProvider from stream_registry.dart. '
+    fix:
+        'Replace with a canonical StreamProvider from stream_registry.dart. '
         'Never open .snapshots() outside lib/services/ or lib/core/.',
     pattern: RegExp(r'\.snapshots\('),
     pathExemptions: const ['_test.dart'],
@@ -278,7 +287,8 @@ final _lineRules = <_LineRule>[
     id: 'FCI-002',
     severity: _Severity.high,
     description: 'FirebaseFirestore.instance used directly',
-    fix: 'Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. '
+    fix:
+        'Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. '
         'Direct .instance bypasses test overrides and makes deduplication impossible.',
     pattern: RegExp(r'FirebaseFirestore\.instance'),
   ),
@@ -288,7 +298,8 @@ final _lineRules = <_LineRule>[
     id: 'FCI-003',
     severity: _Severity.medium,
     description: 'Raw .listen() on a Firestore stream in feature layer',
-    fix: 'Replace with a canonical StreamProvider. '
+    fix:
+        'Replace with a canonical StreamProvider. '
         '.listen() creates an unmanaged subscription that leaks across navigation.',
     pattern: RegExp(
       r'\.collection\([^)]+\).*\.listen\(|\.doc\([^)]+\).*\.listen\(',
@@ -300,7 +311,8 @@ final _lineRules = <_LineRule>[
     id: 'FCI-004',
     severity: _Severity.medium,
     description: 'StreamProvider declared outside canonical provider files',
-    fix: 'StreamProviders that open Firestore streams must be declared in a '
+    fix:
+        'StreamProviders that open Firestore streams must be declared in a '
         'canonical file and registered in kCanonicalStreamProviderNames. '
         'Derived providers (no .snapshots()) are always permitted.',
     pattern: RegExp(r'StreamProvider(?:\.autoDispose)?(?:\.family)?[<(]'),
@@ -320,7 +332,8 @@ final _lineRules = <_LineRule>[
     id: 'FCI-005',
     severity: _Severity.medium,
     description: 'StreamController instantiated in feature/UI layer',
-    fix: 'StreamControllers in widgets/controllers create leaked subscriptions. '
+    fix:
+        'StreamControllers in widgets/controllers create leaked subscriptions. '
         'Use Riverpod StreamProvider instead.',
     pattern: RegExp(r'StreamController\s*[<(]'),
   ),
@@ -330,7 +343,8 @@ final _lineRules = <_LineRule>[
     id: 'FCI-006',
     severity: _Severity.low,
     description: 'Direct Firestore collection()/doc() access in feature layer',
-    fix: 'Firestore access must go through the service layer (lib/services/) '
+    fix:
+        'Firestore access must go through the service layer (lib/services/) '
         'or canonical stream providers.',
     pattern: RegExp(
       r'(?:_firestore|firestore|FirebaseFirestore\.instance)\s*\.\s*(?:collection|doc)\(',
@@ -341,10 +355,7 @@ final _lineRules = <_LineRule>[
 
 // ─── Per-file multi-line analysis (FSL-002, FSL-003/004/005) ─────────────────
 
-List<_Violation> _analyzeFileCritical(
-  List<String> lines,
-  String relativePath,
-) {
+List<_Violation> _analyzeFileCritical(List<String> lines, String relativePath) {
   final violations = <_Violation>[];
 
   for (var i = 0; i < lines.length; i++) {
@@ -360,20 +371,24 @@ List<_Violation> _analyzeFileCritical(
     final windowStart = (i - 10).clamp(0, i);
     final window = lines.sublist(windowStart, i + 1).join('\n');
     if (!window.contains('.limit(')) {
-      violations.add(_Violation(
-        ruleId: 'FSL-002',
-        severity: _Severity.critical,
-        file: relativePath,
-        line: i + 1,
-        lineContent: line,
-        issue: 'Unbounded .snapshots() — no .limit() within 10 lines. '
-            'Unbounded queries cause runaway Firestore read costs at scale.',
-        fix: 'Add .limit(N) before .snapshots(): '
-            'feeds/messages/notifications → .limit(50), '
-            'social graphs/friend lists → .limit(100). '
-            'QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.',
-        isError: true,
-      ));
+      violations.add(
+        _Violation(
+          ruleId: 'FSL-002',
+          severity: _Severity.critical,
+          file: relativePath,
+          line: i + 1,
+          lineContent: line,
+          issue:
+              'Unbounded .snapshots() — no .limit() within 10 lines. '
+              'Unbounded queries cause runaway Firestore read costs at scale.',
+          fix:
+              'Add .limit(N) before .snapshots(): '
+              'feeds/messages/notifications → .limit(50), '
+              'social graphs/friend lists → .limit(100). '
+              'QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.',
+          isError: true,
+        ),
+      );
     }
 
     // ── FSL-003/004/005: Domain lock checks ────────────────────────────────
@@ -402,18 +417,21 @@ List<_Violation> _analyzeFileCritical(
         continue;
       }
 
-      violations.add(_Violation(
-        ruleId: lock.rule,
-        severity: _Severity.critical,
-        file: relativePath,
-        line: i + 1,
-        lineContent: line,
-        issue: '${lock.domain} domain .snapshots() on "$keyword" collection '
-            'outside canonical file. '
-            'Canonical: ${lock.canonicalFile}',
-        fix: lock.fix,
-        isError: true,
-      ));
+      violations.add(
+        _Violation(
+          ruleId: lock.rule,
+          severity: _Severity.critical,
+          file: relativePath,
+          line: i + 1,
+          lineContent: line,
+          issue:
+              '${lock.domain} domain .snapshots() on "$keyword" collection '
+              'outside canonical file. '
+              'Canonical: ${lock.canonicalFile}',
+          fix: lock.fix,
+          isError: true,
+        ),
+      );
       break; // One domain-lock violation per line is sufficient.
     }
   }
@@ -454,9 +472,9 @@ List<_Violation> _detectDuplicateStreams(Map<String, List<String>> allFiles) {
 
       // Take the LAST (innermost) collection name in chained calls.
       final collectionName = matches.last.group(1)!;
-      refs.putIfAbsent(collectionName, () => []).add(
-        _StreamRef(collectionName, file, i + 1, line),
-      );
+      refs
+          .putIfAbsent(collectionName, () => [])
+          .add(_StreamRef(collectionName, file, i + 1, line));
     }
   }
 
@@ -484,20 +502,24 @@ List<_Violation> _detectDuplicateStreams(Map<String, List<String>> allFiles) {
     // Multiple non-canonical files subscribe to the same collection.
     final allFiles2 = streamRefs.map((r) => r.file).toSet().join(', ');
     for (final ref in nonCanonical) {
-      violations.add(_Violation(
-        ruleId: 'FSL-006',
-        severity: _Severity.critical,
-        file: ref.file,
-        line: ref.line,
-        lineContent: ref.lineContent,
-        issue: 'Duplicate Firestore subscription to "$collectionName" collection '
-            'found in ${streamRefs.length} files. SINGLE_STREAM_RULE violated. '
-            'Files: $allFiles2',
-        fix: 'Remove this .snapshots() and derive state from the single canonical '
-            'StreamProvider for "$collectionName". '
-            'See lib/core/architecture/stream_registry.dart for the registered provider.',
-        isError: true,
-      ));
+      violations.add(
+        _Violation(
+          ruleId: 'FSL-006',
+          severity: _Severity.critical,
+          file: ref.file,
+          line: ref.line,
+          lineContent: ref.lineContent,
+          issue:
+              'Duplicate Firestore subscription to "$collectionName" collection '
+              'found in ${streamRefs.length} files. SINGLE_STREAM_RULE violated. '
+              'Files: $allFiles2',
+          fix:
+              'Remove this .snapshots() and derive state from the single canonical '
+              'StreamProvider for "$collectionName". '
+              'See lib/core/architecture/stream_registry.dart for the registered provider.',
+          isError: true,
+        ),
+      );
     }
   }
 
@@ -509,8 +531,9 @@ List<_Violation> _detectDuplicateStreams(Map<String, List<String>> allFiles) {
 List<_Violation> _scanFileLines(List<String> lines, String relativePath) {
   final violations = <_Violation>[];
   final isErrorPath = _errorPaths.any((p) => relativePath.startsWith(p));
-  final isServiceCore =
-      _serviceCorePaths.any((p) => relativePath.startsWith(p));
+  final isServiceCore = _serviceCorePaths.any(
+    (p) => relativePath.startsWith(p),
+  );
 
   for (var i = 0; i < lines.length; i++) {
     final rawLine = lines[i];
@@ -521,16 +544,18 @@ List<_Violation> _scanFileLines(List<String> lines, String relativePath) {
       if (rule.severity != _Severity.critical && isServiceCore) continue;
 
       if (rule.matchesLine(rawLine, relativePath)) {
-        violations.add(_Violation(
-          ruleId: rule.id,
-          severity: rule.severity,
-          file: relativePath,
-          line: i + 1,
-          lineContent: rawLine,
-          issue: rule.description,
-          fix: rule.fix,
-          isError: isErrorPath,
-        ));
+        violations.add(
+          _Violation(
+            ruleId: rule.id,
+            severity: rule.severity,
+            file: relativePath,
+            line: i + 1,
+            lineContent: rawLine,
+            issue: rule.description,
+            fix: rule.fix,
+            isError: isErrorPath,
+          ),
+        );
       }
     }
   }
@@ -552,8 +577,10 @@ void main(List<String> args) {
 
   final projectRoot = _findProjectRoot();
   if (projectRoot == null) {
-    stderr.writeln('ERROR: Could not find project root (no pubspec.yaml). '
-        'Run from the MixVy project root.');
+    stderr.writeln(
+      'ERROR: Could not find project root (no pubspec.yaml). '
+      'Run from the MixVy project root.',
+    );
     exit(2);
   }
 
@@ -576,8 +603,9 @@ void main(List<String> args) {
     if (entity is! File) continue;
     final normalized = entity.path.replaceAll('\\', '/');
     final libIdx = normalized.lastIndexOf('/lib/');
-    final relativePath =
-        libIdx >= 0 ? normalized.substring(libIdx + 1) : normalized;
+    final relativePath = libIdx >= 0
+        ? normalized.substring(libIdx + 1)
+        : normalized;
 
     if (!relativePath.endsWith('.dart')) continue;
 
@@ -609,8 +637,9 @@ void main(List<String> args) {
     // Multi-line critical rules (FSL-002, FSL-003/004/005).
     // Service/core are the legitimate Firestore owners; skip them for domain locks
     // but FSL-002 (no .limit) DOES apply to canonical provider files too.
-    final isServiceCore =
-        _serviceCorePaths.any((p) => relativePath.startsWith(p));
+    final isServiceCore = _serviceCorePaths.any(
+      (p) => relativePath.startsWith(p),
+    );
 
     if (!isServiceCore) {
       allViolations.addAll(_analyzeFileCritical(lines, relativePath));
@@ -652,8 +681,9 @@ void main(List<String> args) {
 
   // ── Summary ──────────────────────────────────────────────────────────────
 
-  final criticals =
-      allViolations.where((v) => v.severity == _Severity.critical).toList();
+  final criticals = allViolations
+      .where((v) => v.severity == _Severity.critical)
+      .toList();
   final errors = allViolations
       .where((v) => v.severity != _Severity.critical && v.isError)
       .toList();
@@ -682,10 +712,11 @@ void main(List<String> args) {
   for (final v in allViolations) {
     byRule[v.ruleId] = (byRule[v.ruleId] ?? 0) + 1;
   }
-  for (final entry in byRule.entries.toList()
-    ..sort((a, b) => a.key.compareTo(b.key))) {
-    final isCrit =
-        allViolations.any((v) => v.ruleId == entry.key && v.severity == _Severity.critical);
+  for (final entry
+      in byRule.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
+    final isCrit = allViolations.any(
+      (v) => v.ruleId == entry.key && v.severity == _Severity.critical,
+    );
     stdout.writeln(
       '    ${entry.key} — ${entry.value} occurrence(s)'
       '${isCrit ? "  🔴 CRITICAL" : ""}',

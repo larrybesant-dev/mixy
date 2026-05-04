@@ -103,7 +103,8 @@ abstract final class FirestoreStreamLinter {
           'StreamProvider declared in feature layer without delegation. '
           'Derive from a canonical provider or register a new canonical entry '
           'in lib/core/architecture/stream_registry.dart.',
-      pattern: r'StreamProvider(?!\.autoDispose\.family|\.family|\.autoDispose)'
+      pattern:
+          r'StreamProvider(?!\.autoDispose\.family|\.family|\.autoDispose)'
           r'\s*[<(]',
       allowedPathPrefixes: <String>[
         'lib/services/',
@@ -145,11 +146,19 @@ abstract final class FirestoreStreamLinter {
 
     final buffer = StringBuffer()
       ..writeln()
-      ..writeln('┌─────────────────────────────────────────────────────────────')
+      ..writeln(
+        '┌─────────────────────────────────────────────────────────────',
+      )
       ..writeln('│  ⚠️  STREAM ARCHITECTURE VIOLATIONS DETECTED')
-      ..writeln('│  These patterns will cause Firestore cost inflation at scale.')
-      ..writeln('│  Fix before merging — see stream_registry.dart for guidance.')
-      ..writeln('├─────────────────────────────────────────────────────────────');
+      ..writeln(
+        '│  These patterns will cause Firestore cost inflation at scale.',
+      )
+      ..writeln(
+        '│  Fix before merging — see stream_registry.dart for guidance.',
+      )
+      ..writeln(
+        '├─────────────────────────────────────────────────────────────',
+      );
 
     for (final v in violations) {
       buffer

@@ -115,31 +115,34 @@ void main() {
     expect(state.displayNameFor('user-1'), 'VelvetHandle');
   });
 
-  test('RoomState presentation role and on-mic authority come from one path', () {
-    const state = RoomState(
-      roomId: 'room-present',
-      currentUserId: 'host-1',
-      hostId: 'host-1',
-      userIds: <String>['host-1', 'cohost-1', 'stage-1', 'audience-1'],
-      stableUserIds: <String>['host-1', 'cohost-1', 'stage-1', 'audience-1'],
-      speakerIds: <String>['host-1', 'stage-1'],
-      participantRolesByUser: <String, String>{
-        'host-1': 'host',
-        'cohost-1': 'cohost',
-        'stage-1': 'stage',
-        'audience-1': 'audience',
-      },
-    );
+  test(
+    'RoomState presentation role and on-mic authority come from one path',
+    () {
+      const state = RoomState(
+        roomId: 'room-present',
+        currentUserId: 'host-1',
+        hostId: 'host-1',
+        userIds: <String>['host-1', 'cohost-1', 'stage-1', 'audience-1'],
+        stableUserIds: <String>['host-1', 'cohost-1', 'stage-1', 'audience-1'],
+        speakerIds: <String>['host-1', 'stage-1'],
+        participantRolesByUser: <String, String>{
+          'host-1': 'host',
+          'cohost-1': 'cohost',
+          'stage-1': 'stage',
+          'audience-1': 'audience',
+        },
+      );
 
-    expect(state.presentationRoleFor('host-1'), roomRoleHost);
-    expect(state.presentationRoleFor('cohost-1'), roomRoleCohost);
-    expect(state.presentationRoleFor('stage-1'), roomRoleStage);
-    expect(state.presentationRoleFor('audience-1'), roomRoleAudience);
-    expect(state.isOnMicByAuthority('host-1'), isTrue);
-    expect(state.isOnMicByAuthority('cohost-1'), isTrue);
-    expect(state.isOnMicByAuthority('stage-1'), isTrue);
-    expect(state.isOnMicByAuthority('audience-1'), isFalse);
-  });
+      expect(state.presentationRoleFor('host-1'), roomRoleHost);
+      expect(state.presentationRoleFor('cohost-1'), roomRoleCohost);
+      expect(state.presentationRoleFor('stage-1'), roomRoleStage);
+      expect(state.presentationRoleFor('audience-1'), roomRoleAudience);
+      expect(state.isOnMicByAuthority('host-1'), isTrue);
+      expect(state.isOnMicByAuthority('cohost-1'), isTrue);
+      expect(state.isOnMicByAuthority('stage-1'), isTrue);
+      expect(state.isOnMicByAuthority('audience-1'), isFalse);
+    },
+  );
 
   test('RoomState lifecycle resolves deterministically by sync condition', () {
     const hydratingState = RoomState(

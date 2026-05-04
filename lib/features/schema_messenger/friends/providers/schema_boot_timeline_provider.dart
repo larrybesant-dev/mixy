@@ -2,11 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'schema_friend_selection_provider.dart';
 
-enum SchemaBootTimelineLevel {
-  info,
-  warning,
-  error,
-}
+enum SchemaBootTimelineLevel { info, warning, error }
 
 class SchemaBootTimelineEvent {
   const SchemaBootTimelineEvent({
@@ -35,7 +31,8 @@ class SchemaBootTimelineNotifier
   void record(SchemaBootTimelineEvent event) {
     if (state.isNotEmpty) {
       final previous = state.last;
-      final isDuplicate = previous.bootId == event.bootId &&
+      final isDuplicate =
+          previous.bootId == event.bootId &&
           previous.source == event.source &&
           previous.phase == event.phase &&
           previous.level == event.level &&
@@ -59,10 +56,11 @@ class SchemaBootTimelineNotifier
   }
 }
 
-final schemaBootTimelineProvider = StateNotifierProvider<
-    SchemaBootTimelineNotifier, List<SchemaBootTimelineEvent>>(
-  (ref) => SchemaBootTimelineNotifier(),
-);
+final schemaBootTimelineProvider =
+    StateNotifierProvider<
+      SchemaBootTimelineNotifier,
+      List<SchemaBootTimelineEvent>
+    >((ref) => SchemaBootTimelineNotifier());
 
 class SchemaBootMetrics {
   const SchemaBootMetrics({

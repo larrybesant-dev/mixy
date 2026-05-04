@@ -48,7 +48,8 @@ Future<UserCredential> _createAndSeedUser({
   required String label,
   required double balance,
 }) async {
-  final email = 'payment-$label-${DateTime.now().microsecondsSinceEpoch}@mixvy.dev';
+  final email =
+      'payment-$label-${DateTime.now().microsecondsSinceEpoch}@mixvy.dev';
   final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
     email: email,
     password: 'P@ssword123!',
@@ -63,8 +64,10 @@ Future<UserCredential> _createAndSeedUser({
 }
 
 Future<Map<String, dynamic>> _userDoc(String uid) async {
-  final snapshot =
-      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  final snapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .get();
   return snapshot.data() ?? <String, dynamic>{};
 }
 
@@ -119,7 +122,10 @@ void main() {
   testWidgets(
     'requestPayment records a requested transaction via emulator',
     (tester) async {
-      final requester = await _createAndSeedUser(label: 'requester', balance: 10);
+      final requester = await _createAndSeedUser(
+        label: 'requester',
+        balance: 10,
+      );
       final requesterId = requester.user!.uid;
       await FirebaseAuth.instance.signOut();
 
@@ -153,10 +159,16 @@ void main() {
   testWidgets(
     'notifySuccess records a completed transaction via emulator',
     (tester) async {
-      final sender = await _createAndSeedUser(label: 'stripe-sender', balance: 50);
+      final sender = await _createAndSeedUser(
+        label: 'stripe-sender',
+        balance: 50,
+      );
       await FirebaseAuth.instance.signOut();
 
-      final receiver = await _createAndSeedUser(label: 'stripe-receiver', balance: 2);
+      final receiver = await _createAndSeedUser(
+        label: 'stripe-receiver',
+        balance: 2,
+      );
       final receiverId = receiver.user!.uid;
       await FirebaseAuth.instance.signOut();
 

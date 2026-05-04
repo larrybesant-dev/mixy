@@ -21,11 +21,15 @@ void main() {
       when(() => user.uid).thenReturn('user-123');
       when(() => gateway.currentUser).thenReturn(user);
       when(() => gateway.sendPayment(any(), any())).thenAnswer((_) async {});
-      when(() => gateway.requestPayment(any(), any(), any())).thenAnswer((_) async {});
+      when(
+        () => gateway.requestPayment(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
       container = ProviderContainer(
         overrides: [
-          paymentControllerProvider.overrideWith(() => PaymentController(gateway: gateway)),
+          paymentControllerProvider.overrideWith(
+            () => PaymentController(gateway: gateway),
+          ),
         ],
       );
     });

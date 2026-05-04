@@ -10,20 +10,22 @@ final groupsProvider = StreamProvider<List<Group>>((ref) {
       .collection('groups')
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => Group.fromJson(doc.data(), doc.id))
-          .toList());
+      .map(
+        (snapshot) => snapshot.docs
+            .map((doc) => Group.fromJson(doc.data(), doc.id))
+            .toList(),
+      );
 });
 
 // Get single group details
-final groupDetailsProvider =
-    StreamProvider.family<Group?, String>((ref, groupId) {
+final groupDetailsProvider = StreamProvider.family<Group?, String>((
+  ref,
+  groupId,
+) {
   final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('groups')
-      .doc(groupId)
-      .snapshots()
-      .map((snapshot) {
+  return firestore.collection('groups').doc(groupId).snapshots().map((
+    snapshot,
+  ) {
     if (!snapshot.exists) return null;
     final data = snapshot.data();
     if (data == null) return null;
@@ -32,21 +34,27 @@ final groupDetailsProvider =
 });
 
 // Get user's groups
-final userGroupsProvider =
-    StreamProvider.family<List<Group>, String>((ref, userId) {
+final userGroupsProvider = StreamProvider.family<List<Group>, String>((
+  ref,
+  userId,
+) {
   final firestore = ref.watch(firestoreProvider);
   return firestore
       .collection('groups')
       .where('memberIds', arrayContains: userId)
       .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => Group.fromJson(doc.data(), doc.id))
-          .toList());
+      .map(
+        (snapshot) => snapshot.docs
+            .map((doc) => Group.fromJson(doc.data(), doc.id))
+            .toList(),
+      );
 });
 
 // Get posts in a group
-final groupPostsProvider =
-    StreamProvider.family<List<GroupPost>, String>((ref, groupId) {
+final groupPostsProvider = StreamProvider.family<List<GroupPost>, String>((
+  ref,
+  groupId,
+) {
   final firestore = ref.watch(firestoreProvider);
   return firestore
       .collection('groups')
@@ -54,9 +62,11 @@ final groupPostsProvider =
       .collection('posts')
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => GroupPost.fromJson(doc.data(), doc.id))
-          .toList());
+      .map(
+        (snapshot) => snapshot.docs
+            .map((doc) => GroupPost.fromJson(doc.data(), doc.id))
+            .toList(),
+      );
 });
 
 // Groups controller
@@ -64,7 +74,7 @@ class GroupsController {
   final FirebaseFirestore _firestore;
 
   GroupsController({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+    : _firestore = firestore;
 
   Future<void> createGroup({
     required String userId,
@@ -110,11 +120,7 @@ class GroupsController {
     required String content,
     required List<String> tags,
   }) async {
-    await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('posts')
-        .add({
+    await _firestore.collection('groups').doc(groupId).collection('posts').add({
       'groupId': groupId,
       'authorId': userId,
       'authorName': username,
@@ -127,9 +133,7 @@ class GroupsController {
     });
   }
 
-  Future<void> deleteGroup({
-    required String groupId,
-  }) async {
+  Future<void> deleteGroup({required String groupId}) async {
     await _firestore.collection('groups').doc(groupId).delete();
   }
 }

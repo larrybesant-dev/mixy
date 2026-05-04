@@ -31,11 +31,13 @@ Future<List<MediaDeviceInfo>> enumerateMediaDevices() async {
     final raw = await devices.enumerateDevices();
     return raw
         .where((d) => d.kind == 'audioinput' || d.kind == 'videoinput')
-        .map((d) => MediaDeviceInfo(
-              deviceId: d.deviceId ?? '',
-              label: (d.label?.isNotEmpty == true) ? d.label! : d.deviceId ?? '',
-              kind: d.kind ?? '',
-            ))
+        .map(
+          (d) => MediaDeviceInfo(
+            deviceId: d.deviceId ?? '',
+            label: (d.label?.isNotEmpty == true) ? d.label! : d.deviceId ?? '',
+            kind: d.kind ?? '',
+          ),
+        )
         .toList(growable: false);
   } catch (_) {
     return const [];

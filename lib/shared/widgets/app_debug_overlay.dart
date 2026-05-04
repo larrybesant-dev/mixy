@@ -84,101 +84,99 @@ class _AppDebugOverlayState extends ConsumerState<AppDebugOverlay> {
       }
     });
 
-    _firestorePresenceSub = ref
-      .read(debugFirestorePresenceWatch(uid))
-      .listen((data) {
-          final observedAt = DateTime.now();
-          final currentUpdatedAtMs = _asEpochMillis(data?['rtdbUpdatedAt']);
-          final shouldUpdateRtdbDelay =
-              currentUpdatedAtMs != null &&
-              currentUpdatedAtMs != _lastFirestoreRtdbUpdatedAtMs;
-          final rtdbDelay = shouldUpdateRtdbDelay && _lastRtdbObservedAt != null
-              ? observedAt.difference(_lastRtdbObservedAt!).inMilliseconds
-              : _rtdbToFirestoreDelayMs;
+    _firestorePresenceSub = ref.read(debugFirestorePresenceWatch(uid)).listen((
+      data,
+    ) {
+      final observedAt = DateTime.now();
+      final currentUpdatedAtMs = _asEpochMillis(data?['rtdbUpdatedAt']);
+      final shouldUpdateRtdbDelay =
+          currentUpdatedAtMs != null &&
+          currentUpdatedAtMs != _lastFirestoreRtdbUpdatedAtMs;
+      final rtdbDelay = shouldUpdateRtdbDelay && _lastRtdbObservedAt != null
+          ? observedAt.difference(_lastRtdbObservedAt!).inMilliseconds
+          : _rtdbToFirestoreDelayMs;
 
-          if (!mounted) {
-            return;
-          }
+      if (!mounted) {
+        return;
+      }
 
-          setState(() {
-            _firestorePresence = data;
-            _lastFirestoreObservedAt = observedAt;
-            _lastFirestoreRtdbUpdatedAtMs = currentUpdatedAtMs;
-            _rtdbToFirestoreDelayMs = rtdbDelay;
-          });
+      setState(() {
+        _firestorePresence = data;
+        _lastFirestoreObservedAt = observedAt;
+        _lastFirestoreRtdbUpdatedAtMs = currentUpdatedAtMs;
+        _rtdbToFirestoreDelayMs = rtdbDelay;
+      });
 
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) {
-              return;
-            }
-            final base = _lastFirestoreObservedAt;
-            if (base == null) {
-              return;
-            }
-            setState(() {
-              _firestoreToUiDelayMs = DateTime.now()
-                  .difference(base)
-                  .inMilliseconds;
-            });
-          });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        final base = _lastFirestoreObservedAt;
+        if (base == null) {
+          return;
+        }
+        setState(() {
+          _firestoreToUiDelayMs = DateTime.now()
+              .difference(base)
+              .inMilliseconds;
         });
+      });
+    });
 
-    _rtdbSessionsSub = ref
-      .read(debugRtdbSessionsWatch(uid))
-        .listen((raw) {
-          final observedAt = DateTime.now();
-          var sessionCount = 0;
-          var anyOnline = false;
-          var anyCamOn = false;
-          var anyMicOn = false;
-          String? anyInRoom;
-          int? latestSeen;
+    _rtdbSessionsSub = ref.read(debugRtdbSessionsWatch(uid)).listen((raw) {
+      final observedAt = DateTime.now();
+      var sessionCount = 0;
+      var anyOnline = false;
+      var anyCamOn = false;
+      var anyMicOn = false;
+      String? anyInRoom;
+      int? latestSeen;
 
-          // raw is always Map<dynamic,dynamic> per the provider's return type.
-          for (final entry in raw.entries) {
-              final value = entry.value;
-              if (value is! Map) {
-                continue;
-              }
-              sessionCount += 1;
-              final online = value['online'] == true;
-              if (online) {
-                anyOnline = true;
-              }
-              if (value['cam_on'] == true) {
-                anyCamOn = true;
-              }
-              if (value['mic_on'] == true) {
-                anyMicOn = true;
-              }
-              final inRoomValue = value['in_room'];
-              if (anyInRoom == null &&
-                  inRoomValue is String &&
-                  inRoomValue.trim().isNotEmpty) {
-                anyInRoom = inRoomValue.trim();
-              }
-              final lastSeenRaw = value['last_seen'];
-              if (lastSeenRaw is int) {
-                if (latestSeen == null || lastSeenRaw > latestSeen) {
-                  latestSeen = lastSeenRaw;
-                }
-              }
-            }
-
-          if (!mounted) {
-            return;
+      // raw is always Map<dynamic,dynamic> per the provider's return type.
+      for (final entry in raw.entries) {
+        final value = entry.value;
+        if (value is! Map) {
+          continue;
+        }
+        sessionCount += 1;
+        final online = value['online'] == true;
+        if (online) {
+          anyOnline = true;
+        }
+        if (value['cam_on'] == true) {
+          anyCamOn = true;
+        }
+        if (value['mic_on'] == true) {
+          anyMicOn = true;
+        }
+        final inRoomValue = value['in_room'];
+        if (anyInRoom == null &&
+            inRoomValue is String &&
+            inRoomValue.trim().isNotEmpty) {
+          anyInRoom = inRoomValue.trim();
+        }
+        final lastSeenRaw = value['last_seen'];
+        if (lastSeenRaw is int) {
+          if (latestSeen == null || lastSeenRaw > latestSeen) {
+            latestSeen = lastSeenRaw;
           }
+        }
+      }
 
-          setState(() {
-            _lastRtdbObservedAt = observedAt;
-            _rtdbSessionCount = sessionCount;
-            _rtdbAnyOnline = anyOnline;
-            _rtdbAnyCamOn = anyCamOn;
-            _rtdbAnyMicOn = anyMicOn;
-            _rtdbAnyInRoom = anyInRoom;
-            _latestRtdbLastSeenMs = latestSeen;
-          });
-        });
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _lastRtdbObservedAt = observedAt;
+        _rtdbSessionCount = sessionCount;
+        _rtdbAnyOnline = anyOnline;
+        _rtdbAnyCamOn = anyCamOn;
+        _rtdbAnyMicOn = anyMicOn;
+        _rtdbAnyInRoom = anyInRoom;
+        _latestRtdbLastSeenMs = latestSeen;
+      });
+    });
   }
 
   void _stopPresenceDebugWatch({required bool resetData}) {

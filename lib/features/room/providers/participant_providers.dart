@@ -115,20 +115,20 @@ class Cohost {
 /// Derived view of cohosts from the canonical [participantsStreamProvider].
 /// No separate Firestore query — filters client-side from the already-active
 /// participants stream.
-final coHostsProvider = Provider.autoDispose.family<List<Cohost>, String>(
-  (ref, roomId) {
-    final participants =
-        ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
-        const <RoomParticipantModel>[];
-    return participants
-        .where(
-          (p) =>
-              normalizeRoomRole(p.role, fallbackRole: '') == roomRoleCohost,
-        )
-        .map((p) => Cohost(p.userId))
-        .toList(growable: false);
-  },
-);
+final coHostsProvider = Provider.autoDispose.family<List<Cohost>, String>((
+  ref,
+  roomId,
+) {
+  final participants =
+      ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
+      const <RoomParticipantModel>[];
+  return participants
+      .where(
+        (p) => normalizeRoomRole(p.role, fallbackRole: '') == roomRoleCohost,
+      )
+      .map((p) => Cohost(p.userId))
+      .toList(growable: false);
+});
 
 final currentParticipantProvider = StreamProvider.autoDispose
     .family<RoomParticipantModel?, CurrentParticipantParams>((ref, params) {

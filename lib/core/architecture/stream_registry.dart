@@ -200,10 +200,14 @@ abstract final class StreamRegistryValidator {
       ..writeln()
       ..writeln('┌── STREAM REGISTRY: UNREGISTERED STREAM PROVIDERS ──────────')
       ..writeln('│  The following providers open Firestore streams but are not')
-      ..writeln('│  in the canonical allow-list (kCanonicalStreamProviderNames).')
+      ..writeln(
+        '│  in the canonical allow-list (kCanonicalStreamProviderNames).',
+      )
       ..writeln('│  If intentional, add them to stream_registry.dart.')
       ..writeln('│  If accidental, convert to a derived provider.')
-      ..writeln('├─────────────────────────────────────────────────────────────');
+      ..writeln(
+        '├─────────────────────────────────────────────────────────────',
+      );
     for (final name in unregistered) {
       buffer.writeln('│  ⚠️  $name');
     }
@@ -257,4 +261,3 @@ abstract final class StreamRegistryValidator {
     return registered;
   }
 }
-

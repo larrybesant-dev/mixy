@@ -67,8 +67,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '980846719834',
     projectId: 'mix-and-mingle-v2',
     storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
-    androidClientId: '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
-    iosClientId: '980846719834-hsn70r4kaghfit4d6t1keohuvjfho9v9.apps.googleusercontent.com',
+    androidClientId:
+        '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
+    iosClientId:
+        '980846719834-hsn70r4kaghfit4d6t1keohuvjfho9v9.apps.googleusercontent.com',
     iosBundleId: 'com.example.mixvy',
   );
 

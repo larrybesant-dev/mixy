@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -78,15 +80,16 @@ class MixVyDrawer extends ConsumerWidget {
               context,
               capability,
             );
-            if (!allowed) return;
+            if (!allowed || !context.mounted) return;
           }
 
           if (!embedded) {
             // Close the drawer, then navigate after the frame so the context
             // is still valid and the drawer animation doesn't compete.
-            Navigator.of(context).maybePop();
+            final router = GoRouter.of(context);
+            unawaited(Navigator.of(context).maybePop());
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              context.go(route);
+              router.go(route);
             });
           } else {
             context.go(route);

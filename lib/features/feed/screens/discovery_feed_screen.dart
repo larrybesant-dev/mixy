@@ -66,7 +66,8 @@ class DiscoveryFeedScreen extends ConsumerStatefulWidget {
   const DiscoveryFeedScreen({super.key});
 
   @override
-  ConsumerState<DiscoveryFeedScreen> createState() => _DiscoveryFeedScreenState();
+  ConsumerState<DiscoveryFeedScreen> createState() =>
+      _DiscoveryFeedScreenState();
 }
 
 class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
@@ -474,12 +475,12 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
 
   Future<void> _joinRoom(RoomModel room) async {
     final allowed = await GuestAuthGate.requireRoomJoin(context, ref);
-    if (!allowed) return;
+    if (!allowed || !mounted) return;
 
     if (_joiningRoomId != null) return;
     setState(() => _joiningRoomId = room.id);
     context.go('/room/${room.id}', extra: room);
-    
+
     // Hardening: Persist room ID so it can be recovered after crash
     unawaited(SessionPersistence.saveLastRoom(room.id));
 
@@ -592,7 +593,11 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
             SliverToBoxAdapter(
               child: HomeFeaturedRoomsSection(
                 hasRooms: true,
-                child: _buildBentoGrid(filteredRooms, feedState.roomReasons, feedState.roomTiers),
+                child: _buildBentoGrid(
+                  filteredRooms,
+                  feedState.roomReasons,
+                  feedState.roomTiers,
+                ),
               ),
             ),
           ] else ...[
@@ -1595,13 +1600,10 @@ class _UpcomingRoomTile extends StatelessWidget {
 
 // ── Shared widgets ────────────────────────────────────────────────────────────
 class _ReasonChip extends StatelessWidget {
-  const _ReasonChip({
-    required this.label,
-    this.tier,
-    this.small = false,
-  });
+  const _ReasonChip({required this.label, this.tier, this.small = false});
 
   final String label;
+
   /// Optional tier string from [RoomService.getRecommendationTier].
   /// Controls the chip accent color for visual social-proof hierarchy.
   final String? tier;
@@ -1691,9 +1693,10 @@ class _LiveBadgeState extends State<_LiveBadge>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.85, end: 1.15).animate(
-      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
-    );
+    _scale = Tween<double>(
+      begin: 0.85,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
   }
 
   @override
@@ -1795,8 +1798,10 @@ class _FollowingFeedTabState extends ConsumerState<_FollowingFeedTab> {
     super.initState();
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      Future.microtask(() =>
-          ref.read(paginatedFollowingFeedProvider(uid).notifier).loadPosts());
+      Future.microtask(
+        () =>
+            ref.read(paginatedFollowingFeedProvider(uid).notifier).loadPosts(),
+      );
     }
   }
 
@@ -2043,6 +2048,7 @@ class _LiveNowBubble extends ConsumerWidget {
 
   final RoomModel room;
   final VoidCallback onTap;
+
   /// How many of the viewer's friends are in this room (host + audience).
   /// When > 0, a gold "👥 N" badge is shown on the avatar ring.
   final int friendCount;
@@ -2115,10 +2121,7 @@ class _LiveNowBubble extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: _npPrimary,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _npSurface,
-                          width: 1.5,
-                        ),
+                        border: Border.all(color: _npSurface, width: 1.5),
                       ),
                       child: Text(
                         '👥 $friendCount',
@@ -2274,14 +2277,14 @@ class _LiveStateBar extends StatelessWidget {
               ],
             ),
           ),
-          if (clusterUids.isNotEmpty) ...
-            [
-              const SizedBox(width: 10),
-              RoomAvatarStack(
-                uids: clusterUids,
-                resolveAvatar: (ref, uid) => ref.watch(_hostAvatarProvider(uid)),
-              ),
-            ],
+          if (clusterUids.isNotEmpty) ...[
+            const SizedBox(width: 10),
+            RoomAvatarStack(
+              uids: clusterUids,
+              // Using denormalized data if available, though clusterUids usually implies multiple users
+              // For now just pass the IDs, and we'll harden the RoomCard to use denormalized host data.
+            ),
+          ],
         ],
       ),
     );
@@ -2309,9 +2312,10 @@ class _AnimatedPulseDotState extends State<_AnimatedPulseDot>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.35, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.35,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -2461,9 +2465,8 @@ class _HeroJoinCard extends StatelessWidget {
     final listenerCount = firstRoom == null
         ? 0
         : firstRoom!.memberCount > 0
-            ? firstRoom!.memberCount
-            : firstRoom!.stageUserIds.length +
-                firstRoom!.audienceUserIds.length;
+        ? firstRoom!.memberCount
+        : firstRoom!.stageUserIds.length + firstRoom!.audienceUserIds.length;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.pageHorizontalPadding,
@@ -2538,56 +2541,55 @@ class _HeroJoinCard extends StatelessWidget {
                 color: _npOnSurface,
               ),
             ),
-            if (hasLiveRoom && listenerCount > 0) ...
-              [
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      '$listenerCount listening',
-                      style: GoogleFonts.raleway(
-                        fontSize: 12,
-                        color: _npOnVariant,
-                      ),
+            if (hasLiveRoom && listenerCount > 0) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Text(
+                    '$listenerCount listening',
+                    style: GoogleFonts.raleway(
+                      fontSize: 12,
+                      color: _npOnVariant,
                     ),
-                    () {
-                      final rel = _relativeTime(
-                        firstRoom!.createdAt?.toDate(),
-                      );
-                      if (rel.isEmpty) return const SizedBox.shrink();
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            margin:
-                                const EdgeInsets.symmetric(horizontal: 6),
-                            width: 3,
-                            height: 3,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _npOnVariant,
-                            ),
+                  ),
+                  () {
+                    final rel = _relativeTime(firstRoom!.createdAt?.toDate());
+                    if (rel.isEmpty) return const SizedBox.shrink();
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          width: 3,
+                          height: 3,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _npOnVariant,
                           ),
-                          Text(
-                            rel,
-                            style: GoogleFonts.raleway(
-                              fontSize: 12,
-                              color: _npOnVariant,
-                            ),
+                        ),
+                        Text(
+                          rel,
+                          style: GoogleFonts.raleway(
+                            fontSize: 12,
+                            color: _npOnVariant,
                           ),
-                        ],
-                      );
-                    }(),
-                  ],
-                ),
-              ],
+                        ),
+                      ],
+                    );
+                  }(),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: hasLiveRoom
-                    ? () => context.go('/room/${firstRoom!.id}', extra: firstRoom!)
-                  : onStartRoom,
+                    ? () => context.go(
+                        '/room/${firstRoom!.id}',
+                        extra: firstRoom!,
+                      )
+                    : onStartRoom,
                 style: FilledButton.styleFrom(
                   backgroundColor: _npPrimary,
                   foregroundColor: _npSurface,
@@ -2608,34 +2610,31 @@ class _HeroJoinCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (hasLiveRoom) ...
-              [
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: onStartRoom,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _npPrimary,
-                      side: BorderSide(
-                        color: _npPrimary.withValues(alpha: 0.6),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+            if (hasLiveRoom) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onStartRoom,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _npPrimary,
+                    side: BorderSide(color: _npPrimary.withValues(alpha: 0.6)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    icon: const Icon(Icons.mic_rounded),
-                    label: Text(
-                      'Start Your Own Room',
-                      style: GoogleFonts.raleway(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
+                  ),
+                  icon: const Icon(Icons.mic_rounded),
+                  label: Text(
+                    'Start Your Own Room',
+                    style: GoogleFonts.raleway(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
                 ),
-              ],
+              ),
+            ],
           ],
         ),
       ),
@@ -2681,7 +2680,9 @@ class _JoinEventTickerState extends State<_JoinEventTicker>
         // 1-5 min old activity
         final count = room.stageUserIds.length + room.audienceUserIds.length;
         if (count > 1) {
-          events.add('Audience growing · ${room.name.length > 18 ? '${room.name.substring(0, 18)}…' : room.name}');
+          events.add(
+            'Audience growing · ${room.name.length > 18 ? '${room.name.substring(0, 18)}…' : room.name}',
+          );
         }
       }
     }
@@ -2745,11 +2746,7 @@ class _JoinEventTickerState extends State<_JoinEventTicker>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.arrow_upward_rounded,
-            size: 10,
-            color: _npOnVariant,
-          ),
+          const Icon(Icons.arrow_upward_rounded, size: 10, color: _npOnVariant),
           const SizedBox(width: 4),
           Text(
             _events[_index.clamp(0, _events.length - 1)],
@@ -2865,10 +2862,7 @@ class _FriendsLiveSection extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'No friends live right now — discover rooms below.',
-              style: GoogleFonts.raleway(
-                fontSize: 13,
-                color: _npOnVariant,
-              ),
+              style: GoogleFonts.raleway(fontSize: 13, color: _npOnVariant),
             ),
           );
         }
@@ -2917,7 +2911,10 @@ class _FriendsLiveSection extends ConsumerWidget {
                     friendRooms[i],
                     followingIds.toSet(),
                   ),
-                  onTap: () => context.go('/room/${friendRooms[i].id}', extra: friendRooms[i]),
+                  onTap: () => context.go(
+                    '/room/${friendRooms[i].id}',
+                    extra: friendRooms[i],
+                  ),
                 ),
               ),
             ),

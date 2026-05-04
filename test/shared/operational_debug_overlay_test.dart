@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/shared/widgets/operational_debug_overlay.dart';
 
 void main() {
-  testWidgets('operational overlay opens via hidden tap sequence', (tester) async {
+  testWidgets('operational overlay opens via hidden tap sequence', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
           home: Scaffold(
-            body: OperationalDebugOverlay(
-              child: SizedBox.expand(),
-            ),
+            body: OperationalDebugOverlay(child: SizedBox.expand()),
           ),
         ),
       ),

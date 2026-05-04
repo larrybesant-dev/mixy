@@ -7,14 +7,16 @@ class RoomMetaState {
   RoomMetaState({required this.roomDoc});
 }
 
-final roomMetaStateProvider = StreamProvider.autoDispose.family<RoomMetaState, String>((ref, roomId) async* {
-  Map<String, dynamic>? previous;
-  // ignore: deprecated_member_use
-  await for (final doc in ref.watch(roomDocStreamProvider(roomId).stream)) {
-    if (previous != null && !RoomMetaContract.shouldRebuild(previous, doc)) {
-      continue;
-    }
-    previous = doc;
-    yield RoomMetaState(roomDoc: doc);
-  }
-});
+final roomMetaStateProvider = StreamProvider.autoDispose
+    .family<RoomMetaState, String>((ref, roomId) async* {
+      Map<String, dynamic>? previous;
+      // ignore: deprecated_member_use
+      await for (final doc in ref.watch(roomDocStreamProvider(roomId).stream)) {
+        if (previous != null &&
+            !RoomMetaContract.shouldRebuild(previous, doc)) {
+          continue;
+        }
+        previous = doc;
+        yield RoomMetaState(roomDoc: doc);
+      }
+    });

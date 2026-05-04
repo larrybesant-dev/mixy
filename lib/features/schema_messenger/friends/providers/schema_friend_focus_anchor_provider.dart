@@ -30,25 +30,24 @@ class SchemaFriendFocusAnchor {
 
 class SchemaFriendFocusAnchorNotifier
     extends StateNotifier<SchemaFriendFocusAnchor> {
-  SchemaFriendFocusAnchorNotifier()
-      : super(const SchemaFriendFocusAnchor());
+  SchemaFriendFocusAnchorNotifier() : super(const SchemaFriendFocusAnchor());
 
-  void setFocusedFriend(
-    String friendId, {
-    bool updateInteractionTime = true,
-  }) {
+  void setFocusedFriend(String friendId, {bool updateInteractionTime = true}) {
     final normalizedFriendId = friendId.trim();
     if (normalizedFriendId.isEmpty) {
       return;
     }
 
-    final shouldUpdateTime = updateInteractionTime ||
+    final shouldUpdateTime =
+        updateInteractionTime ||
         state.friendId != normalizedFriendId ||
         state.lastInteractionAt == null;
 
     state = state.copyWith(
       friendId: normalizedFriendId,
-      lastInteractionAt: shouldUpdateTime ? DateTime.now() : state.lastInteractionAt,
+      lastInteractionAt: shouldUpdateTime
+          ? DateTime.now()
+          : state.lastInteractionAt,
     );
   }
 
@@ -60,7 +59,8 @@ class SchemaFriendFocusAnchorNotifier
   }
 }
 
-final schemaFriendFocusAnchorProvider = StateNotifierProvider<
-    SchemaFriendFocusAnchorNotifier, SchemaFriendFocusAnchor>(
-  (ref) => SchemaFriendFocusAnchorNotifier(),
-);
+final schemaFriendFocusAnchorProvider =
+    StateNotifierProvider<
+      SchemaFriendFocusAnchorNotifier,
+      SchemaFriendFocusAnchor
+    >((ref) => SchemaFriendFocusAnchorNotifier());

@@ -77,12 +77,16 @@ class _FloatingWhisperPanelWidgetState
     if (user == null) return;
 
     try {
-      await ref.read(messagingControllerProvider).sendmessage(
+      await ref
+          .read(messagingControllerProvider)
+          .sendmessage(
             conversationId: widget.conversationId,
             senderId: user.id,
             senderName: user.username,
             senderAvatarUrl: user.avatarUrl,
             content: text,
+            clientmessageId:
+                '${DateTime.now().microsecondsSinceEpoch}-${user.id}',
           );
     } catch (e, st) {
       if (kDebugMode) {
@@ -129,8 +133,11 @@ class _FloatingWhisperPanelWidgetState
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(
                   children: [
-                    const Icon(Icons.drag_indicator,
-                        size: 18, color: Color(0xFFB09080)),
+                    const Icon(
+                      Icons.drag_indicator,
+                      size: 18,
+                      color: Color(0xFFB09080),
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -170,8 +177,7 @@ class _FloatingWhisperPanelWidgetState
                 child: _MessageList(conversationId: widget.conversationId),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: Row(
                   children: [
                     Expanded(
@@ -192,7 +198,7 @@ class _FloatingWhisperPanelWidgetState
                   ],
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),
@@ -253,10 +259,7 @@ class _Bubble extends StatelessWidget {
             ),
             TextSpan(
               text: message.content,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFFF2EBE0),
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFFF2EBE0)),
             ),
           ],
         ),

@@ -39,9 +39,9 @@ extension TrackedDocRef<T extends Object?> on DocumentReference<T> {
   Stream<DocumentSnapshot<T>> trackedSnapshots({
     bool includeMetadataChanges = false,
   }) {
-    return snapshots(
-      includeMetadataChanges: includeMetadataChanges,
-    ).map((snap) {
+    return snapshots(includeMetadataChanges: includeMetadataChanges).map((
+      snap,
+    ) {
       if (kDebugMode) FirestoreCallTracker.trackRead(path);
       return snap;
     });
@@ -79,9 +79,9 @@ extension TrackedQueryRef<T extends Object?> on Query<T> {
   Stream<QuerySnapshot<T>> trackedSnapshots({
     bool includeMetadataChanges = false,
   }) {
-    return snapshots(
-      includeMetadataChanges: includeMetadataChanges,
-    ).map((snap) {
+    return snapshots(includeMetadataChanges: includeMetadataChanges).map((
+      snap,
+    ) {
       if (kDebugMode) FirestoreCallTracker.trackRead(_queryPath(this));
       return snap;
     });

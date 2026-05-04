@@ -20,6 +20,7 @@ abstract final class WebRtcTelemetry {
   // ─── Session state ─────────────────────────────────────────────────────────
   static _SessionCounters? _current;
   static WebRtcSessionSnapshot? _lastSession;
+
   /// Sampling divisor for ICE candidates in [TelemetryMode.standard].
   /// Records 1 of every [_iceSampleRate] candidates to reduce noise
   /// in high-traffic sessions without losing burst detection.
@@ -98,7 +99,8 @@ abstract final class WebRtcTelemetry {
     _current!.peerFailures++;
     ProductionAlertSystem.fireCustomAlert(
       id: 'webrtc_peer_fail_${broadcasterId ?? 'unknown'}',
-      message: 'WebRTC peer failed${broadcasterId != null ? ': $broadcasterId' : ''}',
+      message:
+          'WebRTC peer failed${broadcasterId != null ? ': $broadcasterId' : ''}',
       level: AlertLevel.warning,
     );
     if (TelemetryConfig.allows(LogTier.operational)) {
@@ -122,8 +124,7 @@ abstract final class WebRtcTelemetry {
   }
 
   /// Snapshot of the current active session (null if no session).
-  static WebRtcSessionSnapshot? get currentSession =>
-      _current?.toSnapshot();
+  static WebRtcSessionSnapshot? get currentSession => _current?.toSnapshot();
 
   /// Snapshot of the last completed session (null if none yet).
   static WebRtcSessionSnapshot? get lastSession => _lastSession;
@@ -142,13 +143,15 @@ abstract final class WebRtcTelemetry {
     if (c.reconnectAttempts == 5) {
       ProductionAlertSystem.fireCustomAlert(
         id: 'webrtc_reconnect_burst_${c.roomId}',
-        message: 'WebRTC reconnect burst [${c.roomId}]: ${c.reconnectAttempts} reconnects this session',
+        message:
+            'WebRTC reconnect burst [${c.roomId}]: ${c.reconnectAttempts} reconnects this session',
         level: AlertLevel.warning,
       );
     } else if (c.reconnectAttempts == 10) {
       ProductionAlertSystem.fireCustomAlert(
         id: 'webrtc_reconnect_critical_${c.roomId}',
-        message: 'WebRTC reconnect storm [${c.roomId}]: ${c.reconnectAttempts} reconnects this session',
+        message:
+            'WebRTC reconnect storm [${c.roomId}]: ${c.reconnectAttempts} reconnects this session',
         level: AlertLevel.critical,
       );
     }
@@ -165,8 +168,10 @@ class _SessionCounters {
 
   int offersSent = 0;
   int answersReceived = 0;
+
   /// Sampled ICE candidate count (reported in snapshots).
   int iceCandidatesSent = 0;
+
   /// Raw (unsampled) ICE candidate count for sampling arithmetic.
   int iceCandidatesRaw = 0;
   int reconnectAttempts = 0;

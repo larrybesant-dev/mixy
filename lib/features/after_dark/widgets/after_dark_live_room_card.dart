@@ -40,7 +40,8 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
         : room.stageUserIds.length + room.audienceUserIds.length;
     final categoryKey = room.category?.toLowerCase() ?? 'chat';
     final gradientColors =
-        _fallbackGradients[categoryKey] ?? const [Color(0xFF461424), Color(0xFF14070C)];
+        _fallbackGradients[categoryKey] ??
+        const [Color(0xFF461424), Color(0xFF14070C)];
     final moodLabel = _categoryGlyphs[categoryKey] ?? 'Late Night';
     final accent = room.isLocked ? EmberDark.secondary : EmberDark.primary;
 
@@ -50,7 +51,9 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: EmberDark.surfaceHigh,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: EmberDark.outlineVariant.withValues(alpha: 0.7)),
+          border: Border.all(
+            color: EmberDark.outlineVariant.withValues(alpha: 0.7),
+          ),
           boxShadow: [
             BoxShadow(
               color: accent.withValues(alpha: 0.16),
@@ -73,10 +76,11 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
                     CachedNetworkImage(
                       imageUrl: room.thumbnailUrl!,
                       fit: BoxFit.cover,
-                      errorWidget: (context, error, stackTrace) => _LoungeFallback(
-                        label: moodLabel,
-                        gradientColors: gradientColors,
-                      ),
+                      errorWidget: (context, error, stackTrace) =>
+                          _LoungeFallback(
+                            label: moodLabel,
+                            gradientColors: gradientColors,
+                          ),
                     )
                   else
                     _LoungeFallback(
@@ -167,7 +171,8 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
                         _TagChip(label: moodLabel),
                         if ((room.category ?? '').isNotEmpty)
                           _TagChip(label: room.category!.toUpperCase()),
-                        if (room.tags.isNotEmpty) _TagChip(label: room.tags.first.toUpperCase()),
+                        if (room.tags.isNotEmpty)
+                          _TagChip(label: room.tags.first.toUpperCase()),
                       ],
                     ),
                   ],
@@ -284,7 +289,9 @@ class _TagChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: EmberDark.surfaceHighest,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: EmberDark.outlineVariant.withValues(alpha: 0.8)),
+        border: Border.all(
+          color: EmberDark.outlineVariant.withValues(alpha: 0.8),
+        ),
       ),
       child: Text(
         label,

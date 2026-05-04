@@ -113,8 +113,8 @@ class RoomMediaController {
       final newTier = i < _fullVideoMax
           ? MediaTier.fullVideo
           : i < _lowVideoMax
-              ? MediaTier.lowVideo
-              : MediaTier.audioOnly;
+          ? MediaTier.lowVideo
+          : MediaTier.audioOnly;
 
       if (p.tier != newTier) {
         _states[p.userId] = p.copyWith(tier: newTier);
@@ -124,8 +124,9 @@ class RoomMediaController {
     // 4. Enforce tier decisions on the live RTC service.
     streamControl.applyTiers(_states.values.toList());
 
-    debugPrint('🔁 Media rebalance: ${_states.length} users, '
-        'fullVideo=${sorted.take(_fullVideoMax).length}');
+    debugPrint(
+      '🔁 Media rebalance: ${_states.length} users, '
+      'fullVideo=${sorted.take(_fullVideoMax).length}',
+    );
   }
 }
-

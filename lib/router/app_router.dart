@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:mixvy/core/routing/redirect_trace.dart';
 import 'package:mixvy/core/providers/guest_mode_provider.dart';
 import 'package:mixvy/core/services/guest_session_service.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'package:mixvy/features/after_dark/providers/after_dark_provider.dart';
 import 'package:mixvy/features/auth/register_screen.dart';
 import 'package:mixvy/features/auth/screens/login_screen.dart';
 import 'package:mixvy/features/auth/screens/forgot_password_screen.dart';
@@ -58,22 +60,25 @@ import 'package:mixvy/core/services/app_settings_service.dart';
 import 'package:mixvy/presentation/providers/app_settings_provider.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
-import 'package:mixvy/presentation/screens/live_room_screen.dart';
+import 'package:mixvy/features/room/presentation/live_room_screen.dart';
 import 'package:mixvy/shared/widgets/app_shell.dart';
 
-final GlobalKey<NavigatorState> rootNavigatorKey =
-GlobalKey<NavigatorState>(debugLabel: 'mixvy-root-navigator');
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'mixvy-root-navigator',
+);
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   AuthState _authState = const AuthState();
   AppSettings? _appSettings;
   UserModel? _currentUser;
   bool _isAdmin = false;
+  bool _isAfterDarkSessionActive = false;
 
   AuthState get authState => _authState;
   AppSettings? get appSettings => _appSettings;
   UserModel? get currentUser => _currentUser;
   bool get isAdmin => _isAdmin;
+  bool get isAfterDarkSessionActive => _isAfterDarkSessionActive;
 
   bool _isGuestMode = GuestSessionService.isActive;
   bool get isGuestMode => _isGuestMode;
@@ -106,38 +111,35 @@ class _RouterRefreshNotifier extends ChangeNotifier {
     _isAdmin = value;
     notifyListeners();
   }
+
+  void updateAfterDarkSession(bool value) {
+    _isAfterDarkSessionActive = value;
+    notifyListeners();
+  }
 }
 
 final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
   final notifier = _RouterRefreshNotifier();
 
-  ref.listen<AuthState>(
-    authControllerProvider,
-    (_, next) {
-      notifier.updateAuthState(next);
-      // Clear persisted guest session the moment a real account signs in.
-      if (next.uid != null && next.uid!.isNotEmpty) {
-        GuestSessionService.clearGuestSession();
-        // Also clear the Riverpod guest-mode flag so GuestAuthGate
-        // stops blocking authenticated users after a guest session.
-        if (ref.read(guestModeProvider)) {
-          ref.read(guestModeProvider.notifier).state = false;
-        }
+  ref.listen<AuthState>(authControllerProvider, (_, next) {
+    notifier.updateAuthState(next);
+    // Clear persisted guest session the moment a real account signs in.
+    if (next.uid != null && next.uid!.isNotEmpty) {
+      GuestSessionService.clearGuestSession();
+      // Also clear the Riverpod guest-mode flag so GuestAuthGate
+      // stops blocking authenticated users after a guest session.
+      if (ref.read(guestModeProvider)) {
+        ref.read(guestModeProvider.notifier).state = false;
       }
-    },
-    fireImmediately: true,
-  );
+    }
+  }, fireImmediately: true);
 
-  ref.listen<bool>(
-    guestModeProvider,
-    (_, next) {
-      notifier.updateGuestMode(next);
-      if (!next) {
-        GuestSessionService.clearGuestSession();
-      }
-    },
-    fireImmediately: true,
-  );
+  ref.listen<bool>(guestModeProvider, (_, next) {
+    notifier.updateGuestMode(next);
+    if (!next) {
+      GuestSessionService.clearGuestSession();
+    }
+  }, fireImmediately: true);
 
   ref.listen<AsyncValue<AppSettings>>(
     appSettingsControllerProvider,
@@ -157,6 +159,12 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
     fireImmediately: true,
   );
 
+  ref.listen<bool>(
+    afterDarkSessionProvider,
+    (_, next) => notifier.updateAfterDarkSession(next),
+    fireImmediately: true,
+  );
+
   ref.onDispose(notifier.dispose);
   return notifier;
 });
@@ -167,7 +175,9 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     refreshListenable: refreshNotifier,
-    initialLocation: Uri.base.path.isEmpty ? '/' : Uri.base.path,
+    initialLocation: kIsWeb
+        ? (Uri.base.path.isEmpty ? '/' : Uri.base.path)
+        : '/',
 
     redirect: (context, state) {
       final authState = refreshNotifier.authState;
@@ -175,10 +185,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final evaluation = evaluateAppRedirectWithReason(
         matchedLocation: state.matchedLocation,
         uid: authState.uid,
-          authLoading: !authState.isRoutingStable,
-          legalStateResolved: appSettings != null,
-          hasAcceptedLegal: appSettings?.hasAcceptedCurrentLegal ?? false,
-          isGuestMode: refreshNotifier.isGuestMode,
+        authLoading: !authState.isRoutingStable,
+        legalStateResolved: appSettings != null,
+        hasAcceptedLegal: appSettings?.hasAcceptedCurrentLegal ?? false,
+        isGuestMode: refreshNotifier.isGuestMode,
       );
 
       assert(() {
@@ -200,15 +210,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     routes: [
       /// ✅ ROOT FIX (CRITICAL FOR WEB)
-      GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
-      ),
+      GoRoute(path: '/', redirect: (context, state) => '/home'),
 
-      GoRoute(
-        path: '/auth',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/auth', builder: (context, state) => const LoginScreen()),
 
       GoRoute(
         path: '/onboarding',
@@ -218,8 +222,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) {
-          final tab =
-              int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
           return AppShell(initialIndex: tab);
         },
       ),
@@ -402,6 +405,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           final previewRoom = state.extra is RoomModel
               ? state.extra as RoomModel
               : null;
+
+          // Adult rooms require a signed-in user with adult mode enabled.
+          // Guests (no uid) or users who have not enabled adult mode are
+          // redirected to /auth so they can sign in / enable the feature.
+          final isAdultRoom = previewRoom?.isAdult ?? false;
+          final uid = refreshNotifier.authState.uid;
+          final isGuestOrAnon = uid == null || uid.isEmpty;
+          if (isAdultRoom && (isGuestOrAnon || refreshNotifier.isGuestMode)) {
+            return const FeatureDegradedScreen(
+              title: 'Sign in required',
+              message:
+                  'This room contains adult content. Please sign in and enable MixVy After Dark to continue.',
+              primaryLabel: 'Sign in',
+              primaryRoute: '/auth',
+              icon: Icons.lock_outline,
+            );
+          }
+
           return LiveRoomScreen(
             roomId: roomId,
             previewRoom: previewRoom?.id == roomId ? previewRoom : null,
@@ -414,10 +435,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LiveFloorScreen(),
       ),
 
-      GoRoute(
-        path: '/live',
-        redirect: (context, state) => '/rooms',
-      ),
+      GoRoute(path: '/live', redirect: (context, state) => '/rooms'),
 
       GoRoute(
         path: '/create-room',
@@ -559,9 +577,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       GoRoute(
         path: '/after-dark',
-        builder: (context, state) => const AfterDarkShell(
-          child: AfterDarkHomeScreen(),
-        ),
+        redirect: (context, state) {
+          if (!refreshNotifier.isAfterDarkSessionActive) {
+            return '/after-dark/unlock';
+          }
+          return null;
+        },
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkHomeScreen()),
       ),
 
       GoRoute(
@@ -581,23 +604,38 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       GoRoute(
         path: '/after-dark/lounges',
-        builder: (context, state) => const AfterDarkShell(
-          child: AfterDarkLoungesScreen(),
-        ),
+        redirect: (context, state) {
+          if (!refreshNotifier.isAfterDarkSessionActive) {
+            return '/after-dark/unlock';
+          }
+          return null;
+        },
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkLoungesScreen()),
       ),
 
       GoRoute(
         path: '/after-dark/profile',
-        builder: (context, state) => const AfterDarkShell(
-          child: AfterDarkProfileScreen(),
-        ),
+        redirect: (context, state) {
+          if (!refreshNotifier.isAfterDarkSessionActive) {
+            return '/after-dark/unlock';
+          }
+          return null;
+        },
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkProfileScreen()),
       ),
 
       GoRoute(
         path: '/after-dark/create-lounge',
-        builder: (context, state) => const AfterDarkShell(
-          child: AfterDarkCreateLoungeScreen(),
-        ),
+        redirect: (context, state) {
+          if (!refreshNotifier.isAfterDarkSessionActive) {
+            return '/after-dark/unlock';
+          }
+          return null;
+        },
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkCreateLoungeScreen()),
       ),
 
       GoRoute(
@@ -610,10 +648,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SpeedDatingScreen(),
       ),
 
-      GoRoute(
-        path: '/vip',
-        builder: (context, state) => const VipScreen(),
-      ),
+      GoRoute(path: '/vip', builder: (context, state) => const VipScreen()),
 
       GoRoute(
         path: '/admin-entitlements',

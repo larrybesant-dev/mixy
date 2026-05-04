@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/events/app_event.dart';
@@ -8,6 +9,13 @@ class SocialActivityService {
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+
+  /// Internal buffer for activity logs to reduce Firestore write volume.
+  final List<Map<String, dynamic>> _buffer = [];
+  Timer? _flushTimer;
+
+  static const int _kMaxBufferSize = 15;
+  static const Duration _kFlushInterval = Duration(seconds: 45);
 
   Stream<List<SocialActivity>> watchUserActivities(
     String userId, {
@@ -48,16 +56,17 @@ class SocialActivityService {
         .limit(limit * 3)
         .get();
 
-    final activities = snapshot.docs
-        .map((doc) => SocialActivity.fromJson(doc.id, doc.data()))
-        .toList(growable: false)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final activities =
+        snapshot.docs
+            .map((doc) => SocialActivity.fromJson(doc.id, doc.data()))
+            .toList(growable: false)
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return activities.take(limit).toList(growable: false);
   }
 
   Future<void> handleEvent(AppEvent event) async {
     if (event is FollowEvent) {
-      await logActivity(
+      await _writeActivity(
         userId: event.fromUserId,
         type: 'followed_user',
         targetId: event.toUserId,
@@ -72,7 +81,7 @@ class SocialActivityService {
     }
 
     if (event is ProfileUpdatedEvent) {
-      await logActivity(
+      await _writeActivity(
         userId: event.userId,
         type: 'updated_profile',
         occurredAt: event.timestamp,
@@ -82,7 +91,7 @@ class SocialActivityService {
     }
 
     if (event is RoomJoinedEvent) {
-      await logActivity(
+      await _writeActivity(
         userId: event.userId,
         type: 'joined_room',
         targetId: event.roomId,
@@ -97,7 +106,7 @@ class SocialActivityService {
     }
 
     if (event is RoomLeftEvent) {
-      await logActivity(
+      await _writeActivity(
         userId: event.userId,
         type: 'left_room',
         targetId: event.roomId,
@@ -112,7 +121,7 @@ class SocialActivityService {
     }
 
     if (event is MicStateChangedEvent && event.isSpeaker) {
-      await logActivity(
+      await _writeActivity(
         userId: event.userId,
         type: 'went_live',
         targetId: event.roomId,
@@ -123,7 +132,7 @@ class SocialActivityService {
     }
 
     if (event is CameraStateChangedEvent && event.isCameraOn) {
-      await logActivity(
+      await _writeActivity(
         userId: event.userId,
         type: 'went_live',
         targetId: event.roomId,
@@ -133,7 +142,7 @@ class SocialActivityService {
     }
   }
 
-  Future<void> logActivity({
+  Future<void> _writeActivity({
     required String userId,
     required String type,
     String? targetId,
@@ -155,5 +164,70 @@ class SocialActivityService {
           : Timestamp.fromDate(occurredAt),
       'metadata': metadata ?? const <String, dynamic>{},
     });
+  }
+
+  /// Queues an activity for background batching.
+  /// Returns immediately to avoid blocking UI or event pipeline.
+  void logActivity({
+    required String userId,
+    required String type,
+    String? targetId,
+    Map<String, dynamic>? metadata,
+    DateTime? occurredAt,
+  }) {
+    final normalizedUserId = userId.trim();
+    final normalizedType = type.trim();
+    if (normalizedUserId.isEmpty || normalizedType.isEmpty) {
+      return;
+    }
+
+    final data = {
+      'userId': normalizedUserId,
+      'type': normalizedType,
+      'targetId': (targetId ?? '').trim().isEmpty ? null : targetId!.trim(),
+      'timestamp': occurredAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(occurredAt),
+      'metadata': metadata ?? const <String, dynamic>{},
+    };
+
+    _buffer.add(data);
+
+    if (_buffer.length >= _kMaxBufferSize) {
+      unawaited(flush());
+    } else {
+      _startFlushTimer();
+    }
+  }
+
+  /// Commits all buffered activities to Firestore in a single WriteBatch.
+  Future<void> flush() async {
+    _flushTimer?.cancel();
+    _flushTimer = null;
+
+    if (_buffer.isEmpty) return;
+
+    final batch = _firestore.batch();
+    final activitiesToCommit = List<Map<String, dynamic>>.from(_buffer);
+    _buffer.clear();
+
+    for (final data in activitiesToCommit) {
+      final docRef = _firestore.collection('activity_feed').doc();
+      batch.set(docRef, data);
+    }
+
+    try {
+      await batch.commit();
+    } catch (e) {
+      // Best effort for activity logs. In production, we'd log this to telemetry.
+    }
+  }
+
+  void _startFlushTimer() {
+    _flushTimer ??= Timer(_kFlushInterval, () => unawaited(flush()));
+  }
+
+  Future<void> dispose() async {
+    await flush();
   }
 }

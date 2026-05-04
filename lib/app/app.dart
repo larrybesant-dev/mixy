@@ -28,9 +28,11 @@ import '../features/auth/controllers/auth_controller.dart';
 import '../features/profile/profile_controller.dart';
 import '../services/presence_controller.dart';
 import '../core/events/event_providers.dart';
+import '../core/services/feature_gate_service.dart';
 import '../observability/startup_timeline.dart';
 import '../firebase_options.dart';
 import '../dev/system_stress_runner.dart';
+import '../services/push_messaging_service.dart';
 
 final appBootstrapProvider = FutureProvider<void>((ref) async {
   final startup = StartupProfiler.instance;
@@ -54,10 +56,9 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     bool timeoutHit = false;
     User? authUser;
     try {
-      authUser = await auth
-          .authStateChanges()
-          .first
-          .timeout(const Duration(seconds: 20));
+      authUser = await auth.authStateChanges().first.timeout(
+        const Duration(seconds: 20),
+      );
     } on TimeoutException {
       timeoutHit = true;
       // Fallback: use current user immediately available.
@@ -118,6 +119,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
   int _bootHintIndex = 0;
   Timer? _bootHintTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  ProviderSubscription<FeatureGateState>? _featureGateSub;
 
   static const List<String> _bootHints = <String>[
     'Connecting...',
@@ -146,12 +148,25 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
         _bootHintIndex += 1;
       });
     });
+
+    _featureGateSub = ref.listenManual<FeatureGateState>(
+      featureGateControllerProvider,
+      (_, next) {
+        unawaited(
+          PushMessagingService.instance.setPushEnabled(
+            next.enablePushNotifications,
+          ),
+        );
+      },
+      fireImmediately: true,
+    );
   }
 
   @override
   void dispose() {
     _bootHintTimer?.cancel();
     _connectivitySub?.cancel();
+    _featureGateSub?.close();
     super.dispose();
   }
 
@@ -481,9 +496,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
                 fontFamilyFallback: mixvyFontFamilyFallback,
               ),
               child: IncomingCallOverlay(
-                child: BetaFeedbackOverlay(
-                  child: diagnosticsChild,
-                ),
+                child: BetaFeedbackOverlay(child: diagnosticsChild),
               ),
             );
 

@@ -565,8 +565,10 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                         ? null
                         : () async {
                             await GuestSessionService.enterAsGuest();
-                            ref.read(guestModeProvider.notifier).state = true;
                             if (!context.mounted) return;
+                            // ignore: use_build_context_synchronously
+                            ref.read(guestModeProvider.notifier).state = true;
+                            // ignore: use_build_context_synchronously
                             context.go('/home');
                           },
                     child: Text(

@@ -105,33 +105,46 @@ class StreamControl {
       case MediaTier.fullVideo:
         service
             .setRemoteVideoSubscription(uid, subscribe: true, highQuality: true)
-            .then((_) {}, onError: (Object e) {
-          developer.log(
-            'StreamControl: fullVideo failed uid=$uid userId=$userId',
-            name: 'StreamControl',
-            error: e,
-          );
-        });
+            .then(
+              (_) {},
+              onError: (Object e) {
+                developer.log(
+                  'StreamControl: fullVideo failed uid=$uid userId=$userId',
+                  name: 'StreamControl',
+                  error: e,
+                );
+              },
+            );
       case MediaTier.lowVideo:
         service
-            .setRemoteVideoSubscription(uid, subscribe: true, highQuality: false)
-            .then((_) {}, onError: (Object e) {
-          developer.log(
-            'StreamControl: lowVideo failed uid=$uid userId=$userId',
-            name: 'StreamControl',
-            error: e,
-          );
-        });
+            .setRemoteVideoSubscription(
+              uid,
+              subscribe: true,
+              highQuality: false,
+            )
+            .then(
+              (_) {},
+              onError: (Object e) {
+                developer.log(
+                  'StreamControl: lowVideo failed uid=$uid userId=$userId',
+                  name: 'StreamControl',
+                  error: e,
+                );
+              },
+            );
       case MediaTier.audioOnly:
         service
             .setRemoteVideoSubscription(uid, subscribe: false)
-            .then((_) {}, onError: (Object e) {
-          developer.log(
-            'StreamControl: audioOnly failed uid=$uid userId=$userId',
-            name: 'StreamControl',
-            error: e,
-          );
-        });
+            .then(
+              (_) {},
+              onError: (Object e) {
+                developer.log(
+                  'StreamControl: audioOnly failed uid=$uid userId=$userId',
+                  name: 'StreamControl',
+                  error: e,
+                );
+              },
+            );
     }
   }
 
@@ -143,4 +156,3 @@ class StreamControl {
     }
   }
 }
-

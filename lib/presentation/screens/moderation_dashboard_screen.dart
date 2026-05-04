@@ -10,14 +10,18 @@ class ModerationDashboardScreen extends StatefulWidget {
   const ModerationDashboardScreen({super.key});
 
   @override
-  State<ModerationDashboardScreen> createState() => _ModerationDashboardScreenState();
+  State<ModerationDashboardScreen> createState() =>
+      _ModerationDashboardScreenState();
 }
 
 class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
   final ModerationService _moderationService = ModerationService();
   ModerationStatus? _statusFilter;
 
-  Future<void> _setStatus(ReportRecordModel report, ModerationStatus status) async {
+  Future<void> _setStatus(
+    ReportRecordModel report,
+    ModerationStatus status,
+  ) async {
     try {
       await _moderationService.updateReportStatus(
         reportId: report.id,
@@ -78,7 +82,9 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
           final allReports = snapshot.data ?? const <ReportRecordModel>[];
           final reports = _statusFilter == null
               ? allReports
-              : allReports.where((report) => report.status == _statusFilter).toList(growable: false);
+              : allReports
+                    .where((report) => report.status == _statusFilter)
+                    .toList(growable: false);
 
           if (reports.isEmpty) {
             return const AppEmptyView(
@@ -98,7 +104,7 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
               final createdAtLabel = createdAt == null
                   ? 'Unknown time'
                   : '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')} '
-                      '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+                        '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
 
               return Card(
                 child: Padding(
@@ -118,7 +124,9 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text('Target: ${report.targetType.name} ${report.targetId}'),
+                      Text(
+                        'Target: ${report.targetType.name} ${report.targetId}',
+                      ),
                       Text('Reporter: ${report.reporterUserId}'),
                       const SizedBox(height: 4),
                       Text('Reason: ${report.reason}'),
@@ -136,16 +144,18 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: ModerationStatus.values.map((status) {
-                          final isActive = report.status == status;
-                          return ChoiceChip(
-                            selected: isActive,
-                            label: Text(status.name),
-                            onSelected: isActive
-                                ? null
-                                : (_) => _setStatus(report, status),
-                          );
-                        }).toList(growable: false),
+                        children: ModerationStatus.values
+                            .map((status) {
+                              final isActive = report.status == status;
+                              return ChoiceChip(
+                                selected: isActive,
+                                label: Text(status.name),
+                                onSelected: isActive
+                                    ? null
+                                    : (_) => _setStatus(report, status),
+                              );
+                            })
+                            .toList(growable: false),
                       ),
                     ],
                   ),

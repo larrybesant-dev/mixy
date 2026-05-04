@@ -5,7 +5,7 @@ import '../models/presence_model.dart';
 
 class PresenceService {
   PresenceService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 

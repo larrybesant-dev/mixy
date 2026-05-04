@@ -111,8 +111,11 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
         appBar: AppBar(
           backgroundColor: EmberDark.surface,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: EmberDark.onSurfaceVariant, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: EmberDark.onSurfaceVariant,
+              size: 20,
+            ),
             onPressed: () => context.go('/settings'),
           ),
         ),
@@ -121,8 +124,11 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
             children: [
               const SizedBox(height: 24),
               // Header
-              const Icon(Icons.local_fire_department_rounded,
-                  color: EmberDark.primary, size: 48),
+              const Icon(
+                Icons.local_fire_department_rounded,
+                color: EmberDark.primary,
+                size: 48,
+              ),
               const SizedBox(height: 16),
               Text(
                 _title,
@@ -139,7 +145,10 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
                   _subtitle,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: EmberDark.onSurfaceVariant, fontSize: 14, height: 1.4),
+                    color: EmberDark.onSurfaceVariant,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 40),
@@ -169,8 +178,13 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
 
               if (_error != null) ...[
                 const SizedBox(height: 16),
-                Text(_error!,
-                    style: const TextStyle(color: EmberDark.primary, fontSize: 13)),
+                Text(
+                  _error!,
+                  style: const TextStyle(
+                    color: EmberDark.primary,
+                    fontSize: 13,
+                  ),
+                ),
               ],
 
               const Spacer(),
@@ -247,8 +261,11 @@ class _KeyButton extends StatelessWidget {
         height: 72,
         alignment: Alignment.center,
         child: isDelete
-            ? const Icon(Icons.backspace_outlined,
-                color: EmberDark.onSurfaceVariant, size: 22)
+            ? const Icon(
+                Icons.backspace_outlined,
+                color: EmberDark.onSurfaceVariant,
+                size: 22,
+              )
             : Text(
                 label,
                 style: const TextStyle(

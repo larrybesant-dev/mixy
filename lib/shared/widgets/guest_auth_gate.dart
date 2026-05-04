@@ -41,10 +41,7 @@ abstract final class GuestAuthGate {
     return false;
   }
 
-  static Future<bool> requireMessaging(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requireMessaging(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.sendMessage);
   }
 
@@ -71,31 +68,19 @@ abstract final class GuestAuthGate {
     return requireCapability(context, ref, SessionCapability.startConversation);
   }
 
-  static Future<bool> requireFollow(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requireFollow(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.followUser);
   }
 
-  static Future<bool> requireRoomCreation(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requireRoomCreation(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.createRoom);
   }
 
-  static Future<bool> requireRoomJoin(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requireRoomJoin(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.joinRoom);
   }
 
-  static Future<bool> requirePostCreation(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requirePostCreation(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.createPost);
   }
 
@@ -113,17 +98,11 @@ abstract final class GuestAuthGate {
     return requireCapability(context, ref, SessionCapability.createGroup);
   }
 
-  static Future<bool> requireProfileEdit(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requireProfileEdit(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.editProfile);
   }
 
-  static Future<bool> requireRoomInvite(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  static Future<bool> requireRoomInvite(BuildContext context, WidgetRef ref) {
     return requireCapability(context, ref, SessionCapability.inviteToRoom);
   }
 
@@ -200,9 +179,7 @@ class _GuestGateSheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFF111111),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(
-          top: BorderSide(color: _gold, width: 1.5),
-        ),
+        border: Border(top: BorderSide(color: _gold, width: 1.5)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
       child: Column(

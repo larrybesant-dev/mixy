@@ -98,29 +98,31 @@ final roomPresenceStreamProvider = StreamProvider.autoDispose
         query: 'rooms/$roomId/participants (authoritative room presence)',
         roomId: roomId,
         itemCount: (value) => value.length,
-        stream: ref.watch(participantsStreamProvider(roomId).stream).map((participants) {
-              final now = DateTime.now();
-              return participants
-                  .map((participant) {
-                    final userId = participant.userId.trim();
-                    final participantRoomMatch = _isRoomParticipantActive(
-                      participant,
-                      now: now,
-                    );
+        stream: ref.watch(participantsStreamProvider(roomId).stream).map((
+          participants,
+        ) {
+          final now = DateTime.now();
+          return participants
+              .map((participant) {
+                final userId = participant.userId.trim();
+                final participantRoomMatch = _isRoomParticipantActive(
+                  participant,
+                  now: now,
+                );
 
-                    return RoomPresenceModel(
-                      userId: userId,
-                      isOnline: participantRoomMatch,
-                      lastHeartbeatAt: participant.lastActiveAt,
-                      lastSeenAt: participant.lastActiveAt,
-                      customStatus: participant.customStatus,
-                      userStatus:
-                          participant.userStatus ??
-                          (participantRoomMatch ? 'online' : 'offline'),
-                    );
-                  })
-                  .where((presence) => presence.userId.isNotEmpty)
-                  .toList(growable: false);
-            }),
+                return RoomPresenceModel(
+                  userId: userId,
+                  isOnline: participantRoomMatch,
+                  lastHeartbeatAt: participant.lastActiveAt,
+                  lastSeenAt: participant.lastActiveAt,
+                  customStatus: participant.customStatus,
+                  userStatus:
+                      participant.userStatus ??
+                      (participantRoomMatch ? 'online' : 'offline'),
+                );
+              })
+              .where((presence) => presence.userId.isNotEmpty)
+              .toList(growable: false);
+        }),
       );
     });

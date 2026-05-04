@@ -34,8 +34,7 @@ class LiveStageSpotlight extends ConsumerStatefulWidget {
   final VoidCallback? onPrimaryAction;
 
   @override
-  ConsumerState<LiveStageSpotlight> createState() =>
-      _LiveStageSpotlightState();
+  ConsumerState<LiveStageSpotlight> createState() => _LiveStageSpotlightState();
 }
 
 class _LiveStageSpotlightState extends ConsumerState<LiveStageSpotlight>
@@ -72,8 +71,9 @@ class _LiveStageSpotlightState extends ConsumerState<LiveStageSpotlight>
     final speakerIds = ref.watch(
       liveRoomControllerProvider(widget.roomId).select((s) => s.speakerIds),
     );
-    final participantsAsync =
-        ref.watch(participantsStreamProvider(widget.roomId));
+    final participantsAsync = ref.watch(
+      participantsStreamProvider(widget.roomId),
+    );
     final participants = participantsAsync.valueOrNull ?? const [];
     final participantByUser = {
       for (final p in participants) p.userId.trim(): p,
@@ -92,9 +92,7 @@ class _LiveStageSpotlightState extends ConsumerState<LiveStageSpotlight>
             fit: StackFit.expand,
             children: [
               // Ambient radial glow in stage centre
-              Positioned.fill(
-                child: _AmbientGlow(pulse: _pulseAnim.value),
-              ),
+              Positioned.fill(child: _AmbientGlow(pulse: _pulseAnim.value)),
               // Main content
               Column(
                 children: [
@@ -561,10 +559,7 @@ class _EmptyStage extends StatelessWidget {
             height: 96,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0x40D4A853),
-                width: 2,
-              ),
+              border: Border.all(color: const Color(0x40D4A853), width: 2),
               color: const Color(0xFF1A1225),
             ),
             child: const Center(
@@ -584,10 +579,7 @@ class _EmptyStage extends StatelessWidget {
           const Text(
             'Be the first to take the mic\nand set the vibe',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFFB09080),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Color(0xFFB09080), fontSize: 13),
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 24),

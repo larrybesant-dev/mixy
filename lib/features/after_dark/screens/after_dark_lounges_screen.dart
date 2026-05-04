@@ -13,13 +13,13 @@ import '../theme/after_dark_theme.dart';
 import '../widgets/after_dark_live_room_card.dart';
 
 const List<({String label, String emoji, String? value})> _loungeCategories = [
-  (label: 'All',       emoji: '🔥', value: null),
-  (label: 'Romance',   emoji: '💋', value: 'romance'),
-  (label: 'Roleplay',  emoji: '🎭', value: 'roleplay'),
-  (label: 'Chat',      emoji: '💬', value: 'chat'),
-  (label: 'Couples',   emoji: '💑', value: 'couples'),
-  (label: 'Dating',    emoji: '❤️', value: 'dating'),
-  (label: 'Party',     emoji: '🥂', value: 'party'),
+  (label: 'All', emoji: '🔥', value: null),
+  (label: 'Romance', emoji: '💋', value: 'romance'),
+  (label: 'Roleplay', emoji: '🎭', value: 'roleplay'),
+  (label: 'Chat', emoji: '💬', value: 'chat'),
+  (label: 'Couples', emoji: '💑', value: 'couples'),
+  (label: 'Dating', emoji: '❤️', value: 'dating'),
+  (label: 'Party', emoji: '🥂', value: 'party'),
 ];
 
 /// After Dark lounges browser — lists all 18+ live rooms with category filter.
@@ -42,8 +42,9 @@ class _AfterDarkLoungesScreenState
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() =>
-          _searchQuery = _searchController.text.trim().toLowerCase());
+      setState(
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      );
     });
   }
 
@@ -95,15 +96,19 @@ class _AfterDarkLoungesScreenState
                       decoration: InputDecoration(
                         hintText: 'Search the mood…',
                         hintStyle: GoogleFonts.raleway(
-                            color: EmberDark.onSurfaceVariant),
-                        prefixIcon: const Icon(Icons.search_rounded,
-                            color: EmberDark.onSurfaceVariant),
+                          color: EmberDark.onSurfaceVariant,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: EmberDark.onSurfaceVariant,
+                        ),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear_rounded,
-                                    color: EmberDark.onSurfaceVariant),
-                                onPressed: () =>
-                                    _searchController.clear(),
+                                icon: const Icon(
+                                  Icons.clear_rounded,
+                                  color: EmberDark.onSurfaceVariant,
+                                ),
+                                onPressed: () => _searchController.clear(),
                               )
                             : null,
                         filled: true,
@@ -113,7 +118,9 @@ class _AfterDarkLoungesScreenState
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         isDense: true,
                       ),
                     ),
@@ -128,32 +135,30 @@ class _AfterDarkLoungesScreenState
                         horizontal: context.pageHorizontalPadding,
                       ),
                       itemCount: _loungeCategories.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(width: 8),
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
                       itemBuilder: (ctx, i) {
                         final cat = _loungeCategories[i];
-                        final isSelected =
-                            _selectedCategory == cat.value;
+                        final isSelected = _selectedCategory == cat.value;
                         return GestureDetector(
-                          onTap: () => setState(
-                              () => _selectedCategory = cat.value),
+                          onTap: () =>
+                              setState(() => _selectedCategory = cat.value),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               gradient: isSelected
                                   ? EmberDark.primaryGradient
                                   : null,
-                              color: isSelected
-                                  ? null
-                                  : EmberDark.surfaceHigh,
-                              borderRadius:
-                                  BorderRadius.circular(999),
+                              color: isSelected ? null : EmberDark.surfaceHigh,
+                              borderRadius: BorderRadius.circular(999),
                               border: Border.all(
                                 color: isSelected
                                     ? Colors.transparent
-                                    : EmberDark.outlineVariant
-                                        .withValues(alpha: 0.5),
+                                    : EmberDark.outlineVariant.withValues(
+                                        alpha: 0.5,
+                                      ),
                               ),
                             ),
                             child: Text(
@@ -194,7 +199,11 @@ class _AfterDarkLoungesScreenState
           roomsAsync.when(
             loading: () {
               if (visibleRooms.isNotEmpty) {
-                return _buildRoomGrid(context, _filterRooms(visibleRooms), isRefreshing: true);
+                return _buildRoomGrid(
+                  context,
+                  _filterRooms(visibleRooms),
+                  isRefreshing: true,
+                );
               }
               return const _AfterDarkLoungesLoadingSliver();
             },
@@ -207,7 +216,10 @@ class _AfterDarkLoungesScreenState
                   24,
                 ),
                 child: AppErrorView(
-                  error: friendlyFirestoremessage(e, fallbackContext: 'lounges'),
+                  error: friendlyFirestoremessage(
+                    e,
+                    fallbackContext: 'lounges',
+                  ),
                   fallbackContext: 'Unable to load lounges.',
                 ),
               ),
@@ -229,7 +241,8 @@ class _AfterDarkLoungesScreenState
                       message: 'Be the first to open the floor tonight.',
                       icon: Icons.nightlife_outlined,
                       action: FilledButton.icon(
-                        onPressed: () => context.go('/after-dark/create-lounge'),
+                        onPressed: () =>
+                            context.go('/after-dark/create-lounge'),
                         icon: const Icon(Icons.add_rounded, size: 18),
                         label: const Text('Start a Lounge'),
                         style: FilledButton.styleFrom(
@@ -257,10 +270,13 @@ class _AfterDarkLoungesScreenState
     return _searchQuery.isEmpty
         ? rooms
         : rooms
-            .where((room) =>
-                room.name.toLowerCase().contains(_searchQuery) ||
-                (room.description?.toLowerCase().contains(_searchQuery) ?? false))
-            .toList();
+              .where(
+                (room) =>
+                    room.name.toLowerCase().contains(_searchQuery) ||
+                    (room.description?.toLowerCase().contains(_searchQuery) ??
+                        false),
+              )
+              .toList();
   }
 
   Widget _buildRoomGrid(
@@ -291,13 +307,13 @@ class _AfterDarkLoungesScreenState
               final crossAxisCount = width >= 980
                   ? 4
                   : width >= 720
-                      ? 3
-                      : 2;
+                  ? 3
+                  : 2;
               final aspectRatio = width >= 980
                   ? 0.88
                   : width >= 720
-                      ? 0.86
-                      : 0.85;
+                  ? 0.86
+                  : 0.85;
 
               return SliverGrid(
                 delegate: SliverChildBuilderDelegate(
@@ -344,13 +360,13 @@ class _AfterDarkLoungesLoadingSliver extends StatelessWidget {
           final crossAxisCount = width >= 980
               ? 4
               : width >= 720
-                  ? 3
-                  : 2;
+              ? 3
+              : 2;
           final aspectRatio = width >= 980
               ? 0.88
               : width >= 720
-                  ? 0.86
-                  : 0.85;
+              ? 0.86
+              : 0.85;
 
           return SliverGrid(
             delegate: SliverChildBuilderDelegate(
@@ -380,7 +396,9 @@ class _AfterDarkLoungesLoadingSliver extends StatelessWidget {
                         height: 12,
                         width: 100,
                         decoration: BoxDecoration(
-                          color: EmberDark.surfaceHighest.withValues(alpha: 0.42),
+                          color: EmberDark.surfaceHighest.withValues(
+                            alpha: 0.42,
+                          ),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -391,7 +409,9 @@ class _AfterDarkLoungesLoadingSliver extends StatelessWidget {
                         height: 10,
                         width: 74,
                         decoration: BoxDecoration(
-                          color: EmberDark.surfaceHighest.withValues(alpha: 0.28),
+                          color: EmberDark.surfaceHighest.withValues(
+                            alpha: 0.28,
+                          ),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -445,62 +465,69 @@ class _CreateLoungeBannerState extends State<_CreateLoungeBanner>
       builder: (context, _) => GestureDetector(
         onTap: () => context.go('/after-dark/create-lounge'),
         child: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [EmberDark.primaryDim, EmberDark.primary],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+          height: 70,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [EmberDark.primaryDim, EmberDark.primary],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: EmberDark.secondary.withValues(
+                  alpha: 0.16 + (_controller.value * 0.18),
+                ),
+                blurRadius: 14 + (_controller.value * 10),
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: EmberDark.secondary.withValues(alpha: 0.16 + (_controller.value * 0.18)),
-              blurRadius: 14 + (_controller.value * 10),
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
-              child: const Icon(Icons.add_rounded,
-                  color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Open a Velvet Lounge',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Open a Velvet Lounge',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Go live for adults looking for late-night chemistry',
-                    style: TextStyle(
-                        color: Color(0xCCFFFFFF), fontSize: 11),
-                  ),
-                ],
+                    Text(
+                      'Go live for adults looking for late-night chemistry',
+                      style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Colors.white, size: 22),
-          ],
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

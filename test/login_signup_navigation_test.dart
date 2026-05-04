@@ -60,7 +60,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('SIGN UP'), findsOneWidget);
-    expect(find.text('ENTER AS GUEST'), findsNothing);
+    expect(find.text('ENTER AS GUEST'), findsOneWidget);
 
     await tester.tap(find.text('SIGN UP'), warnIfMissed: false);
 

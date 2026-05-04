@@ -231,11 +231,11 @@ class RoomStateDiff {
 
   /// Sentinel for the first emission — no previous state to compare against.
   const RoomStateDiff.initial()
-      : titleChanged = false,
-        messageCountDelta = 0,
-        participantCountDelta = 0,
-        typingCountDelta = 0,
-        hasChanges = false;
+    : titleChanged = false,
+      messageCountDelta = 0,
+      participantCountDelta = 0,
+      typingCountDelta = 0,
+      hasChanges = false;
 
   /// Compute diff between two consecutive state emissions.
   factory RoomStateDiff.between(
@@ -265,15 +265,18 @@ class RoomStateDiff {
     if (titleChanged) parts.add('title_changed');
     if (messageCountDelta != 0) {
       parts.add(
-          'message${messageCountDelta > 0 ? "+$messageCountDelta" : "$messageCountDelta"}');
+        'message${messageCountDelta > 0 ? "+$messageCountDelta" : "$messageCountDelta"}',
+      );
     }
     if (participantCountDelta != 0) {
       parts.add(
-          'participants${participantCountDelta > 0 ? "+$participantCountDelta" : "$participantCountDelta"}');
+        'participants${participantCountDelta > 0 ? "+$participantCountDelta" : "$participantCountDelta"}',
+      );
     }
     if (typingCountDelta != 0) {
       parts.add(
-          'typing${typingCountDelta > 0 ? "+$typingCountDelta" : "$typingCountDelta"}');
+        'typing${typingCountDelta > 0 ? "+$typingCountDelta" : "$typingCountDelta"}',
+      );
     }
     return parts.join(' | ');
   }

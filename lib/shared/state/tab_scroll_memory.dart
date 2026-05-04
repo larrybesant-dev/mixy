@@ -18,5 +18,5 @@ class TabScrollMemoryNotifier extends StateNotifier<Map<int, double>> {
 
 final tabScrollMemoryProvider =
     StateNotifierProvider<TabScrollMemoryNotifier, Map<int, double>>(
-  (ref) => TabScrollMemoryNotifier(),
-);
+      (ref) => TabScrollMemoryNotifier(),
+    );

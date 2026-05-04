@@ -20,8 +20,11 @@ final firestoreProvider = Provider<FirebaseFirestore>(
 ///
 /// All user-domain feature providers should derive from this provider instead
 /// of opening their own `users/{uid}` snapshots streams.
-final userDocStreamProvider = StreamProvider
-    .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, userId) {
+final userDocStreamProvider =
+    StreamProvider.family<DocumentSnapshot<Map<String, dynamic>>?, String>((
+      ref,
+      userId,
+    ) {
       final normalizedUserId = userId.trim();
       if (normalizedUserId.isEmpty) {
         return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
@@ -34,41 +37,37 @@ final userDocStreamProvider = StreamProvider
           .snapshots();
     });
 
-final userDataStreamProvider = Provider
-    .family<AsyncValue<Map<String, dynamic>?>, String>((ref, userId) {
-      return ref.watch(userDocStreamProvider(userId)).whenData(
-            (doc) => doc?.data(),
-          );
+final userDataStreamProvider =
+    Provider.family<AsyncValue<Map<String, dynamic>?>, String>((ref, userId) {
+      return ref
+          .watch(userDocStreamProvider(userId))
+          .whenData((doc) => doc?.data());
     });
 
 final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
 );
 
-final firebaseDatabaseProvider = Provider<FirebaseDatabase?>(
-  (ref) {
-    try {
-      // RTDB requires a configured databaseURL on web. If absent/invalid,
-      // gracefully disable presence instead of triggering runtime exceptions.
-      final app = Firebase.app();
-      final databaseUrl = app.options.databaseURL?.trim() ?? '';
-      if (!databaseUrl.startsWith('https://')) {
-        return null;
-      }
-      return FirebaseDatabase.instanceFor(app: app, databaseURL: databaseUrl);
-    } catch (e) {
+final firebaseDatabaseProvider = Provider<FirebaseDatabase?>((ref) {
+  try {
+    // RTDB requires a configured databaseURL on web. If absent/invalid,
+    // gracefully disable presence instead of triggering runtime exceptions.
+    final app = Firebase.app();
+    final databaseUrl = app.options.databaseURL?.trim() ?? '';
+    if (!databaseUrl.startsWith('https://')) {
       return null;
     }
-  },
-);
+    return FirebaseDatabase.instanceFor(app: app, databaseURL: databaseUrl);
+  } catch (e) {
+    return null;
+  }
+});
 
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
   (ref) => FirebaseFunctions.instance,
 );
 
-final rtdbPresenceServiceProvider = Provider<RtdbPresenceService>(
-  (ref) {
-    final db = ref.watch(firebaseDatabaseProvider);
-    return RtdbPresenceService(db);
-  },
-);
+final rtdbPresenceServiceProvider = Provider<RtdbPresenceService>((ref) {
+  final db = ref.watch(firebaseDatabaseProvider);
+  return RtdbPresenceService(db);
+});

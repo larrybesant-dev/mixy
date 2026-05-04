@@ -60,171 +60,179 @@ class SchemaGroupedFriendRoster {
 
 final schemaResolvedAcceptedFriendsProvider =
     Provider.autoDispose<SchemaResolvedAcceptedFriendsState>((ref) {
-  final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
-  final acceptedLinks = ref.watch(schemaAcceptedFriendLinksProvider);
+      final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final acceptedLinks = ref.watch(schemaAcceptedFriendLinksProvider);
 
-  if (authUserId == null || authUserId.isEmpty) {
-    return const SchemaResolvedAcceptedFriendsState(
-      entries: <SchemaResolvedFriendEntry>[],
-      loadingCount: 0,
-      totalAcceptedCount: 0,
-    );
-  }
+      if (authUserId == null || authUserId.isEmpty) {
+        return const SchemaResolvedAcceptedFriendsState(
+          entries: <SchemaResolvedFriendEntry>[],
+          loadingCount: 0,
+          totalAcceptedCount: 0,
+        );
+      }
 
-  final entries = <SchemaResolvedFriendEntry>[];
-  var loadingCount = 0;
+      final entries = <SchemaResolvedFriendEntry>[];
+      var loadingCount = 0;
 
-  for (final link in acceptedLinks) {
-    final friendUserId = link.otherUserId(authUserId);
-    if (friendUserId.isEmpty) {
-      continue;
-    }
+      for (final link in acceptedLinks) {
+        final friendUserId = link.otherUserId(authUserId);
+        if (friendUserId.isEmpty) {
+          continue;
+        }
 
-    final identity = ref.watch(schemaFriendIdentityProvider(friendUserId)).valueOrNull;
-    final presence = ref.watch(schemaStableFriendPresenceProvider(friendUserId)).valueOrNull;
+        final identity = ref
+            .watch(schemaFriendIdentityProvider(friendUserId))
+            .valueOrNull;
+        final presence = ref
+            .watch(schemaStableFriendPresenceProvider(friendUserId))
+            .valueOrNull;
 
-    if (identity == null || presence == null) {
-      loadingCount += 1;
-      continue;
-    }
+        if (identity == null || presence == null) {
+          loadingCount += 1;
+          continue;
+        }
 
-    entries.add(
-      SchemaResolvedFriendEntry(
-        link: link,
-        identity: identity,
-        presence: presence,
-      ),
-    );
-  }
+        entries.add(
+          SchemaResolvedFriendEntry(
+            link: link,
+            identity: identity,
+            presence: presence,
+          ),
+        );
+      }
 
-  return SchemaResolvedAcceptedFriendsState(
-    entries: List.unmodifiable(entries),
-    loadingCount: loadingCount,
-    totalAcceptedCount: acceptedLinks.length,
-  );
-});
+      return SchemaResolvedAcceptedFriendsState(
+        entries: List.unmodifiable(entries),
+        loadingCount: loadingCount,
+        totalAcceptedCount: acceptedLinks.length,
+      );
+    });
 
 final schemaStickyGroupedFriendRosterProvider =
     StreamProvider.autoDispose<SchemaGroupedFriendRoster>((ref) {
-  return Stream.multi((controller) {
-    var disposed = false;
-    Timer? reorderTimer;
-    SchemaGroupedFriendRoster? stableRoster;
-    SchemaGroupedFriendRoster? pendingRoster;
-    String? lastSelectedFriendId;
-    var lastResolvedState = const SchemaResolvedAcceptedFriendsState(
-      entries: <SchemaResolvedFriendEntry>[],
-      loadingCount: 0,
-      totalAcceptedCount: 0,
-    );
-
-    void emitRoster(SchemaGroupedFriendRoster roster) {
-      if (disposed || controller.isClosed) {
-        return;
-      }
-      controller.add(roster);
-    }
-
-    SchemaGroupedFriendRoster targetRosterFor(
-      SchemaResolvedAcceptedFriendsState resolvedState,
-      String? selectedFriendId,
-    ) {
-      return _buildTargetRoster(
-        entries: resolvedState.entries,
-        selectedFriendId: selectedFriendId,
-        loadingCount: resolvedState.loadingCount,
-        totalAcceptedCount: resolvedState.totalAcceptedCount,
-      );
-    }
-
-    void handleInputs(
-      SchemaResolvedAcceptedFriendsState resolvedState,
-      String? selectedFriendId,
-    ) {
-      if (disposed || controller.isClosed) {
-        return;
-      }
-
-      lastResolvedState = resolvedState;
-      final targetRoster = targetRosterFor(resolvedState, selectedFriendId);
-      final currentStableRoster = stableRoster;
-
-      if (currentStableRoster == null) {
-        pendingRoster = null;
-        reorderTimer?.cancel();
-        stableRoster = targetRoster;
-        lastSelectedFriendId = selectedFriendId;
-        emitRoster(targetRoster);
-        return;
-      }
-
-      final selectionChanged = lastSelectedFriendId != selectedFriendId;
-      lastSelectedFriendId = selectedFriendId;
-
-      if (!_hasSameGroupMembers(currentStableRoster, targetRoster) || selectionChanged) {
-        pendingRoster = null;
-        reorderTimer?.cancel();
-        stableRoster = targetRoster;
-        emitRoster(targetRoster);
-        return;
-      }
-
-      if (_hasSameOrderedIds(currentStableRoster, targetRoster)) {
-        pendingRoster = null;
-        reorderTimer?.cancel();
-        final refreshedRoster = _projectRosterOntoOrder(
-          orderSource: currentStableRoster,
-          entries: resolvedState.entries,
-          selectedFriendId: selectedFriendId,
-          loadingCount: resolvedState.loadingCount,
-          totalAcceptedCount: resolvedState.totalAcceptedCount,
+      return Stream.multi((controller) {
+        var disposed = false;
+        Timer? reorderTimer;
+        SchemaGroupedFriendRoster? stableRoster;
+        SchemaGroupedFriendRoster? pendingRoster;
+        String? lastSelectedFriendId;
+        var lastResolvedState = const SchemaResolvedAcceptedFriendsState(
+          entries: <SchemaResolvedFriendEntry>[],
+          loadingCount: 0,
+          totalAcceptedCount: 0,
         );
-        stableRoster = refreshedRoster;
-        emitRoster(refreshedRoster);
-        return;
-      }
 
-      pendingRoster = targetRoster;
-      reorderTimer?.cancel();
-
-      final holdingRoster = _projectRosterOntoOrder(
-        orderSource: currentStableRoster,
-        entries: resolvedState.entries,
-        selectedFriendId: selectedFriendId,
-        loadingCount: resolvedState.loadingCount,
-        totalAcceptedCount: resolvedState.totalAcceptedCount,
-      );
-      stableRoster = holdingRoster;
-      emitRoster(holdingRoster);
-
-      reorderTimer = Timer(_rosterReorderHoldDuration, () {
-        if (disposed || controller.isClosed || pendingRoster == null) {
-          return;
+        void emitRoster(SchemaGroupedFriendRoster roster) {
+          if (disposed || controller.isClosed) {
+            return;
+          }
+          controller.add(roster);
         }
-        stableRoster = pendingRoster;
-        pendingRoster = null;
-        emitRoster(stableRoster!);
+
+        SchemaGroupedFriendRoster targetRosterFor(
+          SchemaResolvedAcceptedFriendsState resolvedState,
+          String? selectedFriendId,
+        ) {
+          return _buildTargetRoster(
+            entries: resolvedState.entries,
+            selectedFriendId: selectedFriendId,
+            loadingCount: resolvedState.loadingCount,
+            totalAcceptedCount: resolvedState.totalAcceptedCount,
+          );
+        }
+
+        void handleInputs(
+          SchemaResolvedAcceptedFriendsState resolvedState,
+          String? selectedFriendId,
+        ) {
+          if (disposed || controller.isClosed) {
+            return;
+          }
+
+          lastResolvedState = resolvedState;
+          final targetRoster = targetRosterFor(resolvedState, selectedFriendId);
+          final currentStableRoster = stableRoster;
+
+          if (currentStableRoster == null) {
+            pendingRoster = null;
+            reorderTimer?.cancel();
+            stableRoster = targetRoster;
+            lastSelectedFriendId = selectedFriendId;
+            emitRoster(targetRoster);
+            return;
+          }
+
+          final selectionChanged = lastSelectedFriendId != selectedFriendId;
+          lastSelectedFriendId = selectedFriendId;
+
+          if (!_hasSameGroupMembers(currentStableRoster, targetRoster) ||
+              selectionChanged) {
+            pendingRoster = null;
+            reorderTimer?.cancel();
+            stableRoster = targetRoster;
+            emitRoster(targetRoster);
+            return;
+          }
+
+          if (_hasSameOrderedIds(currentStableRoster, targetRoster)) {
+            pendingRoster = null;
+            reorderTimer?.cancel();
+            final refreshedRoster = _projectRosterOntoOrder(
+              orderSource: currentStableRoster,
+              entries: resolvedState.entries,
+              selectedFriendId: selectedFriendId,
+              loadingCount: resolvedState.loadingCount,
+              totalAcceptedCount: resolvedState.totalAcceptedCount,
+            );
+            stableRoster = refreshedRoster;
+            emitRoster(refreshedRoster);
+            return;
+          }
+
+          pendingRoster = targetRoster;
+          reorderTimer?.cancel();
+
+          final holdingRoster = _projectRosterOntoOrder(
+            orderSource: currentStableRoster,
+            entries: resolvedState.entries,
+            selectedFriendId: selectedFriendId,
+            loadingCount: resolvedState.loadingCount,
+            totalAcceptedCount: resolvedState.totalAcceptedCount,
+          );
+          stableRoster = holdingRoster;
+          emitRoster(holdingRoster);
+
+          reorderTimer = Timer(_rosterReorderHoldDuration, () {
+            if (disposed || controller.isClosed || pendingRoster == null) {
+              return;
+            }
+            stableRoster = pendingRoster;
+            pendingRoster = null;
+            emitRoster(stableRoster!);
+          });
+        }
+
+        ref.listen<SchemaResolvedAcceptedFriendsState>(
+          schemaResolvedAcceptedFriendsProvider,
+          (_, next) => handleInputs(
+            next,
+            ref.read(effectiveSelectedSchemaFriendIdProvider),
+          ),
+          fireImmediately: true,
+        );
+
+        ref.listen<String?>(
+          effectiveSelectedSchemaFriendIdProvider,
+          (_, next) => handleInputs(lastResolvedState, next),
+          fireImmediately: true,
+        );
+
+        controller.onCancel = () {
+          disposed = true;
+          reorderTimer?.cancel();
+        };
       });
-    }
-
-    ref.listen<SchemaResolvedAcceptedFriendsState>(
-      schemaResolvedAcceptedFriendsProvider,
-      (_, next) => handleInputs(next, ref.read(effectiveSelectedSchemaFriendIdProvider)),
-      fireImmediately: true,
-    );
-
-    ref.listen<String?>(
-      effectiveSelectedSchemaFriendIdProvider,
-      (_, next) => handleInputs(lastResolvedState, next),
-      fireImmediately: true,
-    );
-
-    controller.onCancel = () {
-      disposed = true;
-      reorderTimer?.cancel();
-    };
-  });
-});
+    });
 
 SchemaGroupedFriendRoster _buildTargetRoster({
   required List<SchemaResolvedFriendEntry> entries,
@@ -269,8 +277,8 @@ SchemaGroupedFriendRoster _buildTargetRoster({
     }
 
     return left.identity.username.toLowerCase().compareTo(
-          right.identity.username.toLowerCase(),
-        );
+      right.identity.username.toLowerCase(),
+    );
   }
 
   inRooms.sort(compareEntries);
@@ -311,27 +319,34 @@ SchemaGroupedFriendRoster _projectRosterOntoOrder({
       usedIds.add(nextEntry.friendId);
     }
 
-    final remaining = entries
-        .where((entry) => entry.presence.group == group && !usedIds.contains(entry.friendId))
-        .toList(growable: false)
-      ..sort((left, right) {
-        final leftSelected = left.friendId == selectedFriendId;
-        final rightSelected = right.friendId == selectedFriendId;
-        if (leftSelected != rightSelected) {
-          return leftSelected ? -1 : 1;
-        }
-        final leftActivity = left.activityAt;
-        final rightActivity = right.activityAt;
-        if (leftActivity != null && rightActivity != null) {
-          final compare = rightActivity.compareTo(leftActivity);
-          if (compare != 0) {
-            return compare;
-          }
-        } else if (leftActivity != null || rightActivity != null) {
-          return rightActivity == null ? -1 : 1;
-        }
-        return left.identity.username.toLowerCase().compareTo(right.identity.username.toLowerCase());
-      });
+    final remaining =
+        entries
+            .where(
+              (entry) =>
+                  entry.presence.group == group &&
+                  !usedIds.contains(entry.friendId),
+            )
+            .toList(growable: false)
+          ..sort((left, right) {
+            final leftSelected = left.friendId == selectedFriendId;
+            final rightSelected = right.friendId == selectedFriendId;
+            if (leftSelected != rightSelected) {
+              return leftSelected ? -1 : 1;
+            }
+            final leftActivity = left.activityAt;
+            final rightActivity = right.activityAt;
+            if (leftActivity != null && rightActivity != null) {
+              final compare = rightActivity.compareTo(leftActivity);
+              if (compare != 0) {
+                return compare;
+              }
+            } else if (leftActivity != null || rightActivity != null) {
+              return rightActivity == null ? -1 : 1;
+            }
+            return left.identity.username.toLowerCase().compareTo(
+              right.identity.username.toLowerCase(),
+            );
+          });
 
     return List.unmodifiable(<SchemaResolvedFriendEntry>[
       ...projected,
@@ -340,9 +355,15 @@ SchemaGroupedFriendRoster _projectRosterOntoOrder({
   }
 
   return SchemaGroupedFriendRoster(
-    inRooms: projectGroup(orderSource.inRooms, SchemaFriendPresenceGroup.inRoom),
+    inRooms: projectGroup(
+      orderSource.inRooms,
+      SchemaFriendPresenceGroup.inRoom,
+    ),
     online: projectGroup(orderSource.online, SchemaFriendPresenceGroup.online),
-    offline: projectGroup(orderSource.offline, SchemaFriendPresenceGroup.offline),
+    offline: projectGroup(
+      orderSource.offline,
+      SchemaFriendPresenceGroup.offline,
+    ),
     loadingCount: loadingCount,
     totalAcceptedCount: totalAcceptedCount,
   );

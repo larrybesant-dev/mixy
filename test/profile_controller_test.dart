@@ -32,15 +32,18 @@ void main() {
   });
 
   group('ProfileController', () {
-    test('profile user model falls back to displayName when username is absent', () {
-      final user = profile_model.UserModel.fromJson({
-        'id': 'user123',
-        'email': 'user@example.com',
-        'displayName': 'Larry Besant',
-      });
+    test(
+      'profile user model falls back to displayName when username is absent',
+      () {
+        final user = profile_model.UserModel.fromJson({
+          'id': 'user123',
+          'email': 'user@example.com',
+          'displayName': 'Larry Besant',
+        });
 
-      expect(user.username, 'Larry Besant');
-    });
+        expect(user.username, 'Larry Besant');
+      },
+    );
 
     test('fetchProfile loads the Firestore user document', () async {
       await firestore.collection('users').doc('user123').set({
@@ -167,39 +170,54 @@ void main() {
       expect(state.privacy.isPrivate, isFalse);
     });
 
-    test('updateProfile keeps extended profile fields out of the core users doc', () async {
-      final container = ProviderContainer(
-        overrides: [
-          profileControllerProvider.overrideWith(
-            () => ProfileController(firestore: firestore, auth: auth),
+    test(
+      'updateProfile keeps extended profile fields out of the core users doc',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            profileControllerProvider.overrideWith(
+              () => ProfileController(firestore: firestore, auth: auth),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final controller = container.read(profileControllerProvider.notifier);
+        await controller.updateProfile(
+          const ProfileState(
+            username: 'curve',
+            email: 'curve@mixvy.com',
+            avatarUrl: 'https://cdn.mixvy.test/avatar.png',
+            coverPhotoUrl: 'https://cdn.mixvy.test/cover.png',
+            aboutMe: 'Velvet Noir energy.',
+            themeId: 'gold-night',
+            followers: [],
           ),
-        ],
-      );
-      addTearDown(container.dispose);
+        );
 
-      final controller = container.read(profileControllerProvider.notifier);
-      await controller.updateProfile(
-        const ProfileState(
-          username: 'curve',
-          email: 'curve@mixvy.com',
-          avatarUrl: 'https://cdn.mixvy.test/avatar.png',
-          coverPhotoUrl: 'https://cdn.mixvy.test/cover.png',
-          aboutMe: 'Velvet Noir energy.',
-          themeId: 'gold-night',
-          followers: [],
-        ),
-      );
+        final userDoc = await firestore
+            .collection('users')
+            .doc('user123')
+            .get();
+        final profilePublicDoc = await firestore
+            .collection('profile_public')
+            .doc('user123')
+            .get();
+        final preferencesDoc = await firestore
+            .collection('preferences')
+            .doc('user123')
+            .get();
 
-      final userDoc = await firestore.collection('users').doc('user123').get();
-      final profilePublicDoc = await firestore.collection('profile_public').doc('user123').get();
-      final preferencesDoc = await firestore.collection('preferences').doc('user123').get();
-
-      expect(userDoc.data()!['username'], 'curve');
-      expect(userDoc.data(), isNot(contains('coverPhotoUrl')));
-      expect(userDoc.data(), isNot(contains('aboutMe')));
-      expect(profilePublicDoc.data()!['coverPhotoUrl'], 'https://cdn.mixvy.test/cover.png');
-      expect(profilePublicDoc.data()!['aboutMe'], 'Velvet Noir energy.');
-      expect(preferencesDoc.data()!['themeId'], 'gold-night');
-    });
+        expect(userDoc.data()!['username'], 'curve');
+        expect(userDoc.data(), isNot(contains('coverPhotoUrl')));
+        expect(userDoc.data(), isNot(contains('aboutMe')));
+        expect(
+          profilePublicDoc.data()!['coverPhotoUrl'],
+          'https://cdn.mixvy.test/cover.png',
+        );
+        expect(profilePublicDoc.data()!['aboutMe'], 'Velvet Noir energy.');
+        expect(preferencesDoc.data()!['themeId'], 'gold-night');
+      },
+    );
   });
 }

@@ -13,9 +13,7 @@ void main() {
     setUp(() {
       firestore = FakeFirebaseFirestore();
       container = ProviderContainer(
-        overrides: [
-          firestoreProvider.overrideWithValue(firestore),
-        ],
+        overrides: [firestoreProvider.overrideWithValue(firestore)],
       );
     });
 
@@ -48,8 +46,7 @@ void main() {
     }
 
     test('returns empty list when no users exist', () async {
-      final members =
-          await container.read(newMembersStreamProvider.future);
+      final members = await container.read(newMembersStreamProvider.future);
       expect(members, isEmpty);
     });
 
@@ -62,8 +59,7 @@ void main() {
       await seedUser(id: 'u2', username: 'bob', createdAt: newest);
       await seedUser(id: 'u3', username: 'carol', createdAt: newer);
 
-      final members =
-          await container.read(newMembersStreamProvider.future);
+      final members = await container.read(newMembersStreamProvider.future);
 
       expect(members.length, 3);
       // newest first
@@ -82,37 +78,45 @@ void main() {
         );
       }
 
-      final members =
-          await container.read(newMembersStreamProvider.future);
+      final members = await container.read(newMembersStreamProvider.future);
 
       expect(members.length, lessThanOrEqualTo(12));
     });
 
-    test('each returned UserModel has the correct id set from doc id',
-        () async {
-      await seedUser(
-          id: 'explicit-id', username: 'testuser', createdAt: DateTime(2026, 4, 8));
+    test(
+      'each returned UserModel has the correct id set from doc id',
+      () async {
+        await seedUser(
+          id: 'explicit-id',
+          username: 'testuser',
+          createdAt: DateTime(2026, 4, 8),
+        );
 
-      final members =
-          await container.read(newMembersStreamProvider.future);
+        final members = await container.read(newMembersStreamProvider.future);
 
-      expect(members, hasLength(1));
-      expect(members.single.id, 'explicit-id');
-      expect(members.single.username, 'testuser');
-    });
+        expect(members, hasLength(1));
+        expect(members.single.id, 'explicit-id');
+        expect(members.single.username, 'testuser');
+      },
+    );
 
     test('stream updates reactively when a new user is added', () async {
       await seedUser(
-          id: 'u1', username: 'firstuser', createdAt: DateTime(2026, 1, 1));
+        id: 'u1',
+        username: 'firstuser',
+        createdAt: DateTime(2026, 1, 1),
+      );
 
       // Wait for initial emission
-      final first =
-          await container.read(newMembersStreamProvider.future);
+      final first = await container.read(newMembersStreamProvider.future);
       expect(first.any((u) => u.username == 'firstuser'), isTrue);
 
       // Add a second user
       await seedUser(
-          id: 'u2', username: 'newuser', createdAt: DateTime(2026, 4, 8));
+        id: 'u2',
+        username: 'newuser',
+        createdAt: DateTime(2026, 4, 8),
+      );
 
       // The provider is autoDispose — re-read after the second write to get the
       // updated snapshot.
@@ -123,8 +127,9 @@ void main() {
           .limit(12)
           .snapshots();
       final snap = await all.first;
-      final usernames =
-          snap.docs.map((d) => d.data()['username'] as String).toList();
+      final usernames = snap.docs
+          .map((d) => d.data()['username'] as String)
+          .toList();
       expect(usernames, contains('newuser'));
       expect(usernames, contains('firstuser'));
     });

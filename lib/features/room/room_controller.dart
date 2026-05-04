@@ -329,13 +329,15 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       hostMissing: hostMissing,
     );
 
-    return _selfHeal(nextState.copyWith(
-      lifecycleState: resolvedLifecycleState,
-      audioState: resolvedAudioState,
-      micRequested: _micRequested,
-      hasMicPermission: _hasMicPermission,
-      hasSpeakerSeat: hasSpeakerSeat,
-    ));
+    return _selfHeal(
+      nextState.copyWith(
+        lifecycleState: resolvedLifecycleState,
+        audioState: resolvedAudioState,
+        micRequested: _micRequested,
+        hasMicPermission: _hasMicPermission,
+        hasSpeakerSeat: hasSpeakerSeat,
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -462,7 +464,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       participant.role,
       fallbackRole: '',
     );
-    final stageRole = canManageStageRole(normalizedRole) ||
+    final stageRole =
+        canManageStageRole(normalizedRole) ||
         normalizedRole == roomRoleStage ||
         normalizedRole == roomRoleTrustedSpeaker;
 
@@ -624,7 +627,9 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   bool _isPlaceholderDisplayName(String value) {
     final normalized = value.trim();
-    final generatedHandlePattern = RegExp(r'^(User|Guest|Member) [A-Z0-9]{1,4}$');
+    final generatedHandlePattern = RegExp(
+      r'^(User|Guest|Member) [A-Z0-9]{1,4}$',
+    );
     final opaqueIdPattern = RegExp(r'^[A-Za-z0-9_-]{20,}$');
     return normalized.isEmpty ||
         normalized == 'MixVy User' ||
@@ -634,11 +639,17 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   }
 
   String _safeRoomDisplayName(String userId) {
-    final compact = userId.trim().replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
+    final compact = userId
+        .trim()
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .toUpperCase();
     if (compact.isEmpty) {
       return 'MixVy Member';
     }
-    final suffix = compact.substring(0, compact.length < 4 ? compact.length : 4);
+    final suffix = compact.substring(
+      0,
+      compact.length < 4 ? compact.length : 4,
+    );
     return 'Member $suffix';
   }
 
@@ -735,8 +746,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     final ghostSpeakers = healed.speakerIds
         .where(
           (id) =>
-              !healed.userIds.contains(id) &&
-              id.trim() != healed.hostId.trim(),
+              !healed.userIds.contains(id) && id.trim() != healed.hostId.trim(),
         )
         .toList(growable: false);
     if (ghostSpeakers.isNotEmpty) {
@@ -899,11 +909,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
     final sessionId = _activeSessionId;
     if (sessionId != null &&
-        !_isSessionOwner(
-          roomId: arg,
-          userId: userId,
-          sessionId: sessionId,
-        )) {
+        !_isSessionOwner(roomId: arg, userId: userId, sessionId: sessionId)) {
       return;
     }
 
@@ -1166,6 +1172,16 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       enableLiveRooms = true;
     }
     if (!enableLiveRooms) {
+      AppTelemetry.logAction(
+        level: 'warning',
+        domain: 'control_plane',
+        action: 'room_join_denied',
+        message: 'Room join blocked by runtime gate.',
+        roomId: arg,
+        userId: normalizedUserId,
+        result: 'blocked',
+        metadata: <String, Object?>{'feature': 'live_rooms'},
+      );
       return RoomJoinResult.failure(
         'Room creation and joining are currently paused for maintenance.',
       );
@@ -1359,15 +1375,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     _emitState(state.copyWith(phase: _phase, errormessage: null));
     final ownsSession =
         sessionId == null ||
-        _isSessionOwner(
-          roomId: arg,
-          userId: userId,
-          sessionId: sessionId,
-        );
+        _isSessionOwner(roomId: arg, userId: userId, sessionId: sessionId);
     if (ownsSession) {
       await _sessionService.leaveRoom(roomId: arg, userId: userId);
     }
-    
+
     // Hardening: Clear persisted room session on clean exit
     if (ownsSession) {
       unawaited(SessionPersistence.saveLastRoom(null));
@@ -1450,8 +1462,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     // Trusted Speakers bypass the mic queue when a slot is free — they do
     // not need host approval, matching the system prompt contract.
     final actorRole = state.roleFor(normalizedUserId);
-    final isTrustedOrStaff = canModerateRole(actorRole) ||
-        isTrustedSpeakerRole(actorRole);
+    final isTrustedOrStaff =
+        canModerateRole(actorRole) || isTrustedSpeakerRole(actorRole);
     final hasOpenSlot = state.speakerIds.length < RoomState.maxSpeakers;
     if (isTrustedOrStaff && hasOpenSlot) {
       await _roomRepository.requestMic(
@@ -1656,7 +1668,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   Future<void> unmuteUser(String userId) async {
     final normalizedUserId = userId.trim();
     await _requireModerationAuthority();
-    await _hostControls.unmuteUser(arg, normalizedUserId, actorId: _actorUserId);
+    await _hostControls.unmuteUser(
+      arg,
+      normalizedUserId,
+      actorId: _actorUserId,
+    );
     _logModerationAction('unmute_user', targetUserId: normalizedUserId);
   }
 
@@ -1666,8 +1682,15 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     await _requireStageAuthority();
     _pendingRoleByUser[normalizedUserId] = roomRoleTrustedSpeaker;
     _pendingRoleSetAtByUser[normalizedUserId] = DateTime.now();
-    await _hostControls.promoteToTrustedSpeaker(arg, normalizedUserId, actorId: _actorUserId);
-    _logModerationAction('promote_trusted_speaker', targetUserId: normalizedUserId);
+    await _hostControls.promoteToTrustedSpeaker(
+      arg,
+      normalizedUserId,
+      actorId: _actorUserId,
+    );
+    _logModerationAction(
+      'promote_trusted_speaker',
+      targetUserId: normalizedUserId,
+    );
   }
 
   Future<void> promoteToModerator(String userId) async {
@@ -1675,7 +1698,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     await _requireHostAuthority();
     _pendingRoleByUser[normalizedUserId] = roomRoleModerator;
     _pendingRoleSetAtByUser[normalizedUserId] = DateTime.now();
-    await _hostControls.promoteToModerator(arg, normalizedUserId, actorId: _actorUserId);
+    await _hostControls.promoteToModerator(
+      arg,
+      normalizedUserId,
+      actorId: _actorUserId,
+    );
     _logModerationAction('promote_moderator', targetUserId: normalizedUserId);
   }
 
@@ -1684,7 +1711,11 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     await _requireHostAuthority();
     _pendingRoleByUser[normalizedUserId] = roomRoleCohost;
     _pendingRoleSetAtByUser[normalizedUserId] = DateTime.now();
-    await _hostControls.promoteToCohost(arg, normalizedUserId, actorId: _actorUserId);
+    await _hostControls.promoteToCohost(
+      arg,
+      normalizedUserId,
+      actorId: _actorUserId,
+    );
     _logModerationAction('promote_cohost', targetUserId: normalizedUserId);
   }
 
@@ -1693,14 +1724,22 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     await _requireHostAuthority();
     _pendingRoleByUser[normalizedUserId] = roomRoleAudience;
     _pendingRoleSetAtByUser[normalizedUserId] = DateTime.now();
-    await _hostControls.demoteToAudience(arg, normalizedUserId, actorId: _actorUserId);
+    await _hostControls.demoteToAudience(
+      arg,
+      normalizedUserId,
+      actorId: _actorUserId,
+    );
     _logModerationAction('demote_audience', targetUserId: normalizedUserId);
   }
 
   Future<void> removeUser(String userId) async {
     final normalizedUserId = userId.trim();
     await _requireModerationAuthority();
-    await _hostControls.removeUser(arg, normalizedUserId, actorId: _actorUserId);
+    await _hostControls.removeUser(
+      arg,
+      normalizedUserId,
+      actorId: _actorUserId,
+    );
     _logModerationAction('remove_user', targetUserId: normalizedUserId);
   }
 

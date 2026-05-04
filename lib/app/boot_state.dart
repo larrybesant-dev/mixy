@@ -1,6 +1,1 @@
-enum BootState {
-  loading,
-  ready,
-  degraded,
-  failed,
-}
+enum BootState { loading, ready, degraded, failed }

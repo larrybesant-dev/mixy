@@ -20,7 +20,7 @@ class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
 class _StubProfileController extends ProfileController {
   final ProfileState _initial;
   _StubProfileController(this._initial)
-      : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
+    : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
 
   @override
   ProfileState build() => _initial;
@@ -42,10 +42,7 @@ Widget _buildApp(ProfileState profileState) {
   final router = GoRouter(
     initialLocation: '/profile',
     routes: [
-      GoRoute(
-        path: '/profile',
-        builder: (_, _) => const ProfileScreen(),
-      ),
+      GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(
         path: '/login',
         builder: (_, _) => const Scaffold(body: Text('Login')),
@@ -81,11 +78,10 @@ void main() {
       expect(find.text('Profile'), findsOneWidget);
     });
 
-    testWidgets('shows loading indicator while profile is loading',
-        (tester) async {
-      await tester.pumpWidget(
-        _buildApp(const ProfileState(isLoading: true)),
-      );
+    testWidgets('shows loading indicator while profile is loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildApp(const ProfileState(isLoading: true)));
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);

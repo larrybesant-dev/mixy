@@ -66,7 +66,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     final password = _passwordController.text.trim();
     if (_formKey.currentState?.validate() != true) return;
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() => _localError = 'Username, email, and password are required.');
+      setState(
+        () => _localError = 'Username, email, and password are required.',
+      );
       return;
     }
     setState(() => _localError = null);

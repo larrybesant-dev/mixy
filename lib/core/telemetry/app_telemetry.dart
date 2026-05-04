@@ -86,6 +86,7 @@ class RoomHealthSnapshot {
   final int duplicateJoinCount;
   final int reconnectBurstCount;
   final int firestoreErrorBurstCount;
+
   /// Number of self-healing corrections in the last 60 seconds.
   /// A sustained non-zero value means the system is repeatedly correcting
   /// an upstream inconsistency — investigate the root cause.
@@ -674,10 +675,7 @@ class AppTelemetry {
       action: type,
       message: 'Engagement metric recorded.',
       result: value,
-      metadata: {
-        'subType': subType,
-        ...metadata,
-      },
+      metadata: {'subType': subType, ...metadata},
     );
   }
 
@@ -1098,10 +1096,9 @@ class AppTelemetry {
             'The room engine is repeatedly correcting state inconsistencies '
             '(${healBurstCount}x in 60s). '
             'Investigate upstream Firestore write or ordering issues.',
-        severity:
-            healBurstCount >= kRoomHealBurstCritical
-                ? RoomHealthSeverity.critical
-                : RoomHealthSeverity.warning,
+        severity: healBurstCount >= kRoomHealBurstCritical
+            ? RoomHealthSeverity.critical
+            : RoomHealthSeverity.warning,
         penalty: healBurstCount >= kRoomHealBurstCritical ? 20 : 10,
         suppressDuringRecovery: true,
       );

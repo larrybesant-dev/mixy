@@ -11,12 +11,10 @@ class StripeWebPaymentWidget extends StatefulWidget {
   const StripeWebPaymentWidget({super.key});
 
   @override
-  State<StripeWebPaymentWidget> createState() =>
-      _StripeWebPaymentWidgetState();
+  State<StripeWebPaymentWidget> createState() => _StripeWebPaymentWidgetState();
 }
 
-class _StripeWebPaymentWidgetState
-    extends State<StripeWebPaymentWidget> {
+class _StripeWebPaymentWidgetState extends State<StripeWebPaymentWidget> {
   bool isLoading = false;
   String? error;
 
@@ -68,9 +66,7 @@ class _StripeWebPaymentWidgetState
         'createCheckoutSessionCallable',
       );
       final result = await callable.call<Map<String, dynamic>>(
-        <String, dynamic>{
-          'packageId': 'premium_access',
-        },
+        <String, dynamic>{'packageId': 'premium_access'},
       );
       final data = Map<String, dynamic>.from(result.data);
       return _asNullableString(data['url']);
@@ -78,9 +74,15 @@ class _StripeWebPaymentWidgetState
       // Integrate Crashlytics for error reporting (not on web)
       if (!kIsWeb) {
         try {
-          await FirebaseCrashlytics.instance.recordError(e, stack, reason: 'Stripe checkout session creation failed');
+          await FirebaseCrashlytics.instance.recordError(
+            e,
+            stack,
+            reason: 'Stripe checkout session creation failed',
+          );
         } catch (_) {
-          FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack));
+          FlutterError.reportError(
+            FlutterErrorDetails(exception: e, stack: stack),
+          );
         }
       }
       return null;
@@ -91,32 +93,38 @@ class _StripeWebPaymentWidgetState
     _PremiumPerk(
       icon: Icons.mic,
       title: 'Host Live Rooms',
-      description: 'Go live with up to 1,000 listeners and take the stage anytime.',
+      description:
+          'Go live with up to 1,000 listeners and take the stage anytime.',
     ),
     _PremiumPerk(
       icon: Icons.videocam,
       title: 'HD Video & Audio',
-      description: 'Crystal-clear video and studio-quality audio in every session.',
+      description:
+          'Crystal-clear video and studio-quality audio in every session.',
     ),
     _PremiumPerk(
       icon: Icons.monetization_on,
       title: 'Earn Coins',
-      description: 'Receive coin gifts from your audience and cash out your earnings.',
+      description:
+          'Receive coin gifts from your audience and cash out your earnings.',
     ),
     _PremiumPerk(
       icon: Icons.workspace_premium,
       title: 'Premium Badge',
-      description: 'Stand out with an exclusive badge shown on your profile and rooms.',
+      description:
+          'Stand out with an exclusive badge shown on your profile and rooms.',
     ),
     _PremiumPerk(
       icon: Icons.people,
       title: 'Expanded Social Network',
-      description: 'Follow and connect with unlimited creators across the platform.',
+      description:
+          'Follow and connect with unlimited creators across the platform.',
     ),
     _PremiumPerk(
       icon: Icons.bar_chart,
       title: 'Audience Analytics',
-      description: 'See who\u2019s tuning in, peak times, and engagement stats for your rooms.',
+      description:
+          'See who\u2019s tuning in, peak times, and engagement stats for your rooms.',
     ),
   ];
 
@@ -143,7 +151,11 @@ class _StripeWebPaymentWidgetState
             ),
             child: Column(
               children: [
-                const Icon(Icons.workspace_premium, color: Colors.white, size: 48),
+                const Icon(
+                  Icons.workspace_premium,
+                  color: Colors.white,
+                  size: 48,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'MixVy Premium',
@@ -162,7 +174,10 @@ class _StripeWebPaymentWidgetState
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(24),
@@ -183,7 +198,9 @@ class _StripeWebPaymentWidgetState
 
           Text(
             'What you get',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -201,7 +218,11 @@ class _StripeWebPaymentWidgetState
                       color: colorScheme.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(perk.icon, color: colorScheme.primary, size: 22),
+                    child: Icon(
+                      perk.icon,
+                      color: colorScheme.primary,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -218,7 +239,9 @@ class _StripeWebPaymentWidgetState
                         Text(
                           perk.description,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.65),
+                            color: colorScheme.onSurface.withValues(
+                              alpha: 0.65,
+                            ),
                           ),
                         ),
                       ],
@@ -260,7 +283,10 @@ class _StripeWebPaymentWidgetState
                 ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text(
                     'Upgrade Now — \$9.99 / month',
@@ -287,5 +313,9 @@ class _PremiumPerk {
   final IconData icon;
   final String title;
   final String description;
-  const _PremiumPerk({required this.icon, required this.title, required this.description});
+  const _PremiumPerk({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
 }

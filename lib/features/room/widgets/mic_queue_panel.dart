@@ -83,7 +83,9 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
     const npPrimary = Color(0xFFD4A853);
     const npOnVariant = Color(0xFFB09080);
 
-    final requestsAsync = ref.watch(roomMicAccessRequestsProvider(widget.roomId));
+    final requestsAsync = ref.watch(
+      roomMicAccessRequestsProvider(widget.roomId),
+    );
 
     return requestsAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -163,7 +165,9 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                   itemCount: pending.length,
                   itemBuilder: (context, index) {
                     final req = pending[index];
-                    final name = widget.displayNameById[req.requesterId] ?? req.requesterId;
+                    final name =
+                        widget.displayNameById[req.requesterId] ??
+                        req.requesterId;
                     final isMe = req.requesterId == widget.currentUserId;
 
                     return Container(
@@ -201,8 +205,11 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                           ),
                           const SizedBox(width: 8),
                           // Hand raise icon
-                          const Icon(Icons.pan_tool_outlined,
-                              color: Color(0xFFFFA040), size: 13),
+                          const Icon(
+                            Icons.pan_tool_outlined,
+                            color: Color(0xFFFFA040),
+                            size: 13,
+                          ),
                           const SizedBox(width: 6),
                           // Name
                           Expanded(
@@ -213,8 +220,9 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                               style: TextStyle(
                                 color: isMe ? npPrimary : Colors.white,
                                 fontSize: 12,
-                                fontWeight:
-                                    isMe ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight: isMe
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
                               ),
                             ),
                           ),
@@ -225,7 +233,9 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                               color: _countdownColor(req.expiresAt),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
                           if (isMe && !widget.isHost) ...[

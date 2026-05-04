@@ -15,7 +15,7 @@ class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
 class _StubProfileController extends ProfileController {
   final ProfileState _initial;
   _StubProfileController(this._initial)
-      : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
+    : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
 
   @override
   ProfileState build() => _initial;
@@ -37,8 +37,9 @@ Widget _buildScreen(List<Override> overrides) {
 
 void main() {
   group('EditProfileScreen — private-account toggle', () {
-    testWidgets('shows "Anyone can view" subtitle when isPrivate=false',
-        (tester) async {
+    testWidgets('shows "Anyone can view" subtitle when isPrivate=false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildScreen([
           profileControllerProvider.overrideWith(
@@ -58,28 +59,34 @@ void main() {
       expect(find.text('Only followers can view your profile'), findsNothing);
     });
 
-    testWidgets('shows "Only followers can view" subtitle when isPrivate=true',
-        (tester) async {
-      await tester.pumpWidget(
-        _buildScreen([
-          profileControllerProvider.overrideWith(
-            () => _StubProfileController(
-              const ProfileState(
-                followers: [],
-                privacy: ProfilePrivacyModel(isPrivate: true),
+    testWidgets(
+      'shows "Only followers can view" subtitle when isPrivate=true',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildScreen([
+            profileControllerProvider.overrideWith(
+              () => _StubProfileController(
+                const ProfileState(
+                  followers: [],
+                  privacy: ProfilePrivacyModel(isPrivate: true),
+                ),
               ),
             ),
-          ),
-        ]),
-      );
-      await tester.pump();
+          ]),
+        );
+        await tester.pump();
 
-      expect(find.text('Only followers can view your profile'), findsOneWidget);
-      expect(find.text('Anyone can view your profile'), findsNothing);
-    });
+        expect(
+          find.text('Only followers can view your profile'),
+          findsOneWidget,
+        );
+        expect(find.text('Anyone can view your profile'), findsNothing);
+      },
+    );
 
-    testWidgets('tapping switch updates subtitle from public to private',
-        (tester) async {
+    testWidgets('tapping switch updates subtitle from public to private', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildScreen([
           profileControllerProvider.overrideWith(
@@ -127,9 +134,7 @@ void main() {
       await tester.pumpWidget(
         _buildScreen([
           profileControllerProvider.overrideWith(
-            () => _StubProfileController(
-              const ProfileState(followers: []),
-            ),
+            () => _StubProfileController(const ProfileState(followers: [])),
           ),
         ]),
       );
@@ -183,8 +188,9 @@ void main() {
       expect(saveButton.onPressed, isNull);
     });
 
-    testWidgets('error text is displayed when state.error is set',
-        (tester) async {
+    testWidgets('error text is displayed when state.error is set', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildScreen([
           profileControllerProvider.overrideWith(

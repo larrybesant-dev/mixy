@@ -4,10 +4,11 @@ import 'package:mixvy/shared/widgets/ui_stability_contract.dart';
 void main() {
   group('UI stability contract', () {
     test('HomeLayoutV1 keeps the locked section order', () {
-      expect(
-        HomeLayoutV1.sectionTitles,
-        const <String>['Live Pulse', 'Featured Rooms', 'Discovery Feed'],
-      );
+      expect(HomeLayoutV1.sectionTitles, const <String>[
+        'Live Pulse',
+        'Featured Rooms',
+        'Discovery Feed',
+      ]);
 
       expect(
         () => HomeLayoutV1.debugAssertOrder(const <String>[

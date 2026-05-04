@@ -27,11 +27,14 @@ final referralEarningsProvider = StreamProvider<double>((ref) {
   return ref.watch(referralServiceProvider).referralEarningsTotalStream(userId);
 });
 
-final referralAttributionsProvider = StreamProvider<List<ReferralAttributionModel>>((ref) {
-  final userId = ref.watch(walletUserIdProvider);
-  if (userId == null || userId.isEmpty) {
-    return Stream<List<ReferralAttributionModel>>.value(<ReferralAttributionModel>[]);
-  }
+final referralAttributionsProvider =
+    StreamProvider<List<ReferralAttributionModel>>((ref) {
+      final userId = ref.watch(walletUserIdProvider);
+      if (userId == null || userId.isEmpty) {
+        return Stream<List<ReferralAttributionModel>>.value(
+          <ReferralAttributionModel>[],
+        );
+      }
 
-  return ref.watch(referralServiceProvider).referralsForUserStream(userId);
-});
+      return ref.watch(referralServiceProvider).referralsForUserStream(userId);
+    });

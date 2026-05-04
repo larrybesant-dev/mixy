@@ -17,7 +17,8 @@ class CreateGroupChatScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CreateGroupChatScreen> createState() => _CreateGroupChatScreenState();
+  ConsumerState<CreateGroupChatScreen> createState() =>
+      _CreateGroupChatScreenState();
 }
 
 class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
@@ -48,10 +49,12 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
 
       final matches = snapshot.docs
           .where((doc) => doc.id != widget.userId)
-          .map((doc) => {
-                'id': doc.id,
-                'name': (doc.data()['username'] as String? ?? doc.id),
-              })
+          .map(
+            (doc) => {
+              'id': doc.id,
+              'name': (doc.data()['username'] as String? ?? doc.id),
+            },
+          )
           .toList();
 
       if (mounted) {
@@ -69,14 +72,19 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
     setState(() => _isCreating = true);
     try {
       final participantIds = [widget.userId, ..._selectedUserIds];
-      final participantNames = {widget.userId: widget.username, ..._selectedUserNames};
-      
-      final convId = await ref.read(messagingControllerProvider).createGroupConversation(
-        groupName: _nameController.text.trim(),
-        groupAvatarUrl: null,
-        participantIds: participantIds,
-        participantNames: participantNames,
-      );
+      final participantNames = {
+        widget.userId: widget.username,
+        ..._selectedUserNames,
+      };
+
+      final convId = await ref
+          .read(messagingControllerProvider)
+          .createGroupConversation(
+            groupName: _nameController.text.trim(),
+            groupAvatarUrl: null,
+            participantIds: participantIds,
+            participantNames: participantNames,
+          );
       if (mounted) context.go('/chat/$convId');
     } finally {
       if (mounted) setState(() => _isCreating = false);
@@ -90,9 +98,14 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
         title: const Text('New Group Chat'),
         actions: [
           TextButton(
-            onPressed: (_nameController.text.isNotEmpty && _selectedUserIds.isNotEmpty) ? _createGroup : null,
-            child: _isCreating ? const CircularProgressIndicator() : const Text('Create'),
-          )
+            onPressed:
+                (_nameController.text.isNotEmpty && _selectedUserIds.isNotEmpty)
+                ? _createGroup
+                : null,
+            child: _isCreating
+                ? const CircularProgressIndicator()
+                : const Text('Create'),
+          ),
         ],
       ),
       body: Column(
@@ -101,14 +114,20 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Group Name', hintText: 'Enter group name...'),
+              decoration: const InputDecoration(
+                labelText: 'Group Name',
+                hintText: 'Enter group name...',
+              ),
               onChanged: (_) => setState(() {}),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
-              decoration: const InputDecoration(hintText: 'Search people to add...', prefixIcon: Icon(Icons.search)),
+              decoration: const InputDecoration(
+                hintText: 'Search people to add...',
+                prefixIcon: Icon(Icons.search),
+              ),
               onChanged: _searchUsers,
             ),
           ),
@@ -118,16 +137,20 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children: _selectedUserIds.map((id) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Chip(
-                    label: Text(_selectedUserNames[id] ?? id),
-                    onDeleted: () => setState(() {
-                      _selectedUserIds.remove(id);
-                      _selectedUserNames.remove(id);
-                    }),
-                  ),
-                )).toList(),
+                children: _selectedUserIds
+                    .map(
+                      (id) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Chip(
+                          label: Text(_selectedUserNames[id] ?? id),
+                          onDeleted: () => setState(() {
+                            _selectedUserIds.remove(id);
+                            _selectedUserNames.remove(id);
+                          }),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           Expanded(
@@ -143,7 +166,9 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
                 final isSelected = _selectedUserIds.contains(id);
                 return ListTile(
                   title: Text(name),
-                  trailing: Icon(isSelected ? Icons.check_circle : Icons.add_circle_outline),
+                  trailing: Icon(
+                    isSelected ? Icons.check_circle : Icons.add_circle_outline,
+                  ),
                   onTap: () => setState(() {
                     if (isSelected) {
                       _selectedUserIds.remove(id);

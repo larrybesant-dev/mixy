@@ -34,7 +34,9 @@ final schemaConversationsProvider = StreamProvider.autoDispose
         return const Stream<List<SchemaConversation>>.empty();
       }
 
-      return ref.watch(rawConversationsStreamProvider(userId).stream).map((all) {
+      return ref.watch(rawConversationsStreamProvider(userId).stream).map((
+        all,
+      ) {
         return all
             .where((c) => !c.isArchived)
             .map(_toSchemaConversation)

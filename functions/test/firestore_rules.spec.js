@@ -472,4 +472,655 @@ describe("firestore rules", () => {
       isMuted: false,
     }));
   });
+
+  it("enforces verification_requests contract for create and rejected-only delete", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "verification_requests", "user-1"), {
+      userId: "user-1",
+      reason: "I meet verification requirements",
+      status: "pending",
+      submittedAt: serverTimestamp(),
+      reviewedAt: null,
+      reviewNote: null,
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "verification_requests", "user-1"), {
+      userId: "user-1",
+      reason: "spoof",
+      status: "pending",
+      submittedAt: serverTimestamp(),
+      reviewedAt: null,
+      reviewNote: null,
+    }));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "verification_requests", "user-1"), {
+        userId: "user-1",
+        reason: "rejected sample",
+        status: "rejected",
+        submittedAt: Timestamp.now(),
+        reviewedAt: Timestamp.now(),
+        reviewNote: "needs updates",
+      });
+    });
+
+    await assertSucceeds(deleteDoc(doc(selfDb, "verification_requests", "user-1")));
+  });
+
+  it("enforces room typing self-write only", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-typing-1"), {
+        hostId: "host-1",
+        isAdult: false,
+      });
+      await setDoc(doc(db, "rooms", "room-typing-1", "participants", "user-1"), {
+        userId: "user-1",
+        role: "audience",
+      });
+    });
+
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "rooms", "room-typing-1", "typing", "user-1"), {
+      isTyping: true,
+      updatedAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-typing-1", "typing", "user-1"), {
+      isTyping: true,
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces nested WebRTC ICE writes under webrtc_calls", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-webrtc-1"), {
+        hostId: "host-1",
+        isAdult: false,
+      });
+      await setDoc(doc(db, "rooms", "room-webrtc-1", "participants", "viewer-1"), {
+        userId: "viewer-1",
+        role: "audience",
+      });
+      await setDoc(doc(db, "rooms", "room-webrtc-1", "participants", "broadcaster-1"), {
+        userId: "broadcaster-1",
+        role: "host",
+      });
+      await setDoc(doc(db, "rooms", "room-webrtc-1", "webrtc_calls", "call-1"), {
+        viewerId: "viewer-1",
+        broadcasterId: "broadcaster-1",
+        viewerUid: 101,
+        broadcasterUid: 202,
+        offer: {type: "offer", sdp: "seed"},
+        createdAt: Timestamp.now(),
+      });
+    });
+
+    const viewerDb = testEnv.authenticatedContext("viewer-1").firestore();
+    const broadcasterDb = testEnv.authenticatedContext("broadcaster-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("outsider-1").firestore();
+
+    await assertSucceeds(setDoc(doc(
+        viewerDb,
+        "rooms",
+        "room-webrtc-1",
+        "webrtc_calls",
+        "call-1",
+        "viewer_ice",
+        "ice-1",
+    ), {
+      candidate: "cand-a",
+      sdpMid: "0",
+      sdpMLineIndex: 0,
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertSucceeds(setDoc(doc(
+        broadcasterDb,
+        "rooms",
+        "room-webrtc-1",
+        "webrtc_calls",
+        "call-1",
+        "broadcaster_ice",
+        "ice-2",
+    ), {
+      candidate: "cand-b",
+      sdpMid: "0",
+      sdpMLineIndex: 0,
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(
+        outsiderDb,
+        "rooms",
+        "room-webrtc-1",
+        "webrtc_calls",
+        "call-1",
+        "viewer_ice",
+        "ice-3",
+    ), {
+      candidate: "cand-c",
+      sdpMid: "0",
+      sdpMLineIndex: 0,
+      createdAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces notifications actor trust and target-recipient model", async () => {
+    const actorDb = testEnv.authenticatedContext("user-1").firestore();
+    const spoofDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(actorDb, "notifications", "notif-p0-1"), {
+      userId: "user-3",
+      actorId: "user-1",
+      type: "follow",
+      content: "hello",
+      isRead: false,
+      createdAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(spoofDb, "notifications", "notif-p0-spoof"), {
+      userId: "user-3",
+      actorId: "user-1",
+      type: "follow",
+      content: "spoof",
+      isRead: false,
+      createdAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces friend_links and friendships users[] actor ownership", async () => {
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+
+    await assertSucceeds(setDoc(doc(userDb, "friend_links", "u1_u2"), {
+      users: ["user-1", "user-2"],
+      status: "pending",
+      requestedBy: "user-1",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }));
+
+    await assertSucceeds(setDoc(doc(userDb, "friendships", "u1_u2"), {
+      users: ["user-1", "user-2"],
+      status: "pending",
+      requestedBy: "user-1",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(outsiderDb, "friend_links", "u1_u2_bad"), {
+      users: ["user-1", "user-2"],
+      status: "pending",
+      requestedBy: "user-1",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(outsiderDb, "friendships", "u1_u2_bad"), {
+      users: ["user-1", "user-2"],
+      status: "pending",
+      requestedBy: "user-1",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces profile_public and preferences self ownership", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "profile_public", "user-1"), {
+      userId: "user-1",
+      displayName: "User 1",
+      updatedAt: serverTimestamp(),
+    }));
+    await assertSucceeds(setDoc(doc(selfDb, "preferences", "user-1"), {
+      userId: "user-1",
+      language: "en",
+      updatedAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "profile_public", "user-1"), {
+      userId: "user-1",
+      displayName: "spoof",
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(doc(otherDb, "preferences", "user-1"), {
+      userId: "user-1",
+      language: "xx",
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("allows room host to create mod_log entries and denies non-host", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-mod-1"), {
+        hostId: "host-1",
+        isAdult: false,
+      });
+    });
+
+    const hostDb = testEnv.authenticatedContext("host-1").firestore();
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+
+    await assertSucceeds(setDoc(doc(hostDb, "rooms", "room-mod-1", "mod_log", "entry-1"), {
+      action: "mute",
+      actorId: "host-1",
+      ts: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(userDb, "rooms", "room-mod-1", "mod_log", "entry-2"), {
+      action: "mute",
+      actorId: "user-1",
+      ts: serverTimestamp(),
+    }));
+  });
+
+  it("enforces webrtc_peers self lifecycle and denies cross-user writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-peers-1"), {
+        hostId: "host-1",
+        isAdult: false,
+      });
+      await setDoc(doc(db, "rooms", "room-peers-1", "participants", "user-1"), {
+        userId: "user-1",
+        role: "audience",
+      });
+      await setDoc(doc(db, "rooms", "room-peers-1", "participants", "user-2"), {
+        userId: "user-2",
+        role: "audience",
+      });
+    });
+
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "rooms", "room-peers-1", "webrtc_peers", "user-1"), {
+      uid: 101,
+      isBroadcasting: false,
+      cameraActive: false,
+      joinedAt: serverTimestamp(),
+      lastHeartbeatAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-peers-1", "webrtc_peers", "user-1"), {
+      uid: 202,
+      isBroadcasting: false,
+      cameraActive: false,
+      joinedAt: serverTimestamp(),
+      lastHeartbeatAt: serverTimestamp(),
+    }));
+
+    await assertSucceeds(deleteDoc(doc(selfDb, "rooms", "room-peers-1", "webrtc_peers", "user-1")));
+  });
+
+  it("enforces room delete host-or-admin only", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-delete-1"), {
+        hostId: "host-1",
+        isAdult: false,
+      });
+    });
+
+    const hostDb = testEnv.authenticatedContext("host-1").firestore();
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const adminDb = testEnv.authenticatedContext("admin-1", {admin: true}).firestore();
+
+    await assertFails(deleteDoc(doc(userDb, "rooms", "room-delete-1")));
+    await assertSucceeds(deleteDoc(doc(hostDb, "rooms", "room-delete-1")));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-delete-2"), {
+        hostId: "host-2",
+        isAdult: false,
+      });
+    });
+
+    await assertSucceeds(deleteDoc(doc(adminDb, "rooms", "room-delete-2")));
+  });
+
+  it("enforces cam_view_requests requester create and target resolve", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-cvr-1"), {hostId: "host-1", isAdult: false});
+      await setDoc(doc(db, "rooms", "room-cvr-1", "participants", "user-1"), {userId: "user-1", role: "audience"});
+      await setDoc(doc(db, "rooms", "room-cvr-1", "participants", "user-2"), {userId: "user-2", role: "audience"});
+    });
+
+    const requesterDb = testEnv.authenticatedContext("user-1").firestore();
+    const targetDb = testEnv.authenticatedContext("user-2").firestore();
+    const otherDb = testEnv.authenticatedContext("user-3").firestore();
+
+    // Requester creates
+    const reqRef = doc(requesterDb, "rooms", "room-cvr-1", "cam_view_requests", "req-1");
+    await assertSucceeds(setDoc(reqRef, {
+      id: "req-1", roomId: "room-cvr-1", requesterId: "user-1", targetId: "user-2",
+      requesterName: "User1", requestKey: "user-1:user-2", status: "pending",
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+
+    // Non-requester cannot create spoofing another's requesterId
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-cvr-1", "cam_view_requests", "req-bad"), {
+      id: "req-bad", roomId: "room-cvr-1", requesterId: "user-1", targetId: "user-2",
+      requesterName: "User3", requestKey: "user-1:user-2", status: "pending",
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+
+    // Target resolves
+    await assertSucceeds(updateDoc(doc(targetDb, "rooms", "room-cvr-1", "cam_view_requests", "req-1"), {
+      status: "approved", resolvedAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+
+    // Requester cannot resolve (wrong affectedKeys)
+    await assertFails(updateDoc(doc(requesterDb, "rooms", "room-cvr-1", "cam_view_requests", "req-1"), {
+      status: "denied", resolvedAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces mic_access_requests self create and host update", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-mic-1"), {hostId: "host-1", isAdult: false});
+      await setDoc(doc(db, "rooms", "room-mic-1", "participants", "user-1"), {userId: "user-1", role: "audience"});
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const hostDb = testEnv.authenticatedContext("host-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    // Self can create request
+    await assertSucceeds(setDoc(doc(userDb, "rooms", "room-mic-1", "mic_access_requests", "mic-req-1"), {
+      id: "mic-req-1", roomId: "room-mic-1", requesterId: "user-1", hostId: "host-1",
+      status: "pending", priority: 1,
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 60000)),
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+
+    // Cannot spoof another user's requesterId
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-mic-1", "mic_access_requests", "mic-req-bad"), {
+      id: "mic-req-bad", roomId: "room-mic-1", requesterId: "user-1", hostId: "host-1",
+      status: "pending", priority: 2,
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 60000)),
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+
+    // Host can update status
+    await assertSucceeds(updateDoc(doc(hostDb, "rooms", "room-mic-1", "mic_access_requests", "mic-req-1"), {
+      status: "approved", updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces room policies host-only write", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-pol-1"), {hostId: "host-1", isAdult: false});
+    });
+
+    const hostDb = testEnv.authenticatedContext("host-1").firestore();
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+
+    await assertSucceeds(setDoc(doc(hostDb, "rooms", "room-pol-1", "policies", "settings"), {
+      allowChat: true, allowGifts: true, updatedAt: serverTimestamp(),
+    }, {merge: true}));
+
+    await assertFails(setDoc(doc(userDb, "rooms", "room-pol-1", "policies", "settings"), {
+      allowChat: false,
+    }, {merge: true}));
+  });
+
+  it("enforces room slots self-claim and delete", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-slots-1"), {hostId: "host-1", isAdult: false});
+      await setDoc(doc(db, "rooms", "room-slots-1", "participants", "user-1"), {userId: "user-1", role: "audience"});
+    });
+
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    // Self can claim slot (set with own userId)
+    const slotRef = doc(selfDb, "rooms", "room-slots-1", "slots", "1");
+    await assertSucceeds(setDoc(slotRef, {userId: "user-1"}));
+
+    // Another user cannot set userId of someone else
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-slots-1", "slots", "2"), {userId: "user-1"}));
+
+    // Self can delete own slot
+    await assertSucceeds(deleteDoc(slotRef));
+  });
+
+  it("enforces buzz_events participant self-send", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-buzz-1"), {hostId: "host-1", isAdult: false});
+      await setDoc(doc(db, "rooms", "room-buzz-1", "participants", "user-1"), {userId: "user-1", role: "audience"});
+    });
+
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "rooms", "room-buzz-1", "buzz_events", "buzz-1"), {
+      fromUserId: "user-1", toUserId: "host-1", sentAt: serverTimestamp(),
+    }));
+
+    // Cannot send on behalf of another user
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-buzz-1", "buzz_events", "buzz-2"), {
+      fromUserId: "user-1", toUserId: "host-1", sentAt: serverTimestamp(),
+    }));
+  });
+
+  it("enforces room message reactions participant self-write", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-react-1"), {hostId: "host-1", isAdult: false});
+      await setDoc(doc(db, "rooms", "room-react-1", "participants", "user-1"), {userId: "user-1", role: "audience"});
+      await setDoc(doc(db, "rooms", "room-react-1", "messages", "msg-1"), {
+        senderId: "host-1", roomId: "room-react-1", content: "hello",
+      });
+    });
+
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    // Participant can add own reaction (reactionId == uid)
+    const reactionRef = doc(selfDb, "rooms", "room-react-1", "messages", "msg-1", "reactions", "user-1");
+    await assertSucceeds(setDoc(reactionRef, {
+      userId: "user-1", emoji: "👏", timestamp: serverTimestamp(),
+    }));
+
+    // Non-participant or spoofed reactionId is rejected
+    await assertFails(setDoc(doc(otherDb, "rooms", "room-react-1", "messages", "msg-1", "reactions", "user-1"), {
+      userId: "user-2", emoji: "👎", timestamp: serverTimestamp(),
+    }));
+
+    // Self can delete own reaction
+    await assertSucceeds(deleteDoc(reactionRef));
+  });
+
+  it("enforces user bookmarks self-only create and delete", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "users", "user-1", "bookmarks", "bm-1"), {
+      postId: "post-abc", savedAt: serverTimestamp(),
+    }));
+
+    await assertFails(setDoc(doc(otherDb, "users", "user-1", "bookmarks", "bm-bad"), {
+      postId: "post-xyz", savedAt: serverTimestamp(),
+    }));
+
+    await assertSucceeds(deleteDoc(doc(selfDb, "users", "user-1", "bookmarks", "bm-1")));
+  });
+
+  it("enforces user privacy self-only write", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "users", "user-1", "privacy", "settings"), {
+      isPrivate: false, updatedAt: serverTimestamp(),
+    }, {merge: true}));
+
+    await assertFails(setDoc(doc(otherDb, "users", "user-1", "privacy", "settings"), {
+      isPrivate: true,
+    }, {merge: true}));
+  });
+
+  it("enforces activity_feed self-userId create", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "activity_feed", "af-1"), {
+      userId: "user-1", type: "joined_room", targetId: "room-1",
+      timestamp: serverTimestamp(), metadata: {},
+    }));
+
+    // Cannot create activity with someone else's userId
+    await assertFails(setDoc(doc(otherDb, "activity_feed", "af-bad"), {
+      userId: "user-1", type: "joined_room", targetId: "room-1",
+      timestamp: serverTimestamp(), metadata: {},
+    }));
+  });
+
+  it("enforces groups creator-only create and member join/leave", async () => {
+    const creatorDb = testEnv.authenticatedContext("creator-1").firestore();
+    const memberDb = testEnv.authenticatedContext("member-1").firestore();
+
+    // Creator creates group with self in members
+    await assertSucceeds(setDoc(doc(creatorDb, "groups", "grp-1"), {
+      name: "Test Group", description: "desc",
+      creatorId: "creator-1", adminId: "creator-1",
+      memberIds: ["creator-1"], memberCount: 1,
+      createdAt: serverTimestamp(),
+    }));
+
+    // Cannot spoof creatorId
+    await assertFails(setDoc(doc(memberDb, "groups", "grp-bad"), {
+      name: "Hacked", description: "hack",
+      creatorId: "creator-1", adminId: "member-1",
+      memberIds: ["member-1"], memberCount: 1,
+      createdAt: serverTimestamp(),
+    }));
+
+    // Member can join (only memberIds/memberCount change)
+    await assertSucceeds(updateDoc(doc(memberDb, "groups", "grp-1"), {
+      memberIds: ["creator-1", "member-1"], memberCount: 2,
+    }));
+  });
+
+  it("enforces group posts author identity", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups", "grp-post-1"), {
+        creatorId: "creator-1", adminId: "creator-1",
+        memberIds: ["creator-1", "author-1"], memberCount: 2,
+      });
+    });
+
+    const authorDb = testEnv.authenticatedContext("author-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-99").firestore();
+
+    await assertSucceeds(setDoc(doc(authorDb, "groups", "grp-post-1", "posts", "post-1"), {
+      groupId: "grp-post-1", authorId: "author-1", authorName: "Author",
+      authorAvatarUrl: null, content: "hello group",
+      tags: [], createdAt: serverTimestamp(), likeCount: 0, likedBy: [],
+    }));
+
+    // Cannot forge authorId
+    await assertFails(setDoc(doc(otherDb, "groups", "grp-post-1", "posts", "post-bad"), {
+      groupId: "grp-post-1", authorId: "author-1", authorName: "Hacker",
+      authorAvatarUrl: null, content: "injected",
+      tags: [], createdAt: serverTimestamp(), likeCount: 0, likedBy: [],
+    }));
+  });
+
+  it("enforces userCamPermissions self-only write", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(setDoc(doc(selfDb, "userCamPermissions", "user-1"), {
+      allowedViewers: ["user-2"], updatedAt: serverTimestamp(),
+    }, {merge: true}));
+
+    // Cannot write to another user's cam permissions
+    await assertFails(setDoc(doc(otherDb, "userCamPermissions", "user-1"), {
+      allowedViewers: [], updatedAt: serverTimestamp(),
+    }, {merge: true}));
+  });
+
+  it("enforces posts like update allows only likes and likeCount fields", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "posts", "post-like-1"), {
+        authorId: "author-1", content: "test post", likes: [], likeCount: 0,
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+
+    // Signed-in user can update only likes/likeCount
+    await assertSucceeds(updateDoc(doc(userDb, "posts", "post-like-1"), {
+      likes: ["user-1"], likeCount: 1,
+    }));
+
+    // Cannot update other fields (e.g. content)
+    await assertFails(updateDoc(doc(userDb, "posts", "post-like-1"), {
+      content: "hacked content",
+    }));
+  });
+
+  it("enforces friendships update requires existing actor ownership", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      // friendship between user-A and user-B — user-3 is a stranger
+      await setDoc(doc(db, "friendships", "fs-stranger-1"), {
+        userA: "user-A", userB: "user-B", users: ["user-A", "user-B"],
+      });
+    });
+
+    const strangerDb = testEnv.authenticatedContext("user-3").firestore();
+    const participantDb = testEnv.authenticatedContext("user-A").firestore();
+
+    // Stranger cannot update even if they set userA in payload
+    await assertFails(updateDoc(doc(strangerDb, "friendships", "fs-stranger-1"), {
+      userA: "user-3", userB: "user-B",
+    }));
+
+    // Participant (existing userA) can update
+    await assertSucceeds(updateDoc(doc(participantDb, "friendships", "fs-stranger-1"), {
+      userA: "user-A", userB: "user-B", status: "active",
+    }));
+  });
+
+  it("enforces friend_links update requires existing actor ownership", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "friend_links", "fl-stranger-1"), {
+        users: ["user-A", "user-B"], status: "pending",
+      });
+    });
+
+    const strangerDb = testEnv.authenticatedContext("user-3").firestore();
+    const participantDb = testEnv.authenticatedContext("user-A").firestore();
+
+    // Stranger cannot update
+    await assertFails(updateDoc(doc(strangerDb, "friend_links", "fl-stranger-1"), {
+      users: ["user-3", "user-B"], status: "accepted",
+    }));
+
+    // Participant can update
+    await assertSucceeds(updateDoc(doc(participantDb, "friend_links", "fl-stranger-1"), {
+      users: ["user-A", "user-B"], status: "accepted",
+    }));
+  });
 });

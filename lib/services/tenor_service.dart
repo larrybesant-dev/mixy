@@ -27,13 +27,15 @@ class GifService {
       return null;
     }
 
-    final uri = Uri.parse('$_base/search').replace(queryParameters: {
-      'api_key': apiKey,
-      'q': query,
-      'limit': '1',
-      'rating': rating,
-      'lang': 'en',
-    });
+    final uri = Uri.parse('$_base/search').replace(
+      queryParameters: {
+        'api_key': apiKey,
+        'q': query,
+        'limit': '1',
+        'rating': rating,
+        'lang': 'en',
+      },
+    );
 
     try {
       final response = await http.get(uri).timeout(const Duration(seconds: 8));
@@ -49,8 +51,9 @@ class GifService {
       final data = decoded['data'] as List<dynamic>?;
       if (data == null || data.isEmpty) return null;
 
-      final images = (data.first as Map<String, dynamic>)['images']
-          as Map<String, dynamic>?;
+      final images =
+          (data.first as Map<String, dynamic>)['images']
+              as Map<String, dynamic>?;
       if (images == null) return null;
 
       // Prefer downsized → fixed_height → original (bandwidth-conscious)

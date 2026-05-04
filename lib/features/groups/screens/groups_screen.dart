@@ -13,10 +13,7 @@ import '../providers/groups_provider.dart';
 class GroupsScreen extends ConsumerWidget {
   final String userId;
 
-  const GroupsScreen({
-    super.key,
-    required this.userId,
-  });
+  const GroupsScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,7 +37,10 @@ class GroupsScreen extends ConsumerWidget {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: VelvetNoir.primary),
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: VelvetNoir.primary,
+              ),
               tooltip: 'Create group',
               onPressed: () => context.push('/create-group?userId=$userId'),
             ),
@@ -57,96 +57,106 @@ class GroupsScreen extends ConsumerWidget {
                 title: 'No groups yet',
               ),
               data: (groups) => ListView.builder(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.pageHorizontalPadding,
-                    vertical: 12,
-                  ),
-                  itemCount: groups.length,
-                  itemBuilder: (context, index) {
-                    final group = groups[index];
-                    final isMember = group.isMember(userId);
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.pageHorizontalPadding,
+                  vertical: 12,
+                ),
+                itemCount: groups.length,
+                itemBuilder: (context, index) {
+                  final group = groups[index];
+                  final isMember = group.isMember(userId);
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: VelvetNoir.surfaceContainer,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
-                        ),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: VelvetNoir.surfaceContainer,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
                       ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () => context.push('/group/${group.id}'),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      group.name,
-                                      style: const TextStyle(
-                                        color: VelvetNoir.onSurface,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => context.push('/group/${group.id}'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    group.name,
+                                    style: const TextStyle(
+                                      color: VelvetNoir.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${group.memberCount} members',
-                                      style: const TextStyle(
-                                        color: VelvetNoir.onSurfaceVariant,
-                                        fontSize: 13,
-                                      ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${group.memberCount} members',
+                                    style: const TextStyle(
+                                      color: VelvetNoir.onSurfaceVariant,
+                                      fontSize: 13,
                                     ),
-                                  ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 80,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (isMember) {
+                                    ref
+                                        .read(groupsControllerProvider)
+                                        .leaveGroup(
+                                          groupId: group.id,
+                                          userId: userId,
+                                        );
+                                  } else {
+                                    ref
+                                        .read(groupsControllerProvider)
+                                        .joinGroup(
+                                          groupId: group.id,
+                                          userId: userId,
+                                        );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isMember
+                                      ? VelvetNoir.surfaceBright
+                                      : VelvetNoir.primaryDim,
+                                  foregroundColor: VelvetNoir.onSurface,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  isMember ? 'Leave' : 'Join',
+                                  style: const TextStyle(fontSize: 13),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              SizedBox(
-                                width: 80,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    if (isMember) {
-                                      ref.read(groupsControllerProvider).leaveGroup(
-                                            groupId: group.id,
-                                            userId: userId,
-                                          );
-                                    } else {
-                                      ref.read(groupsControllerProvider).joinGroup(
-                                            groupId: group.id,
-                                            userId: userId,
-                                          );
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isMember
-                                        ? VelvetNoir.surfaceBright
-                                        : VelvetNoir.primaryDim,
-                                    foregroundColor: VelvetNoir.onSurface,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text(
-                                    isMember ? 'Leave' : 'Join',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  );
+                },
               ),
             ),
             AppAsyncValueView<List<Group>>(
@@ -158,44 +168,49 @@ class GroupsScreen extends ConsumerWidget {
                 title: 'You haven\'t joined any groups yet',
               ),
               data: (groups) => ListView.builder(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.pageHorizontalPadding,
-                    vertical: 12,
-                  ),
-                  itemCount: groups.length,
-                  itemBuilder: (context, index) {
-                    final group = groups[index];
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.pageHorizontalPadding,
+                  vertical: 12,
+                ),
+                itemCount: groups.length,
+                itemBuilder: (context, index) {
+                  final group = groups[index];
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: VelvetNoir.surfaceContainer,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: VelvetNoir.surfaceContainer,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      title: Text(
+                        group.name,
+                        style: const TextStyle(
+                          color: VelvetNoir.onSurface,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        title: Text(
-                          group.name,
-                          style: const TextStyle(
-                            color: VelvetNoir.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${group.memberCount} members',
-                          style: const TextStyle(color: VelvetNoir.onSurfaceVariant),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
+                      subtitle: Text(
+                        '${group.memberCount} members',
+                        style: const TextStyle(
                           color: VelvetNoir.onSurfaceVariant,
                         ),
-                        onTap: () => context.push('/group/${group.id}'),
                       ),
-                    );
-                  },
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: VelvetNoir.onSurfaceVariant,
+                      ),
+                      onTap: () => context.push('/group/${group.id}'),
+                    ),
+                  );
+                },
               ),
             ),
           ],

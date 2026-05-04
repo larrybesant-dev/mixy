@@ -50,12 +50,13 @@ class SchemaMutationService {
     'profileBgGradientEnd',
     'profileMusicUrl',
     'profileMusicTitle',
-  };
-
-  static const Set<String> _verificationFields = <String>{
+    // Adult-mode preferences are stored in preferences/{userId}, NOT in the
+    // server-managed /verification/{userId} collection (client writes blocked).
     'adultModeEnabled',
     'adultConsentAccepted',
   };
+
+  static const Set<String> _verificationFields = <String>{};
 
   static const Set<String> _knownProfileWriteFields = <String>{
     ..._identityFields,
@@ -156,7 +157,6 @@ class SchemaMutationService {
         .collection('profile_public')
         .doc(userId);
     final preferencesRef = _firestore.collection('preferences').doc(userId);
-    final verificationRef = _firestore.collection('verification').doc(userId);
     final privacyRef = usersRef.collection('privacy').doc('settings');
     final adultRef = usersRef.collection('adult_profile').doc('details');
 
@@ -184,17 +184,15 @@ class SchemaMutationService {
       allowedFields: _preferencesFields,
     )..addAll(<String, dynamic>{'userId': userId, 'updatedAt': now});
 
-    final verificationPayload = _pickAllowedFields(
-      userData: userData,
-      allowedFields: _verificationFields,
-    )..addAll(<String, dynamic>{'userId': userId, 'updatedAt': now});
+    // _verificationFields is empty — verification/{userId} is server-managed
+    // (admin SDK only). Do NOT write to it from the client; Firestore rules
+    // block all client writes to that collection.
 
     final batch = _firestore.batch();
 
     batch.set(usersRef, identityPayload, SetOptions(merge: true));
     batch.set(profilePublicRef, profilePublicPayload, SetOptions(merge: true));
     batch.set(preferencesRef, preferencesPayload, SetOptions(merge: true));
-    batch.set(verificationRef, verificationPayload, SetOptions(merge: true));
 
     // Preserve existing runtime paths while migration is in progress.
     batch.set(privacyRef, {
@@ -227,6 +225,17 @@ class SchemaMutationService {
     String? verifiedBy,
     bool? mirrorLegacyUsersDoc,
   }) async {
+    // GUARD: /verification/{userId} is server-only. Firestore rules block ALL
+    // client writes to this collection. Calling this method from the Flutter
+    // client will always result in a PERMISSION_DENIED error. Verification
+    // status must be set via a Cloud Function using the Firebase Admin SDK.
+    // See: functions/src/verification/ for the correct server-side path.
+    throw UnsupportedError(
+      'setVerificationStatus() must not be called from the Flutter client. '
+      'Write to verification/{userId} via a Cloud Function (Admin SDK only). '
+      'Firestore rules unconditionally deny client writes to this collection.',
+    );
+    // ignore: dead_code
     final verificationRef = _firestore.collection('verification').doc(userId);
     final usersRef = _firestore.collection('users').doc(userId);
 

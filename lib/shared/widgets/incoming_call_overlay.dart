@@ -28,32 +28,32 @@ class _IncomingCallOverlayState extends ConsumerState<IncomingCallOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<Map<String, dynamic>?>>(pendingDirectCallRoomProvider,
-        (_, next) {
-      final callRoom = next.valueOrNull;
-      if (callRoom == null) {
-        // Call was cancelled/accepted by another device — dismiss dialog.
-        if (_dialogShown) {
-          _dialogShown = false;
-          Navigator.of(context, rootNavigator: true).maybePop();
+    ref.listen<AsyncValue<Map<String, dynamic>?>>(
+      pendingDirectCallRoomProvider,
+      (_, next) {
+        final callRoom = next.valueOrNull;
+        if (callRoom == null) {
+          // Call was cancelled/accepted by another device — dismiss dialog.
+          if (_dialogShown) {
+            _dialogShown = false;
+            Navigator.of(context, rootNavigator: true).maybePop();
+          }
+          _activeCallRoomId = null;
+          return;
         }
-        _activeCallRoomId = null;
-        return;
-      }
-      final roomId = callRoom['id'] as String? ?? '';
-      if (roomId.isEmpty || roomId == _activeCallRoomId) return;
-      _activeCallRoomId = roomId;
-      _showCallDialog(context, callRoom);
-    });
+        final roomId = callRoom['id'] as String? ?? '';
+        if (roomId.isEmpty || roomId == _activeCallRoomId) return;
+        _activeCallRoomId = roomId;
+        _showCallDialog(context, callRoom);
+      },
+    );
 
     return widget.child;
   }
 
-  void _showCallDialog(
-      BuildContext context, Map<String, dynamic> callRoom) {
+  void _showCallDialog(BuildContext context, Map<String, dynamic> callRoom) {
     final roomId = callRoom['id'] as String? ?? '';
-    final callerName =
-        callRoom['ownerName'] as String? ?? 'Someone';
+    final callerName = callRoom['ownerName'] as String? ?? 'Someone';
 
     _dialogShown = true;
     showDialog<void>(
@@ -74,13 +74,14 @@ class _IncomingCallOverlayState extends ConsumerState<IncomingCallOverlay> {
           _activeCallRoomId = null;
           Navigator.of(context, rootNavigator: true).pop();
           try {
-            await ref.read(firestoreProvider)
+            await ref
+                .read(firestoreProvider)
                 .collection('rooms')
                 .doc(roomId)
                 .update({
-              'callDeclined': true,
-              'callDeclinedAt': FieldValue.serverTimestamp(),
-            });
+                  'callDeclined': true,
+                  'callDeclinedAt': FieldValue.serverTimestamp(),
+                });
           } catch (e) {
             developer.log(
               'Failed to decline call: $e',
@@ -136,8 +137,9 @@ class _IncomingCallDialog extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Incoming video call',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 6),
           Text(

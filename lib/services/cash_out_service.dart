@@ -11,8 +11,8 @@ final cashOutServiceProvider = Provider<CashOutService>(
 
 class CashOutService {
   CashOutService({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -28,13 +28,22 @@ class CashOutService {
         .where('userId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-      final requests = snapshot.docs
-          .map((doc) => CashOutRequestModel.fromJson(doc.id, doc.data()))
-          .toList(growable: false)
-        ..sort((a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-            .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
-      return requests;
-    });
+          final requests =
+              snapshot.docs
+                  .map(
+                    (doc) => CashOutRequestModel.fromJson(doc.id, doc.data()),
+                  )
+                  .toList(growable: false)
+                ..sort(
+                  (a, b) =>
+                      (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+                          .compareTo(
+                            a.createdAt ??
+                                DateTime.fromMillisecondsSinceEpoch(0),
+                          ),
+                );
+          return requests;
+        });
   }
 
   Future<void> requestCashOut(double amount) async {
@@ -49,7 +58,10 @@ class CashOutService {
       );
     }
 
-    final walletSnapshot = await _firestore.collection('wallets').doc(userId).get();
+    final walletSnapshot = await _firestore
+        .collection('wallets')
+        .doc(userId)
+        .get();
     final walletData = walletSnapshot.data() ?? const <String, dynamic>{};
     final cashBalance = (walletData['cashBalance'] as num?)?.toDouble() ?? 0;
 
@@ -59,8 +71,14 @@ class CashOutService {
         .get();
     final pendingTotal = requestsSnapshot.docs
         .map((doc) => CashOutRequestModel.fromJson(doc.id, doc.data()))
-        .where((request) => request.status == 'pending' || request.status == 'processing')
-      .fold<double>(0, (runningTotal, request) => runningTotal + request.amount);
+        .where(
+          (request) =>
+              request.status == 'pending' || request.status == 'processing',
+        )
+        .fold<double>(
+          0,
+          (runningTotal, request) => runningTotal + request.amount,
+        );
 
     final availableToCashOut = cashBalance - pendingTotal;
     if (amount > availableToCashOut) {

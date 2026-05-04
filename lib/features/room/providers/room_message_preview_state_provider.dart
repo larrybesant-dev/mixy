@@ -8,14 +8,18 @@ class RoommessagePreviewState {
   RoommessagePreviewState({required this.messagePreview});
 }
 
-final roommessagePreviewStateProvider = StreamProvider.autoDispose.family<RoommessagePreviewState, String>((ref, roomId) async* {
-  List<MessageModel>? previous;
-  // ignore: deprecated_member_use
-  await for (final message in ref.watch(messagetreamProvider(roomId).stream)) {
-    if (previous != null && !RoommessagePreviewContract.shouldRebuild(previous, message)) {
-      continue;
-    }
-    previous = message;
-    yield RoommessagePreviewState(messagePreview: message);
-  }
-});
+final roommessagePreviewStateProvider = StreamProvider.autoDispose
+    .family<RoommessagePreviewState, String>((ref, roomId) async* {
+      List<MessageModel>? previous;
+      // ignore: deprecated_member_use
+      await for (final message in ref.watch(
+        messagetreamProvider(roomId).stream,
+      )) {
+        if (previous != null &&
+            !RoommessagePreviewContract.shouldRebuild(previous, message)) {
+          continue;
+        }
+        previous = message;
+        yield RoommessagePreviewState(messagePreview: message);
+      }
+    });

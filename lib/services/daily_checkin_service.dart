@@ -15,16 +15,18 @@ class DailyCheckinStatus {
     this.lastCheckin,
   });
 
-  final bool claimed;     // already claimed today
-  final int streak;       // current streak (1 = first day)
-  final int reward;       // coins to award today
+  final bool claimed; // already claimed today
+  final int streak; // current streak (1 = first day)
+  final int reward; // coins to award today
   final DateTime? lastCheckin;
 }
 
 class DailyCheckinService {
-  DailyCheckinService({FirebaseFirestore? firestore, FirebaseFunctions? functions})
-      : _db = firestore ?? FirebaseFirestore.instance,
-        _functions = functions ?? FirebaseFunctions.instance;
+  DailyCheckinService({
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  }) : _db = firestore ?? FirebaseFirestore.instance,
+       _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
@@ -33,7 +35,7 @@ class DailyCheckinService {
     // Check wallet root collection first (new domain)
     final walletRef = _db.collection('wallets').doc(uid);
     final walletSnap = await walletRef.get();
-    
+
     Map<String, dynamic> data = const <String, dynamic>{};
     bool foundInWallet = false;
 

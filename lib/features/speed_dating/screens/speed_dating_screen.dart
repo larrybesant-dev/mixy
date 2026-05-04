@@ -60,6 +60,11 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     _secondsLeftNotifier.dispose();
     _queueSub?.cancel();
     _sessionSub?.cancel();
+    // If the user navigated away while still in the matchmaking queue, remove
+    // them server-side so the queue does not fill with ghost entries.
+    if (_queueMode) {
+      _service.leaveQueue().catchError((_) {});
+    }
     super.dispose();
   }
 
@@ -97,9 +102,9 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not join queue: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not join queue: $e')));
       setState(() {
         _queueMode = false;
         _queueJoining = false;
@@ -189,7 +194,11 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     if (_isSubmitting) return;
     setState(() {
       _isSubmitting = true;
-      if (liked) { _likesCount++; } else { _passesCount++; }
+      if (liked) {
+        _likesCount++;
+      } else {
+        _passesCount++;
+      }
     });
 
     try {
@@ -203,13 +212,17 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
       if (!mounted) return;
 
       if (result.isMatch && result.matchId != null) {
-        await _showMatchDialog(candidate: candidate, currentUserId: currentUserId, matchId: result.matchId!);
+        await _showMatchDialog(
+          candidate: candidate,
+          currentUserId: currentUserId,
+          matchId: result.matchId!,
+        );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save decision: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save decision: $e')));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -282,8 +295,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorWidget: (_, _, _) =>
-                        const CircleAvatar(radius: 40, child: Icon(Icons.person)),
+                    errorWidget: (_, _, _) => const CircleAvatar(
+                      radius: 40,
+                      child: Icon(Icons.person),
+                    ),
                   ),
                 ),
               const SizedBox(height: 28),
@@ -310,9 +325,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                     pageContext.go('/room/$roomId');
                   },
                   icon: const Icon(Icons.videocam_rounded, size: 20),
-                  label: const Text('Start Live Date',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 16)),
+                  label: const Text(
+                    'Start Live Date',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -338,15 +354,24 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     );
   }
 
-  Widget _buildCandidateCard(SpeedDateCandidate candidate, ThemeData theme, String currentUserId) {
-    final hasAvatar = candidate.avatarUrl != null && candidate.avatarUrl!.trim().isNotEmpty;
-    final displayName = candidate.username.trim().isEmpty ? 'MixVy user' : candidate.username.trim();
+  Widget _buildCandidateCard(
+    SpeedDateCandidate candidate,
+    ThemeData theme,
+    String currentUserId,
+  ) {
+    final hasAvatar =
+        candidate.avatarUrl != null && candidate.avatarUrl!.trim().isNotEmpty;
+    final displayName = candidate.username.trim().isEmpty
+        ? 'MixVy user'
+        : candidate.username.trim();
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.22),
@@ -374,11 +399,14 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                           height: 46,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                            valueColor: AlwaysStoppedAnimation(
+                              theme.colorScheme.primary,
+                            ),
                           ),
                         ),
                       ),
-                      errorWidget: (context, url, error) => const Icon(Icons.person, size: 42),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.person, size: 42),
                     ),
                   )
                 : const Icon(Icons.person, size: 42),
@@ -386,7 +414,9 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           const SizedBox(height: 14),
           Text(
             displayName,
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -398,7 +428,9 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            (candidate.bio ?? '').trim().isEmpty ? 'Ready for a quick live date.' : candidate.bio!.trim(),
+            (candidate.bio ?? '').trim().isEmpty
+                ? 'Ready for a quick live date.'
+                : candidate.bio!.trim(),
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -411,8 +443,12 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
               children: candidate.interests.take(6).map((interest) {
                 return Chip(
                   label: Text(interest),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                  backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  backgroundColor: theme.colorScheme.secondary.withValues(
+                    alpha: 0.14,
+                  ),
                   side: BorderSide.none,
                 );
               }).toList(),
@@ -436,11 +472,17 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: theme.colorScheme.error,
-                    side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                    side: BorderSide(
+                      color: theme.colorScheme.error.withValues(alpha: 0.5),
+                    ),
                   ),
                   onPressed: _isSubmitting
                       ? null
-                      : () => _handleDecision(candidate: candidate, liked: false, currentUserId: currentUserId),
+                      : () => _handleDecision(
+                          candidate: candidate,
+                          liked: false,
+                          currentUserId: currentUserId,
+                        ),
                   icon: const Icon(Icons.close),
                   label: const Text('Pass'),
                 ),
@@ -453,7 +495,11 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                   ),
                   onPressed: _isSubmitting
                       ? null
-                      : () => _handleDecision(candidate: candidate, liked: true, currentUserId: currentUserId),
+                      : () => _handleDecision(
+                          candidate: candidate,
+                          liked: true,
+                          currentUserId: currentUserId,
+                        ),
                   icon: const Icon(Icons.favorite),
                   label: const Text('Like'),
                 ),
@@ -491,7 +537,8 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
         appBar: AppBar(title: const Text('Speed Dating')),
         body: const AppEmptyView(
           title: 'Speed Dating is currently unavailable',
-          message: 'The system is undergoing maintenance. Please check back soon.',
+          message:
+              'The system is undergoing maintenance. Please check back soon.',
           icon: Icons.timer_off_outlined,
         ),
       );
@@ -542,15 +589,20 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                 style: TextButton.styleFrom(
                   backgroundColor: VelvetNoir.primary,
                   foregroundColor: VelvetNoir.surface,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
                 onPressed: () => _enterQueueMode(user.uid),
                 icon: const Icon(Icons.search, size: 16),
-                label: const Text('Find Match',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                label: const Text(
+                  'Find Match',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
               ),
             ),
           if (_queueMode)
@@ -560,268 +612,311 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                 style: TextButton.styleFrom(
                   backgroundColor: VelvetNoir.surfaceBright,
                   foregroundColor: VelvetNoir.error,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
                 onPressed: _leaveQueueMode,
                 icon: const Icon(Icons.cancel_outlined, size: 16),
-                label: const Text('Leave Queue',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                label: const Text(
+                  'Leave Queue',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
               ),
             ),
         ],
       ),
-      body: _queueMode ? _buildQueueBody(user, theme) : StreamBuilder<List<SpeedDateCandidate>>(
-        stream: _service.candidatesStream(currentUserId: user.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const AppLoadingView(label: 'Loading speed dating queue');
-          }
+      body: _queueMode
+          ? _buildQueueBody(user, theme)
+          : StreamBuilder<List<SpeedDateCandidate>>(
+              stream: _service.candidatesStream(currentUserId: user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const AppLoadingView(
+                    label: 'Loading speed dating queue',
+                  );
+                }
 
-          if (snapshot.hasError) {
-            return AppErrorView(
-              error: snapshot.error ?? 'Unknown error',
-              fallbackContext: 'Failed to load queue.',
-            );
-          }
+                if (snapshot.hasError) {
+                  return AppErrorView(
+                    error: snapshot.error ?? 'Unknown error',
+                    fallbackContext: 'Failed to load queue.',
+                  );
+                }
 
-          final candidates = snapshot.data ?? const [];
-          if (candidates.isEmpty) {
-            // Session done — show summary
-            return Center(
-              child: AppEmptyView(
-                title: 'Session complete',
-                message: 'Check back later for more matches.',
-                icon: Icons.favorite_outline_rounded,
-                action: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _StatBadge(label: 'Liked', value: _likesCount, color: Colors.pinkAccent),
-                        const SizedBox(width: 16),
-                        _StatBadge(label: 'Passed', value: _passesCount, color: Colors.grey),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: () => setState(() {
-                        _candidateIndex = 0;
-                        _likesCount = 0;
-                        _passesCount = 0;
-                      }),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Check back later'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final activeCandidate = candidates[_candidateIndex % candidates.length];
-
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              // Header with circular countdown timer
-              Row(
-                children: [
-                  ValueListenableBuilder<int>(
-                    valueListenable: _secondsLeftNotifier,
-                    builder: (context, secondsLeft, _) {
-                      final progress = secondsLeft / _sessionLengthSeconds;
-                      final Color countdownColor = secondsLeft > 30
-                          ? theme.colorScheme.primary
-                          : secondsLeft > 10
-                              ? Colors.orange
-                              : Colors.red;
-                      return Stack(
-                        alignment: Alignment.center,
+                final candidates = snapshot.data ?? const [];
+                if (candidates.isEmpty) {
+                  // Session done — show summary
+                  return Center(
+                    child: AppEmptyView(
+                      title: 'Session complete',
+                      message: 'Check back later for more matches.',
+                      icon: Icons.favorite_outline_rounded,
+                      action: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(
-                            width: 64,
-                            height: 64,
-                            child: CircularProgressIndicator(
-                              value: progress,
-                              strokeWidth: 5,
-                              backgroundColor:
-                                  theme.colorScheme.surfaceContainerHighest,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                countdownColor,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _StatBadge(
+                                label: 'Liked',
+                                value: _likesCount,
+                                color: Colors.pinkAccent,
                               ),
-                            ),
+                              const SizedBox(width: 16),
+                              _StatBadge(
+                                label: 'Passed',
+                                value: _passesCount,
+                                color: Colors.grey,
+                              ),
+                            ],
                           ),
-                          Text(
-                            '$secondsLeft',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
-                              color: countdownColor,
-                            ),
+                          const SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: () => setState(() {
+                              _candidateIndex = 0;
+                              _likesCount = 0;
+                              _passesCount = 0;
+                            }),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Check back later'),
                           ),
                         ],
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                    ),
+                  );
+                }
+
+                final activeCandidate =
+                    candidates[_candidateIndex % candidates.length];
+
+                return ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Header with circular countdown timer
+                    Row(
                       children: [
-                        Text(
-                          'Speed Round',
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ValueListenableBuilder<int>(
+                          valueListenable: _secondsLeftNotifier,
+                          builder: (context, secondsLeft, _) {
+                            final progress =
+                                secondsLeft / _sessionLengthSeconds;
+                            final Color countdownColor = secondsLeft > 30
+                                ? theme.colorScheme.primary
+                                : secondsLeft > 10
+                                ? Colors.orange
+                                : Colors.red;
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 64,
+                                  height: 64,
+                                  child: CircularProgressIndicator(
+                                    value: progress,
+                                    strokeWidth: 5,
+                                    backgroundColor: theme
+                                        .colorScheme
+                                        .surfaceContainerHighest,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      countdownColor,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$secondsLeft',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                    color: countdownColor,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
-                        Text(
-                          '${candidates.length} in queue  •  $_likesCount ❤️  $_passesCount ✗',
-                          style: theme.textTheme.bodySmall,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Speed Round',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                '${candidates.length} in queue  •  $_likesCount ❤️  $_passesCount ✗',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Swipeable candidate card
-              GestureDetector(
-                onHorizontalDragUpdate: (details) {
-                  setState(() {
-                    _dragOffset += details.delta.dx;
-                    _isDragging = true;
-                  });
-                },
-                onHorizontalDragEnd: (details) {
-                  const threshold = 100.0;
-                  if (_dragOffset > threshold) {
-                    // Swipe right = like
-                    _handleDecision(
-                      candidate: activeCandidate,
-                      liked: true,
-                      currentUserId: user.uid,
-                    );
-                  } else if (_dragOffset < -threshold) {
-                    // Swipe left = pass
-                    _handleDecision(
-                      candidate: activeCandidate,
-                      liked: false,
-                      currentUserId: user.uid,
-                    );
-                  } else {
-                    setState(() {
-                      _dragOffset = 0;
-                      _isDragging = false;
-                    });
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: _isDragging
-                      ? Duration.zero
-                      : const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  transform: Matrix4.translationValues(_dragOffset, 0, 0)
-                    ..rotateZ(_dragOffset * 0.002),
-                  child: Stack(
-                    children: [
-                      _buildCandidateCard(activeCandidate, theme, user.uid),
-                      // Swipe overlay hints
-                      if (_dragOffset > 40)
-                        Positioned(
-                          top: 20,
-                          left: 20,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                    const SizedBox(height: 20),
+                    // Swipeable candidate card
+                    GestureDetector(
+                      onHorizontalDragUpdate: (details) {
+                        setState(() {
+                          _dragOffset += details.delta.dx;
+                          _isDragging = true;
+                        });
+                      },
+                      onHorizontalDragEnd: (details) {
+                        const threshold = 100.0;
+                        if (_dragOffset > threshold) {
+                          // Swipe right = like
+                          _handleDecision(
+                            candidate: activeCandidate,
+                            liked: true,
+                            currentUserId: user.uid,
+                          );
+                        } else if (_dragOffset < -threshold) {
+                          // Swipe left = pass
+                          _handleDecision(
+                            candidate: activeCandidate,
+                            liked: false,
+                            currentUserId: user.uid,
+                          );
+                        } else {
+                          setState(() {
+                            _dragOffset = 0;
+                            _isDragging = false;
+                          });
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: _isDragging
+                            ? Duration.zero
+                            : const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                        transform: Matrix4.translationValues(_dragOffset, 0, 0)
+                          ..rotateZ(_dragOffset * 0.002),
+                        child: Stack(
+                          children: [
+                            _buildCandidateCard(
+                              activeCandidate,
+                              theme,
+                              user.uid,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.pinkAccent.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: Colors.pinkAccent, width: 2),
-                            ),
-                            child: const Text(
-                              '❤️ LIKE',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18,
+                            // Swipe overlay hints
+                            if (_dragOffset > 40)
+                              Positioned(
+                                top: 20,
+                                left: 20,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.pinkAccent.withValues(
+                                      alpha: 0.85,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.pinkAccent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '❤️ LIKE',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (_dragOffset < -40)
+                              Positioned(
+                                top: 20,
+                                right: 20,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.85),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade400,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '✗ PASS',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    StreamBuilder<List<SpeedDatingMatch>>(
+                      stream: _service.matchesStream(user.uid),
+                      builder: (context, matchSnapshot) {
+                        final matches = matchSnapshot.data ?? const [];
+                        if (matches.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Recent matches',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
-                        ),
-                      if (_dragOffset < -40)
-                        Positioned(
-                          top: 20,
-                          right: 20,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: Colors.grey.shade400, width: 2),
-                            ),
-                            child: const Text(
-                              '✗ PASS',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              StreamBuilder<List<SpeedDatingMatch>>(
-                stream: _service.matchesStream(user.uid),
-                builder: (context, matchSnapshot) {
-                  final matches = matchSnapshot.data ?? const [];
-                  if (matches.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Recent matches', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
-                      ...matches.take(5).map((match) {
-                        final otherId = match.otherUserId(user.uid);
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
-                              child: const Icon(Icons.favorite),
-                            ),
-                            title: Text('Match with $otherId'),
-                            subtitle: Text(match.latestRoomId == null
-                                ? 'No live date started yet'
-                                : 'Tap to rejoin your last live date room'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: match.latestRoomId == null ? null : () => context.go('/room/${match.latestRoomId}'),
-                          ),
+                            const SizedBox(height: 8),
+                            ...matches.take(5).map((match) {
+                              final otherId = match.otherUserId(user.uid);
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: theme.colorScheme.secondary
+                                        .withValues(alpha: 0.15),
+                                    child: const Icon(Icons.favorite),
+                                  ),
+                                  title: Text('Match with $otherId'),
+                                  subtitle: Text(
+                                    match.latestRoomId == null
+                                        ? 'No live date started yet'
+                                        : 'Tap to rejoin your last live date room',
+                                  ),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: match.latestRoomId == null
+                                      ? null
+                                      : () => context.go(
+                                          '/room/${match.latestRoomId}',
+                                        ),
+                                ),
+                              );
+                            }),
+                          ],
                         );
-                      }),
-                    ],
-                  );
-                },
-              ),
-            ],
-          );
-        },
-      ),
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
 
@@ -833,23 +928,29 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_queueJoining) ...[
-              const CircularProgressIndicator(
-                color: VelvetNoir.primary),
+              const CircularProgressIndicator(color: VelvetNoir.primary),
               const SizedBox(height: 20),
-              Text('Joining match queue…',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      color: VelvetNoir.onSurface)),
+              Text(
+                'Joining match queue…',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: VelvetNoir.onSurface,
+                ),
+              ),
             ] else if (_queueSessionId != null) ...[
               const Text('💘', style: TextStyle(fontSize: 64)),
               const SizedBox(height: 16),
               Text(
                 'Match found!',
                 style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800, color: VelvetNoir.onSurface),
+                  fontWeight: FontWeight.w800,
+                  color: VelvetNoir.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
-              const Text('Connecting you to a live date room…',
-                  style: TextStyle(color: VelvetNoir.onSurfaceVariant)),
+              const Text(
+                'Connecting you to a live date room…',
+                style: TextStyle(color: VelvetNoir.onSurfaceVariant),
+              ),
               const SizedBox(height: 20),
               const CircularProgressIndicator(color: VelvetNoir.primary),
             ] else ...[
@@ -858,7 +959,9 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
               Text(
                 'Searching for a match…',
                 style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800, color: VelvetNoir.onSurface),
+                  fontWeight: FontWeight.w800,
+                  color: VelvetNoir.onSurface,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -878,9 +981,12 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                 label: const Text('Leave Queue'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: VelvetNoir.error,
-                  side: BorderSide(color: VelvetNoir.error.withValues(alpha: 0.5)),
+                  side: BorderSide(
+                    color: VelvetNoir.error.withValues(alpha: 0.5),
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
               ),
             ],
@@ -938,4 +1044,3 @@ class _StatBadge extends StatelessWidget {
     );
   }
 }
-

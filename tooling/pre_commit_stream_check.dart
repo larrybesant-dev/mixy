@@ -32,7 +32,8 @@ import 'dart:io';
 // ── Inline rule set (subset of CI linter — fast patterns only) ───────────────
 
 const _highRiskPatterns = <String, String>{
-  r'\.snapshots\(': 'FCI-001: Direct .snapshots() — use a canonical StreamProvider',
+  r'\.snapshots\(':
+      'FCI-001: Direct .snapshots() — use a canonical StreamProvider',
   r'FirebaseFirestore\.instance':
       'FCI-002: FirebaseFirestore.instance — use ref.watch(firestoreProvider)',
   r'StreamController\s*[<(]':
@@ -80,9 +81,13 @@ void main(List<String> args) {
 
   // ── Print violations ────────────────────────────────────────────────────────
   stderr.writeln();
-  stderr.writeln('╔══════════════════════════════════════════════════════════╗');
+  stderr.writeln(
+    '╔══════════════════════════════════════════════════════════╗',
+  );
   stderr.writeln('║  ❌  COMMIT BLOCKED — STREAM ARCHITECTURE VIOLATIONS     ║');
-  stderr.writeln('╚══════════════════════════════════════════════════════════╝');
+  stderr.writeln(
+    '╚══════════════════════════════════════════════════════════╝',
+  );
   stderr.writeln();
 
   for (final v in violations) {
@@ -92,19 +97,29 @@ void main(List<String> args) {
     stderr.writeln();
   }
 
-  stderr.writeln('─────────────────────────────────────────────────────────────');
+  stderr.writeln(
+    '─────────────────────────────────────────────────────────────',
+  );
   stderr.writeln('  ${violations.length} violation(s) found.');
   stderr.writeln();
   stderr.writeln('  Fix options:');
   stderr.writeln('    1. Replace with a canonical StreamProvider from:');
   stderr.writeln('       lib/core/architecture/stream_registry.dart');
-  stderr.writeln('    2. Move logic into lib/services/ (service layer is exempt)');
+  stderr.writeln(
+    '    2. Move logic into lib/services/ (service layer is exempt)',
+  );
   stderr.writeln('    3. If genuinely new canonical stream: register it in');
-  stderr.writeln('       kCanonicalStreamProviderNames in stream_registry.dart');
+  stderr.writeln(
+    '       kCanonicalStreamProviderNames in stream_registry.dart',
+  );
   stderr.writeln();
-  stderr.writeln('  Full linter: dart run tool/firestore_stream_ci_linter.dart');
+  stderr.writeln(
+    '  Full linter: dart run tool/firestore_stream_ci_linter.dart',
+  );
   stderr.writeln('  Bypass (justify in PR): git commit --no-verify');
-  stderr.writeln('─────────────────────────────────────────────────────────────\n');
+  stderr.writeln(
+    '─────────────────────────────────────────────────────────────\n',
+  );
 
   exit(1);
 }

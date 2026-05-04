@@ -37,6 +37,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
   String? _videoUrl;
   _StoryType _type = _StoryType.text;
   double _uploadProgress = 0;
+  StreamSubscription<TaskSnapshot>? _uploadProgressSub;
 
   static const int _maxPhotoBytes = 20 * 1024 * 1024;
   static const int _maxVideoBytes = 120 * 1024 * 1024;
@@ -50,6 +51,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
 
   @override
   void dispose() {
+    _uploadProgressSub?.cancel();
     _textController.dispose();
     super.dispose();
   }
@@ -58,7 +60,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
     final content = _textController.text.trim();
     if (content.isEmpty && _imageUrl == null && _videoUrl == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add text, a photo, or a video to post a story.')),
+        const SnackBar(
+          content: Text('Add text, a photo, or a video to post a story.'),
+        ),
       );
       return;
     }
@@ -66,7 +70,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
     setState(() => _isPosting = true);
 
     try {
-      await ref.read(storyControllerProvider).createStory(
+      await ref
+          .read(storyControllerProvider)
+          .createStory(
             userId: widget.userId,
             username: widget.username,
             userAvatarUrl: widget.avatarUrl,
@@ -82,9 +88,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error posting story: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error posting story: $e')));
     } finally {
       if (mounted) {
         setState(() => _isPosting = false);
@@ -113,10 +119,17 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
     final path =
         'users/${widget.userId}/stories/$folder/${DateTime.now().millisecondsSinceEpoch}.$extension';
     final ref = FirebaseStorage.instance.ref(path);
-    final task = ref.putData(bytes, SettableMetadata(contentType: contentType));
-    task.snapshotEvents.listen((snap) {
+    // UploadTask starts immediately; we await it below via task.timeout().
+    final task = ref.putData(
+      bytes,
+      SettableMetadata(contentType: contentType),
+    ); // ignore: unawaited_futures
+    _uploadProgressSub?.cancel();
+    _uploadProgressSub = task.snapshotEvents.listen((snap) {
       if (snap.totalBytes > 0 && mounted) {
-        setState(() => _uploadProgress = snap.bytesTransferred / snap.totalBytes);
+        setState(
+          () => _uploadProgress = snap.bytesTransferred / snap.totalBytes,
+        );
       }
     });
     await task.timeout(const Duration(seconds: 60));
@@ -151,9 +164,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Photo upload failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Photo upload failed: $e')));
     } finally {
       if (mounted) setState(() => _isUploadingMedia = false);
     }
@@ -187,9 +200,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Video upload failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Video upload failed: $e')));
     } finally {
       if (mounted) setState(() => _isUploadingMedia = false);
     }
@@ -197,7 +210,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canPost = !_isPosting && !_isUploadingMedia &&
+    final canPost =
+        !_isPosting &&
+        !_isUploadingMedia &&
         (_textController.text.trim().isNotEmpty ||
             _imageUrl != null ||
             _videoUrl != null);
@@ -242,14 +257,19 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
                           ? VelvetNoir.surface
                           : VelvetNoir.onSurfaceVariant,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                     child: const Text(
                       'Share',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
           ),
@@ -329,7 +349,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
             Icon(
               icon,
               size: 15,
-              color: selected ? VelvetNoir.surface : VelvetNoir.onSurfaceVariant,
+              color: selected
+                  ? VelvetNoir.surface
+                  : VelvetNoir.onSurfaceVariant,
             ),
             const SizedBox(width: 5),
             Text(
@@ -337,7 +359,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? VelvetNoir.surface : VelvetNoir.onSurfaceVariant,
+                color: selected
+                    ? VelvetNoir.surface
+                    : VelvetNoir.onSurfaceVariant,
               ),
             ),
           ],
@@ -350,9 +374,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
     return Container(
       width: double.infinity,
       height: 220,
-      decoration: const BoxDecoration(
-        color: VelvetNoir.surfaceLow,
-      ),
+      decoration: const BoxDecoration(color: VelvetNoir.surfaceLow),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -361,9 +383,8 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
             CachedNetworkImage(
               imageUrl: _imageUrl!,
               fit: BoxFit.cover,
-              placeholder: (_, _) => const ColoredBox(
-                color: VelvetNoir.surfaceHigh,
-              ),
+              placeholder: (_, _) =>
+                  const ColoredBox(color: VelvetNoir.surfaceHigh),
             )
           else
             Container(
@@ -382,13 +403,14 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_circle_fill,
-                      size: 56, color: Colors.white70),
+                  Icon(Icons.play_circle_fill, size: 56, color: Colors.white70),
                   SizedBox(height: 8),
                   Text(
                     'Video ready',
                     style: TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.w600),
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -396,15 +418,16 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
 
           // Text overlay (shown for text type, or as overlay on image)
           if (_type == _StoryType.text ||
-              (_imageUrl != null &&
-                  _textController.text.trim().isNotEmpty))
+              (_imageUrl != null && _textController.text.trim().isNotEmpty))
             Positioned(
               bottom: 16,
               left: 16,
               right: 16,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(8),
@@ -442,8 +465,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close,
-                      size: 18, color: Colors.white),
+                  child: const Icon(Icons.close, size: 18, color: Colors.white),
                 ),
               ),
             ),
@@ -506,8 +528,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
           ),
           child: TextField(
             controller: _textController,
-            style: const TextStyle(
-                color: VelvetNoir.onSurface, fontSize: 15),
+            style: const TextStyle(color: VelvetNoir.onSurface, fontSize: 15),
             maxLines: _type == _StoryType.text ? 6 : 3,
             maxLength: _maxTextChars,
             decoration: InputDecoration(
@@ -515,7 +536,9 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
                   ? 'Share what\'s on your mind… (24 h only)'
                   : 'Add a caption…',
               hintStyle: const TextStyle(
-                  color: VelvetNoir.onSurfaceVariant, fontSize: 14),
+                color: VelvetNoir.onSurfaceVariant,
+                fontSize: 14,
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(14),
               counterText: '',
@@ -551,21 +574,18 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
               foregroundColor: VelvetNoir.onSurfaceVariant,
               side: const BorderSide(color: VelvetNoir.outlineVariant),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: _isUploadingMedia
                 ? null
                 : (_type == _StoryType.photo ? _pickPhoto : _pickVideo),
             icon: Icon(
-              _type == _StoryType.photo
-                  ? Icons.swap_horiz
-                  : Icons.swap_horiz,
+              _type == _StoryType.photo ? Icons.swap_horiz : Icons.swap_horiz,
               size: 18,
             ),
             label: Text(
-              _type == _StoryType.photo
-                  ? 'Change photo'
-                  : 'Change video',
+              _type == _StoryType.photo ? 'Change photo' : 'Change video',
               style: const TextStyle(fontSize: 13),
             ),
           ),

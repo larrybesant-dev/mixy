@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
@@ -9,59 +8,61 @@ import 'test_helpers.dart';
 void main() {
   setUpAll(() async {
     await testSetup();
-    await Firebase.initializeApp();
   });
 
   group('Messaging retention', () {
-    test('sendmessage writes expiresAt and updates conversation summary', () async {
-      final firestore = FakeFirebaseFirestore();
-      final controller = MessagingController(firestore: firestore);
-      final now = DateTime.now();
+    test(
+      'sendmessage writes expiresAt and updates conversation summary',
+      () async {
+        final firestore = FakeFirebaseFirestore();
+        final controller = MessagingController(firestore: firestore);
+        final now = DateTime.now();
 
-      await firestore.collection('conversations').doc('conv-1').set({
-        'type': 'direct',
-        'participantIds': ['user-1', 'user-2'],
-        'participantNames': {
-          'user-1': 'User One',
-          'user-2': 'User Two',
-        },
-        'createdAt': Timestamp.fromDate(now),
-        'lastReadAt': {
-          'user-1': Timestamp.fromDate(now),
-          'user-2': Timestamp.fromDate(now),
-        },
-        'isArchived': false,
-        'status': 'active',
-      });
+        await firestore.collection('conversations').doc('conv-1').set({
+          'type': 'direct',
+          'participantIds': ['user-1', 'user-2'],
+          'participantNames': {'user-1': 'User One', 'user-2': 'User Two'},
+          'createdAt': Timestamp.fromDate(now),
+          'lastReadAt': {
+            'user-1': Timestamp.fromDate(now),
+            'user-2': Timestamp.fromDate(now),
+          },
+          'isArchived': false,
+          'status': 'active',
+        });
 
-      await controller.sendmessage(
-        conversationId: 'conv-1',
-        senderId: 'user-1',
-        senderName: 'User One',
-        senderAvatarUrl: null,
-        content: 'Hello there',
-      );
+        await controller.sendmessage(
+          conversationId: 'conv-1',
+          senderId: 'user-1',
+          senderName: 'User One',
+          senderAvatarUrl: null,
+          content: 'Hello there',
+        );
 
-      final message = await firestore
-          .collection('conversations')
-          .doc('conv-1')
-          .collection('messages')
-          .get();
-      expect(message.docs, hasLength(1));
+        final message = await firestore
+            .collection('conversations')
+            .doc('conv-1')
+            .collection('messages')
+            .get();
+        expect(message.docs, hasLength(1));
 
-      final messageData = message.docs.single.data();
-      final expiresAt = (messageData['expiresAt'] as Timestamp).toDate();
-      final lowerBound = now.add(const Duration(days: 89));
-      final upperBound = now.add(const Duration(days: 91));
-      expect(expiresAt.isAfter(lowerBound), isTrue);
-      expect(expiresAt.isBefore(upperBound), isTrue);
+        final messageData = message.docs.single.data();
+        final expiresAt = (messageData['expiresAt'] as Timestamp).toDate();
+        final lowerBound = now.add(const Duration(days: 89));
+        final upperBound = now.add(const Duration(days: 91));
+        expect(expiresAt.isAfter(lowerBound), isTrue);
+        expect(expiresAt.isBefore(upperBound), isTrue);
 
-      final conversation = await firestore.collection('conversations').doc('conv-1').get();
-      expect(conversation.data()?['lastMessageId'], message.docs.single.id);
-      expect(conversation.data()?['lastMessagePreview'], 'Hello there');
-      expect(conversation.data()?['lastMessageSenderId'], 'user-1');
-      expect(conversation.data()?['lastMessageAt'], isA<Timestamp>());
-    });
+        final conversation = await firestore
+            .collection('conversations')
+            .doc('conv-1')
+            .get();
+        expect(conversation.data()?['lastMessageId'], message.docs.single.id);
+        expect(conversation.data()?['lastMessagePreview'], 'Hello there');
+        expect(conversation.data()?['lastMessageSenderId'], 'user-1');
+        expect(conversation.data()?['lastMessageAt'], isA<Timestamp>());
+      },
+    );
 
     test('MessageModel.fromJson parses expiresAt', () {
       final createdAt = Timestamp.fromDate(DateTime(2026, 4, 8, 12));

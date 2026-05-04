@@ -21,29 +21,32 @@ void main() {
       controller = FollowController(firestore: firestore);
     });
 
-    test('followUser writes to both following and followers subcollections', () async {
-      await controller.followUser(
-        currentUserId: 'alice',
-        targetUserId: 'bob',
-        targetUsername: 'bob_user',
-      );
+    test(
+      'followUser writes to both following and followers subcollections',
+      () async {
+        await controller.followUser(
+          currentUserId: 'alice',
+          targetUserId: 'bob',
+          targetUsername: 'bob_user',
+        );
 
-      final followingDoc = await firestore
-          .collection('users')
-          .doc('alice')
-          .collection('following')
-          .doc('bob')
-          .get();
-      final followerDoc = await firestore
-          .collection('users')
-          .doc('bob')
-          .collection('followers')
-          .doc('alice')
-          .get();
+        final followingDoc = await firestore
+            .collection('users')
+            .doc('alice')
+            .collection('following')
+            .doc('bob')
+            .get();
+        final followerDoc = await firestore
+            .collection('users')
+            .doc('bob')
+            .collection('followers')
+            .doc('alice')
+            .get();
 
-      expect(followingDoc.exists, isTrue);
-      expect(followerDoc.exists, isTrue);
-    });
+        expect(followingDoc.exists, isTrue);
+        expect(followerDoc.exists, isTrue);
+      },
+    );
 
     test('unfollowUser removes from both subcollections', () async {
       await controller.followUser(
@@ -89,9 +92,10 @@ void main() {
 
     test('returns false when not following', () async {
       final result = await container.read(
-        isFollowingProvider(
-          (currentUserId: 'alice', targetUserId: 'bob'),
-        ).future,
+        isFollowingProvider((
+          currentUserId: 'alice',
+          targetUserId: 'bob',
+        )).future,
       );
       expect(result, isFalse);
     });
@@ -104,9 +108,10 @@ void main() {
       });
 
       final result = await container.read(
-        isFollowingProvider(
-          (currentUserId: 'alice', targetUserId: 'bob'),
-        ).future,
+        isFollowingProvider((
+          currentUserId: 'alice',
+          targetUserId: 'bob',
+        )).future,
       );
       expect(result, isTrue);
     });

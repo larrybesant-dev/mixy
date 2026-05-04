@@ -45,12 +45,12 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
       setState(() {
         _cameras = devices.where((d) => d.kind == 'videoinput').toList();
         _mics = devices.where((d) => d.kind == 'audioinput').toList();
-        _selectedCameraId = (savedCam != null &&
-                _cameras.any((c) => c.deviceId == savedCam))
+        _selectedCameraId =
+            (savedCam != null && _cameras.any((c) => c.deviceId == savedCam))
             ? savedCam
             : (_cameras.isNotEmpty ? _cameras.first.deviceId : null);
-        _selectedMicId = (savedMic != null &&
-                _mics.any((m) => m.deviceId == savedMic))
+        _selectedMicId =
+            (savedMic != null && _mics.any((m) => m.deviceId == savedMic))
             ? savedMic
             : (_mics.isNotEmpty ? _mics.first.deviceId : null);
         _loading = false;
@@ -71,7 +71,9 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Camera preference saved. Takes effect on next room join.'),
+          content: Text(
+            'Camera preference saved. Takes effect on next room join.',
+          ),
           duration: Duration(seconds: 3),
         ),
       );
@@ -85,7 +87,9 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Microphone preference saved. Takes effect on next room join.'),
+          content: Text(
+            'Microphone preference saved. Takes effect on next room join.',
+          ),
           duration: Duration(seconds: 3),
         ),
       );
@@ -106,20 +110,18 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
             const SizedBox(width: 8),
             Text(
               'Camera & Microphone',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           'Select which camera and mic to use in live rooms.',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: scheme.onSurfaceVariant),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 16),
         if (!isWeb)
@@ -137,9 +139,10 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
           )
         else if (_error != null)
           _InfoTile(
-              icon: Icons.warning_amber_outlined,
-              message: _error!,
-              color: scheme.error)
+            icon: Icons.warning_amber_outlined,
+            message: _error!,
+            color: scheme.error,
+          )
         else if (_cameras.isEmpty && _mics.isEmpty)
           _InfoTile(
             icon: Icons.perm_device_info_outlined,
@@ -203,19 +206,25 @@ class _DeviceDropdown extends StatelessWidget {
         labelText: label,
         prefixIcon: Icon(icon, size: 18, color: scheme.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
       ),
       isExpanded: true,
       items: devices
-          .map((d) => DropdownMenuItem<String>(
-                value: d.deviceId,
-                child: Text(
-                  d.label.isNotEmpty ? d.label : 'Device ${d.deviceId.substring(0, 6)}',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ))
+          .map(
+            (d) => DropdownMenuItem<String>(
+              value: d.deviceId,
+              child: Text(
+                d.label.isNotEmpty
+                    ? d.label
+                    : 'Device ${d.deviceId.substring(0, 6)}',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          )
           .toList(),
       onChanged: onChanged,
     );
@@ -223,8 +232,11 @@ class _DeviceDropdown extends StatelessWidget {
 }
 
 class _InfoTile extends StatelessWidget {
-  const _InfoTile(
-      {required this.icon, required this.message, required this.color});
+  const _InfoTile({
+    required this.icon,
+    required this.message,
+    required this.color,
+  });
 
   final IconData icon;
   final String message;
@@ -245,10 +257,7 @@ class _InfoTile extends StatelessWidget {
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: color, fontSize: 13),
-            ),
+            child: Text(message, style: TextStyle(color: color, fontSize: 13)),
           ),
         ],
       ),

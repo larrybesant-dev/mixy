@@ -121,7 +121,10 @@ void main() {
       FirestoreCallTracker.trackRead('rooms/s1');
       FirestoreCallTracker.reset();
       FirestoreCallTracker.trackRead('messages/s2');
-      expect(FirestoreCallTracker.snapshotReads().containsKey('rooms'), isFalse);
+      expect(
+        FirestoreCallTracker.snapshotReads().containsKey('rooms'),
+        isFalse,
+      );
       expect(FirestoreCallTracker.snapshotReads()['messages'], 1);
     });
 
@@ -164,9 +167,11 @@ void main() {
       }
       final alerts = ProductionAlertSystem.alerts;
       expect(
-        alerts.any((a) =>
-            a.id.startsWith('webrtc_reconnect_burst_') &&
-            a.level == AlertLevel.warning),
+        alerts.any(
+          (a) =>
+              a.id.startsWith('webrtc_reconnect_burst_') &&
+              a.level == AlertLevel.warning,
+        ),
         isTrue,
       );
       WebRtcTelemetry.endSession();
@@ -179,9 +184,11 @@ void main() {
       }
       final alerts = ProductionAlertSystem.alerts;
       expect(
-        alerts.any((a) =>
-            a.id.startsWith('webrtc_reconnect_critical_') &&
-            a.level == AlertLevel.critical),
+        alerts.any(
+          (a) =>
+              a.id.startsWith('webrtc_reconnect_critical_') &&
+              a.level == AlertLevel.critical,
+        ),
         isTrue,
       );
       WebRtcTelemetry.endSession();
@@ -192,7 +199,9 @@ void main() {
       WebRtcTelemetry.recordPeerFailure(broadcasterId: 'host1');
       expect(
         ProductionAlertSystem.alerts.any(
-            (a) => a.id == 'webrtc_peer_fail_host1' && a.level == AlertLevel.warning),
+          (a) =>
+              a.id == 'webrtc_peer_fail_host1' && a.level == AlertLevel.warning,
+        ),
         isTrue,
       );
       WebRtcTelemetry.endSession();
@@ -227,7 +236,10 @@ void main() {
       }
       expect(
         ProductionAlertSystem.alerts.any(
-            (a) => a.id == 'firestore_read_warn_rooms' && a.level == AlertLevel.warning),
+          (a) =>
+              a.id == 'firestore_read_warn_rooms' &&
+              a.level == AlertLevel.warning,
+        ),
         isTrue,
       );
     });
@@ -240,7 +252,10 @@ void main() {
       }
       expect(
         ProductionAlertSystem.alerts.any(
-            (a) => a.id == 'firestore_read_critical_rooms' && a.level == AlertLevel.critical),
+          (a) =>
+              a.id == 'firestore_read_critical_rooms' &&
+              a.level == AlertLevel.critical,
+        ),
         isTrue,
       );
     });

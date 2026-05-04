@@ -86,19 +86,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _OnboardScene(
       kicker: 'Connect',
       title: 'Meet people who match your energy fast.',
-      body: 'Move from browsing to conversation without awkward friction or empty noise.',
+      body:
+          'Move from browsing to conversation without awkward friction or empty noise.',
       highlight: 'The app should feel curated, not crowded.',
       statValue: 'Real time',
       statLabel: 'chat, reactions, and room momentum happening together',
-      perks: <String>['Friends in rooms', 'Quick reactions', 'Better discovery'],
+      perks: <String>[
+        'Friends in rooms',
+        'Quick reactions',
+        'Better discovery',
+      ],
       icon: Icons.favorite_outline_rounded,
       accent: VelvetNoir.secondaryBright,
     ),
     _OnboardScene(
       kicker: 'Indulge',
       title: 'Host your own room when the mood is right.',
-      body: 'Open a room, shape the atmosphere, and bring people into your orbit.',
-      highlight: 'When you go live, it should feel premium from the first second.',
+      body:
+          'Open a room, shape the atmosphere, and bring people into your orbit.',
+      highlight:
+          'When you go live, it should feel premium from the first second.',
       statValue: 'Under a minute',
       statLabel: 'to open your first room and start setting the tone',
       perks: <String>['Quick setup', 'Premium identity', 'Host presence'],
@@ -141,17 +148,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() => _submitting = true);
     try {
       await FirstRunService.markOnboardingSeen();
-      await ref.read(appSettingsControllerProvider.notifier).acceptCurrentLegal();
+      await ref
+          .read(appSettingsControllerProvider.notifier)
+          .acceptCurrentLegal();
 
       if (_selectedInterests.isNotEmpty) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .update(<String, dynamic>{
-            'interests': _selectedInterests.toList(growable: false),
-          });
+          await FirebaseFirestore.instance.collection('users').doc(uid).update(
+            <String, dynamic>{
+              'interests': _selectedInterests.toList(growable: false),
+            },
+          );
         }
       }
 
@@ -181,11 +189,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: Row(
                     children: <Widget>[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: VelvetNoir.surfaceHigh.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.9)),
+                          border: Border.all(
+                            color: VelvetNoir.outlineVariant.withValues(
+                              alpha: 0.9,
+                            ),
+                          ),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -209,7 +224,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Expanded(
                   child: PageView(
                     controller: _controller,
-                    onPageChanged: (int value) => setState(() => _index = value),
+                    onPageChanged: (int value) =>
+                        setState(() => _index = value),
                     children: <Widget>[
                       ..._pages.map((scene) => _ScenePage(scene: scene)),
                       _InterestsPage(
@@ -247,7 +263,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             decoration: BoxDecoration(
                               color: _index == dotIndex
                                   ? accent
-                                  : VelvetNoir.onSurfaceVariant.withValues(alpha: 0.28),
+                                  : VelvetNoir.onSurfaceVariant.withValues(
+                                      alpha: 0.28,
+                                    ),
                               borderRadius: BorderRadius.circular(999),
                               boxShadow: _index == dotIndex
                                   ? <BoxShadow>[
@@ -307,17 +325,26 @@ class _VelvetBackdrop extends StatelessWidget {
         Positioned(
           top: -120,
           left: -90,
-          child: _GlowOrb(size: 280, color: VelvetNoir.primary.withValues(alpha: 0.14)),
+          child: _GlowOrb(
+            size: 280,
+            color: VelvetNoir.primary.withValues(alpha: 0.14),
+          ),
         ),
         Positioned(
           top: 160,
           right: -100,
-          child: _GlowOrb(size: 220, color: VelvetNoir.secondary.withValues(alpha: 0.16)),
+          child: _GlowOrb(
+            size: 220,
+            color: VelvetNoir.secondary.withValues(alpha: 0.16),
+          ),
         ),
         Positioned(
           bottom: -140,
           right: -80,
-          child: _GlowOrb(size: 300, color: VelvetNoir.secondaryBright.withValues(alpha: 0.12)),
+          child: _GlowOrb(
+            size: 300,
+            color: VelvetNoir.secondaryBright.withValues(alpha: 0.12),
+          ),
         ),
         Positioned.fill(
           child: DecoratedBox(
@@ -354,11 +381,7 @@ class _GlowOrb extends StatelessWidget {
         shape: BoxShape.circle,
         color: color,
         boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: color,
-            blurRadius: 90,
-            spreadRadius: 20,
-          ),
+          BoxShadow(color: color, blurRadius: 90, spreadRadius: 20),
         ],
       ),
     );
@@ -420,7 +443,9 @@ class _ScenePage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: VelvetNoir.surfaceHigh.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.9)),
+                border: Border.all(
+                  color: VelvetNoir.outlineVariant.withValues(alpha: 0.9),
+                ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: scene.accent.withValues(alpha: 0.18),
@@ -444,7 +469,9 @@ class _ScenePage extends StatelessWidget {
                           VelvetNoir.surfaceHighest,
                         ],
                       ),
-                      border: Border.all(color: scene.accent.withValues(alpha: 0.55)),
+                      border: Border.all(
+                        color: scene.accent.withValues(alpha: 0.55),
+                      ),
                     ),
                     child: Icon(scene.icon, color: scene.accent, size: 28),
                   ),
@@ -481,7 +508,10 @@ class _ScenePage extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: scene.perks
-                  .map((String perk) => _PerkChip(label: perk, accent: scene.accent))
+                  .map(
+                    (String perk) =>
+                        _PerkChip(label: perk, accent: scene.accent),
+                  )
                   .toList(growable: false),
             ),
           ],
@@ -556,7 +586,9 @@ class _InterestsPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: VelvetNoir.surfaceHigh.withValues(alpha: 0.94),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.9)),
+                border: Border.all(
+                  color: VelvetNoir.outlineVariant.withValues(alpha: 0.9),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,7 +597,8 @@ class _InterestsPage extends StatelessWidget {
                     value: acceptedLegal,
                     activeColor: VelvetNoir.primary,
                     side: const BorderSide(color: VelvetNoir.onSurfaceVariant),
-                    onChanged: (bool? value) => onAcceptedLegalChanged(value ?? false),
+                    onChanged: (bool? value) =>
+                        onAcceptedLegalChanged(value ?? false),
                   ),
                   Expanded(
                     child: Column(
@@ -694,7 +727,9 @@ class _InterestChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: selected ? VelvetNoir.primaryGradient : null,
-          color: selected ? null : VelvetNoir.surfaceHigh.withValues(alpha: 0.95),
+          color: selected
+              ? null
+              : VelvetNoir.surfaceHigh.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected

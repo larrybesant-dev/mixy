@@ -10,28 +10,26 @@ import 'room_firestore_provider.dart';
 
 /// Streams the `slots` subcollection for a room.
 /// Each document id is the slot identifier (e.g. '1', '2', …).
-final roomSlotsProvider =
-    StreamProvider.autoDispose.family<List<RoomSlotModel>, String>(
-  (ref, roomId) {
-    final firestore = ref.watch(roomFirestoreProvider);
-    return traceFirestoreStream<List<RoomSlotModel>>(
-      key: 'room_slots/$roomId',
-      query: 'rooms/$roomId/slots',
-      roomId: roomId,
-      itemCount: (value) => value.length,
-      stream: firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('slots')
-          .snapshots()
-          .map(
-            (snap) => snap.docs
-                .map((doc) => RoomSlotModel.fromMap(doc.id, doc.data()))
-                .toList(growable: false),
-          ),
-    );
-  },
-);
+final roomSlotsProvider = StreamProvider.autoDispose
+    .family<List<RoomSlotModel>, String>((ref, roomId) {
+      final firestore = ref.watch(roomFirestoreProvider);
+      return traceFirestoreStream<List<RoomSlotModel>>(
+        key: 'room_slots/$roomId',
+        query: 'rooms/$roomId/slots',
+        roomId: roomId,
+        itemCount: (value) => value.length,
+        stream: firestore
+            .collection('rooms')
+            .doc(roomId)
+            .collection('slots')
+            .snapshots()
+            .map(
+              (snap) => snap.docs
+                  .map((doc) => RoomSlotModel.fromMap(doc.id, doc.data()))
+                  .toList(growable: false),
+            ),
+      );
+    });
 
 class RoomSlotService {
   RoomSlotService(this._db);
@@ -44,12 +42,11 @@ class RoomSlotService {
   DocumentReference<Map<String, dynamic>> _participantRef(
     String roomId,
     String userId,
-  ) =>
-      _db
-          .collection('rooms')
-          .doc(roomId)
-          .collection('participants')
-          .doc(userId);
+  ) => _db
+      .collection('rooms')
+      .doc(roomId)
+      .collection('participants')
+      .doc(userId);
 
   /// Tries to claim a free slot for [userId].
   ///
@@ -77,8 +74,7 @@ class RoomSlotService {
 
         // If the user already owns a slot, just confirm it.
         for (final snap in snaps) {
-          if (snap.exists &&
-              (snap.data()?['userId'] as String?) == userId) {
+          if (snap.exists && (snap.data()?['userId'] as String?) == userId) {
             claimedSlotId = snap.id;
             return;
           }
@@ -104,8 +100,10 @@ class RoomSlotService {
           operation: 'mark_cam_on_after_slot_claim',
           roomId: roomId,
           userId: userId,
-          action: () => _participantRef(roomId, userId)
-              .set({'camOn': true}, SetOptions(merge: true)),
+          action: () => _participantRef(
+            roomId,
+            userId,
+          ).set({'camOn': true}, SetOptions(merge: true)),
         );
       }
 
@@ -138,9 +136,9 @@ class RoomSlotService {
     if (roomId.trim().isEmpty || userId.trim().isEmpty) return;
 
     try {
-      final slotsSnap = await _slotsRef(roomId)
-          .where('userId', isEqualTo: userId)
-          .get();
+      final slotsSnap = await _slotsRef(
+        roomId,
+      ).where('userId', isEqualTo: userId).get();
       final batch = _db.batch();
       for (final doc in slotsSnap.docs) {
         // Delete the slot doc so the next claimant can create a fresh one.
@@ -148,11 +146,9 @@ class RoomSlotService {
         // request.resource.data.userId == request.auth.uid on updates.)
         batch.delete(doc.reference);
       }
-      batch.set(
-        _participantRef(roomId, userId),
-        {'camOn': false},
-        SetOptions(merge: true),
-      );
+      batch.set(_participantRef(roomId, userId), {
+        'camOn': false,
+      }, SetOptions(merge: true));
       await traceFirestoreWrite<void>(
         path: 'rooms/$roomId/slots',
         operation: 'release_slot_batch',

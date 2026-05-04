@@ -12,10 +12,17 @@ abstract class PaymentRecipientRepository {
   });
 }
 
-class FirestorePaymentRecipientRepository implements PaymentRecipientRepository {
-  FirestorePaymentRecipientRepository({FirebaseFirestore? firestore, ModerationService? moderationService})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _moderationService = moderationService ?? ModerationService(firestore: firestore ?? FirebaseFirestore.instance);
+class FirestorePaymentRecipientRepository
+    implements PaymentRecipientRepository {
+  FirestorePaymentRecipientRepository({
+    FirebaseFirestore? firestore,
+    ModerationService? moderationService,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _moderationService =
+           moderationService ??
+           ModerationService(
+             firestore: firestore ?? FirebaseFirestore.instance,
+           );
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
@@ -62,7 +69,7 @@ final currentPaymentUserIdProvider = Provider<String?>((ref) {
 
 final paymentRecipientSearchProvider =
     FutureProvider.family<List<UserModel>, String>((ref, query) {
-  final repository = ref.read(paymentRecipientRepositoryProvider);
-  final currentUserId = ref.read(currentPaymentUserIdProvider);
-  return repository.searchRecipients(query, currentUserId: currentUserId);
-});
+      final repository = ref.read(paymentRecipientRepositoryProvider);
+      final currentUserId = ref.read(currentPaymentUserIdProvider);
+      return repository.searchRecipients(query, currentUserId: currentUserId);
+    });

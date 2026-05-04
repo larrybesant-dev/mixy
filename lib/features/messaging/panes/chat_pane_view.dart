@@ -1,6 +1,5 @@
 import 'dart:async';
 
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,6 +47,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   late final ConversationScrollMemoryNotifier _scrollMemoryNotifier;
   late final MessagingController _messagingController;
   Timer? _typingTimer;
+  Timer? _typingStartTimer;
   Timer? _hydrationTimer;
   bool _isTyping = false;
   bool _didAutoScrollInitialLoad = false;
@@ -84,9 +84,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
       SystemEvent(
         type: 'HYDRATION_START',
         timestamp: DateTime.now(),
-        meta: <String, dynamic>{
-          'conversationId': widget.conversationId,
-        },
+        meta: <String, dynamic>{'conversationId': widget.conversationId},
       ),
     );
     _hydrationTimer = Timer(const Duration(milliseconds: 900), () {
@@ -125,22 +123,20 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     _draftCacheNotifier = ref.read(draftCacheProvider.notifier);
     _scrollMemoryNotifier = ref.read(conversationScrollMemoryProvider.notifier);
     _messagingController = ref.read(messagingControllerProvider);
-    final savedDraft =
-        _draftCacheNotifier.getDraft(widget.conversationId);
+    final savedDraft = _draftCacheNotifier.getDraft(widget.conversationId);
     _messageController = TextEditingController(text: savedDraft);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _messageController.addListener(_onTextChanged);
-    _savedScrollOffset =
-      ref.read(conversationScrollMemoryProvider)[widget.conversationId];
+    _savedScrollOffset = ref.read(
+      conversationScrollMemoryProvider,
+    )[widget.conversationId];
 
     SystemEventBus.instance.emit(
       SystemEvent(
         type: 'MESSAGE_STREAM_ATTACHED',
         timestamp: DateTime.now(),
-        meta: <String, dynamic>{
-          'conversationId': widget.conversationId,
-        },
+        meta: <String, dynamic>{'conversationId': widget.conversationId},
       ),
     );
 
@@ -166,21 +162,32 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
   void _onTextChanged() {
     // Persist draft on every keystroke so tab switches don't lose it.
-    _draftCacheNotifier.setDraft(widget.conversationId, _messageController.text);
+    _draftCacheNotifier.setDraft(
+      widget.conversationId,
+      _messageController.text,
+    );
     if (_messageController.text.isEmpty) {
+      _typingStartTimer?.cancel();
       _clearTyping();
       return;
     }
     if (!_isTyping) {
-      _isTyping = true;
-      _guardAsync(
-        _messagingController.updateTypingStatus(
-          conversationId: widget.conversationId,
-          userId: widget.userId,
-          isTyping: true,
-        ),
-        contextLabel: 'typing_start',
-      );
+      // Debounce the "start typing" write by 350 ms — avoids one Firestore
+      // write per keypress for fast typists hitting the field for the first time.
+      _typingStartTimer?.cancel();
+      _typingStartTimer = Timer(const Duration(milliseconds: 350), () {
+        if (!_isTyping && mounted) {
+          _isTyping = true;
+          _guardAsync(
+            _messagingController.updateTypingStatus(
+              conversationId: widget.conversationId,
+              userId: widget.userId,
+              isTyping: true,
+            ),
+            contextLabel: 'typing_start',
+          );
+        }
+      });
     }
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 4), _clearTyping);
@@ -211,7 +218,10 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     }
     if (_scrollController.hasClients &&
         _scrollController.position.hasContentDimensions) {
-      _scrollMemoryNotifier.setOffset(widget.conversationId, _scrollController.offset);
+      _scrollMemoryNotifier.setOffset(
+        widget.conversationId,
+        _scrollController.offset,
+      );
     }
   }
 
@@ -257,21 +267,23 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
     if (_scrollController.hasClients &&
         _scrollController.position.hasContentDimensions) {
-      _scrollMemoryNotifier.setOffset(widget.conversationId, _scrollController.offset);
+      _scrollMemoryNotifier.setOffset(
+        widget.conversationId,
+        _scrollController.offset,
+      );
     }
     // Safety-net: persist any unsent draft that wasn't saved via _onTextChanged.
     final remainingDraft = _messageController.text;
     _draftCacheNotifier.setDraft(widget.conversationId, remainingDraft);
     _clearTyping();
     _typingTimer?.cancel();
+    _typingStartTimer?.cancel();
     _hydrationTimer?.cancel();
     SystemEventBus.instance.emit(
       SystemEvent(
         type: 'MESSAGE_STREAM_DISPOSE',
         timestamp: DateTime.now(),
-        meta: <String, dynamic>{
-          'conversationId': widget.conversationId,
-        },
+        meta: <String, dynamic>{'conversationId': widget.conversationId},
       ),
     );
     _messageController.removeListener(_onTextChanged);
@@ -293,7 +305,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     _messageController.clear();
 
     final pendingmessage = _Pendingmessage(
-      clientmessageId: '${DateTime.now().microsecondsSinceEpoch}-${widget.userId}',
+      clientmessageId:
+          '${DateTime.now().microsecondsSinceEpoch}-${widget.userId}',
       content: content,
       createdAt: DateTime.now(),
       senderId: widget.userId,
@@ -311,23 +324,24 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
     try {
       await _messagingController.sendmessage(
-            conversationId: widget.conversationId,
-            senderId: widget.userId,
-            senderName: widget.username,
-            senderAvatarUrl: widget.avatarUrl,
-            content: content,
-            clientmessageId: pendingmessage.clientmessageId,
-          );
+        conversationId: widget.conversationId,
+        senderId: widget.userId,
+        senderName: widget.username,
+        senderAvatarUrl: widget.avatarUrl,
+        content: content,
+        clientmessageId: pendingmessage.clientmessageId,
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _pendingmessage.removeWhere(
-          (message) => message.clientmessageId == pendingmessage.clientmessageId,
+          (message) =>
+              message.clientmessageId == pendingmessage.clientmessageId,
         );
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send message: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not send message: $error')));
       return;
     }
 
@@ -339,9 +353,15 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
   @override
   Widget build(BuildContext context) {
-    final messageAsync = ref.watch(messagestreamProvider(widget.conversationId));
-    final paginatedState = ref.watch(paginatedmessageProvider(widget.conversationId));
-    final conversationAsync = ref.watch(conversationDocProvider(widget.conversationId));
+    final messageAsync = ref.watch(
+      messagestreamProvider(widget.conversationId),
+    );
+    final paginatedState = ref.watch(
+      paginatedmessageProvider(widget.conversationId),
+    );
+    final conversationAsync = ref.watch(
+      conversationDocProvider(widget.conversationId),
+    );
     if (conversationAsync.hasError) {
       _markHydrationComplete('conversation_error');
       return AppErrorView(
@@ -375,7 +395,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
       );
       return const AppEmptyView(
         title: 'Conversation unavailable',
-        message: 'This thread may have been removed or access is no longer available.',
+        message:
+            'This thread may have been removed or access is no longer available.',
         icon: Icons.forum_outlined,
       );
     }
@@ -388,15 +409,15 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         ? const AsyncValue<UserModel?>.data(null)
         : ref.watch(feed_user.userProvider(otherUserId));
     final displayName = conversation.type == 'group'
-      ? (conversation.groupName ?? 'Group Chat')
-      : (conversation.getDisplayName(widget.userId).trim().isNotEmpty
-        ? conversation.getDisplayName(widget.userId)
-            : (otherUserAsync.valueOrNull?.username ?? 'Conversation'));
+        ? (conversation.groupName ?? 'Group Chat')
+        : (conversation.getDisplayName(widget.userId).trim().isNotEmpty
+              ? conversation.getDisplayName(widget.userId)
+              : (otherUserAsync.valueOrNull?.username ?? 'Conversation'));
     final peerUser = otherUserAsync.valueOrNull;
     final displayAvatarUrl = sanitizeNetworkImageUrl(
       conversation.type == 'group'
-        ? conversation.groupAvatarUrl
-        : peerUser?.avatarUrl,
+          ? conversation.groupAvatarUrl
+          : peerUser?.avatarUrl,
     );
 
     return Column(
@@ -458,12 +479,17 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   .whereType<String>()
                   .toSet();
               final pendingmessage = _pendingmessage
-                  .where((message) => !liveClientIds.contains(message.clientmessageId))
+                  .where(
+                    (message) =>
+                        !liveClientIds.contains(message.clientmessageId),
+                  )
                   .toList(growable: false);
               final allmessage = [
                 ...paginatedState.oldermessage,
                 ...livemessage,
-                ...pendingmessage.map((message) => message.tomessage(widget.conversationId)),
+                ...pendingmessage.map(
+                  (message) => message.tomessage(widget.conversationId),
+                ),
               ];
 
               if (_pendingmessage.length != pendingmessage.length) {
@@ -532,11 +558,17 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                             ? const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : TextButton(
                                 onPressed: () => ref
-                                    .read(paginatedmessageProvider(widget.conversationId).notifier)
+                                    .read(
+                                      paginatedmessageProvider(
+                                        widget.conversationId,
+                                      ).notifier,
+                                    )
                                     .loadMore(null),
                                 child: const Text('Load older message'),
                               ),
@@ -547,15 +579,18 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   final message =
                       allmessage[index - (paginatedState.hasMore ? 1 : 0)];
                   final isOwn = message.senderId == widget.userId;
-                    final isPending =
-                      pendingClientIds.contains(message.clientmessageId);
+                  final isPending = pendingClientIds.contains(
+                    message.clientmessageId,
+                  );
                   bool isReadByOther = false;
-                    if (isOwn) {
-                    final otherIds =
-                        conversation.participantIds.where((id) => id != widget.userId);
+                  if (isOwn) {
+                    final otherIds = conversation.participantIds.where(
+                      (id) => id != widget.userId,
+                    );
                     isReadByOther = otherIds.any((id) {
                       final readAt = conversation.lastReadAt[id];
-                      return readAt != null && !readAt.isBefore(message.createdAt);
+                      return readAt != null &&
+                          !readAt.isBefore(message.createdAt);
                     });
                   }
 
@@ -565,7 +600,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                       child: Center(
                         child: Text(
                           'message deleted',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 fontStyle: FontStyle.italic,
                                 color: Colors.grey,
                               ),
@@ -575,7 +611,9 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   }
 
                   return Align(
-                    alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: isOwn
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
@@ -613,7 +651,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                   child: Container(
                                     constraints: BoxConstraints(
                                       maxWidth:
-                                          MediaQuery.of(context).size.width * 0.72,
+                                          MediaQuery.of(context).size.width *
+                                          0.72,
                                     ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 14,
@@ -630,14 +669,18 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                               ],
                                             )
                                           : null,
-                                      color: isOwn ? null : VelvetNoir.surfaceHigh,
+                                      color: isOwn
+                                          ? null
+                                          : VelvetNoir.surfaceHigh,
                                       borderRadius: BorderRadius.only(
                                         topLeft: const Radius.circular(18),
                                         topRight: const Radius.circular(18),
-                                        bottomLeft:
-                                            Radius.circular(isOwn ? 18 : 4),
-                                        bottomRight:
-                                            Radius.circular(isOwn ? 4 : 18),
+                                        bottomLeft: Radius.circular(
+                                          isOwn ? 18 : 4,
+                                        ),
+                                        bottomRight: Radius.circular(
+                                          isOwn ? 4 : 18,
+                                        ),
                                       ),
                                       border: isOwn
                                           ? null
@@ -650,16 +693,18 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                         BoxShadow(
                                           color: isOwn
                                               ? VelvetNoir.primaryDim
-                                                  .withValues(alpha: 0.25)
-                                              : Colors.black
-                                                  .withValues(alpha: 0.15),
+                                                    .withValues(alpha: 0.25)
+                                              : Colors.black.withValues(
+                                                  alpha: 0.15,
+                                                ),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         if (!isOwn) ...[
                                           Text(
@@ -687,7 +732,10 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.only(
-                                      top: 3, left: 4, right: 4),
+                                    top: 3,
+                                    left: 4,
+                                    right: 4,
+                                  ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -706,18 +754,24 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                             isReadByOther: isReadByOther,
                                           ),
                                           child: AnimatedSwitcher(
-                                            duration: const Duration(milliseconds: 180),
+                                            duration: const Duration(
+                                              milliseconds: 180,
+                                            ),
                                             switchInCurve: Curves.easeOutCubic,
                                             switchOutCurve: Curves.easeInCubic,
-                                            transitionBuilder: (child, animation) {
-                                              return FadeTransition(
-                                                opacity: animation,
-                                                child: ScaleTransition(
-                                                  scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
-                                                  child: child,
-                                                ),
-                                              );
-                                            },
+                                            transitionBuilder:
+                                                (child, animation) {
+                                                  return FadeTransition(
+                                                    opacity: animation,
+                                                    child: ScaleTransition(
+                                                      scale: Tween<double>(
+                                                        begin: 0.85,
+                                                        end: 1,
+                                                      ).animate(animation),
+                                                      child: child,
+                                                    ),
+                                                  );
+                                                },
                                             child: Icon(
                                               _deliveryStateIcon(
                                                 isPending: isPending,
@@ -752,7 +806,12 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                 },
               );
             },
-            loading: () => const AppLoadingView(label: 'Loading message'),
+            loading: () {
+              if (_pendingmessage.isNotEmpty) {
+                return _buildPendingWhileLoading();
+              }
+              return const AppLoadingView(label: 'Loading message');
+            },
             skipLoadingOnRefresh: true,
             error: (error, stackTrace) => AppErrorView(
               error: friendlyFirestoremessage(
@@ -766,7 +825,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         _TypingIndicatorRow(
           conversationId: widget.conversationId,
           currentUserId: widget.userId,
-            otherUsername: displayName,
+          otherUsername: displayName,
         ),
         Padding(
           padding: EdgeInsets.only(
@@ -788,46 +847,55 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.emoji_emotions_outlined,
-                      color: VelvetNoir.onSurfaceVariant),
+                  icon: const Icon(
+                    Icons.emoji_emotions_outlined,
+                    color: VelvetNoir.onSurfaceVariant,
+                  ),
                   iconSize: 22,
                   padding: EdgeInsets.zero,
                   onPressed: () async {
-                    final allowed =
-                        await GuestAuthGate.requireMessaging(context, ref);
-                    if (!allowed) return;
-                    if (!mounted) return;
-
-                    EmojiPackPicker.show(
+                    final allowed = await GuestAuthGate.requireMessaging(
                       context,
                       ref,
-                      onSelected: (item) => ref
-                          .read(messagingControllerProvider)
-                          .sendmessage(
+                    );
+                    if (!allowed) return;
+                    if (!mounted) return;
+                    final messagingController = ref.read(
+                      messagingControllerProvider,
+                    );
+                    await EmojiPackPicker.show(
+                      // ignore: use_build_context_synchronously
+                      context,
+                      ref,
+                      onSelected: (item) async {
+                        try {
+                          await messagingController.sendmessage(
                             conversationId: widget.conversationId,
                             senderId: widget.userId,
                             senderName: widget.username,
                             senderAvatarUrl: widget.avatarUrl,
                             content: item.messageContent,
-                          )
-                          .catchError((error, stackTrace) {
-                            AppTelemetry.logAction(
-                              level: 'error',
-                              domain: 'messaging',
-                              action: 'emoji_send_failed',
-                              message: 'Emoji message send failed.',
-                              roomId: widget.conversationId,
-                              userId: widget.userId,
-                              error: error,
-                              stackTrace: stackTrace,
-                            );
-                            if (!mounted) return;
-                            ScaffoldMessenger.maybeOf(this.context)?.showSnackBar(
-                              SnackBar(
-                                content: Text('Could not send message: $error'),
-                              ),
-                            );
-                          }),
+                          );
+                        } catch (error, stackTrace) {
+                          AppTelemetry.logAction(
+                            level: 'error',
+                            domain: 'messaging',
+                            action: 'emoji_send_failed',
+                            message: 'Emoji message send failed.',
+                            roomId: widget.conversationId,
+                            userId: widget.userId,
+                            error: error,
+                            stackTrace: stackTrace,
+                          );
+                          if (!mounted) return;
+                          // ignore: use_build_context_synchronously
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            SnackBar(
+                              content: Text('Could not send message: $error'),
+                            ),
+                          );
+                        }
+                      },
                     );
                   },
                 ),
@@ -836,17 +904,20 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                     controller: _messageController,
                     decoration: const InputDecoration(
                       hintText: 'message…',
-                      hintStyle:
-                          TextStyle(color: VelvetNoir.onSurfaceVariant),
+                      hintStyle: TextStyle(color: VelvetNoir.onSurfaceVariant),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 8),
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                     ),
                     style: const TextStyle(
-                        color: VelvetNoir.onSurface, fontSize: 14),
+                      color: VelvetNoir.onSurface,
+                      fontSize: 14,
+                    ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendmessage(),
@@ -862,8 +933,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                       gradient: VelvetNoir.primaryGradient,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.send_rounded,
-                        color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ],
@@ -875,15 +949,68 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
   }
 
+  Widget _buildPendingWhileLoading() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: _pendingmessage.length,
+      itemBuilder: (context, index) {
+        final pending = _pendingmessage[index];
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.72,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [VelvetNoir.primary, VelvetNoir.primaryDim],
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(4),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  EmojimessageContent(content: pending.content, isOwn: true),
+                  const SizedBox(height: 4),
+                  Tooltip(
+                    message: _deliveryStateLabel(
+                      isPending: true,
+                      isReadByOther: false,
+                    ),
+                    child: Icon(
+                      _deliveryStateIcon(isPending: true, isReadByOther: false),
+                      size: 13,
+                      color: _deliveryStateColor(
+                        isPending: true,
+                        isReadByOther: false,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final messageDate = DateTime(
-      dateTime.year,
-      dateTime.month,
-      dateTime.day,
-    );
+    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
 
     if (messageDate == today) {
       return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
@@ -933,7 +1060,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     return 'Delivered';
   }
 
-  void _showReactionPicker(BuildContext context, WidgetRef ref, String messageId) {
+  void _showReactionPicker(
+    BuildContext context,
+    WidgetRef ref,
+    String messageId,
+  ) {
     const emojis = ['❤️', '😂', '😮', '😢', '👍', '👎'];
     showModalBottomSheet<void>(
       context: context,
@@ -942,23 +1073,27 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: emojis.map((emoji) {
-              return GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _guardAsync(
-                    ref.read(messagingControllerProvider).toggleReaction(
-                          conversationId: widget.conversationId,
-                          messageId: messageId,
-                          currentUserId: widget.userId,
-                          emoji: emoji,
-                        ),
-                    contextLabel: 'toggle_reaction',
+            children: emojis
+                .map((emoji) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _guardAsync(
+                        ref
+                            .read(messagingControllerProvider)
+                            .toggleReaction(
+                              conversationId: widget.conversationId,
+                              messageId: messageId,
+                              currentUserId: widget.userId,
+                              emoji: emoji,
+                            ),
+                        contextLabel: 'toggle_reaction',
+                      );
+                    },
+                    child: Text(emoji, style: const TextStyle(fontSize: 32)),
                   );
-                },
-                child: Text(emoji, style: const TextStyle(fontSize: 32)),
-              );
-            }).toList(growable: false),
+                })
+                .toList(growable: false),
           ),
         ),
       ),
@@ -1008,10 +1143,9 @@ class _TypingIndicatorRow extends ConsumerWidget {
                       const SizedBox(width: 6),
                       Text(
                         '$otherUsername is typing…',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: Colors.grey),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -1062,10 +1196,7 @@ class _BouncingDotsState extends State<_BouncingDots>
               offset: Offset(0, dy),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 1.5),
-                child: CircleAvatar(
-                  radius: 3,
-                  backgroundColor: Colors.grey,
-                ),
+                child: CircleAvatar(radius: 3, backgroundColor: Colors.grey),
               ),
             );
           }),
@@ -1105,33 +1236,45 @@ class _ReactionRow extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
           child: Wrap(
             spacing: 4,
-            children: counts.entries.map((e) {
-              final myReaction = reactions[currentUserId] == e.key;
-              return GestureDetector(
-                onTap: () => ref.read(messagingControllerProvider).toggleReaction(
-                      conversationId: conversationId,
-                      messageId: messageId,
-                      currentUserId: currentUserId,
-                      emoji: e.key,
+            children: counts.entries
+                .map((e) {
+                  final myReaction = reactions[currentUserId] == e.key;
+                  return GestureDetector(
+                    onTap: () => ref
+                        .read(messagingControllerProvider)
+                        .toggleReaction(
+                          conversationId: conversationId,
+                          messageId: messageId,
+                          currentUserId: currentUserId,
+                          emoji: e.key,
+                        ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: myReaction
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(999),
+                        border: myReaction
+                            ? Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1,
+                              )
+                            : null,
+                      ),
+                      child: Text(
+                        '${e.key} ${e.value}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: myReaction
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(999),
-                    border: myReaction
-                        ? Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 1,
-                          )
-                        : null,
-                  ),
-                  child: Text('${e.key} ${e.value}', style: const TextStyle(fontSize: 12)),
-                ),
-              );
-            }).toList(growable: false),
+                  );
+                })
+                .toList(growable: false),
           ),
         );
       },

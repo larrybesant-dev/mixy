@@ -54,9 +54,10 @@ class _EmojiParticleState extends State<_EmojiParticle>
       duration: const Duration(milliseconds: 1800),
     );
 
-    _y = Tween<double>(begin: 0, end: -200).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
+    _y = Tween<double>(
+      begin: 0,
+      end: -200,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
     _opacity = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 10),
@@ -91,10 +92,7 @@ class _EmojiParticleState extends State<_EmojiParticle>
             left: leftPx,
             child: Opacity(
               opacity: _opacity.value.clamp(0.0, 1.0),
-              child: Transform.scale(
-                scale: _scale.value,
-                child: child,
-              ),
+              child: Transform.scale(scale: _scale.value, child: child),
             ),
           ),
           child: Text(widget.emoji, style: const TextStyle(fontSize: 36)),
@@ -131,7 +129,9 @@ class EmojiReactionOverlayState extends State<EmojiReactionOverlay> {
     // Randomize horizontal position slightly around the button row area (right side).
     final fraction = 0.60 + _rng.nextDouble() * 0.30;
     setState(() {
-      _particles.add(_ParticleEntry(id: id, emoji: emoji, leftFraction: fraction));
+      _particles.add(
+        _ParticleEntry(id: id, emoji: emoji, leftFraction: fraction),
+      );
     });
   }
 
@@ -189,10 +189,7 @@ class _ReactionButtonRowState extends State<_ReactionButtonRow>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-    _expandAnim = CurvedAnimation(
-      parent: _expandCtrl,
-      curve: Curves.easeOut,
-    );
+    _expandAnim = CurvedAnimation(parent: _expandCtrl, curve: Curves.easeOut);
   }
 
   @override
@@ -251,7 +248,9 @@ class _ReactionButtonRowState extends State<_ReactionButtonRow>
                   : VelvetNoir.surfaceHighest.withValues(alpha: 0.85),
               shape: BoxShape.circle,
               border: Border.all(
-                color: _expanded ? VelvetNoir.secondary : VelvetNoir.outlineVariant,
+                color: _expanded
+                    ? VelvetNoir.secondary
+                    : VelvetNoir.outlineVariant,
               ),
             ),
             alignment: Alignment.center,

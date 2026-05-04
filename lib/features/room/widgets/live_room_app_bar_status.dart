@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-class LiveRoomAppBarStatus extends StatelessWidget implements PreferredSizeWidget {
+class LiveRoomAppBarStatus extends StatelessWidget
+    implements PreferredSizeWidget {
   const LiveRoomAppBarStatus({
     super.key,
     required this.roomDescription,
@@ -16,9 +17,9 @@ class LiveRoomAppBarStatus extends StatelessWidget implements PreferredSizeWidge
 
   @override
   Size get preferredSize => Size.fromHeight(
-        (roomDescription.isEmpty ? 0.0 : 24.0) +
-            (cameraStatus != null ? 20.0 : 0.0),
-      );
+    (roomDescription.isEmpty ? 0.0 : 24.0) +
+        (cameraStatus != null ? 20.0 : 0.0),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +37,7 @@ class LiveRoomAppBarStatus extends StatelessWidget implements PreferredSizeWidge
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
             child: Text(
               cameraStatus!,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
               textAlign: TextAlign.center,
             ),
           ),

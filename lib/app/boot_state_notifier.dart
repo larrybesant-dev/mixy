@@ -5,7 +5,7 @@ import 'boot_state.dart';
 /// Transitions through: loading → ready/degraded/failed
 class BootStateNotifier extends StateNotifier<BootState> {
   BootStateNotifier({BootState initialState = BootState.loading})
-      : super(initialState);
+    : super(initialState);
 
   /// Move boot flow back into loading state for explicit retry attempts.
   void setLoading() {
@@ -31,7 +31,8 @@ class BootStateNotifier extends StateNotifier<BootState> {
 }
 
 /// Reactive boot state provider. Watch this to respond to state changes in real-time.
-final bootStateProvider =
-    StateNotifierProvider<BootStateNotifier, BootState>((ref) {
+final bootStateProvider = StateNotifierProvider<BootStateNotifier, BootState>((
+  ref,
+) {
   return BootStateNotifier();
 });

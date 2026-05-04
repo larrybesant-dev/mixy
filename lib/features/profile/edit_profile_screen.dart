@@ -15,9 +15,24 @@ import 'profile_controller.dart';
 
 // Common interest tags users can tap to add
 const _kInterestSuggestions = [
-  'Music', 'Gaming', 'Travel', 'Fitness', 'Food', 'Art', 'Movies',
-  'Sports', 'Tech', 'Cooking', 'Reading', 'Dancing', 'Fashion',
-  'Photography', 'Nature', 'Anime', 'Comedy', 'Podcasts',
+  'Music',
+  'Gaming',
+  'Travel',
+  'Fitness',
+  'Food',
+  'Art',
+  'Movies',
+  'Sports',
+  'Tech',
+  'Cooking',
+  'Reading',
+  'Dancing',
+  'Fashion',
+  'Photography',
+  'Nature',
+  'Anime',
+  'Comedy',
+  'Podcasts',
 ];
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -58,7 +73,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-        length: 4, vsync: this, initialIndex: widget.initialTab.clamp(0, 3));
+      length: 4,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 3),
+    );
     final s = ref.read(profileControllerProvider);
     _nameController.text = s.username ?? '';
     _emailController.text = s.email ?? '';
@@ -108,15 +126,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       final bytes = await file.readAsBytes();
       final ext = file.name.split('.').last.toLowerCase();
       final ref = FirebaseStorage.instance.ref('$storagePath.$ext');
-      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'image/$ext'));
+      final snap = await ref.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/$ext'),
+      );
       final url = await snap.ref.getDownloadURL();
       if (mounted) onSuccess(url);
     } catch (e, st) {
-      developer.log('Upload failed', name: 'EditProfile', error: e, stackTrace: st);
+      developer.log(
+        'Upload failed',
+        name: 'EditProfile',
+        error: e,
+        stackTrace: st,
+      );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     } finally {
       setLoading(false);
@@ -127,25 +153,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   Future<void> _saveProfile() async {
     final current = ref.read(profileControllerProvider);
-    await ref.read(profileControllerProvider.notifier).updateProfile(
-      current.copyWith(
-        username: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        avatarUrl: _avatarUrl ?? '',
-        coverPhotoUrl: _coverPhotoUrl ?? '',
-        bio: _bioController.text.trim(),
-        aboutMe: _aboutMeController.text.trim(),
-        profileMusicUrl: _musicUrlController.text.trim(),
-        profileMusicTitle: _musicTitleController.text.trim(),
-        profileAccentColor: _profileAccentColor,
-        interests: List<String>.from(_interests),
-      ),
-    );
+    await ref
+        .read(profileControllerProvider.notifier)
+        .updateProfile(
+          current.copyWith(
+            username: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            avatarUrl: _avatarUrl ?? '',
+            coverPhotoUrl: _coverPhotoUrl ?? '',
+            bio: _bioController.text.trim(),
+            aboutMe: _aboutMeController.text.trim(),
+            profileMusicUrl: _musicUrlController.text.trim(),
+            profileMusicTitle: _musicTitleController.text.trim(),
+            profileAccentColor: _profileAccentColor,
+            interests: List<String>.from(_interests),
+          ),
+        );
     if (!mounted) return;
     if (ref.read(profileControllerProvider).error == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile saved!')));
       context.pop();
     }
   }
@@ -153,14 +181,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   // ── Completion banner ─────────────────────────────────────────────────────
 
   Widget _completionBanner(ProfileState s) {
-    final pct = ProfileCompletion.completeness(s.copyWith(
-      username: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : s.username,
-      bio: _bioController.text.trim().isNotEmpty ? _bioController.text.trim() : s.bio,
-      aboutMe: _aboutMeController.text.trim().isNotEmpty ? _aboutMeController.text.trim() : s.aboutMe,
-      avatarUrl: _avatarUrl ?? s.avatarUrl,
-      coverPhotoUrl: _coverPhotoUrl ?? s.coverPhotoUrl,
-      interests: _interests.isNotEmpty ? _interests : s.interests,
-    ));
+    final pct = ProfileCompletion.completeness(
+      s.copyWith(
+        username: _nameController.text.trim().isNotEmpty
+            ? _nameController.text.trim()
+            : s.username,
+        bio: _bioController.text.trim().isNotEmpty
+            ? _bioController.text.trim()
+            : s.bio,
+        aboutMe: _aboutMeController.text.trim().isNotEmpty
+            ? _aboutMeController.text.trim()
+            : s.aboutMe,
+        avatarUrl: _avatarUrl ?? s.avatarUrl,
+        coverPhotoUrl: _coverPhotoUrl ?? s.coverPhotoUrl,
+        interests: _interests.isNotEmpty ? _interests : s.interests,
+      ),
+    );
     final pctInt = (pct * 100).round();
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -176,8 +212,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Profile completion', style: TextStyle(color: VelvetNoir.primary, fontWeight: FontWeight.w600)),
-              Text('$pctInt%', style: TextStyle(color: VelvetNoir.primary, fontWeight: FontWeight.bold)),
+              Text(
+                'Profile completion',
+                style: TextStyle(
+                  color: VelvetNoir.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '$pctInt%',
+                style: TextStyle(
+                  color: VelvetNoir.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -210,10 +258,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
               onTap: _isUploadingCover
                   ? null
                   : () => _pickAndUpload(
-                        storagePath: 'users/${FirebaseAuth.instance.currentUser?.uid}/cover',
-                        onSuccess: (url) => setState(() => _coverPhotoUrl = url),
-                        setLoading: (v) => setState(() => _isUploadingCover = v),
-                      ),
+                      storagePath:
+                          'users/${FirebaseAuth.instance.currentUser?.uid}/cover',
+                      onSuccess: (url) => setState(() => _coverPhotoUrl = url),
+                      setLoading: (v) => setState(() => _isUploadingCover = v),
+                    ),
               child: Container(
                 height: 120,
                 decoration: BoxDecoration(
@@ -230,17 +279,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   child: _isUploadingCover
                       ? const CircularProgressIndicator()
                       : (_coverPhotoUrl == null || _coverPhotoUrl!.isEmpty)
-                          ? Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.add_photo_alternate_outlined,
-                                    color: Colors.white38, size: 32),
-                                const SizedBox(height: 4),
-                                const Text('Add cover photo',
-                                    style: TextStyle(color: Colors.white38, fontSize: 12)),
-                              ],
-                            )
-                          : const SizedBox.shrink(),
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: Colors.white38,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Add cover photo',
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -252,10 +309,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 onTap: _isUploadingAvatar
                     ? null
                     : () => _pickAndUpload(
-                          storagePath: 'users/${FirebaseAuth.instance.currentUser?.uid}/avatar',
-                          onSuccess: (url) => setState(() => _avatarUrl = url),
-                          setLoading: (v) => setState(() => _isUploadingAvatar = v),
-                        ),
+                        storagePath:
+                            'users/${FirebaseAuth.instance.currentUser?.uid}/avatar',
+                        onSuccess: (url) => setState(() => _avatarUrl = url),
+                        setLoading: (v) =>
+                            setState(() => _isUploadingAvatar = v),
+                      ),
                 child: Stack(
                   alignment: Alignment.bottomRight,
                   children: [
@@ -264,25 +323,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                       backgroundColor: const Color(0xFF23253A),
                       child: _isUploadingAvatar
                           ? const SizedBox(
-                              width: 24, height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2))
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                              ? ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: _avatarUrl!,
-                                    width: 72,
-                                    height: 72,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (_, _, _) =>
-                                        const Icon(Icons.person, size: 32),
-                                  ),
-                                )
-                              : const Icon(Icons.person, size: 32, color: Colors.white54),
+                          ? ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: _avatarUrl!,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, _, _) =>
+                                    const Icon(Icons.person, size: 32),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 32,
+                              color: Colors.white54,
+                            ),
                     ),
                     CircleAvatar(
                       radius: 12,
                       backgroundColor: VelvetNoir.primary,
-                      child: const Icon(Icons.camera_alt, size: 12, color: Colors.white),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -291,7 +360,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           ],
         ),
         const SizedBox(height: 40),
-        _field(_nameController, 'Display name', Icons.person_outline, next: true),
+        _field(
+          _nameController,
+          'Display name',
+          Icons.person_outline,
+          next: true,
+        ),
         const SizedBox(height: 14),
         _field(_emailController, 'Email', Icons.email_outlined, next: true),
         const SizedBox(height: 14),
@@ -302,7 +376,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             labelText: 'New password (leave blank to keep)',
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              icon: Icon(_showPassword ? Icons.visibility : Icons.visibility_off),
+              icon: Icon(
+                _showPassword ? Icons.visibility : Icons.visibility_off,
+              ),
               onPressed: () => setState(() => _showPassword = !_showPassword),
             ),
           ),
@@ -311,12 +387,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           title: const Text('Private account'),
-          subtitle: Text(s.privacy.isPrivate
-              ? 'Only followers can view your profile'
-              : 'Anyone can view your profile'),
+          subtitle: Text(
+            s.privacy.isPrivate
+                ? 'Only followers can view your profile'
+                : 'Anyone can view your profile',
+          ),
           value: s.privacy.isPrivate,
-          onChanged: (val) => ref.read(profileControllerProvider.notifier)
-              .updateDraft(s.copyWith(privacy: s.privacy.copyWith(isPrivate: val))),
+          onChanged: (val) => ref
+              .read(profileControllerProvider.notifier)
+              .updateDraft(
+                s.copyWith(privacy: s.privacy.copyWith(isPrivate: val)),
+              ),
         ),
       ],
     );
@@ -328,7 +409,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Short bio', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        const Text(
+          'Short bio',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: _bioController,
@@ -340,7 +424,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           ),
         ),
         const SizedBox(height: 14),
-        const Text('About me', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        const Text(
+          'About me',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: _aboutMeController,
@@ -383,38 +470,48 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         ),
         const SizedBox(height: 16),
         if (_interests.isNotEmpty) ...[
-          const Text('Your interests', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const Text(
+            'Your interests',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: _interests
-                .map((i) => Chip(
-                      label: Text(i),
-                      onDeleted: () => setState(() => _interests.remove(i)),
-                      deleteIconColor: VelvetNoir.primary,
-                      backgroundColor: const Color(0xFF1C1F2C),
-                      side: BorderSide(color: VelvetNoir.primary.withAlpha(80)),
-                      labelStyle: const TextStyle(color: Colors.white),
-                    ))
+                .map(
+                  (i) => Chip(
+                    label: Text(i),
+                    onDeleted: () => setState(() => _interests.remove(i)),
+                    deleteIconColor: VelvetNoir.primary,
+                    backgroundColor: const Color(0xFF1C1F2C),
+                    side: BorderSide(color: VelvetNoir.primary.withAlpha(80)),
+                    labelStyle: const TextStyle(color: Colors.white),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 20),
         ],
-        const Text('Suggestions', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        const Text(
+          'Suggestions',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: _kInterestSuggestions
               .where((s) => !_interests.contains(s))
-              .map((s) => ActionChip(
-                    label: Text(s),
-                    onPressed: () => _addInterest(s),
-                    backgroundColor: const Color(0xFF16181F),
-                    side: const BorderSide(color: Color(0xFF2E2F3A)),
-                    labelStyle: const TextStyle(color: Colors.white70),
-                  ))
+              .map(
+                (s) => ActionChip(
+                  label: Text(s),
+                  onPressed: () => _addInterest(s),
+                  backgroundColor: const Color(0xFF16181F),
+                  side: const BorderSide(color: Color(0xFF2E2F3A)),
+                  labelStyle: const TextStyle(color: Colors.white70),
+                ),
+              )
               .toList(),
         ),
       ],
@@ -430,8 +527,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  Widget _field(TextEditingController c, String label, IconData icon,
-      {bool next = false}) {
+  Widget _field(
+    TextEditingController c,
+    String label,
+    IconData icon, {
+    bool next = false,
+  }) {
     return TextFormField(
       controller: c,
       decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
@@ -455,9 +556,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             onPressed: state.isLoading ? null : _saveProfile,
             child: state.isLoading
                 ? const SizedBox(
-                    width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Text('Save', style: TextStyle(color: VelvetNoir.primary, fontWeight: FontWeight.bold)),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Save',
+                    style: TextStyle(
+                      color: VelvetNoir.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
         bottom: TabBar(
@@ -485,8 +594,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 context.pageHorizontalPadding,
                 0,
               ),
-              child: Text(state.error!,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+              child: Text(
+                state.error!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+              ),
             ),
           Expanded(
             child: TabBarView(
@@ -508,17 +619,39 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Profile Music', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text(
+          'Profile Music',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
         const SizedBox(height: 12),
-        _field(_musicTitleController, 'Song Title', Icons.music_note_outlined, next: true),
+        _field(
+          _musicTitleController,
+          'Song Title',
+          Icons.music_note_outlined,
+          next: true,
+        ),
         const SizedBox(height: 14),
         _field(_musicUrlController, 'Direct MP3 URL', Icons.link, next: true),
         const Padding(
           padding: EdgeInsets.only(top: 6),
-          child: Text('Enter a direct https link to an MP3 file.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+          child: Text(
+            'Enter a direct https link to an MP3 file.',
+            style: TextStyle(color: Colors.white54, fontSize: 11),
+          ),
         ),
         const SizedBox(height: 24),
-        const Text('Accent Color', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text(
+          'Accent Color',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 10,
@@ -538,7 +671,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   Widget _colorOption(String? hex, String label) {
     final isSelected = _profileAccentColor == hex;
-    final color = hex != null ? Color(int.parse(hex.replaceFirst('#', '0xFF'))) : VelvetNoir.primary;
+    final color = hex != null
+        ? Color(int.parse(hex.replaceFirst('#', '0xFF')))
+        : VelvetNoir.primary;
     return GestureDetector(
       onTap: () => setState(() => _profileAccentColor = hex),
       child: Column(
@@ -549,12 +684,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
-              boxShadow: isSelected ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)] : null,
+              border: isSelected
+                  ? Border.all(color: Colors.white, width: 3)
+                  : null,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.5),
+                        blurRadius: 10,
+                      ),
+                    ]
+                  : null,
             ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: isSelected ? Colors.white : Colors.white54)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: isSelected ? Colors.white : Colors.white54,
+            ),
+          ),
         ],
       ),
     );

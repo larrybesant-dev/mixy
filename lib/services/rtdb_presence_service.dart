@@ -28,8 +28,7 @@ class RtdbPresenceService {
   bool _camOn = false;
   bool _micOn = false;
 
-  DatabaseReference? _userRef(String userId) =>
-      _rtdb?.ref('status/$userId');
+  DatabaseReference? _userRef(String userId) => _rtdb?.ref('status/$userId');
 
   DatabaseReference? _sessionsRef(String userId) =>
       _userRef(userId)?.child('sessions');

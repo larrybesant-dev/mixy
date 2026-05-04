@@ -44,13 +44,11 @@ class _VipScreenState extends ConsumerState<VipScreen> {
     });
 
     try {
-      final callable = FirebaseFunctions.instance
-          .httpsCallable('createCheckoutSessionCallable');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'createCheckoutSessionCallable',
+      );
       final result = await callable.call<Map<String, dynamic>>(
-        <String, dynamic>{
-          'packageId': 'premium_access',
-          'tier': tier,
-        },
+        <String, dynamic>{'packageId': 'premium_access', 'tier': tier},
       );
 
       final data = Map<String, dynamic>.from(result.data);
@@ -120,7 +118,11 @@ class _VipScreenState extends ConsumerState<VipScreen> {
         ),
         title: Row(
           children: [
-            const Icon(Icons.workspace_premium_rounded, color: _vPrimary, size: 22),
+            const Icon(
+              Icons.workspace_premium_rounded,
+              color: _vPrimary,
+              size: 22,
+            ),
             const SizedBox(width: 8),
             Text(
               'MIXVY VIP',
@@ -146,7 +148,8 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                   // Clear pending flag if webhook arrived.
                   if (_awaitingWebhookConfirmation) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) setState(() => _awaitingWebhookConfirmation = false);
+                      if (mounted)
+                        setState(() => _awaitingWebhookConfirmation = false);
                     });
                   }
                   return _VipUnlockedView();
@@ -186,7 +189,10 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                       yearlyPrice: 49.99,
                       isYearly: _isYearly,
                       accentColor: const Color(0xFFB8C0C8),
-                      gradientColors: const [Color(0xFF1A1E22), Color(0xFF0B0B0B)],
+                      gradientColors: const [
+                        Color(0xFF1A1E22),
+                        Color(0xFF0B0B0B),
+                      ],
                       icon: Icons.star_outline_rounded,
                       isBusy: _checkoutInProgress,
                       onPressed: () => _startVipCheckout(tier: 'silver'),
@@ -206,7 +212,10 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                       yearlyPrice: 99.99,
                       isYearly: _isYearly,
                       accentColor: _vPrimary,
-                      gradientColors: const [Color(0xFF2A1E05), Color(0xFF1A1200)],
+                      gradientColors: const [
+                        Color(0xFF2A1E05),
+                        Color(0xFF1A1200),
+                      ],
                       icon: Icons.workspace_premium_rounded,
                       isRecommended: true,
                       isBusy: _checkoutInProgress,
@@ -229,7 +238,10 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                       yearlyPrice: 199.99,
                       isYearly: _isYearly,
                       accentColor: const Color(0xFF9CD0FA),
-                      gradientColors: const [Color(0xFF0A1525), Color(0xFF050C18)],
+                      gradientColors: const [
+                        Color(0xFF0A1525),
+                        Color(0xFF050C18),
+                      ],
                       icon: Icons.diamond_outlined,
                       isBusy: _checkoutInProgress,
                       onPressed: () => _startVipCheckout(tier: 'diamond'),
@@ -246,7 +258,9 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                     ),
                     const SizedBox(height: 32),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: context.pageHorizontalPadding),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.pageHorizontalPadding,
+                      ),
                       child: Text(
                         'Access unlocks automatically after successful Stripe checkout. '
                         'No waitlist state is used for VIP entitlement.',
@@ -300,7 +314,11 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                 ),
               ],
             ),
-            child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 36),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -365,7 +383,9 @@ class _SignInRequiredView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: context.pageHorizontalPadding),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.pageHorizontalPadding,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -533,9 +553,7 @@ class _ToggleChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? _vPrimary : _vCard,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? _vPrimary : _vOutline,
-          ),
+          border: Border.all(color: isSelected ? _vPrimary : _vOutline),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -623,7 +641,9 @@ class _TierCard extends StatelessWidget {
                 colors: gradientColors,
               ),
               border: Border.all(
-                color: accentColor.withValues(alpha: isRecommended ? 0.6 : 0.25),
+                color: accentColor.withValues(
+                  alpha: isRecommended ? 0.6 : 0.25,
+                ),
                 width: isRecommended ? 1.5 : 1,
               ),
               boxShadow: isRecommended
@@ -648,7 +668,9 @@ class _TierCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: accentColor.withValues(alpha: 0.15),
-                        border: Border.all(color: accentColor.withValues(alpha: 0.4)),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Icon(icon, color: accentColor, size: 22),
                     ),
@@ -698,7 +720,10 @@ class _TierCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                Container(height: 1, color: accentColor.withValues(alpha: 0.15)),
+                Container(
+                  height: 1,
+                  color: accentColor.withValues(alpha: 0.15),
+                ),
                 const SizedBox(height: 16),
                 ...features.map((feature) {
                   return Padding(
@@ -712,7 +737,11 @@ class _TierCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: accentColor.withValues(alpha: 0.15),
                           ),
-                          child: Icon(Icons.check, color: accentColor, size: 11),
+                          child: Icon(
+                            Icons.check,
+                            color: accentColor,
+                            size: 11,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -746,8 +775,8 @@ class _TierCard extends StatelessWidget {
                       isBusy
                           ? 'OPENING CHECKOUT...'
                           : isRecommended
-                              ? 'UNLOCK VIP - MOST POPULAR'
-                              : 'UNLOCK VIP',
+                          ? 'UNLOCK VIP - MOST POPULAR'
+                          : 'UNLOCK VIP',
                       style: GoogleFonts.raleway(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -764,7 +793,10 @@ class _TierCard extends StatelessWidget {
               top: -12,
               right: 20,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFD4AF37), Color(0xFF8C6020)],

@@ -16,7 +16,10 @@ class Host {
   Host(this.userId);
 }
 
-final hostProvider = StreamProvider.autoDispose.family<Host?, String>((ref, roomId) {
+final hostProvider = StreamProvider.autoDispose.family<Host?, String>((
+  ref,
+  roomId,
+) {
   final firestore = ref.watch(roomFirestoreProvider);
   return firestore.collection('rooms').doc(roomId).snapshots().map((doc) {
     final data = doc.data();

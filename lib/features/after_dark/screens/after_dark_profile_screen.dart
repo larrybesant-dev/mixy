@@ -22,12 +22,12 @@ class AfterDarkProfileScreen extends ConsumerStatefulWidget {
 
 class _AfterDarkProfileScreenState
     extends ConsumerState<AfterDarkProfileScreen> {
-  final _stageNameCtrl  = TextEditingController();
-  final _adultBioCtrl   = TextEditingController();
+  final _stageNameCtrl = TextEditingController();
+  final _adultBioCtrl = TextEditingController();
   final _lookingForCtrl = TextEditingController();
-  bool _profilePrivate  = false;
-  bool _saving          = false;
-  bool _loaded          = false;
+  bool _profilePrivate = false;
+  bool _saving = false;
+  bool _loaded = false;
 
   @override
   void initState() {
@@ -45,10 +45,10 @@ class _AfterDarkProfileScreenState
     if (!mounted) return;
     final data = doc.data() ?? {};
     setState(() {
-      _stageNameCtrl.text  = (data['adultStageName'] as String?) ?? '';
-      _adultBioCtrl.text   = (data['adultBio'] as String?) ?? '';
+      _stageNameCtrl.text = (data['adultStageName'] as String?) ?? '';
+      _adultBioCtrl.text = (data['adultBio'] as String?) ?? '';
       _lookingForCtrl.text = (data['adultLookingFor'] as String?) ?? '';
-      _profilePrivate      = (data['adultProfilePrivate'] as bool?) ?? false;
+      _profilePrivate = (data['adultProfilePrivate'] as bool?) ?? false;
       _loaded = true;
     });
   }
@@ -58,15 +58,12 @@ class _AfterDarkProfileScreenState
     if (uid == null) return;
     setState(() => _saving = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set({
-        'adultStageName':      _stageNameCtrl.text.trim(),
-        'adultBio':            _adultBioCtrl.text.trim(),
-        'adultLookingFor':     _lookingForCtrl.text.trim(),
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'adultStageName': _stageNameCtrl.text.trim(),
+        'adultBio': _adultBioCtrl.text.trim(),
+        'adultLookingFor': _lookingForCtrl.text.trim(),
         'adultProfilePrivate': _profilePrivate,
-        'updatedAt':           FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -77,9 +74,9 @@ class _AfterDarkProfileScreenState
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -90,8 +87,10 @@ class _AfterDarkProfileScreenState
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: EmberDark.surfaceHigh,
-        title: const Text('Disable After Dark',
-            style: TextStyle(color: EmberDark.onSurface)),
+        title: const Text(
+          'Disable After Dark',
+          style: TextStyle(color: EmberDark.onSurface),
+        ),
         content: const Text(
           'This will remove your After Dark access and clear your PIN. You can re-enable it anytime.',
           style: TextStyle(color: EmberDark.onSurfaceVariant),
@@ -99,13 +98,17 @@ class _AfterDarkProfileScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: EmberDark.onSurfaceVariant)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: EmberDark.onSurfaceVariant),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Disable',
-                style: TextStyle(color: EmberDark.primary)),
+            child: const Text(
+              'Disable',
+              style: TextStyle(color: EmberDark.primary),
+            ),
           ),
         ],
       ),
@@ -154,7 +157,8 @@ class _AfterDarkProfileScreenState
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: EmberDark.outlineVariant.withValues(alpha: 0.5)),
+                  color: EmberDark.outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
                 children: [
@@ -165,25 +169,32 @@ class _AfterDarkProfileScreenState
                       gradient: EmberDark.bannerGradient,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.local_fire_department_rounded,
-                        color: Colors.white, size: 30),
+                    child: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('After Dark Profile',
-                          style: TextStyle(
-                            color: EmberDark.onSurface,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
-                          )),
+                      Text(
+                        'After Dark Profile',
+                        style: TextStyle(
+                          color: EmberDark.onSurface,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      ),
                       SizedBox(height: 4),
-                      Text('Visible to adults inside your late-night circle',
-                          style: TextStyle(
-                            color: EmberDark.onSurfaceVariant,
-                            fontSize: 12,
-                          )),
+                      Text(
+                        'Visible to adults inside your late-night circle',
+                        style: TextStyle(
+                          color: EmberDark.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -227,23 +238,30 @@ class _AfterDarkProfileScreenState
                 color: EmberDark.surfaceHigh,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                    color: EmberDark.outlineVariant.withValues(alpha: 0.4)),
+                  color: EmberDark.outlineVariant.withValues(alpha: 0.4),
+                ),
               ),
               child: SwitchListTile(
                 value: _profilePrivate,
                 onChanged: (v) => setState(() => _profilePrivate = v),
-                title: const Text('Private Profile',
-                    style: TextStyle(color: EmberDark.onSurface)),
+                title: const Text(
+                  'Private Profile',
+                  style: TextStyle(color: EmberDark.onSurface),
+                ),
                 subtitle: Text(
                   _profilePrivate
-                    ? 'Only people you trust can see your After Dark profile.'
-                    : 'Your After Dark profile is visible to all eligible 18+ users.',
+                      ? 'Only people you trust can see your After Dark profile.'
+                      : 'Your After Dark profile is visible to all eligible 18+ users.',
                   style: const TextStyle(
-                      color: EmberDark.onSurfaceVariant, fontSize: 12),
+                    color: EmberDark.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
                 activeThumbColor: EmberDark.primary,
-                secondary: const Icon(Icons.visibility_outlined,
-                    color: EmberDark.onSurfaceVariant),
+                secondary: const Icon(
+                  Icons.visibility_outlined,
+                  color: EmberDark.onSurfaceVariant,
+                ),
               ),
             ),
 
@@ -256,7 +274,9 @@ class _AfterDarkProfileScreenState
               child: _saving
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: EmberDark.primary))
+                        color: EmberDark.primary,
+                      ),
+                    )
                   : DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: EmberDark.primaryGradient,
@@ -275,14 +295,17 @@ class _AfterDarkProfileScreenState
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999)),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
-                        child: const Text('Save Midnight Profile',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            )),
+                        child: const Text(
+                          'Save Midnight Profile',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
                       ),
                     ),
             ),
@@ -298,14 +321,20 @@ class _AfterDarkProfileScreenState
               height: 48,
               child: OutlinedButton.icon(
                 onPressed: _disable,
-                icon: const Icon(Icons.power_off_outlined,
-                    size: 18, color: EmberDark.error),
-                label: const Text('Disable After Dark',
-                    style: TextStyle(color: EmberDark.error)),
+                icon: const Icon(
+                  Icons.power_off_outlined,
+                  size: 18,
+                  color: EmberDark.error,
+                ),
+                label: const Text(
+                  'Disable After Dark',
+                  style: TextStyle(color: EmberDark.error),
+                ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: EmberDark.error),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999)),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               ),
             ),
@@ -346,23 +375,21 @@ class _AfterDarkProfileScreenState
         fillColor: EmberDark.surfaceHigh,
         prefixIcon: Icon(icon, color: EmberDark.onSurfaceVariant, size: 18),
         border: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(isRound ? 999 : 14),
+          borderRadius: BorderRadius.circular(isRound ? 999 : 14),
           borderSide: BorderSide(color: EmberDark.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(isRound ? 999 : 14),
+          borderRadius: BorderRadius.circular(isRound ? 999 : 14),
           borderSide: BorderSide(color: EmberDark.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(isRound ? 999 : 14),
-          borderSide:
-              const BorderSide(color: EmberDark.primary, width: 2),
+          borderRadius: BorderRadius.circular(isRound ? 999 : 14),
+          borderSide: const BorderSide(color: EmberDark.primary, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 14,
+        ),
       ),
     );
   }

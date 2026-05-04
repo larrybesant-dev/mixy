@@ -1,6 +1,5 @@
 import 'dart:async';
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -88,8 +87,9 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
 
   @override
   Widget build(BuildContext context) {
-    final conversationsAsync =
-        ref.watch(conversationsStreamProvider(widget.userId));
+    final conversationsAsync = ref.watch(
+      conversationsStreamProvider(widget.userId),
+    );
     final requestsAsync = ref.watch(requestsStreamProvider(widget.userId));
     final requestCount = requestsAsync.valueOrNull?.length ?? 0;
 
@@ -213,8 +213,11 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.mark_email_unread_outlined,
-                        color: VelvetNoir.secondaryBright, size: 18),
+                    const Icon(
+                      Icons.mark_email_unread_outlined,
+                      color: VelvetNoir.secondaryBright,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       '$requestCount request${requestCount > 1 ? 's' : ''}',
@@ -238,8 +241,11 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                       ),
                     ),
                     const Spacer(),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: VelvetNoir.onSurfaceVariant, size: 18),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: VelvetNoir.onSurfaceVariant,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -358,8 +364,10 @@ class MessageRequestsSheet extends ConsumerWidget {
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close,
-                        color: VelvetNoir.onSurfaceVariant),
+                    icon: const Icon(
+                      Icons.close,
+                      color: VelvetNoir.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -407,7 +415,8 @@ class MessageRequestsSheet extends ConsumerWidget {
                           style: const TextStyle(color: VelvetNoir.onSurface),
                         ),
                         subtitle: Text(
-                          conversation.lastMessagePreview ?? 'New message request',
+                          conversation.lastMessagePreview ??
+                              'New message request',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -416,13 +425,17 @@ class MessageRequestsSheet extends ConsumerWidget {
                         ),
                         trailing: TextButton(
                           onPressed: () async {
-                            await ref.read(messagingControllerProvider).acceptmessageRequest(
+                            await ref
+                                .read(messagingControllerProvider)
+                                .acceptmessageRequest(
                                   conversationId: conversation.id,
                                 );
                             if (context.mounted) {
                               Navigator.of(context).pop();
                               unawaited(
-                                GoRouter.of(context).push('/chat/${conversation.id}'),
+                                GoRouter.of(
+                                  context,
+                                ).push('/chat/${conversation.id}'),
                               );
                             }
                           },
@@ -444,7 +457,10 @@ class MessageRequestsSheet extends ConsumerWidget {
   }
 }
 
-String? _otherParticipantIdForConversation(Conversation conversation, String userId) {
+String? _otherParticipantIdForConversation(
+  Conversation conversation,
+  String userId,
+) {
   if (conversation.type == 'group') {
     return null;
   }
@@ -483,9 +499,11 @@ class _ConversationsList extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.chat_bubble_outline,
-                  size: 56,
-                  color: VelvetNoir.primary.withValues(alpha: 0.35)),
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 56,
+                color: VelvetNoir.primary.withValues(alpha: 0.35),
+              ),
               const SizedBox(height: 14),
               Text(
                 emptymessage,
@@ -514,12 +532,16 @@ class _ConversationsList extends ConsumerWidget {
     }
 
     final visiblePeerIds = conversations
-        .map((conversation) => _otherParticipantIdForConversation(conversation, userId))
+        .map(
+          (conversation) =>
+              _otherParticipantIdForConversation(conversation, userId),
+        )
         .whereType<String>()
         .toSet()
         .toList(growable: false);
     final presenceBatchKey = buildPresenceBatchKey(visiblePeerIds);
-    final presenceMap = ref.watch(batchedPresenceProvider(presenceBatchKey)).valueOrNull ??
+    final presenceMap =
+        ref.watch(batchedPresenceProvider(presenceBatchKey)).valueOrNull ??
         const <String, PresenceModel>{};
 
     return ListView.separated(
@@ -539,17 +561,16 @@ class _ConversationsList extends ConsumerWidget {
             ),
           );
         }
-        return const Divider(
-          indent: 52,
-          height: 1,
-          color: Color(0x18F7EDE2),
-        );
+        return const Divider(indent: 52, height: 1, color: Color(0x18F7EDE2));
       },
       itemBuilder: (context, index) => _ConversationTile(
         conversation: conversations[index],
         userId: userId,
         peerPresence:
-            presenceMap[_otherParticipantIdForConversation(conversations[index], userId)],
+            presenceMap[_otherParticipantIdForConversation(
+              conversations[index],
+              userId,
+            )],
       ),
     );
   }
@@ -575,7 +596,8 @@ class _ConversationTile extends ConsumerWidget {
     final previewText = conversation.lastMessagePreview ?? 'No message yet';
     final isGroup = conversation.type == 'group';
     final peerUserId = _otherParticipantId();
-    final typingUsers = ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
+    final typingUsers =
+        ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
         const <String>{};
     final isPeerTyping = peerUserId != null && typingUsers.contains(peerUserId);
     final resolvedPresence = isGroup ? null : peerPresence;
@@ -588,7 +610,9 @@ class _ConversationTile extends ConsumerWidget {
         onTap: () => GoRouter.of(context).push('/chat/${conversation.id}'),
         onLongPress: () => _showActionSheet(context, ref),
         child: Container(
-          color: unread ? VelvetNoir.secondary.withValues(alpha: 0.08) : Colors.transparent,
+          color: unread
+              ? VelvetNoir.secondary.withValues(alpha: 0.08)
+              : Colors.transparent,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -707,8 +731,9 @@ class _ConversationTile extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.raleway(
-                              fontWeight:
-                                  unread ? FontWeight.w800 : FontWeight.w700,
+                              fontWeight: unread
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
                               fontSize: 14,
                               color: VelvetNoir.onSurface,
                               letterSpacing: 0.1,
@@ -720,8 +745,9 @@ class _ConversationTile extends ConsumerWidget {
                           _formatTime(conversation.lastMessageAt),
                           style: GoogleFonts.raleway(
                             fontSize: 11,
-                            fontWeight:
-                                unread ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: unread
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                             color: unread
                                 ? VelvetNoir.primary
                                 : VelvetNoir.onSurfaceVariant,
@@ -740,8 +766,9 @@ class _ConversationTile extends ConsumerWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  VelvetNoir.secondary.withValues(alpha: 0.15),
+                              color: VelvetNoir.secondary.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
@@ -779,8 +806,9 @@ class _ConversationTile extends ConsumerWidget {
                                     color: unread
                                         ? VelvetNoir.onSurface
                                         : VelvetNoir.onSurfaceVariant,
-                                    fontWeight:
-                                        unread ? FontWeight.w600 : FontWeight.w400,
+                                    fontWeight: unread
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
                                   ),
                                 ),
                         ),
@@ -803,10 +831,8 @@ class _ConversationTile extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _ConversationActionSheet(
-        conversation: conversation,
-        userId: userId,
-      ),
+      builder: (_) =>
+          _ConversationActionSheet(conversation: conversation, userId: userId),
     );
   }
 
@@ -824,9 +850,7 @@ class _ConversationTile extends ConsumerWidget {
     final lastSeen = presence.lastSeen;
     if (lastSeen == null) return null;
     final isRecentlyActive = DateTime.now().difference(lastSeen).inMinutes < 10;
-    return isRecentlyActive
-        ? const Color(0xFF86EFAC)
-        : null;
+    return isRecentlyActive ? const Color(0xFF86EFAC) : null;
   }
 
   String _formatTime(DateTime? dateTime) {
@@ -890,7 +914,9 @@ class _ConversationActionSheet extends ConsumerWidget {
               style: const TextStyle(color: VelvetNoir.onSurface, fontSize: 15),
             ),
             onTap: () {
-              ref.read(messagingControllerProvider).setConversationPinned(
+              ref
+                  .read(messagingControllerProvider)
+                  .setConversationPinned(
                     conversationId: conversation.id,
                     userId: userId,
                     pinned: !pinned,
@@ -899,7 +925,10 @@ class _ConversationActionSheet extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.archive_outlined, color: VelvetNoir.primary),
+            leading: const Icon(
+              Icons.archive_outlined,
+              color: VelvetNoir.primary,
+            ),
             title: const Text(
               'Archive conversation',
               style: TextStyle(color: VelvetNoir.onSurface, fontSize: 15),

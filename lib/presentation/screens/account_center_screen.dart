@@ -11,7 +11,8 @@ class AccountCenterScreen extends ConsumerStatefulWidget {
   const AccountCenterScreen({super.key});
 
   @override
-  ConsumerState<AccountCenterScreen> createState() => _AccountCenterScreenState();
+  ConsumerState<AccountCenterScreen> createState() =>
+      _AccountCenterScreenState();
 }
 
 class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
@@ -56,13 +57,17 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
       await user.reload();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_providerLabel(providerId)} has been unlinked.')),
+        SnackBar(
+          content: Text('${_providerLabel(providerId)} has been unlinked.'),
+        ),
       );
       setState(() {});
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not unlink provider: ${e.message ?? e.code}')),
+        SnackBar(
+          content: Text('Could not unlink provider: ${e.message ?? e.code}'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -79,13 +84,17 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
     try {
       await user.sendEmailVerification();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Verification email sent.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Verification email sent.')));
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send verification email: ${e.message ?? e.code}')),
+        SnackBar(
+          content: Text(
+            'Could not send verification email: ${e.message ?? e.code}',
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -99,7 +108,9 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
     final email = user?.email?.trim();
     if (email == null || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No email is associated with this account.')),
+        const SnackBar(
+          content: Text('No email is associated with this account.'),
+        ),
       );
       return;
     }
@@ -108,13 +119,17 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password reset sent to $email')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Password reset sent to $email')));
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send password reset: ${e.message ?? e.code}')),
+        SnackBar(
+          content: Text(
+            'Could not send password reset: ${e.message ?? e.code}',
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -154,7 +169,9 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(confirmController.text.trim().toUpperCase() == 'DELETE'),
+              onPressed: () => Navigator.of(
+                context,
+              ).pop(confirmController.text.trim().toUpperCase() == 'DELETE'),
               child: const Text('Delete'),
             ),
           ],
@@ -170,9 +187,9 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
     try {
       final uid = user.uid;
       await user.delete();
-      await ref.read(authControllerProvider.notifier).finalizeSessionCleanup(
-        uidOverride: uid,
-          );
+      await ref
+          .read(authControllerProvider.notifier)
+          .finalizeSessionCleanup(uidOverride: uid);
       if (!mounted) return;
       context.go('/auth');
     } on FirebaseAuthException catch (e) {
@@ -180,12 +197,14 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
       final message = e.code == 'requires-recent-login'
           ? 'For security, log in again and retry account deletion.'
           : 'Could not delete account: ${e.message ?? e.code}';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not delete account: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not delete account: $e')));
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -197,11 +216,14 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email?.trim();
-    final emailText = email == null || email.isEmpty ? 'No email linked' : email;
-    final linkedProviders = user?.providerData
-        .where((provider) => provider.providerId.isNotEmpty)
-        .toList(growable: false) ??
-      const <UserInfo>[];
+    final emailText = email == null || email.isEmpty
+        ? 'No email linked'
+        : email;
+    final linkedProviders =
+        user?.providerData
+            .where((provider) => provider.providerId.isNotEmpty)
+            .toList(growable: false) ??
+        const <UserInfo>[];
 
     return AppPageScaffold(
       appBar: AppBar(title: const Text('Account Center')),
@@ -222,9 +244,15 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
                 ListTile(
                   leading: const Icon(Icons.mark_email_read_outlined),
                   title: const Text('Verify email'),
-                  subtitle: Text(user?.emailVerified == true ? 'Your email is verified.' : 'Send verification email.'),
+                  subtitle: Text(
+                    user?.emailVerified == true
+                        ? 'Your email is verified.'
+                        : 'Send verification email.',
+                  ),
                   trailing: IconButton(
-                    onPressed: _busy || user == null || user.emailVerified ? null : _sendVerificationEmail,
+                    onPressed: _busy || user == null || user.emailVerified
+                        ? null
+                        : _sendVerificationEmail,
                     icon: const Icon(Icons.send_outlined),
                   ),
                 ),
@@ -232,9 +260,13 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
                 ListTile(
                   leading: const Icon(Icons.password_outlined),
                   title: const Text('Change password'),
-                  subtitle: const Text('We will email you a secure reset link.'),
+                  subtitle: const Text(
+                    'We will email you a secure reset link.',
+                  ),
                   trailing: IconButton(
-                    onPressed: _busy || user == null ? null : _sendPasswordReset,
+                    onPressed: _busy || user == null
+                        ? null
+                        : _sendPasswordReset,
                     icon: const Icon(Icons.send_outlined),
                   ),
                 ),
@@ -253,17 +285,17 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
                 ),
                 const Divider(height: 1),
                 if (linkedProviders.isEmpty)
-                  const ListTile(
-                    title: Text('No linked providers found.'),
-                  )
+                  const ListTile(title: Text('No linked providers found.'))
                 else
                   ...linkedProviders.map(
                     (provider) => ListTile(
                       leading: const Icon(Icons.verified_user_outlined),
                       title: Text(_providerLabel(provider.providerId)),
-                      subtitle: Text(provider.email?.trim().isNotEmpty == true
-                          ? provider.email!.trim()
-                          : 'Linked'),
+                      subtitle: Text(
+                        provider.email?.trim().isNotEmpty == true
+                            ? provider.email!.trim()
+                            : 'Linked',
+                      ),
                       trailing: TextButton(
                         onPressed: _busy || user == null
                             ? null
@@ -278,9 +310,14 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.delete_forever_outlined, color: Colors.redAccent),
+              leading: const Icon(
+                Icons.delete_forever_outlined,
+                color: Colors.redAccent,
+              ),
               title: const Text('Delete account'),
-              subtitle: const Text('Permanently remove your account and profile data.'),
+              subtitle: const Text(
+                'Permanently remove your account and profile data.',
+              ),
               trailing: FilledButton.tonal(
                 onPressed: _busy || user == null ? null : _deleteAccount,
                 child: const Text('Delete'),

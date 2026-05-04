@@ -38,9 +38,9 @@ Widget _buildPanel({
       roomControllerProvider.overrideWith(
         () => _FakeRoomController(speakerIds),
       ),
-      participantsStreamProvider(roomId).overrideWith(
-        (ref) => Stream.value(participants),
-      ),
+      participantsStreamProvider(
+        roomId,
+      ).overrideWith((ref) => Stream.value(participants)),
     ],
     child: MaterialApp(
       home: Scaffold(
@@ -78,20 +78,23 @@ void main() {
   });
 
   group('OnMicPanel', () {
-    testWidgets('renders an empty state when participant list is empty', (tester) async {
+    testWidgets('renders an empty state when participant list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildPanel(participants: []));
       await tester.pump();
       expect(find.byType(OnMicPanel), findsOneWidget);
-      expect(find.textContaining('On Mic'), findsOneWidget);
-      expect(find.text('Nobody on mic yet'), findsOneWidget);
+      expect(find.text('ON STAGE'), findsOneWidget);
+      expect(find.text('Stage is open'), findsOneWidget);
     });
 
-    testWidgets('renders participant name and host badge for host', (tester) async {
+    testWidgets('renders participant name and host badge for host', (
+      tester,
+    ) async {
       final host = _makeParticipant(userId: 'host-1', role: 'host');
-      await tester.pumpWidget(_buildPanel(
-        participants: [host],
-        currentUserId: 'other',
-      ));
+      await tester.pumpWidget(
+        _buildPanel(participants: [host], currentUserId: 'other'),
+      );
       await tester.pump();
 
       expect(find.textContaining('User host-1'), findsOneWidget);
@@ -100,16 +103,17 @@ void main() {
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
     });
 
-    testWidgets('renders countdown badge for stage user with micExpiresAt', (tester) async {
+    testWidgets('renders countdown badge for stage user with micExpiresAt', (
+      tester,
+    ) async {
       final stageUser = _makeParticipant(
         userId: 'user-2',
         role: 'stage',
         micExpiresAt: DateTime.now().add(const Duration(seconds: 30)),
       );
-      await tester.pumpWidget(_buildPanel(
-        participants: [stageUser],
-        currentUserId: 'other',
-      ));
+      await tester.pumpWidget(
+        _buildPanel(participants: [stageUser], currentUserId: 'other'),
+      );
       await tester.pump();
 
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
@@ -118,31 +122,34 @@ void main() {
       expect(timerFinder, findsOneWidget);
     });
 
-    testWidgets('does not render countdown badge for stage user without micExpiresAt', (tester) async {
-      final stageUser = _makeParticipant(
-        userId: 'user-2',
-        role: 'stage',
-        // No micExpiresAt → unlimited session.
-      );
-      await tester.pumpWidget(_buildPanel(
-        participants: [stageUser],
-        currentUserId: 'other',
-      ));
-      await tester.pump();
+    testWidgets(
+      'does not render countdown badge for stage user without micExpiresAt',
+      (tester) async {
+        final stageUser = _makeParticipant(
+          userId: 'user-2',
+          role: 'stage',
+          // No micExpiresAt → unlimited session.
+        );
+        await tester.pumpWidget(
+          _buildPanel(participants: [stageUser], currentUserId: 'other'),
+        );
+        await tester.pump();
 
-      expect(find.byIcon(Icons.timer_outlined), findsNothing);
-    });
+        expect(find.byIcon(Icons.timer_outlined), findsNothing);
+      },
+    );
 
-    testWidgets('timer badge is red when expiry is within 10 seconds', (tester) async {
+    testWidgets('timer badge is red when expiry is within 10 seconds', (
+      tester,
+    ) async {
       final stageUser = _makeParticipant(
         userId: 'user-2',
         role: 'stage',
         micExpiresAt: DateTime.now().add(const Duration(seconds: 5)),
       );
-      await tester.pumpWidget(_buildPanel(
-        participants: [stageUser],
-        currentUserId: 'other',
-      ));
+      await tester.pumpWidget(
+        _buildPanel(participants: [stageUser], currentUserId: 'other'),
+      );
       await tester.pump();
 
       // Icon should use red color (0xFFFF5252).
@@ -150,44 +157,46 @@ void main() {
       expect(icon.color, const Color(0xFFFF5252));
     });
 
-    testWidgets('timer badge is orange when expiry is 11..20 seconds away', (tester) async {
+    testWidgets('timer badge is orange when expiry is 11..20 seconds away', (
+      tester,
+    ) async {
       final stageUser = _makeParticipant(
         userId: 'user-2',
         role: 'stage',
         micExpiresAt: DateTime.now().add(const Duration(seconds: 15)),
       );
-      await tester.pumpWidget(_buildPanel(
-        participants: [stageUser],
-        currentUserId: 'other',
-      ));
+      await tester.pumpWidget(
+        _buildPanel(participants: [stageUser], currentUserId: 'other'),
+      );
       await tester.pump();
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.timer_outlined));
       expect(icon.color, const Color(0xFFFF9800));
     });
 
-    testWidgets('timer badge is green when expiry is more than 20 seconds away', (tester) async {
-      final stageUser = _makeParticipant(
-        userId: 'user-2',
-        role: 'stage',
-        micExpiresAt: DateTime.now().add(const Duration(seconds: 60)),
-      );
-      await tester.pumpWidget(_buildPanel(
-        participants: [stageUser],
-        currentUserId: 'other',
-      ));
-      await tester.pump();
+    testWidgets(
+      'timer badge is green when expiry is more than 20 seconds away',
+      (tester) async {
+        final stageUser = _makeParticipant(
+          userId: 'user-2',
+          role: 'stage',
+          micExpiresAt: DateTime.now().add(const Duration(seconds: 60)),
+        );
+        await tester.pumpWidget(
+          _buildPanel(participants: [stageUser], currentUserId: 'other'),
+        );
+        await tester.pump();
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.timer_outlined));
-      expect(icon.color, const Color(0xFF4CAF50));
-    });
+        final icon = tester.widget<Icon>(find.byIcon(Icons.timer_outlined));
+        expect(icon.color, const Color(0xFF4CAF50));
+      },
+    );
 
     testWidgets('shows (you) suffix for current user', (tester) async {
       final me = _makeParticipant(userId: 'user-1', role: 'host');
-      await tester.pumpWidget(_buildPanel(
-        participants: [me],
-        currentUserId: 'user-1',
-      ));
+      await tester.pumpWidget(
+        _buildPanel(participants: [me], currentUserId: 'user-1'),
+      );
       await tester.pump();
 
       expect(find.textContaining('(you)'), findsOneWidget);

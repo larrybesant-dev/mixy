@@ -127,20 +127,26 @@ abstract final class StreamTelemetry {
     if (burst.count == _emitCriticalThreshold) {
       ProductionAlertSystem.fireCustomAlert(
         id: 'stream_burst_critical_$key',
-        message: 'Stream burst [$key]: ${burst.count} emits/${_burstWindowSeconds}s',
+        message:
+            'Stream burst [$key]: ${burst.count} emits/${_burstWindowSeconds}s',
         level: AlertLevel.critical,
       );
       if (TelemetryConfig.allows(LogTier.operational)) {
-        debugPrint('[StreamTelemetry] 🔴 EMIT STORM [$key]: ${burst.count} emits/${_burstWindowSeconds}s');
+        debugPrint(
+          '[StreamTelemetry] 🔴 EMIT STORM [$key]: ${burst.count} emits/${_burstWindowSeconds}s',
+        );
       }
     } else if (burst.count == _emitWarnThreshold) {
       ProductionAlertSystem.fireCustomAlert(
         id: 'stream_burst_warn_$key',
-        message: 'Stream spike [$key]: ${burst.count} emits/${_burstWindowSeconds}s',
+        message:
+            'Stream spike [$key]: ${burst.count} emits/${_burstWindowSeconds}s',
         level: AlertLevel.warning,
       );
       if (TelemetryConfig.allows(LogTier.operational)) {
-        debugPrint('[StreamTelemetry] 🟡 EMIT SPIKE [$key]: ${burst.count} emits/${_burstWindowSeconds}s');
+        debugPrint(
+          '[StreamTelemetry] 🟡 EMIT SPIKE [$key]: ${burst.count} emits/${_burstWindowSeconds}s',
+        );
       }
     }
   }

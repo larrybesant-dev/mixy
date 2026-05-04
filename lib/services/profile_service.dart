@@ -18,17 +18,21 @@ class ProfileBundle {
 }
 
 class ProfileService {
-  ProfileService({FirebaseFirestore? firestore, SchemaMutationService? mutationService})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _mutationService =
-            mutationService ?? SchemaMutationService(firestore: firestore);
+  ProfileService({
+    FirebaseFirestore? firestore,
+    SchemaMutationService? mutationService,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _mutationService =
+           mutationService ?? SchemaMutationService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
   final SchemaMutationService _mutationService;
 
   Future<ProfileBundle> loadProfile(String userId) async {
     final userRef = _firestore.collection('users').doc(userId);
-    final profilePublicRef = _firestore.collection('profile_public').doc(userId);
+    final profilePublicRef = _firestore
+        .collection('profile_public')
+        .doc(userId);
     final preferencesRef = _firestore.collection('preferences').doc(userId);
     final verificationRef = _firestore.collection('verification').doc(userId);
     final privacyRef = userRef.collection('privacy').doc('settings');

@@ -108,7 +108,9 @@ abstract final class FirestoreCallTracker {
         level: AlertLevel.critical,
       );
       if (TelemetryConfig.allows(LogTier.operational)) {
-        debugPrint('[FirestoreTracker] 🔴 READ BURST [$bucket]: $count total reads');
+        debugPrint(
+          '[FirestoreTracker] 🔴 READ BURST [$bucket]: $count total reads',
+        );
       }
     } else if (count == _readWarnThreshold) {
       ProductionAlertSystem.fireCustomAlert(
@@ -117,7 +119,9 @@ abstract final class FirestoreCallTracker {
         level: AlertLevel.warning,
       );
       if (TelemetryConfig.allows(LogTier.operational)) {
-        debugPrint('[FirestoreTracker] 🟡 READ SPIKE [$bucket]: $count total reads');
+        debugPrint(
+          '[FirestoreTracker] 🟡 READ SPIKE [$bucket]: $count total reads',
+        );
       }
     }
   }
@@ -131,7 +135,9 @@ abstract final class FirestoreCallTracker {
         level: AlertLevel.critical,
       );
       if (TelemetryConfig.allows(LogTier.operational)) {
-        debugPrint('[FirestoreTracker] 🔴 WRITE BURST [$bucket]: $count total writes');
+        debugPrint(
+          '[FirestoreTracker] 🔴 WRITE BURST [$bucket]: $count total writes',
+        );
       }
     } else if (count == _writeWarnThreshold) {
       ProductionAlertSystem.fireCustomAlert(
@@ -140,7 +146,9 @@ abstract final class FirestoreCallTracker {
         level: AlertLevel.warning,
       );
       if (TelemetryConfig.allows(LogTier.operational)) {
-        debugPrint('[FirestoreTracker] 🟡 WRITE SPIKE [$bucket]: $count total writes');
+        debugPrint(
+          '[FirestoreTracker] 🟡 WRITE SPIKE [$bucket]: $count total writes',
+        );
       }
     }
   }

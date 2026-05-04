@@ -9,10 +9,7 @@ import '../../../shared/widgets/app_page_scaffold.dart';
 class CreateGroupScreen extends ConsumerStatefulWidget {
   final String userId;
 
-  const CreateGroupScreen({
-    super.key,
-    required this.userId,
-  });
+  const CreateGroupScreen({super.key, required this.userId});
 
   @override
   ConsumerState<CreateGroupScreen> createState() => _CreateGroupScreenState();
@@ -48,23 +45,25 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(groupsControllerProvider).createGroup(
+      await ref
+          .read(groupsControllerProvider)
+          .createGroup(
             userId: widget.userId,
             name: _nameController.text.trim(),
             description: _descriptionController.text.trim(),
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group created!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Group created!')));
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -96,22 +95,23 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
               style: const TextStyle(color: VelvetNoir.onSurface),
               decoration: InputDecoration(
                 labelText: 'Group Name',
-                labelStyle:
-                    const TextStyle(color: VelvetNoir.onSurfaceVariant),
+                labelStyle: const TextStyle(color: VelvetNoir.onSurfaceVariant),
                 hintText: 'Enter a name for your group',
-                hintStyle:
-                    const TextStyle(color: VelvetNoir.onSurfaceVariant),
+                hintStyle: const TextStyle(color: VelvetNoir.onSurfaceVariant),
                 filled: true,
                 fillColor: VelvetNoir.surfaceContainer,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: VelvetNoir.outlineVariant),
+                  borderSide: const BorderSide(
+                    color: VelvetNoir.outlineVariant,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                      color: VelvetNoir.primary, width: 1.5),
+                    color: VelvetNoir.primary,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -124,22 +124,23 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
               maxLines: 5,
               decoration: InputDecoration(
                 labelText: 'Description',
-                labelStyle:
-                    const TextStyle(color: VelvetNoir.onSurfaceVariant),
+                labelStyle: const TextStyle(color: VelvetNoir.onSurfaceVariant),
                 hintText: 'What is this group about?',
-                hintStyle:
-                    const TextStyle(color: VelvetNoir.onSurfaceVariant),
+                hintStyle: const TextStyle(color: VelvetNoir.onSurfaceVariant),
                 filled: true,
                 fillColor: VelvetNoir.surfaceContainer,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: VelvetNoir.outlineVariant),
+                  borderSide: const BorderSide(
+                    color: VelvetNoir.outlineVariant,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                      color: VelvetNoir.primary, width: 1.5),
+                    color: VelvetNoir.primary,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -154,20 +155,23 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                disabledBackgroundColor:
-                    VelvetNoir.surfaceBright,
+                disabledBackgroundColor: VelvetNoir.surfaceBright,
               ),
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: VelvetNoir.primary),
+                        strokeWidth: 2,
+                        color: VelvetNoir.primary,
+                      ),
                     )
                   : const Text(
                       'Create Group',
                       style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 16),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
                     ),
             ),
           ],

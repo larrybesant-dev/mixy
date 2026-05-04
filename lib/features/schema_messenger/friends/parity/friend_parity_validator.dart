@@ -43,7 +43,9 @@ class FriendParityResult {
 }
 
 FriendParityResult evaluateFriendParity(FriendParitySnapshot snapshot) {
-  if (!snapshot.legacyReady || !snapshot.schemaReady || !snapshot.schemaPresenceReady) {
+  if (!snapshot.legacyReady ||
+      !snapshot.schemaReady ||
+      !snapshot.schemaPresenceReady) {
     return const FriendParityResult(
       isComparable: false,
       isMatch: true,
@@ -72,13 +74,18 @@ FriendParityResult evaluateFriendParity(FriendParitySnapshot snapshot) {
       .toList(growable: false);
 
   final statusMismatches = comparableIds
-      .where((id) => snapshot.legacyOnlineIds.contains(id) != snapshot.schemaOnlineIds.contains(id))
+      .where(
+        (id) =>
+            snapshot.legacyOnlineIds.contains(id) !=
+            snapshot.schemaOnlineIds.contains(id),
+      )
       .toList(growable: false);
 
   final legacyOrderHash = snapshot.legacyIdsOrdered.join('|').hashCode;
   final schemaOrderHash = snapshot.schemaIdsOrdered.join('|').hashCode;
 
-  final isMatch = missingInSchema.isEmpty &&
+  final isMatch =
+      missingInSchema.isEmpty &&
       missingInLegacy.isEmpty &&
       statusMismatches.isEmpty &&
       legacyOrderHash == schemaOrderHash;

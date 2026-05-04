@@ -47,7 +47,9 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
 
     try {
       final roomService = ref.read(roomServiceProvider);
-      final callerName = caller.username.trim().isEmpty ? 'Someone' : caller.username;
+      final callerName = caller.username.trim().isEmpty
+          ? 'Someone'
+          : caller.username;
 
       // Fetch target user's display name for the room title.
       final targetDoc = await FirebaseFirestore.instance

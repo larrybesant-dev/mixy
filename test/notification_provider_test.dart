@@ -46,12 +46,17 @@ void main() {
       container.dispose();
     });
 
-    test('notificationsStreamProvider scopes notifications to current user', () async {
-      final notifications = await container.read(notificationsStreamProvider.future);
+    test(
+      'notificationsStreamProvider scopes notifications to current user',
+      () async {
+        final notifications = await container.read(
+          notificationsStreamProvider.future,
+        );
 
-      expect(notifications, hasLength(1));
-      expect(notifications.single.id, 'n1');
-      expect(notifications.single.content, 'Payment received');
-    });
+        expect(notifications, hasLength(1));
+        expect(notifications.single.id, 'n1');
+        expect(notifications.single.content, 'Payment received');
+      },
+    );
   });
 }

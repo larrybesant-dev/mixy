@@ -1,0 +1,559 @@
+{
+  "specFile": "functions/test/firestore_rules.spec.js",
+  "requiredContracts": [
+    {
+      "id": "verification_requests",
+      "path": "verification_requests/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('verification_requests')",
+          ".set(",
+          ".delete()"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces verification_requests contract for create and rejected-only delete"
+        ],
+        "deny": [
+          "enforces verification_requests contract for create and rejected-only delete"
+        ]
+      }
+    },
+    {
+      "id": "rooms_messages",
+      "path": "rooms/{roomId}/messages/{messageId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('rooms')",
+          "collection('messages')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "allows room message writes only for participants and blocks non-participants"
+        ],
+        "deny": [
+          "allows room message writes only for participants and blocks non-participants"
+        ]
+      }
+    },
+    {
+      "id": "rooms_typing",
+      "path": "rooms/{roomId}/typing/{userId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('rooms')",
+          "collection('typing')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces room typing self-write only"
+        ],
+        "deny": [
+          "enforces room typing self-write only"
+        ]
+      }
+    },
+    {
+      "id": "rooms_webrtc_peers",
+      "path": "rooms/{roomId}/webrtc_peers/{peerId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('webrtc_peers')",
+          ".set(",
+          ".delete()"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces webrtc_peers self lifecycle and denies cross-user writes"
+        ],
+        "deny": [
+          "enforces webrtc_peers self lifecycle and denies cross-user writes"
+        ]
+      }
+    },
+    {
+      "id": "rooms_webrtc_viewer_ice",
+      "path": "rooms/{roomId}/webrtc_calls/{callId}/viewer_ice/{iceId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('webrtc_calls')",
+          "collection('viewer_ice')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces nested WebRTC ICE writes under webrtc_calls"
+        ],
+        "deny": [
+          "enforces nested WebRTC ICE writes under webrtc_calls"
+        ]
+      }
+    },
+    {
+      "id": "rooms_webrtc_broadcaster_ice",
+      "path": "rooms/{roomId}/webrtc_calls/{callId}/broadcaster_ice/{iceId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('webrtc_calls')",
+          "collection('broadcaster_ice')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces nested WebRTC ICE writes under webrtc_calls"
+        ],
+        "deny": [
+          "enforces nested WebRTC ICE writes under webrtc_calls"
+        ]
+      }
+    },
+    {
+      "id": "rooms_mod_log",
+      "path": "rooms/{roomId}/mod_log/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('mod_log')",
+          ".add("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "allows room host to create mod_log entries and denies non-host"
+        ],
+        "deny": [
+          "allows room host to create mod_log entries and denies non-host"
+        ]
+      }
+    },
+    {
+      "id": "notifications",
+      "path": "notifications/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('notifications')",
+          ".add(",
+          ".update("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces notifications actor trust and target-recipient model"
+        ],
+        "deny": [
+          "enforces notifications actor trust and target-recipient model"
+        ]
+      }
+    },
+    {
+      "id": "follows",
+      "path": "follows/{followId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('follows')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces canonical follows edge writes"
+        ],
+        "deny": [
+          "enforces canonical follows edge writes"
+        ]
+      }
+    },
+    {
+      "id": "friend_links",
+      "path": "friend_links/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('friend_links')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces friend_links and friendships users[] actor ownership"
+        ],
+        "deny": [
+          "enforces friend_links and friendships users[] actor ownership"
+        ]
+      }
+    },
+    {
+      "id": "friendships",
+      "path": "friendships/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('friendships')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces friend_links and friendships users[] actor ownership"
+        ],
+        "deny": [
+          "enforces friend_links and friendships users[] actor ownership"
+        ]
+      }
+    },
+    {
+      "id": "profile_public",
+      "path": "profile_public/{userId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('profile_public')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces profile_public and preferences self ownership"
+        ],
+        "deny": [
+          "enforces profile_public and preferences self ownership"
+        ]
+      }
+    },
+    {
+      "id": "preferences",
+      "path": "preferences/{userId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('preferences')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces profile_public and preferences self ownership"
+        ],
+        "deny": [
+          "enforces profile_public and preferences self ownership"
+        ]
+      }
+    },
+    {
+      "id": "users_following",
+      "path": "users/{userId}/following/{docId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('following')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "allows authenticated follow edge writes only on the caller-owned follower/following docs"
+        ],
+        "deny": [
+          "allows authenticated follow edge writes only on the caller-owned follower/following docs"
+        ]
+      }
+    },
+    {
+      "id": "users_followers",
+      "path": "users/{userId}/followers/{docId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('followers')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "allows authenticated follow edge writes only on the caller-owned follower/following docs"
+        ],
+        "deny": [
+          "allows authenticated follow edge writes only on the caller-owned follower/following docs"
+        ]
+      }
+    },
+    {
+      "id": "rooms_delete_host_admin",
+      "path": "rooms/{roomId} delete",
+      "codeSignals": {
+        "includeAll": [
+          "collection('rooms')",
+          ".delete()"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces room delete host-or-admin only"
+        ],
+        "deny": [
+          "enforces room delete host-or-admin only"
+        ]
+      }
+    },
+    {
+      "id": "rooms_cam_view_requests",
+      "path": "rooms/{roomId}/cam_view_requests/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('cam_view_requests')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces cam_view_requests requester create and target resolve"
+        ],
+        "deny": [
+          "enforces cam_view_requests requester create and target resolve"
+        ]
+      }
+    },
+    {
+      "id": "rooms_mic_access_requests",
+      "path": "rooms/{roomId}/mic_access_requests/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('mic_access_requests')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces mic_access_requests self create and host update"
+        ],
+        "deny": [
+          "enforces mic_access_requests self create and host update"
+        ]
+      }
+    },
+    {
+      "id": "rooms_policies",
+      "path": "rooms/{roomId}/policies/{docId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('policies')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces room policies host-only write"
+        ],
+        "deny": [
+          "enforces room policies host-only write"
+        ]
+      }
+    },
+    {
+      "id": "rooms_slots",
+      "path": "rooms/{roomId}/slots/{slotId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('slots')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces room slots self-claim and delete"
+        ],
+        "deny": [
+          "enforces room slots self-claim and delete"
+        ]
+      }
+    },
+    {
+      "id": "rooms_buzz_events",
+      "path": "rooms/{roomId}/buzz_events/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('buzz_events')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces buzz_events participant self-send"
+        ],
+        "deny": [
+          "enforces buzz_events participant self-send"
+        ]
+      }
+    },
+    {
+      "id": "rooms_messages_reactions",
+      "path": "rooms/{roomId}/messages/{messageId}/reactions/{reactionId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('messages')",
+          "collection('reactions')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces room message reactions participant self-write"
+        ],
+        "deny": [
+          "enforces room message reactions participant self-write"
+        ]
+      }
+    },
+    {
+      "id": "users_bookmarks",
+      "path": "users/{userId}/bookmarks/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('bookmarks')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces user bookmarks self-only create and delete"
+        ],
+        "deny": [
+          "enforces user bookmarks self-only create and delete"
+        ]
+      }
+    },
+    {
+      "id": "users_privacy",
+      "path": "users/{userId}/privacy/{docId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('privacy')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces user privacy self-only write"
+        ],
+        "deny": [
+          "enforces user privacy self-only write"
+        ]
+      }
+    },
+    {
+      "id": "activity_feed",
+      "path": "activity_feed/{id}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('activity_feed')",
+          ".add("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces activity_feed self-userId create"
+        ],
+        "deny": [
+          "enforces activity_feed self-userId create"
+        ]
+      }
+    },
+    {
+      "id": "groups",
+      "path": "groups/{groupId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('groups')",
+          ".add("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces groups creator-only create and member join/leave"
+        ],
+        "deny": [
+          "enforces groups creator-only create and member join/leave"
+        ]
+      }
+    },
+    {
+      "id": "groups_posts",
+      "path": "groups/{groupId}/posts/{postId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('groups')",
+          "collection('posts')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces group posts author identity"
+        ],
+        "deny": [
+          "enforces group posts author identity"
+        ]
+      }
+    },
+    {
+      "id": "userCamPermissions",
+      "path": "userCamPermissions/{userId}",
+      "codeSignals": {
+        "includeAll": [
+          "collection('userCamPermissions')",
+          ".set("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces userCamPermissions self-only write"
+        ],
+        "deny": [
+          "enforces userCamPermissions self-only write"
+        ]
+      }
+    },
+    {
+      "id": "posts_likes",
+      "path": "posts/{postId} likes update",
+      "codeSignals": {
+        "includeAll": [
+          "collection('posts')",
+          ".update("
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces posts like update allows only likes and likeCount fields"
+        ],
+        "deny": [
+          "enforces posts like update allows only likes and likeCount fields"
+        ]
+      }
+    },
+    {
+      "id": "friendships_secure_update",
+      "path": "friendships/{id} secure update",
+      "codeSignals": {
+        "includeAll": [
+          "collection('friendships')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces friendships update requires existing actor ownership"
+        ],
+        "deny": [
+          "enforces friendships update requires existing actor ownership"
+        ]
+      }
+    },
+    {
+      "id": "friend_links_secure_update",
+      "path": "friend_links/{id} secure update",
+      "codeSignals": {
+        "includeAll": [
+          "collection('friend_links')"
+        ]
+      },
+      "tests": {
+        "allow": [
+          "enforces friend_links update requires existing actor ownership"
+        ],
+        "deny": [
+          "enforces friend_links update requires existing actor ownership"
+        ]
+      }
+    }
+  ]
+}

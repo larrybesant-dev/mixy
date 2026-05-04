@@ -13,10 +13,20 @@ import 'package:mixvy/shared/widgets/app_page_scaffold.dart';
 
 // ── Category data ─────────────────────────────────────────────────────────────
 const _categories = [
-  (label: 'Music', emoji: '🎵', value: 'music', color: VelvetNoir.secondaryBright),
+  (
+    label: 'Music',
+    emoji: '🎵',
+    value: 'music',
+    color: VelvetNoir.secondaryBright,
+  ),
   (label: 'Talk', emoji: '💬', value: 'talk', color: VelvetNoir.primary),
   (label: 'Dating', emoji: '💕', value: 'dating', color: VelvetNoir.secondary),
-  (label: 'Chill', emoji: '🍃', value: 'chill', color: VelvetNoir.surfaceBright),
+  (
+    label: 'Chill',
+    emoji: '🍃',
+    value: 'chill',
+    color: VelvetNoir.surfaceBright,
+  ),
   (label: 'Gaming', emoji: '🎮', value: 'gaming', color: VelvetNoir.primaryDim),
   (label: 'Art', emoji: '🎨', value: 'art', color: VelvetNoir.onSurfaceVariant),
 ];
@@ -38,7 +48,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(
-      () => setState(() => _searchQuery = _searchController.text.trim().toLowerCase()),
+      () => setState(
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      ),
     );
   }
 
@@ -57,9 +69,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     }
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
-          .where((r) =>
-              r.name.toLowerCase().contains(_searchQuery) ||
-              (r.category?.toLowerCase().contains(_searchQuery) ?? false))
+          .where(
+            (r) =>
+                r.name.toLowerCase().contains(_searchQuery) ||
+                (r.category?.toLowerCase().contains(_searchQuery) ?? false),
+          )
           .toList();
     }
     return filtered;
@@ -126,25 +140,21 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   crossAxisSpacing: 10,
                   childAspectRatio: 1.5,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) {
-                    final cat = _categories[i];
-                    final selected = _selectedCategory == cat.value;
-                    return GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedCategory =
-                            selected ? null : cat.value;
-                      }),
-                      child: _CategoryTile(
-                        label: cat.label,
-                        emoji: cat.emoji,
-                        color: cat.color,
-                        selected: selected,
-                      ),
-                    );
-                  },
-                  childCount: _categories.length,
-                ),
+                delegate: SliverChildBuilderDelegate((ctx, i) {
+                  final cat = _categories[i];
+                  final selected = _selectedCategory == cat.value;
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedCategory = selected ? null : cat.value;
+                    }),
+                    child: _CategoryTile(
+                      label: cat.label,
+                      emoji: cat.emoji,
+                      color: cat.color,
+                      selected: selected,
+                    ),
+                  );
+                }, childCount: _categories.length),
               ),
             ),
           ],
@@ -165,7 +175,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: VelvetNoir.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(999),
@@ -184,11 +196,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     ),
                     const SizedBox(width: 6),
                     GestureDetector(
-                      onTap: () =>
-                          setState(() => _selectedCategory = null),
-                      child: const Icon(Icons.close_rounded,
-                          size: 16,
-                          color: VelvetNoir.onSurfaceVariant),
+                      onTap: () => setState(() => _selectedCategory = null),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: VelvetNoir.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -197,19 +210,20 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
           // Live rooms matching filter
           roomsAsync.when(
-            loading: () => const SliverToBoxAdapter(
-              child: _ShimmerList(),
-            ),
+            loading: () => const SliverToBoxAdapter(child: _ShimmerList()),
             error: (_, _) => const SliverToBoxAdapter(child: SizedBox()),
             data: (rooms) {
               final filtered = _filterRooms(rooms);
-              if (filtered.isEmpty && (_selectedCategory != null || _searchQuery.isNotEmpty)) {
+              if (filtered.isEmpty &&
+                  (_selectedCategory != null || _searchQuery.isNotEmpty)) {
                 return SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(hp),
-                    child: _NoResults(query: _searchQuery.isNotEmpty
-                        ? _searchQuery
-                        : _selectedCategory ?? ''),
+                    child: _NoResults(
+                      query: _searchQuery.isNotEmpty
+                          ? _searchQuery
+                          : _selectedCategory ?? '',
+                    ),
                   ),
                 );
               }
@@ -254,8 +268,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       padding: EdgeInsets.symmetric(horizontal: hp),
                       scrollDirection: Axis.horizontal,
                       itemCount: rooms.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(width: 10),
+                      separatorBuilder: (_, _) => const SizedBox(width: 10),
                       itemBuilder: (ctx, i) => SocialRoomCardCompact(
                         key: ValueKey(rooms[i].id),
                         room: rooms[i],
@@ -291,8 +304,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       padding: EdgeInsets.symmetric(horizontal: hp),
                       scrollDirection: Axis.horizontal,
                       itemCount: users.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(width: 12),
+                      separatorBuilder: (_, _) => const SizedBox(width: 12),
                       itemBuilder: (ctx, i) => TrendingUserCard(
                         key: ValueKey(users[i].id),
                         user: users[i],
@@ -325,24 +337,32 @@ class _SearchBar extends StatelessWidget {
         color: VelvetNoir.surfaceHigh,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: VelvetNoir.outlineVariant.withValues(alpha: 0.4)),
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: TextField(
         controller: controller,
-        style: GoogleFonts.raleway(
-            fontSize: 14, color: VelvetNoir.onSurface),
+        style: GoogleFonts.raleway(fontSize: 14, color: VelvetNoir.onSurface),
         decoration: InputDecoration(
           hintText: 'Search rooms, categories...',
           hintStyle: GoogleFonts.raleway(
-              fontSize: 14, color: VelvetNoir.onSurfaceVariant),
-          prefixIcon: const Icon(Icons.search_rounded,
-              color: VelvetNoir.onSurfaceVariant, size: 20),
+            fontSize: 14,
+            color: VelvetNoir.onSurfaceVariant,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: VelvetNoir.onSurfaceVariant,
+            size: 20,
+          ),
           suffixIcon: ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
             builder: (_, value, _) => value.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        color: VelvetNoir.onSurfaceVariant, size: 18),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: VelvetNoir.onSurfaceVariant,
+                      size: 18,
+                    ),
                     onPressed: controller.clear,
                   )
                 : const SizedBox.shrink(),
@@ -380,10 +400,7 @@ class _CategoryTile extends StatelessWidget {
                 end: Alignment.bottomRight,
               )
             : LinearGradient(
-                colors: [
-                  color.withValues(alpha: 0.12),
-                  VelvetNoir.surfaceHigh,
-                ],
+                colors: [color.withValues(alpha: 0.12), VelvetNoir.surfaceHigh],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

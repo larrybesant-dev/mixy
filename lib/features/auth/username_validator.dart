@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 // Username uniqueness validator
 class UsernameValidator {
   Future<bool> isUnique(String username) async {

@@ -29,10 +29,22 @@ class _CoinPackage {
 }
 
 const _kPackages = <_CoinPackage>[
-  _CoinPackage(id: 'coins_70',   coins: 70,   price: 0.99),
-  _CoinPackage(id: 'coins_350',  coins: 350,  price: 4.99),
-  _CoinPackage(id: 'coins_1400', coins: 1400, price: 19.99, bonusCoins: 100, tag: 'Popular'),
-  _CoinPackage(id: 'coins_3500', coins: 3500, price: 49.99, bonusCoins: 500, tag: 'Best Value'),
+  _CoinPackage(id: 'coins_70', coins: 70, price: 0.99),
+  _CoinPackage(id: 'coins_350', coins: 350, price: 4.99),
+  _CoinPackage(
+    id: 'coins_1400',
+    coins: 1400,
+    price: 19.99,
+    bonusCoins: 100,
+    tag: 'Popular',
+  ),
+  _CoinPackage(
+    id: 'coins_3500',
+    coins: 3500,
+    price: 49.99,
+    bonusCoins: 500,
+    tag: 'Best Value',
+  ),
 ];
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -66,8 +78,7 @@ class _BuyCoinsSheetContent extends ConsumerStatefulWidget {
       _BuyCoinsSheetContentState();
 }
 
-class _BuyCoinsSheetContentState
-    extends ConsumerState<_BuyCoinsSheetContent> {
+class _BuyCoinsSheetContentState extends ConsumerState<_BuyCoinsSheetContent> {
   String? _loadingPackageId;
   String? _errormessage;
 
@@ -80,14 +91,16 @@ class _BuyCoinsSheetContentState
     });
 
     try {
-      final callable = FirebaseFunctions.instance
-          .httpsCallable('createCheckoutSessionCallable');
-      final result =
-          await callable.call<Map<String, dynamic>>(<String, dynamic>{
-        'packageId': package.id,
-        'coins': package.totalCoins,
-        'price': package.price,
-      });
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'createCheckoutSessionCallable',
+      );
+      final result = await callable.call<Map<String, dynamic>>(
+        <String, dynamic>{
+          'packageId': package.id,
+          'coins': package.totalCoins,
+          'price': package.price,
+        },
+      );
       final data = Map<String, dynamic>.from(result.data);
       final url = _asString(data['url']);
       if (url.isEmpty) throw Exception('No checkout URL returned.');
@@ -115,8 +128,7 @@ class _BuyCoinsSheetContentState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final walletAsync = ref.watch(walletDetailsProvider);
-    final coinBalance =
-        walletAsync.valueOrNull?.coinBalance ?? 0;
+    final coinBalance = walletAsync.valueOrNull?.coinBalance ?? 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -161,12 +173,16 @@ class _BuyCoinsSheetContentState
               ),
               // Current balance badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: VelvetNoir.surfaceHigh,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: VelvetNoir.primary.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: VelvetNoir.primary.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -209,8 +225,9 @@ class _BuyCoinsSheetContentState
             const SizedBox(height: 12),
             Text(
               _errormessage!,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.error),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -220,8 +237,9 @@ class _BuyCoinsSheetContentState
             kIsWeb
                 ? 'You\'ll be redirected to Stripe to complete your purchase securely.'
                 : 'Coins are credited to your wallet instantly after purchase.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: VelvetNoir.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: VelvetNoir.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -263,7 +281,10 @@ class _PackageTile extends StatelessWidget {
                   ? const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [VelvetNoir.surfaceHigh, VelvetNoir.surfaceHighest],
+                      colors: [
+                        VelvetNoir.surfaceHigh,
+                        VelvetNoir.surfaceHighest,
+                      ],
                     )
                   : null,
               color: isPopular ? null : VelvetNoir.surfaceHigh,
@@ -313,7 +334,9 @@ class _PackageTile extends StatelessWidget {
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: isPopular
                               ? VelvetNoir.primary
@@ -341,8 +364,7 @@ class _PackageTile extends StatelessWidget {
             top: -8,
             right: -4,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: VelvetNoir.secondary,
                 borderRadius: BorderRadius.circular(10),

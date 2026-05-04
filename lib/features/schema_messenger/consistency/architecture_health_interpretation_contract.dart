@@ -27,6 +27,5 @@ class ArchitectureHealthInterpretationContract {
   static const String reasonLoadingNoise =
       'loading_noise:comparability_pending';
 
-  static const String reasonAligned =
-      'aligned:contracts_and_behavior';
+  static const String reasonAligned = 'aligned:contracts_and_behavior';
 }

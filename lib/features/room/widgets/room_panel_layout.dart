@@ -87,13 +87,19 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
         ? 0.0
         : _camWidth.clamp(
             widget.minCamWidth,
-            totalWidth - widget.minChatWidth - widget.minUsersWidth - dividerWidth * 2,
+            totalWidth -
+                widget.minChatWidth -
+                widget.minUsersWidth -
+                dividerWidth * 2,
           );
     final effectiveUsersWidth = _usersMinimized
         ? 0.0
         : _usersWidth.clamp(
             widget.minUsersWidth,
-            totalWidth - effectiveCamWidth - widget.minChatWidth - dividerWidth * 2,
+            totalWidth -
+                effectiveCamWidth -
+                widget.minChatWidth -
+                dividerWidth * 2,
           );
 
     return Stack(
@@ -128,7 +134,10 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
                   setState(() {
                     _camWidth = (_camWidth + delta).clamp(
                       widget.minCamWidth,
-                      totalWidth - widget.minChatWidth - effectiveUsersWidth - dividerWidth * 2,
+                      totalWidth -
+                          widget.minChatWidth -
+                          effectiveUsersWidth -
+                          dividerWidth * 2,
                     );
                   });
                 },
@@ -150,7 +159,10 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
                   setState(() {
                     _usersWidth = (_usersWidth - delta).clamp(
                       widget.minUsersWidth,
-                      totalWidth - effectiveCamWidth - widget.minChatWidth - dividerWidth * 2,
+                      totalWidth -
+                          effectiveCamWidth -
+                          widget.minChatWidth -
+                          dividerWidth * 2,
                     );
                   });
                 },
@@ -270,10 +282,7 @@ class _ResizeDivider extends StatelessWidget {
       cursor: SystemMouseCursors.resizeColumn,
       child: GestureDetector(
         onHorizontalDragUpdate: (details) => onDelta(details.delta.dx),
-        child: Container(
-          width: 4,
-          color: const Color(0x20D4A853),
-        ),
+        child: Container(width: 4, color: const Color(0x20D4A853)),
       ),
     );
   }

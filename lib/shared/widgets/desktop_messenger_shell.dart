@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,7 +33,8 @@ class DesktopMessengerShell extends ConsumerStatefulWidget {
   final String? avatarUrl;
 
   @override
-  ConsumerState<DesktopMessengerShell> createState() => _DesktopMessengerShellState();
+  ConsumerState<DesktopMessengerShell> createState() =>
+      _DesktopMessengerShellState();
 }
 
 class _DesktopMessengerShellState extends ConsumerState<DesktopMessengerShell> {
@@ -79,7 +79,9 @@ class _DesktopMessengerShellState extends ConsumerState<DesktopMessengerShell> {
       moderationService: ModerationService(),
       notificationService: NotificationService(),
     );
-    final railWidth = context.screenWidth >= AppBreakpoints.expanded ? 288.0 : 256.0;
+    final railWidth = context.screenWidth >= AppBreakpoints.expanded
+        ? 288.0
+        : 256.0;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -109,7 +111,8 @@ class _DesktopMessengerShellState extends ConsumerState<DesktopMessengerShell> {
                       routeState: widget.routeState,
                       query: _query,
                       showOffline: _showOffline,
-                      onToggleOffline: () => setState(() => _showOffline = !_showOffline),
+                      onToggleOffline: () =>
+                          setState(() => _showOffline = !_showOffline),
                     ),
                   ),
                 ),
@@ -197,66 +200,123 @@ class _MessengerSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roster = ref.watch(friendRosterProvider).valueOrNull ?? const <FriendRosterEntry>[];
-    final conversations = ref.watch(conversationsStreamProvider(currentUser.id)).valueOrNull ?? const <Conversation>[];
-    final favoriteIds = ref.watch(favoriteFriendIdsProvider).valueOrNull ?? const <String>{};
-    final currentRoomId = ref.watch(currentUserPresenceProvider).valueOrNull?.inRoom;
+    final roster =
+        ref.watch(friendRosterProvider).valueOrNull ??
+        const <FriendRosterEntry>[];
+    final conversations =
+        ref.watch(conversationsStreamProvider(currentUser.id)).valueOrNull ??
+        const <Conversation>[];
+    final favoriteIds =
+        ref.watch(favoriteFriendIdsProvider).valueOrNull ?? const <String>{};
+    final currentRoomId = ref
+        .watch(currentUserPresenceProvider)
+        .valueOrNull
+        ?.inRoom;
     final selectedConversationId = routeState.conversationId;
 
-    final recentConversations = conversations.where((conversation) {
-      if (conversation.type != 'direct') return false;
-      if (query.isEmpty) return true;
-      final displayName = conversation.getDisplayName(currentUser.id).toLowerCase();
-      final preview = (conversation.lastMessagePreview ?? '').toLowerCase();
-      return displayName.contains(query) || preview.contains(query);
-    }).toList(growable: false)
-      ..sort((left, right) {
-        final leftPinned = left.isPinnedFor(currentUser.id);
-        final rightPinned = right.isPinnedFor(currentUser.id);
-        if (leftPinned != rightPinned) {
-          return leftPinned ? -1 : 1;
-        }
-        return (right.lastMessageAt ?? right.createdAt)
-          .compareTo(left.lastMessageAt ?? left.createdAt);
-      });
+    final recentConversations =
+        conversations
+            .where((conversation) {
+              if (conversation.type != 'direct') return false;
+              if (query.isEmpty) return true;
+              final displayName = conversation
+                  .getDisplayName(currentUser.id)
+                  .toLowerCase();
+              final preview = (conversation.lastMessagePreview ?? '')
+                  .toLowerCase();
+              return displayName.contains(query) || preview.contains(query);
+            })
+            .toList(growable: false)
+          ..sort((left, right) {
+            final leftPinned = left.isPinnedFor(currentUser.id);
+            final rightPinned = right.isPinnedFor(currentUser.id);
+            if (leftPinned != rightPinned) {
+              return leftPinned ? -1 : 1;
+            }
+            return (right.lastMessageAt ?? right.createdAt).compareTo(
+              left.lastMessageAt ?? left.createdAt,
+            );
+          });
 
-    final filteredRoster = roster.where((entry) {
-      if (query.isEmpty) return true;
-      final conversation = _directConversationForFriend(conversations, currentUser.id, entry.friendId);
-      final preview = (conversation?.lastMessagePreview ?? '').toLowerCase();
-      return entry.user.username.toLowerCase().contains(query) || preview.contains(query);
-    }).toList(growable: false)
-      ..sort(_compareRosterEntries);
+    final filteredRoster =
+        roster
+            .where((entry) {
+              if (query.isEmpty) return true;
+              final conversation = _directConversationForFriend(
+                conversations,
+                currentUser.id,
+                entry.friendId,
+              );
+              final preview = (conversation?.lastMessagePreview ?? '')
+                  .toLowerCase();
+              return entry.user.username.toLowerCase().contains(query) ||
+                  preview.contains(query);
+            })
+            .toList(growable: false)
+          ..sort(_compareRosterEntries);
 
-    final favorites = filteredRoster.where((entry) => favoriteIds.contains(entry.friendId)).toList(growable: false);
-    final online = filteredRoster.where((entry) => !favoriteIds.contains(entry.friendId) && entry.isOnline).toList(growable: false);
-    final offline = filteredRoster.where((entry) => !favoriteIds.contains(entry.friendId) && !entry.isOnline).toList(growable: false);
+    final favorites = filteredRoster
+        .where((entry) => favoriteIds.contains(entry.friendId))
+        .toList(growable: false);
+    final online = filteredRoster
+        .where(
+          (entry) => !favoriteIds.contains(entry.friendId) && entry.isOnline,
+        )
+        .toList(growable: false);
+    final offline = filteredRoster
+        .where(
+          (entry) => !favoriteIds.contains(entry.friendId) && !entry.isOnline,
+        )
+        .toList(growable: false);
 
     Widget friendList(List<FriendRosterEntry> entries) => Column(
-          children: entries.map((entry) {
-            final conversation = _directConversationForFriend(conversations, currentUser.id, entry.friendId);
+      children: entries
+          .map((entry) {
+            final conversation = _directConversationForFriend(
+              conversations,
+              currentUser.id,
+              entry.friendId,
+            );
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _FriendRosterRow(
                 entry: entry,
                 conversation: conversation,
                 unread: conversation?.hasUnreadmessage(currentUser.id) ?? false,
-                canInviteToRoom: currentRoomId != null && currentRoomId.isNotEmpty && currentRoomId != entry.roomId,
-                onOpenChat: () => _openConversation(context, currentUser, entry.user, conversation),
+                canInviteToRoom:
+                    currentRoomId != null &&
+                    currentRoomId.isNotEmpty &&
+                    currentRoomId != entry.roomId,
+                onOpenChat: () => _openConversation(
+                  context,
+                  currentUser,
+                  entry.user,
+                  conversation,
+                ),
                 onViewProfile: () => context.go('/profile/${entry.user.id}'),
                 onInviteToRoom: currentRoomId == null || currentRoomId.isEmpty
                     ? null
-                    : () => _inviteToRoom(context, currentUser, entry.user, currentRoomId),
+                    : () => _inviteToRoom(
+                        context,
+                        currentUser,
+                        entry.user,
+                        currentRoomId,
+                      ),
                 onBlockUser: () => _blockUser(context, entry.user),
               ),
             );
-          }).toList(growable: false),
-        );
+          })
+          .toList(growable: false),
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceLow,
-        border: Border(right: BorderSide(color: VelvetNoir.outlineVariant.withValues(alpha: 0.35))),
+        border: Border(
+          right: BorderSide(
+            color: VelvetNoir.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
       ),
       child: SafeArea(
         child: Column(
@@ -267,9 +327,24 @@ class _MessengerSidebar extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Messenger', style: GoogleFonts.playfairDisplay(color: VelvetNoir.primary, fontSize: 28, fontWeight: FontWeight.w700)),
+                  Text(
+                    'Messenger',
+                    style: GoogleFonts.playfairDisplay(
+                      color: VelvetNoir.primary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text('See people. Click. Talk.', style: GoogleFonts.raleway(color: VelvetNoir.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.3)),
+                  Text(
+                    'See people. Click. Talk.',
+                    style: GoogleFonts.raleway(
+                      color: VelvetNoir.onSurfaceVariant,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const _SidebarQuickNav(),
                   const SizedBox(height: 16),
@@ -285,52 +360,97 @@ class _MessengerSidebar extends ConsumerWidget {
                     title: 'Recent Conversations',
                     count: recentConversations.length,
                     child: recentConversations.isEmpty
-                        ? const _SidebarEmptyState(label: 'Recent chats show up here once you start talking.')
+                        ? const _SidebarEmptyState(
+                            label:
+                                'Recent chats show up here once you start talking.',
+                          )
                         : Column(
-                            children: recentConversations.map((conversation) {
-                              final otherUserId = _directOtherUserId(conversation, currentUser.id);
-                              final rosterEntry = _rosterEntryForUserId(roster, otherUserId);
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: _RecentConversationRow(
-                                  isSelected: selectedConversationId == conversation.id,
-                                  pinned: conversation.isPinnedFor(currentUser.id),
-                                  isOnline: rosterEntry?.isOnline ?? false,
-                                  displayName: conversation.getDisplayName(currentUser.id),
-                                  avatarUrl: rosterEntry == null ? null : sanitizeNetworkImageUrl(rosterEntry.user.avatarUrl),
-                                  preview: conversation.lastMessagePreview ?? 'No message yet',
-                                  timestamp: conversation.lastMessageAt ?? conversation.createdAt,
-                                  unread: conversation.hasUnreadmessage(currentUser.id),
-                                  onTogglePin: () => controller.togglePinned(
-                                    conversationId: conversation.id,
-                                    userId: currentUser.id,
-                                    pinned: !conversation.isPinnedFor(currentUser.id),
-                                  ),
-                                  onTap: () => context.go('/chat/${conversation.id}'),
-                                ),
-                              );
-                            }).toList(growable: false),
+                            children: recentConversations
+                                .map((conversation) {
+                                  final otherUserId = _directOtherUserId(
+                                    conversation,
+                                    currentUser.id,
+                                  );
+                                  final rosterEntry = _rosterEntryForUserId(
+                                    roster,
+                                    otherUserId,
+                                  );
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: _RecentConversationRow(
+                                      isSelected:
+                                          selectedConversationId ==
+                                          conversation.id,
+                                      pinned: conversation.isPinnedFor(
+                                        currentUser.id,
+                                      ),
+                                      isOnline: rosterEntry?.isOnline ?? false,
+                                      displayName: conversation.getDisplayName(
+                                        currentUser.id,
+                                      ),
+                                      avatarUrl: rosterEntry == null
+                                          ? null
+                                          : sanitizeNetworkImageUrl(
+                                              rosterEntry.user.avatarUrl,
+                                            ),
+                                      preview:
+                                          conversation.lastMessagePreview ??
+                                          'No message yet',
+                                      timestamp:
+                                          conversation.lastMessageAt ??
+                                          conversation.createdAt,
+                                      unread: conversation.hasUnreadmessage(
+                                        currentUser.id,
+                                      ),
+                                      onTogglePin: () =>
+                                          controller.togglePinned(
+                                            conversationId: conversation.id,
+                                            userId: currentUser.id,
+                                            pinned: !conversation.isPinnedFor(
+                                              currentUser.id,
+                                            ),
+                                          ),
+                                      onTap: () => context.go(
+                                        '/chat/${conversation.id}',
+                                      ),
+                                    ),
+                                  );
+                                })
+                                .toList(growable: false),
                           ),
                   ),
                   _SidebarSection(
                     title: 'Favorites',
                     count: favorites.length,
-                    child: favorites.isEmpty ? const _SidebarEmptyState(label: 'No favorite friends yet.') : friendList(favorites),
+                    child: favorites.isEmpty
+                        ? const _SidebarEmptyState(
+                            label: 'No favorite friends yet.',
+                          )
+                        : friendList(favorites),
                   ),
                   _SidebarSection(
                     title: 'Online',
                     count: online.length,
-                    child: online.isEmpty ? const _SidebarEmptyState(label: 'Nobody online right now.') : friendList(online),
+                    child: online.isEmpty
+                        ? const _SidebarEmptyState(
+                            label: 'Nobody online right now.',
+                          )
+                        : friendList(online),
                   ),
                   _SidebarSection(
                     title: 'Offline',
                     count: offline.length,
-                    trailing: TextButton(onPressed: onToggleOffline, child: Text(showOffline ? 'Hide' : 'Show')),
+                    trailing: TextButton(
+                      onPressed: onToggleOffline,
+                      child: Text(showOffline ? 'Hide' : 'Show'),
+                    ),
                     child: !showOffline
-                        ? const _SidebarEmptyState(label: 'Offline friends collapsed.')
+                        ? const _SidebarEmptyState(
+                            label: 'Offline friends collapsed.',
+                          )
                         : offline.isEmpty
-                            ? const _SidebarEmptyState(label: 'No offline friends.')
-                            : friendList(offline),
+                        ? const _SidebarEmptyState(label: 'No offline friends.')
+                        : friendList(offline),
                   ),
                 ],
               ),
@@ -341,24 +461,48 @@ class _MessengerSidebar extends ConsumerWidget {
     );
   }
 
-  Future<void> _openConversation(BuildContext context, UserModel currentUser, UserModel friend, Conversation? conversation) async {
+  Future<void> _openConversation(
+    BuildContext context,
+    UserModel currentUser,
+    UserModel friend,
+    Conversation? conversation,
+  ) async {
     try {
-      final conversationId = await controller.openConversation(currentUser: currentUser, friend: friend, existingConversation: conversation);
+      final conversationId = await controller.openConversation(
+        currentUser: currentUser,
+        friend: friend,
+        existingConversation: conversation,
+      );
       if (context.mounted) context.go('/chat/$conversationId');
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open chat: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open chat: $error')));
     }
   }
 
-  Future<void> _inviteToRoom(BuildContext context, UserModel currentUser, UserModel friend, String roomId) async {
+  Future<void> _inviteToRoom(
+    BuildContext context,
+    UserModel currentUser,
+    UserModel friend,
+    String roomId,
+  ) async {
     try {
-      await controller.inviteFriendToRoom(currentUser: currentUser, friend: friend, roomId: roomId);
+      await controller.inviteFriendToRoom(
+        currentUser: currentUser,
+        friend: friend,
+        roomId: roomId,
+      );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invite sent to ${friend.username}.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invite sent to ${friend.username}.')),
+      );
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send invite: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not send invite: $error')));
     }
   }
 
@@ -366,10 +510,14 @@ class _MessengerSidebar extends ConsumerWidget {
     try {
       await controller.blockUser(friend.id);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${friend.username} blocked.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${friend.username} blocked.')));
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not block user: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not block user: $error')));
     }
   }
 }
@@ -402,7 +550,11 @@ class _MessengerSidebarController {
     );
   }
 
-  Future<void> inviteFriendToRoom({required UserModel currentUser, required UserModel friend, required String roomId}) {
+  Future<void> inviteFriendToRoom({
+    required UserModel currentUser,
+    required UserModel friend,
+    required String roomId,
+  }) {
     return notificationService.sendRoomInviteToFriends(
       friendIds: [friend.id],
       inviterId: currentUser.id,
@@ -412,7 +564,8 @@ class _MessengerSidebarController {
     );
   }
 
-  Future<void> blockUser(String friendId) => moderationService.blockUser(friendId);
+  Future<void> blockUser(String friendId) =>
+      moderationService.blockUser(friendId);
 
   Future<void> togglePinned({
     required String conversationId,
@@ -434,45 +587,76 @@ class _DesktopSocialRail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roster = ref.watch(friendRosterProvider).valueOrNull ?? const <FriendRosterEntry>[];
-    final conversations = ref.watch(conversationsStreamProvider(currentUser.id)).valueOrNull ?? const <Conversation>[];
+    final roster =
+        ref.watch(friendRosterProvider).valueOrNull ??
+        const <FriendRosterEntry>[];
+    final conversations =
+        ref.watch(conversationsStreamProvider(currentUser.id)).valueOrNull ??
+        const <Conversation>[];
     final myPresence = ref.watch(currentUserPresenceProvider).valueOrNull;
-    final requestCount = ref.watch(requestsStreamProvider(currentUser.id)).valueOrNull?.length ?? 0;
+    final requestCount =
+        ref.watch(requestsStreamProvider(currentUser.id)).valueOrNull?.length ??
+        0;
     final onlineCount = roster.where((entry) => entry.isOnline).length;
-    final inRoomCount = roster.where((entry) => (entry.roomId ?? '').isNotEmpty).length;
-    final unreadCount = conversations.where((c) => c.hasUnreadmessage(currentUser.id)).length;
-    final pinnedCount = conversations.where((c) => c.isPinnedFor(currentUser.id)).length;
+    final inRoomCount = roster
+        .where((entry) => (entry.roomId ?? '').isNotEmpty)
+        .length;
+    final unreadCount = conversations
+        .where((c) => c.hasUnreadmessage(currentUser.id))
+        .length;
+    final pinnedCount = conversations
+        .where((c) => c.isPinnedFor(currentUser.id))
+        .length;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceLow,
-        border: Border(left: BorderSide(color: VelvetNoir.outlineVariant.withValues(alpha: 0.35))),
+        border: Border(
+          left: BorderSide(
+            color: VelvetNoir.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
       ),
       child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
-            _RailCard(title: 'Presence', child: Column(children: [
-              _StatRow(label: 'Online friends', value: '$onlineCount'),
-              _StatRow(label: 'Friends in rooms', value: '$inRoomCount'),
-              _StatRow(label: 'Unread chats', value: '$unreadCount'),
-              _StatRow(label: 'Pinned chats', value: '$pinnedCount'),
-              _StatRow(label: 'Requests', value: '$requestCount'),
-            ])),
+            _RailCard(
+              title: 'Presence',
+              child: Column(
+                children: [
+                  _StatRow(label: 'Online friends', value: '$onlineCount'),
+                  _StatRow(label: 'Friends in rooms', value: '$inRoomCount'),
+                  _StatRow(label: 'Unread chats', value: '$unreadCount'),
+                  _StatRow(label: 'Pinned chats', value: '$pinnedCount'),
+                  _StatRow(label: 'Requests', value: '$requestCount'),
+                ],
+              ),
+            ),
             const SizedBox(height: 14),
             _RailCard(
               title: 'Your status',
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _StatusPill(color: _presenceColor(myPresence?.status, myPresence?.inRoom), label: _presenceLabel(myPresence)),
-                if ((myPresence?.inRoom ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => context.go('/room/${myPresence!.inRoom}'),
-                    icon: const Icon(Icons.meeting_room_outlined),
-                    label: const Text('Rejoin current room'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _StatusPill(
+                    color: _presenceColor(
+                      myPresence?.status,
+                      myPresence?.inRoom,
+                    ),
+                    label: _presenceLabel(myPresence),
                   ),
+                  if ((myPresence?.inRoom ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          context.go('/room/${myPresence!.inRoom}'),
+                      icon: const Icon(Icons.meeting_room_outlined),
+                      label: const Text('Rejoin current room'),
+                    ),
+                  ],
                 ],
-              ]),
+              ),
             ),
           ],
         ),
@@ -511,14 +695,17 @@ class _FriendRosterRowState extends State<_FriendRosterRow> {
 
   @override
   Widget build(BuildContext context) {
-    final preview = widget.conversation?.lastMessagePreview ?? _presenceLabel(widget.entry.presence);
-    final timestamp = widget.conversation?.lastMessageAt ?? widget.entry.lastSeen;
+    final preview =
+        widget.conversation?.lastMessagePreview ??
+        _presenceLabel(widget.entry.presence);
+    final timestamp =
+        widget.conversation?.lastMessageAt ?? widget.entry.lastSeen;
     final avatarUrl = sanitizeNetworkImageUrl(widget.entry.user.avatarUrl);
     final borderColor = widget.unread
         ? VelvetNoir.primary.withValues(alpha: 0.42)
         : _isHovered
-            ? VelvetNoir.secondary.withValues(alpha: 0.32)
-            : VelvetNoir.outlineVariant.withValues(alpha: 0.28);
+        ? VelvetNoir.secondary.withValues(alpha: 0.32)
+        : VelvetNoir.outlineVariant.withValues(alpha: 0.28);
     final backgroundColor = _isHovered
         ? VelvetNoir.surfaceContainer.withValues(alpha: 0.92)
         : VelvetNoir.surfaceHigh.withValues(alpha: 0.95);
@@ -534,10 +721,10 @@ class _FriendRosterRowState extends State<_FriendRosterRow> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 170),
             curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(18),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: borderColor),
               boxShadow: [
                 if (_isHovered)
@@ -547,21 +734,21 @@ class _FriendRosterRowState extends State<_FriendRosterRow> {
                     offset: const Offset(0, 6),
                   ),
               ],
-          ),
-          child: Row(
-            children: [
-              SafeNetworkAvatar(
-                radius: 24,
-                avatarUrl: avatarUrl,
-                backgroundColor: VelvetNoir.surfaceHighest,
-                fallbackText: widget.entry.user.username.isNotEmpty
-                    ? widget.entry.user.username[0].toUpperCase()
-                    : '?',
-                fallbackTextStyle: const TextStyle(
-                  color: VelvetNoir.primary,
-                  fontWeight: FontWeight.w800,
+            ),
+            child: Row(
+              children: [
+                SafeNetworkAvatar(
+                  radius: 24,
+                  avatarUrl: avatarUrl,
+                  backgroundColor: VelvetNoir.surfaceHighest,
+                  fallbackText: widget.entry.user.username.isNotEmpty
+                      ? widget.entry.user.username[0].toUpperCase()
+                      : '?',
+                  fallbackTextStyle: const TextStyle(
+                    color: VelvetNoir.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
                 AnimatedSlide(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
@@ -574,53 +761,101 @@ class _FriendRosterRowState extends State<_FriendRosterRow> {
                     child: const _PresenceDot(),
                   ),
                 ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text(widget.entry.user.username, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: VelvetNoir.onSurface, fontSize: 14, fontWeight: FontWeight.w700))),
-                        if (timestamp != null) Text(_formatConversationTime(timestamp), style: const TextStyle(color: VelvetNoir.onSurfaceVariant, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(preview, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: widget.unread ? VelvetNoir.onSurface : VelvetNoir.onSurfaceVariant, fontSize: 12, fontWeight: widget.unread ? FontWeight.w700 : FontWeight.w500)),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.entry.user.username,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: VelvetNoir.onSurface,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (timestamp != null)
+                            Text(
+                              _formatConversationTime(timestamp),
+                              style: const TextStyle(
+                                color: VelvetNoir.onSurfaceVariant,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: widget.unread
+                              ? VelvetNoir.onSurface
+                              : VelvetNoir.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: widget.unread
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 140),
-                opacity: _isHovered || widget.unread ? 1 : 0.7,
-                child: PopupMenuButton<_FriendMenuAction>(
-                tooltip: 'Friend actions',
-                color: VelvetNoir.surfaceHigh,
-                onSelected: (value) {
-                  switch (value) {
-                    case _FriendMenuAction.viewProfile:
-                        widget.onViewProfile();
-                    case _FriendMenuAction.startChat:
-                        widget.onOpenChat();
-                    case _FriendMenuAction.inviteToRoom:
-                        widget.onInviteToRoom?.call();
-                    case _FriendMenuAction.blockUser:
-                        widget.onBlockUser();
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem<_FriendMenuAction>(value: _FriendMenuAction.viewProfile, child: Text('View Profile')),
-                  const PopupMenuItem<_FriendMenuAction>(value: _FriendMenuAction.startChat, child: Text('Start Chat')),
-                    PopupMenuItem<_FriendMenuAction>(value: _FriendMenuAction.inviteToRoom, enabled: widget.canInviteToRoom, child: const Text('Invite to Room')),
-                  const PopupMenuItem<_FriendMenuAction>(value: _FriendMenuAction.blockUser, child: Text('Block User')),
-                ],
-                icon: const Icon(Icons.more_vert_rounded, color: VelvetNoir.onSurfaceVariant),
-              ),
-              ),
-            ],
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 140),
+                  opacity: _isHovered || widget.unread ? 1 : 0.7,
+                  child: PopupMenuButton<_FriendMenuAction>(
+                    tooltip: 'Friend actions',
+                    color: VelvetNoir.surfaceHigh,
+                    onSelected: (value) {
+                      switch (value) {
+                        case _FriendMenuAction.viewProfile:
+                          widget.onViewProfile();
+                        case _FriendMenuAction.startChat:
+                          widget.onOpenChat();
+                        case _FriendMenuAction.inviteToRoom:
+                          widget.onInviteToRoom?.call();
+                        case _FriendMenuAction.blockUser:
+                          widget.onBlockUser();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<_FriendMenuAction>(
+                        value: _FriendMenuAction.viewProfile,
+                        child: Text('View Profile'),
+                      ),
+                      const PopupMenuItem<_FriendMenuAction>(
+                        value: _FriendMenuAction.startChat,
+                        child: Text('Start Chat'),
+                      ),
+                      PopupMenuItem<_FriendMenuAction>(
+                        value: _FriendMenuAction.inviteToRoom,
+                        enabled: widget.canInviteToRoom,
+                        child: const Text('Invite to Room'),
+                      ),
+                      const PopupMenuItem<_FriendMenuAction>(
+                        value: _FriendMenuAction.blockUser,
+                        child: Text('Block User'),
+                      ),
+                    ],
+                    icon: const Icon(
+                      Icons.more_vert_rounded,
+                      color: VelvetNoir.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -664,15 +899,15 @@ class _RecentConversationRowState extends State<_RecentConversationRow> {
     final backgroundColor = widget.isSelected
         ? VelvetNoir.primary.withValues(alpha: 0.12)
         : _isHovered
-            ? VelvetNoir.surfaceContainer.withValues(alpha: 0.94)
-            : VelvetNoir.surfaceHigh.withValues(alpha: 0.95);
+        ? VelvetNoir.surfaceContainer.withValues(alpha: 0.94)
+        : VelvetNoir.surfaceHigh.withValues(alpha: 0.95);
     final borderColor = widget.isSelected
         ? VelvetNoir.primary.withValues(alpha: 0.52)
         : widget.unread
-            ? VelvetNoir.primary.withValues(alpha: 0.42)
-            : _isHovered
-                ? VelvetNoir.secondary.withValues(alpha: 0.28)
-                : VelvetNoir.outlineVariant.withValues(alpha: 0.28);
+        ? VelvetNoir.primary.withValues(alpha: 0.42)
+        : _isHovered
+        ? VelvetNoir.secondary.withValues(alpha: 0.28)
+        : VelvetNoir.outlineVariant.withValues(alpha: 0.28);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -685,10 +920,10 @@ class _RecentConversationRowState extends State<_RecentConversationRow> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 170),
             curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(18),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: borderColor),
               boxShadow: [
                 if (_isHovered || widget.isSelected)
@@ -698,21 +933,21 @@ class _RecentConversationRowState extends State<_RecentConversationRow> {
                     offset: const Offset(0, 6),
                   ),
               ],
-          ),
-          child: Row(
-            children: [
-              SafeNetworkAvatar(
-                radius: 24,
-                avatarUrl: avatarUrl,
-                backgroundColor: VelvetNoir.surfaceHighest,
-                fallbackText: widget.displayName.isNotEmpty
-                    ? widget.displayName[0].toUpperCase()
-                    : '?',
-                fallbackTextStyle: const TextStyle(
-                  color: VelvetNoir.primary,
-                  fontWeight: FontWeight.w800,
+            ),
+            child: Row(
+              children: [
+                SafeNetworkAvatar(
+                  radius: 24,
+                  avatarUrl: avatarUrl,
+                  backgroundColor: VelvetNoir.surfaceHighest,
+                  fallbackText: widget.displayName.isNotEmpty
+                      ? widget.displayName[0].toUpperCase()
+                      : '?',
+                  fallbackTextStyle: const TextStyle(
+                    color: VelvetNoir.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
                 AnimatedSlide(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
@@ -725,54 +960,104 @@ class _RecentConversationRowState extends State<_RecentConversationRow> {
                     child: const _PresenceDot(),
                   ),
                 ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text(widget.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: VelvetNoir.onSurface, fontSize: 14, fontWeight: widget.unread ? FontWeight.w800 : FontWeight.w700))),
-                        Text(_formatConversationTime(widget.timestamp), style: TextStyle(color: widget.unread ? VelvetNoir.primary : VelvetNoir.onSurfaceVariant, fontSize: 11, fontWeight: widget.unread ? FontWeight.w700 : FontWeight.w600)),
-                        const SizedBox(width: 4),
-                        AnimatedScale(
-                          duration: const Duration(milliseconds: 160),
-                          scale: widget.pinned ? 1 : (_isHovered ? 1 : 0.92),
-                          child: IconButton(
-                          tooltip: widget.pinned ? 'Unpin conversation' : 'Pin conversation',
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                          onPressed: widget.onTogglePin,
-                          icon: Icon(
-                            widget.pinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-                            size: 16,
-                            color: widget.pinned ? VelvetNoir.secondaryBright : VelvetNoir.onSurfaceVariant,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: VelvetNoir.onSurface,
+                                fontSize: 14,
+                                fontWeight: widget.unread
+                                    ? FontWeight.w800
+                                    : FontWeight.w700,
+                              ),
+                            ),
                           ),
+                          Text(
+                            _formatConversationTime(widget.timestamp),
+                            style: TextStyle(
+                              color: widget.unread
+                                  ? VelvetNoir.primary
+                                  : VelvetNoir.onSurfaceVariant,
+                              fontSize: 11,
+                              fontWeight: widget.unread
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          AnimatedScale(
+                            duration: const Duration(milliseconds: 160),
+                            scale: widget.pinned ? 1 : (_isHovered ? 1 : 0.92),
+                            child: IconButton(
+                              tooltip: widget.pinned
+                                  ? 'Unpin conversation'
+                                  : 'Pin conversation',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              onPressed: widget.onTogglePin,
+                              icon: Icon(
+                                widget.pinned
+                                    ? Icons.push_pin_rounded
+                                    : Icons.push_pin_outlined,
+                                size: 16,
+                                color: widget.pinned
+                                    ? VelvetNoir.secondaryBright
+                                    : VelvetNoir.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 150),
+                        style: TextStyle(
+                          color: widget.unread
+                              ? VelvetNoir.onSurface
+                              : VelvetNoir.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: widget.unread
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
+                        child: Text(
+                          widget.preview,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 150),
-                      style: TextStyle(color: widget.unread ? VelvetNoir.onSurface : VelvetNoir.onSurfaceVariant, fontSize: 12, fontWeight: widget.unread ? FontWeight.w700 : FontWeight.w500),
-                      child: Text(widget.preview, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
 }
 
 class _SidebarSection extends StatelessWidget {
-  const _SidebarSection({required this.title, required this.count, required this.child, this.trailing});
+  const _SidebarSection({
+    required this.title,
+    required this.count,
+    required this.child,
+    this.trailing,
+  });
 
   final String title;
   final int count;
@@ -871,8 +1156,21 @@ class _SidebarEmptyState extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      decoration: BoxDecoration(color: VelvetNoir.surfaceHigh.withValues(alpha: 0.88), borderRadius: BorderRadius.circular(16), border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.28))),
-      child: Text(label, style: const TextStyle(color: VelvetNoir.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w500)),
+      decoration: BoxDecoration(
+        color: VelvetNoir.surfaceHigh.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.28),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: VelvetNoir.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
@@ -886,14 +1184,31 @@ class _SearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 46,
-      decoration: BoxDecoration(color: VelvetNoir.surfaceHigh.withValues(alpha: 0.94), borderRadius: BorderRadius.circular(18), border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.28))),
+      decoration: BoxDecoration(
+        color: VelvetNoir.surfaceHigh.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.28),
+        ),
+      ),
       child: TextField(
         controller: controller,
-        style: GoogleFonts.raleway(color: VelvetNoir.onSurface, fontSize: 14, fontWeight: FontWeight.w500),
+        style: GoogleFonts.raleway(
+          color: VelvetNoir.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
           hintText: 'Search people or chats',
-          hintStyle: GoogleFonts.raleway(color: VelvetNoir.onSurfaceVariant, fontSize: 14),
-          prefixIcon: const Icon(Icons.search_rounded, color: VelvetNoir.onSurfaceVariant, size: 20),
+          hintStyle: GoogleFonts.raleway(
+            color: VelvetNoir.onSurfaceVariant,
+            fontSize: 14,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: VelvetNoir.onSurfaceVariant,
+            size: 20,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
@@ -927,18 +1242,31 @@ class _PresenceDot extends StatelessWidget {
 
 enum _FriendMenuAction { viewProfile, startChat, inviteToRoom, blockUser }
 
-Conversation? _directConversationForFriend(List<Conversation> conversations, String currentUserId, String friendId) {
+Conversation? _directConversationForFriend(
+  List<Conversation> conversations,
+  String currentUserId,
+  String friendId,
+) {
   for (final conversation in conversations) {
-    if (conversation.type == 'direct' && conversation.participantIds.contains(currentUserId) && conversation.participantIds.contains(friendId)) {
+    if (conversation.type == 'direct' &&
+        conversation.participantIds.contains(currentUserId) &&
+        conversation.participantIds.contains(friendId)) {
       return conversation;
     }
   }
   return null;
 }
 
-String _directOtherUserId(Conversation conversation, String currentUserId) => conversation.participantIds.firstWhere((participantId) => participantId != currentUserId, orElse: () => '');
+String _directOtherUserId(Conversation conversation, String currentUserId) =>
+    conversation.participantIds.firstWhere(
+      (participantId) => participantId != currentUserId,
+      orElse: () => '',
+    );
 
-FriendRosterEntry? _rosterEntryForUserId(List<FriendRosterEntry> roster, String userId) {
+FriendRosterEntry? _rosterEntryForUserId(
+  List<FriendRosterEntry> roster,
+  String userId,
+) {
   for (final entry in roster) {
     if (entry.friendId == userId) return entry;
   }
@@ -997,7 +1325,6 @@ String _formatConversationTime(DateTime value) {
   return '${value.month}/${value.day}';
 }
 
-
 class _RailCard extends StatelessWidget {
   const _RailCard({required this.title, required this.child});
 
@@ -1011,7 +1338,9 @@ class _RailCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceHigh,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: VelvetNoir.outlineVariant.withValues(alpha: 0.28)),
+        border: Border.all(
+          color: VelvetNoir.outlineVariant.withValues(alpha: 0.28),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1107,14 +1436,3 @@ class _StatRow extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

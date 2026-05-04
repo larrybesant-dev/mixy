@@ -1,16 +1,6 @@
-enum ReportTargetType {
-  user,
-  room,
-  message,
-  cam,
-}
+enum ReportTargetType { user, room, message, cam }
 
-enum ModerationStatus {
-  open,
-  reviewing,
-  actioned,
-  dismissed,
-}
+enum ModerationStatus { open, reviewing, actioned, dismissed }
 
 String _asString(dynamic value, {String fallback = ''}) {
   if (value is String) {
@@ -56,7 +46,6 @@ class BlockRecordModel {
       'blockerUserId': blockerUserId,
       'blockedUserId': blockedUserId,
       'createdAt': createdAt?.toIso8601String(),
-      'participantIds': [blockerUserId, blockedUserId],
     };
   }
 

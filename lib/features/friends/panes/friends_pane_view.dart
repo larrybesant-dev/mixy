@@ -252,7 +252,7 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
               const SizedBox(height: 4),
 
               // ── RECENTLY ACTIVE ───────────────────────────────────────
-              if (recentlyActiveEntries.isNotEmpty) ...[                
+              if (recentlyActiveEntries.isNotEmpty) ...[
                 _RichSectionHeader(
                   label: 'RECENTLY ACTIVE',
                   count: recentlyActiveEntries.length,
@@ -265,7 +265,9 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
                 if (_recentlyActiveExpanded)
                   for (var i = 0; i < recentlyActiveEntries.length; i++) ...[
                     FriendTile(
-                      key: ValueKey('recent-${recentlyActiveEntries[i].friendId}'),
+                      key: ValueKey(
+                        'recent-${recentlyActiveEntries[i].friendId}',
+                      ),
                       user: recentlyActiveEntries[i].user,
                       statusLabel: _lastSeenLabel(recentlyActiveEntries[i]),
                       statusColor: const Color(0xFFF59E0B),

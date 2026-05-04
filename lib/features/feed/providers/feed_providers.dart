@@ -35,22 +35,21 @@ final postsStreamProvider = FutureProvider.autoDispose<List<PostModel>>((ref) {
   return ref.read(feedRepositoryProvider).getPostsFeed();
 });
 
-final userPostsStreamProvider = StreamProvider.autoDispose.family<List<PostModel>, String>((
-  ref,
-  userId,
-) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('posts')
-      .where('authorId', isEqualTo: userId)
-      .orderBy('createdAt', descending: true)
-      .limit(30)
-      .snapshots()
-      .map(
-        (snap) =>
-            snap.docs.map((d) => PostModel.fromDoc(d.id, d.data())).toList(),
-      );
-});
+final userPostsStreamProvider = StreamProvider.autoDispose
+    .family<List<PostModel>, String>((ref, userId) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('posts')
+          .where('authorId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(30)
+          .snapshots()
+          .map(
+            (snap) => snap.docs
+                .map((d) => PostModel.fromDoc(d.id, d.data()))
+                .toList(),
+          );
+    });
 
 final roomsStreamProvider = StreamProvider.autoDispose<List<RoomModel>>((ref) {
   // ref.watch (not ref.read) so dependency tracking works correctly if
@@ -67,12 +66,17 @@ final eventsStreamProvider = FutureProvider.autoDispose<List<EventModel>>((
 /// Dashboard metrics do not need live Firestore listeners on every page load.
 /// Fetch them once and refresh when the screen is re-entered or manually pulled.
 final onlineUsersCountProvider = FutureProvider.autoDispose<int>((ref) async {
-  return ref.watch(presenceRepositoryProvider).countOnlineUsers(limit: 501);
+  return ref.watch(presenceRepositoryProvider).countOnlineUsers();
 });
 
 final liveRoomsCountProvider = FutureProvider.autoDispose<int>((ref) async {
-  final rooms = await ref.read(roomServiceProvider).getLiveRooms(limit: 501);
-  return rooms.length;
+  final firestore = ref.watch(firestoreProvider);
+  final snap = await firestore
+      .collection('rooms')
+      .where('isLive', isEqualTo: true)
+      .count()
+      .get();
+  return snap.count ?? 0;
 });
 
 final newMembersStreamProvider = FutureProvider.autoDispose<List<UserModel>>((
@@ -116,13 +120,13 @@ final homeFeedServiceProvider = Provider<HomeFeedService>((ref) {
 });
 
 final currentUserActivitiesProvider =
-  FutureProvider.autoDispose<List<SocialActivity>>((ref) async {
-    final currentUser = ref.watch(userProvider);
-    final userId = currentUser?.id ?? '';
-    return ref
-      .watch(socialActivityServiceProvider)
-      .getUserActivities(userId, limit: 12);
-  });
+    FutureProvider.autoDispose<List<SocialActivity>>((ref) async {
+      final currentUser = ref.watch(userProvider);
+      final userId = currentUser?.id ?? '';
+      return ref
+          .watch(socialActivityServiceProvider)
+          .getUserActivities(userId, limit: 12);
+    });
 
 final homeFeedSnapshotProvider =
     Provider.autoDispose<AsyncValue<HomeFeedSnapshot>>((ref) {

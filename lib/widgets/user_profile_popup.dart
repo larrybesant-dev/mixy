@@ -27,6 +27,7 @@ class UserProfilePopup {
     BuildContext context,
     WidgetRef ref, {
     required String userId,
+
     /// Pre-loaded user — skips the Firestore fetch if you already have it.
     UserModel? preloadedUser,
   }) {
@@ -36,10 +37,8 @@ class UserProfilePopup {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => _UserProfilePopupSheet(
-        userId: userId,
-        preloadedUser: preloadedUser,
-      ),
+      builder: (ctx) =>
+          _UserProfilePopupSheet(userId: userId, preloadedUser: preloadedUser),
     );
   }
 }
@@ -110,7 +109,10 @@ class _UserProfilePopupSheetState
 
   Future<void> _loadRelationship() async {
     final currentUser = ref.read(userProvider);
-    if (currentUser == null || _normalizedUserId.isEmpty || _normalizedUserId == currentUser.id) return;
+    if (currentUser == null ||
+        _normalizedUserId.isEmpty ||
+        _normalizedUserId == currentUser.id)
+      return;
     try {
       final friendIds = await _friendService.getFriendIds(currentUser.id);
       final blocked = await _moderationService.isBlocked(_normalizedUserId);
@@ -186,12 +188,18 @@ class _UserProfilePopupSheetState
                           fit: BoxFit.cover,
                           errorWidget: (context, url, error) => CircleAvatar(
                             radius: 36,
-                            child: Text(initials, style: const TextStyle(fontSize: 28)),
+                            child: Text(
+                              initials,
+                              style: const TextStyle(fontSize: 28),
+                            ),
                           ),
                         )
                       : CircleAvatar(
                           radius: 36,
-                          child: Text(initials, style: const TextStyle(fontSize: 28)),
+                          child: Text(
+                            initials,
+                            style: const TextStyle(fontSize: 28),
+                          ),
                         ),
                 ),
                 const SizedBox(width: 16),
@@ -200,15 +208,29 @@ class _UserProfilePopupSheetState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        profile.username.trim().isEmpty ? 'MixVy user' : profile.username,
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        profile.username.trim().isEmpty
+                            ? 'MixVy user'
+                            : profile.username,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (profile.vipLevel > 0)
                         Row(
                           children: [
-                            Icon(Icons.workspace_premium, size: 16, color: _vipColor(profile.vipLevel)),
+                            Icon(
+                              Icons.workspace_premium,
+                              size: 16,
+                              color: _vipColor(profile.vipLevel),
+                            ),
                             const SizedBox(width: 4),
-                            Text('VIP ${profile.vipLevel}', style: TextStyle(color: _vipColor(profile.vipLevel), fontWeight: FontWeight.w600)),
+                            Text(
+                              'VIP ${profile.vipLevel}',
+                              style: TextStyle(
+                                color: _vipColor(profile.vipLevel),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       if (profile.location?.isNotEmpty == true)
@@ -216,7 +238,10 @@ class _UserProfilePopupSheetState
                           children: [
                             const Icon(Icons.place_outlined, size: 14),
                             const SizedBox(width: 2),
-                            Text(profile.location!, style: theme.textTheme.bodySmall),
+                            Text(
+                              profile.location!,
+                              style: theme.textTheme.bodySmall,
+                            ),
                           ],
                         ),
                     ],
@@ -229,10 +254,17 @@ class _UserProfilePopupSheetState
               const SizedBox(height: 12),
               Wrap(
                 spacing: 6,
-                children: profile.badges.map((badge) => Chip(
-                  label: Text(badge, style: const TextStyle(fontSize: 12)),
-                  visualDensity: VisualDensity.compact,
-                )).toList(),
+                children: profile.badges
+                    .map(
+                      (badge) => Chip(
+                        label: Text(
+                          badge,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                    .toList(),
               ),
             ],
             // Bio
@@ -262,14 +294,21 @@ class _UserProfilePopupSheetState
               ),
               if (!_isBlocked)
                 _ActionButton(
-                  icon: _isFriend ? Icons.check_circle_outline : Icons.person_add_alt_1_outlined,
-                  label: _isFriend ? 'Already friends' : (_requestPending ? 'Request sent' : 'Add friend'),
+                  icon: _isFriend
+                      ? Icons.check_circle_outline
+                      : Icons.person_add_alt_1_outlined,
+                  label: _isFriend
+                      ? 'Already friends'
+                      : (_requestPending ? 'Request sent' : 'Add friend'),
                   onTap: (_isFriend || _requestPending)
                       ? null
                       : () async {
                           final me = ref.read(userProvider);
                           if (me == null || _normalizedUserId.isEmpty) return;
-                          await _friendService.sendFriendRequest(me.id, _normalizedUserId);
+                          await _friendService.sendFriendRequest(
+                            me.id,
+                            _normalizedUserId,
+                          );
                           if (mounted) setState(() => _requestPending = true);
                         },
                 ),
@@ -279,12 +318,18 @@ class _UserProfilePopupSheetState
                   label: 'Send message',
                   onTap: () async {
                     final allowed =
-                        await GuestAuthGate.requireConversationStart(context, ref);
+                        await GuestAuthGate.requireConversationStart(
+                          context,
+                          ref,
+                        );
                     if (!allowed) return;
 
                     final currentUser = ref.read(userProvider);
                     final profile = _profile;
-                    if (currentUser == null || profile == null || _normalizedUserId.isEmpty) return;
+                    if (currentUser == null ||
+                        profile == null ||
+                        _normalizedUserId.isEmpty)
+                      return;
                     final conversationId = await ref
                         .read(messagingControllerProvider)
                         .createDirectConversation(
@@ -311,13 +356,15 @@ class _UserProfilePopupSheetState
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('This profile is unavailable right now.'),
+                          content: Text(
+                            'This profile is unavailable right now.',
+                          ),
                         ),
                       );
                       return;
                     }
                     Navigator.of(context).pop();
-                      context.go('/cam?userId=$_normalizedUserId');
+                    context.go('/cam?userId=$_normalizedUserId');
                   },
                 ),
               if (!_isBlocked)
@@ -329,7 +376,9 @@ class _UserProfilePopupSheetState
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('This profile is unavailable right now.'),
+                          content: Text(
+                            'This profile is unavailable right now.',
+                          ),
                         ),
                       );
                       return;
@@ -339,12 +388,16 @@ class _UserProfilePopupSheetState
                       context,
                       ref,
                       recipientId: _normalizedUserId,
-                      recipientName: profile.username.isEmpty ? 'user' : profile.username,
+                      recipientName: profile.username.isEmpty
+                          ? 'user'
+                          : profile.username,
                     );
                   },
                 ),
               _ActionButton(
-                icon: _isBlocked ? Icons.lock_open_outlined : Icons.block_outlined,
+                icon: _isBlocked
+                    ? Icons.lock_open_outlined
+                    : Icons.block_outlined,
                 label: _isBlocked ? 'Unblock user' : 'Block user',
                 destructive: !_isBlocked,
                 onTap: () async {

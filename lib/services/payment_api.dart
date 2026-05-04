@@ -49,15 +49,12 @@ DateTime _asDateTime(dynamic value) {
 }
 
 abstract class PaymentFunctionsGateway {
-  Future<Map<String, dynamic>> call(
-    String name,
-    Map<String, dynamic> payload,
-  );
+  Future<Map<String, dynamic>> call(String name, Map<String, dynamic> payload);
 }
 
 class FirebasePaymentFunctionsGateway implements PaymentFunctionsGateway {
   FirebasePaymentFunctionsGateway({FirebaseFunctions? functions})
-      : _functions = functions ?? FirebaseFunctions.instance;
+    : _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFunctions _functions;
 
@@ -78,7 +75,7 @@ abstract class PaymentAuthGateway {
 
 class FirebasePaymentAuthGateway implements PaymentAuthGateway {
   FirebasePaymentAuthGateway({FirebaseAuth? auth})
-      : _auth = auth ?? FirebaseAuth.instance;
+    : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
 
@@ -221,10 +218,10 @@ class PaymentApi {
   static PaymentAuthGateway? _authGateway;
 
   static PaymentFunctionsGateway get _resolvedFunctionsGateway =>
-    _functionsGateway ??= FirebasePaymentFunctionsGateway();
+      _functionsGateway ??= FirebasePaymentFunctionsGateway();
 
   static PaymentAuthGateway get _resolvedAuthGateway =>
-    _authGateway ??= FirebasePaymentAuthGateway();
+      _authGateway ??= FirebasePaymentAuthGateway();
 
   @visibleForTesting
   static void configureForTesting({
@@ -262,15 +259,16 @@ class PaymentApi {
   }) async {
     final resolvedIdempotencyKey =
         (idempotencyKey == null || idempotencyKey.trim().isEmpty)
-            ? 'intent_${_uuid.v4()}'
-            : idempotencyKey.trim();
+        ? 'intent_${_uuid.v4()}'
+        : idempotencyKey.trim();
 
-    final data = await _callFunction<Map<String, dynamic>>('createPaymentIntent', {
-      'amount': amount,
-      'currency': currency,
-      'recipientId': recipientId,
-      'idempotencyKey': resolvedIdempotencyKey,
-    });
+    final data =
+        await _callFunction<Map<String, dynamic>>('createPaymentIntent', {
+          'amount': amount,
+          'currency': currency,
+          'recipientId': recipientId,
+          'idempotencyKey': resolvedIdempotencyKey,
+        });
     final clientSecret = _asTrimmedString(data['clientSecret']);
     final paymentIntentId = _asTrimmedString(data['paymentIntentId']);
     final returnedIdempotencyKey = _asTrimmedString(
@@ -311,9 +309,9 @@ class PaymentApi {
 
   static Future<void> sendPayment(
     String receiverId,
-    double amount,
-    {String? idempotencyKey}
-  ) async {
+    double amount, {
+    String? idempotencyKey,
+  }) async {
     final user = _resolvedAuthGateway.currentUser;
     if (user == null) {
       throw Exception('User not logged in');
@@ -328,9 +326,9 @@ class PaymentApi {
   static Future<void> requestPayment(
     String requesterId,
     String targetId,
-    double amount,
-    {String? idempotencyKey}
-  ) async {
+    double amount, {
+    String? idempotencyKey,
+  }) async {
     final user = _resolvedAuthGateway.currentUser;
     if (user == null) {
       throw Exception('User not logged in');
@@ -351,7 +349,10 @@ class PaymentApi {
       throw Exception('User not logged in');
     }
 
-    final data = await _callFunction<Map<String, dynamic>>('getStripeConnectStatus', {});
+    final data = await _callFunction<Map<String, dynamic>>(
+      'getStripeConnectStatus',
+      {},
+    );
     return StripeConnectStatus.fromJson(data);
   }
 
@@ -361,7 +362,10 @@ class PaymentApi {
       throw Exception('User not logged in');
     }
 
-    final data = await _callFunction<Map<String, dynamic>>('createStripeConnectOnboardingLink', {});
+    final data = await _callFunction<Map<String, dynamic>>(
+      'createStripeConnectOnboardingLink',
+      {},
+    );
     final url = _asTrimmedString(data['url']);
     if (url.isEmpty) {
       throw Exception('Onboarding URL missing in response');
@@ -375,7 +379,10 @@ class PaymentApi {
       throw Exception('User not logged in');
     }
 
-    final data = await _callFunction<Map<String, dynamic>>('createStripeConnectDashboardLink', {});
+    final data = await _callFunction<Map<String, dynamic>>(
+      'createStripeConnectDashboardLink',
+      {},
+    );
     final url = _asTrimmedString(data['url']);
     if (url.isEmpty) {
       throw Exception('Dashboard URL missing in response');
@@ -417,14 +424,17 @@ class PaymentApi {
         .where('requesterId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-          final requests = snapshot.docs
-              .map((doc) => RefundRequest.fromJson(doc.data()))
-              .toList(growable: false)
-            ..sort((a, b) {
-              final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-              final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-              return bTime.compareTo(aTime);
-            });
+          final requests =
+              snapshot.docs
+                  .map((doc) => RefundRequest.fromJson(doc.data()))
+                  .toList(growable: false)
+                ..sort((a, b) {
+                  final aTime =
+                      a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                  final bTime =
+                      b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                  return bTime.compareTo(aTime);
+                });
           return requests;
         });
   }
@@ -438,14 +448,13 @@ class PaymentApi {
         .collection('transactions')
         .where('participants', arrayContains: userId)
         .snapshots()
-        .map(
-          (snapshot) {
-            final transactions = snapshot.docs
-                .map((doc) => CoinTransaction.fromJson(doc.data()))
-                .toList(growable: false)
-              ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-            return transactions;
-          },
-        );
+        .map((snapshot) {
+          final transactions =
+              snapshot.docs
+                  .map((doc) => CoinTransaction.fromJson(doc.data()))
+                  .toList(growable: false)
+                ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return transactions;
+        });
   }
 }

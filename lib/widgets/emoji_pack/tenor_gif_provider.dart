@@ -8,7 +8,9 @@ import '../../services/tenor_service.dart';
 /// ```dart
 /// final gifAsync = ref.watch(tenorGifProvider('laugh cry emoji funny'));
 /// ```
-final tenorGifProvider =
-    FutureProvider.family<String?, String>((ref, query) async {
+final tenorGifProvider = FutureProvider.family<String?, String>((
+  ref,
+  query,
+) async {
   return GifService.fetchGifUrl(query);
 });

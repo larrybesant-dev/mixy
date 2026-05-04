@@ -1,10 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum FriendPaneRenderMode {
-  legacy,
-  schema,
-  dual,
-}
+enum FriendPaneRenderMode { legacy, schema, dual }
 
 class FriendPaneRenderModeController extends Notifier<FriendPaneRenderMode> {
   @override
@@ -17,8 +13,8 @@ class FriendPaneRenderModeController extends Notifier<FriendPaneRenderMode> {
 
 final friendPaneRenderModeProvider =
     NotifierProvider<FriendPaneRenderModeController, FriendPaneRenderMode>(
-  FriendPaneRenderModeController.new,
-);
+      FriendPaneRenderModeController.new,
+    );
 
 String friendPaneSnapshotKey({
   required FriendPaneRenderMode mode,

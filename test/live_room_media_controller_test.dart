@@ -21,7 +21,9 @@ void main() {
       LiveRoomMediaPhase.connecting,
     );
     expect(
-      container.read(liveRoomMediaControllerProvider('room-a')).isCallConnecting,
+      container
+          .read(liveRoomMediaControllerProvider('room-a'))
+          .isCallConnecting,
       isTrue,
     );
 

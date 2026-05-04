@@ -662,7 +662,10 @@ class _RoomListView extends ConsumerWidget {
                       TextButton.icon(
                         onPressed: () async {
                           final allowed =
-                              await GuestAuthGate.requireRoomCreation(context, ref);
+                              await GuestAuthGate.requireRoomCreation(
+                                context,
+                                ref,
+                              );
                           if (!allowed || !context.mounted) return;
                           context.go('/create-room');
                         },

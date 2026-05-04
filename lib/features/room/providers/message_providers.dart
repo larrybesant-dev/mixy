@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/query_policy.dart';
 import '../../../core/firestore/firestore_debug_tracing.dart';
+import '../../../core/logger.dart';
+import '../../../core/services/feature_gate_service.dart';
 import '../../../presentation/providers/user_provider.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
@@ -128,7 +130,10 @@ final messagetreamProvider = StreamProvider.autoDispose
               return docs
                   .map((doc) {
                     final data = doc.data();
-                    final sentAt = data['sentAt'] ?? data['createdAt'] ?? data['clientSentAt'];
+                    final sentAt =
+                        data['sentAt'] ??
+                        data['createdAt'] ??
+                        data['clientSentAt'];
                     final recipientUserId = _asString(data['recipientUserId']);
                     final recipientDisplayName = _asString(
                       data['recipientDisplayName'],
@@ -183,6 +188,21 @@ final sendmessageProvider = Provider.autoDispose
         final user = ref.read(userProvider);
         if (user == null) {
           throw StateError('User must be logged in to send message');
+        }
+
+        var messagingEnabled = true;
+        try {
+          messagingEnabled = ref
+              .read(featureGateControllerProvider)
+              .enableMessaging;
+        } on AssertionError {
+          messagingEnabled = true;
+        }
+        if (!messagingEnabled) {
+          Logger.warning(
+            'CONTROL_GATE feature_blocked feature=messaging operation=room_chat_send roomId=$roomId userId=${user.id} result=blocked',
+          );
+          return;
         }
 
         final normalizedmessage = message.trim();
@@ -278,6 +298,21 @@ final sendPrivatemessageProvider = Provider.autoDispose
         final user = ref.read(userProvider);
         if (user == null) {
           throw StateError('User must be logged in to send message');
+        }
+
+        var messagingEnabled = true;
+        try {
+          messagingEnabled = ref
+              .read(featureGateControllerProvider)
+              .enableMessaging;
+        } on AssertionError {
+          messagingEnabled = true;
+        }
+        if (!messagingEnabled) {
+          Logger.warning(
+            'CONTROL_GATE feature_blocked feature=messaging operation=room_private_chat_send roomId=$roomId userId=${user.id} result=blocked',
+          );
+          return;
         }
 
         final normalizedmessage = content.trim();

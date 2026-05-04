@@ -17,11 +17,17 @@
  *   - joinedAt — if missing, fall back to createdAt → serverTimestamp sentinel
  *   - role     — if missing, defaults to 'audience'
  *
+ * Optional orphan prune:
+ *   - If a room has neither hostId nor ownerId and no participants/members/
+ *     speakers/messages plus empty stage/audience arrays, it can be deleted
+ *     safely as an orphan stub using --prune-orphaned-hostless.
+ *
  * Dry-run by default. Pass --apply to write.
  *
  * Usage:
  *   node scripts/repair-rooms.js
  *   node scripts/repair-rooms.js --apply
+ *   node scripts/repair-rooms.js --apply --prune-orphaned-hostless
  */
 
 const admin = require("firebase-admin");
@@ -32,6 +38,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 const APPLY = process.argv.includes("--apply");
+const PRUNE_ORPHANED_HOSTLESS = process.argv.includes("--prune-orphaned-hostless");
 const PAGE_SIZE = 300;
 const ALLOWED_PARTICIPANT_ROLES = new Set([
   "host", "cohost", "moderator", "trusted_speaker", "stage", "audience",
@@ -62,6 +69,62 @@ function coerceBool(value) {
 function toStringArray(raw) {
   if (!Array.isArray(raw)) return [];
   return [...new Set(raw.filter((v) => typeof v === "string" && v.trim().length > 0).map((v) => v.trim()))];
+}
+
+function resolveHostCandidate(data, participantDocs) {
+  const directCandidates = [
+    data.hostId,
+    data.ownerId,
+    data.hostUserId,
+    data.ownerUserId,
+    data.createdBy,
+    data.creatorId,
+    data.userId,
+  ];
+
+  for (const candidate of directCandidates) {
+    if (isNonEmptyString(candidate)) {
+      return candidate.trim();
+    }
+  }
+
+  // Prefer explicit host/owner role in participants when available.
+  for (const pDoc of participantDocs) {
+    const pd = pDoc.data() || {};
+    const role = typeof pd.role === "string" ? pd.role.trim().toLowerCase() : "";
+    if (role === "host" || role === "owner") {
+      if (isNonEmptyString(pd.userId)) {
+        return pd.userId.trim();
+      }
+      if (isNonEmptyString(pDoc.id)) {
+        return pDoc.id.trim();
+      }
+    }
+  }
+
+  // Fallback to room arrays in deterministic order.
+  const stageUserIds = toStringArray(data.stageUserIds);
+  if (stageUserIds.length > 0) {
+    return stageUserIds[0];
+  }
+
+  const audienceUserIds = toStringArray(data.audienceUserIds);
+  if (audienceUserIds.length > 0) {
+    return audienceUserIds[0];
+  }
+
+  // Last fallback: any participant user id.
+  for (const pDoc of participantDocs) {
+    const pd = pDoc.data() || {};
+    if (isNonEmptyString(pd.userId)) {
+      return pd.userId.trim();
+    }
+    if (isNonEmptyString(pDoc.id)) {
+      return pDoc.id.trim();
+    }
+  }
+
+  return null;
 }
 
 async function repairRoomDoc(doc, batch) {
@@ -144,6 +207,7 @@ async function run() {
   let roomsPatched = 0;
   let participantsScanned = 0;
   let participantsPatched = 0;
+  let roomsDeleted = 0;
 
   console.log(`[repair-rooms] mode=${APPLY ? "APPLY" : "DRY-RUN"} pageSize=${PAGE_SIZE}`);
 
@@ -156,19 +220,66 @@ async function run() {
 
     for (const roomDoc of snap.docs) {
       roomsScanned++;
+      const participantsSnap = await roomDoc.ref.collection("participants").get();
 
       // Use separate batches per room to stay well under the 500-op Firestore limit.
       const batch = db.batch();
       let batchOps = 0;
 
-      const roomPatched = await repairRoomDoc(roomDoc, batch);
+      const roomData = roomDoc.data() || {};
+      const hasHostId = isNonEmptyString(roomData.hostId);
+      const hasOwnerId = isNonEmptyString(roomData.ownerId);
+      if (!hasHostId && !hasOwnerId) {
+        const candidate = resolveHostCandidate(roomData, participantsSnap.docs);
+        if (candidate) {
+          roomData.hostId = candidate;
+          roomData.ownerId = candidate;
+        } else {
+          const stageUserIds = toStringArray(roomData.stageUserIds);
+          const audienceUserIds = toStringArray(roomData.audienceUserIds);
+
+          const roomRef = roomDoc.ref;
+          const [messagesSnap, membersSnap, speakersSnap] = await Promise.all([
+            roomRef.collection("messages").limit(1).get(),
+            roomRef.collection("members").limit(1).get(),
+            roomRef.collection("speakers").limit(1).get(),
+          ]);
+
+          const canPruneAsOrphan =
+            participantsSnap.empty &&
+            membersSnap.empty &&
+            speakersSnap.empty &&
+            messagesSnap.empty &&
+            stageUserIds.length === 0 &&
+            audienceUserIds.length === 0;
+
+          if (canPruneAsOrphan && PRUNE_ORPHANED_HOSTLESS) {
+            console.log(`  [delete:orphan-room] rooms/${roomDoc.id}`);
+            if (APPLY) {
+              batch.delete(roomRef);
+            }
+            roomsDeleted++;
+            batchOps++;
+          } else {
+            console.warn(`  [skip:room-host-owner-unresolvable] rooms/${roomDoc.id}`);
+          }
+        }
+      }
+
+      const roomPatched = await repairRoomDoc(
+        {
+          id: roomDoc.id,
+          ref: roomDoc.ref,
+          data: () => roomData,
+        },
+        batch,
+      );
       if (roomPatched) {
         roomsPatched++;
         batchOps++;
       }
 
       // ── participants subcollection ──────────────────────────────────────
-      const participantsSnap = await roomDoc.ref.collection("participants").get();
       for (const pDoc of participantsSnap.docs) {
         participantsScanned++;
         const pPatched = await repairParticipantDoc(pDoc, batch);
@@ -200,7 +311,8 @@ async function run() {
   console.log(
     `\n[repair-rooms] done` +
     ` — rooms scanned=${roomsScanned} patched=${roomsPatched}` +
-    ` | participants scanned=${participantsScanned} patched=${participantsPatched}`,
+    ` | participants scanned=${participantsScanned} patched=${participantsPatched}` +
+    ` | rooms deleted=${roomsDeleted}`,
   );
   if (!APPLY && (roomsPatched + participantsPatched) > 0) {
     console.log("[repair-rooms] Re-run with --apply to write changes.");

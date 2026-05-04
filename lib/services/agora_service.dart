@@ -931,7 +931,12 @@ class AgoraService extends RtcRoomService {
       // --- re‑enable video engine before join ---
       try {
         await _engine.enableVideo();
-      } catch (_) {}
+      } catch (e) {
+        developer.log(
+          'rejoinAsBroadcaster: enableVideo error: $e',
+          name: 'AgoraService',
+        );
+      }
 
       // --- rejoin as broadcaster ---
       developer.log(
@@ -1058,7 +1063,9 @@ class AgoraService extends RtcRoomService {
     final agoraVol = (volume.clamp(0.0, 2.0) * 100).round();
     try {
       await _engine.adjustRecordingSignalVolume(agoraVol);
-    } catch (_) {}
+    } catch (e) {
+      developer.log('setMicVolume error: $e', name: 'AgoraService');
+    }
   }
 
   /// Set local speaker / playback output volume.
@@ -1070,7 +1077,9 @@ class AgoraService extends RtcRoomService {
     final agoraVol = (volume.clamp(0.0, 1.0) * 100).round();
     try {
       await _engine.adjustPlaybackSignalVolume(agoraVol);
-    } catch (_) {}
+    } catch (e) {
+      developer.log('setSpeakerVolume error: $e', name: 'AgoraService');
+    }
   }
 
   /// Enable/disable video.

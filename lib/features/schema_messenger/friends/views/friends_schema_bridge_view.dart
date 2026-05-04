@@ -63,24 +63,25 @@ class _FriendsSchemaBridgeViewState
     final bootTarget = ref.watch(schemaConversationFirstBootTargetProvider);
     final onStartChat = currentUser == null
         ? null
-        : (String friendUserId, String friendUsername, String? friendAvatarUrl) =>
-              _openDirectChat(
-                context: context,
-                currentUserId: currentUser.id,
-                currentUsername: currentUser.username,
-                currentAvatarUrl: currentUser.avatarUrl,
-                friendUserId: friendUserId,
-                friendUsername: friendUsername,
-                friendAvatarUrl: friendAvatarUrl,
-              );
+        : (
+            String friendUserId,
+            String friendUsername,
+            String? friendAvatarUrl,
+          ) => _openDirectChat(
+            context: context,
+            currentUserId: currentUser.id,
+            currentUsername: currentUser.username,
+            currentAvatarUrl: currentUser.avatarUrl,
+            friendUserId: friendUserId,
+            friendUsername: friendUsername,
+            friendAvatarUrl: friendAvatarUrl,
+          );
 
     _syncBootSession(authUserId);
     if (kDebugMode) {
       _runParityDiagnostics(mode);
     }
-    _runConversationFirstBoot(
-      bootTarget: bootTarget,
-    );
+    _runConversationFirstBoot(bootTarget: bootTarget);
 
     return Column(
       children: [
@@ -96,13 +97,20 @@ class _FriendsSchemaBridgeViewState
         ],
         Expanded(
           child: switch (mode) {
-            FriendPaneRenderMode.legacy => const FriendsPaneView(showHeader: false),
-            FriendPaneRenderMode.schema => SchemaFriendsModuleView(onStartChat: onStartChat),
-            FriendPaneRenderMode.dual => isDesktop
-                ? _DualDesktopFriendPanes(
-                    schemaPane: SchemaFriendsModuleView(onStartChat: onStartChat),
-                  )
-                : SchemaFriendsModuleView(onStartChat: onStartChat),
+            FriendPaneRenderMode.legacy => const FriendsPaneView(
+              showHeader: false,
+            ),
+            FriendPaneRenderMode.schema => SchemaFriendsModuleView(
+              onStartChat: onStartChat,
+            ),
+            FriendPaneRenderMode.dual =>
+              isDesktop
+                  ? _DualDesktopFriendPanes(
+                      schemaPane: SchemaFriendsModuleView(
+                        onStartChat: onStartChat,
+                      ),
+                    )
+                  : SchemaFriendsModuleView(onStartChat: onStartChat),
           },
         ),
       ],
@@ -137,7 +145,9 @@ class _FriendsSchemaBridgeViewState
     final source = _nextBootSource;
     _nextBootSource = SchemaConversationBootSource.unknown;
 
-    ref.read(schemaConversationBootEngineProvider).startConversationBoot(
+    ref
+        .read(schemaConversationBootEngineProvider)
+        .startConversationBoot(
           target: bootTarget,
           source: source,
           navigate: (conversationId) async {
@@ -162,7 +172,9 @@ class _FriendsSchemaBridgeViewState
     final messenger = ScaffoldMessenger.of(context);
 
     try {
-      final conversationId = await ref.read(messagingControllerProvider).createDirectConversation(
+      final conversationId = await ref
+          .read(messagingControllerProvider)
+          .createDirectConversation(
             userId1: currentUserId,
             user1Name: currentUsername,
             user1AvatarUrl: currentAvatarUrl,
@@ -193,7 +205,9 @@ class _FriendsSchemaBridgeViewState
 
     final legacyRosterAsync = ref.watch(friendRosterProvider);
     final schemaLinksAsync = ref.watch(schemaFriendLinksProvider);
-    final schemaPresenceMapAsync = ref.watch(schemaStableFriendPresenceMapProvider);
+    final schemaPresenceMapAsync = ref.watch(
+      schemaStableFriendPresenceMapProvider,
+    );
 
     final legacyRoster = legacyRosterAsync.valueOrNull;
     final schemaAcceptedLinks = ref.watch(schemaAcceptedFriendLinksProvider);
@@ -201,18 +215,22 @@ class _FriendsSchemaBridgeViewState
 
     final snapshot = FriendParitySnapshot(
       legacyIdsOrdered:
-          legacyRoster?.map((entry) => entry.friendId).toList(growable: false) ??
-              const <String>[],
+          legacyRoster
+              ?.map((entry) => entry.friendId)
+              .toList(growable: false) ??
+          const <String>[],
       schemaIdsOrdered: schemaAcceptedLinks
           .map((link) => link.otherUserId(authUserId))
           .where((id) => id.isNotEmpty)
           .toList(growable: false),
-      legacyOnlineIds: legacyRoster
+      legacyOnlineIds:
+          legacyRoster
               ?.where((entry) => entry.isOnline)
               .map((entry) => entry.friendId)
               .toSet() ??
           const <String>{},
-      schemaOnlineIds: schemaPresenceMap?.entries
+      schemaOnlineIds:
+          schemaPresenceMap?.entries
               .where((entry) => entry.value.isOnline)
               .map((entry) => entry.key)
               .toSet() ??
@@ -278,7 +296,8 @@ class _FriendsSchemaBridgeViewState
       metadata: <String, Object?>{
         'legacyCount': snapshot.legacyIdsOrdered.length,
         'schemaCount': snapshot.schemaIdsOrdered.length,
-        'countDelta': snapshot.legacyIdsOrdered.length - snapshot.schemaIdsOrdered.length,
+        'countDelta':
+            snapshot.legacyIdsOrdered.length - snapshot.schemaIdsOrdered.length,
         'missingInSchema': result.missingInSchema.join(','),
         'missingInLegacy': result.missingInLegacy.join(','),
         'statusMismatches': result.statusMismatches.join(','),
@@ -347,8 +366,8 @@ class _BootTimelineStrip extends ConsumerWidget {
         : '[${latest.source.name}] ${latest.phase.name}: ${latest.message}';
 
     final metricsSummary = metrics == null
-      ? null
-      : '${metrics.eventCount} events, ${metrics.phaseCount} phases, ${metrics.duration.inMilliseconds}ms';
+        ? null
+        : '${metrics.eventCount} events, ${metrics.phaseCount} phases, ${metrics.duration.inMilliseconds}ms';
 
     return Container(
       width: double.infinity,
@@ -390,7 +409,8 @@ class _BootTimelineStrip extends ConsumerWidget {
               ),
             ),
           TextButton(
-            onPressed: () => ref.read(schemaBootTimelineProvider.notifier).clear(),
+            onPressed: () =>
+                ref.read(schemaBootTimelineProvider.notifier).clear(),
             style: TextButton.styleFrom(
               foregroundColor: VelvetNoir.onSurfaceVariant,
               minimumSize: const Size(0, 24),
@@ -436,11 +456,20 @@ class _ModeHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _scoreColor(health.compositeScore).withValues(alpha: 0.16),
+                    color: _scoreColor(
+                      health.compositeScore,
+                    ).withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: _scoreColor(health.compositeScore).withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: _scoreColor(
+                        health.compositeScore,
+                      ).withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Text(
                     'Health ${health.compositeScore}%',
@@ -508,10 +537,7 @@ class _DualDesktopFriendPanes extends StatelessWidget {
         ),
         const VerticalDivider(width: 1, color: VelvetNoir.outlineVariant),
         Expanded(
-          child: _PaneCard(
-            title: 'Schema Pane (Contract)',
-            child: schemaPane,
-          ),
+          child: _PaneCard(title: 'Schema Pane (Contract)', child: schemaPane),
         ),
       ],
     );
@@ -519,10 +545,7 @@ class _DualDesktopFriendPanes extends StatelessWidget {
 }
 
 class _PaneCard extends StatelessWidget {
-  const _PaneCard({
-    required this.title,
-    required this.child,
-  });
+  const _PaneCard({required this.title, required this.child});
 
   final String title;
   final Widget child;

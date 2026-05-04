@@ -34,7 +34,8 @@ class SafeNetworkAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: radius,
       backgroundColor:
-          backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerHighest,
+          backgroundColor ??
+          Theme.of(context).colorScheme.surfaceContainerHighest,
       child: fallbackText != null
           ? Text(fallbackText!, style: fallbackTextStyle)
           : Icon(

@@ -6,6 +6,9 @@ class RedirectEvaluation {
 }
 
 /// Routes (or prefixes) a guest (no Firebase UID) may visit in browse mode.
+/// NOTE: /room/* is intentionally NOT listed here because adult rooms must be
+/// gated. The router's /room/:id builder performs the isAdult check at render
+/// time; unauthenticated users reaching an adult room are pushed to /auth.
 bool _isGuestBrowseable(String loc) {
   const exact = <String>[
     '/home',
@@ -16,9 +19,11 @@ bool _isGuestBrowseable(String loc) {
     '/about',
   ];
   if (exact.contains(loc)) return true;
-  // Read-only room preview and profile pages.
-  if (loc.startsWith('/room/')) return true;
+  // Profile pages are public previews.
   if (loc.startsWith('/profile/')) return true;
+  // Non-adult room previews are allowed. Adult rooms are blocked at the
+  // builder level — guests who land on an adult room are sent to /auth.
+  if (loc.startsWith('/room/')) return true;
   return false;
 }
 
@@ -39,7 +44,9 @@ RedirectEvaluation evaluateAppRedirectWithReason({
 
   final isAuth = uid != null && uid.isNotEmpty;
 
-  if (isAuth && !legalStateResolved) {
+  // Safety: Prevent permanent loading state if legal settings never arrive.
+  if (isAuth && !legalStateResolved && matchedLocation != '/error') {
+    // Allow it to stay for now, but in Phase 3 we'll add a timeout guard in app.dart
     return const RedirectEvaluation(
       redirectTo: null,
       reason: 'legal_loading_hold',

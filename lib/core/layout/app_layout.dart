@@ -12,7 +12,8 @@ extension AppLayoutContext on BuildContext {
 
   bool get isCompactLayout => screenWidth < AppBreakpoints.compact;
   bool get isMediumLayout =>
-      screenWidth >= AppBreakpoints.compact && screenWidth < AppBreakpoints.medium;
+      screenWidth >= AppBreakpoints.compact &&
+      screenWidth < AppBreakpoints.medium;
   bool get isExpandedLayout => screenWidth >= AppBreakpoints.medium;
 
   double get contentMaxWidth {

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,9 +32,7 @@ Widget _buildApp({
   );
 
   return ProviderScope(
-    overrides: [
-      firestoreProvider.overrideWithValue(firestore),
-    ],
+    overrides: [firestoreProvider.overrideWithValue(firestore)],
     child: MaterialApp.router(routerConfig: router),
   );
 }
@@ -43,12 +40,10 @@ Widget _buildApp({
 void main() {
   setUpAll(() async {
     await testSetup();
-    await Firebase.initializeApp();
   });
 
   group('messagescreen', () {
-    testWidgets('renders Inbox AppBar and request action',
-        (tester) async {
+    testWidgets('renders Inbox AppBar and request action', (tester) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
@@ -58,8 +53,9 @@ void main() {
       expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
     });
 
-    testWidgets('shows empty Chats state when no conversations exist',
-        (tester) async {
+    testWidgets('shows empty Chats state when no conversations exist', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
@@ -88,43 +84,56 @@ void main() {
       expect(find.text('Hey there!'), findsOneWidget);
     });
 
-    testWidgets('shows pinned conversations before newer unpinned conversations',
-        (tester) async {
-      final firestore = FakeFirebaseFirestore();
-      final now = DateTime.now();
+    testWidgets(
+      'shows pinned conversations before newer unpinned conversations',
+      (tester) async {
+        final firestore = FakeFirebaseFirestore();
+        final now = DateTime.now();
 
-      await firestore.collection('conversations').doc('conv-older-pinned').set({
-        'participantIds': ['user-1', 'user-2'],
-        'lastMessagePreview': 'Pinned hello',
-        'lastMessageAt': Timestamp.fromDate(now.subtract(const Duration(minutes: 5))),
-        'isArchived': false,
-        'status': 'active',
-        'participantNames': {'user-2': 'Alice'},
-        'pinnedBy': ['user-1'],
-        'type': 'direct',
-        'createdAt': Timestamp.fromDate(now.subtract(const Duration(days: 1))),
-      });
-      await firestore.collection('conversations').doc('conv-newer').set({
-        'participantIds': ['user-1', 'user-3'],
-        'lastMessagePreview': 'Fresh message',
-        'lastMessageAt': Timestamp.fromDate(now),
-        'isArchived': false,
-        'status': 'active',
-        'participantNames': {'user-3': 'Bianca'},
-        'type': 'direct',
-        'createdAt': Timestamp.fromDate(now.subtract(const Duration(hours: 3))),
-      });
+        await firestore
+            .collection('conversations')
+            .doc('conv-older-pinned')
+            .set({
+              'participantIds': ['user-1', 'user-2'],
+              'lastMessagePreview': 'Pinned hello',
+              'lastMessageAt': Timestamp.fromDate(
+                now.subtract(const Duration(minutes: 5)),
+              ),
+              'isArchived': false,
+              'status': 'active',
+              'participantNames': {'user-2': 'Alice'},
+              'pinnedBy': ['user-1'],
+              'type': 'direct',
+              'createdAt': Timestamp.fromDate(
+                now.subtract(const Duration(days: 1)),
+              ),
+            });
+        await firestore.collection('conversations').doc('conv-newer').set({
+          'participantIds': ['user-1', 'user-3'],
+          'lastMessagePreview': 'Fresh message',
+          'lastMessageAt': Timestamp.fromDate(now),
+          'isArchived': false,
+          'status': 'active',
+          'participantNames': {'user-3': 'Bianca'},
+          'type': 'direct',
+          'createdAt': Timestamp.fromDate(
+            now.subtract(const Duration(hours: 3)),
+          ),
+        });
 
-      await tester.pumpWidget(_buildApp(firestore: firestore));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpWidget(_buildApp(firestore: firestore));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
 
-      final aliceTop = tester.getTopLeft(find.text('Alice')).dy;
-      final biancaTop = tester.getTopLeft(find.text('Bianca')).dy;
-      expect(aliceTop, lessThan(biancaTop));
-    });
+        final aliceTop = tester.getTopLeft(find.text('Alice')).dy;
+        final biancaTop = tester.getTopLeft(find.text('Bianca')).dy;
+        expect(aliceTop, lessThan(biancaTop));
+      },
+    );
 
-    testWidgets('add message button is shown in AppBar actions', (tester) async {
+    testWidgets('add message button is shown in AppBar actions', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
@@ -132,8 +141,9 @@ void main() {
       expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
     });
 
-    testWidgets('requests sheet shows empty state when no pending requests',
-        (tester) async {
+    testWidgets('requests sheet shows empty state when no pending requests', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();

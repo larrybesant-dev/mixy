@@ -35,7 +35,8 @@ class BetaMetricsState {
       activeUsersChat: activeUsersChat ?? this.activeUsersChat,
       matchSuccessCount: matchSuccessCount ?? this.matchSuccessCount,
       matchFailureCount: matchFailureCount ?? this.matchFailureCount,
-      avgRoomDurationMinutes: avgRoomDurationMinutes ?? this.avgRoomDurationMinutes,
+      avgRoomDurationMinutes:
+          avgRoomDurationMinutes ?? this.avgRoomDurationMinutes,
       retentionRate24h: retentionRate24h ?? this.retentionRate24h,
     );
   }
@@ -46,11 +47,11 @@ class BetaMetricsController extends StateNotifier<BetaMetricsState> {
 
   void refreshFromTelemetry(AppTelemetryState telemetry) {
     final events = telemetry.recentEvents;
-    
+
     // Simple count based on recent events (10m window)
     final now = DateTime.now();
     final window = const Duration(minutes: 10);
-    
+
     int feedCount = 0;
     int roomCount = 0;
     int chatCount = 0;
@@ -60,27 +61,27 @@ class BetaMetricsController extends StateNotifier<BetaMetricsState> {
 
     for (final event in events) {
       if (now.difference(event.timestamp) > window) continue;
-      
+
       if (event.domain == 'routing' && event.action == 'navigate') {
         final path = event.metadata['path'] as String? ?? '';
         if (path.contains('home')) feedCount++;
         if (path.contains('room')) roomCount++;
         if (path.contains('chat')) chatCount++;
       }
-      
+
       if (event.domain == 'speed_dating' && event.action == 'match_success') {
         matchSuccess++;
       }
-      
+
       if (event.domain == 'room' && event.action == 'drop_off') {
         final duration = event.metadata['durationSeconds'] as int? ?? 0;
         if (duration > 0) roomDurations.add(duration);
       }
     }
 
-    final avgDuration = roomDurations.isEmpty 
-      ? 0.0 
-      : roomDurations.reduce((a, b) => a + b) / roomDurations.length / 60.0;
+    final avgDuration = roomDurations.isEmpty
+        ? 0.0
+        : roomDurations.reduce((a, b) => a + b) / roomDurations.length / 60.0;
 
     state = state.copyWith(
       activeUsersFeed: feedCount,
@@ -93,6 +94,7 @@ class BetaMetricsController extends StateNotifier<BetaMetricsState> {
   }
 }
 
-final betaMetricsProvider = StateNotifierProvider<BetaMetricsController, BetaMetricsState>((ref) {
-  return BetaMetricsController();
-});
+final betaMetricsProvider =
+    StateNotifierProvider<BetaMetricsController, BetaMetricsState>((ref) {
+      return BetaMetricsController();
+    });

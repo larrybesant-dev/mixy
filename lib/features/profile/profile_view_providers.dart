@@ -14,22 +14,25 @@ class UserProfileBasePayload {
   final Map<String, dynamic> privacy;
 }
 
-final userProfileBaseProvider =
-    FutureProvider.autoDispose.family<UserProfileBasePayload, String>((
-  ref,
-  profileUserId,
-) async {
-  final firestore = ref.watch(firestoreProvider);
-  final viewerId = ref.watch(userProvider)?.id;
+final userProfileBaseProvider = FutureProvider.autoDispose
+    .family<UserProfileBasePayload, String>((ref, profileUserId) async {
+      final firestore = ref.watch(firestoreProvider);
+      final viewerId = ref.watch(userProvider)?.id;
 
-  final userRef = firestore.collection('users').doc(profileUserId);
-  final userSnapshot = await userRef.get();
+      final userRef = firestore.collection('users').doc(profileUserId);
+      final userSnapshot = await userRef.get();
 
-  Map<String, dynamic> privacyData = const <String, dynamic>{};
-  if (viewerId == profileUserId) {
-    final privacySnapshot = await userRef.collection('privacy').doc('settings').get();
-    privacyData = privacySnapshot.data() ?? const <String, dynamic>{};
-  }
+      Map<String, dynamic> privacyData = const <String, dynamic>{};
+      if (viewerId == profileUserId) {
+        final privacySnapshot = await userRef
+            .collection('privacy')
+            .doc('settings')
+            .get();
+        privacyData = privacySnapshot.data() ?? const <String, dynamic>{};
+      }
 
-  return UserProfileBasePayload(userSnapshot: userSnapshot, privacy: privacyData);
-});
+      return UserProfileBasePayload(
+        userSnapshot: userSnapshot,
+        privacy: privacyData,
+      );
+    });

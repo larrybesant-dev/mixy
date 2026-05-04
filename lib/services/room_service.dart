@@ -5,8 +5,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/models/room_model.dart';
 
+import '../core/logger.dart';
+import '../core/services/feature_gate_service.dart';
+
 final roomServiceProvider = Provider<RoomService>((ref) {
-  return RoomService();
+  return RoomService(
+    isLiveRoomsEnabled: () {
+      try {
+        return ref.read(featureGateControllerProvider).enableLiveRooms;
+      } on AssertionError {
+        return true;
+      }
+    },
+  );
 });
 
 class RoomService {
@@ -15,10 +26,14 @@ class RoomService {
   static const Duration _liveRoomsDebounceWindow = Duration(milliseconds: 220);
   static const Duration _roomActivityFallbackWindow = Duration(minutes: 3);
 
-  RoomService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  RoomService({
+    FirebaseFirestore? firestore,
+    bool Function()? isLiveRoomsEnabled,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _isLiveRoomsEnabled = isLiveRoomsEnabled;
 
   final FirebaseFirestore _firestore;
+  final bool Function()? _isLiveRoomsEnabled;
 
   CollectionReference<Map<String, dynamic>> get _roomsCollection =>
       _firestore.collection('rooms');
@@ -35,7 +50,7 @@ class RoomService {
     if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
       query = query.where('category', isEqualTo: normalizedCategory);
     }
-    return query.limit(limit);
+    return query.orderBy('createdAt', descending: true).limit(limit);
   }
 
   Query<Map<String, dynamic>> _upcomingRoomsQuery({
@@ -65,6 +80,19 @@ class RoomService {
     return trimmedRoomId;
   }
 
+  bool _canCreateLiveRooms() {
+    final resolver = _isLiveRoomsEnabled;
+    if (resolver == null) {
+      return true;
+    }
+
+    try {
+      return resolver();
+    } on AssertionError {
+      return true;
+    }
+  }
+
   DateTime get _freshParticipantCutoff =>
       DateTime.now().subtract(_participantFreshnessWindow);
 
@@ -83,6 +111,16 @@ class RoomService {
   }
 
   Future<bool> _hasFreshParticipants(RoomModel room) async {
+    // Fast path: if the room doc itself shows a non-zero member count and
+    // was updated recently, trust it without making subcollection reads.
+    // This eliminates up to 2 Firestore reads per room in the discovery feed
+    // (N+1 pattern) when rooms are being actively heartbeated.
+    if (_roomDocShowsRecentActivity(room)) {
+      return true;
+    }
+
+    // Slow path: room doc looks stale — do a single subcollection probe to
+    // confirm at least one fresh participant exists before showing the room.
     try {
       final cutoff = Timestamp.fromDate(_freshParticipantCutoff);
       final participantSnapshot = await _participantsCollection(
@@ -99,7 +137,7 @@ class RoomService {
         return true;
       }
 
-      return _roomDocShowsRecentActivity(room);
+      return false;
     } on FirebaseException {
       // Some production rule sets can restrict participant reads.
       // Fail open here so discovery feed remains usable.
@@ -107,7 +145,7 @@ class RoomService {
     }
   }
 
-/*
+  /*
   Future<void> _markRoomInactive(String roomId) {
     return _roomsCollection.doc(roomId).set({
       'isLive': false,
@@ -276,6 +314,13 @@ class RoomService {
     final scoreB = _scoreRoom(b, const <String>{});
     final scoreCompare = scoreB.compareTo(scoreA);
     if (scoreCompare != 0) return scoreCompare;
+
+    // Tie-break with createdAt desc (newest first).
+    final createdA = a.createdAt?.toDate() ?? DateTime(2020);
+    final createdB = b.createdAt?.toDate() ?? DateTime(2020);
+    final createCompare = createdB.compareTo(createdA);
+    if (createCompare != 0) return createCompare;
+
     return a.id.compareTo(b.id);
   }
 
@@ -502,7 +547,10 @@ class RoomService {
     if (createdAt == null) {
       return 0;
     }
-    final ageMinutes = math.max(1, DateTime.now().difference(createdAt).inMinutes);
+    final ageMinutes = math.max(
+      1,
+      DateTime.now().difference(createdAt).inMinutes,
+    );
     final effectiveCount = room.memberCount > 0
         ? room.memberCount
         : room.stageUserIds.length + room.audienceUserIds.length;
@@ -583,6 +631,8 @@ class RoomService {
   Future<String> createRoom({
     required String hostId,
     required String name,
+    String? hostUsername,
+    String? hostAvatarUrl,
     String? description,
     String? rules,
     bool isLive = true,
@@ -592,6 +642,15 @@ class RoomService {
     List<String> tags = const <String>[],
     DateTime? scheduledAt,
   }) async {
+    if (!_canCreateLiveRooms()) {
+      Logger.warning(
+        'CONTROL_GATE feature_blocked feature=live_rooms operation=create_room result=blocked',
+      );
+      throw StateError(
+        'Room creation is temporarily disabled for maintenance.',
+      );
+    }
+
     final trimmedHostId = hostId.trim();
     final trimmedName = name.trim();
     if (trimmedHostId.isEmpty) {
@@ -609,6 +668,8 @@ class RoomService {
       'description': description?.trim(),
       'rules': rules?.trim(),
       'hostId': trimmedHostId,
+      'hostUsername': hostUsername?.trim(),
+      'hostAvatarUrl': hostAvatarUrl?.trim(),
       'isLive': isLive,
       'isAdult': isAdult,
       'thumbnailUrl': thumbnailUrl?.trim(),

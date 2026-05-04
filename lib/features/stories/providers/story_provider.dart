@@ -134,11 +134,11 @@ class Story {
 final followingIdsProvider = rawFollowGraphStreamProvider;
 
 // Stream of stories from following users
-final followingStoriesProvider =
-    StreamProvider.autoDispose.family<
-      List<Story>,
-      ({String userId, List<String> followingIds})
-    >((ref, params) {
+final followingStoriesProvider = StreamProvider.autoDispose
+    .family<List<Story>, ({String userId, List<String> followingIds})>((
+      ref,
+      params,
+    ) {
       final firestore = ref.watch(firestoreProvider);
       return firestore
           .collectionGroup('stories')
@@ -161,26 +161,24 @@ final followingStoriesProvider =
     });
 
 // Stream of user's own stories
-final myStoriesProvider = StreamProvider.autoDispose.family<List<Story>, String>((
-  ref,
-  userId,
-) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('users')
-      .doc(userId)
-      .collection('stories')
-      .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
-      .orderBy('expiresAt')
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map((snapshot) {
-        return snapshot.docs
-            .map((doc) => Story.fromJson(doc.data(), doc.id))
-            .where((story) => !story.isExpired)
-            .toList();
-      });
-});
+final myStoriesProvider = StreamProvider.autoDispose
+    .family<List<Story>, String>((ref, userId) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('users')
+          .doc(userId)
+          .collection('stories')
+          .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
+          .orderBy('expiresAt')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => Story.fromJson(doc.data(), doc.id))
+                .where((story) => !story.isExpired)
+                .toList();
+          });
+    });
 
 // Controller for story operations
 final storyControllerProvider = Provider<StoryController>((ref) {

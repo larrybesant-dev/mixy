@@ -23,7 +23,9 @@ FirestoreErrorInfo parseFirestoreError(Object error) {
         : rawMessage;
     final normalized = code.toLowerCase();
     final isPermissionOrAuth =
-        normalized == 'permission-denied' || normalized == 'unauthenticated' || normalized == 'unauthorized';
+        normalized == 'permission-denied' ||
+        normalized == 'unauthenticated' ||
+        normalized == 'unauthorized';
     return FirestoreErrorInfo(
       code: code,
       message: message,
@@ -38,7 +40,10 @@ FirestoreErrorInfo parseFirestoreError(Object error) {
   );
 }
 
-String friendlyFirestoremessage(Object error, {required String fallbackContext}) {
+String friendlyFirestoremessage(
+  Object error, {
+  required String fallbackContext,
+}) {
   final info = parseFirestoreError(error);
   if (info.isPermissionOrAuth) {
     return 'You do not have access to this data right now. Please sign in again or contact support if this keeps happening.';

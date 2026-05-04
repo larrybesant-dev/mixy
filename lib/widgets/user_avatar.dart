@@ -6,7 +6,11 @@ class UserAvatar extends StatelessWidget {
   final String profilePictureUrl;
   final double radius;
 
-  const UserAvatar({required this.profilePictureUrl, this.radius = 24, super.key});
+  const UserAvatar({
+    required this.profilePictureUrl,
+    this.radius = 24,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +37,24 @@ class UserAvatar extends StatelessWidget {
                       height: radius,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                        valueColor: AlwaysStoppedAnimation(
+                          theme.colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
-                  errorWidget: (context, url, error) =>
-                      Icon(Icons.person, color: theme.colorScheme.primary, size: radius),
+                  errorWidget: (context, url, error) => Icon(
+                    Icons.person,
+                    color: theme.colorScheme.primary,
+                    size: radius,
+                  ),
                 ),
               )
-            : Icon(Icons.person, color: theme.colorScheme.primary, size: radius),
+            : Icon(
+                Icons.person,
+                color: theme.colorScheme.primary,
+                size: radius,
+              ),
       ),
     );
   }

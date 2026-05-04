@@ -46,9 +46,12 @@ class MixVySystemStressRunner {
     final analyzer = const SystemTraceAnalyzer();
 
     try {
-      bus.emitNow('STRESS_RUN_START', meta: <String, dynamic>{
-        'signedInStable': authState.isAuthenticatedStable,
-      });
+      bus.emitNow(
+        'STRESS_RUN_START',
+        meta: <String, dynamic>{
+          'signedInStable': authState.isAuthenticatedStable,
+        },
+      );
 
       final deepLinks = <String>[
         '/chat/thread-123',
@@ -60,24 +63,32 @@ class MixVySystemStressRunner {
         await _probeRoute(router: router, route: route);
       }
 
-      final burstRoutes = <String>['/home', '/messages', '/rooms', '/speed-dating', '/settings'];
-      bus.emitNow('STRESS_NAV_BURST_START', meta: <String, dynamic>{
-        'hops': 20,
-      });
+      final burstRoutes = <String>[
+        '/home',
+        '/messages',
+        '/rooms',
+        '/speed-dating',
+        '/settings',
+      ];
+      bus.emitNow(
+        'STRESS_NAV_BURST_START',
+        meta: <String, dynamic>{'hops': 20},
+      );
       for (var i = 0; i < 20; i += 1) {
         final target = burstRoutes[i % burstRoutes.length];
-        bus.emitNow('STRESS_NAV_BURST_HOP', meta: <String, dynamic>{
-          'index': i,
-          'route': target,
-        });
+        bus.emitNow(
+          'STRESS_NAV_BURST_HOP',
+          meta: <String, dynamic>{'index': i, 'route': target},
+        );
         router.go(target);
         await Future<void>.delayed(const Duration(milliseconds: 80));
       }
       await Future<void>.delayed(const Duration(milliseconds: 400));
 
-      bus.emitNow('STRESS_RUN_COMPLETE', meta: <String, dynamic>{
-        'authFlipEnabled': kEnableStressAuthFlipCycle,
-      });
+      bus.emitNow(
+        'STRESS_RUN_COMPLETE',
+        meta: <String, dynamic>{'authFlipEnabled': kEnableStressAuthFlipCycle},
+      );
 
       await Future<void>.delayed(const Duration(milliseconds: 120));
       final summary = analyzer.analyze(observedEvents);
@@ -96,9 +107,10 @@ class MixVySystemStressRunner {
   }) async {
     final bus = SystemEventBus.instance;
     final stopwatch = Stopwatch()..start();
-    bus.emitNow('STRESS_ROUTE_START', meta: <String, dynamic>{
-      'requestedRoute': route,
-    });
+    bus.emitNow(
+      'STRESS_ROUTE_START',
+      meta: <String, dynamic>{'requestedRoute': route},
+    );
 
     router.go(route);
 
@@ -119,11 +131,14 @@ class MixVySystemStressRunner {
     }
 
     stopwatch.stop();
-    bus.emitNow('STRESS_ROUTE_FINAL', meta: <String, dynamic>{
-      'requestedRoute': route,
-      'finalRoute': _currentRoute(router),
-      'durationMs': stopwatch.elapsedMilliseconds,
-    });
+    bus.emitNow(
+      'STRESS_ROUTE_FINAL',
+      meta: <String, dynamic>{
+        'requestedRoute': route,
+        'finalRoute': _currentRoute(router),
+        'durationMs': stopwatch.elapsedMilliseconds,
+      },
+    );
   }
 
   static String _currentRoute(GoRouter router) {

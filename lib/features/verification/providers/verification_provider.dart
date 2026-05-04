@@ -25,26 +25,26 @@ bool _asBool(dynamic value, {required bool fallback}) {
 }
 
 // Check if user is verified
-final userVerificationProvider =
-    StreamProvider.autoDispose.family<bool, String>((ref, userId) {
-  final firestore = ref.watch(firestoreProvider);
-  final verificationRef = firestore.collection('verification').doc(userId);
-  final usersRef = firestore.collection('users').doc(userId);
+final userVerificationProvider = StreamProvider.autoDispose
+    .family<bool, String>((ref, userId) {
+      final firestore = ref.watch(firestoreProvider);
+      final verificationRef = firestore.collection('verification').doc(userId);
+      final usersRef = firestore.collection('users').doc(userId);
 
-  return verificationRef.snapshots().asyncMap((snapshot) async {
-    if (snapshot.exists && snapshot.data() != null) {
-      return _asBool(snapshot.data()?['isVerified'], fallback: false);
-    }
+      return verificationRef.snapshots().asyncMap((snapshot) async {
+        if (snapshot.exists && snapshot.data() != null) {
+          return _asBool(snapshot.data()?['isVerified'], fallback: false);
+        }
 
-    if (!SchemaMigrationFlags.enableVerificationLegacyRead) {
-      return false;
-    }
+        if (!SchemaMigrationFlags.enableVerificationLegacyRead) {
+          return false;
+        }
 
-    final userSnapshot = await usersRef.get();
-    if (!userSnapshot.exists) return false;
-    return _asBool(userSnapshot.data()?['isVerified'], fallback: false);
-  });
-});
+        final userSnapshot = await usersRef.get();
+        if (!userSnapshot.exists) return false;
+        return _asBool(userSnapshot.data()?['isVerified'], fallback: false);
+      });
+    });
 
 // Get all verified users — ADMIN ONLY context. autoDispose so it releases
 // when the admin screen is closed. Hard-limited to 200 docs; use server-side
@@ -58,8 +58,10 @@ final verifiedUsersProvider = StreamProvider.autoDispose<List<String>>((ref) {
       .where('isVerified', isEqualTo: true)
       .limit(200)
       .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((doc) => doc.id).toList(growable: false));
+      .map(
+        (snapshot) =>
+            snapshot.docs.map((doc) => doc.id).toList(growable: false),
+      );
 });
 
 // Verification controller (admin only)
@@ -67,7 +69,7 @@ class VerificationController {
   final SchemaMutationService _mutationService;
 
   VerificationController({required FirebaseFirestore firestore})
-      : _mutationService = SchemaMutationService(firestore: firestore);
+    : _mutationService = SchemaMutationService(firestore: firestore);
 
   Future<void> verifyUser({
     required String userId,

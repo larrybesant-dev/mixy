@@ -11,18 +11,22 @@ class SpeedDatingService {
     FirebaseFirestore? firestore,
     ModerationService? moderationService,
     FirebaseFunctions? functions,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _moderationService = moderationService ??
-            ModerationService(
-                firestore: firestore ?? FirebaseFirestore.instance),
-        _functions = functions ?? FirebaseFunctions.instance;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _moderationService =
+           moderationService ??
+           ModerationService(
+             firestore: firestore ?? FirebaseFirestore.instance,
+           ),
+       _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
   final FirebaseFunctions _functions;
   static const Uuid _uuid = Uuid();
 
-  Stream<List<SpeedDateCandidate>> candidatesStream({required String currentUserId}) {
+  Stream<List<SpeedDateCandidate>> candidatesStream({
+    required String currentUserId,
+  }) {
     // Query only users who have a non-empty username — avoids a full-collection
     // scan and filters out incomplete accounts server-side. Limit to 40 so the
     // Dart-side block filter still leaves a useful candidate set.
@@ -33,14 +37,16 @@ class SpeedDatingService {
         .limit(40)
         .snapshots()
         .asyncMap((snapshot) async {
-      final blockedIds = await _moderationService.getExcludedUserIds(currentUserId);
-      return snapshot.docs
-          .where((doc) => doc.id != currentUserId)
-          .where((doc) => !blockedIds.contains(doc.id))
-          .map(SpeedDateCandidate.fromDoc)
-          .where((candidate) => candidate.username.trim().isNotEmpty)
-          .toList();
-    });
+          final blockedIds = await _moderationService.getExcludedUserIds(
+            currentUserId,
+          );
+          return snapshot.docs
+              .where((doc) => doc.id != currentUserId)
+              .where((doc) => !blockedIds.contains(doc.id))
+              .map(SpeedDateCandidate.fromDoc)
+              .where((candidate) => candidate.username.trim().isNotEmpty)
+              .toList();
+        });
   }
 
   Stream<List<SpeedDatingMatch>> matchesStream(String currentUserId) {
@@ -48,7 +54,9 @@ class SpeedDatingService {
         .collection('speed_dating_matches')
         .where('participantIds', arrayContains: currentUserId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList());
+        .map(
+          (snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList(),
+        );
   }
 
   Future<SpeedDateDecisionResult> submitDecision({
@@ -57,7 +65,10 @@ class SpeedDatingService {
     required bool liked,
     required int sessionSeconds,
   }) async {
-    if (await _moderationService.hasBlockingRelationship(fromUserId, toUserId)) {
+    if (await _moderationService.hasBlockingRelationship(
+      fromUserId,
+      toUserId,
+    )) {
       throw Exception('Cannot interact with a blocked user.');
     }
 
@@ -88,7 +99,8 @@ class SpeedDatingService {
         _firestore.collection('speed_dating_actions').doc(reciprocalActionId),
       );
       final reciprocalData = reciprocalDoc.data();
-      final reciprocalLiked = reciprocalData != null && reciprocalData['decision'] == 'like';
+      final reciprocalLiked =
+          reciprocalData != null && reciprocalData['decision'] == 'like';
 
       if (!reciprocalLiked) {
         return const SpeedDateDecisionResult(isMatch: false);
@@ -138,11 +150,11 @@ class SpeedDatingService {
     int durationSeconds = 300,
   }) async {
     final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
-    
+
     return await _firestore.runTransaction((txn) async {
       final matchSnap = await txn.get(matchRef);
       final data = matchSnap.data();
-      
+
       // If a room already exists for this match, reuse it instead of creating a duplicate.
       if (data != null && data['latestRoomId'] != null) {
         return data['latestRoomId'] as String;
@@ -156,6 +168,7 @@ class SpeedDatingService {
         'description': 'Private speed date session',
         'hostId': hostUserId,
         'isLive': true,
+        'isAdult': false,
         'isLocked': true,
         'category': 'speed_dating',
         'memberCount': 2,
@@ -209,15 +222,15 @@ class SpeedDatingService {
         .doc(userId)
         .snapshots()
         .map((doc) {
-      if (!doc.exists) return null;
-      final data = doc.data();
-      if (data == null) return null;
-      return SpeedDatingQueueResult(
-        matched: data['matched'] as bool? ?? false,
-        sessionId: data['sessionId'] as String?,
-        partnerId: null,
-      );
-    });
+          if (!doc.exists) return null;
+          final data = doc.data();
+          if (data == null) return null;
+          return SpeedDatingQueueResult(
+            matched: data['matched'] as bool? ?? false,
+            sessionId: data['sessionId'] as String?,
+            partnerId: null,
+          );
+        });
   }
 
   /// Watches a specific speed dating session doc (active + expiresAt).

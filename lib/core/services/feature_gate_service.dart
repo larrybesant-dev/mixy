@@ -5,10 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../logger.dart';
 
-enum FeatureServiceMode {
-  full,
-  disabled,
-}
+enum FeatureServiceMode { full, disabled }
 
 @immutable
 class FeatureGateState {
@@ -16,22 +13,25 @@ class FeatureGateState {
     required this.enableLiveRooms,
     required this.enableMessaging,
     required this.enableSpeedDating,
+    required this.enablePushNotifications,
     required this.feedRefreshRateSeconds,
     required this.lastUpdatedAt,
     required this.source,
   });
 
   const FeatureGateState.defaults()
-      : enableLiveRooms = true,
-        enableMessaging = true,
-        enableSpeedDating = true,
-        feedRefreshRateSeconds = 30,
-        lastUpdatedAt = null,
-        source = 'beta-default';
+    : enableLiveRooms = true,
+      enableMessaging = true,
+      enableSpeedDating = true,
+      enablePushNotifications = true,
+      feedRefreshRateSeconds = 30,
+      lastUpdatedAt = null,
+      source = 'beta-default';
 
   final bool enableLiveRooms;
   final bool enableMessaging;
   final bool enableSpeedDating;
+  final bool enablePushNotifications;
   final int feedRefreshRateSeconds;
   final DateTime? lastUpdatedAt;
   final String source;
@@ -45,6 +45,10 @@ class FeatureGateState {
   FeatureServiceMode get speedDatingMode =>
       enableSpeedDating ? FeatureServiceMode.full : FeatureServiceMode.disabled;
 
+  FeatureServiceMode get pushNotificationsMode => enablePushNotifications
+      ? FeatureServiceMode.full
+      : FeatureServiceMode.disabled;
+
   bool get liveRoomsDegraded => false;
   bool get messagingDegraded => false;
   bool get hasLocalOverrides => false;
@@ -52,6 +56,7 @@ class FeatureGateState {
   bool get remoteEnableLiveRooms => enableLiveRooms;
   bool get remoteEnableMessaging => enableMessaging;
   bool get remoteEnableSpeedDating => enableSpeedDating;
+  bool get remoteEnablePushNotifications => enablePushNotifications;
   int get remoteFeedRefreshRate => feedRefreshRateSeconds;
   String? get localOverrideSource => null;
   DateTime? get localOverrideUpdatedAt => null;
@@ -64,6 +69,7 @@ class FeatureGateState {
     bool? enableLiveRooms,
     bool? enableMessaging,
     bool? enableSpeedDating,
+    bool? enablePushNotifications,
     int? feedRefreshRateSeconds,
     DateTime? lastUpdatedAt,
     String? source,
@@ -72,6 +78,8 @@ class FeatureGateState {
       enableLiveRooms: enableLiveRooms ?? this.enableLiveRooms,
       enableMessaging: enableMessaging ?? this.enableMessaging,
       enableSpeedDating: enableSpeedDating ?? this.enableSpeedDating,
+      enablePushNotifications:
+          enablePushNotifications ?? this.enablePushNotifications,
       feedRefreshRateSeconds:
           feedRefreshRateSeconds ?? this.feedRefreshRateSeconds,
       lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
@@ -102,6 +110,7 @@ class FeatureGateController extends StateNotifier<FeatureGateState> {
       enableLiveRooms: true,
       enableMessaging: true,
       enableSpeedDating: true,
+      enablePushNotifications: true,
       feedRefreshRateSeconds: 30,
       lastUpdatedAt: DateTime.now(),
       source: 'beta-runtime-defaults',
@@ -139,6 +148,13 @@ class FeatureGateController extends StateNotifier<FeatureGateState> {
           source: source,
         );
         break;
+      case 'push_notifications':
+        state = state.copyWith(
+          enablePushNotifications: enabled,
+          lastUpdatedAt: DateTime.now(),
+          source: source,
+        );
+        break;
       default:
         Logger.warning('Unknown feature gate toggle target: $feature');
         return;
@@ -166,6 +182,7 @@ class FeatureGateController extends StateNotifier<FeatureGateState> {
       enableLiveRooms: true,
       enableMessaging: true,
       enableSpeedDating: true,
+      enablePushNotifications: true,
       feedRefreshRateSeconds: 30,
       lastUpdatedAt: DateTime.now(),
       source: source,

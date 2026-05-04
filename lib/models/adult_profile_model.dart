@@ -1,14 +1,6 @@
-enum AdultRelationshipIntent {
-  love,
-  fun,
-  hookups,
-  openConnection,
-}
+enum AdultRelationshipIntent { love, fun, hookups, openConnection }
 
-enum AdultProfileVisibility {
-  optedInAdultsOnly,
-  privateOnly,
-}
+enum AdultProfileVisibility { optedInAdultsOnly, privateOnly }
 
 String _asString(dynamic value, {String fallback = ''}) {
   if (value is String) {
@@ -49,7 +41,10 @@ DateTime? _parseNullableDateTime(dynamic value) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
+        .map(
+          (item) =>
+              item is String ? item.trim() : item?.toString().trim() ?? '',
+        )
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }

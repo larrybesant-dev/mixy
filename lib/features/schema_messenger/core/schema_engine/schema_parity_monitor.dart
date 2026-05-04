@@ -31,129 +31,141 @@ class SchemaParityMonitorReport {
       missingInSchema.length + missingInLegacy.length + mismatchDetails.length;
 }
 
-final schemaParityMonitorProvider =
-  Provider.autoDispose.family<SchemaParityMonitorReport, String>((ref, moduleId) {
-  if (!kDebugMode) {
-    return SchemaParityMonitorReport(
-      moduleId: moduleId,
-      isComparable: false,
-      isMatch: true,
-      signature: 'disabled_outside_debug',
-      missingInSchema: const <String>[],
-      missingInLegacy: const <String>[],
-      mismatchDetails: const <String>[],
-    );
-  }
-
-  switch (moduleId) {
-    case 'message':
-      final contract = ref.watch(messageConsistencyContractProvider);
-
-      final userId = ref.watch(userProvider)?.id;
-      if (userId == null || userId.isEmpty) {
-        return const SchemaParityMonitorReport(
-          moduleId: 'message',
+final schemaParityMonitorProvider = Provider.autoDispose
+    .family<SchemaParityMonitorReport, String>((ref, moduleId) {
+      if (!kDebugMode) {
+        return SchemaParityMonitorReport(
+          moduleId: moduleId,
           isComparable: false,
           isMatch: true,
-          signature: 'unauthenticated',
-          missingInSchema: <String>[],
-          missingInLegacy: <String>[],
-          mismatchDetails: <String>[],
+          signature: 'disabled_outside_debug',
+          missingInSchema: const <String>[],
+          missingInLegacy: const <String>[],
+          mismatchDetails: const <String>[],
         );
       }
 
-      final legacyAsync = ref.watch(conversationsStreamProvider(userId));
-      final schemaAsync = ref.watch(conversationsStreamProvider(userId));
-      final legacy = legacyAsync.valueOrNull ?? const [];
-      final schema = schemaAsync.valueOrNull ?? const [];
+      switch (moduleId) {
+        case 'message':
+          final contract = ref.watch(messageConsistencyContractProvider);
 
-      final snapshot = MessageSnapshot(
-        legacyConversationIds: legacy.map((c) => c.id).toList(growable: false),
-        schemaConversationIds: schema.map((c) => c.id).toList(growable: false),
-        legacyUnreadByConversation: {
-          for (final c in legacy) c.id: c.hasUnreadmessage(userId) ? 1 : 0,
-        },
-        schemaUnreadByConversation: {
-          for (final c in schema) c.id: c.hasUnreadmessage(userId) ? 1 : 0,
-        },
-        legacyReady: legacyAsync.hasValue,
-        schemaReady: schemaAsync.hasValue,
-      );
+          final userId = ref.watch(userProvider)?.id;
+          if (userId == null || userId.isEmpty) {
+            return const SchemaParityMonitorReport(
+              moduleId: 'message',
+              isComparable: false,
+              isMatch: true,
+              signature: 'unauthenticated',
+              missingInSchema: <String>[],
+              missingInLegacy: <String>[],
+              mismatchDetails: <String>[],
+            );
+          }
 
-      final result = contract.evaluate(snapshot);
-      return SchemaParityMonitorReport(
-        moduleId: moduleId,
-        isComparable: result.isComparable,
-        isMatch: result.isMatch,
-        signature: result.signature,
-        missingInSchema: result.missingInSchema,
-        missingInLegacy: result.missingInLegacy,
-        mismatchDetails: result.unreadMismatches,
-      );
-    case 'friends':
-      final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
-      if (authUserId == null || authUserId.isEmpty) {
-        return const SchemaParityMonitorReport(
-          moduleId: 'friends',
-          isComparable: false,
-          isMatch: true,
-          signature: 'unauthenticated',
-          missingInSchema: <String>[],
-          missingInLegacy: <String>[],
-          mismatchDetails: <String>[],
-        );
-      }
+          final legacyAsync = ref.watch(conversationsStreamProvider(userId));
+          final schemaAsync = ref.watch(conversationsStreamProvider(userId));
+          final legacy = legacyAsync.valueOrNull ?? const [];
+          final schema = schemaAsync.valueOrNull ?? const [];
 
-      final legacyRosterAsync = ref.watch(friendRosterProvider);
-      final schemaLinksAsync = ref.watch(schemaFriendLinksProvider);
-      final schemaPresenceMapAsync = ref.watch(schemaFriendPresenceMapProvider);
+          final snapshot = MessageSnapshot(
+            legacyConversationIds: legacy
+                .map((c) => c.id)
+                .toList(growable: false),
+            schemaConversationIds: schema
+                .map((c) => c.id)
+                .toList(growable: false),
+            legacyUnreadByConversation: {
+              for (final c in legacy) c.id: c.hasUnreadmessage(userId) ? 1 : 0,
+            },
+            schemaUnreadByConversation: {
+              for (final c in schema) c.id: c.hasUnreadmessage(userId) ? 1 : 0,
+            },
+            legacyReady: legacyAsync.hasValue,
+            schemaReady: schemaAsync.hasValue,
+          );
 
-      final legacyRoster = legacyRosterAsync.valueOrNull;
-      final schemaAcceptedLinks = ref.watch(schemaAcceptedFriendLinksProvider);
-      final schemaPresenceMap = schemaPresenceMapAsync.valueOrNull;
+          final result = contract.evaluate(snapshot);
+          return SchemaParityMonitorReport(
+            moduleId: moduleId,
+            isComparable: result.isComparable,
+            isMatch: result.isMatch,
+            signature: result.signature,
+            missingInSchema: result.missingInSchema,
+            missingInLegacy: result.missingInLegacy,
+            mismatchDetails: result.unreadMismatches,
+          );
+        case 'friends':
+          final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+          if (authUserId == null || authUserId.isEmpty) {
+            return const SchemaParityMonitorReport(
+              moduleId: 'friends',
+              isComparable: false,
+              isMatch: true,
+              signature: 'unauthenticated',
+              missingInSchema: <String>[],
+              missingInLegacy: <String>[],
+              mismatchDetails: <String>[],
+            );
+          }
 
-      final snapshot = FriendParitySnapshot(
-        legacyIdsOrdered:
-            legacyRoster?.map((entry) => entry.friendId).toList(growable: false) ??
+          final legacyRosterAsync = ref.watch(friendRosterProvider);
+          final schemaLinksAsync = ref.watch(schemaFriendLinksProvider);
+          final schemaPresenceMapAsync = ref.watch(
+            schemaFriendPresenceMapProvider,
+          );
+
+          final legacyRoster = legacyRosterAsync.valueOrNull;
+          final schemaAcceptedLinks = ref.watch(
+            schemaAcceptedFriendLinksProvider,
+          );
+          final schemaPresenceMap = schemaPresenceMapAsync.valueOrNull;
+
+          final snapshot = FriendParitySnapshot(
+            legacyIdsOrdered:
+                legacyRoster
+                    ?.map((entry) => entry.friendId)
+                    .toList(growable: false) ??
                 const <String>[],
-        schemaIdsOrdered: schemaAcceptedLinks
-            .map((link) => link.otherUserId(authUserId))
-            .where((id) => id.isNotEmpty)
-            .toList(growable: false),
-        legacyOnlineIds: legacyRoster
-                ?.where((entry) => entry.isOnline)
-                .map((entry) => entry.friendId)
-                .toSet() ??
-            const <String>{},
-        schemaOnlineIds: schemaPresenceMap?.entries
-                .where((entry) => entry.value.isOnline)
-                .map((entry) => entry.key)
-                .toSet() ??
-            const <String>{},
-        legacyReady: legacyRosterAsync.hasValue,
-        schemaReady: schemaLinksAsync.hasValue,
-        schemaPresenceReady: schemaPresenceMapAsync.hasValue,
-      );
+            schemaIdsOrdered: schemaAcceptedLinks
+                .map((link) => link.otherUserId(authUserId))
+                .where((id) => id.isNotEmpty)
+                .toList(growable: false),
+            legacyOnlineIds:
+                legacyRoster
+                    ?.where((entry) => entry.isOnline)
+                    .map((entry) => entry.friendId)
+                    .toSet() ??
+                const <String>{},
+            schemaOnlineIds:
+                schemaPresenceMap?.entries
+                    .where((entry) => entry.value.isOnline)
+                    .map((entry) => entry.key)
+                    .toSet() ??
+                const <String>{},
+            legacyReady: legacyRosterAsync.hasValue,
+            schemaReady: schemaLinksAsync.hasValue,
+            schemaPresenceReady: schemaPresenceMapAsync.hasValue,
+          );
 
-      final result = evaluateFriendParity(snapshot);
-      return SchemaParityMonitorReport(
-        moduleId: moduleId,
-        isComparable: result.isComparable,
-        isMatch: result.isMatch,
-        signature: result.paritySignature,
-        missingInSchema: result.missingInSchema,
-        missingInLegacy: result.missingInLegacy,
-        mismatchDetails: result.statusMismatches,
-      );
-    default:
-      return SchemaParityMonitorReport(
-        moduleId: moduleId,
-        isComparable: false,
-        isMatch: false,
-        signature: 'unsupported:$moduleId',
-        missingInSchema: const <String>[],
-        missingInLegacy: const <String>[],
-        mismatchDetails: <String>['unsupported_module:$moduleId'],
-      );
-  }
-});
+          final result = evaluateFriendParity(snapshot);
+          return SchemaParityMonitorReport(
+            moduleId: moduleId,
+            isComparable: result.isComparable,
+            isMatch: result.isMatch,
+            signature: result.paritySignature,
+            missingInSchema: result.missingInSchema,
+            missingInLegacy: result.missingInLegacy,
+            mismatchDetails: result.statusMismatches,
+          );
+        default:
+          return SchemaParityMonitorReport(
+            moduleId: moduleId,
+            isComparable: false,
+            isMatch: false,
+            signature: 'unsupported:$moduleId',
+            missingInSchema: const <String>[],
+            missingInLegacy: const <String>[],
+            mismatchDetails: <String>['unsupported_module:$moduleId'],
+          );
+      }
+    });

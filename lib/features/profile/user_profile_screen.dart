@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -116,7 +118,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   Future<Map<String, dynamic>> _loadProfile() async {
-    final basePayload = await ref.read(userProfileBaseProvider(widget.userId).future);
+    final basePayload = await ref.read(
+      userProfileBaseProvider(widget.userId).future,
+    );
     final userSnapshot = basePayload.userSnapshot;
     final privacyData = basePayload.privacy;
     final viewerId = FirebaseAuth.instance.currentUser?.uid;
@@ -211,7 +215,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
   }
 
-  Future<void> _toggleFollow(bool currentlyFollowing, {String targetUsername = ''}) async {
+  Future<void> _toggleFollow(
+    bool currentlyFollowing, {
+    String targetUsername = '',
+  }) async {
     final allowed = await GuestAuthGate.requireFollow(context, ref);
     if (!allowed) return;
 
@@ -548,11 +555,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       aboutMe: aboutMe,
                       interests: interests,
                       galleryCount: galleryUrls.length,
-                      promptCount: [
-                        vibePrompt,
-                        firstDatePrompt,
-                        musicTastePrompt,
-                      ].where((entry) => (entry ?? '').trim().isNotEmpty).length,
+                      promptCount:
+                          [vibePrompt, firstDatePrompt, musicTastePrompt]
+                              .where((entry) => (entry ?? '').trim().isNotEmpty)
+                              .length,
                       hasIntroVideo: (introVideoUrl ?? '').isNotEmpty,
                       isLiveNow: (roomId ?? '').isNotEmpty,
                       roomId: roomId,
@@ -573,7 +579,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                           ? () => context.go('/room/$roomId')
                           : null,
                       currentRoom: (roomId ?? '').isNotEmpty ? roomId : null,
-                        lastMessagePreview: directPreview,
+                      lastMessagePreview: directPreview,
                       mutualFriendsCount: null,
                       onMute: () {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -620,7 +626,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                         Expanded(
                           child: FollowButton(
                             isFollowing: isFollowing,
-                            onPressed: () => _toggleFollow(isFollowing, targetUsername: displayName),
+                            onPressed: () => _toggleFollow(
+                              isFollowing,
+                              targetUsername: displayName,
+                            ),
                           ),
                         ),
                       ],
@@ -650,9 +659,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                           child: FilledButton.icon(
                             onPressed: () async {
                               final allowed =
-                                  await GuestAuthGate.requireProfileEdit(context, ref);
+                                  await GuestAuthGate.requireProfileEdit(
+                                    context,
+                                    ref,
+                                  );
                               if (!allowed || !context.mounted) return;
-                              context.push('/edit-profile');
+                              // ignore: use_build_context_synchronously
+                              unawaited(context.push('/edit-profile'));
                             },
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Edit Profile'),
@@ -876,10 +889,8 @@ class _UserPostsTab extends ConsumerWidget {
 
     return postsAsync.when(
       loading: () => const AppLoadingView(label: 'Loading posts'),
-      error: (error, _) => AppErrorView(
-        error: error,
-        fallbackContext: 'Unable to load posts.',
-      ),
+      error: (error, _) =>
+          AppErrorView(error: error, fallbackContext: 'Unable to load posts.'),
       data: (posts) {
         if (posts.isEmpty) {
           return const AppEmptyView(

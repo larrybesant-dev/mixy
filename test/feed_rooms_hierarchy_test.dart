@@ -47,9 +47,7 @@ void main() {
                 hasRooms: true,
                 child: SizedBox(height: 40),
               ),
-              HomeDiscoverySection(
-                child: SizedBox(height: 40),
-              ),
+              HomeDiscoverySection(child: SizedBox(height: 40)),
             ],
           ),
         ),
@@ -82,7 +80,9 @@ void main() {
     expect(find.text('stream: empty'), findsOneWidget);
     expect(find.text('visible rooms: 0'), findsOneWidget);
     expect(
-      find.textContaining('No live rooms are currently available from the backend.'),
+      find.textContaining(
+        'No live rooms are currently available from the backend.',
+      ),
       findsOneWidget,
     );
   });
@@ -102,12 +102,8 @@ void main() {
               onQuickJoin: () {},
               onStartRoom: () {},
             ),
-            controls: const RoomsControlsSection(
-              sortLabel: 'Most Active',
-            ),
-            roomList: const RoomsListSection(
-              child: SizedBox(height: 120),
-            ),
+            controls: const RoomsControlsSection(sortLabel: 'Most Active'),
+            roomList: const RoomsListSection(child: SizedBox(height: 120)),
           ),
         ),
       ),

@@ -42,13 +42,20 @@ Widget _buildApp({
   when(() => gw.requestPayment(any(), any(), any())).thenAnswer((_) async {});
 
   final repo = recipientRepo ?? MockPaymentRecipientRepository();
-  when(() => repo.searchRecipients(any(), currentUserId: any(named: 'currentUserId')))
-      .thenAnswer((_) async => <UserModel>[]);
+  when(
+    () => repo.searchRecipients(
+      any(),
+      currentUserId: any(named: 'currentUserId'),
+    ),
+  ).thenAnswer((_) async => <UserModel>[]);
 
   final fakeFirestore = FakeFirebaseFirestore();
   final mockAuth = _MockFirebaseAuth();
   when(() => mockAuth.currentUser).thenReturn(null);
-  final cashOutService = CashOutService(firestore: fakeFirestore, auth: mockAuth);
+  final cashOutService = CashOutService(
+    firestore: fakeFirestore,
+    auth: mockAuth,
+  );
 
   const emptyWallet = WalletModel(userId: 'user-1', coinBalance: 0);
 
@@ -66,12 +73,8 @@ Widget _buildApp({
       coinTransactionStreamProvider('').overrideWith(
         (_) => Stream<List<CoinTransaction>>.value(<CoinTransaction>[]),
       ),
-      referralCodeProvider.overrideWith(
-        (_) => Stream<String?>.value(null),
-      ),
-      referralEarningsProvider.overrideWith(
-        (_) => Stream<double>.value(0),
-      ),
+      referralCodeProvider.overrideWith((_) => Stream<String?>.value(null)),
+      referralEarningsProvider.overrideWith((_) => Stream<double>.value(0)),
     ],
     child: const MaterialApp(home: PaymentsScreen()),
   );
@@ -101,7 +104,9 @@ void main() {
       expect(find.text('Payments'), findsOneWidget);
     });
 
-    testWidgets('shows recipient search field and amount field', (tester) async {
+    testWidgets('shows recipient search field and amount field', (
+      tester,
+    ) async {
       await _setTallSurface(tester);
       await tester.pumpWidget(_buildApp());
       await tester.pump();
@@ -131,40 +136,49 @@ void main() {
       expect(find.widgetWithText(ActionChip, '100'), findsOneWidget);
     });
 
-    testWidgets('tapping Send Coins with no recipient shows validation snackbar',
-        (tester) async {
-      await _setTallSurface(tester);
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-      await tester.pump();
+    testWidgets(
+      'tapping Send Coins with no recipient shows validation snackbar',
+      (tester) async {
+        await _setTallSurface(tester);
+        await tester.pumpWidget(_buildApp());
+        await tester.pump();
+        await tester.pump();
 
-      await tester.tap(find.text('Send Coins'));
-      await tester.pump();
+        await tester.tap(find.text('Send Coins'));
+        await tester.pump();
 
-      expect(
-        find.text('Select a recipient and enter a valid amount (max 100000).'),
-        findsOneWidget,
-      );
-    });
+        expect(
+          find.text(
+            'Select a recipient and enter a valid amount (max 100000).',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('tapping Request Coins with no recipient shows validation snackbar',
-        (tester) async {
-      await _setTallSurface(tester);
-      await tester.pumpWidget(_buildApp());
-      await tester.pump();
-      await tester.pump();
+    testWidgets(
+      'tapping Request Coins with no recipient shows validation snackbar',
+      (tester) async {
+        await _setTallSurface(tester);
+        await tester.pumpWidget(_buildApp());
+        await tester.pump();
+        await tester.pump();
 
-      await tester.tap(find.text('Request Coins'));
-      await tester.pump();
+        await tester.tap(find.text('Request Coins'));
+        await tester.pump();
 
-      expect(
-        find.text('Select a recipient and enter a valid amount (max 100000).'),
-        findsOneWidget,
-      );
-    });
+        expect(
+          find.text(
+            'Select a recipient and enter a valid amount (max 100000).',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('shows coin balance from wallet when wallet data loads',
-        (tester) async {
+    testWidgets('shows coin balance from wallet when wallet data loads', (
+      tester,
+    ) async {
       await _setTallSurface(tester);
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle(const Duration(seconds: 1));

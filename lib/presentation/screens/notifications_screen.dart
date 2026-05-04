@@ -24,8 +24,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   String _filter = 'all'; // all | mentions | gifts | system
 
   static const _mentionTypes = {
-    'follow', 'friend_request', 'friend_accept', 'friend_favorite',
-    'like', 'comment', 'speed_dating_match',
+    'follow',
+    'friend_request',
+    'friend_accept',
+    'friend_favorite',
+    'like',
+    'comment',
+    'speed_dating_match',
   };
   static const _giftTypes = {'gift'};
   static const _systemTypes = {'live_room_invite'};
@@ -191,14 +196,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         actions: [
           if (userId != null)
             IconButton(
-              icon: const Icon(Icons.done_all_rounded,
-                  color: VelvetNoir.onSurfaceVariant),
+              icon: const Icon(
+                Icons.done_all_rounded,
+                color: VelvetNoir.onSurfaceVariant,
+              ),
               tooltip: 'Mark all as read',
               onPressed: () => service.markAllRead(userId),
             ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: VelvetNoir.onSurfaceVariant),
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: VelvetNoir.onSurfaceVariant,
+            ),
             tooltip: 'Notification settings',
             onPressed: () => context.go('/settings'),
           ),
@@ -221,15 +230,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.notifications_off_outlined,
-                            size: 16, color: VelvetNoir.onSurfaceVariant),
+                        const Icon(
+                          Icons.notifications_off_outlined,
+                          size: 16,
+                          color: VelvetNoir.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
                             'Push notifications are disabled.',
                             style: TextStyle(
-                                color: VelvetNoir.onSurfaceVariant,
-                                fontSize: 13),
+                              color: VelvetNoir.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                         TextButton(
@@ -237,11 +250,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           style: TextButton.styleFrom(
                             foregroundColor: VelvetNoir.primary,
                             padding: EdgeInsets.zero,
-                            tapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text('Enable',
-                              style: TextStyle(fontSize: 13)),
+                          child: const Text(
+                            'Enable',
+                            style: TextStyle(fontSize: 13),
+                          ),
                         ),
                       ],
                     ),
@@ -258,13 +272,33 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             vertical: 6,
                           ),
                           children: [
-                            _FilterChip(label: 'All', value: 'all', selected: _filter == 'all', onTap: () => setState(() => _filter = 'all')),
+                            _FilterChip(
+                              label: 'All',
+                              value: 'all',
+                              selected: _filter == 'all',
+                              onTap: () => setState(() => _filter = 'all'),
+                            ),
                             const SizedBox(width: 8),
-                            _FilterChip(label: 'Mentions', value: 'mentions', selected: _filter == 'mentions', onTap: () => setState(() => _filter = 'mentions')),
+                            _FilterChip(
+                              label: 'Mentions',
+                              value: 'mentions',
+                              selected: _filter == 'mentions',
+                              onTap: () => setState(() => _filter = 'mentions'),
+                            ),
                             const SizedBox(width: 8),
-                            _FilterChip(label: 'Gifts', value: 'gifts', selected: _filter == 'gifts', onTap: () => setState(() => _filter = 'gifts')),
+                            _FilterChip(
+                              label: 'Gifts',
+                              value: 'gifts',
+                              selected: _filter == 'gifts',
+                              onTap: () => setState(() => _filter = 'gifts'),
+                            ),
                             const SizedBox(width: 8),
-                            _FilterChip(label: 'System', value: 'system', selected: _filter == 'system', onTap: () => setState(() => _filter = 'system')),
+                            _FilterChip(
+                              label: 'System',
+                              value: 'system',
+                              selected: _filter == 'system',
+                              onTap: () => setState(() => _filter = 'system'),
+                            ),
                           ],
                         ),
                       ),
@@ -272,8 +306,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         child: AppAsyncValueView<List<NotificationModel>>(
                           value: notificationsAsync,
                           fallbackContext: 'notifications',
-                          isEmpty: (notifications) =>
-                              notifications.where((n) => _matchesFilter(n.type)).isEmpty,
+                          isEmpty: (notifications) => notifications
+                              .where((n) => _matchesFilter(n.type))
+                              .isEmpty,
                           empty: const FeedEmptyState(
                             emoji: '🔔',
                             heading: 'All caught up!',
@@ -301,12 +336,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                   label: _labelForType(n.type),
                                   timeAgo: _relativeTime(n.createdAt),
                                   onTap: () => _handleNotificationTap(
-                                      context, userId, n, service),
+                                    context,
+                                    userId,
+                                    n,
+                                    service,
+                                  ),
                                   onMarkRead: n.isRead
                                       ? null
                                       : () async {
                                           try {
-                                            await service.markRead(userId, n.id);
+                                            await service.markRead(
+                                              userId,
+                                              n.id,
+                                            );
                                           } catch (e) {
                                             Logger.log('Mark read failed: $e');
                                           }
@@ -510,9 +552,7 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: selected
-              ? VelvetNoir.primary
-              : VelvetNoir.surfaceHigh,
+          color: selected ? VelvetNoir.primary : VelvetNoir.surfaceHigh,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected
@@ -532,4 +572,3 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
-

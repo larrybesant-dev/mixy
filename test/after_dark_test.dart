@@ -86,8 +86,7 @@ Widget _shellApp({required bool sessionActive}) {
         routes: [
           GoRoute(
             path: '/after-dark',
-            builder: (_, _) =>
-                const Scaffold(body: Text('After Dark Home')),
+            builder: (_, _) => const Scaffold(body: Text('After Dark Home')),
           ),
           GoRoute(
             path: '/after-dark/lounges',
@@ -297,8 +296,9 @@ void main() {
       expect(find.byIcon(Icons.backspace_outlined), findsOneWidget);
     });
 
-    testWidgets('entering a digit keeps title as Enter PIN before 4 digits',
-        (tester) async {
+    testWidgets('entering a digit keeps title as Enter PIN before 4 digits', (
+      tester,
+    ) async {
       await tester.pumpWidget(_pinUnlockApp());
       await tester.pumpAndSettle();
 

@@ -28,8 +28,6 @@ class OnMicPanel extends ConsumerWidget {
   /// Display-name lookup keyed by userId (same map used by UserListPanel).
   final Map<String, String> displayNameById;
 
-
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Derive the ordered speaker list from the single-authority controller,
@@ -152,7 +150,7 @@ class OnMicPanel extends ConsumerWidget {
                     isMe: isMe,
                     micExpiresAt: p.micExpiresAt,
                     layout: RoomUserTileLayout.grid,
-                    compact: false,
+                    compact: true,
                   );
                 },
               ),
@@ -161,7 +159,6 @@ class OnMicPanel extends ConsumerWidget {
       ),
     );
   }
-
 }
 // _roleOrder() removed — speaker ordering is owned by RoomController
 

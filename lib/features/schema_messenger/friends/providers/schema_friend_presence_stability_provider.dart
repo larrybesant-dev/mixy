@@ -8,233 +8,249 @@ import 'schema_friend_links_providers.dart';
 const _presenceDebounceDuration = Duration(milliseconds: 700);
 const _presenceHoldDuration = Duration(seconds: 2);
 
-final schemaStableFriendPresenceProvider =
-    StreamProvider.autoDispose.family<SchemaFriendPresence, String>((ref, friendId) {
-  return Stream.multi((controller) {
-    bool disposed = false;
-    bool hasEmittedInitialState = false;
-    Timer? debounceTimer;
-    Timer? pendingTransitionTimer;
-    SchemaFriendPresence? stablePresence;
-    SchemaFriendPresence? pendingPresence;
+final schemaStableFriendPresenceProvider = StreamProvider.autoDispose
+    .family<SchemaFriendPresence, String>((ref, friendId) {
+      return Stream.multi((controller) {
+        bool disposed = false;
+        bool hasEmittedInitialState = false;
+        Timer? debounceTimer;
+        Timer? pendingTransitionTimer;
+        SchemaFriendPresence? stablePresence;
+        SchemaFriendPresence? pendingPresence;
 
-    void emitStable() {
-      if (disposed || controller.isClosed || stablePresence == null) {
-        return;
-      }
-      controller.add(stablePresence!);
-    }
-
-    void applyPresence(SchemaFriendPresence nextPresence) {
-      final normalizedPresence = nextPresence.normalized();
-      final currentStablePresence = stablePresence;
-      if (currentStablePresence == null) {
-        stablePresence = normalizedPresence;
-        emitStable();
-        return;
-      }
-
-      if (_hasEquivalentPlacement(currentStablePresence, normalizedPresence)) {
-        pendingPresence = null;
-        pendingTransitionTimer?.cancel();
-        if (!_hasEquivalentPayload(currentStablePresence, normalizedPresence)) {
-          stablePresence = normalizedPresence;
-          emitStable();
-        }
-        return;
-      }
-
-      if (_isPromotion(currentStablePresence, normalizedPresence)) {
-        pendingPresence = null;
-        pendingTransitionTimer?.cancel();
-        stablePresence = normalizedPresence;
-        emitStable();
-        return;
-      }
-
-      if (pendingPresence != null && _hasEquivalentPayload(pendingPresence!, normalizedPresence)) {
-        return;
-      }
-
-      pendingPresence = normalizedPresence;
-      pendingTransitionTimer?.cancel();
-      pendingTransitionTimer = Timer(_presenceHoldDuration, () {
-        if (disposed || controller.isClosed || pendingPresence == null) {
-          return;
-        }
-        stablePresence = pendingPresence;
-        pendingPresence = null;
-        emitStable();
-      });
-    }
-
-    void handlePresence(SchemaFriendPresence nextPresence) {
-        if (disposed || controller.isClosed) {
-          return;
+        void emitStable() {
+          if (disposed || controller.isClosed || stablePresence == null) {
+            return;
+          }
+          controller.add(stablePresence!);
         }
 
-        final normalizedPresence = nextPresence.normalized();
-        if (!hasEmittedInitialState) {
-          hasEmittedInitialState = true;
-          stablePresence = normalizedPresence;
-          emitStable();
-          return;
+        void applyPresence(SchemaFriendPresence nextPresence) {
+          final normalizedPresence = nextPresence.normalized();
+          final currentStablePresence = stablePresence;
+          if (currentStablePresence == null) {
+            stablePresence = normalizedPresence;
+            emitStable();
+            return;
+          }
+
+          if (_hasEquivalentPlacement(
+            currentStablePresence,
+            normalizedPresence,
+          )) {
+            pendingPresence = null;
+            pendingTransitionTimer?.cancel();
+            if (!_hasEquivalentPayload(
+              currentStablePresence,
+              normalizedPresence,
+            )) {
+              stablePresence = normalizedPresence;
+              emitStable();
+            }
+            return;
+          }
+
+          if (_isPromotion(currentStablePresence, normalizedPresence)) {
+            pendingPresence = null;
+            pendingTransitionTimer?.cancel();
+            stablePresence = normalizedPresence;
+            emitStable();
+            return;
+          }
+
+          if (pendingPresence != null &&
+              _hasEquivalentPayload(pendingPresence!, normalizedPresence)) {
+            return;
+          }
+
+          pendingPresence = normalizedPresence;
+          pendingTransitionTimer?.cancel();
+          pendingTransitionTimer = Timer(_presenceHoldDuration, () {
+            if (disposed || controller.isClosed || pendingPresence == null) {
+              return;
+            }
+            stablePresence = pendingPresence;
+            pendingPresence = null;
+            emitStable();
+          });
         }
 
-        debounceTimer?.cancel();
-        debounceTimer = Timer(_presenceDebounceDuration, () {
-          applyPresence(normalizedPresence);
-        });
-    }
+        void handlePresence(SchemaFriendPresence nextPresence) {
+          if (disposed || controller.isClosed) {
+            return;
+          }
 
-    ref.listen<AsyncValue<SchemaFriendPresence>>(
-      schemaFriendPresenceProvider(friendId),
-      (_, next) {
-        next.when(
-          data: handlePresence,
-          loading: () {},
-          error: (error, stackTrace) => controller.addError(error, stackTrace),
+          final normalizedPresence = nextPresence.normalized();
+          if (!hasEmittedInitialState) {
+            hasEmittedInitialState = true;
+            stablePresence = normalizedPresence;
+            emitStable();
+            return;
+          }
+
+          debounceTimer?.cancel();
+          debounceTimer = Timer(_presenceDebounceDuration, () {
+            applyPresence(normalizedPresence);
+          });
+        }
+
+        ref.listen<AsyncValue<SchemaFriendPresence>>(
+          schemaFriendPresenceProvider(friendId),
+          (_, next) {
+            next.when(
+              data: handlePresence,
+              loading: () {},
+              error: (error, stackTrace) =>
+                  controller.addError(error, stackTrace),
+            );
+          },
+          fireImmediately: true,
         );
-      },
-      fireImmediately: true,
-    );
 
-    controller.onCancel = () {
-      disposed = true;
-      debounceTimer?.cancel();
-      pendingTransitionTimer?.cancel();
-    };
-  });
-});
+        controller.onCancel = () {
+          disposed = true;
+          debounceTimer?.cancel();
+          pendingTransitionTimer?.cancel();
+        };
+      });
+    });
 
 final schemaStableFriendPresenceMapProvider =
     StreamProvider.autoDispose<Map<String, SchemaFriendPresence>>((ref) {
-  return Stream.multi((controller) {
-    bool disposed = false;
-    bool hasEmittedInitialState = false;
-    Timer? debounceTimer;
-    final Map<String, SchemaFriendPresence> stablePresenceMap = <String, SchemaFriendPresence>{};
-    Map<String, SchemaFriendPresence> latestRawPresenceMap = <String, SchemaFriendPresence>{};
-    final pendingTransitions = <String, _PendingPresenceTransition>{};
+      return Stream.multi((controller) {
+        bool disposed = false;
+        bool hasEmittedInitialState = false;
+        Timer? debounceTimer;
+        final Map<String, SchemaFriendPresence> stablePresenceMap =
+            <String, SchemaFriendPresence>{};
+        Map<String, SchemaFriendPresence> latestRawPresenceMap =
+            <String, SchemaFriendPresence>{};
+        final pendingTransitions = <String, _PendingPresenceTransition>{};
 
-    void emitStableMap() {
-      if (disposed || controller.isClosed) {
-        return;
-      }
-      controller.add(Map<String, SchemaFriendPresence>.unmodifiable(stablePresenceMap));
-    }
-
-    void cancelPendingTransition(String friendId) {
-      final pendingTransition = pendingTransitions.remove(friendId);
-      pendingTransition?.timer.cancel();
-    }
-    void applySnapshot(Map<String, SchemaFriendPresence> snapshot) {
-      bool didChange = false;
-      final normalizedSnapshot = {
-        for (final entry in snapshot.entries) entry.key: entry.value.normalized(),
-      };
-
-      final removedFriendIds = stablePresenceMap.keys
-          .where((friendId) => !normalizedSnapshot.containsKey(friendId))
-          .toList(growable: false);
-      for (final friendId in removedFriendIds) {
-        cancelPendingTransition(friendId);
-        stablePresenceMap.remove(friendId);
-        didChange = true;
-      }
-
-      for (final entry in normalizedSnapshot.entries) {
-        final friendId = entry.key;
-        final nextPresence = entry.value;
-        final currentStablePresence = stablePresenceMap[friendId];
-
-        if (currentStablePresence == null) {
-          cancelPendingTransition(friendId);
-          stablePresenceMap[friendId] = nextPresence;
-          didChange = true;
-          continue;
+        void emitStableMap() {
+          if (disposed || controller.isClosed) {
+            return;
+          }
+          controller.add(
+            Map<String, SchemaFriendPresence>.unmodifiable(stablePresenceMap),
+          );
         }
 
-        if (_hasEquivalentPlacement(currentStablePresence, nextPresence)) {
-          cancelPendingTransition(friendId);
-          if (!_hasEquivalentPayload(currentStablePresence, nextPresence)) {
-            stablePresenceMap[friendId] = nextPresence;
+        void cancelPendingTransition(String friendId) {
+          final pendingTransition = pendingTransitions.remove(friendId);
+          pendingTransition?.timer.cancel();
+        }
+
+        void applySnapshot(Map<String, SchemaFriendPresence> snapshot) {
+          bool didChange = false;
+          final normalizedSnapshot = {
+            for (final entry in snapshot.entries)
+              entry.key: entry.value.normalized(),
+          };
+
+          final removedFriendIds = stablePresenceMap.keys
+              .where((friendId) => !normalizedSnapshot.containsKey(friendId))
+              .toList(growable: false);
+          for (final friendId in removedFriendIds) {
+            cancelPendingTransition(friendId);
+            stablePresenceMap.remove(friendId);
             didChange = true;
           }
-          continue;
-        }
 
-        if (_isPromotion(currentStablePresence, nextPresence)) {
-          cancelPendingTransition(friendId);
-          stablePresenceMap[friendId] = nextPresence;
-          didChange = true;
-          continue;
-        }
+          for (final entry in normalizedSnapshot.entries) {
+            final friendId = entry.key;
+            final nextPresence = entry.value;
+            final currentStablePresence = stablePresenceMap[friendId];
 
-        final pendingTransition = pendingTransitions[friendId];
-        if (pendingTransition != null && _hasEquivalentPayload(pendingTransition.target, nextPresence)) {
-          continue;
-        }
-
-        cancelPendingTransition(friendId);
-        pendingTransitions[friendId] = _PendingPresenceTransition(
-          target: nextPresence,
-          timer: Timer(_presenceHoldDuration, () {
-            if (disposed || controller.isClosed) {
-              return;
+            if (currentStablePresence == null) {
+              cancelPendingTransition(friendId);
+              stablePresenceMap[friendId] = nextPresence;
+              didChange = true;
+              continue;
             }
-            pendingTransitions.remove(friendId);
-            stablePresenceMap[friendId] = nextPresence;
+
+            if (_hasEquivalentPlacement(currentStablePresence, nextPresence)) {
+              cancelPendingTransition(friendId);
+              if (!_hasEquivalentPayload(currentStablePresence, nextPresence)) {
+                stablePresenceMap[friendId] = nextPresence;
+                didChange = true;
+              }
+              continue;
+            }
+
+            if (_isPromotion(currentStablePresence, nextPresence)) {
+              cancelPendingTransition(friendId);
+              stablePresenceMap[friendId] = nextPresence;
+              didChange = true;
+              continue;
+            }
+
+            final pendingTransition = pendingTransitions[friendId];
+            if (pendingTransition != null &&
+                _hasEquivalentPayload(pendingTransition.target, nextPresence)) {
+              continue;
+            }
+
+            cancelPendingTransition(friendId);
+            pendingTransitions[friendId] = _PendingPresenceTransition(
+              target: nextPresence,
+              timer: Timer(_presenceHoldDuration, () {
+                if (disposed || controller.isClosed) {
+                  return;
+                }
+                pendingTransitions.remove(friendId);
+                stablePresenceMap[friendId] = nextPresence;
+                emitStableMap();
+              }),
+            );
+          }
+
+          if (didChange) {
             emitStableMap();
-          }),
-        );
-      }
-
-      if (didChange) {
-        emitStableMap();
-      }
-    }
-
-    void handleSnapshot(Map<String, SchemaFriendPresence> snapshot) {
-        if (disposed || controller.isClosed) {
-          return;
+          }
         }
 
-        latestRawPresenceMap = snapshot;
-        if (!hasEmittedInitialState) {
-          hasEmittedInitialState = true;
-          applySnapshot(snapshot);
-          return;
+        void handleSnapshot(Map<String, SchemaFriendPresence> snapshot) {
+          if (disposed || controller.isClosed) {
+            return;
+          }
+
+          latestRawPresenceMap = snapshot;
+          if (!hasEmittedInitialState) {
+            hasEmittedInitialState = true;
+            applySnapshot(snapshot);
+            return;
+          }
+
+          debounceTimer?.cancel();
+          debounceTimer = Timer(_presenceDebounceDuration, () {
+            applySnapshot(latestRawPresenceMap);
+          });
         }
 
-        debounceTimer?.cancel();
-        debounceTimer = Timer(_presenceDebounceDuration, () {
-          applySnapshot(latestRawPresenceMap);
-        });
-    }
-
-    ref.listen<AsyncValue<Map<String, SchemaFriendPresence>>>(
-      schemaFriendPresenceMapProvider,
-      (_, next) {
-        next.when(
-          data: handleSnapshot,
-          loading: () {},
-          error: (error, stackTrace) => controller.addError(error, stackTrace),
+        ref.listen<AsyncValue<Map<String, SchemaFriendPresence>>>(
+          schemaFriendPresenceMapProvider,
+          (_, next) {
+            next.when(
+              data: handleSnapshot,
+              loading: () {},
+              error: (error, stackTrace) =>
+                  controller.addError(error, stackTrace),
+            );
+          },
+          fireImmediately: true,
         );
-      },
-      fireImmediately: true,
-    );
 
-    controller.onCancel = () {
-      disposed = true;
-      debounceTimer?.cancel();
-      for (final transition in pendingTransitions.values) {
-        transition.timer.cancel();
-      }
-      pendingTransitions.clear();
-    };
-  });
-});
+        controller.onCancel = () {
+          disposed = true;
+          debounceTimer?.cancel();
+          for (final transition in pendingTransitions.values) {
+            transition.timer.cancel();
+          }
+          pendingTransitions.clear();
+        };
+      });
+    });
 
 bool _hasEquivalentPlacement(
   SchemaFriendPresence left,
@@ -254,10 +270,7 @@ bool _hasEquivalentPayload(
       left.lastActiveAt == right.lastActiveAt;
 }
 
-bool _isPromotion(
-  SchemaFriendPresence current,
-  SchemaFriendPresence next,
-) {
+bool _isPromotion(SchemaFriendPresence current, SchemaFriendPresence next) {
   return _presenceGroupRank(next.group) < _presenceGroupRank(current.group);
 }
 
@@ -273,10 +286,7 @@ int _presenceGroupRank(SchemaFriendPresenceGroup group) {
 }
 
 class _PendingPresenceTransition {
-  const _PendingPresenceTransition({
-    required this.target,
-    required this.timer,
-  });
+  const _PendingPresenceTransition({required this.target, required this.timer});
 
   final SchemaFriendPresence target;
   final Timer timer;

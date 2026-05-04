@@ -45,11 +45,13 @@ class MessengerRouteState {
       return const MessengerRouteState._(kind: MessengerRouteKind.compose);
     }
     if (path.startsWith('/messages/') && path.length > '/messages/'.length) {
-      final fromParams = state.pathParameters['conversationId'] ??
+      final fromParams =
+          state.pathParameters['conversationId'] ??
           state.pathParameters['threadId'];
       final fromPath = path.substring('/messages/'.length).split('/').first;
-      final conversationId =
-          (fromParams != null && fromParams.isNotEmpty) ? fromParams : fromPath;
+      final conversationId = (fromParams != null && fromParams.isNotEmpty)
+          ? fromParams
+          : fromPath;
       return MessengerRouteState._(
         kind: MessengerRouteKind.conversation,
         conversationId: conversationId.isNotEmpty ? conversationId : null,
@@ -59,10 +61,10 @@ class MessengerRouteState {
       // pathParameters may be empty at the ShellRoute level; extract the
       // conversationId directly from the path as the reliable source.
       final fromParams = state.pathParameters['conversationId'];
-      final fromPath =
-          path.substring('/chat/'.length).split('/').first;
-      final conversationId =
-          (fromParams != null && fromParams.isNotEmpty) ? fromParams : fromPath;
+      final fromPath = path.substring('/chat/'.length).split('/').first;
+      final conversationId = (fromParams != null && fromParams.isNotEmpty)
+          ? fromParams
+          : fromPath;
       return MessengerRouteState._(
         kind: MessengerRouteKind.conversation,
         conversationId: conversationId.isNotEmpty ? conversationId : null,

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/utils/network_image_url.dart';
 import 'package:mixvy/config/agora_constants.dart';
 
+import '../../../core/services/feature_gate_service.dart';
 import '../../../models/room_model.dart';
 import '../../feed/providers/user_providers.dart' as feed_user;
 import '../controllers/live_room_media_controller.dart';
@@ -39,11 +40,7 @@ class LiveRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
   final RoomModel? previewRoom;
 
-  const LiveRoomScreen({
-    super.key,
-    required this.roomId,
-    this.previewRoom,
-  });
+  const LiveRoomScreen({super.key, required this.roomId, this.previewRoom});
 
   @override
   ConsumerState<LiveRoomScreen> createState() => _LiveRoomScreenState();
@@ -62,8 +59,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
   @override
   void initState() {
     super.initState();
-    _roomController =
-        ref.read(roomControllerProvider(widget.roomId).notifier);
+    _roomController = ref.read(roomControllerProvider(widget.roomId).notifier);
     _mediaController = ref.read(
       liveRoomMediaControllerProvider(widget.roomId).notifier,
     );
@@ -92,12 +88,45 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
     mediaController.beginConnecting();
 
     // ── 1. Firestore presence join ──────────────────────────────────────────
-    await _roomController.joinRoom(
+    final joinResult = await _roomController.joinRoom(
       user.id,
       displayName: user.username,
       avatarUrl: user.avatarUrl,
     );
     if (!mounted) return;
+    if (!joinResult.isSuccess) {
+      final reason =
+          joinResult.errormessage ?? 'Room joining is temporarily unavailable.';
+      developer.log(
+        '[CONTROL_GATE] room_join_denied roomId=${widget.roomId} userId=${user.id} reason=$reason',
+        name: 'LiveRoomScreen',
+      );
+      mediaController.markConnectionFailed(
+        callError: reason,
+        cameraStatus: 'Join blocked',
+      );
+      return;
+    }
+
+    var liveRoomsEnabled = true;
+    try {
+      liveRoomsEnabled = ref
+          .read(featureGateControllerProvider)
+          .enableLiveRooms;
+    } on AssertionError {
+      liveRoomsEnabled = true;
+    }
+    if (!liveRoomsEnabled) {
+      developer.log(
+        '[CONTROL_GATE] room_rtc_init_blocked roomId=${widget.roomId} userId=${user.id} reason=live_rooms_disabled',
+        name: 'LiveRoomScreen',
+      );
+      mediaController.markConnectionFailed(
+        callError: 'Live rooms are temporarily paused for maintenance.',
+        cameraStatus: 'Join blocked',
+      );
+      return;
+    }
 
     // ── 2. RTC audio channel join ───────────────────────────────────────────
     // Web: WebRtcRoomService (Firestore signaling, no SDK download).
@@ -109,9 +138,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
       // different networks and NAT types. Falls back to STUN-only on error.
       List<Map<String, dynamic>>? iceServers;
       try {
-        iceServers = await ref
-            .read(roomRepositoryProvider)
-            .fetchIceServers();
+        iceServers = await ref.read(roomRepositoryProvider).fetchIceServers();
       } catch (e) {
         // Keep RTC join alive even when TURN credential fetch fails.
         // WebRtcRoomService can still run on browser default/STUN behavior.
@@ -129,7 +156,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
       // WebRtcRoomService ignores appId while Agora requires a real one.
       await service.initialize(resolvedAgoraAppId);
       await service.joinRoom(
-        '',             // token — WebRtcRoomService ignores it
+        '', // token — WebRtcRoomService ignores it
         widget.roomId,
         _stableUid(user.id),
         publishMicrophoneTrackOnJoin: false, // start muted; user unmutes
@@ -181,7 +208,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
   void dispose() {
     // ── RTC teardown (safe: uses cached references) ─────────────────────────
     final rtcService = _rtcService;
-    rtcService?.dispose().ignore();
+    rtcService?.dispose().catchError((Object e, StackTrace st) {
+      // Log but do not rethrow — dispose must complete even if RTC cleanup
+      // fails (e.g. RTCPeerConnection.close() throws on Flutter Web).
+      developer.log(
+        'RTC dispose failed: $e',
+        name: 'LiveRoomScreen',
+        error: e,
+        stackTrace: st,
+      );
+    });
     // Riverpod rejects provider writes during widget disposal. Defer room
     // controller cleanup to a microtask while using cached notifiers.
     scheduleMicrotask(() {
@@ -342,7 +378,8 @@ class _LoadingScaffold extends ConsumerWidget {
                     height: 52,
                     child: hostAsync.when(
                       data: (host) {
-                        final hostName = host?.username.trim().isNotEmpty == true
+                        final hostName =
+                            host?.username.trim().isNotEmpty == true
                             ? host!.username.trim()
                             : 'Host';
                         final hostAvatar = host?.avatarUrl;
@@ -368,7 +405,9 @@ class _LoadingScaffold extends ConsumerWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _relativeSince(previewRoom?.createdAt?.toDate()),
+                                    _relativeSince(
+                                      previewRoom?.createdAt?.toDate(),
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -383,7 +422,9 @@ class _LoadingScaffold extends ConsumerWidget {
                       },
                       loading: () => Row(
                         children: [
-                          _LoadingHostAvatar(fallbackColor: colorScheme.primary),
+                          _LoadingHostAvatar(
+                            fallbackColor: colorScheme.primary,
+                          ),
                           const SizedBox(width: 10),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -398,7 +439,9 @@ class _LoadingScaffold extends ConsumerWidget {
                       ),
                       error: (_, _) => Row(
                         children: [
-                          _LoadingHostAvatar(fallbackColor: colorScheme.primary),
+                          _LoadingHostAvatar(
+                            fallbackColor: colorScheme.primary,
+                          ),
                           const SizedBox(width: 10),
                           Text(
                             'Host',
@@ -430,13 +473,18 @@ class _LoadingScaffold extends ConsumerWidget {
                               _LoadingAvatar(color: colorScheme.primary),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: _LoadingBar(width: double.infinity, height: 14),
+                                child: _LoadingBar(
+                                  width: double.infinity,
+                                  height: 14,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ],
                           ),
@@ -478,15 +526,21 @@ class _LoadingScaffold extends ConsumerWidget {
                           Row(
                             children: const [
                               Expanded(
-                                child: _LoadingControl(icon: Icons.mic_off_rounded),
+                                child: _LoadingControl(
+                                  icon: Icons.mic_off_rounded,
+                                ),
                               ),
                               SizedBox(width: 10),
                               Expanded(
-                                child: _LoadingControl(icon: Icons.chat_bubble_outline_rounded),
+                                child: _LoadingControl(
+                                  icon: Icons.chat_bubble_outline_rounded,
+                                ),
                               ),
                               SizedBox(width: 10),
                               Expanded(
-                                child: _LoadingControl(icon: Icons.people_outline_rounded),
+                                child: _LoadingControl(
+                                  icon: Icons.people_outline_rounded,
+                                ),
                               ),
                             ],
                           ),
@@ -579,10 +633,7 @@ class _LoadingAvatar extends StatelessWidget {
 }
 
 class _LoadingHostAvatar extends StatelessWidget {
-  const _LoadingHostAvatar({
-    this.imageUrl,
-    required this.fallbackColor,
-  });
+  const _LoadingHostAvatar({this.imageUrl, required this.fallbackColor});
 
   final String? imageUrl;
   final Color fallbackColor;
@@ -671,8 +722,9 @@ class _ErrorScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSchema = error is RoomSchemaException;
     final heading = isSchema ? 'Room data error' : 'Unable to load room';
-    final icon =
-        isSchema ? Icons.warning_amber_rounded : Icons.wifi_off_rounded;
+    final icon = isSchema
+        ? Icons.warning_amber_rounded
+        : Icons.wifi_off_rounded;
 
     return Scaffold(
       appBar: AppBar(
@@ -702,7 +754,7 @@ class _ErrorScaffold extends StatelessWidget {
                 Text(
                   isSchema
                       ? 'This room has an unexpected data format. '
-                          'Please try again or contact support.'
+                            'Please try again or contact support.'
                       : 'Check your connection and try again.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -713,15 +765,12 @@ class _ErrorScaffold extends StatelessWidget {
                     error.toString(),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: onBack,
-                  child: const Text('Go back'),
-                ),
+                FilledButton(onPressed: onBack, child: const Text('Go back')),
               ],
             ),
           ),
@@ -781,9 +830,7 @@ class _RoomScaffold extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
               if (reconnecting) const _ReconnectingBanner(),
-              Expanded(
-                child: _MessageList(roomId: roomId),
-              ),
+              Expanded(child: _MessageList(roomId: roomId)),
               _TypingIndicator(roomId: roomId),
               _FirstThirtySecondsCoach(
                 key: ValueKey('coach-$roomId'),
@@ -929,7 +976,8 @@ class _MessageList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message =
-        ref.watch(messagetreamProvider(roomId)).valueOrNull ?? const <MessageModel>[];
+        ref.watch(messagetreamProvider(roomId)).valueOrNull ??
+        const <MessageModel>[];
 
     if (message.isEmpty) {
       return const Center(
@@ -949,10 +997,7 @@ class _MessageList extends ConsumerWidget {
       itemCount: message.length,
       itemBuilder: (_, i) {
         final msg = message[i];
-        return ListTile(
-          title: Text(msg.content),
-          subtitle: Text(msg.senderId),
-        );
+        return ListTile(title: Text(msg.content), subtitle: Text(msg.senderId));
       },
     );
   }
@@ -1030,10 +1075,7 @@ class _FirstThirtySecondsCoachState
         _smoothedActivityScore =
             (_smoothedActivityScore * (1 - _smoothingAlpha)) +
             (instant * _smoothingAlpha);
-        _profile = _resolveProfile(
-          _smoothedActivityScore,
-          current: _profile,
-        );
+        _profile = _resolveProfile(_smoothedActivityScore, current: _profile);
         _applyMoodInertia(_instantMood());
       });
       if (_elapsedSeconds >= _maxWindowSeconds) {
@@ -1107,9 +1149,7 @@ class _FirstThirtySecondsCoachState
 
     // Chaotic <-> non-chaotic transitions need stronger evidence.
     final requiredSeconds =
-        (_stableMood == _RoomMood.chaotic || next == _RoomMood.chaotic)
-        ? 5
-        : 3;
+        (_stableMood == _RoomMood.chaotic || next == _RoomMood.chaotic) ? 5 : 3;
 
     if (_moodCandidateSeconds >= requiredSeconds) {
       _stableMood = next;
@@ -1141,8 +1181,7 @@ class _FirstThirtySecondsCoachState
 
   bool get _isHighActivity => _profile == _CoachActivityProfile.high;
 
-  bool get _isLowActivity =>
-      _profile == _CoachActivityProfile.low;
+  bool get _isLowActivity => _profile == _CoachActivityProfile.low;
 
   int get _maxWindowSeconds {
     if (_isHighActivity) return 18;
@@ -1309,18 +1348,17 @@ class _MessageInputState extends ConsumerState<_MessageInput> {
                   hintText: 'Send a message…',
                   border: OutlineInputBorder(),
                   isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _send(),
               ),
             ),
             const SizedBox(width: 4),
-            IconButton(
-              icon: const Icon(Icons.send),
-              onPressed: _send,
-            ),
+            IconButton(icon: const Icon(Icons.send), onPressed: _send),
           ],
         ),
       ),
@@ -1334,7 +1372,9 @@ class _MessageInputState extends ConsumerState<_MessageInput> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    ref.read(sendmessageProvider(widget.roomId))(text).catchError((_) {});
+    unawaited(
+      ref.read(sendmessageProvider(widget.roomId))(text).catchError((_) {}),
+    );
   }
 }
 
@@ -1357,26 +1397,36 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
   /// Ensure RTC is initialized before attempting media actions.
   /// This is the tap-time resolution entry point that guarantees RTC readiness.
   Future<void> ensureRtcInitialized() async {
-    developer.log('[DEBUG-RTC] ensureRtcInitialized() called', name: 'RTC-Pipeline');
-    
+    developer.log(
+      '[DEBUG-RTC] ensureRtcInitialized() called',
+      name: 'RTC-Pipeline',
+    );
+
     final mediaController = ref.read(
       liveRoomMediaControllerProvider(widget.roomId).notifier,
     );
-    final mediaState = ref.read(
-      liveRoomMediaControllerProvider(widget.roomId),
-    );
+    final mediaState = ref.read(liveRoomMediaControllerProvider(widget.roomId));
 
-    developer.log('[DEBUG-RTC] Current state: ${mediaState.rtcState}', name: 'RTC-Pipeline');
+    developer.log(
+      '[DEBUG-RTC] Current state: ${mediaState.rtcState}',
+      name: 'RTC-Pipeline',
+    );
 
     // Already ready or initializing — no need to do anything.
     if (mediaState.rtcState == RtcState.ready ||
         mediaState.rtcState == RtcState.initializing) {
-      developer.log('[DEBUG-RTC] Already ready or initializing, skipping', name: 'RTC-Pipeline');
+      developer.log(
+        '[DEBUG-RTC] Already ready or initializing, skipping',
+        name: 'RTC-Pipeline',
+      );
       return;
     }
 
     // Mark as initializing
-    developer.log('[DEBUG-RTC] Setting state to initializing', name: 'RTC-Pipeline');
+    developer.log(
+      '[DEBUG-RTC] Setting state to initializing',
+      name: 'RTC-Pipeline',
+    );
     mediaController.setRtcState(RtcState.initializing);
 
     try {
@@ -1391,10 +1441,16 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
 
       final service = ref.read(rtcServiceProvider(widget.roomId));
       if (service != null) {
-        developer.log('[DEBUG-RTC] Service available after $attempts attempts, marking ready', name: 'RTC-Pipeline');
+        developer.log(
+          '[DEBUG-RTC] Service available after $attempts attempts, marking ready',
+          name: 'RTC-Pipeline',
+        );
         mediaController.markRtcReady();
       } else {
-        developer.log('[DEBUG-RTC] Service NOT available after $attempts attempts, marking degraded', name: 'RTC-Pipeline');
+        developer.log(
+          '[DEBUG-RTC] Service NOT available after $attempts attempts, marking degraded',
+          name: 'RTC-Pipeline',
+        );
         mediaController.markRtcDegraded();
       }
     } catch (e) {
@@ -1408,14 +1464,15 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
 
   Future<void> _toggleMic() async {
     developer.log('[DEBUG-BUTTON] Mic button tapped', name: 'RTC-Pipeline');
-    
+
     await ensureRtcInitialized();
 
-    final mediaState = ref.read(
-      liveRoomMediaControllerProvider(widget.roomId),
-    );
+    final mediaState = ref.read(liveRoomMediaControllerProvider(widget.roomId));
 
-    developer.log('[DEBUG-BUTTON] After ensureRtcInitialized: rtcState=${mediaState.rtcState}', name: 'RTC-Pipeline');
+    developer.log(
+      '[DEBUG-BUTTON] After ensureRtcInitialized: rtcState=${mediaState.rtcState}',
+      name: 'RTC-Pipeline',
+    );
 
     // If RTC failed, we cannot proceed
     if (mediaState.rtcState == RtcState.failed) {
@@ -1435,7 +1492,10 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
       return;
     }
 
-    developer.log('[DEBUG-BUTTON] Service available, proceeding with mic toggle', name: 'RTC-Pipeline');
+    developer.log(
+      '[DEBUG-BUTTON] Service available, proceeding with mic toggle',
+      name: 'RTC-Pipeline',
+    );
 
     final mediaController = ref.read(
       liveRoomMediaControllerProvider(widget.roomId).notifier,
@@ -1450,9 +1510,15 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
         await service.setBroadcaster(true);
         await service.mute(false);
         mediaController.finishMicAction(isMuted: service.isLocalAudioMuted);
-        developer.log('[DEBUG-BUTTON] Mic enabled successfully', name: 'RTC-Pipeline');
+        developer.log(
+          '[DEBUG-BUTTON] Mic enabled successfully',
+          name: 'RTC-Pipeline',
+        );
       } catch (e) {
-        developer.log('[DEBUG-BUTTON] Mic enable failed — $e', name: 'RTC-Pipeline');
+        developer.log(
+          '[DEBUG-BUTTON] Mic enable failed — $e',
+          name: 'RTC-Pipeline',
+        );
         mediaController.endMicAction();
         mediaController.markRtcDegraded();
       }
@@ -1462,9 +1528,15 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
         await service.mute(true);
         await service.setBroadcaster(false);
         mediaController.finishMicAction(isMuted: service.isLocalAudioMuted);
-        developer.log('[DEBUG-BUTTON] Mic disabled successfully', name: 'RTC-Pipeline');
+        developer.log(
+          '[DEBUG-BUTTON] Mic disabled successfully',
+          name: 'RTC-Pipeline',
+        );
       } catch (e) {
-        developer.log('[DEBUG-BUTTON] Mic disable failed — $e', name: 'RTC-Pipeline');
+        developer.log(
+          '[DEBUG-BUTTON] Mic disable failed — $e',
+          name: 'RTC-Pipeline',
+        );
         mediaController.endMicAction();
         mediaController.markRtcDegraded();
       }
@@ -1472,18 +1544,25 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
   }
 
   Future<void> _toggleSystemAudio() async {
-    developer.log('[DEBUG-BUTTON] Screen share button tapped', name: 'RTC-Pipeline');
-    
-    await ensureRtcInitialized();
-
-    final mediaState = ref.read(
-      liveRoomMediaControllerProvider(widget.roomId),
+    developer.log(
+      '[DEBUG-BUTTON] Screen share button tapped',
+      name: 'RTC-Pipeline',
     );
 
-    developer.log('[DEBUG-BUTTON] After ensureRtcInitialized: rtcState=${mediaState.rtcState}', name: 'RTC-Pipeline');
+    await ensureRtcInitialized();
+
+    final mediaState = ref.read(liveRoomMediaControllerProvider(widget.roomId));
+
+    developer.log(
+      '[DEBUG-BUTTON] After ensureRtcInitialized: rtcState=${mediaState.rtcState}',
+      name: 'RTC-Pipeline',
+    );
 
     if (mediaState.rtcState == RtcState.failed) {
-      developer.log('[DEBUG-BUTTON] RTC failed, cannot share', name: 'RTC-Pipeline');
+      developer.log(
+        '[DEBUG-BUTTON] RTC failed, cannot share',
+        name: 'RTC-Pipeline',
+      );
       return;
     }
 
@@ -1493,17 +1572,26 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
     );
 
     if (service == null || !kIsWeb || mediaState.isSystemAudioActionInFlight) {
-      developer.log('[DEBUG-BUTTON] Cannot proceed: service=$service, kIsWeb=$kIsWeb, inFlight=${mediaState.isSystemAudioActionInFlight}', name: 'RTC-Pipeline');
+      developer.log(
+        '[DEBUG-BUTTON] Cannot proceed: service=$service, kIsWeb=$kIsWeb, inFlight=${mediaState.isSystemAudioActionInFlight}',
+        name: 'RTC-Pipeline',
+      );
       return;
     }
 
     final target = !service.isSharingSystemAudio;
-    developer.log('[DEBUG-BUTTON] Toggling system audio to: $target', name: 'RTC-Pipeline');
-    
+    developer.log(
+      '[DEBUG-BUTTON] Toggling system audio to: $target',
+      name: 'RTC-Pipeline',
+    );
+
     mediaController.beginSystemAudioAction();
     try {
       await service.shareSystemAudio(target);
-      developer.log('[DEBUG-BUTTON] System audio toggled successfully', name: 'RTC-Pipeline');
+      developer.log(
+        '[DEBUG-BUTTON] System audio toggled successfully',
+        name: 'RTC-Pipeline',
+      );
       mediaController.finishSystemAudioAction(
         isSharing: service.isSharingSystemAudio,
       );
@@ -1520,9 +1608,7 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
   Future<void> _stopScreenShare() async {
     await ensureRtcInitialized();
 
-    final mediaState = ref.read(
-      liveRoomMediaControllerProvider(widget.roomId),
-    );
+    final mediaState = ref.read(liveRoomMediaControllerProvider(widget.roomId));
 
     if (mediaState.rtcState == RtcState.failed) {
       return;
@@ -1550,14 +1636,16 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final service = ref.watch(rtcServiceProvider(widget.roomId));
-    final mediaState = ref.watch(liveRoomMediaControllerProvider(widget.roomId));
-    
+    final mediaState = ref.watch(
+      liveRoomMediaControllerProvider(widget.roomId),
+    );
+
     // Get actual media state from service if available, otherwise use defaults
     final sharingAudio = service?.isSharingSystemAudio ?? false;
     final micActive = service != null ? !service.isLocalAudioMuted : false;
     final micActionInFlight = mediaState.isMicActionInFlight;
     final systemAudioActionInFlight = mediaState.isSystemAudioActionInFlight;
-    
+
     // Buttons are ALWAYS enabled now — they resolve at tap-time via ensureRtcInitialized()
     // No more silent disabling based on hasRtcService
     final micButtonEnabled = !micActionInFlight;
@@ -1572,9 +1660,7 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: cs.outlineVariant, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: cs.outlineVariant, width: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1605,23 +1691,21 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
                                 foregroundColor: cs.onError,
                               )
                             : micButtonEnabled && !micActive
-                                ? IconButton.styleFrom(
-                                    backgroundColor: cs.errorContainer,
-                                    foregroundColor: cs.onErrorContainer,
-                                  )
-                                : null,
+                            ? IconButton.styleFrom(
+                                backgroundColor: cs.errorContainer,
+                                foregroundColor: cs.onErrorContainer,
+                              )
+                            : null,
                         icon: Icon(
-                          micActive
-                              ? Icons.mic_rounded
-                              : Icons.mic_off_rounded,
+                          micActive ? Icons.mic_rounded : Icons.mic_off_rounded,
                         ),
                       ),
                 Text(
                   micActionInFlight
                       ? 'Connecting…'
                       : micActive
-                          ? 'You are speaking'
-                          : 'Muted',
+                      ? 'You are speaking'
+                      : 'Muted',
                   style: TextStyle(
                     fontSize: 10,
                     color: micActive ? cs.error : cs.onSurfaceVariant,
@@ -1651,9 +1735,7 @@ class _RoomActionBarState extends ConsumerState<_RoomActionBar> {
                       )
                     : null,
                 icon: Icon(
-                  sharingAudio
-                      ? Icons.graphic_eq
-                      : Icons.screen_share_outlined,
+                  sharingAudio ? Icons.graphic_eq : Icons.screen_share_outlined,
                 ),
               ),
             if (statusLabel != null)

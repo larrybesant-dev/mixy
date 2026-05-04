@@ -16,10 +16,7 @@ class ChatInput extends StatelessWidget {
             decoration: const InputDecoration(hintText: 'Type a message...'),
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.send),
-          onPressed: onSend,
-        ),
+        IconButton(icon: const Icon(Icons.send), onPressed: onSend),
       ],
     );
   }

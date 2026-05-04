@@ -36,14 +36,13 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   @override
   void initState() {
     super.initState();
-    _progressController = AnimationController(
-      vsync: this,
-      duration: _storyDuration,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _advance();
-        }
-      });
+    _progressController =
+        AnimationController(vsync: this, duration: _storyDuration)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _advance();
+            }
+          });
     _startProgress();
   }
 
@@ -81,7 +80,9 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     final viewerId = FirebaseAuth.instance.currentUser?.uid;
     if (viewerId == null) return;
     if (story.viewedBy.contains(viewerId)) return;
-    ref.read(storyControllerProvider).markStoryAsViewed(
+    ref
+        .read(storyControllerProvider)
+        .markStoryAsViewed(
           userId: widget.userId,
           storyId: story.id,
           viewerId: viewerId,
@@ -97,12 +98,12 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
       safeArea: false,
       body: storiesAsync.when(
         loading: () => const AppLoadingView(label: 'Loading stories'),
-        error: (e, _) => AppErrorView(
-          error: e,
-          fallbackContext: 'Unable to load stories.',
-        ),
+        error: (e, _) =>
+            AppErrorView(error: e, fallbackContext: 'Unable to load stories.'),
         data: (stories) {
-          final active = stories.where((s) => !s.isDeleted && !s.isExpired).toList();
+          final active = stories
+              .where((s) => !s.isDeleted && !s.isExpired)
+              .toList();
           if (active.isEmpty) {
             return const AppEmptyView(
               title: 'No stories to show',
@@ -132,7 +133,9 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
               _StoryBackground(story: story),
 
               // Text content overlay (when no image/video)
-              if (story.imageUrl == null && story.videoUrl == null && story.content != null)
+              if (story.imageUrl == null &&
+                  story.videoUrl == null &&
+                  story.content != null)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -192,12 +195,17 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                   children: [
                     // Progress bars
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: Row(
                         children: List.generate(active.length, (i) {
                           return Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
                               child: _ProgressBar(
                                 filled: i < _index,
                                 active: i == _index,
@@ -210,7 +218,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                     ),
                     // Author row
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       child: Row(
                         children: [
                           SafeNetworkAvatar(
@@ -234,7 +245,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                           ),
                           Text(
                             _formatAge(story.createdAt),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
@@ -318,8 +332,8 @@ class _ProgressBar extends StatelessWidget {
           widthFactor: filled
               ? 1.0
               : active
-                  ? null
-                  : 0.0,
+              ? null
+              : 0.0,
           child: active
               ? AnimatedBuilder(
                   animation: animation,

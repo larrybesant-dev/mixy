@@ -52,12 +52,10 @@ class RedirectTrace {
     );
 
     if (_redirectIndex % 20 == 0) {
-      final summary = topReasons(limit: 3)
-          .map((entry) => '${entry.key}:${entry.value}')
-          .join(', ');
-      debugPrint(
-        '[ROUTER][REDIRECT][session=$_sessionId] topReasons=$summary',
-      );
+      final summary = topReasons(
+        limit: 3,
+      ).map((entry) => '${entry.key}:${entry.value}').join(', ');
+      debugPrint('[ROUTER][REDIRECT][session=$_sessionId] topReasons=$summary');
     }
   }
 
