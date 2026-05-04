@@ -14,6 +14,7 @@ name: Stream Architecture Enforcement
 #   FSL-004  Room domain snapshot outside canonical file     [CRITICAL]
 #   FSL-005  Messaging domain snapshot outside canonical     [CRITICAL]
 #   FSL-006  Duplicate Firestore collection subscription     [CRITICAL]
+#   FSL-007  Top-level rooms query/read outside RoomService  [CRITICAL]
 #
 # Inspection rules (FCI) — fail based on path / --strict:
 #   FCI-001  Direct .snapshots() in feature layer           [HIGH]
@@ -93,6 +94,7 @@ jobs:
             echo "| FSL-004 | Room domain snapshot outside \`participant_providers.dart\` |"
             echo "| FSL-005 | Messaging domain snapshot outside \`messaging_provider.dart\` |"
             echo "| FSL-006 | Duplicate \`.snapshots()\` on the same Firestore collection |"
+            echo "| FSL-007 | Top-level \`rooms\` collection query/read outside \`lib/services/room_service.dart\` |"
             echo ""
             echo "### Inspection Rules (FCI) — fail by path"
             echo "| Rule | Severity | Description |"
@@ -108,7 +110,8 @@ jobs:
             echo "2. For FSL-002: add \`.limit(50)\` before \`.snapshots()\`"
             echo "3. For FSL-003/004/005: delete the .snapshots() and derive from the canonical StreamProvider"
             echo "4. For FSL-006: pick one canonical provider and remove all others; wire consumers to it"
-            echo "5. For FCI rules: see \`lib/core/architecture/stream_registry.dart\`"
+            echo "5. For FSL-007: move the rooms query into \`lib/services/room_service.dart\` and expose a RoomService-owned helper"
+            echo "6. For FCI rules: see \`lib/core/architecture/stream_registry.dart\`"
             echo ""
             echo "Run locally: \`dart run tool/firestore_stream_ci_linter.dart\`"
           } >> "$GITHUB_STEP_SUMMARY"

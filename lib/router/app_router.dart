@@ -55,6 +55,7 @@ import 'package:mixvy/presentation/screens/legal_terms_screen.dart';
 import 'package:mixvy/presentation/screens/moderation_dashboard_screen.dart';
 import 'package:mixvy/features/onboarding/onboarding_screen.dart';
 import 'package:mixvy/models/room_model.dart';
+import 'package:mixvy/observability/realtime_ops_screen.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/core/services/app_settings_service.dart';
 import 'package:mixvy/presentation/providers/app_settings_provider.dart';
@@ -472,6 +473,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      GoRoute(
+        path: '/ops',
+        builder: (context, state) => const RealtimeOpsScreen(),
       ),
 
       GoRoute(

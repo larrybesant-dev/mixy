@@ -3,13 +3,17 @@ import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/telemetry/app_telemetry.dart';
 import 'package:mixvy/features/room/contracts/room_visibility_contract.dart';
+import 'package:mixvy/features/room/contracts/room_with_visibility.dart';
+import 'package:mixvy/features/room/providers/room_visibility_windows_provider.dart';
 import 'package:mixvy/models/room_model.dart';
 
 import '../core/logger.dart';
 import '../core/services/feature_gate_service.dart';
 
 final roomServiceProvider = Provider<RoomService>((ref) {
+  ref.watch(roomVisibilityWindowsBootstrapProvider);
   return RoomService(
     isLiveRoomsEnabled: () {
       try {
@@ -18,21 +22,37 @@ final roomServiceProvider = Provider<RoomService>((ref) {
         return true;
       }
     },
+    visibilityWindowsResolver: () => ref.read(roomVisibilityWindowsProvider),
   );
 });
 
 class RoomService {
   static const Duration _liveRoomRemovalGraceWindow = Duration(seconds: 2);
   static const Duration _liveRoomsDebounceWindow = Duration(milliseconds: 220);
+  static const Duration _discoverableDemotionBuffer = Duration(minutes: 1);
+  static const Duration _discoverablePromotionBuffer = Duration(minutes: 2);
+  static const Duration _warmDemotionBuffer = Duration(minutes: 3);
+  static const Duration _warmPromotionBuffer = Duration(minutes: 4);
 
   RoomService({
     FirebaseFirestore? firestore,
     bool Function()? isLiveRoomsEnabled,
+    RoomVisibilityWindows Function()? visibilityWindowsResolver,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _isLiveRoomsEnabled = isLiveRoomsEnabled;
+       _isLiveRoomsEnabled = isLiveRoomsEnabled,
+       _visibilityWindowsResolver = visibilityWindowsResolver;
 
   final FirebaseFirestore _firestore;
   final bool Function()? _isLiveRoomsEnabled;
+  final RoomVisibilityWindows Function()? _visibilityWindowsResolver;
+
+  RoomVisibilityWindows get _visibilityWindows {
+    final resolver = _visibilityWindowsResolver;
+    if (resolver == null) {
+      return RoomVisibilityWindows.defaults;
+    }
+    return resolver();
+  }
 
   CollectionReference<Map<String, dynamic>> get _roomsCollection =>
       _firestore.collection('rooms');
@@ -41,10 +61,7 @@ class RoomService {
     required int limit,
     String? category,
   }) {
-    Query<Map<String, dynamic>> query = _roomsCollection.where(
-      'isLive',
-      isEqualTo: true,
-    );
+    Query<Map<String, dynamic>> query = _roomsCollection;
     final normalizedCategory = category?.trim();
     if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
       query = query.where('category', isEqualTo: normalizedCategory);
@@ -63,13 +80,6 @@ class RoomService {
         .where('scheduledAt', isLessThanOrEqualTo: cutoff)
         .limit(limit);
   }
-
-  CollectionReference<Map<String, dynamic>> _participantsCollection(
-    String roomId,
-  ) => _roomsCollection.doc(roomId).collection('participants');
-
-  CollectionReference<Map<String, dynamic>> _membersCollection(String roomId) =>
-      _roomsCollection.doc(roomId).collection('members');
 
   String _normalizeRoomId(String roomId) {
     final trimmedRoomId = roomId.trim();
@@ -161,6 +171,7 @@ class RoomService {
   }) {
     final controller = StreamController<List<RoomModel>>();
     final bufferedRooms = <String, _StableLiveRoomBufferEntry>{};
+    final previousTiers = <String, RoomVisibilityTier>{};
     Timer? debounceTimer;
     Future<void> pending = Future<void>.value();
     String? lastFingerprint;
@@ -172,6 +183,7 @@ class RoomService {
       final incomingRooms = await _filterActiveLiveRooms(
         snapshot.docs,
         includeAdultRooms: includeAdultRooms,
+        previousTiers: previousTiers,
       );
       final incomingIds = <String>{};
 
@@ -194,6 +206,7 @@ class RoomService {
         final missingSince = entry.value.missingSince ??= now;
         if (now.difference(missingSince) >= _liveRoomRemovalGraceWindow) {
           bufferedRooms.remove(entry.key);
+          previousTiers.remove(entry.key);
         }
       }
 
@@ -234,17 +247,35 @@ class RoomService {
   Future<List<RoomModel>> _filterActiveLiveRooms(
     Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs, {
     required bool includeAdultRooms,
+    Map<String, RoomVisibilityTier>? previousTiers,
+  }) async {
+    final classified = await _classifyLiveRooms(
+      docs,
+      includeAdultRooms: includeAdultRooms,
+      previousTiers: previousTiers,
+    );
+    return classified
+        .where((item) => item.isVisible)
+        .map((item) => item.room)
+        .toList(growable: false);
+  }
+
+  Future<List<RoomWithVisibility>> _classifyLiveRooms(
+    Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs, {
+    required bool includeAdultRooms,
+    Map<String, RoomVisibilityTier>? previousTiers,
   }) async {
     final activeRooms = <RoomModel>[];
+    final classifiedRooms = <RoomWithVisibility>[];
     final now = _now;
     var totalDocs = 0;
     var adultDropped = 0;
     var parseDropped = 0;
-    var missingOwnerDropped = 0;
-    var endedDropped = 0;
-    var staleDropped = 0;
-    var graceKept = 0;
-    var structuralOk = 0;
+    var invalidDropped = 0;
+    var discoverableCount = 0;
+    var warmCount = 0;
+    var coldCount = 0;
+    final windows = _visibilityWindows;
 
     for (final doc in docs) {
       totalDocs += 1;
@@ -267,42 +298,243 @@ class RoomService {
         continue;
       }
 
-      final decision = RoomVisibilityContract.evaluate(room, now: now);
-      RoomVisibilityContract.logDecision(room, decision);
-      if (decision.visible) {
-        if (decision.reasonCode == RoomVisibilityReasonCode.graceAllowed) {
-          graceKept += 1;
-        } else {
-          structuralOk += 1;
-        }
-        activeRooms.add(room);
-        continue;
+        final decision =
+          RoomVisibilityContract.evaluate(room, now: now, windows: windows);
+        final stabilizedDecision = _applyTierHysteresis(
+          roomId: room.id,
+          decision: decision,
+          previousTier: previousTiers?[room.id],
+          windows: windows,
+        );
+        previousTiers?[room.id] = stabilizedDecision.tier;
+
+        RoomVisibilityContract.logDecision(room, stabilizedDecision);
+        final withVisibility = RoomWithVisibility(
+          room: room,
+          visibility: stabilizedDecision,
+        );
+      classifiedRooms.add(withVisibility);
+
+        switch (stabilizedDecision.tier) {
+        case RoomVisibilityTier.discoverable:
+          discoverableCount += 1;
+          break;
+        case RoomVisibilityTier.warm:
+          warmCount += 1;
+          break;
+        case RoomVisibilityTier.cold:
+          coldCount += 1;
+          break;
+        case RoomVisibilityTier.invalid:
+          invalidDropped += 1;
+          break;
       }
 
-      switch (decision.reasonCode) {
-        case RoomVisibilityReasonCode.missingOwner:
-          missingOwnerDropped += 1;
-        case RoomVisibilityReasonCode.ended:
-          endedDropped += 1;
-        case RoomVisibilityReasonCode.stale:
-          staleDropped += 1;
-        case RoomVisibilityReasonCode.structuralOk:
-          structuralOk += 1;
-        case RoomVisibilityReasonCode.graceAllowed:
-          graceKept += 1;
+      if (stabilizedDecision.isVisible) {
+        activeRooms.add(room);
       }
     }
 
-    activeRooms.sort(_compareStableLiveRooms);
+    activeRooms.sort((a, b) => _compareStableLiveRooms(a, b, windows: windows));
 
     Logger.info(
-      'ROOM_VISIBILITY snapshot_total=$totalDocs visible=${activeRooms.length} adult_dropped=$adultDropped parse_dropped=$parseDropped missing_owner_dropped=$missingOwnerDropped ended_dropped=$endedDropped stale_dropped=$staleDropped grace_kept=$graceKept structural_ok=$structuralOk includeAdult=$includeAdultRooms',
+      'ROOM_VISIBILITY snapshot_total=$totalDocs visible=${activeRooms.length} discoverable=$discoverableCount warm=$warmCount cold=$coldCount invalid_dropped=$invalidDropped adult_dropped=$adultDropped parse_dropped=$parseDropped includeAdult=$includeAdultRooms',
     );
 
-    return activeRooms;
+    classifiedRooms.sort(
+      (a, b) => _compareStableLiveRooms(a.room, b.room, windows: windows),
+    );
+    return classifiedRooms;
   }
 
-  int _compareStableLiveRooms(RoomModel a, RoomModel b) {
+  Stream<List<RoomWithVisibility>> watchRoomsWithVisibility({
+    int limit = 30,
+    bool includeAdultRooms = false,
+    String? category,
+  }) {
+    return _liveRoomsQuery(limit: limit, category: category)
+        .snapshots()
+        .asyncMap(
+          (snapshot) => _classifyLiveRooms(
+            snapshot.docs,
+            includeAdultRooms: includeAdultRooms,
+          ),
+        );
+  }
+
+  Stream<RoomWithVisibility?> watchPendingDirectCallForCallee({
+    required String calleeId,
+    bool includeAdultRooms = false,
+  }) {
+    final normalizedCalleeId = calleeId.trim();
+    if (normalizedCalleeId.isEmpty) {
+      return Stream.value(null);
+    }
+
+    final query = _roomsCollection
+        .where('isDirectCall', isEqualTo: true)
+        .where('calleeId', isEqualTo: normalizedCalleeId)
+        .where('callDeclined', isEqualTo: false)
+        .limit(3);
+
+    return query.snapshots().asyncMap((snapshot) async {
+      final classified = await _classifyLiveRooms(
+        snapshot.docs,
+        includeAdultRooms: includeAdultRooms,
+      );
+      for (final candidate in classified) {
+        if (candidate.isVisible) {
+          return candidate;
+        }
+      }
+
+      if (classified.isNotEmpty) {
+        final candidate = classified.first;
+        AppTelemetry.logAction(
+          level: 'warning',
+          domain: 'feed',
+          action: 'pending_direct_call_hidden',
+          message: 'Pending direct call classified but not renderable.',
+          roomId: candidate.room.id,
+          userId: normalizedCalleeId,
+          result: candidate.visibility.reasonCode.name,
+          metadata: <String, Object?>{
+            'candidateCount': classified.length,
+            'tier': candidate.tier.name,
+          },
+        );
+      }
+
+      return null;
+    });
+  }
+
+  Future<List<RoomWithVisibility>> getRoomsWithVisibility({
+    int limit = 20,
+    bool includeAdultRooms = false,
+    String? category,
+  }) async {
+    if (limit <= 0) {
+      return const <RoomWithVisibility>[];
+    }
+
+    final snapshot = await _liveRoomsQuery(
+      limit: limit,
+      category: category,
+    ).get();
+    return _classifyLiveRooms(
+      snapshot.docs,
+      includeAdultRooms: includeAdultRooms,
+      previousTiers: null,
+    );
+  }
+
+  Future<List<RoomWithVisibility>> getHostedRoomsWithVisibility({
+    required String hostId,
+    int limit = 10,
+    bool includeAdultRooms = false,
+  }) async {
+    final normalizedHostId = hostId.trim();
+    if (normalizedHostId.isEmpty || limit <= 0) {
+      return const <RoomWithVisibility>[];
+    }
+
+    final snapshot = await _roomsCollection
+        .where('hostId', isEqualTo: normalizedHostId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+    return _classifyLiveRooms(
+      snapshot.docs,
+      includeAdultRooms: includeAdultRooms,
+      previousTiers: null,
+    );
+  }
+
+  RoomVisibilityResult _applyTierHysteresis({
+    required String roomId,
+    required RoomVisibilityResult decision,
+    required RoomVisibilityTier? previousTier,
+    required RoomVisibilityWindows windows,
+  }) {
+    final staleness = decision.staleness;
+    if (previousTier == null || staleness == null) {
+      return decision;
+    }
+
+    if (previousTier == RoomVisibilityTier.discoverable &&
+        decision.tier == RoomVisibilityTier.warm) {
+      final holdUntil = windows.discoverableWindow + _discoverableDemotionBuffer;
+      if (staleness <= holdUntil) {
+        return RoomVisibilityResult(
+          tier: RoomVisibilityTier.discoverable,
+          reasonCode: RoomVisibilityReasonCode.discoverableHysteresisHold,
+          staleness: staleness,
+        );
+      }
+    }
+
+    if (previousTier == RoomVisibilityTier.warm &&
+        decision.tier == RoomVisibilityTier.discoverable) {
+      final promoteBefore =
+          windows.discoverableWindow - _discoverablePromotionBuffer;
+      if (promoteBefore > Duration.zero && staleness > promoteBefore) {
+        return RoomVisibilityResult(
+          tier: RoomVisibilityTier.warm,
+          reasonCode: RoomVisibilityReasonCode.warmHysteresisHold,
+          staleness: staleness,
+        );
+      }
+    }
+
+    if (previousTier == RoomVisibilityTier.warm &&
+        decision.tier == RoomVisibilityTier.cold) {
+      final holdUntil = windows.warmWindow + _warmDemotionBuffer;
+      if (staleness <= holdUntil) {
+        return RoomVisibilityResult(
+          tier: RoomVisibilityTier.warm,
+          reasonCode: RoomVisibilityReasonCode.warmHysteresisHold,
+          staleness: staleness,
+        );
+      }
+    }
+
+    if (previousTier == RoomVisibilityTier.cold &&
+        decision.tier == RoomVisibilityTier.warm) {
+      final promoteBefore = windows.warmWindow - _warmPromotionBuffer;
+      if (promoteBefore > Duration.zero && staleness > promoteBefore) {
+        return RoomVisibilityResult(
+          tier: RoomVisibilityTier.cold,
+          reasonCode: RoomVisibilityReasonCode.coldHysteresisHold,
+          staleness: staleness,
+        );
+      }
+    }
+
+    if (decision.tier != previousTier) {
+      Logger.info(
+        'ROOM_VISIBILITY_TIER_TRANSITION roomId=$roomId from=${previousTier.name} to=${decision.tier.name} stalenessMs=${staleness.inMilliseconds}',
+      );
+    }
+
+    return decision;
+  }
+
+  int _compareStableLiveRooms(
+    RoomModel a,
+    RoomModel b, {
+    RoomVisibilityWindows? windows,
+  }) {
+    final resolvedWindows = windows ?? _visibilityWindows;
+    final tierA = RoomVisibilityContract.tierFor(a, windows: resolvedWindows);
+    final tierB = RoomVisibilityContract.tierFor(b, windows: resolvedWindows);
+    final tierCompare = RoomVisibilityContract.tierPriority(
+      tierA,
+    ).compareTo(RoomVisibilityContract.tierPriority(tierB));
+    if (tierCompare != 0) {
+      return tierCompare;
+    }
+
     // Score without friend context so the stable watch stream consistently
     // surfaces active rooms over stale ones, regardless of viewer identity.
     final scoreA = _scoreRoom(a, const <String>{});

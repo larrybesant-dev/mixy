@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/features/feed/providers/feed_providers.dart';
+import 'package:mixvy/features/room/contracts/room_visibility_contract.dart';
+import 'package:mixvy/features/room/providers/room_visibility_windows_provider.dart';
 
 import '../../config/environment.dart';
 import '../../core/logger.dart';
@@ -120,6 +123,8 @@ class _OperationalDebugOverlayState
     final gates = ref.watch(featureGateControllerProvider);
     final autoResponse = ref.watch(autoResponseControllerProvider);
     final betaMetrics = ref.watch(betaMetricsProvider);
+    final feedHealthAsync = ref.watch(feedHealthProvider);
+    final visibilityPolicy = ref.watch(roomVisibilityPolicyStateProvider);
     final telemetry = AppTelemetry.state;
     final userId = _safeCurrentUserId();
 
@@ -171,6 +176,7 @@ class _OperationalDebugOverlayState
                           gates: gates,
                           lastError: snapshot,
                         );
+                        final feedHealth = feedHealthAsync.valueOrNull;
                         final lastErrorLabel = snapshot == null
                             ? 'none'
                             : '${snapshot.message} (${snapshot.errorType ?? 'error'})';
@@ -255,6 +261,35 @@ class _OperationalDebugOverlayState
                                 'feed_refresh_rate: ${gates.feedRefreshRateSeconds}s',
                               ),
                               Text('rooms_mode: ${gates.liveRoomsMode.name}'),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Visibility Policy',
+                                style: TextStyle(
+                                  color: Color(0xFFD4AF37),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'policy_source: ${visibilityPolicy.source.name}',
+                              ),
+                              Text(
+                                'policy_valid: ${visibilityPolicy.isConfigValid}',
+                              ),
+                              Text(
+                                'discoverable_min: ${visibilityPolicy.windows.discoverableWindow.inMinutes}',
+                              ),
+                              Text(
+                                'warm_min: ${visibilityPolicy.windows.warmWindow.inMinutes}',
+                              ),
+                              Text(
+                                'cold_ended_min: ${visibilityPolicy.windows.coldEndedWindow.inMinutes}',
+                              ),
+                              Text(
+                                'policy_updated: ${_formatRelative(visibilityPolicy.lastUpdatedAt)}',
+                              ),
+                              Text(
+                                'policy_issue: ${visibilityPolicy.configIssue ?? 'none'}',
+                              ),
                               Text(
                                 'messaging_mode: ${gates.messagingMode.name}',
                               ),
@@ -288,6 +323,32 @@ class _OperationalDebugOverlayState
                               ),
                               Text(
                                 'last_update: ${_formatRelative(gates.lastUpdatedAt)}',
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Feed Health',
+                                style: TextStyle(
+                                  color: Color(0xFFD4AF37),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'feed_health_state: ${feedHealth?.state.name ?? 'loading'}',
+                              ),
+                              Text(
+                                'fallback_active: ${feedHealth?.usingColdFallback ?? false}',
+                              ),
+                              Text(
+                                'tier_counts: d=${feedHealth?.sections.discoverable.length ?? 0} w=${feedHealth?.sections.warm.length ?? 0} c=${feedHealth?.sections.cold.length ?? 0} i=${feedHealth?.sections.invalid.length ?? 0}',
+                              ),
+                              Text(
+                                'invalid_rate: ${((feedHealth?.invalidRate ?? 0) * 100).toStringAsFixed(1)}%',
+                              ),
+                              Text(
+                                'stale_rate: ${((feedHealth?.staleRate ?? 0) * 100).toStringAsFixed(1)}%',
+                              ),
+                              Text(
+                                'warm_unknown_freshness: ${feedHealth?.reasonCounts[RoomVisibilityReasonCode.warmUnknownFreshness] ?? 0}',
                               ),
                               const SizedBox(height: 6),
                               const Text(

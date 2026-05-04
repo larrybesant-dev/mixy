@@ -5,7 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/features/room/contracts/room_visibility_contract.dart';
 import 'package:mixvy/models/room_model.dart';
+import 'package:mixvy/services/room_service.dart';
 import '../../auth/controllers/auth_controller.dart';
 
 const _kEnabled = 'after_dark_enabled';
@@ -28,20 +30,18 @@ final afterDarkControllerProvider = Provider<AfterDarkController>((ref) {
 
 final adultRoomsProvider = StreamProvider.autoDispose
     .family<List<RoomModel>, String?>((ref, category) {
-      Query<Map<String, dynamic>> query = ref
-          .watch(firestoreProvider)
-          .collection('rooms')
-          .where('isLive', isEqualTo: true)
-          .where('isAdult', isEqualTo: true)
-          .limit(50);
-
-      if (category != null) {
-        query = query.where('category', isEqualTo: category);
-      }
-
-      return query.snapshots().map((snapshot) {
-        final rooms = snapshot.docs
-            .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
+      return ref
+          .watch(roomServiceProvider)
+          .watchRoomsWithVisibility(
+            category: category,
+            limit: 50,
+            includeAdultRooms: true,
+          )
+          .map((classifiedRooms) {
+        final rooms = classifiedRooms
+            .where((item) => item.tier != RoomVisibilityTier.invalid)
+            .map((item) => item.room)
+            .where((room) => room.isAdult)
             .toList(growable: false);
         rooms.sort((a, b) {
           final aTs = a.createdAt?.seconds ?? 0;

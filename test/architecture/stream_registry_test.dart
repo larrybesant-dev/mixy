@@ -41,6 +41,41 @@ Iterable<({String file, int line, String content})> grep(
   }
 }
 
+const _roomsCollectionPattern = ".collection('rooms')";
+const _roomsCollectionPatternDouble = '.collection("rooms")';
+
+bool _containsIllegalTopLevelRoomsRead(List<String> lines, int anchorLine) {
+  final start = (anchorLine - 4).clamp(0, anchorLine);
+  final end = (anchorLine + 8).clamp(anchorLine + 1, lines.length);
+  final context = lines.sublist(start, end).join(' ');
+
+  final collectionIndex = context.indexOf(_roomsCollectionPattern) >= 0
+      ? context.indexOf(_roomsCollectionPattern)
+      : context.indexOf(_roomsCollectionPatternDouble);
+  if (collectionIndex == -1) {
+    return false;
+  }
+
+  final suffix = context.substring(collectionIndex);
+  final firstDoc = suffix.indexOf('.doc(');
+  final indices = <int>[
+    suffix.indexOf('.where('),
+    suffix.indexOf('.orderBy('),
+    suffix.indexOf('.limit('),
+    suffix.indexOf('.count('),
+    suffix.indexOf('.get('),
+    suffix.indexOf('.snapshots('),
+  ].where((index) => index >= 0).toList(growable: false)
+    ..sort();
+
+  if (indices.isEmpty) {
+    return false;
+  }
+
+  final firstQueryOrRead = indices.first;
+  return firstDoc == -1 || firstQueryOrRead < firstDoc;
+}
+
 // ── canonical paths ───────────────────────────────────────────────────────────
 
 const String _canonicalFirestoreProvider =
@@ -88,6 +123,48 @@ void main() {
         }
       },
     );
+
+    test('Top-level rooms collection reads are owned only by RoomService', () {
+      final violations = <String>[];
+      const canonicalRoomReadFile = 'lib/services/room_service.dart';
+
+      for (final file in dartFiles('lib')) {
+        final rel = p.relative(file.path).replaceAll('\\', '/');
+        if (rel == canonicalRoomReadFile || rel.startsWith('lib/dev/')) {
+          continue;
+        }
+
+        final lines = file.readAsLinesSync();
+        for (var i = 0; i < lines.length; i++) {
+          final trimmed = lines[i].trim();
+          if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+            continue;
+          }
+
+          final touchesRoomsCollection =
+              trimmed.contains(_roomsCollectionPattern) ||
+              trimmed.contains(_roomsCollectionPatternDouble) ||
+              trimmed.contains(".where('isLive'") ||
+              trimmed.contains('.where("isLive"');
+          if (!touchesRoomsCollection) {
+            continue;
+          }
+
+          if (_containsIllegalTopLevelRoomsRead(lines, i)) {
+            violations.add('${rel}:${i + 1}  →  ${trimmed}');
+          }
+        }
+      }
+
+      if (violations.isNotEmpty) {
+        fail(
+          'Top-level rooms collection reads were found outside RoomService.\n'
+          'Discovery and visibility queries must route through '
+          'RoomService.watchRoomsWithVisibility() or a RoomService-owned helper:\n\n'
+          '${violations.join('\n')}',
+        );
+      }
+    });
 
     // ── 2. No raw FirebaseFirestore.instance usage in widgets/screens ─────
     test('Widgets and screens do not call FirebaseFirestore.instance directly', () {

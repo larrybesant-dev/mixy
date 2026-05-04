@@ -8,6 +8,7 @@ import '../../../core/services/feature_gate_service.dart';
 import '../../../presentation/providers/user_provider.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'package:mixvy/services/room_service.dart';
 import '../../../services/moderation_service.dart';
 import 'package:mixvy/features/feed/providers/typing_providers.dart';
 import 'room_firestore_provider.dart';
@@ -49,20 +50,21 @@ final pendingDirectCallRoomProvider =
       }
 
       return ref
-          .watch(roomFirestoreProvider)
-          .collection('rooms')
-          .where('isDirectCall', isEqualTo: true)
-          .where('isLive', isEqualTo: true)
-          .where('calleeId', isEqualTo: uid)
-          .where('callDeclined', isEqualTo: false)
-          .limit(1)
-          .snapshots()
-          .map((snapshot) {
-            if (snapshot.docs.isEmpty) {
+          .watch(roomServiceProvider)
+          .watchPendingDirectCallForCallee(calleeId: uid)
+          .map((roomWithVisibility) {
+            if (roomWithVisibility == null) {
               return null;
             }
-            final doc = snapshot.docs.first;
-            return {'id': doc.id, ...doc.data()};
+
+            final room = roomWithVisibility.room;
+            return <String, dynamic>{
+              'id': room.id,
+              'hostId': room.hostId,
+              'ownerName': room.hostUsername ?? room.name,
+              'visibilityTier': roomWithVisibility.tier.name,
+              'visibilityReason': roomWithVisibility.visibility.reasonCode.name,
+            };
           });
     });
 

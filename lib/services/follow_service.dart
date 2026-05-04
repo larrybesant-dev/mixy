@@ -1,15 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mixvy/core/telemetry/app_telemetry.dart';
 
 import '../services/moderation_service.dart';
+import '../services/room_service.dart';
 
 class FollowService {
   FollowService({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     ModerationService? moderationService,
+    RoomService? roomService,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _auth = auth ?? FirebaseAuth.instance,
+       _roomService = roomService ?? RoomService(firestore: firestore),
        _moderationService =
            moderationService ??
            ModerationService(
@@ -19,6 +23,7 @@ class FollowService {
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final RoomService _roomService;
   final ModerationService _moderationService;
 
   String _asString(dynamic value, {String fallback = ''}) {
@@ -155,26 +160,38 @@ class FollowService {
       throw Exception('You cannot invite this user.');
     }
 
-    final roomsSnapshot = await _firestore
-        .collection('rooms')
-        .where('hostId', isEqualTo: inviterUserId)
-        .limit(10)
-        .get();
+    final hostedRooms = await _roomService.getHostedRoomsWithVisibility(
+      hostId: inviterUserId,
+      limit: 10,
+    );
+    final visibleHostedRooms = hostedRooms
+        .where((item) => item.isVisible)
+        .toList(growable: false);
 
-    final roomDocs = roomsSnapshot.docs;
-    if (roomDocs.isEmpty) {
+    if (visibleHostedRooms.isEmpty) {
+      if (hostedRooms.isNotEmpty) {
+        final blockedRoom = hostedRooms.first;
+        AppTelemetry.logAction(
+          level: 'warning',
+          domain: 'feed',
+          action: 'hosted_room_invite_blocked',
+          message:
+              'Hosted room invite blocked because no hosted room is currently renderable.',
+          roomId: blockedRoom.room.id,
+          userId: inviterUserId,
+          result: blockedRoom.visibility.reasonCode.name,
+          metadata: <String, Object?>{
+            'candidateCount': hostedRooms.length,
+            'tier': blockedRoom.tier.name,
+          },
+        );
+      }
       throw Exception('Create a live room first.');
     }
 
-    final preferredRoom = roomDocs
-        .cast<QueryDocumentSnapshot<Map<String, dynamic>>?>()
-        .firstWhere(
-          (doc) => _asBool(doc?.data()['isLive']),
-          orElse: () => roomDocs.first,
-        );
-    final roomData = preferredRoom?.data() ?? const <String, dynamic>{};
-    final roomId = preferredRoom?.id ?? '';
-    final roomName = _asString(roomData['name']);
+    final preferredRoom = visibleHostedRooms.first.room;
+    final roomId = preferredRoom.id;
+    final roomName = preferredRoom.name;
 
     final inviterSnapshot = await _firestore
         .collection('users')

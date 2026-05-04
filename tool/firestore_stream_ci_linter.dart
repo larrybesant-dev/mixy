@@ -15,6 +15,7 @@
 //   FSL-004  Room domain snapshot outside canonical file         [CRITICAL]
 //   FSL-005  Messaging domain snapshot outside canonical file    [CRITICAL]
 //   FSL-006  Duplicate Firestore collection subscription         [CRITICAL]
+//   FSL-007  Top-level rooms query/read outside RoomService      [CRITICAL]
 //   FCI-001  Direct .snapshots() in feature layer               [HIGH]
 //   FCI-002  FirebaseFirestore.instance used directly            [HIGH]
 //   FCI-003  Raw .listen() on Firestore stream                  [MEDIUM]
@@ -90,6 +91,8 @@ const _canonicalProviderFiles = <String>[
   'lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart',
   'lib/presentation/providers/notification_provider.dart',
 ];
+
+const _roomReadAuthorityFile = 'lib/services/room_service.dart';
 
 // ─── Domain lock configuration ────────────────────────────────────────────────
 
@@ -450,6 +453,111 @@ class _StreamRef {
 }
 
 final _collectionRe = RegExp(r'''\.collection\(\s*['"]([^'"]+)['"]\s*\)''');
+final _roomsCollectionRe = RegExp(r'''\.collection\(\s*['"]rooms['"]\s*\)''');
+
+int _firstIndexOfAny(String source, List<String> needles) {
+  var result = -1;
+  for (final needle in needles) {
+    final index = source.indexOf(needle);
+    if (index == -1) continue;
+    if (result == -1 || index < result) {
+      result = index;
+    }
+  }
+  return result;
+}
+
+bool _containsIllegalTopLevelRoomsRead(String context) {
+  final match = _roomsCollectionRe.firstMatch(context);
+  if (match == null) {
+    return false;
+  }
+
+  final suffix = context.substring(match.start);
+  final firstDoc = suffix.indexOf('.doc(');
+  final firstQueryOp = _firstIndexOfAny(suffix, const <String>[
+    '.where(',
+    '.orderBy(',
+    '.limit(',
+    '.count(',
+  ]);
+  if (firstQueryOp != -1 && (firstDoc == -1 || firstQueryOp < firstDoc)) {
+    return true;
+  }
+
+  final firstReadOp = _firstIndexOfAny(suffix, const <String>[
+    '.get(',
+    '.snapshots(',
+  ]);
+  if (firstReadOp != -1 && (firstDoc == -1 || firstReadOp < firstDoc)) {
+    return true;
+  }
+
+  final firstIsLiveFilter = _firstIndexOfAny(suffix, const <String>[
+    ".where('isLive'",
+    '.where("isLive"',
+  ]);
+  return firstIsLiveFilter != -1 &&
+      (firstDoc == -1 || firstIsLiveFilter < firstDoc);
+}
+
+List<_Violation> _detectIllegalRoomCollectionReads(
+  Map<String, List<String>> allFiles,
+) {
+  final violations = <_Violation>[];
+
+  for (final entry in allFiles.entries) {
+    final file = entry.key.replaceAll('\\', '/');
+    if (file == _roomReadAuthorityFile) {
+      continue;
+    }
+
+    final lines = entry.value;
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final trimmed = line.trim();
+      if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+        continue;
+      }
+
+      final touchesRoomsCollection =
+          _roomsCollectionRe.hasMatch(line) ||
+          line.contains(".where('isLive'") ||
+          line.contains('.where("isLive"');
+      if (!touchesRoomsCollection) {
+        continue;
+      }
+
+      final ctxStart = (i - 4).clamp(0, i);
+      final ctxEnd = (i + 8).clamp(i + 1, lines.length);
+      final context = lines.sublist(ctxStart, ctxEnd).join(' ');
+      if (!_containsIllegalTopLevelRoomsRead(context)) {
+        continue;
+      }
+
+      violations.add(
+        _Violation(
+          ruleId: 'FSL-007',
+          severity: _Severity.critical,
+          file: file,
+          line: i + 1,
+          lineContent: line,
+          issue:
+              'Top-level rooms collection query/read found outside RoomService. '
+              'Discovery and visibility reads must be owned by $_roomReadAuthorityFile.',
+          fix:
+              'Delete this rooms collection read and route through '
+              'RoomService.watchRoomsWithVisibility() or a RoomService-owned '
+              'classified helper. Do not query the rooms collection directly '
+              'from providers, UI, or non-RoomService services.',
+          isError: true,
+        ),
+      );
+    }
+  }
+
+  return violations;
+}
 
 List<_Violation> _detectDuplicateStreams(Map<String, List<String>> allFiles) {
   // collection → list of stream refs (file + line).
@@ -650,6 +758,10 @@ void main(List<String> args) {
 
   allViolations.addAll(_detectDuplicateStreams(allFileLines));
 
+  // ── Phase 4: Room authority hard lock (FSL-007) ─────────────────────────
+
+  allViolations.addAll(_detectIllegalRoomCollectionReads(allFileLines));
+
   // ── Output ───────────────────────────────────────────────────────────────
 
   if (allViolations.isEmpty) {
@@ -775,6 +887,8 @@ CRITICAL Rules (FSL) — always fail CI, no exceptions:
   FSL-005  Messaging domain snapshot outside canonical file
            → Canonical: lib/features/messaging/providers/messaging_provider.dart
   FSL-006  Duplicate Firestore collection subscription (cross-file analysis)
+  FSL-007  Top-level rooms collection query/read outside RoomService
+           → Canonical: lib/services/room_service.dart
 
 Inspection Rules (FCI) — fail by path and --strict:
   FCI-001  Direct .snapshots() in feature layer          [HIGH]

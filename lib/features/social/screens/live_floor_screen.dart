@@ -227,9 +227,22 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final roomsAsync = ref.watch(roomsStreamProvider);
+    final sectionsAsync = ref.watch(roomVisibilitySectionsProvider);
     final hp = context.pageHorizontalPadding;
-    final previewRooms = _sorted(roomsAsync.valueOrNull ?? const <RoomModel>[]);
+    final previewSections = sectionsAsync.valueOrNull;
+    final previewPrimaryRooms = _sorted(
+      previewSections?.primaryLive
+              .map((item) => item.room)
+              .toList(growable: false) ??
+          const <RoomModel>[],
+    );
+    final previewColdRooms = _sorted(
+      previewSections?.cold.map((item) => item.room).toList(growable: false) ??
+          const <RoomModel>[],
+    );
+    final previewRooms = previewPrimaryRooms.isNotEmpty
+        ? previewPrimaryRooms
+        : previewColdRooms;
     final listenerCount = previewRooms.fold<int>(
       0,
       (sum, room) =>
@@ -238,19 +251,23 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
               ? room.memberCount
               : room.stageUserIds.length + room.audienceUserIds.length),
     );
-    final streamStateLabel = roomsAsync.isLoading
+    final streamStateLabel = sectionsAsync.isLoading
         ? 'loading'
-        : roomsAsync.hasError
+      : sectionsAsync.hasError
         ? 'error'
         : previewRooms.isEmpty
         ? 'empty'
         : 'ready';
-    final visibilityHint = roomsAsync.isLoading
+    final visibilityHint = sectionsAsync.isLoading
         ? 'Waiting for the stabilized live room stream.'
-        : roomsAsync.hasError
+      : sectionsAsync.hasError
         ? 'The room stream returned an error, so visible rooms may be temporarily hidden.'
-        : previewRooms.isEmpty
-        ? 'No rooms currently match live visibility rules.'
+      : previewSections != null &&
+          previewSections.primaryLive.isEmpty &&
+          previewSections.cold.isNotEmpty
+      ? 'Primary rooms are empty; showing cold fallback while freshness recovers.'
+      : previewRooms.isEmpty
+      ? 'No rooms currently match visibility tiers.'
         : 'Rooms are visible and sorted for quick entry.';
 
     RoomLayoutV1.debugAssertOrder(const <String>[
@@ -318,7 +335,7 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                   key: RoomLayoutV1.heroKey,
                   roomCount: previewRooms.length,
                   listenerCount: listenerCount,
-                  isLoading: roomsAsync.isLoading,
+                  isLoading: sectionsAsync.isLoading,
                   sortLabel: _sort.label,
                   onQuickJoin: () {
                     if (previewRooms.isNotEmpty) {
@@ -402,14 +419,15 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                       padding: EdgeInsets.fromLTRB(hp, 0, hp, 8),
                       child: RoomsVisibilityDebugPanel(
                         streamStateLabel: streamStateLabel,
-                        roomCount: roomsAsync.valueOrNull?.length ?? 0,
-                        visibleRoomCount: previewRooms.length,
+                        roomCount: previewSections?.totalClassified ?? 0,
+                        visibleRoomCount:
+                            previewSections?.allVisible.length ?? 0,
                         sortLabel: _sort.label,
                         hint: visibilityHint,
                       ),
                     ),
                     Expanded(
-                      child: roomsAsync.when(
+                      child: sectionsAsync.when(
                         loading: () => const _FloorLoadingShimmer(),
                         error: (e, _) => Padding(
                           padding: EdgeInsets.all(hp),
@@ -422,9 +440,26 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                             ),
                           ),
                         ),
-                        data: (rooms) {
-                          final sorted = _sorted(rooms);
-                          if (sorted.isEmpty) {
+                        data: (sections) {
+                          final discoverable = _sorted(
+                            sections.discoverable
+                                .map((item) => item.room)
+                                .toList(growable: false),
+                          );
+                          final warm = _sorted(
+                            sections.warm
+                                .map((item) => item.room)
+                                .toList(growable: false),
+                          );
+                          final cold = _sorted(
+                            sections.cold
+                                .map((item) => item.room)
+                                .toList(growable: false),
+                          );
+
+                          if (discoverable.isEmpty &&
+                              warm.isEmpty &&
+                              cold.isEmpty) {
                             return Padding(
                               padding: EdgeInsets.all(hp),
                               child: _EmptyFloor(
@@ -433,17 +468,28 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                             );
                           }
 
-                          return ListView.builder(
+                          return ListView(
                             padding: EdgeInsets.only(bottom: 100),
-                            itemCount: sorted.length,
-                            itemBuilder: (ctx, i) {
-                              final room = sorted[i];
-                              return _FloorRoomTile(
-                                room: room,
-                                rank: i + 1,
-                                onTap: () => context.go('/room/${room.id}'),
-                              );
-                            },
+                            children: [
+                              _TierSection(
+                                title: 'Discoverable',
+                                subtitle: 'Fresh activity right now',
+                                rooms: discoverable,
+                                color: VelvetNoir.primary,
+                              ),
+                              _TierSection(
+                                title: 'Warm',
+                                subtitle: 'Still active and joinable',
+                                rooms: warm,
+                                color: const Color(0xFFE2A85A),
+                              ),
+                              _TierSection(
+                                title: 'Cold',
+                                subtitle: 'Recent rooms while live traffic recovers',
+                                rooms: cold,
+                                color: const Color(0xFF9A7A5A),
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -453,6 +499,73 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TierSection extends StatelessWidget {
+  const _TierSection({
+    required this.title,
+    required this.subtitle,
+    required this.rooms,
+    required this.color,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<RoomModel> rooms;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rooms.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$title (${rooms.length})',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: VelvetNoir.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: GoogleFonts.raleway(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: VelvetNoir.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...rooms.asMap().entries.map((entry) {
+            final index = entry.key;
+            final room = entry.value;
+            return _FloorRoomTile(
+              room: room,
+              rank: index + 1,
+              onTap: () => context.go('/room/${room.id}'),
+            );
+          }),
         ],
       ),
     );

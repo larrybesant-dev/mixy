@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-04-30T00:11:47.956Z",
-  "finishedAt": "2026-04-30T00:11:54.165Z",
-  "durationMs": 6209,
-  "passed": false,
-  "failCount": 2,
+  "startedAt": "2026-05-04T02:59:33.198Z",
+  "finishedAt": "2026-05-04T02:59:38.878Z",
+  "durationMs": 5680,
+  "passed": true,
+  "failCount": 0,
   "warnCount": 1,
   "totalChecks": 31,
   "checks": [
@@ -46,9 +46,9 @@
     },
     {
       "category": "data",
-      "name": "Rooms sample (19 docs)",
-      "status": "FAIL",
-      "detail": "9 violations — run npm run repair:rooms:apply"
+      "name": "Rooms sample (10 docs)",
+      "status": "PASS",
+      "detail": null
     },
     {
       "category": "data",
@@ -78,7 +78,7 @@
       "category": "arch",
       "name": "No raw FirebaseFirestore.instance in UI layer",
       "status": "WARN",
-      "detail": "25 usages: lib\\features\\after_dark\\screens\\after_dark_create_lounge_screen.dart:102, lib\\features\\after_dark\\screens\\after_dark_home_screen.dart:16, lib\\features\\after_dark\\screens\\after_dark_lounges_screen.dart:27"
+      "detail": "12 usages: lib\\features\\after_dark\\screens\\after_dark_create_lounge_screen.dart:104, lib\\features\\after_dark\\screens\\after_dark_profile_screen.dart:41, lib\\features\\after_dark\\screens\\after_dark_profile_screen.dart:61"
     },
     {
       "category": "rules",
@@ -178,9 +178,9 @@
     },
     {
       "category": "security",
-      "name": "No hardcoded secrets (AIza[0-9A-Za-z-_]{35…)",
-      "status": "FAIL",
-      "detail": "found in: lib\\firebase_options.generated.dart:47, lib\\firebase_options.generated.dart:57, lib\\firebase_options.generated.dart:65"
+      "name": "No hardcoded API keys or secrets in lib/",
+      "status": "PASS",
+      "detail": null
     },
     {
       "category": "security",

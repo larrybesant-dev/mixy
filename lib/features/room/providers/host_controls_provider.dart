@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/telemetry/app_telemetry.dart';
 
 import '../../../services/notification_service.dart';
 import '../controllers/room_state.dart';
@@ -156,6 +157,15 @@ class HostControls {
     String actorId = '',
   }) async {
     await _participantRef(roomId, userId).update({'role': 'moderator'});
+    AppTelemetry.logAction(
+      domain: 'ownership',
+      action: 'promote_moderator',
+      message: 'Moderator promotion applied.',
+      roomId: roomId,
+      userId: actorId,
+      result: 'success',
+      metadata: <String, Object?>{'targetUserId': userId},
+    );
     _modLog(
       roomId,
       action: 'promote_moderator',
@@ -342,6 +352,17 @@ class HostControls {
       'lastActiveAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
     await batch.commit();
+
+    AppTelemetry.logAction(
+      level: 'warning',
+      domain: 'ownership',
+      action: 'host_transfer',
+      message: 'Room host ownership transferred.',
+      roomId: roomId,
+      userId: fromUserId,
+      result: 'success',
+      metadata: <String, Object?>{'toUserId': toUserId},
+    );
 
     final notifier = NotificationService(firestore: _db);
     await notifier.inAppNotification(

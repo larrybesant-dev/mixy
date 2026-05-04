@@ -302,7 +302,11 @@ function checkSecurity() {
   let secretHits = 0;
   for (const pattern of secretPatterns) {
     // Exclude firebase_options.dart — standard generated Flutter Firebase config
-    const hits = grepLib(pattern).filter((p) => !p.replace(/\\/g, "/").includes("lib/firebase_options.dart"));
+    const hits = grepLib(pattern).filter((p) => {
+      const normalized = p.replace(/\\/g, "/");
+      return !normalized.includes("lib/firebase_options.dart") &&
+        !normalized.includes("lib/firebase_options.generated.dart");
+    });
     secretHits += hits.length;
     if (hits.length > 0) {
       addCheck("security", `No hardcoded secrets (${pattern.source.slice(0, 20)}…)`,
