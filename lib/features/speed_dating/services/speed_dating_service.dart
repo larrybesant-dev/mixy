@@ -53,6 +53,7 @@ class SpeedDatingService {
     return _firestore
         .collection('speed_dating_matches')
         .where('participantIds', arrayContains: currentUserId)
+        .limit(50)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList(),
@@ -219,7 +220,7 @@ class SpeedDatingService {
   Stream<SpeedDatingQueueResult?> watchQueueEntry(String userId) {
     return _firestore
         .collection('speed_dating_queue')
-        .doc(userId)
+        .doc(userId) // Single-document read — .limit(1) not applicable for document snapshots.
         .snapshots()
         .map((doc) {
           if (!doc.exists) return null;
@@ -237,7 +238,7 @@ class SpeedDatingService {
   Stream<Map<String, dynamic>?> watchSession(String sessionId) {
     return _firestore
         .collection('speed_dating_sessions')
-        .doc(sessionId)
+        .doc(sessionId) // Single-document read — .limit(1) not applicable for document snapshots.
         .snapshots()
         .map((doc) => doc.exists ? doc.data() : null);
   }

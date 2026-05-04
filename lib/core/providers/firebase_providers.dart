@@ -21,7 +21,7 @@ final firestoreProvider = Provider<FirebaseFirestore>(
 /// All user-domain feature providers should derive from this provider instead
 /// of opening their own `users/{uid}` snapshots streams.
 final userDocStreamProvider =
-    StreamProvider.family<DocumentSnapshot<Map<String, dynamic>>?, String>((
+    StreamProvider.autoDispose.family<DocumentSnapshot<Map<String, dynamic>>?, String>((
       ref,
       userId,
     ) {

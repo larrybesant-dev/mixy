@@ -52,6 +52,7 @@ final roomPolicyProvider = StreamProvider.autoDispose
       final roomRef = firestore.collection('rooms').doc(roomId);
       final policyRef = roomRef.collection('policies').doc('settings');
 
+      // Single-document read — .limit(1) not applicable for document snapshots.
       return policyRef.snapshots().map((snapshot) {
         final data = snapshot.data() ?? <String, dynamic>{};
         if (data.isEmpty) {

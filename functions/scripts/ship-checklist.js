@@ -90,6 +90,93 @@ function grepLib(pattern, opts = {}) {
   return hits;
 }
 
+function findIllegalTopLevelRoomReads() {
+  const hits = [];
+  const canonicalFile = "lib/services/room_service.dart";
+
+  function firstIndexOfAny(source, needles) {
+    let result = -1;
+    for (const needle of needles) {
+      const index = source.indexOf(needle);
+      if (index === -1) continue;
+      if (result === -1 || index < result) {
+        result = index;
+      }
+    }
+    return result;
+  }
+
+  function containsIllegalTopLevelRoomsRead(context) {
+    const roomsCollectionMatch = context.match(/\.collection\(\s*['"]rooms['"]\s*\)/);
+    if (!roomsCollectionMatch) return false;
+
+    const suffix = context.slice(roomsCollectionMatch.index);
+    const firstDoc = suffix.indexOf(".doc(");
+    const firstQueryOp = firstIndexOfAny(suffix, [
+      ".where(",
+      ".orderBy(",
+      ".limit(",
+      ".count(",
+    ]);
+    if (firstQueryOp !== -1 && (firstDoc === -1 || firstQueryOp < firstDoc)) {
+      return true;
+    }
+
+    const firstReadOp = firstIndexOfAny(suffix, [".get(", ".snapshots("]);
+    if (firstReadOp !== -1 && (firstDoc === -1 || firstReadOp < firstDoc)) {
+      return true;
+    }
+
+    const firstIsLiveFilter = firstIndexOfAny(suffix, [
+      ".where('isLive'",
+      '.where("isLive"',
+    ]);
+    return firstIsLiveFilter !== -1 &&
+      (firstDoc === -1 || firstIsLiveFilter < firstDoc);
+  }
+
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.endsWith(".dart")) {
+        continue;
+      }
+
+      const relative = path.relative(WORKSPACE_ROOT, full).replace(/\\/g, "/");
+      if (relative === canonicalFile || relative.startsWith("lib/dev/")) {
+        continue;
+      }
+
+      const lines = fs.readFileSync(full, "utf8").split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
+        if (!trimmed.includes(".collection('rooms')") &&
+            !trimmed.includes('.collection("rooms")') &&
+            !trimmed.includes(".where('isLive'") &&
+            !trimmed.includes('.where("isLive"')) {
+          continue;
+        }
+
+        const start = Math.max(0, i - 4);
+        const end = Math.min(lines.length, i + 8);
+        const context = lines.slice(start, end).join(" ");
+        if (containsIllegalTopLevelRoomsRead(context)) {
+          hits.push(`${relative}:${i + 1}`);
+        }
+      }
+    }
+  }
+
+  walk(LIB_DIR);
+  return hits;
+}
+
 // ── Section 1: Environment ────────────────────────────────────────────────────
 async function checkEnvironment() {
   // Node version
@@ -210,6 +297,12 @@ function checkArchitecture() {
     rawInstanceUsage.length === 0 ? "PASS" : "WARN",
     rawInstanceUsage.length > 0 ?
       `${rawInstanceUsage.length} usages: ${rawInstanceUsage.slice(0, 3).join(", ")}` : null);
+
+  const illegalRoomReads = findIllegalTopLevelRoomReads();
+  addCheck("arch", "Top-level rooms reads owned only by RoomService",
+    illegalRoomReads.length === 0 ? "PASS" : "FAIL",
+    illegalRoomReads.length > 0 ?
+      `${illegalRoomReads.length} violations: ${illegalRoomReads.slice(0, 3).join(", ")}` : null);
 }
 
 // ── Section 4: Rules ──────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ final debugFirestorePresenceWatch = Provider.autoDispose
       return ref
           .watch(firestoreProvider)
           .collection('presence')
-          .doc(uid)
+          .doc(uid) // Single-document read — .limit(1) not applicable for document snapshots.
           .snapshots()
           .map((doc) => doc.data());
     });

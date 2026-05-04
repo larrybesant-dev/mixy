@@ -15,7 +15,7 @@ final isAdminProvider = StreamProvider<bool>((ref) {
       .collection('roles')
       .doc('admins')
       .collection('members')
-      .doc(uid)
+      .doc(uid) // Single-document read — .limit(1) not applicable for document snapshots.
       .snapshots()
       .map((doc) => doc.exists);
 });

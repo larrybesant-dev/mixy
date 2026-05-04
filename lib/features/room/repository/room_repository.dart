@@ -243,7 +243,7 @@ class RoomRepository {
   }
 
   Stream<List<String>> watchSpeakerUserIds(String roomId) {
-    return _speakerCollection(roomId).snapshots().map((snapshot) {
+    return _speakerCollection(roomId).limit(50).snapshots().map((snapshot) {
       final userIds = snapshot.docs
           .map((doc) {
             final data = doc.data();

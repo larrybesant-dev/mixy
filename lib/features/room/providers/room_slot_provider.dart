@@ -22,6 +22,7 @@ final roomSlotsProvider = StreamProvider.autoDispose
             .collection('rooms')
             .doc(roomId)
             .collection('slots')
+            .limit(50)
             .snapshots()
             .map(
               (snap) => snap.docs

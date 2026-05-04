@@ -21,6 +21,7 @@ final bookmarkedPostsProvider = StreamProvider.autoDispose
           .doc(userId)
           .collection('bookmarks')
           .orderBy('savedAt', descending: true)
+          .limit(50)
           .snapshots()
           .asyncMap((snapshot) async {
             final bookmarks = <Map<String, dynamic>>[];

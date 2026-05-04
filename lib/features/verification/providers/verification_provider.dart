@@ -31,6 +31,7 @@ final userVerificationProvider = StreamProvider.autoDispose
       final verificationRef = firestore.collection('verification').doc(userId);
       final usersRef = firestore.collection('users').doc(userId);
 
+      // Single-document read — .limit(1) not applicable for document snapshots.
       return verificationRef.snapshots().asyncMap((snapshot) async {
         if (snapshot.exists && snapshot.data() != null) {
           return _asBool(snapshot.data()?['isVerified'], fallback: false);
@@ -104,7 +105,7 @@ final verificationRequestProvider =
       return ref
           .watch(firestoreProvider)
           .collection('verification_requests')
-          .doc(uid)
+          .doc(uid) // Single-document read — .limit(1) not applicable for document snapshots.
           .snapshots()
           .map((doc) => doc.exists ? doc.data() : null);
     });

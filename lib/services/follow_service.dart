@@ -36,25 +36,6 @@ class FollowService {
     return fallback;
   }
 
-  bool _asBool(dynamic value, {bool fallback = false}) {
-    if (value is bool) {
-      return value;
-    }
-    if (value is num) {
-      return value != 0;
-    }
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      if (normalized == 'true' || normalized == '1') {
-        return true;
-      }
-      if (normalized == 'false' || normalized == '0') {
-        return false;
-      }
-    }
-    return fallback;
-  }
-
   String _followDocId(String followerUserId, String followedUserId) {
     return '${followerUserId}_$followedUserId';
   }

@@ -133,7 +133,7 @@ final conversationDocProvider = StreamProvider.autoDispose
       final firestore = ref.watch(firestoreProvider);
       return firestore
           .collection('conversations')
-          .doc(conversationId)
+          .doc(conversationId) // Single-document read — .limit(1) not applicable for document snapshots.
           .snapshots()
           .map((snap) {
             if (!snap.exists) {
@@ -804,7 +804,7 @@ final typingUsersProvider = StreamProvider.autoDispose.family<Set<String>, Strin
       .collection('conversations')
       .doc(conversationId)
       .collection('ephemeral')
-      .doc('typing')
+      .doc('typing') // Single-document read — .limit(1) not applicable for document snapshots.
       .snapshots()
       .map((doc) {
         final raw = doc.data()?['users'] as Map<String, dynamic>?;

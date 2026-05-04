@@ -49,7 +49,7 @@ bool _containsIllegalTopLevelRoomsRead(List<String> lines, int anchorLine) {
   final end = (anchorLine + 8).clamp(anchorLine + 1, lines.length);
   final context = lines.sublist(start, end).join(' ');
 
-  final collectionIndex = context.indexOf(_roomsCollectionPattern) >= 0
+    final collectionIndex = context.contains(_roomsCollectionPattern)
       ? context.indexOf(_roomsCollectionPattern)
       : context.indexOf(_roomsCollectionPatternDouble);
   if (collectionIndex == -1) {
@@ -151,7 +151,7 @@ void main() {
           }
 
           if (_containsIllegalTopLevelRoomsRead(lines, i)) {
-            violations.add('${rel}:${i + 1}  →  ${trimmed}');
+            violations.add('$rel:${i + 1}  →  $trimmed');
           }
         }
       }

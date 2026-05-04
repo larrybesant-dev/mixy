@@ -337,6 +337,7 @@ final roomMicAccessRequestsProvider = StreamProvider.autoDispose
           .doc(roomId)
           .collection('mic_access_requests')
           .orderBy('createdAt', descending: true)
+          .limit(50)
           .snapshots()
           .map((snapshot) {
             final requests = snapshot.docs

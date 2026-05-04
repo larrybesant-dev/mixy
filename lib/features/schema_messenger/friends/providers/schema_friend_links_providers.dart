@@ -140,7 +140,7 @@ final schemaFriendIdentityProvider = StreamProvider.autoDispose
 
         userSub = firestore
             .collection('users')
-            .doc(friendId)
+            .doc(friendId) // Single-document read — .limit(1) not applicable for document snapshots.
             .snapshots()
             .listen((snapshot) {
               if (disposed || controller.isClosed) return;

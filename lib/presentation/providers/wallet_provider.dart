@@ -37,6 +37,7 @@ final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
   }
 
   final firestore = ref.watch(walletFirestoreProvider);
+  // Single-document read — .limit(1) not applicable for document snapshots.
   final docStream = firestore.collection('wallets').doc(userId).snapshots();
 
   return docStream.asyncMap((walletDoc) async {

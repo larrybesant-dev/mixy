@@ -9,6 +9,7 @@ final groupsProvider = StreamProvider<List<Group>>((ref) {
   return firestore
       .collection('groups')
       .orderBy('createdAt', descending: true)
+      .limit(50)
       .snapshots()
       .map(
         (snapshot) => snapshot.docs
@@ -18,12 +19,13 @@ final groupsProvider = StreamProvider<List<Group>>((ref) {
 });
 
 // Get single group details
-final groupDetailsProvider = StreamProvider.family<Group?, String>((
+final groupDetailsProvider = StreamProvider.autoDispose.family<Group?, String>((
   ref,
   groupId,
 ) {
   final firestore = ref.watch(firestoreProvider);
-  return firestore.collection('groups').doc(groupId).snapshots().map((
+  return firestore.collection('groups').doc(groupId) // Single-document read — .limit(1) not applicable here.
+      .snapshots().map((
     snapshot,
   ) {
     if (!snapshot.exists) return null;
@@ -34,7 +36,7 @@ final groupDetailsProvider = StreamProvider.family<Group?, String>((
 });
 
 // Get user's groups
-final userGroupsProvider = StreamProvider.family<List<Group>, String>((
+final userGroupsProvider = StreamProvider.autoDispose.family<List<Group>, String>((
   ref,
   userId,
 ) {
@@ -42,6 +44,7 @@ final userGroupsProvider = StreamProvider.family<List<Group>, String>((
   return firestore
       .collection('groups')
       .where('memberIds', arrayContains: userId)
+      .limit(100)
       .snapshots()
       .map(
         (snapshot) => snapshot.docs
@@ -51,7 +54,7 @@ final userGroupsProvider = StreamProvider.family<List<Group>, String>((
 });
 
 // Get posts in a group
-final groupPostsProvider = StreamProvider.family<List<GroupPost>, String>((
+final groupPostsProvider = StreamProvider.autoDispose.family<List<GroupPost>, String>((
   ref,
   groupId,
 ) {
@@ -61,6 +64,7 @@ final groupPostsProvider = StreamProvider.family<List<GroupPost>, String>((
       .doc(groupId)
       .collection('posts')
       .orderBy('createdAt', descending: true)
+      .limit(50)
       .snapshots()
       .map(
         (snapshot) => snapshot.docs

@@ -179,6 +179,7 @@ final pendingCamViewRequestsProvider = StreamProvider.autoDispose
           .doc(params.roomId)
           .collection('cam_view_requests')
           .where('targetId', isEqualTo: params.targetId)
+          .limit(50)
           .snapshots()
           .map((qs) {
             final requests =

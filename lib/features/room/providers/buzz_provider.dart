@@ -55,6 +55,7 @@ final incomingBuzzStreamProvider = StreamProvider.autoDispose
           .collection('buzz_events')
           .where('toUserId', isEqualTo: params.currentUserId)
           .where('sentAt', isGreaterThan: Timestamp.fromDate(since))
+          .limit(50)
           .snapshots()
           .map(
             (snap) => snap.docs

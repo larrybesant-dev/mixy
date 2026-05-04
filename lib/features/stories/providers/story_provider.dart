@@ -171,6 +171,7 @@ final myStoriesProvider = StreamProvider.autoDispose
           .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
           .orderBy('expiresAt')
           .orderBy('createdAt', descending: true)
+          .limit(50)
           .snapshots()
           .map((snapshot) {
             return snapshot.docs

@@ -88,6 +88,7 @@ const _canonicalProviderFiles = <String>[
   'lib/features/feed/providers/reaction_providers.dart',
   'lib/features/verification/providers/verification_provider.dart',
   'lib/features/schema_messenger/messages/providers/schema_conversations_providers.dart',
+  'lib/features/groups/providers/groups_provider.dart',
   'lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart',
   'lib/presentation/providers/notification_provider.dart',
 ];

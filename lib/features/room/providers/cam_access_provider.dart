@@ -122,6 +122,7 @@ final roomCamAccessRequestsProvider = StreamProvider.autoDispose
           .doc(roomId)
           .collection('cam_access_requests')
           .orderBy('createdAt', descending: true)
+          .limit(50)
           .snapshots()
           .map(
             (snapshot) => snapshot.docs
