@@ -1,13 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mixvy/core/providers/guest_mode_provider.dart';
 import 'package:mixvy/core/services/first_run_service.dart';
-import 'package:mixvy/core/services/guest_session_service.dart';
 import 'package:mixvy/core/theme.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/presentation/providers/app_settings_provider.dart';
 import 'package:mixvy/services/analytics_service.dart';
 import 'package:mixvy/shared/widgets/app_page_scaffold.dart';
@@ -125,10 +123,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _skipOnboarding() async {
     if (_submitting) return;
     await FirstRunService.markOnboardingSeen();
-    // Enter guest-browse mode so the redirect guard lets /home through
-    // without a Firebase uid.
-    await GuestSessionService.enterAsGuest();
-    ref.read(guestModeProvider.notifier).state = true;
+    await ref.read(appSettingsControllerProvider.notifier).acceptCurrentLegal();
     if (!mounted) return;
     context.go('/home');
   }
@@ -155,7 +150,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (_selectedInterests.isNotEmpty) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {
-          await FirebaseFirestore.instance.collection('users').doc(uid).update(
+          await ref.read(firestoreProvider).collection('users').doc(uid).update(
             <String, dynamic>{
               'interests': _selectedInterests.toList(growable: false),
             },

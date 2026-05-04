@@ -66,6 +66,7 @@ const _serviceCorePaths = <String>{
   'lib/services/',
   'lib/core/',
   'lib/observability/',
+  'lib/dev/',
 };
 
 /// Paths where non-critical rule violations are treated as errors.
@@ -91,6 +92,12 @@ const _canonicalProviderFiles = <String>[
   'lib/features/groups/providers/groups_provider.dart',
   'lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart',
   'lib/presentation/providers/notification_provider.dart',
+  // Domain-specific stream authority files — each owns a single Firestore domain.
+  'lib/features/auth/providers/admin_provider.dart',
+  'lib/features/room/providers/host_provider.dart',
+  'lib/features/room/providers/room_gift_provider.dart',
+  'lib/presentation/providers/wallet_provider.dart',
+  'lib/features/payments/admin_entitlement_providers.dart',
 ];
 
 const _roomReadAuthorityFile = 'lib/services/room_service.dart';

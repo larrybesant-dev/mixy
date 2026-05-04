@@ -10,6 +10,7 @@ import 'package:mixvy/services/profile_service.dart';
 import '../auth/controllers/auth_controller.dart';
 import '../../core/events/app_event.dart';
 import '../../core/events/app_event_bus.dart';
+import '../../core/providers/firebase_providers.dart';
 import '../../models/user_model.dart';
 
 class ProfileState {
@@ -208,19 +209,24 @@ final profileControllerProvider =
 
 class ProfileController extends Notifier<ProfileState> {
   final FirebaseAuth _auth;
-  final ProfileService _profileService;
+  final FirebaseFirestore? _firestore;
+  final ProfileService? _providedProfileService;
+  late final ProfileService _profileService;
 
   ProfileController({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     ProfileService? profileService,
   }) : _auth = auth ?? FirebaseAuth.instance,
-       _profileService =
-           profileService ??
-           ProfileService(firestore: firestore ?? FirebaseFirestore.instance);
+       _firestore = firestore,
+       _providedProfileService = profileService;
 
   @override
   ProfileState build() {
+    _profileService =
+        _providedProfileService ??
+        ProfileService(firestore: _firestore ?? ref.read(firestoreProvider));
+
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       final previousUid = previous?.uid?.trim();
       final nextUid = next.uid?.trim();

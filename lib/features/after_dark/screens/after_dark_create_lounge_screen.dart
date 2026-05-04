@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../services/room_service.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../theme/after_dark_theme.dart';
@@ -101,7 +102,7 @@ class _AfterDarkCreateLoungeScreenState
         tags: tags,
       );
       if (_privacy == _Privacy.private) {
-        await FirebaseFirestore.instance.collection('rooms').doc(roomId).update(
+        await ref.read(firestoreProvider).collection('rooms').doc(roomId).update(
           {'isLocked': true, 'updatedAt': FieldValue.serverTimestamp()},
         );
       }

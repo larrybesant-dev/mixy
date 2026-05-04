@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mixvy/core/providers/guest_mode_provider.dart';
 import 'package:mixvy/core/providers/session_capabilities_provider.dart';
 
 /// Gold / Wine / Cream brand tokens (duplicated here to avoid a
@@ -12,9 +11,9 @@ const _wine = Color(0xFF781E2B);
 const _surface = Color(0xFF0B0B0B);
 const _cream = Color(0xFFF7EDE2);
 
-/// Shows an auth gate bottom sheet when the current user is browsing as a
-/// guest and tries to perform a write action (join room, follow, send
-/// message, etc.).
+/// Shows an auth gate bottom sheet when the current user is not authenticated
+/// and tries to perform a restricted action (join room, follow, send message,
+/// etc.).
 ///
 /// Usage:
 /// ```dart
@@ -22,8 +21,8 @@ const _cream = Color(0xFFF7EDE2);
 /// // ... proceed with the action
 /// ```
 ///
-/// Returns `true` if the user already has an account (or just signed in).
-/// Returns `false` if the user is a guest and was shown the gate.
+/// Returns `true` if the user is authenticated.
+/// Returns `false` if the user is unauthenticated and was shown the gate.
 abstract final class GuestAuthGate {
   static Future<bool> requireCapability(
     BuildContext context,
@@ -131,26 +130,15 @@ abstract final class GuestAuthGate {
     }
   }
 
-  /// Checks whether the user is in guest mode.  If so, shows the gate bottom
-  /// sheet and returns `false`.  Otherwise returns `true` immediately.
+  /// Checks whether the current session is authenticated. If not, shows the
+  /// gate bottom sheet and returns `false`.
   static Future<bool> gate(
     BuildContext context,
     WidgetRef ref, {
     String? actionHint,
   }) async {
-    final isGuest = ref.read(guestModeProvider);
-    return gateForGuestFlag(context, isGuest: isGuest, actionHint: actionHint);
-  }
-
-  /// Same as [gate] but accepts a plain boolean guest flag. Useful in
-  /// widgets that do not have a [WidgetRef] (for example plain StatelessWidget
-  /// helpers that can still read providers via `ProviderScope.containerOf`).
-  static Future<bool> gateForGuestFlag(
-    BuildContext context, {
-    required bool isGuest,
-    String? actionHint,
-  }) async {
-    if (!isGuest) return true;
+    final session = ref.read(sessionCapabilitiesProvider);
+    if (session.isAuthenticated) return true;
     await _showGateSheet(context, actionHint: actionHint);
     return false;
   }

@@ -8,6 +8,8 @@ import '../../features/profile/profile_screen.dart';
 import '../../features/profile/user_profile_screen.dart';
 import '../../features/social/screens/live_floor_screen.dart';
 import '../../features/speed_dating/screens/speed_dating_screen.dart';
+import '../../core/routing/auth_invariant.dart';
+import '../../observability/startup_timeline.dart';
 import '../../presentation/providers/user_provider.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -32,6 +34,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   late int _index;
 
   void _onDestinationSelected(int value) {
+    StartupProfiler.instance.markFirstUserAction(
+      context: 'bottom_nav_tab_$value',
+    );
     setState(() => _index = value);
 
     final router = GoRouter.maybeOf(context);
@@ -58,8 +63,9 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   Widget _buildActivePage() {
     final user = ref.watch(userProvider);
+
     if (user == null) {
-      return const Center(child: CircularProgressIndicator());
+      return AuthInvariant.redirectToAuth();
     }
 
     switch (_index) {

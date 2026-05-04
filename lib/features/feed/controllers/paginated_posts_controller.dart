@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/feature_gate_service.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../models/post_model.dart';
 
 class PaginatedPostsState {
@@ -97,5 +98,5 @@ final paginatedPostsProvider =
       PaginatedPostsController,
       PaginatedPostsState
     >((ref) {
-      return PaginatedPostsController(FirebaseFirestore.instance, ref);
+      return PaginatedPostsController(ref.read(firestoreProvider), ref);
     });

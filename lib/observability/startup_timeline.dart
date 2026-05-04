@@ -5,6 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'startup_timeline_runtime_sink.dart';
 import 'system_event_bus.dart';
 
+// ---------------------------------------------------------------------------
+// Internal helpers — Timeline events work in debug AND profile mode and are
+// visible in the DevTools Performance tab. They are no-ops in release builds
+// when the observatory is absent, so there is zero overhead at launch.
+// ---------------------------------------------------------------------------
+
 const bool kStartupDebug = true;
 
 enum StartupCheckpoint {
@@ -13,6 +19,10 @@ enum StartupCheckpoint {
   firebaseReady,
   bootstrapResolved,
   firstFrameRendered,
+  firstInteractiveReady,
+  /// Fired on the first deliberate user gesture after the app is interactive.
+  /// This closes the loop between "system ready" and "user felt ready".
+  firstUserAction,
 }
 
 enum BootstrapResolution { ready, degraded, failed }
@@ -23,13 +33,23 @@ enum BootstrapResolution { ready, degraded, failed }
 class StartupProfiler {
   StartupProfiler._()
     : startTime = DateTime.now(),
-      _elapsed = Stopwatch()..start();
+      _elapsed = Stopwatch()..start() {
+    // Open the root timeline block immediately when the profiler is created.
+    // This is visible in the DevTools Performance → Timeline view.
+    developer.Timeline.startSync(
+      'MixVy:AppBoot',
+      arguments: <String, dynamic>{'launch_type': 'cold'},
+    );
+  }
 
   static final StartupProfiler instance = StartupProfiler._();
 
   final DateTime startTime;
   final Stopwatch _elapsed;
   final Set<StartupCheckpoint> _marks = <StartupCheckpoint>{};
+  DateTime? _firstFrameTime;
+  DateTime? _firstInteractiveTime;
+  DateTime? _warmStartTime;
 
   void markMainStart() {
     _mark(StartupCheckpoint.mainStart);
@@ -68,7 +88,123 @@ class StartupProfiler {
   }
 
   void markFirstFrameRendered() {
+    if (_marks.contains(StartupCheckpoint.firstFrameRendered)) {
+      return;
+    }
+    _firstFrameTime ??= DateTime.now();
+    _emitComputedTiming(
+      label: 'first_frame_rendered_time',
+      duration: _firstFrameTime!.difference(startTime),
+      launchType: 'cold',
+    );
     _mark(StartupCheckpoint.firstFrameRendered);
+    // Close the root boot block now that the first frame is painted.
+    developer.Timeline.finishSync();
+  }
+
+  void markFirstInteractiveReady({String launchType = 'cold'}) {
+    if (_marks.contains(StartupCheckpoint.firstInteractiveReady)) {
+      return;
+    }
+    _firstInteractiveTime ??= DateTime.now();
+    _emitComputedTiming(
+      label: 'first_interactive_ready_time',
+      duration: _firstInteractiveTime!.difference(startTime),
+      launchType: launchType,
+    );
+    _mark(
+      StartupCheckpoint.firstInteractiveReady,
+      detail: 'launch_type=$launchType',
+    );
+  }
+
+  void markWarmStartBegin() {
+    _warmStartTime = DateTime.now();
+    developer.Timeline.startSync(
+      'MixVy:WarmBoot',
+      arguments: <String, dynamic>{'launch_type': 'warm'},
+    );
+    _emitComputedTiming(
+      label: 'warm_start_begin_time',
+      duration: Duration.zero,
+      launchType: 'warm',
+    );
+  }
+
+  void markWarmInteractiveReady() {
+    final warmStartTime = _warmStartTime;
+    if (warmStartTime == null) {
+      return;
+    }
+    developer.Timeline.finishSync();
+    _emitComputedTiming(
+      label: 'warm_start_duration',
+      duration: DateTime.now().difference(warmStartTime),
+      launchType: 'warm',
+    );
+  }
+
+  void markAppStartTime() {
+    _emitComputedTiming(
+      label: 'app_start_time',
+      duration: Duration.zero,
+      launchType: 'cold',
+    );
+  }
+
+  /// Call this on the first deliberate user gesture inside the app
+  /// (tap, scroll, navigation). Only the first call is recorded; subsequent
+  /// calls are no-ops. [context] is a free-form label shown in DevTools
+  /// (e.g. 'social_pulse_tap', 'room_card_tap', 'dashboard_scroll').
+  void markFirstUserAction({String context = 'unknown'}) {
+    if (_marks.contains(StartupCheckpoint.firstUserAction)) {
+      return;
+    }
+    developer.Timeline.instantSync(
+      'MixVy:FirstUserAction',
+      arguments: <String, dynamic>{
+        'context': context,
+        'elapsed_ms': _elapsed.elapsedMilliseconds,
+      },
+    );
+    _emitComputedTiming(
+      label: 'first_user_action_time',
+      duration: Duration(milliseconds: _elapsed.elapsedMilliseconds),
+      launchType: 'cold',
+    );
+    _mark(StartupCheckpoint.firstUserAction, detail: 'context=$context');
+  }
+
+  void _emitComputedTiming({
+    required String label,
+    required Duration duration,
+    required String launchType,
+  }) {
+    final valueMs = duration.inMilliseconds;
+
+    // Persist in the in-process metric store (works in ALL build modes).
+    StartupMetrics._record(label, valueMs);
+
+    if (!kStartupDebug) {
+      return;
+    }
+    final message =
+        'startup_metric name=$label launch_type=$launchType value_ms=$valueMs';
+    if (kIsWeb) {
+      emitStartupMessageToRuntime(message);
+    }
+    developer.log(message, name: 'startup_timing');
+
+    // dart:developer flow event — visible in DevTools CPU/Timeline tab in
+    // debug AND profile mode regardless of stdout suppression.
+    developer.Timeline.instantSync(
+      'startup_metric',
+      arguments: <String, dynamic>{
+        'name': label,
+        'launch_type': launchType,
+        'value_ms': valueMs,
+      },
+    );
   }
 
   void _mark(
@@ -79,11 +215,17 @@ class StartupProfiler {
   }) {
     if (_marks.contains(checkpoint)) return;
     _marks.add(checkpoint);
+
+    final elapsedMs = _elapsed.elapsedMilliseconds;
+
+    // Persist every checkpoint regardless of build mode.
+    StartupMetrics._record('checkpoint.${checkpoint.name}', elapsedMs);
+
     if (!kStartupDebug) return;
 
     final suffix = (detail == null || detail.isEmpty) ? '' : ' $detail';
     final message =
-        '+${_elapsed.elapsedMilliseconds}ms startup.${checkpoint.name}$suffix';
+        '+${elapsedMs}ms startup.${checkpoint.name}$suffix';
 
     if (kIsWeb) {
       emitStartupMessageToRuntime(message);
@@ -107,5 +249,61 @@ class StartupProfiler {
       error: error,
       stackTrace: stackTrace,
     );
+
+    developer.Timeline.instantSync(
+      'startup.${checkpoint.name}',
+      arguments: <String, dynamic>{
+        'elapsed_ms': elapsedMs,
+        'detail': detail ?? '',
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// StartupMetrics — persistent, release-safe timing store
+//
+// Written to on every checkpoint and metric emission.
+// Safe to read from any provider, overlay, or analytics export.
+// Works in debug, profile, and release without any dependencies.
+// ---------------------------------------------------------------------------
+class StartupMetrics {
+  StartupMetrics._();
+
+  static final Map<String, int> _data = <String, int>{};
+
+  static void _record(String key, int valueMs) {
+    _data[key] = valueMs;
+  }
+
+  /// Snapshot of all recorded timing marks (ms since app start).
+  static Map<String, int> dump() => Map<String, int>.unmodifiable(_data);
+
+  /// Convenience getters for the four canonical targets.
+  static int? get appStartMs => _data['app_start_time'];
+  static int? get firstFrameMs => _data['first_frame_rendered_time'];
+  static int? get firstInteractiveMs => _data['first_interactive_ready_time'];
+  static int? get firstUserActionMs => _data['first_user_action_time'];
+  static int? get warmStartDurationMs => _data['warm_start_duration'];
+
+  /// Gap between system-interactive and first user action.
+  /// A large value here indicates the app felt slow even after it was ready.
+  static int? get perceivedLatencyMs {
+    final interactive = firstInteractiveMs;
+    final action = firstUserActionMs;
+    if (interactive == null || action == null) return null;
+    return action - interactive;
+  }
+
+  /// Whether cold-start performance meets the 3 s usable-UI target.
+  static bool get coldStartOnTarget {
+    final ms = firstInteractiveMs;
+    return ms != null && ms <= 3000;
+  }
+
+  /// Whether warm-start performance meets the 1.5 s target.
+  static bool get warmStartOnTarget {
+    final ms = warmStartDurationMs;
+    return ms != null && ms <= 1500;
   }
 }

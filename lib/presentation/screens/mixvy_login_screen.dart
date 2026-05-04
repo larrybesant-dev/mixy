@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mixvy/core/layout/app_layout.dart';
-import 'package:mixvy/core/providers/guest_mode_provider.dart';
-import 'package:mixvy/core/services/guest_session_service.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/shared/widgets/app_page_scaffold.dart';
 import 'package:mixvy/services/analytics_service.dart';
@@ -555,30 +553,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                         ? null
                         : () => context.go('/register'),
                     label: 'SIGN UP',
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ── ENTER AS GUEST — ghost link ───────────────────
-                  TextButton(
-                    onPressed: authState.isLoading
-                        ? null
-                        : () async {
-                            await GuestSessionService.enterAsGuest();
-                            if (!context.mounted) return;
-                            // ignore: use_build_context_synchronously
-                            ref.read(guestModeProvider.notifier).state = true;
-                            // ignore: use_build_context_synchronously
-                            context.go('/home');
-                          },
-                    child: Text(
-                      'ENTER AS GUEST',
-                      style: GoogleFonts.raleway(
-                        fontSize: 13,
-                        color: _onVariant,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
                   ),
 
                   const SizedBox(height: 8),

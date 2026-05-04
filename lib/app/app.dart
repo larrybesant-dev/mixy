@@ -29,6 +29,9 @@ import '../features/profile/profile_controller.dart';
 import '../services/presence_controller.dart';
 import '../core/events/event_providers.dart';
 import '../core/services/feature_gate_service.dart';
+import '../presentation/providers/wallet_provider.dart';
+import '../features/payments/premium_entitlement.dart';
+import '../features/feed/providers/feed_providers.dart';
 import '../observability/startup_timeline.dart';
 import '../firebase_options.dart';
 import '../dev/system_stress_runner.dart';
@@ -78,7 +81,6 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
       return;
     }
 
-    await ref.read(appSettingsControllerProvider.notifier).load();
     // Auth check succeeded; boot is ready
     bootStateNotifier.setReady();
     startup.markBootstrapResolved(
@@ -100,9 +102,6 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     );
   }
 
-  if (!kIsWeb) {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-  }
 });
 
 class MixVyApp extends ConsumerStatefulWidget {
@@ -112,9 +111,13 @@ class MixVyApp extends ConsumerStatefulWidget {
   ConsumerState<MixVyApp> createState() => _MixVyAppState();
 }
 
-class _MixVyAppState extends ConsumerState<MixVyApp> {
-  bool _runtimeStarted = false;
-  bool _runtimeQueued = false;
+class _MixVyAppState extends ConsumerState<MixVyApp>
+    with WidgetsBindingObserver {
+  bool _fastLaneQueued = false;
+  bool _fastLaneStarted = false;
+  bool _backgroundLaneQueued = false;
+  bool _interactiveReadyMarked = false;
+  bool _wasPaused = false;
   bool _stressRunnerQueued = false;
   int _bootHintIndex = 0;
   Timer? _bootHintTimer;
@@ -130,6 +133,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final isOffline = results.contains(ConnectivityResult.none);
       if (isOffline) {
@@ -164,39 +168,81 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bootHintTimer?.cancel();
     _connectivitySub?.cancel();
     _featureGateSub?.close();
     super.dispose();
   }
 
-  Future<void> _startRuntimeServices() async {
-    if (_runtimeStarted || _runtimeQueued) return;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _wasPaused = true;
+      return;
+    }
 
-    _runtimeQueued = true;
+    if (state == AppLifecycleState.resumed && _wasPaused) {
+      _wasPaused = false;
+      StartupProfiler.instance.markWarmStartBegin();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        StartupProfiler.instance.markWarmInteractiveReady();
+      });
+    }
+  }
+
+  Future<void> _startFastLaneServices() async {
+    if (_fastLaneStarted) return;
+    _fastLaneStarted = true;
 
     try {
-      final uid = ref.read(authControllerProvider).uid;
+      unawaited(ref.read(appSettingsControllerProvider.notifier).load());
 
+      final uid = ref.read(authControllerProvider).uid;
       if (uid != null && uid.isNotEmpty) {
-        await ref.read(profileControllerProvider.notifier).loadCurrentProfile();
+        unawaited(ref.read(profileControllerProvider.notifier).loadCurrentProfile());
       }
 
       ref.read(presenceControllerProvider);
       ref.read(eventPipelineProvider);
+      ref.read(walletDetailsProvider);
+      ref.read(vipEntitlementProvider);
     } catch (error, stackTrace) {
       developer.log(
-        'Runtime services failed during startup',
+        'Fast lane services failed during startup',
         error: error,
         stackTrace: stackTrace,
         name: 'MixVyApp',
       );
-      ref.read(bootStateProvider.notifier).setDegraded();
-    } finally {
-      if (mounted) {
-        setState(() => _runtimeStarted = true);
-      }
     }
+  }
+
+  Future<void> _startBackgroundLaneServices() async {
+    if (_backgroundLaneQueued) return;
+    _backgroundLaneQueued = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 450), () {
+        if (!mounted) return;
+        // Keep density surfaces warm without blocking first interactive render.
+        unawaited(ref.read(currentUserActivitiesProvider.future));
+        unawaited(ref.read(trendingUsersStreamProvider.future));
+        unawaited(ref.read(roomsStreamProvider.future));
+        ref.read(homeFeedSnapshotProvider);
+      });
+    });
+  }
+
+  void _queueStartupLanes(AuthState authState) {
+    if (!authState.isAuthenticatedStable || _fastLaneQueued) {
+      return;
+    }
+    _fastLaneQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_startFastLaneServices());
+      unawaited(_startBackgroundLaneServices());
+    });
   }
 
   Future<void> _retryStartup() async {
@@ -450,16 +496,9 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
       error: (_, stackTrace) =>
           _buildBootShell(message: 'Recovering startup...'),
       data: (_) {
-        if (!_runtimeStarted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) unawaited(_startRuntimeServices());
-          });
-
-          return _buildBootShell(message: 'Preparing your rooms...');
-        }
-
         final router = ref.watch(routerProvider);
         _queueStressRunnerIfEnabled(router: router, authState: authState);
+        _queueStartupLanes(authState);
 
         final settings =
             ref.watch(appSettingsControllerProvider).valueOrNull ??
@@ -471,6 +510,12 @@ class _MixVyAppState extends ConsumerState<MixVyApp> {
         SchedulerBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           StartupProfiler.instance.markFirstFrameRendered();
+          if (!_interactiveReadyMarked && authState.isRoutingStable) {
+            _interactiveReadyMarked = true;
+            StartupProfiler.instance.markFirstInteractiveReady(
+              launchType: 'cold',
+            );
+          }
         });
 
         return MaterialApp.router(

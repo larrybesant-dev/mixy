@@ -8,14 +8,14 @@ import '../models/speed_dating_models.dart';
 
 class SpeedDatingService {
   SpeedDatingService({
-    FirebaseFirestore? firestore,
+    required FirebaseFirestore firestore,
     ModerationService? moderationService,
     FirebaseFunctions? functions,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+  }) : _firestore = firestore,
        _moderationService =
            moderationService ??
            ModerationService(
-             firestore: firestore ?? FirebaseFirestore.instance,
+             firestore: firestore,
            ),
        _functions = functions ?? FirebaseFunctions.instance;
 

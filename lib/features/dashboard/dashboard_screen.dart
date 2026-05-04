@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/safe_network_avatar.dart';
 import '../../core/layout/app_layout.dart';
+import '../../core/routing/auth_invariant.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/guest_auth_gate.dart';
@@ -20,9 +21,12 @@ import '../stories/widgets/stories_row.dart';
 import 'daily_checkin_card.dart';
 import 'leaderboard_strip.dart';
 import 'widgets/social_pulse_section.dart';
+import '../onboarding/session_stage_controller.dart';
 import '../feed/models/home_feed_snapshot.dart';
 import '../../models/user_model.dart';
 import '../../widgets/brand_ui_kit.dart';
+import '../../shared/widgets/canonical_ui_state.dart';
+import '../../observability/startup_timeline.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -117,6 +121,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ]);
   }
 
+  Future<void> _completeFirstSessionAndGo(String route) async {
+    StartupProfiler.instance.markFirstUserAction(
+      context: 'first_session_entry',
+    );
+    await ref
+        .read(sessionStageProvider.notifier)
+        .completeFirstSessionAction();
+    if (!mounted) {
+      return;
+    }
+    context.go(route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final postsState = ref.watch(paginatedPostsProvider);
@@ -125,6 +142,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final profileState = ref.watch(profileControllerProvider);
     final setupItems = ProfileCompletion.homeNudgeItems(profileState);
     final currentUser = ref.watch(userProvider);
+    final sessionStage = ref.watch(sessionStageProvider);
+    if (currentUser == null) {
+      return AuthInvariant.redirectToAuth();
+    }
+
+    if (sessionStage == SessionStage.loading) {
+      return const AppPageScaffold(
+        backgroundColor: VelvetNoir.surface,
+        body: Padding(
+          padding: EdgeInsets.all(16),
+          child: LoadingState(
+            title: 'Preparing your home',
+            subtitle: 'Your first interactive view is loading now.',
+          ),
+        ),
+      );
+    }
+
+    if (sessionStage == SessionStage.firstTime) {
+      return AppPageScaffold(
+        backgroundColor: VelvetNoir.surface,
+        safeArea: false,
+        body: _FirstSessionEntry(
+          onPrimaryAction: () => _completeFirstSessionAndGo('/search'),
+          onSecondaryAction: () => _completeFirstSessionAndGo('/rooms/create'),
+        ),
+      );
+    }
+
     final newMembersAsync = ref.watch(newMembersStreamProvider);
     final homeFeedAsync = ref.watch(homeFeedSnapshotProvider);
 
@@ -144,8 +190,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 // Current user avatar
                 GestureDetector(
                   onTap: () {
-                    final uid = currentUser?.id;
-                    if (uid != null && uid.isNotEmpty) {
+                    final uid = currentUser.id;
+                    if (uid.isNotEmpty) {
                       context.go('/profile/$uid');
                     }
                   },
@@ -163,16 +209,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                     child: ClipOval(
-                      child: (currentUser?.avatarUrl ?? '').isNotEmpty
+                      child: (currentUser.avatarUrl ?? '').isNotEmpty
                           ? CachedNetworkImage(
-                              imageUrl: currentUser!.avatarUrl!,
+                              imageUrl: currentUser.avatarUrl!,
                               fit: BoxFit.cover,
                             )
                           : Center(
                               child: Text(
-                                (currentUser?.username ?? 'U').isNotEmpty
-                                    ? (currentUser?.username ?? 'U')[0]
-                                          .toUpperCase()
+                                currentUser.username.isNotEmpty
+                                    ? currentUser.username[0].toUpperCase()
                                     : 'U',
                                 style: const TextStyle(
                                   color: VelvetNoir.primary,
@@ -191,7 +236,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${_greeting()}, ${currentUser?.username ?? 'there'}',
+                        '${_greeting()}, ${currentUser.username}',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -214,6 +259,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               _StatsBarWidget(
                 onlineAsync: ref.watch(onlineUsersCountProvider),
                 liveAsync: ref.watch(liveRoomsCountProvider),
+                isFirstSession: sessionStage == SessionStage.firstTime,
               ),
               const SizedBox(width: 4),
               IconButton(
@@ -287,7 +333,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               SliverToBoxAdapter(
                 child: roomsAsync.when(
                   data: (rooms) => rooms.isEmpty
-                      ? const _EmptyPill(label: 'No live rooms right now')
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: EmptyState(
+                            title: 'Rooms are warming up',
+                            message:
+                                'Start a room and set the energy for everyone arriving now.',
+                            ctaLabel: 'Start a Room',
+                            onCta: () => context.go('/create-room'),
+                            icon: Icons.mic_rounded,
+                          ),
+                        )
                       : SizedBox(
                           height: 110,
                           child: ListView.separated(
@@ -306,9 +362,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                         ),
-                  loading: () => const _HorizontalSkeleton(height: 110),
-                  error: (e, _) =>
-                      const _ErrorCard(message: 'Could not load live rooms'),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LoadingState(
+                      title: 'Loading live rooms',
+                      subtitle: 'Fetching active rooms around you.',
+                    ),
+                  ),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ErrorState(
+                      title: 'Could not load live rooms',
+                      message: 'Check your connection and try again.',
+                      ctaLabel: 'Retry',
+                      onCta: () => ref.invalidate(roomsStreamProvider),
+                    ),
+                  ),
                 ),
               ),
 
@@ -330,7 +399,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     child: _HorizontalSkeleton(height: 190),
                   ),
                   error: (_, _) => SocialPulseSection(
-                    pulseItems: const [],
+                    pulseItems: [
+                      PulseFeedItem(
+                        id: 'pulse:fallback',
+                        type: 'system_trending',
+                        title: 'New rooms are trending right now',
+                        detail: 'Jump in and find your people.',
+                        timestamp: DateTime.now(),
+                      ),
+                    ],
                     onOpenPulseItem: _openPulseItem,
                     onOpenRooms: () => context.go('/rooms'),
                     onOpenDiscover: () => context.go('/search'),
@@ -356,7 +433,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               SliverToBoxAdapter(
                 child: trendingUsersAsync.when(
                   data: (users) => users.isEmpty
-                      ? const _EmptyPill(label: 'No people to discover yet')
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: EmptyState(
+                            title: 'New people are loading in',
+                            message:
+                                'Explore profiles and connect with your first matches.',
+                            ctaLabel: 'Find People',
+                            onCta: () => context.go('/search'),
+                            icon: Icons.favorite_outline_rounded,
+                          ),
+                        )
                       : SizedBox(
                           height: 200,
                           child: ListView.separated(
@@ -374,8 +461,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                         ),
-                  loading: () => const _HorizontalSkeleton(height: 200),
-                  error: (_, _) => const SizedBox.shrink(),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LoadingState(
+                      title: 'Loading people',
+                      subtitle: 'Finding profiles worth your attention.',
+                    ),
+                  ),
+                  error: (_, _) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ErrorState(
+                      title: 'Could not load people right now',
+                      message: 'We could not fetch discover suggestions.',
+                      ctaLabel: 'Retry',
+                      onCta: () => ref.invalidate(trendingUsersStreamProvider),
+                    ),
+                  ),
                 ),
               ),
 
@@ -397,7 +498,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               SliverToBoxAdapter(
                 child: roomsAsync.when(
                   data: (rooms) => rooms.isEmpty
-                      ? const _EmptyPill(label: 'No popular rooms right now')
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: EmptyState(
+                            title: 'No featured rooms yet',
+                            message:
+                                'Create one room to spark conversation and pull people in.',
+                            ctaLabel: 'Start a Room',
+                            onCta: () => context.go('/create-room'),
+                            icon: Icons.graphic_eq_rounded,
+                          ),
+                        )
                       : SizedBox(
                           height: 170,
                           child: ListView.separated(
@@ -416,8 +527,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                         ),
-                  loading: () => const _HorizontalSkeleton(height: 170),
-                  error: (_, _) => const SizedBox.shrink(),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LoadingState(
+                      title: 'Loading featured rooms',
+                      subtitle: 'Curating live rooms for quick join.',
+                    ),
+                  ),
+                  error: (_, _) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ErrorState(
+                      title: 'Featured rooms unavailable',
+                      message: 'Room recommendations are temporarily unavailable.',
+                      ctaLabel: 'Retry',
+                      onCta: () => ref.invalidate(roomsStreamProvider),
+                    ),
+                  ),
                 ),
               ),
 
@@ -435,7 +560,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               SliverToBoxAdapter(
                 child: newMembersAsync.when(
                   data: (members) => members.isEmpty
-                      ? const _EmptyPill(label: 'No new members yet')
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: EmptyState(
+                            title: 'Fresh members are arriving',
+                            message:
+                                'Use discover to meet the newest people in your circle.',
+                            ctaLabel: 'Open Discover',
+                            onCta: () => context.go('/search'),
+                            icon: Icons.person_add_alt_1_rounded,
+                          ),
+                        )
                       : SizedBox(
                           height: 88,
                           child: ListView.separated(
@@ -454,9 +589,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                         ),
-                  loading: () => const _HorizontalSkeleton(height: 88),
-                  error: (_, _) =>
-                      const _ErrorCard(message: 'Could not load new members'),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LoadingState(
+                      title: 'Loading new members',
+                      subtitle: 'Bringing recent arrivals into view.',
+                    ),
+                  ),
+                  error: (_, _) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ErrorState(
+                      title: 'Could not load new members',
+                      message: 'Recent member updates are temporarily unavailable.',
+                      ctaLabel: 'Retry',
+                      onCta: () => ref.invalidate(newMembersStreamProvider),
+                    ),
+                  ),
                 ),
               ),
 
@@ -473,17 +621,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (postsState.posts.isEmpty && postsState.isLoading)
                 const SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: VelvetNoir.primary,
-                      ),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LoadingState(
+                      title: 'Loading recent activity',
+                      subtitle: 'Preparing posts and conversation starters.',
                     ),
                   ),
                 )
               else if (postsState.posts.isEmpty)
-                const SliverToBoxAdapter(
-                  child: _EmptyPill(label: 'No posts yet — be the first!'),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: EmptyState(
+                      title: 'No posts yet',
+                      message:
+                          'Share the first moment so people have something to react to.',
+                      ctaLabel: 'Create a Post',
+                      onCta: () => context.go('/create-post'),
+                      icon: Icons.edit_note_rounded,
+                    ),
+                  ),
                 )
               else
                 SliverList.builder(
@@ -520,6 +677,85 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
+class _FirstSessionEntry extends StatelessWidget {
+  const _FirstSessionEntry({
+    required this.onPrimaryAction,
+    required this.onSecondaryAction,
+  });
+
+  final VoidCallback onPrimaryAction;
+  final VoidCallback onSecondaryAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: VelvetNoir.surfaceHigh,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: VelvetNoir.primary.withValues(alpha: 0.22),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome to MixVy',
+                  style: GoogleFonts.playfairDisplay(
+                    color: VelvetNoir.onSurface,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Start with one move and your home feed will unlock around your vibe.',
+                  style: GoogleFonts.raleway(
+                    color: VelvetNoir.onSurfaceVariant,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: onPrimaryAction,
+                  icon: const Icon(Icons.favorite_outline_rounded),
+                  label: const Text('Find People'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VelvetNoir.primary,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size.fromHeight(46),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: onSecondaryAction,
+                  icon: const Icon(Icons.mic_none_rounded),
+                  label: const Text('Start a Room'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VelvetNoir.onSurface,
+                    side: BorderSide(
+                      color: VelvetNoir.onSurface.withValues(alpha: 0.30),
+                    ),
+                    minimumSize: const Size.fromHeight(44),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Stats bar (online count + live rooms count) shown in the AppBar actions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -527,24 +763,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 class _StatsBarWidget extends StatelessWidget {
   final AsyncValue<int> onlineAsync;
   final AsyncValue<int> liveAsync;
+  final bool isFirstSession;
 
-  const _StatsBarWidget({required this.onlineAsync, required this.liveAsync});
+  const _StatsBarWidget({
+    required this.onlineAsync,
+    required this.liveAsync,
+    this.isFirstSession = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final online = onlineAsync.valueOrNull ?? 0;
     final live = liveAsync.valueOrNull ?? 0;
+    final isLoading = onlineAsync.isLoading || liveAsync.isLoading;
+    final onlineLabel = isLoading
+        ? '...'
+        : (online <= 0 || isFirstSession)
+        ? 'new'
+        : (online >= 500 ? '500+' : '$online');
+    final liveLabel = isLoading
+        ? '...'
+        : (live <= 0 || isFirstSession)
+        ? 'fresh'
+        : '$live';
+
     return Row(
       children: [
         _StatPill(
           dot: VelvetNoir.primary,
-          label: online >= 500 ? '500+' : '$online',
+          label: onlineLabel,
           tooltip: 'online now',
         ),
         const SizedBox(width: 6),
         _StatPill(
           dot: VelvetNoir.liveGlow,
-          label: '$live',
+          label: liveLabel,
           tooltip: 'live rooms',
         ),
       ],

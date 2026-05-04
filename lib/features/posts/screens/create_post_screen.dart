@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../widgets/safe_network_avatar.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 
 class CreatePostScreen extends ConsumerStatefulWidget {
@@ -71,7 +72,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 .map((tag) => tag.trim().toLowerCase())
                 .toList();
 
-      await FirebaseFirestore.instance.collection('posts').add({
+      await ref.read(firestoreProvider).collection('posts').add({
         'authorId': widget.userId,
         'authorName': widget.username,
         'authorAvatarUrl': widget.avatarUrl,

@@ -27,6 +27,7 @@ void main() {
                 timestamp: DateTime(2026, 4, 12, 20, 45),
               ),
             ],
+            onOpenPulseItem: _noopPulse,
             onOpenRooms: _noop,
             onOpenDiscover: _noop,
           ),
@@ -50,6 +51,7 @@ void main() {
           home: Scaffold(
             body: SocialPulseSection(
               pulseItems: [],
+              onOpenPulseItem: _noopPulse,
               onOpenRooms: _noop,
               onOpenDiscover: _noop,
             ),
@@ -64,3 +66,5 @@ void main() {
 }
 
 void _noop() {}
+
+void _noopPulse(PulseFeedItem _) {}

@@ -4,7 +4,7 @@ import '../auth/controllers/auth_controller.dart';
 
 /// Streams the `betaTester` boolean field from the current user's Firestore
 /// doc.  Returns `false` when there is no signed-in user or the field is absent.
-final isBetaTesterProvider = Provider<AsyncValue<bool>>((ref) {
+final isBetaTesterProvider = Provider.autoDispose<AsyncValue<bool>>((ref) {
   final uid = ref.watch(authControllerProvider).uid;
   if (uid == null || uid.isEmpty) {
     return const AsyncData(false);

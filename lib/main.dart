@@ -15,7 +15,6 @@ import 'app/app.dart';
 import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
-import 'core/services/guest_session_service.dart';
 import 'router/app_router.dart';
 import 'services/push_messaging_service.dart';
 import 'firebase_options.dart';
@@ -29,6 +28,7 @@ SemanticsHandle? _webSemanticsHandle;
 
 Future<void> main() async {
   final startup = StartupProfiler.instance;
+  startup.markAppStartTime();
   startup.markMainStart();
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,8 +65,6 @@ Future<void> main() async {
 
   try {
     await dotenv.load(fileName: 'assets/.env');
-    // Restore guest session flag before routing begins.
-    await GuestSessionService.initialize();
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );

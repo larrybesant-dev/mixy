@@ -63,8 +63,20 @@ void main() {
       expect(result, isNull);
     });
 
+    test('routes signed-out users away from onboarding route', () {
+      final result = evaluateAppRedirect(
+        matchedLocation: '/onboarding',
+        uid: null,
+        authLoading: false,
+        legalStateResolved: false,
+        hasAcceptedLegal: false,
+      );
+
+      expect(result, '/auth');
+    });
+
     test(
-      'does not redirect authenticated users until legal state resolves',
+      'keeps authenticated users on non-auth routes regardless of legal state',
       () {
         final result = evaluateAppRedirect(
           matchedLocation: '/speed-dating',
@@ -79,7 +91,7 @@ void main() {
     );
 
     test(
-      'routes authenticated users without accepted legal to onboarding after settings load',
+      'keeps authenticated users on requested route when signed in',
       () {
         final result = evaluateAppRedirect(
           matchedLocation: '/speed-dating',
@@ -89,7 +101,7 @@ void main() {
           hasAcceptedLegal: false,
         );
 
-        expect(result, '/onboarding');
+        expect(result, isNull);
       },
     );
   });

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../providers/after_dark_provider.dart';
@@ -38,10 +39,7 @@ class _AfterDarkProfileScreenState
   Future<void> _loadProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .get();
+    final doc = await ref.read(firestoreProvider).collection('users').doc(uid).get();
     if (!mounted) return;
     final data = doc.data() ?? {};
     setState(() {
@@ -58,7 +56,7 @@ class _AfterDarkProfileScreenState
     if (uid == null) return;
     setState(() => _saving = true);
     try {
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      await ref.read(firestoreProvider).collection('users').doc(uid).set({
         'adultStageName': _stageNameCtrl.text.trim(),
         'adultBio': _adultBioCtrl.text.trim(),
         'adultLookingFor': _lookingForCtrl.text.trim(),

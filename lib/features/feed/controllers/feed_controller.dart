@@ -7,6 +7,7 @@ import '../../../services/moderation_service.dart';
 import '../../../services/room_service.dart';
 import '../../../services/room_discovery_service.dart';
 import '../../../core/firestore/firestore_error_utils.dart';
+import '../../../core/providers/firebase_providers.dart';
 
 class FeedState {
   final bool isLoading;
@@ -80,7 +81,7 @@ class FeedController extends Notifier<FeedState> {
 
   @override
   FeedState build() {
-    _firestore = FirebaseFirestore.instance;
+    _firestore = ref.read(firestoreProvider);
     _auth = FirebaseAuth.instance;
     _moderationService = ModerationService(firestore: _firestore, auth: _auth);
     _roomService = ref.read(roomServiceProvider);

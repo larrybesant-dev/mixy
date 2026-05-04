@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/controllers/auth_controller.dart';
-import 'guest_mode_provider.dart';
 
 enum SessionCapability {
   sendMessage,
@@ -18,23 +17,21 @@ enum SessionCapability {
 
 class SessionCapabilities {
   const SessionCapabilities({
-    required this.isGuestMode,
     required this.isAuthenticated,
   });
 
-  final bool isGuestMode;
   final bool isAuthenticated;
 
-  bool get canSendMessage => isAuthenticated && !isGuestMode;
-  bool get canStartConversation => isAuthenticated && !isGuestMode;
-  bool get canFollowUser => isAuthenticated && !isGuestMode;
-  bool get canCreateRoom => isAuthenticated && !isGuestMode;
-  bool get canJoinRoom => isAuthenticated && !isGuestMode;
-  bool get canCreatePost => isAuthenticated && !isGuestMode;
-  bool get canCreateStory => isAuthenticated && !isGuestMode;
-  bool get canCreateGroup => isAuthenticated && !isGuestMode;
-  bool get canEditProfile => isAuthenticated && !isGuestMode;
-  bool get canInviteToRoom => isAuthenticated && !isGuestMode;
+  bool get canSendMessage => isAuthenticated;
+  bool get canStartConversation => isAuthenticated;
+  bool get canFollowUser => isAuthenticated;
+  bool get canCreateRoom => isAuthenticated;
+  bool get canJoinRoom => isAuthenticated;
+  bool get canCreatePost => isAuthenticated;
+  bool get canCreateStory => isAuthenticated;
+  bool get canCreateGroup => isAuthenticated;
+  bool get canEditProfile => isAuthenticated;
+  bool get canInviteToRoom => isAuthenticated;
 
   bool has(SessionCapability capability) {
     switch (capability) {
@@ -64,11 +61,9 @@ class SessionCapabilities {
 
 final sessionCapabilitiesProvider = Provider<SessionCapabilities>((ref) {
   final authState = ref.watch(authControllerProvider);
-  final isGuestMode = ref.watch(guestModeProvider);
   final isAuthenticated = (authState.uid?.isNotEmpty ?? false);
 
   return SessionCapabilities(
-    isGuestMode: isGuestMode,
     isAuthenticated: isAuthenticated,
   );
 });

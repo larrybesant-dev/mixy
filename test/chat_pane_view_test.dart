@@ -68,7 +68,7 @@ Widget _buildChatApp({
     overrides: [
       core_firebase.firestoreProvider.overrideWithValue(firestore),
       sessionCapabilitiesProvider.overrideWithValue(
-        const SessionCapabilities(isGuestMode: false, isAuthenticated: true),
+        const SessionCapabilities(isAuthenticated: true),
       ),
       friendRosterProvider.overrideWith(
         (ref) => const Stream<List<FriendRosterEntry>>.empty(),

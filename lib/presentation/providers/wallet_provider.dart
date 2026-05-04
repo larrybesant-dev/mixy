@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/providers/firebase_providers.dart';
 import '../../features/auth/providers/admin_provider.dart';
 import '../../models/wallet_model.dart';
 
@@ -13,7 +14,7 @@ final walletAuthProvider = Provider<FirebaseAuth>((ref) {
 });
 
 final walletFirestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
+  return ref.watch(firestoreProvider);
 });
 
 final walletUserIdProvider = Provider<String?>((ref) {

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/layout/app_layout.dart';
 import '../../core/theme.dart';
 import '../../core/utils/network_image_url.dart';
+import '../../core/routing/auth_invariant.dart';
 import '../../features/friends/models/friend_roster_entry.dart';
 import '../../features/friends/providers/friends_providers.dart';
 import '../../features/messaging/models/conversation_model.dart';
@@ -68,10 +69,7 @@ class _DesktopMessengerShellState extends ConsumerState<DesktopMessengerShell> {
       avatarUrl: widget.avatarUrl,
     );
     if (currentUser == null) {
-      return DecoratedBox(
-        decoration: const BoxDecoration(color: VelvetNoir.surface),
-        child: SafeArea(child: centerPane),
-      );
+      return AuthInvariant.redirectToAuth();
     }
 
     final controller = _MessengerSidebarController(

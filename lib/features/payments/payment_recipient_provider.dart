@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/firebase_providers.dart';
 import '../../models/user_model.dart';
 import '../../services/moderation_service.dart';
 
@@ -15,13 +16,13 @@ abstract class PaymentRecipientRepository {
 class FirestorePaymentRecipientRepository
     implements PaymentRecipientRepository {
   FirestorePaymentRecipientRepository({
-    FirebaseFirestore? firestore,
+    required FirebaseFirestore firestore,
     ModerationService? moderationService,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+  }) : _firestore = firestore,
        _moderationService =
            moderationService ??
            ModerationService(
-             firestore: firestore ?? FirebaseFirestore.instance,
+             firestore: firestore,
            );
 
   final FirebaseFirestore _firestore;
@@ -60,7 +61,9 @@ class FirestorePaymentRecipientRepository
 }
 
 final paymentRecipientRepositoryProvider = Provider<PaymentRecipientRepository>(
-  (ref) => FirestorePaymentRecipientRepository(),
+  (ref) => FirestorePaymentRecipientRepository(
+    firestore: ref.read(firestoreProvider),
+  ),
 );
 
 final currentPaymentUserIdProvider = Provider<String?>((ref) {

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/providers/firebase_providers.dart';
 import '../models/user_model.dart';
 import '../features/messaging/providers/messaging_provider.dart';
 import '../services/friend_service.dart';
@@ -89,7 +90,7 @@ class _UserProfilePopupSheetState
       return;
     }
     try {
-      final doc = await FirebaseFirestore.instance
+      final doc = await ref.read(firestoreProvider)
           .collection('users')
           .doc(_normalizedUserId)
           .get();

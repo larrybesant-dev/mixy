@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../providers/messaging_provider.dart';
 
 class CreateGroupChatScreen extends ConsumerStatefulWidget {
@@ -40,7 +40,7 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
       return;
     }
     try {
-      final snapshot = await FirebaseFirestore.instance
+      final snapshot = await ref.read(firestoreProvider)
           .collection('users')
           .where('username', isGreaterThanOrEqualTo: query)
           .where('username', isLessThanOrEqualTo: '$query\uf8ff')

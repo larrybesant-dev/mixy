@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +35,7 @@ import '../widgets/trending_user_card.dart';
 import '../../stories/providers/story_provider.dart';
 import '../../../presentation/providers/notification_provider.dart';
 import '../../../services/room_discovery_service.dart';
+import '../../../core/providers/firebase_providers.dart';
 
 // ── Velvet Noir brand aliases ────────────────────────────────────────────────
 const _npSurface = VelvetNoir.surface;
@@ -54,10 +54,7 @@ final _hostAvatarProvider = FutureProvider.autoDispose.family<String?, String>((
   ref,
   hostId,
 ) async {
-  final doc = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(hostId)
-      .get();
+  final doc = await ref.watch(firestoreProvider).collection('users').doc(hostId).get();
   if (!doc.exists) return null;
   return sanitizeNetworkImageUrl(doc.data()?['avatarUrl'] as String?);
 });

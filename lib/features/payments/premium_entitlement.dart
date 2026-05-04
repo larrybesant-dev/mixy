@@ -7,7 +7,7 @@ final entitlementUserIdProvider = Provider<String?>((ref) {
   return ref.watch(entitlementAuthProvider).currentUser?.uid;
 });
 
-final vipEntitlementProvider = Provider<AsyncValue<bool>>((ref) {
+final vipEntitlementProvider = Provider.autoDispose<AsyncValue<bool>>((ref) {
   final uid = ref.watch(entitlementUserIdProvider);
   if (uid == null || uid.isEmpty) {
     return const AsyncData(false);

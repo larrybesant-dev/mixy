@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../models/post_model.dart';
 
 class PaginatedFollowingFeedState {
@@ -106,7 +107,7 @@ final paginatedFollowingFeedProvider = StateNotifierProvider.autoDispose
       String
     >((ref, userId) {
       return PaginatedFollowingFeedController(
-        FirebaseFirestore.instance,
+        ref.read(firestoreProvider),
         userId,
       );
     });

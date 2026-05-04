@@ -89,15 +89,7 @@ class HomeFeedService {
 
   List<PulseFeedItem> _rankAndDedupe(List<PulseFeedItem> rawItems) {
     if (rawItems.isEmpty) {
-      return <PulseFeedItem>[
-        PulseFeedItem(
-          id: 'quiet-state',
-          type: 'quiet_state',
-          title: 'Your circle is quiet right now.',
-          detail: 'Start the vibe and give people something to join.',
-          timestamp: DateTime.fromMillisecondsSinceEpoch(0),
-        ),
-      ];
+      return _seededPulseItems();
     }
 
     final seen = <String>{};
@@ -114,6 +106,33 @@ class HomeFeedService {
     }
 
     return List<PulseFeedItem>.unmodifiable(uniqueItems.take(3));
+  }
+
+  List<PulseFeedItem> _seededPulseItems() {
+    final now = DateTime.now();
+    return List<PulseFeedItem>.unmodifiable(<PulseFeedItem>[
+      PulseFeedItem(
+        id: 'seed:nearby-vibe',
+        type: 'system_trending',
+        title: '3 people started a vibe nearby',
+        detail: 'Tap in and meet people while rooms are warming up.',
+        timestamp: now.subtract(const Duration(minutes: 1)),
+      ),
+      PulseFeedItem(
+        id: 'seed:music-trending',
+        type: 'system_trending',
+        title: 'New rooms trending in Music',
+        detail: 'Jump into the latest rooms and find your energy.',
+        timestamp: now.subtract(const Duration(minutes: 3)),
+      ),
+      PulseFeedItem(
+        id: 'seed:new-join',
+        type: 'system_trending',
+        title: 'Someone just joined MixVy',
+        detail: 'Say hi and help set the tone for tonight.',
+        timestamp: now.subtract(const Duration(minutes: 5)),
+      ),
+    ]);
   }
 }
 

@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../core/theme.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
@@ -173,7 +173,7 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
 
   Future<List<Map<String, String>>> _searchUsers(String query) async {
     final normalized = query.trim();
-    final snapshot = await FirebaseFirestore.instance
+    final snapshot = await ref.read(firestoreProvider)
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: normalized)
         .where('username', isLessThanOrEqualTo: '$normalized\uf8ff')

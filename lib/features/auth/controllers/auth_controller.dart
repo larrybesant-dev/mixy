@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/firestore/firestore_debug_tracing.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../core/telemetry/app_telemetry.dart';
 import '../../../presentation/screens/google_sign_in_helper.dart';
 import '../../../presentation/screens/apple_sign_in_helper.dart';
@@ -809,7 +810,7 @@ class AuthController extends Notifier<AuthState> {
 
   FirebaseFirestore? _tryResolveFirestore() {
     try {
-      return FirebaseFirestore.instance;
+      return ref.read(firestoreProvider);
     } catch (_) {
       return null;
     }

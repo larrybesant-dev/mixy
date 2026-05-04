@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../presentation/providers/user_provider.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../services/room_service.dart';
@@ -47,12 +47,13 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
 
     try {
       final roomService = ref.read(roomServiceProvider);
+      final firestore = ref.read(firestoreProvider);
       final callerName = caller.username.trim().isEmpty
           ? 'Someone'
           : caller.username;
 
       // Fetch target user's display name for the room title.
-      final targetDoc = await FirebaseFirestore.instance
+      final targetDoc = await firestore
           .collection('users')
           .doc(widget.targetUserId)
           .get();
@@ -69,7 +70,7 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
       );
 
       // Set maxBroadcasters = 2 and flag as a direct call.
-      await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+      await firestore.collection('rooms').doc(roomId).update({
         'maxBroadcasters': 2,
         'isDirectCall': true,
         'calleeId': widget.targetUserId,
@@ -77,7 +78,7 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
       });
 
       await NotificationService(
-        firestore: FirebaseFirestore.instance,
+        firestore: firestore,
       ).inAppNotification(
         widget.targetUserId,
         '📹 $callerName is calling you! Join at mixvy.app/room/$roomId',

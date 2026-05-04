@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/services/feature_gate_service.dart';
+import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../core/theme.dart';
@@ -25,7 +26,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     with SingleTickerProviderStateMixin {
   static const int _sessionLengthSeconds = 90;
 
-  final SpeedDatingService _service = SpeedDatingService();
+  late final SpeedDatingService _service;
   final ValueNotifier<int> _secondsLeftNotifier = ValueNotifier<int>(
     _sessionLengthSeconds,
   );
@@ -51,6 +52,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
   @override
   void initState() {
     super.initState();
+    _service = SpeedDatingService(firestore: ref.read(firestoreProvider));
     _startTimer();
   }
 

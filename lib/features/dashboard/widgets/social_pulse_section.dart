@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme.dart';
+import '../../../observability/startup_timeline.dart';
 import '../../feed/models/home_feed_snapshot.dart';
 
 class SocialPulseSection extends StatelessWidget {
@@ -158,7 +159,12 @@ class SocialPulseSection extends StatelessWidget {
               runSpacing: 10,
               children: [
                 ElevatedButton.icon(
-                  onPressed: onOpenRooms,
+                  onPressed: () {
+                    StartupProfiler.instance.markFirstUserAction(
+                      context: 'social_pulse_rooms_cta',
+                    );
+                    onOpenRooms();
+                  },
                   icon: const Icon(Icons.mic_rounded, size: 16),
                   label: Text(hasActivity ? 'Join a room' : 'Start the vibe'),
                   style: ElevatedButton.styleFrom(
@@ -167,7 +173,12 @@ class SocialPulseSection extends StatelessWidget {
                   ),
                 ),
                 OutlinedButton.icon(
-                  onPressed: onOpenDiscover,
+                  onPressed: () {
+                    StartupProfiler.instance.markFirstUserAction(
+                      context: 'social_pulse_discover_cta',
+                    );
+                    onOpenDiscover();
+                  },
                   icon: const Icon(Icons.favorite_outline_rounded, size: 16),
                   label: const Text('Find people'),
                   style: OutlinedButton.styleFrom(
@@ -195,7 +206,12 @@ class _PulseItemRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+            StartupProfiler.instance.markFirstUserAction(
+              context: 'pulse_item_tap',
+            );
+            onTap();
+          },
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(10),
