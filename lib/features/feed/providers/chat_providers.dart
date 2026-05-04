@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/room/providers/message_providers.dart'
     as room_message;
 
-final messageStreamProvider = StreamProvider.autoDispose
+final roomMessageMapStreamProvider = StreamProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, roomId) {
       return ref.watch(room_message.roomMessageStreamProvider(roomId).stream).map((
         messages,

@@ -19,6 +19,7 @@ import '../providers/room_live_state_provider.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../providers/rtc_service_provider.dart';
 import '../room_controller.dart';
+import '../widgets/message_bubble.dart';
 import '../../../dev/room_inspector_panel.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../services/rtc_room_service.dart';
@@ -992,11 +993,16 @@ class _MessageList extends ConsumerWidget {
       );
     }
 
+    final currentUserId = ref.watch(userProvider)?.id;
+
     return ListView.builder(
       itemCount: message.length,
       itemBuilder: (_, i) {
         final msg = message[i];
-        return ListTile(title: Text(msg.content), subtitle: Text(msg.senderId));
+        return MessageBubble(
+          message: msg,
+          isMe: msg.senderId == currentUserId,
+        );
       },
     );
   }

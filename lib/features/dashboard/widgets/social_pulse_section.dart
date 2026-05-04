@@ -8,6 +8,7 @@ class SocialPulseSection extends StatelessWidget {
   const SocialPulseSection({
     super.key,
     required this.pulseItems,
+    required this.onOpenPulseItem,
     required this.onOpenRooms,
     required this.onOpenDiscover,
     this.headline,
@@ -17,6 +18,7 @@ class SocialPulseSection extends StatelessWidget {
   });
 
   final List<PulseFeedItem> pulseItems;
+  final ValueChanged<PulseFeedItem> onOpenPulseItem;
   final VoidCallback onOpenRooms;
   final VoidCallback onOpenDiscover;
   final String? headline;
@@ -127,7 +129,10 @@ class SocialPulseSection extends StatelessWidget {
                   .map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: _PulseItemRow(item: item),
+                      child: _PulseItemRow(
+                        item: item,
+                        onTap: () => onOpenPulseItem(item),
+                      ),
                     ),
                   )
             else
@@ -180,68 +185,76 @@ class SocialPulseSection extends StatelessWidget {
 }
 
 class _PulseItemRow extends StatelessWidget {
-  const _PulseItemRow({required this.item});
+  const _PulseItemRow({required this.item, required this.onTap});
 
   final PulseFeedItem item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.14),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: _accentFor(item.type).withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              _iconFor(item.type),
-              color: _accentFor(item.type),
-              size: 18,
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.raleway(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: VelvetNoir.onSurface,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _accentFor(item.type).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  item.detail,
-                  style: GoogleFonts.raleway(
-                    fontSize: 11,
-                    color: VelvetNoir.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Icon(
+                  _iconFor(item.type),
+                  color: _accentFor(item.type),
+                  size: 18,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: GoogleFonts.raleway(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: VelvetNoir.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.detail,
+                      style: GoogleFonts.raleway(
+                        fontSize: 11,
+                        color: VelvetNoir.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _relativeTime(item.timestamp),
+                style: GoogleFonts.raleway(
+                  fontSize: 10,
+                  color: VelvetNoir.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            _relativeTime(item.timestamp),
-            style: GoogleFonts.raleway(
-              fontSize: 10,
-              color: VelvetNoir.onSurfaceVariant,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -85,87 +85,47 @@ final roomMessageStreamProvider = StreamProvider.autoDispose
             .limit(QueryPolicy.messagesLimit)
             .snapshots(includeMetadataChanges: true)
             .map((snapshot) {
-              final visibleDocs = snapshot.docs
-                  .where((doc) {
-                    final data = doc.data();
-                    final recipientUserId = _asString(data['recipientUserId']);
-                    if (recipientUserId.isEmpty) {
-                      return true;
-                    }
-                    if (currentUserId == null || currentUserId.trim().isEmpty) {
-                      return false;
-                    }
-                    final senderId = _asString(data['senderId']);
-                    return senderId == currentUserId ||
-                        recipientUserId == currentUserId;
-                  })
-                  .toList(growable: false);
+              final visibleDocs = snapshot.docs.where((doc) {
+                final data = doc.data();
+                final recipientUserId = _asString(data['recipientUserId']);
+                if (recipientUserId.isEmpty) return true;
+                if (currentUserId == null || currentUserId.trim().isEmpty) {
+                  return false;
+                }
+                final senderId = _asString(data['senderId']);
+                return senderId == currentUserId ||
+                    recipientUserId == currentUserId;
+              });
 
-              final docs = visibleDocs
-                ..sort((a, b) {
-                  final aData = a.data();
-                  final bData = b.data();
-                  final aSentAt = aData['sentAt'];
-                  final bSentAt = bData['sentAt'];
-                  if (aSentAt is Timestamp && bSentAt is Timestamp) {
-                    final sentAtCompare = aSentAt.compareTo(bSentAt);
-                    if (sentAtCompare != 0) {
-                      return sentAtCompare;
-                    }
+              final messages = visibleDocs.map((doc) {
+                final data = doc.data();
+                var msg = MessageModel.fromJson(data, doc.id);
+
+                final recipientUserId = _asString(data['recipientUserId']);
+                if (recipientUserId.isNotEmpty) {
+                  final recipientDisplayName = _asString(
+                    data['recipientDisplayName'],
+                  );
+                  if (currentUserId != null && msg.senderId == currentUserId) {
+                    final label = recipientDisplayName.isEmpty
+                        ? recipientUserId
+                        : recipientDisplayName;
+                    msg = msg.copyWith(content: '[Private to $label] ${msg.content}');
+                  } else if (currentUserId != null &&
+                      recipientUserId == currentUserId) {
+                    msg = msg.copyWith(content: '[Private to you] ${msg.content}');
                   }
+                }
+                return msg;
+              }).toList();
 
-                  final aClientSentAt = aData['clientSentAt'];
-                  final bClientSentAt = bData['clientSentAt'];
-                  if (aClientSentAt is Timestamp &&
-                      bClientSentAt is Timestamp) {
-                    final clientCompare = aClientSentAt.compareTo(
-                      bClientSentAt,
-                    );
-                    if (clientCompare != 0) {
-                      return clientCompare;
-                    }
-                  }
+              messages.sort((a, b) {
+                final cmp = a.createdAt.compareTo(b.createdAt);
+                if (cmp != 0) return cmp;
+                return a.id.compareTo(b.id);
+              });
 
-                  return a.id.compareTo(b.id);
-                });
-
-              return docs
-                  .map((doc) {
-                    final data = doc.data();
-                    final message = MessageModel.fromJson(data, doc.id);
-                    final recipientUserId = _asString(data['recipientUserId']);
-                    final recipientDisplayName = _asString(
-                      data['recipientDisplayName'],
-                    );
-                    final senderId = message.senderId;
-                    String content = message.content;
-                    if (recipientUserId.isNotEmpty) {
-                      if (currentUserId != null && senderId == currentUserId) {
-                        final targetLabel = recipientDisplayName.isEmpty
-                            ? recipientUserId
-                            : recipientDisplayName;
-                        content = '[Private to $targetLabel] $content';
-                      } else if (currentUserId != null &&
-                          recipientUserId == currentUserId) {
-                        content = '[Private to you] $content';
-                      }
-                    }
-                    return MessageModel(
-                      id: message.id,
-                      conversationId: roomId,
-                      senderId: senderId,
-                      senderName: message.senderName,
-                      senderAvatarUrl: message.senderAvatarUrl,
-                      content: content,
-                      type: message.type,
-                      createdAt: message.createdAt,
-                      expiresAt: message.expiresAt,
-                      editedAt: message.editedAt,
-                      isDeleted: message.isDeleted,
-                      readBy: message.readBy,
-                    );
-                  })
-                  .toList(growable: false);
+              return messages;
             }),
       );
     });

@@ -135,6 +135,38 @@ class MessageModel {
 
   bool isRead(String userId) => readBy.contains(userId);
 
+  MessageModel copyWith({
+    String? id,
+    String? clientmessageId,
+    String? conversationId,
+    String? senderId,
+    String? senderName,
+    String? senderAvatarUrl,
+    String? content,
+    DateTime? createdAt,
+    DateTime? expiresAt,
+    DateTime? editedAt,
+    bool? isDeleted,
+    List<String>? readBy,
+    String? type,
+  }) {
+    return MessageModel(
+      id: id ?? this.id,
+      clientmessageId: clientmessageId ?? this.clientmessageId,
+      conversationId: conversationId ?? this.conversationId,
+      senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
+      senderAvatarUrl: senderAvatarUrl ?? this.senderAvatarUrl,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      editedAt: editedAt ?? this.editedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      readBy: readBy ?? this.readBy,
+      type: type ?? this.type,
+    );
+  }
+
   String get roomId => conversationId;
 
   DateTime get sentAt => createdAt;

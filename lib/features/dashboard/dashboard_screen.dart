@@ -20,6 +20,7 @@ import '../stories/widgets/stories_row.dart';
 import 'daily_checkin_card.dart';
 import 'leaderboard_strip.dart';
 import 'widgets/social_pulse_section.dart';
+import '../feed/models/home_feed_snapshot.dart';
 import '../../models/user_model.dart';
 import '../../widgets/brand_ui_kit.dart';
 
@@ -63,6 +64,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
     context.go('/profile/${Uri.encodeComponent(normalizedUserId)}');
+  }
+
+  void _openPulseItem(PulseFeedItem item) {
+    if (item.isQuietState) {
+      context.go('/rooms');
+      return;
+    }
+
+    if (item.type == 'room_momentum') {
+      final id = item.id.trim();
+      if (id.startsWith('room:')) {
+        _openRoom(id.substring('room:'.length));
+        return;
+      }
+      context.go('/rooms');
+      return;
+    }
+
+    context.go('/search');
   }
 
   String _greeting() {
@@ -301,6 +321,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     subheadline: snapshot.subheadline,
                     liveRoomCount: snapshot.liveRooms.length,
                     suggestionCount: snapshot.suggestedUsers.length,
+                    onOpenPulseItem: _openPulseItem,
                     onOpenRooms: () => context.go('/rooms'),
                     onOpenDiscover: () => context.go('/search'),
                   ),
@@ -310,6 +331,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   error: (_, _) => SocialPulseSection(
                     pulseItems: const [],
+                    onOpenPulseItem: _openPulseItem,
                     onOpenRooms: () => context.go('/rooms'),
                     onOpenDiscover: () => context.go('/search'),
                   ),
