@@ -8,10 +8,12 @@ class RoomModel {
   final String? description;
   final String? rules;
   final String hostId;
+  final String ownerId;
   final bool isLive;
   final String? thumbnailUrl;
   final Timestamp? createdAt;
   final Timestamp? updatedAt;
+  final Timestamp? endedAt;
   // Members
   final List<String> stageUserIds;
   final List<String> audienceUserIds;
@@ -41,12 +43,14 @@ class RoomModel {
     required this.id,
     required this.name,
     required this.hostId,
+    this.ownerId = '',
     this.description,
     this.rules,
     this.isLive = false,
     this.thumbnailUrl,
     this.createdAt,
     this.updatedAt,
+    this.endedAt,
     this.stageUserIds = const [],
     this.audienceUserIds = const [],
     this.memberCount = 0,
@@ -126,12 +130,14 @@ class RoomModel {
           : null,
       rules: json['rules'] is String ? json['rules'] as String : null,
       hostId: _asString(json['hostId']),
+      ownerId: _asString(json['ownerId']),
       isLive: _asBool(json['isLive']),
       thumbnailUrl: sanitizeNetworkImageUrl(
         json['thumbnailUrl'] is String ? json['thumbnailUrl'] as String : null,
       ),
       createdAt: _asTimestamp(json['createdAt']),
       updatedAt: _asTimestamp(json['updatedAt']),
+      endedAt: _asTimestamp(json['endedAt']),
       stageUserIds: _asStringList(json['stageUserIds']),
       audienceUserIds: _asStringList(json['audienceUserIds']),
       memberCount: _asInt(json['memberCount']),
@@ -163,10 +169,12 @@ class RoomModel {
       'description': description,
       'rules': rules,
       'hostId': hostId,
+      'ownerId': ownerId,
       'isLive': isLive,
       'thumbnailUrl': thumbnailUrl,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'endedAt': endedAt,
       'stageUserIds': stageUserIds,
       'audienceUserIds': audienceUserIds,
       'memberCount': memberCount,
@@ -190,10 +198,12 @@ class RoomModel {
     String? description,
     String? rules,
     String? hostId,
+    String? ownerId,
     bool? isLive,
     String? thumbnailUrl,
     Timestamp? createdAt,
     Timestamp? updatedAt,
+    Timestamp? endedAt,
     List<String>? stageUserIds,
     List<String>? audienceUserIds,
     int? memberCount,
@@ -215,10 +225,12 @@ class RoomModel {
       description: description ?? this.description,
       rules: rules ?? this.rules,
       hostId: hostId ?? this.hostId,
+      ownerId: ownerId ?? this.ownerId,
       isLive: isLive ?? this.isLive,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      endedAt: endedAt ?? this.endedAt,
       stageUserIds: stageUserIds ?? this.stageUserIds,
       audienceUserIds: audienceUserIds ?? this.audienceUserIds,
       memberCount: memberCount ?? this.memberCount,

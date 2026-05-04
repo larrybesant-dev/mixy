@@ -70,13 +70,8 @@ final onlineUsersCountProvider = FutureProvider.autoDispose<int>((ref) async {
 });
 
 final liveRoomsCountProvider = FutureProvider.autoDispose<int>((ref) async {
-  final firestore = ref.watch(firestoreProvider);
-  final snap = await firestore
-      .collection('rooms')
-      .where('isLive', isEqualTo: true)
-      .count()
-      .get();
-  return snap.count ?? 0;
+  final rooms = await ref.watch(roomServiceProvider).getLiveRooms(limit: 50);
+  return rooms.length;
 });
 
 final newMembersStreamProvider = FutureProvider.autoDispose<List<UserModel>>((

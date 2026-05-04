@@ -25,6 +25,7 @@ class RoomService {
   static const Duration _liveRoomRemovalGraceWindow = Duration(seconds: 2);
   static const Duration _liveRoomsDebounceWindow = Duration(milliseconds: 220);
   static const Duration _roomActivityFallbackWindow = Duration(minutes: 3);
+  static const Duration _newRoomVisibilityGraceWindow = Duration(minutes: 5);
 
   RoomService({
     FirebaseFirestore? firestore,
@@ -95,6 +96,31 @@ class RoomService {
 
   DateTime get _freshParticipantCutoff =>
       DateTime.now().subtract(_participantFreshnessWindow);
+
+  bool _hasOwnershipIdentity(RoomModel room) {
+    return room.hostId.trim().isNotEmpty || room.ownerId.trim().isNotEmpty;
+  }
+
+  bool _isNewRoomWithinGrace(RoomModel room, DateTime now) {
+    final createdAt = room.createdAt?.toDate();
+    if (createdAt == null) {
+      return false;
+    }
+    return now.difference(createdAt) <= _newRoomVisibilityGraceWindow;
+  }
+
+  bool _passesStructuralVisibilityContract(RoomModel room) {
+    if (!room.isLive) {
+      return false;
+    }
+    if (room.endedAt != null) {
+      return false;
+    }
+    if (!_hasOwnershipIdentity(room)) {
+      return false;
+    }
+    return true;
+  }
 
   bool _roomDocShowsRecentActivity(RoomModel room) {
     final effectiveCount = _effectiveRoomMemberCount(room);
@@ -287,23 +313,78 @@ class RoomService {
     required bool includeAdultRooms,
   }) async {
     final activeRooms = <RoomModel>[];
+    final now = DateTime.now();
+    var totalDocs = 0;
+    var adultDropped = 0;
+    var parseDropped = 0;
+    var structuralDropped = 0;
+    var freshParticipantRooms = 0;
+    var staleDropped = 0;
+    var graceKept = 0;
+    var participantCheckErrors = 0;
+
     for (final doc in docs) {
-      final room = _normalizeLiveRoomSnapshot(
-        RoomModel.fromJson(doc.data(), doc.id),
-      );
-      if (!includeAdultRooms && room.isAdult) {
+      totalDocs += 1;
+
+      RoomModel room;
+      try {
+        room = _normalizeLiveRoomSnapshot(RoomModel.fromJson(doc.data(), doc.id));
+      } catch (error, stackTrace) {
+        parseDropped += 1;
+        Logger.warning(
+          'ROOM_VISIBILITY parse_drop roomId=${doc.id} reason=model_parse_failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
         continue;
       }
+
+      if (!includeAdultRooms && room.isAdult) {
+        adultDropped += 1;
+        continue;
+      }
+
+      if (!_passesStructuralVisibilityContract(room)) {
+        structuralDropped += 1;
+        Logger.warning(
+          'ROOM_VISIBILITY structural_drop roomId=${room.id} reason=contract_failed isLive=${room.isLive} hasHost=${room.hostId.trim().isNotEmpty} hasOwner=${room.ownerId.trim().isNotEmpty} ended=${room.endedAt != null}',
+        );
+        continue;
+      }
+
       try {
-        if (await _hasFreshParticipants(room)) {
+        final hasFreshParticipants = await _hasFreshParticipants(room);
+        if (hasFreshParticipants) {
+          freshParticipantRooms += 1;
           activeRooms.add(room);
+          continue;
+        }
+
+        if (_isNewRoomWithinGrace(room, now)) {
+          graceKept += 1;
+          Logger.warning(
+            'ROOM_VISIBILITY grace_keep roomId=${room.id} reason=new_room_no_fresh_participants roomMemberCount=${room.memberCount} stage=${room.stageUserIds.length} audience=${room.audienceUserIds.length}',
+          );
+          activeRooms.add(room);
+        } else {
+          staleDropped += 1;
+          Logger.warning(
+            'ROOM_VISIBILITY stale_drop roomId=${room.id} reason=no_fresh_participants roomMemberCount=${room.memberCount} stage=${room.stageUserIds.length} audience=${room.audienceUserIds.length}',
+          );
         }
       } on FirebaseException {
+        participantCheckErrors += 1;
         // Keep the room visible instead of failing the entire feed.
         activeRooms.add(room);
       }
     }
+
     activeRooms.sort(_compareStableLiveRooms);
+
+    Logger.info(
+      'ROOM_VISIBILITY snapshot_total=$totalDocs visible=${activeRooms.length} adult_dropped=$adultDropped parse_dropped=$parseDropped structural_dropped=$structuralDropped fresh=$freshParticipantRooms grace_kept=$graceKept stale_dropped=$staleDropped participant_check_errors=$participantCheckErrors includeAdult=$includeAdultRooms',
+    );
+
     return activeRooms;
   }
 
