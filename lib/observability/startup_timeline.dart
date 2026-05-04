@@ -116,6 +116,8 @@ class StartupProfiler {
       StartupCheckpoint.firstInteractiveReady,
       detail: 'launch_type=$launchType',
     );
+    // Keep funnel tracker in sync — first interactive = first screen visible.
+    SessionFunnelTracker.instance.markFirstScreenVisible();
   }
 
   void markWarmStartBegin() {
@@ -173,6 +175,8 @@ class StartupProfiler {
       launchType: 'cold',
     );
     _mark(StartupCheckpoint.firstUserAction, detail: 'context=$context');
+    // Keep funnel tracker in sync — first user action = first tap.
+    SessionFunnelTracker.instance.markFirstTap(context: context);
   }
 
   void _emitComputedTiming({
@@ -306,4 +310,170 @@ class StartupMetrics {
     final ms = warmStartDurationMs;
     return ms != null && ms <= 1500;
   }
+}
+
+// ---------------------------------------------------------------------------
+// SessionFunnelTracker — first-60-second beta instrumentation
+//
+// Tracks the key conversion moments in a new user's first session.
+// All writes are in-process, release-safe, and zero-dependency.
+// Read via SessionFunnelTracker.snapshot for export to analytics.
+// ---------------------------------------------------------------------------
+
+/// Immutable snapshot of a completed or in-progress funnel.
+class SessionFunnelSnapshot {
+  const SessionFunnelSnapshot({
+    required this.appOpenMs,
+    this.firstScreenVisibleMs,
+    this.firstTapMs,
+    this.firstSuccessActionMs,
+    this.sessionDropoffMs,
+    this.pulseImpressions,
+    this.pulseTaps,
+  });
+
+  /// Epoch ms when the app opened (matches StartupProfiler.startTime).
+  final int appOpenMs;
+
+  /// Ms elapsed when the first interactive screen was visible.
+  final int? firstScreenVisibleMs;
+
+  /// Ms elapsed when the user first tapped anything.
+  final int? firstTapMs;
+
+  /// Ms elapsed when the user completed a meaningful action (joined room,
+  /// sent message, followed user, tapped "Find People", etc.).
+  final int? firstSuccessActionMs;
+
+  /// Ms elapsed when the session ended (app backgrounded or closed).
+  final int? sessionDropoffMs;
+
+  /// How many Social Pulse items were rendered (impressions).
+  final int? pulseImpressions;
+
+  /// How many Social Pulse items were tapped.
+  final int? pulseTaps;
+
+  /// Conversion rate: pulseTaps / pulseImpressions. Null if no impressions.
+  double? get pulseConversionRate {
+    final imp = pulseImpressions;
+    final taps = pulseTaps;
+    if (imp == null || imp == 0 || taps == null) return null;
+    return taps / imp;
+  }
+
+  /// Gap from first interactive to first success action.
+  int? get timeToSuccessMs {
+    final visible = firstScreenVisibleMs;
+    final success = firstSuccessActionMs;
+    if (visible == null || success == null) return null;
+    return success - visible;
+  }
+
+  Map<String, dynamic> toMap() => <String, dynamic>{
+    'app_open_ms': appOpenMs,
+    if (firstScreenVisibleMs != null)
+      'first_screen_visible_ms': firstScreenVisibleMs,
+    if (firstTapMs != null) 'first_tap_ms': firstTapMs,
+    if (firstSuccessActionMs != null)
+      'first_success_action_ms': firstSuccessActionMs,
+    if (sessionDropoffMs != null) 'session_dropoff_ms': sessionDropoffMs,
+    if (pulseImpressions != null) 'pulse_impressions': pulseImpressions,
+    if (pulseTaps != null) 'pulse_taps': pulseTaps,
+    if (pulseConversionRate != null)
+      'pulse_conversion_rate':
+          double.parse(pulseConversionRate!.toStringAsFixed(3)),
+    if (timeToSuccessMs != null) 'time_to_success_ms': timeToSuccessMs,
+  };
+}
+
+class SessionFunnelTracker {
+  SessionFunnelTracker._()
+    : _startMs = DateTime.now().millisecondsSinceEpoch,
+      _elapsed = Stopwatch()..start();
+
+  static final SessionFunnelTracker instance = SessionFunnelTracker._();
+
+  final int _startMs;
+  final Stopwatch _elapsed;
+
+  int? _firstScreenVisibleMs;
+  int? _firstTapMs;
+  int? _firstSuccessActionMs;
+  int? _sessionDropoffMs;
+  int _pulseImpressions = 0;
+  int _pulseTaps = 0;
+
+  int get _now => _elapsed.elapsedMilliseconds;
+
+  // ── Funnel events ─────────────────────────────────────────────────────────
+
+  /// Call when the first interactive screen frame is visible to the user.
+  /// Typically wired from `markFirstInteractiveReady`.
+  void markFirstScreenVisible() {
+    _firstScreenVisibleMs ??= _now;
+    developer.Timeline.instantSync(
+      'MixVy:Funnel:FirstScreenVisible',
+      arguments: <String, dynamic>{'elapsed_ms': _now},
+    );
+  }
+
+  /// Call on first deliberate user gesture. Aliased from
+  /// `StartupProfiler.markFirstUserAction` so both systems stay in sync.
+  void markFirstTap({String context = 'unknown'}) {
+    if (_firstTapMs != null) return;
+    _firstTapMs = _now;
+    developer.Timeline.instantSync(
+      'MixVy:Funnel:FirstTap',
+      arguments: <String, dynamic>{'elapsed_ms': _now, 'context': context},
+    );
+  }
+
+  /// Call when the user completes a meaningful action: joined a room,
+  /// sent a message, followed someone, or completed first-session entry.
+  void markFirstSuccessAction({String action = 'unknown'}) {
+    if (_firstSuccessActionMs != null) return;
+    _firstSuccessActionMs = _now;
+    developer.Timeline.instantSync(
+      'MixVy:Funnel:FirstSuccess',
+      arguments: <String, dynamic>{'elapsed_ms': _now, 'action': action},
+    );
+    developer.log(
+      'funnel first_success action=$action elapsed_ms=$_now',
+      name: 'SessionFunnel',
+    );
+  }
+
+  /// Call from `didChangeAppLifecycleState` when the app is paused/detached.
+  void markSessionDropoff() {
+    _sessionDropoffMs ??= _now;
+    developer.Timeline.instantSync(
+      'MixVy:Funnel:SessionDropoff',
+      arguments: <String, dynamic>{'elapsed_ms': _now},
+    );
+  }
+
+  // ── Social Pulse engagement ───────────────────────────────────────────────
+
+  /// Call once per Social Pulse render with the number of items displayed.
+  void recordPulseImpression(int itemCount) {
+    _pulseImpressions += itemCount;
+  }
+
+  /// Call on each Social Pulse item tap.
+  void recordPulseTap() {
+    _pulseTaps += 1;
+  }
+
+  // ── Read ──────────────────────────────────────────────────────────────────
+
+  SessionFunnelSnapshot get snapshot => SessionFunnelSnapshot(
+    appOpenMs: _startMs,
+    firstScreenVisibleMs: _firstScreenVisibleMs,
+    firstTapMs: _firstTapMs,
+    firstSuccessActionMs: _firstSuccessActionMs,
+    sessionDropoffMs: _sessionDropoffMs,
+    pulseImpressions: _pulseImpressions > 0 ? _pulseImpressions : null,
+    pulseTaps: _pulseTaps > 0 ? _pulseTaps : null,
+  );
 }

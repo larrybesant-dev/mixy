@@ -111,7 +111,7 @@ void main() {
     );
 
     testWidgets(
-      'redirects to onboarding only after legal state resolves as not accepted',
+      'authenticated user stays on current route when legal state is not accepted (legal enforced in feature flows, not startup routing)',
       (tester) async {
         final state = _RedirectHarness(
           uid: 'user-1',
@@ -156,11 +156,14 @@ void main() {
         expect(find.text('Speed Dating Screen'), findsOneWidget);
         expect(find.text('Onboarding Screen'), findsNothing);
 
+        // Legal state resolves but user has not accepted — startup routing
+        // ignores legal state. User stays on /speed-dating.
         state.setState(legalStateResolved: true, hasAcceptedLegal: false);
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pumpAndSettle();
 
-        expect(find.text('Onboarding Screen'), findsOneWidget);
+        expect(find.text('Speed Dating Screen'), findsOneWidget);
+        expect(find.text('Onboarding Screen'), findsNothing);
 
         router.dispose();
         state.dispose();

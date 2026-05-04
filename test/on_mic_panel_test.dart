@@ -2,7 +2,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mixvy/features/room/controllers/room_state.dart';
 import 'package:mixvy/features/room/providers/participant_providers.dart';
 import 'package:mixvy/features/room/room_controller.dart';
 import 'package:mixvy/features/room/widgets/on_mic_panel.dart';

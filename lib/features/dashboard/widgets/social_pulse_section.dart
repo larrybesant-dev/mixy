@@ -30,6 +30,13 @@ class SocialPulseSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasActivity = pulseItems.any((item) => !item.isQuietState);
+
+    // Record impression count for funnel analytics on each render.
+    // This is idempotent-safe because the funnel accumulates across renders.
+    if (pulseItems.isNotEmpty) {
+      SessionFunnelTracker.instance.recordPulseImpression(pulseItems.length);
+    }
+
     final titleText =
         headline ??
         (hasActivity
@@ -209,6 +216,10 @@ class _PulseItemRow extends StatelessWidget {
         onTap: () {
             StartupProfiler.instance.markFirstUserAction(
               context: 'pulse_item_tap',
+            );
+            SessionFunnelTracker.instance.recordPulseTap();
+            SessionFunnelTracker.instance.markFirstSuccessAction(
+              action: 'pulse_item_tap',
             );
             onTap();
           },

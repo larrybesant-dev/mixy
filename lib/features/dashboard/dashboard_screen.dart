@@ -125,6 +125,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     StartupProfiler.instance.markFirstUserAction(
       context: 'first_session_entry',
     );
+    SessionFunnelTracker.instance.markFirstSuccessAction(
+      action: 'first_session_cta',
+    );
     await ref
         .read(sessionStageProvider.notifier)
         .completeFirstSessionAction();
@@ -647,7 +650,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   itemCount: postsState.posts.length,
                   itemBuilder: (ctx, i) => PostCard(
                     post: postsState.posts[i],
-                    currentUserId: currentUser?.id ?? '',
+                    currentUserId: currentUser.id,
                   ),
                 ),
 
@@ -1678,73 +1681,6 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
       ],
     ),
   );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Empty state pill
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EmptyPill extends StatelessWidget {
-  final String label;
-  const _EmptyPill({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: VelvetNoir.surfaceContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: VelvetNoir.onSurfaceVariant,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Inline error card
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ErrorCard extends StatelessWidget {
-  final String message;
-  const _ErrorCard({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: VelvetNoir.error.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: VelvetNoir.error.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, size: 16, color: VelvetNoir.error),
-            const SizedBox(width: 8),
-            Text(
-              message,
-              style: const TextStyle(
-                fontSize: 12,
-                color: VelvetNoir.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

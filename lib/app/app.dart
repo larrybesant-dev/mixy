@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -119,6 +119,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
   bool _interactiveReadyMarked = false;
   bool _wasPaused = false;
   bool _stressRunnerQueued = false;
+  bool _isOffline = false;
   int _bootHintIndex = 0;
   Timer? _bootHintTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -136,8 +137,12 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
     WidgetsBinding.instance.addObserver(this);
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final isOffline = results.contains(ConnectivityResult.none);
-      if (isOffline) {
-        developer.log('App is offline', name: 'MixVyApp');
+      if (isOffline != _isOffline) {
+        setState(() => _isOffline = isOffline);
+        developer.log(
+          isOffline ? 'App went offline' : 'App back online',
+          name: 'MixVyApp',
+        );
       }
     });
     _bootHintTimer = Timer.periodic(const Duration(milliseconds: 1400), (
@@ -179,6 +184,8 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _wasPaused = true;
+      // Record session dropoff for funnel analytics.
+      SessionFunnelTracker.instance.markSessionDropoff();
       return;
     }
 
@@ -459,6 +466,53 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
     );
   }
 
+  /// Shown whenever the device reports no network connectivity.
+  /// Cached Firestore data continues to work; this banner tells the user
+  /// why live content may be stale.
+  Widget _buildOfflineBanner(Widget child) {
+    return Stack(
+      children: [
+        child,
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: VelvetNoir.onSurface.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.wifi_off_rounded,
+                    size: 15,
+                    color: VelvetNoir.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'You\'re offline — showing cached content.',
+                    style: TextStyle(
+                      color: VelvetNoir.onSurfaceVariant,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Check fatal failure first — before touching appBootstrapProvider — so
@@ -547,6 +601,10 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
 
             if (bootState == BootState.degraded) {
               return _buildDegradedBanner(appChild);
+            }
+
+            if (_isOffline) {
+              return _buildOfflineBanner(appChild);
             }
 
             return appChild;

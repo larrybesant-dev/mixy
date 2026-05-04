@@ -77,12 +77,10 @@ void main() {
         suggestedUsers: const [],
       );
 
-      expect(snapshot.pulseItems.length, 1);
-      expect(
-        snapshot.pulseItems.single.title,
-        'Your circle is quiet right now.',
-      );
-      expect(snapshot.headline, 'Your circle is quiet right now.');
+      // When the graph is empty the feed is seeded with 3 onboarding-safe
+      // system items so the Social Pulse never renders an empty state.
+      expect(snapshot.pulseItems.length, 3);
+      expect(snapshot.pulseItems.every((i) => i.type == 'system_trending'), isTrue);
     },
   );
 }

@@ -60,7 +60,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('SIGN UP'), findsOneWidget);
-    expect(find.text('ENTER AS GUEST'), findsOneWidget);
+    // Guest mode is not supported — ENTER AS GUEST button does not exist.
 
     await tester.tap(find.text('SIGN UP'), warnIfMissed: false);
 

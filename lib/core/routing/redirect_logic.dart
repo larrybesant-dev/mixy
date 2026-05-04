@@ -13,10 +13,7 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   required bool hasAcceptedLegal,
 }) {
   // Legal acceptance is enforced in feature flows, not in startup routing.
-  // Keep parameters for backward-compatible callsites.
-  final _ = legalStateResolved;
-  final __ = hasAcceptedLegal;
-
+  // Keep parameters for backward-compatible callsites but do not act on them.
   if (authLoading) {
     return const RedirectEvaluation(
       redirectTo: null,
