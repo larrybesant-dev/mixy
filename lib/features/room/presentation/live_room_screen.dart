@@ -976,7 +976,7 @@ class _MessageList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message =
-        ref.watch(messagetreamProvider(roomId)).valueOrNull ??
+        ref.watch(roomMessageStreamProvider(roomId)).valueOrNull ??
         const <MessageModel>[];
 
     if (message.isEmpty) {
@@ -993,7 +993,6 @@ class _MessageList extends ConsumerWidget {
     }
 
     return ListView.builder(
-      reverse: true,
       itemCount: message.length,
       itemBuilder: (_, i) {
         final msg = message[i];

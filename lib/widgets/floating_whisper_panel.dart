@@ -213,7 +213,7 @@ class _MessageList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stream = ref.watch(messagestreamProvider(conversationId));
+    final stream = ref.watch(messageStreamProvider(conversationId));
 
     return stream.when(
       loading: () => const Center(child: CircularProgressIndicator()),

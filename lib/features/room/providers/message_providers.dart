@@ -68,7 +68,7 @@ final pendingDirectCallRoomProvider =
           });
     });
 
-final messagetreamProvider = StreamProvider.autoDispose
+final roomMessageStreamProvider = StreamProvider.autoDispose
     .family<List<MessageModel>, String>((ref, roomId) {
       final firestore = ref.watch(roomFirestoreProvider);
       final currentUserId = ref.watch(userProvider)?.id;
@@ -83,7 +83,7 @@ final messagetreamProvider = StreamProvider.autoDispose
             .collection('messages')
             .orderBy('sentAt')
             .limit(QueryPolicy.messagesLimit)
-            .snapshots()
+            .snapshots(includeMetadataChanges: true)
             .map((snapshot) {
               final visibleDocs = snapshot.docs
                   .where((doc) {
@@ -132,42 +132,37 @@ final messagetreamProvider = StreamProvider.autoDispose
               return docs
                   .map((doc) {
                     final data = doc.data();
-                    final sentAt =
-                        data['sentAt'] ??
-                        data['createdAt'] ??
-                        data['clientSentAt'];
+                    final message = MessageModel.fromJson(data, doc.id);
                     final recipientUserId = _asString(data['recipientUserId']);
                     final recipientDisplayName = _asString(
                       data['recipientDisplayName'],
                     );
-                    final senderId = _asString(data['senderId']);
-                    final contentRaw = _asString(data['content']);
-                    String content = contentRaw;
+                    final senderId = message.senderId;
+                    String content = message.content;
                     if (recipientUserId.isNotEmpty) {
                       if (currentUserId != null && senderId == currentUserId) {
                         final targetLabel = recipientDisplayName.isEmpty
                             ? recipientUserId
                             : recipientDisplayName;
-                        content = '[Private to $targetLabel] $contentRaw';
+                        content = '[Private to $targetLabel] $content';
                       } else if (currentUserId != null &&
                           recipientUserId == currentUserId) {
-                        content = '[Private to you] $contentRaw';
+                        content = '[Private to you] $content';
                       }
                     }
                     return MessageModel(
-                      id: doc.id,
+                      id: message.id,
                       conversationId: roomId,
                       senderId: senderId,
-                      senderName: _asString(
-                        data['senderName'],
-                        fallback: senderId,
-                      ),
+                      senderName: message.senderName,
+                      senderAvatarUrl: message.senderAvatarUrl,
                       content: content,
-                      type: _asString(data['type'], fallback: 'normal'),
-                      createdAt: sentAt is Timestamp
-                          ? sentAt.toDate()
-                          : DateTime.tryParse(sentAt?.toString() ?? '') ??
-                                DateTime.now(),
+                      type: message.type,
+                      createdAt: message.createdAt,
+                      expiresAt: message.expiresAt,
+                      editedAt: message.editedAt,
+                      isDeleted: message.isDeleted,
+                      readBy: message.readBy,
                     );
                   })
                   .toList(growable: false);

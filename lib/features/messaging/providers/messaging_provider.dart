@@ -152,7 +152,7 @@ final conversationDocProvider = StreamProvider.autoDispose
 // During the pending-write window (before server ack), Firestore's local SDK
 // estimates the server timestamp from device time for ordering \u2014 this is
 // correct behavior. We sort stable-ly so pending writes stay in send order.
-final messagestreamProvider = StreamProvider.autoDispose
+final messageStreamProvider = StreamProvider.autoDispose
     .family<List<MessageModel>, String>((ref, conversationId) {
       final firestore = ref.watch(firestoreProvider);
       return firestore
@@ -841,38 +841,47 @@ final unreadmessageCountProvider = Provider.autoDispose<int>((ref) {
 
 /// Optimized provider that filters conversations by the user's block list.
 /// Hardening: separates the raw Firestore stream from the expensive moderation logic.
-final filteredConversationsProvider = FutureProvider.autoDispose
-    .family<List<Conversation>, String>((ref, userId) async {
-      final allConversations = await ref.watch(
-        rawConversationsStreamProvider(userId).future,
+final filteredConversationsProvider =
+    Provider.autoDispose.family<AsyncValue<List<Conversation>>, String>((ref, userId) {
+  final allAsync = ref.watch(rawConversationsStreamProvider(userId));
+  final excludedAsync = ref.watch(excludedUserIdsProvider(userId));
+
+  return allAsync.when(
+    data: (all) {
+      return excludedAsync.when(
+        data: (excludedIds) {
+          final active = all.where((c) => c.status != 'pending');
+
+          if (excludedIds.isEmpty) {
+            final sorted = active.toList();
+            sorted.sort((left, right) => _compareConversationsForUser(left, right, userId));
+            return AsyncValue.data(sorted);
+          }
+
+          final visible = active.where((conv) {
+            final others = conv.participantIds.where((id) => id != userId);
+            return !others.any((id) => excludedIds.contains(id));
+          }).toList();
+
+          visible.sort((left, right) => _compareConversationsForUser(left, right, userId));
+          return AsyncValue.data(visible);
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.data(
+          all
+              .where((c) => c.status != 'pending')
+              .toList()
+            ..sort((left, right) => _compareConversationsForUser(left, right, userId)),
+        ),
       );
-      final activeConversations = allConversations
-          .where((conversation) => conversation.status != 'pending')
-          .toList(growable: false);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
 
-      try {
-        final moderationService = ModerationService();
-        final excludedIds = await moderationService.getExcludedUserIds(userId);
-
-        if (excludedIds.isEmpty) {
-          final sorted = List<Conversation>.from(activeConversations);
-          sorted.sort(
-            (left, right) => _compareConversationsForUser(left, right, userId),
-          );
-          return sorted;
-        }
-
-        final visibleConversations = activeConversations.where((conv) {
-          final others = conv.participantIds.where((id) => id != userId);
-          return !others.any((id) => excludedIds.contains(id));
-        }).toList();
-
-        visibleConversations.sort(
-          (left, right) => _compareConversationsForUser(left, right, userId),
-        );
-        return visibleConversations;
-      } catch (e) {
-        // Fail safe: return all conversations if moderation check fails
-        return activeConversations;
-      }
-    });
+/// Watches the excluded user IDs for a given user, used for filtering conversations.
+final excludedUserIdsProvider =
+    FutureProvider.autoDispose.family<Set<String>, String>((ref, userId) async {
+  return ModerationService().getExcludedUserIds(userId);
+});

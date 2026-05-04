@@ -38,7 +38,7 @@ final userDocStreamProvider =
     });
 
 final userDataStreamProvider =
-    Provider.family<AsyncValue<Map<String, dynamic>?>, String>((ref, userId) {
+    Provider.autoDispose.family<AsyncValue<Map<String, dynamic>?>, String>((ref, userId) {
       return ref
           .watch(userDocStreamProvider(userId))
           .whenData((doc) => doc?.data());

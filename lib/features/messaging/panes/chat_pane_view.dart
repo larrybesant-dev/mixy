@@ -353,8 +353,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
   @override
   Widget build(BuildContext context) {
-    final messageAsync = ref.watch(
-      messagestreamProvider(widget.conversationId),
+    final messageStream = ref.watch(
+      messageStreamProvider(widget.conversationId),
     );
     final paginatedState = ref.watch(
       paginatedmessageProvider(widget.conversationId),
@@ -469,7 +469,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
             ),
           ),
         Expanded(
-          child: messageAsync.when(
+          child: messageStream.when(
             data: (livemessage) {
               final pendingClientIds = _pendingmessage
                   .map((message) => message.clientmessageId)

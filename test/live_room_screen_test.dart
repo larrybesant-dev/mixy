@@ -49,7 +49,7 @@ void main() {
             (ref, roomId) => Stream.value([]),
           ),
           participantCountProvider.overrideWith((ref, roomId) => 1),
-          messagetreamProvider.overrideWith((ref, roomId) => Stream.value([])),
+          roomMessageStreamProvider.overrideWith((ref, roomId) => Stream.value([])),
           hostProvider.overrideWith(
             (ref, roomId) => Stream.value(Host('host-1')),
           ),

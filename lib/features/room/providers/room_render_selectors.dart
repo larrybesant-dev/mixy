@@ -92,7 +92,7 @@ final roomCoachMetricsProvider = Provider.autoDispose
           ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
           const <RoomParticipantModel>[];
       final messages =
-          ref.watch(messagetreamProvider(roomId)).valueOrNull ??
+          ref.watch(roomMessageStreamProvider(roomId)).valueOrNull ??
           const <dynamic>[];
       // Watch typingStreamProvider directly — bypasses the participant-hydration
       // gate in roomActivityStateProvider so typing is visible immediately.
