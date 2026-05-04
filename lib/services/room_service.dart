@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/features/room/contracts/room_visibility_contract.dart';
 import 'package:mixvy/models/room_model.dart';
 
 import '../core/logger.dart';
@@ -21,11 +22,8 @@ final roomServiceProvider = Provider<RoomService>((ref) {
 });
 
 class RoomService {
-  static const Duration _participantFreshnessWindow = Duration(seconds: 90);
   static const Duration _liveRoomRemovalGraceWindow = Duration(seconds: 2);
   static const Duration _liveRoomsDebounceWindow = Duration(milliseconds: 220);
-  static const Duration _roomActivityFallbackWindow = Duration(minutes: 3);
-  static const Duration _newRoomVisibilityGraceWindow = Duration(minutes: 5);
 
   RoomService({
     FirebaseFirestore? firestore,
@@ -94,82 +92,7 @@ class RoomService {
     }
   }
 
-  DateTime get _freshParticipantCutoff =>
-      DateTime.now().subtract(_participantFreshnessWindow);
-
-  bool _hasOwnershipIdentity(RoomModel room) {
-    return room.hostId.trim().isNotEmpty || room.ownerId.trim().isNotEmpty;
-  }
-
-  bool _isNewRoomWithinGrace(RoomModel room, DateTime now) {
-    final createdAt = room.createdAt?.toDate();
-    if (createdAt == null) {
-      return false;
-    }
-    return now.difference(createdAt) <= _newRoomVisibilityGraceWindow;
-  }
-
-  bool _passesStructuralVisibilityContract(RoomModel room) {
-    if (!room.isLive) {
-      return false;
-    }
-    if (room.endedAt != null) {
-      return false;
-    }
-    if (!_hasOwnershipIdentity(room)) {
-      return false;
-    }
-    return true;
-  }
-
-  bool _roomDocShowsRecentActivity(RoomModel room) {
-    final effectiveCount = _effectiveRoomMemberCount(room);
-    if (effectiveCount <= 0) {
-      return false;
-    }
-
-    final activityAt = room.updatedAt?.toDate() ?? room.createdAt?.toDate();
-    if (activityAt == null) {
-      return true;
-    }
-
-    return DateTime.now().difference(activityAt) <= _roomActivityFallbackWindow;
-  }
-
-  Future<bool> _hasFreshParticipants(RoomModel room) async {
-    // Fast path: if the room doc itself shows a non-zero member count and
-    // was updated recently, trust it without making subcollection reads.
-    // This eliminates up to 2 Firestore reads per room in the discovery feed
-    // (N+1 pattern) when rooms are being actively heartbeated.
-    if (_roomDocShowsRecentActivity(room)) {
-      return true;
-    }
-
-    // Slow path: room doc looks stale — do a single subcollection probe to
-    // confirm at least one fresh participant exists before showing the room.
-    try {
-      final cutoff = Timestamp.fromDate(_freshParticipantCutoff);
-      final participantSnapshot = await _participantsCollection(
-        room.id,
-      ).where('lastActiveAt', isGreaterThanOrEqualTo: cutoff).limit(1).get();
-      if (participantSnapshot.docs.isNotEmpty) {
-        return true;
-      }
-
-      final memberSnapshot = await _membersCollection(
-        room.id,
-      ).where('lastActiveAt', isGreaterThanOrEqualTo: cutoff).limit(1).get();
-      if (memberSnapshot.docs.isNotEmpty) {
-        return true;
-      }
-
-      return false;
-    } on FirebaseException {
-      // Some production rule sets can restrict participant reads.
-      // Fail open here so discovery feed remains usable.
-      return true;
-    }
-  }
+  DateTime get _now => DateTime.now();
 
   /*
   Future<void> _markRoomInactive(String roomId) {
@@ -313,15 +236,15 @@ class RoomService {
     required bool includeAdultRooms,
   }) async {
     final activeRooms = <RoomModel>[];
-    final now = DateTime.now();
+    final now = _now;
     var totalDocs = 0;
     var adultDropped = 0;
     var parseDropped = 0;
-    var structuralDropped = 0;
-    var freshParticipantRooms = 0;
+    var missingOwnerDropped = 0;
+    var endedDropped = 0;
     var staleDropped = 0;
     var graceKept = 0;
-    var participantCheckErrors = 0;
+    var structuralOk = 0;
 
     for (final doc in docs) {
       totalDocs += 1;
@@ -344,45 +267,36 @@ class RoomService {
         continue;
       }
 
-      if (!_passesStructuralVisibilityContract(room)) {
-        structuralDropped += 1;
-        Logger.warning(
-          'ROOM_VISIBILITY structural_drop roomId=${room.id} reason=contract_failed isLive=${room.isLive} hasHost=${room.hostId.trim().isNotEmpty} hasOwner=${room.ownerId.trim().isNotEmpty} ended=${room.endedAt != null}',
-        );
+      final decision = RoomVisibilityContract.evaluate(room, now: now);
+      RoomVisibilityContract.logDecision(room, decision);
+      if (decision.visible) {
+        if (decision.reasonCode == RoomVisibilityReasonCode.graceAllowed) {
+          graceKept += 1;
+        } else {
+          structuralOk += 1;
+        }
+        activeRooms.add(room);
         continue;
       }
 
-      try {
-        final hasFreshParticipants = await _hasFreshParticipants(room);
-        if (hasFreshParticipants) {
-          freshParticipantRooms += 1;
-          activeRooms.add(room);
-          continue;
-        }
-
-        if (_isNewRoomWithinGrace(room, now)) {
-          graceKept += 1;
-          Logger.warning(
-            'ROOM_VISIBILITY grace_keep roomId=${room.id} reason=new_room_no_fresh_participants roomMemberCount=${room.memberCount} stage=${room.stageUserIds.length} audience=${room.audienceUserIds.length}',
-          );
-          activeRooms.add(room);
-        } else {
+      switch (decision.reasonCode) {
+        case RoomVisibilityReasonCode.missingOwner:
+          missingOwnerDropped += 1;
+        case RoomVisibilityReasonCode.ended:
+          endedDropped += 1;
+        case RoomVisibilityReasonCode.stale:
           staleDropped += 1;
-          Logger.warning(
-            'ROOM_VISIBILITY stale_drop roomId=${room.id} reason=no_fresh_participants roomMemberCount=${room.memberCount} stage=${room.stageUserIds.length} audience=${room.audienceUserIds.length}',
-          );
-        }
-      } on FirebaseException {
-        participantCheckErrors += 1;
-        // Keep the room visible instead of failing the entire feed.
-        activeRooms.add(room);
+        case RoomVisibilityReasonCode.structuralOk:
+          structuralOk += 1;
+        case RoomVisibilityReasonCode.graceAllowed:
+          graceKept += 1;
       }
     }
 
     activeRooms.sort(_compareStableLiveRooms);
 
     Logger.info(
-      'ROOM_VISIBILITY snapshot_total=$totalDocs visible=${activeRooms.length} adult_dropped=$adultDropped parse_dropped=$parseDropped structural_dropped=$structuralDropped fresh=$freshParticipantRooms grace_kept=$graceKept stale_dropped=$staleDropped participant_check_errors=$participantCheckErrors includeAdult=$includeAdultRooms',
+      'ROOM_VISIBILITY snapshot_total=$totalDocs visible=${activeRooms.length} adult_dropped=$adultDropped parse_dropped=$parseDropped missing_owner_dropped=$missingOwnerDropped ended_dropped=$endedDropped stale_dropped=$staleDropped grace_kept=$graceKept structural_ok=$structuralOk includeAdult=$includeAdultRooms',
     );
 
     return activeRooms;
@@ -749,9 +663,11 @@ class RoomService {
       'description': description?.trim(),
       'rules': rules?.trim(),
       'hostId': trimmedHostId,
+      'ownerId': trimmedHostId,
       'hostUsername': hostUsername?.trim(),
       'hostAvatarUrl': hostAvatarUrl?.trim(),
       'isLive': isLive,
+      'endedAt': null,
       'isAdult': isAdult,
       'thumbnailUrl': thumbnailUrl?.trim(),
       'createdAt': now,
@@ -785,6 +701,7 @@ class RoomService {
     final normalizedRoomId = _normalizeRoomId(roomId);
     await _roomsCollection.doc(normalizedRoomId).update({
       'isLive': isLive,
+      'endedAt': isLive ? null : FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
