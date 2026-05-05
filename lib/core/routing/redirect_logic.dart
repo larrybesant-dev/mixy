@@ -12,44 +12,29 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   required bool legalStateResolved,
   required bool hasAcceptedLegal,
 }) {
-  // Legal acceptance is enforced in feature flows, not in startup routing.
-  // Keep parameters for backward-compatible callsites but do not act on them.
+  final isAuth = uid != null && uid.isNotEmpty;
   if (authLoading) {
     return const RedirectEvaluation(
       redirectTo: null,
-      reason: 'auth_loading_hold',
+      reason: 'auth_loading_non_blocking',
     );
   }
 
-  final isAuth = uid != null && uid.isNotEmpty;
-
-  // ── Unauthenticated ────────────────────────────────────────────────────
-  if (!isAuth) {
-    // Public auth routes always allowed.
-    if (matchedLocation == '/auth' || matchedLocation == '/register') {
-      return const RedirectEvaluation(
-        redirectTo: null,
-        reason: 'signed_out_allowed_public_auth_routes',
-      );
-    }
-
-    return const RedirectEvaluation(
-      redirectTo: '/auth',
-      reason: 'signed_out_redirect_to_auth',
-    );
-  }
-
-  // ── Authenticated ──────────────────────────────────────────────────────
   if (matchedLocation == '/auth') {
-    return const RedirectEvaluation(
-      redirectTo: '/home',
-      reason: 'signed_in_redirect_to_home',
-    );
+    return isAuth
+        ? const RedirectEvaluation(
+            redirectTo: '/home',
+            reason: 'signed_in_redirect_to_home',
+          )
+        : const RedirectEvaluation(
+            redirectTo: null,
+            reason: 'signed_out_allowed_auth_route',
+          );
   }
 
   return const RedirectEvaluation(
     redirectTo: null,
-    reason: 'no_redirect_keep_location',
+    reason: 'shell_first_keep_location',
   );
 }
 

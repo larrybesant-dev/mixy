@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +31,7 @@ import '../features/auth/controllers/auth_controller.dart';
 import '../features/profile/profile_controller.dart';
 import '../services/presence_controller.dart';
 import '../core/events/event_providers.dart';
+import '../core/providers/push_messaging_providers.dart';
 import '../core/services/feature_gate_service.dart';
 import '../presentation/providers/wallet_provider.dart';
 import '../features/payments/premium_entitlement.dart';
@@ -40,68 +44,124 @@ import '../services/push_messaging_service.dart';
 final appBootstrapProvider = FutureProvider<void>((ref) async {
   final startup = StartupProfiler.instance;
   final bootStateNotifier = ref.read(bootStateProvider.notifier);
-  if (Firebase.apps.isEmpty) {
-    bootStateNotifier.setFailed();
-    developer.log(
-      'Firebase app is not initialized during bootstrap',
-      name: 'appBootstrapProvider',
-    );
-    startup.markBootstrapResolved(
-      resolution: BootstrapResolution.failed,
-      detail: 'reason=firebase_apps_empty',
-    );
-    return;
-  }
+  bootStateNotifier.setLoading();
 
-  final auth = FirebaseAuth.instance;
-
-  try {
-    bool timeoutHit = false;
-    User? authUser;
-    try {
-      authUser = await auth.authStateChanges().first.timeout(
-        const Duration(seconds: 20),
+  final bootstrapWatchdog = Timer(const Duration(seconds: 8), () {
+    if (bootStateNotifier.isLoadingState) {
+      bootStateNotifier.setFailed();
+      startup.markBootstrapResolved(
+        resolution: BootstrapResolution.failed,
+        detail: 'reason=bootstrap_timeout',
       );
-    } on TimeoutException {
-      timeoutHit = true;
-      // Fallback: use current user immediately available.
-      authUser = auth.currentUser;
       developer.log(
-        'Auth bootstrap stream timed out; using currentUser as fallback',
+        'BOOTSTRAP TIMEOUT: exceeded 8s while still loading',
         name: 'appBootstrapProvider',
       );
     }
+  });
 
-    if (timeoutHit && authUser == null) {
-      bootStateNotifier.setDegraded();
-      startup.markBootstrapResolved(
-        resolution: BootstrapResolution.degraded,
-        detail: 'reason=auth_timeout_without_user',
+  var hasDegradedDependency = false;
+
+  try {
+    // Env is optional at boot time. Keep startup alive if the file is missing
+    // or malformed and allow feature-level fallbacks.
+    try {
+      await dotenv.load(fileName: 'assets/.env');
+    } catch (error, stackTrace) {
+      developer.log(
+        'ENV LOAD FAILED: $error',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'appBootstrapProvider',
       );
-      return;
+      hasDegradedDependency = true;
     }
 
-    // Auth check succeeded; boot is ready
-    bootStateNotifier.setReady();
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    }
+
+    FirebaseFirestore.instance.settings = kIsWeb
+        ? const Settings(
+            persistenceEnabled: true,
+            cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+            webPersistentTabManager: WebPersistentMultipleTabManager(),
+          )
+        : const Settings(
+            persistenceEnabled: true,
+            cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+          );
+
+    // Push is optional per platform/runtime; do not fail app boot if unavailable.
+    // Time-box initialization so web/incognito push capability checks cannot
+    // pin the app in a perpetual loading shell.
+    try {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      PushMessagingService.instance.setNavigatorKey(rootNavigatorKey);
+      await PushMessagingService.instance
+          .initialize()
+          .timeout(const Duration(seconds: 4));
+    } catch (error, stackTrace) {
+      developer.log(
+        'PUSH INIT FAILED: $error',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'appBootstrapProvider',
+      );
+      hasDegradedDependency = true;
+    }
+
+    // Crashlytics is optional for app startup.
+    try {
+      if (!kIsWeb && const bool.fromEnvironment('dart.vm.product')) {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'CRASHLYTICS INIT FAILED: $error',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'appBootstrapProvider',
+      );
+      hasDegradedDependency = true;
+    }
+
+    if (bootStateNotifier.isLoadingState) {
+      bootStateNotifier.setReady();
+      if (hasDegradedDependency) {
+        bootStateNotifier.setDegraded();
+      }
+    }
+
+    startup.markFirebaseReady(success: true);
     startup.markBootstrapResolved(
-      resolution: BootstrapResolution.ready,
-      detail: 'user=${auth.currentUser != null}',
+      resolution: hasDegradedDependency
+          ? BootstrapResolution.degraded
+          : BootstrapResolution.ready,
+      detail: hasDegradedDependency
+          ? 'firebase_initialized_optional_dependency_failed'
+          : 'firebase_initialized',
     );
   } catch (error, stackTrace) {
+    bootStateNotifier.setFailed();
     developer.log(
-      'Auth state check failed during bootstrap',
+      'FIREBASE INIT FAILED: $error',
       error: error,
       stackTrace: stackTrace,
       name: 'appBootstrapProvider',
     );
-    bootStateNotifier.setDegraded();
-    startup.markBootstrapResolved(
-      resolution: BootstrapResolution.degraded,
+    startup.markFirebaseReady(
+      success: false,
       error: error,
       stackTrace: stackTrace,
     );
+    startup.markBootstrapResolved(
+      resolution: BootstrapResolution.failed,
+      detail: 'reason=firebase_init_failed',
+    );
+  } finally {
+    bootstrapWatchdog.cancel();
   }
-
 });
 
 class MixVyApp extends ConsumerStatefulWidget {
@@ -124,6 +184,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
   Timer? _bootHintTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   ProviderSubscription<FeatureGateState>? _featureGateSub;
+  bool? _pendingPushEnabled;
 
   static const List<String> _bootHints = <String>[
     'Connecting...',
@@ -161,11 +222,8 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
     _featureGateSub = ref.listenManual<FeatureGateState>(
       featureGateControllerProvider,
       (_, next) {
-        unawaited(
-          PushMessagingService.instance.setPushEnabled(
-            next.enablePushNotifications,
-          ),
-        );
+        _pendingPushEnabled = next.enablePushNotifications;
+        _maybeApplyPushFeatureGate();
       },
       fireImmediately: true,
     );
@@ -196,6 +254,28 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
         StartupProfiler.instance.markWarmInteractiveReady();
       });
     }
+  }
+
+  Future<void> _applyPushFeatureGate(bool enabled) async {
+    try {
+      await PushMessagingService.instance.setPushEnabled(enabled);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Push feature-gate sync skipped until messaging is available',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'MixVyApp',
+      );
+    }
+  }
+
+  void _maybeApplyPushFeatureGate() {
+    final pending = _pendingPushEnabled;
+    if (pending == null || Firebase.apps.isEmpty) {
+      return;
+    }
+    _pendingPushEnabled = null;
+    unawaited(_applyPushFeatureGate(pending));
   }
 
   Future<void> _startFastLaneServices() async {
@@ -231,10 +311,8 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 450), () {
         if (!mounted) return;
-        // Keep density surfaces warm without blocking first interactive render.
+        // Keep only lightweight warmups here to avoid long-lived startup listeners.
         unawaited(ref.read(currentUserActivitiesProvider.future));
-        unawaited(ref.read(trendingUsersStreamProvider.future));
-        unawaited(ref.read(roomsStreamProvider.future));
         ref.read(homeFeedSnapshotProvider);
       });
     });
@@ -254,24 +332,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
 
   Future<void> _retryStartup() async {
     ref.read(bootStateProvider.notifier).setLoading();
-
-    try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-      }
-
-      ref.invalidate(appBootstrapProvider);
-    } catch (error, stackTrace) {
-      developer.log(
-        'Retry startup failed',
-        error: error,
-        stackTrace: stackTrace,
-        name: 'MixVyApp',
-      );
-      ref.read(bootStateProvider.notifier).setFailed();
-    }
+    ref.invalidate(appBootstrapProvider);
   }
 
   void _queueStressRunnerIfEnabled({
@@ -515,9 +576,13 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
 
   @override
   Widget build(BuildContext context) {
-    // Check fatal failure first — before touching appBootstrapProvider — so
-    // we never show a spurious loading frame when Firebase init already failed.
+    ref.watch(appBootstrapProvider);
+    ref.watch(pushMessagingAuthCoordinatorProvider);  // Coordinate push auth with canonical auth stream
     final bootState = ref.watch(bootStateProvider);
+
+    if (bootState == BootState.loading) {
+      return _buildBootShell();
+    }
 
     if (bootState == BootState.failed) {
       return _buildBootShell(
@@ -527,92 +592,72 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
       );
     }
 
-    final boot = ref.watch(appBootstrapProvider);
+    if (bootState == BootState.ready || bootState == BootState.degraded) {
+      _maybeApplyPushFeatureGate();
+    }
+
     final authState = ref.watch(authControllerProvider);
+    final router = ref.watch(routerProvider);
+    _queueStressRunnerIfEnabled(router: router, authState: authState);
+    _queueStartupLanes(authState);
 
-    if (bootState == BootState.loading || boot.isLoading) {
-      return _buildBootShell();
-    }
+    final settings =
+        ref.watch(appSettingsControllerProvider).valueOrNull ??
+        const AppSettings.defaults();
 
-    // Only route once auth bootstrap has reached a stable phase.
-    if (!authState.isRoutingStable) {
-      final statusMessage = switch (authState.phase) {
-        AuthBootstrapPhase.booting => 'Launching auth runtime...',
-        AuthBootstrapPhase.initializingAuth =>
-          'Resolving your secure session...',
-        _ => 'Preparing your connection and live state...',
-      };
-      return _buildBootShell(message: statusMessage);
-    }
+    final locale = Locale(settings.localeCode);
+    final afterDark = ref.watch(afterDarkSessionProvider);
 
-    return boot.when(
-      loading: () => _buildBootShell(),
-      error: (_, stackTrace) =>
-          _buildBootShell(message: 'Recovering startup...'),
-      data: (_) {
-        final router = ref.watch(routerProvider);
-        _queueStressRunnerIfEnabled(router: router, authState: authState);
-        _queueStartupLanes(authState);
-
-        final settings =
-            ref.watch(appSettingsControllerProvider).valueOrNull ??
-            const AppSettings.defaults();
-
-        final locale = Locale(settings.localeCode);
-        final afterDark = ref.watch(afterDarkSessionProvider);
-
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          StartupProfiler.instance.markFirstFrameRendered();
-          if (!_interactiveReadyMarked && authState.isRoutingStable) {
-            _interactiveReadyMarked = true;
-            StartupProfiler.instance.markFirstInteractiveReady(
-              launchType: 'cold',
-            );
-          }
-        });
-
-        return MaterialApp.router(
-          title: 'MixVy',
-          theme: afterDark ? afterDarkTheme : AppTheme.light,
-          darkTheme: afterDark ? afterDarkTheme : midnightCreativeTheme,
-          themeMode: afterDark ? ThemeMode.dark : settings.themeMode,
-          locale: locale,
-          supportedLocales: const [Locale('en'), Locale('es'), Locale('fr')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          builder: (context, child) {
-            final routedChild = child ?? const SizedBox.shrink();
-            final diagnosticsChild = kDebugMode
-                ? AppDebugOverlay(child: routedChild)
-                : routedChild;
-
-            final appChild = DefaultTextStyle.merge(
-              style: const TextStyle(
-                fontFamilyFallback: mixvyFontFamilyFallback,
-              ),
-              child: IncomingCallOverlay(
-                child: BetaFeedbackOverlay(child: diagnosticsChild),
-              ),
-            );
-
-            if (bootState == BootState.degraded) {
-              return _buildDegradedBanner(appChild);
-            }
-
-            if (_isOffline) {
-              return _buildOfflineBanner(appChild);
-            }
-
-            return appChild;
-          },
-          routerConfig: router,
-          debugShowCheckedModeBanner: false,
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      StartupProfiler.instance.markFirstFrameRendered();
+      if (!_interactiveReadyMarked) {
+        _interactiveReadyMarked = true;
+        StartupProfiler.instance.markFirstInteractiveReady(
+          launchType: 'cold',
         );
+      }
+    });
+
+    return MaterialApp.router(
+      title: 'MixVy',
+      theme: afterDark ? afterDarkTheme : AppTheme.light,
+      darkTheme: afterDark ? afterDarkTheme : midnightCreativeTheme,
+      themeMode: afterDark ? ThemeMode.dark : settings.themeMode,
+      locale: locale,
+      supportedLocales: const [Locale('en'), Locale('es'), Locale('fr')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      builder: (context, child) {
+        final routedChild = child ?? const SizedBox.shrink();
+        final diagnosticsChild = kDebugMode
+            ? AppDebugOverlay(child: routedChild)
+            : routedChild;
+
+        final appChild = DefaultTextStyle.merge(
+          style: const TextStyle(
+            fontFamilyFallback: mixvyFontFamilyFallback,
+          ),
+          child: IncomingCallOverlay(
+            child: BetaFeedbackOverlay(child: diagnosticsChild),
+          ),
+        );
+
+        if (bootState == BootState.degraded) {
+          return _buildDegradedBanner(appChild);
+        }
+
+        if (_isOffline) {
+          return _buildOfflineBanner(appChild);
+        }
+
+        return appChild;
       },
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

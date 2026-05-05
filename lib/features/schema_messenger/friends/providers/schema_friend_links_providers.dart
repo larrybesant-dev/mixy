@@ -15,13 +15,11 @@ import '../models/schema_friend_presence.dart';
 // Route through canonical providers so test overrides work.
 final schemaFriendFirestoreProvider = firestoreProvider;
 
-/// Streams the authenticated user's UID. Uses the canonical [firebaseAuthProvider]
-/// so there is only ONE authStateChanges() listener per session.
-final schemaAuthUserIdProvider = StreamProvider<String?>((ref) {
-  return ref
-      .watch(firebaseAuthProvider)
-      .authStateChanges()
-      .map((user) => user?.uid);
+/// Exposes the authenticated user's UID from canonical [authStateProvider]
+/// without opening a duplicate authStateChanges() stream.
+final schemaAuthUserIdProvider = Provider<String?>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  return user?.uid;
 });
 
 /// Derived: shares the canonical [rawAllFriendshipsStreamProvider] with the
@@ -30,7 +28,7 @@ final schemaAuthUserIdProvider = StreamProvider<String?>((ref) {
 /// userId, Riverpod's family deduplication guarantees ONE underlying stream.
 final schemaFriendLinksProvider =
     StreamProvider.autoDispose<List<SchemaFriendLink>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull ?? '';
+      final userId = ref.watch(schemaAuthUserIdProvider) ?? '';
       if (userId.isEmpty) {
         return const Stream<List<SchemaFriendLink>>.empty();
       }
@@ -78,7 +76,7 @@ final schemaAcceptedFriendLinksProvider =
 final schemaAcceptedFriendIdsProvider = Provider.autoDispose<List<String>>((
   ref,
 ) {
-  final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+  final userId = ref.watch(schemaAuthUserIdProvider);
   final links = ref.watch(schemaAcceptedFriendLinksProvider);
   if (userId == null || userId.isEmpty) return const <String>[];
 
@@ -91,7 +89,7 @@ final schemaAcceptedFriendIdsProvider = Provider.autoDispose<List<String>>((
 
 final schemaIncomingFriendRequestsProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final userId = ref.watch(schemaAuthUserIdProvider);
       final links =
           ref.watch(schemaFriendLinksProvider).valueOrNull ??
           const <SchemaFriendLink>[];
@@ -104,7 +102,7 @@ final schemaIncomingFriendRequestsProvider =
 
 final schemaOutgoingFriendRequestsProvider =
     Provider.autoDispose<List<SchemaFriendLink>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final userId = ref.watch(schemaAuthUserIdProvider);
       final links =
           ref.watch(schemaFriendLinksProvider).valueOrNull ??
           const <SchemaFriendLink>[];

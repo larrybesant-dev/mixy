@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/firestore/firestore_debug_tracing.dart';
 import '../core/providers/firebase_providers.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
 import '../models/presence_model.dart';
 
 abstract class PresenceRepository {
@@ -17,16 +18,24 @@ abstract class PresenceRepository {
 }
 
 final presenceRepositoryProvider = Provider<PresenceRepository>((ref) {
-  return FirestorePresenceRepository(ref.watch(firestoreProvider));
+  return FirestorePresenceRepository(
+    ref.watch(firestoreProvider),
+    streamLifecycleManager: ref.watch(streamLifecycleManagerProvider),
+  );
 });
 
 class FirestorePresenceRepository implements PresenceRepository {
-  FirestorePresenceRepository(this._firestore);
+  FirestorePresenceRepository(
+    this._firestore, {
+    StreamLifecycleManager? streamLifecycleManager,
+  }) : _streamLifecycleManager =
+           streamLifecycleManager ?? StreamLifecycleManager.instance;
 
   static const int _firestoreWhereInLimit = 30;
   static const Duration _transientOfflineHold = Duration(seconds: 8);
 
   final FirebaseFirestore _firestore;
+  final StreamLifecycleManager _streamLifecycleManager;
 
   bool _isPermissionDenied(Object error) {
     if (error is FirebaseException) {
@@ -209,20 +218,31 @@ class FirestorePresenceRepository implements PresenceRepository {
         void emit() => emitFrom(presenceById);
 
         for (final userId in normalizedIds) {
-          final sub = _ref(userId).snapshots().listen(
-            (doc) {
-              presenceById[userId] = _parsePresence(userId, doc.data());
-              emit();
-            },
-            onError: (error, stackTrace) {
-              if (_isPermissionDenied(error)) {
-                presenceById[userId] = _parsePresence(userId, null);
-                emit();
-                return;
-              }
-              controller.addError(error, stackTrace);
-            },
+          final streamKey = _streamLifecycleManager.buildDedupeKey(
+            domain: 'presence-user-doc',
+            userId: userId,
+            queryHash: 'doc',
           );
+          final sub = _streamLifecycleManager
+              .bind<DocumentSnapshot<Map<String, dynamic>>>(
+                key: streamKey,
+                routePrefixes: const <String>['*'],
+                create: () => _ref(userId).snapshots(),
+              )
+              .listen(
+                (doc) {
+                  presenceById[userId] = _parsePresence(userId, doc.data());
+                  emit();
+                },
+                onError: (error, stackTrace) {
+                  if (_isPermissionDenied(error)) {
+                    presenceById[userId] = _parsePresence(userId, null);
+                    emit();
+                    return;
+                  }
+                  controller.addError(error, stackTrace);
+                },
+              );
           subscriptions.add(sub);
         }
 
@@ -248,10 +268,21 @@ class FirestorePresenceRepository implements PresenceRepository {
 
       for (var index = 0; index < chunks.length; index += 1) {
         final chunk = chunks[index];
-        final sub = _firestore
-            .collection('presence')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .snapshots()
+        final queryHash = chunk.join('|').hashCode.toUnsigned(32).toRadixString(16);
+        final streamKey = _streamLifecycleManager.buildDedupeKey(
+          domain: 'presence-batch',
+          userId: normalizedIds.join(','),
+          queryHash: queryHash,
+        );
+        final sub = _streamLifecycleManager
+            .bind<QuerySnapshot<Map<String, dynamic>>>(
+              key: streamKey,
+              routePrefixes: const <String>['*'],
+              create: () => _firestore
+                  .collection('presence')
+                  .where(FieldPath.documentId, whereIn: chunk)
+                  .snapshots(),
+            )
             .listen(
               (snapshot) {
                 chunkMaps[index] = {

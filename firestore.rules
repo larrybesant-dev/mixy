@@ -301,7 +301,13 @@ service cloud.firestore {
           'description',
           'rules',
           'hostId',
+          'ownerId',
+          'hostUsername',
+          'hostAvatarUrl',
+          'meta',
+          'schemaVersion',
           'isLive',
+          'endedAt',
           'isAdult',
           'allowGuestAccess',
           'thumbnailUrl',
@@ -320,12 +326,26 @@ service cloud.firestore {
           'maxSpeakers',
           'speakerSyncVersion',
           'theme',
-          'expiresAt'
+          'expiresAt',
+          'isDirectCall',
+          'calleeId'
         ])
         && request.resource.data.hostId == uid()
+        && (
+          !('ownerId' in request.resource.data)
+          || request.resource.data.ownerId == uid()
+        )
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 120
+        && (
+          !('meta' in request.resource.data)
+          || (
+            request.resource.data.meta is map
+            && request.resource.data.meta.title is string
+            && request.resource.data.meta.title.size() > 0
+          )
+        )
         && request.resource.data.isLive is bool
         && request.resource.data.isAdult is bool
         && (!request.resource.data.isAdult || isAdultVerified(uid()))
@@ -1119,6 +1139,15 @@ service cloud.firestore {
         allow delete: if signedIn()
           && resource.data.authorId == uid();
       }
+    }
+
+    // ---------------------------------------------------------------------
+    // Hashtags (search/trending index)
+    // ---------------------------------------------------------------------
+
+    match /hashtags/{tagId} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn();
     }
 
     // ---------------------------------------------------------------------

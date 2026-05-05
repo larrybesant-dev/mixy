@@ -95,7 +95,7 @@ final schemaParityMonitorProvider = Provider.autoDispose
             mismatchDetails: result.unreadMismatches,
           );
         case 'friends':
-          final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+          final authUserId = ref.watch(schemaAuthUserIdProvider);
           if (authUserId == null || authUserId.isEmpty) {
             return const SchemaParityMonitorReport(
               moduleId: 'friends',

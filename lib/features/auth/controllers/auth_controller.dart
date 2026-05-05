@@ -64,6 +64,28 @@ class AuthState {
       phase: phase ?? this.phase,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is AuthState &&
+        other.isLoading == isLoading &&
+        other.hasResolvedSession == hasResolvedSession &&
+        other.error == error &&
+        other.uid == uid &&
+        other.phase == phase;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    isLoading,
+    hasResolvedSession,
+    error,
+    uid,
+    phase,
+  );
 }
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
@@ -74,8 +96,6 @@ class AuthController extends Notifier<AuthState> {
   final GoogleSignInHelper _googleSignInHelper;
   final AppleSignInHelper _appleSignInHelper;
   final SchemaMutationService? _schemaMutationService;
-
-  StreamSubscription<User?>? _authStateSubscription;
 
   void _setAuthState(AuthState nextState, {required String source}) {
     final previous = state;
@@ -213,44 +233,47 @@ class AuthController extends Notifier<AuthState> {
       meta: <String, dynamic>{'source': 'auth_controller_build'},
     );
 
-    _authStateSubscription?.cancel();
-    _authStateSubscription = _auth.authStateChanges().listen((user) {
-      if (_isAnonymousUser(user)) {
-        unawaited(_rejectAnonymousSession());
-        return;
-      }
+    // Subscribe to the canonical authStateProvider (single source of truth).
+    // ref.listen automatically cancels on StateNotifier disposal.
+    ref.listen<AsyncValue<User?>>(authStateProvider, (prev, next) {
+      next.whenData((user) {
+        if (_isAnonymousUser(user)) {
+          unawaited(_rejectAnonymousSession());
+          return;
+        }
 
-      // If we are currently repairing or rejecting a session, do not emit
-      // a stable state from the auth stream until that logic concludes.
-      if (state.phase == AuthBootstrapPhase.initializingAuth &&
-          state.isLoading == true) {
-        return;
-      }
+        // If we are currently repairing or rejecting a session, do not emit
+        // a stable state from the auth stream until that logic concludes.
+        if (state.phase == AuthBootstrapPhase.initializingAuth &&
+            state.isLoading == true) {
+          return;
+        }
 
-      _setAuthState(
-        state.copyWith(
-          uid: user?.uid,
+        _setAuthState(
+          state.copyWith(
+            uid: user?.uid,
+            isLoading: false,
+            hasResolvedSession: true,
+            error: null,
+            phase: user == null
+                ? AuthBootstrapPhase.unauthenticatedStable
+                : AuthBootstrapPhase.authenticatedStable,
+          ),
+          source: 'firebase_auth_state_change',
+        );
+        AppTelemetry.updateAuthState(
+          userId: user?.uid,
           isLoading: false,
-          hasResolvedSession: true,
           error: null,
-          phase: user == null
-              ? AuthBootstrapPhase.unauthenticatedStable
-              : AuthBootstrapPhase.authenticatedStable,
-        ),
-        source: 'firebase_auth_state_change',
-      );
-      AppTelemetry.updateAuthState(
-        userId: user?.uid,
-        isLoading: false,
-        error: null,
-      );
-      AppTelemetry.logAction(
-        domain: 'auth',
-        action: 'auth_state_change',
-        message: 'Firebase auth state updated.',
-        userId: user?.uid,
-        result: user == null ? 'signed_out' : 'signed_in',
-      );
+        );
+        AppTelemetry.logAction(
+          domain: 'auth',
+          action: 'auth_state_change',
+          message: 'Firebase auth state updated.',
+          userId: user?.uid,
+          result: user == null ? 'signed_out' : 'signed_in',
+        );
+      });
     });
 
     // Run critical initialization/repairs.
@@ -261,17 +284,13 @@ class AuthController extends Notifier<AuthState> {
       await _completeRedirectSignInIfNeeded();
     });
 
-    ref.onDispose(() {
-      _authStateSubscription?.cancel();
-    });
-
     final currentUser = _auth.currentUser;
     if (_isAnonymousUser(currentUser)) {
       unawaited(_rejectAnonymousSession());
       return const AuthState(
-        isLoading: true, // Keep loading while we reject
-        hasResolvedSession: false,
-        phase: AuthBootstrapPhase.initializingAuth,
+        isLoading: false,
+        hasResolvedSession: true,
+        phase: AuthBootstrapPhase.unauthenticatedStable,
       );
     }
 
@@ -281,12 +300,12 @@ class AuthController extends Notifier<AuthState> {
       error: null,
     );
     return AuthState(
-      isLoading:
-          currentUser !=
-          null, // If we have a user, we are initializing/validating
-      hasResolvedSession: false,
+      isLoading: false,
+      hasResolvedSession: true,
       uid: currentUser?.uid,
-      phase: AuthBootstrapPhase.initializingAuth,
+      phase: currentUser == null
+          ? AuthBootstrapPhase.unauthenticatedStable
+          : AuthBootstrapPhase.authenticatedStable,
     );
   }
 

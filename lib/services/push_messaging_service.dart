@@ -60,7 +60,6 @@ class PushMessagingService {
     _navigatorKey = key;
   }
 
-  StreamSubscription<User?>? _authSubscription;
   StreamSubscription<String>? _tokenRefreshSubscription;
 
   bool _isInitialized = false;
@@ -136,11 +135,8 @@ class PushMessagingService {
     _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
       unawaited(_registerTokenIfPossible(token));
     });
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user != null) {
-        unawaited(_registerCurrentToken());
-      }
-    });
+    // Note: auth subscription coordination is now handled by pushMessagingAuthCoordinatorProvider
+    // in lib/core/providers/push_messaging_providers.dart to avoid duplicate listeners.
 
     try {
       await _requestPermission();
@@ -404,9 +400,7 @@ class PushMessagingService {
   }
 
   Future<void> dispose() async {
-    await _authSubscription?.cancel();
     await _tokenRefreshSubscription?.cancel();
-    _authSubscription = null;
     _tokenRefreshSubscription = null;
     _isInitialized = false;
   }

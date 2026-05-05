@@ -60,7 +60,7 @@ class SchemaGroupedFriendRoster {
 
 final schemaResolvedAcceptedFriendsProvider =
     Provider.autoDispose<SchemaResolvedAcceptedFriendsState>((ref) {
-      final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final authUserId = ref.watch(schemaAuthUserIdProvider);
       final acceptedLinks = ref.watch(schemaAcceptedFriendLinksProvider);
 
       if (authUserId == null || authUserId.isEmpty) {

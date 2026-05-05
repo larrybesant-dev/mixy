@@ -111,8 +111,9 @@ class _UserProfilePopupSheetState
     final currentUser = ref.read(userProvider);
     if (currentUser == null ||
         _normalizedUserId.isEmpty ||
-        _normalizedUserId == currentUser.id)
+        _normalizedUserId == currentUser.id) {
       return;
+    }
     try {
       final friendIds = await _friendService.getFriendIds(currentUser.id);
       final blocked = await _moderationService.isBlocked(_normalizedUserId);
@@ -328,8 +329,9 @@ class _UserProfilePopupSheetState
                     final profile = _profile;
                     if (currentUser == null ||
                         profile == null ||
-                        _normalizedUserId.isEmpty)
+                        _normalizedUserId.isEmpty) {
                       return;
+                    }
                     final conversationId = await ref
                         .read(messagingControllerProvider)
                         .createDirectConversation(

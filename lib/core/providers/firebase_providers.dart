@@ -48,6 +48,18 @@ final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
 );
 
+/// Canonical Firebase auth state stream.
+///
+/// This is the ONLY authStateChanges() listener in the app. All services
+/// (auth controller, push messaging, providers) subscribe to this provider
+/// rather than opening their own streams. This ensures:
+/// - One auth event timeline (no race conditions)
+/// - Synchronized auth state across UI, push, and services
+/// - Single cancellation path (managed by Riverpod)
+final authStateProvider = StreamProvider<User?>((ref) {
+  return ref.watch(firebaseAuthProvider).authStateChanges();
+});
+
 final firebaseDatabaseProvider = Provider<FirebaseDatabase?>((ref) {
   try {
     // RTDB requires a configured databaseURL on web. If absent/invalid,

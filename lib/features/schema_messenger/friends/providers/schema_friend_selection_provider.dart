@@ -492,7 +492,7 @@ final schemaConversationBootEngineProvider =
 
 final schemaConversationFirstBootTargetProvider =
     Provider.autoDispose<SchemaConversationBootTarget?>((ref) {
-      final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final authUserId = ref.watch(schemaAuthUserIdProvider);
       if (authUserId == null || authUserId.isEmpty) {
         return null;
       }
@@ -534,7 +534,7 @@ final effectiveSelectedSchemaFriendIdProvider = Provider.autoDispose<String?>((
     return anchoredFriendId;
   }
 
-  final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+  final authUserId = ref.watch(schemaAuthUserIdProvider);
   if (authUserId == null || authUserId.isEmpty) {
     return null;
   }

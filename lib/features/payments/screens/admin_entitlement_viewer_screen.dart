@@ -311,7 +311,7 @@ class _ResolvedUserPanel extends ConsumerWidget {
       children: [
         userDocAsync.when(
           loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
           data: (data) {
             final entitlements = data?['entitlements'] as Map<String, dynamic>?;
             final vip = entitlements?['vip'] as Map<String, dynamic>?;
@@ -392,7 +392,7 @@ class _ResolvedUserPanel extends ConsumerWidget {
         const SizedBox(height: 16),
         eventsAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
           data: (eventDocs) {
             final docs = [...eventDocs]
               ..sort((a, b) {

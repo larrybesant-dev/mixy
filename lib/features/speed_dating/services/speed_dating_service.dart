@@ -166,6 +166,7 @@ class SpeedDatingService {
 
       txn.set(roomRef, {
         'name': 'Speed Date',
+        'meta': <String, dynamic>{'title': 'Speed Date'},
         'description': 'Private speed date session',
         'hostId': hostUserId,
         'isLive': true,

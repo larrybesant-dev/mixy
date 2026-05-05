@@ -69,7 +69,9 @@ class _DesktopMessengerShellState extends ConsumerState<DesktopMessengerShell> {
       avatarUrl: widget.avatarUrl,
     );
     if (currentUser == null) {
-      return AuthInvariant.redirectToAuth();
+      return AuthInvariant.authRequiredScreen(
+        message: 'Please sign in to access desktop messaging.',
+      );
     }
 
     final controller = _MessengerSidebarController(

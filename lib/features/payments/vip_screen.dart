@@ -148,8 +148,9 @@ class _VipScreenState extends ConsumerState<VipScreen> {
                   // Clear pending flag if webhook arrived.
                   if (_awaitingWebhookConfirmation) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted)
+                      if (mounted) {
                         setState(() => _awaitingWebhookConfirmation = false);
+                      }
                     });
                   }
                   return _VipUnlockedView();

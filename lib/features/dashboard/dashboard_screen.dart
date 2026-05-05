@@ -110,7 +110,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     await Future.wait([
       ref.read(postsStreamProvider.future),
-      ref.read(roomsStreamProvider.future),
+      ref.read(roomsSnapshotProvider.future),
       ref.read(onlineUsersCountProvider.future),
       ref.read(liveRoomsCountProvider.future),
       ref.read(newMembersStreamProvider.future),
@@ -147,7 +147,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final currentUser = ref.watch(userProvider);
     final sessionStage = ref.watch(sessionStageProvider);
     if (currentUser == null) {
-      return AuthInvariant.redirectToAuth();
+      return AuthInvariant.authRequiredScreen(
+        message: 'Sign in to personalize your home feed and messaging.',
+      );
     }
 
     if (sessionStage == SessionStage.loading) {

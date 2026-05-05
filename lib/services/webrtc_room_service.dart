@@ -11,6 +11,7 @@ import 'package:web/web.dart' as web;
 
 import 'agora_service.dart' show AgoraServiceException;
 import 'rtc_room_service.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
 import '../observability/webrtc_telemetry.dart';
 
 /// Browser-native WebRTC room service using Firestore for signaling.
@@ -67,6 +68,8 @@ class WebRtcRoomService extends RtcRoomService {
   final String _localUserId;
   final int _maxMeshPeers;
   final List<Map<String, dynamic>>? _iceServers;
+  final StreamLifecycleManager _streamLifecycleManager =
+      StreamLifecycleManager.instance;
 
   // ────────────────────────────────────────────────────────────────────────
   // State
@@ -1247,45 +1250,63 @@ class WebRtcRoomService extends RtcRoomService {
     });
 
     // Wait for broadcaster's answer
-    peer.answerSub = callRef.snapshots().listen((snap) async {
-      if (!snap.exists) return;
-      final callData = snap.data();
-      final answerMap = callData?['answer'] as Map<String, dynamic>?;
-      if (answerMap == null) return;
-      final sdp = answerMap['sdp'];
-      final type = answerMap['type'];
-      if (sdp is! String || type is! String) return;
-      if (pc.signalingState ==
-          RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-        try {
-          await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
-          _log('set remote answer from broadcaster=$broadcasterId');
-        } catch (e) {
-          _log(
-            'setRemoteDescription failed for broadcaster=$broadcasterId: $e',
-          );
-        }
-      }
-    });
+    peer.answerSub = _streamLifecycleManager
+        .bind<DocumentSnapshot<Map<String, dynamic>>>(
+          key: _streamLifecycleManager.buildDedupeKey(
+            domain: 'webrtc-answer',
+            userId: _localUserId,
+            queryHash: callId,
+          ),
+          routePrefixes: const <String>['/room'],
+          create: () => callRef.snapshots(),
+        )
+        .listen((snap) async {
+          if (!snap.exists) return;
+          final callData = snap.data();
+          final answerMap = callData?['answer'] as Map<String, dynamic>?;
+          if (answerMap == null) return;
+          final sdp = answerMap['sdp'];
+          final type = answerMap['type'];
+          if (sdp is! String || type is! String) return;
+          if (pc.signalingState ==
+              RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
+            try {
+              await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+              _log('set remote answer from broadcaster=$broadcasterId');
+            } catch (e) {
+              _log(
+                'setRemoteDescription failed for broadcaster=$broadcasterId: $e',
+              );
+            }
+          }
+        });
 
     // Receive broadcaster's ICE candidates
-    peer.iceSub = callRef.collection('broadcaster_ice').snapshots().listen((
-      snap,
-    ) {
-      for (final change in snap.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final d = change.doc.data();
-          if (d == null) continue;
-          pc.addCandidate(
-            RTCIceCandidate(
-              d['candidate'] as String?,
-              d['sdpMid'] as String?,
-              (d['sdpMLineIndex'] as num?)?.toInt(),
-            ),
-          );
-        }
-      }
-    });
+    peer.iceSub = _streamLifecycleManager
+        .bind<QuerySnapshot<Map<String, dynamic>>>(
+          key: _streamLifecycleManager.buildDedupeKey(
+            domain: 'webrtc-ice',
+            userId: _localUserId,
+            queryHash: callId,
+          ),
+          routePrefixes: const <String>['/room'],
+          create: () => callRef.collection('broadcaster_ice').snapshots(),
+        )
+        .listen((snap) {
+          for (final change in snap.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              final d = change.doc.data();
+              if (d == null) continue;
+              pc.addCandidate(
+                RTCIceCandidate(
+                  d['candidate'] as String?,
+                  d['sdpMid'] as String?,
+                  (d['sdpMLineIndex'] as num?)?.toInt(),
+                ),
+              );
+            }
+          }
+        });
 
     _log('offer sent for callId=$callId');
   }

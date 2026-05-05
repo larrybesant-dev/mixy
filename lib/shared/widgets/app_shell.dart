@@ -64,20 +64,26 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget _buildActivePage() {
     final user = ref.watch(userProvider);
 
-    if (user == null) {
-      return AuthInvariant.redirectToAuth();
-    }
-
     switch (_index) {
       case 0:
         return const DashboardScreen();
       case 1:
+        if (user == null) {
+          return AuthInvariant.authRequiredScreen(
+            message: 'Please sign in to access your inbox.',
+          );
+        }
         return MessagesScreen(userId: user.id, username: user.username);
       case 2:
         return const LiveFloorScreen();
       case 3:
         return const SpeedDatingScreen();
       case 4:
+        if (user == null) {
+          return AuthInvariant.authRequiredScreen(
+            message: 'Please sign in to access your profile.',
+          );
+        }
         return user.id.isEmpty
             ? const ProfileScreen()
             : UserProfileScreen(userId: user.id);

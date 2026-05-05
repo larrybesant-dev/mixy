@@ -5,6 +5,7 @@ import 'package:mixvy/features/room/contracts/room_with_visibility.dart';
 import 'package:mixvy/features/room/providers/room_visibility_windows_provider.dart';
 import 'package:mixvy/services/room_service.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 
 import '../repository/feed_repository.dart';
 import '../models/home_feed_snapshot.dart';
@@ -24,15 +25,21 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
 
 final postsFeedProvider = StreamProvider.autoDispose<List<PostModel>>((ref) {
   final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('posts')
-      .orderBy('createdAt', descending: true)
-      .limit(30)
-      .snapshots()
-      .map(
-        (snap) =>
-            snap.docs.map((d) => PostModel.fromDoc(d.id, d.data())).toList(),
-      );
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  return lifecycle.bind(
+    key: 'feed-posts:global',
+    routePrefixes: const <String>['/home', '/trending'],
+    create: () => firestore
+        .collection('posts')
+        .orderBy('createdAt', descending: true)
+        .limit(30)
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((d) => PostModel.fromDoc(d.id, d.data()))
+              .toList(growable: false),
+        ),
+  );
 });
 
 final postsStreamProvider = FutureProvider.autoDispose<List<PostModel>>((ref) {
@@ -41,40 +48,70 @@ final postsStreamProvider = FutureProvider.autoDispose<List<PostModel>>((ref) {
 
 final roomsWithVisibilityStreamProvider =
     StreamProvider.autoDispose<List<RoomWithVisibility>>((ref) {
-      return ref
-          .watch(roomServiceProvider)
-          .watchRoomsWithVisibility(limit: 50);
+      final lifecycle = ref.watch(streamLifecycleManagerProvider);
+      return lifecycle.bind(
+        key: 'rooms-with-visibility',
+        routePrefixes: const <String>[
+          '/home',
+          '/rooms',
+          '/explore',
+          '/after-dark',
+          '/trending',
+        ],
+        create: () => ref
+            .watch(roomServiceProvider)
+            .watchRoomsWithVisibility(limit: 50),
+      );
     });
 
 final userPostsStreamProvider = StreamProvider.autoDispose
     .family<List<PostModel>, String>((ref, userId) {
       final firestore = ref.watch(firestoreProvider);
-      return firestore
-          .collection('posts')
-          .where('authorId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(30)
-          .snapshots()
-          .map(
-            (snap) => snap.docs
-                .map((d) => PostModel.fromDoc(d.id, d.data()))
-                .toList(),
-          );
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  return lifecycle.bind(
+    key: 'feed-user-posts:$userId',
+    routePrefixes: const <String>['/profile'],
+    create: () => firestore
+    .collection('posts')
+    .where('authorId', isEqualTo: userId)
+    .orderBy('createdAt', descending: true)
+    .limit(30)
+    .snapshots()
+    .map(
+      (snap) => snap.docs
+      .map((d) => PostModel.fromDoc(d.id, d.data()))
+      .toList(growable: false),
+    ),
+  );
     });
 
-final roomsStreamProvider = StreamProvider.autoDispose<List<RoomModel>>((ref) {
-  return ref.watch(roomsWithVisibilityStreamProvider.stream).map((classified) {
-    final sections = _toSections(classified);
-    if (sections.primaryLive.isNotEmpty) {
-      return sections.primaryLive
-          .map((item) => item.room)
-          .toList(growable: false);
-    }
+final roomsStreamProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>(
+  (ref) {
+    return ref.watch(roomsWithVisibilityStreamProvider).whenData((classified) {
+      final sections = _toSections(classified);
+      if (sections.primaryLive.isNotEmpty) {
+        return sections.primaryLive
+            .map((item) => item.room)
+            .toList(growable: false);
+      }
 
-    // Feed health invariant: if primary is empty, surface cold fallback instead
-    // of silently rendering an empty list while valid classified rooms exist.
-    return sections.cold.map((item) => item.room).toList(growable: false);
-  });
+      return sections.cold.map((item) => item.room).toList(growable: false);
+    });
+  },
+);
+
+final roomsSnapshotProvider = FutureProvider.autoDispose<List<RoomModel>>((
+  ref,
+) async {
+  final classified = await ref.watch(roomsWithVisibilityStreamProvider.future);
+  final sections = _toSections(classified);
+  if (sections.primaryLive.isNotEmpty) {
+    return sections.primaryLive
+        .map((item) => item.room)
+        .toList(growable: false);
+  }
+
+  return sections.cold.map((item) => item.room).toList(growable: false);
 });
 
 class RoomVisibilitySections {

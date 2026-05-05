@@ -11,6 +11,7 @@ import 'package:mixvy/models/room_model.dart';
 
 import '../core/logger.dart';
 import '../core/services/feature_gate_service.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
 
 final roomServiceProvider = Provider<RoomService>((ref) {
   ref.watch(roomVisibilityWindowsBootstrapProvider);
@@ -45,6 +46,8 @@ class RoomService {
   final FirebaseFirestore _firestore;
   final bool Function()? _isLiveRoomsEnabled;
   final RoomVisibilityWindows Function()? _visibilityWindowsResolver;
+  final StreamLifecycleManager _streamLifecycleManager =
+      StreamLifecycleManager.instance;
 
   RoomVisibilityWindows get _visibilityWindows {
     final resolver = _visibilityWindowsResolver;
@@ -225,16 +228,26 @@ class RoomService {
       });
     }
 
-    final subscription = query.snapshots().listen(
-      (snapshot) {
-        pending = pending.then((_) => processSnapshot(snapshot));
-      },
-      onError: controller.addError,
-      onDone: () {
-        debounceTimer?.cancel();
-        controller.close();
-      },
+    final dedupeKey = _streamLifecycleManager.buildDedupeKey(
+      domain: 'room-live-query',
+      queryHash: query.hashCode.toUnsigned(32).toRadixString(16),
     );
+    final subscription = _streamLifecycleManager
+        .bind<QuerySnapshot<Map<String, dynamic>>>(
+          key: dedupeKey,
+          routePrefixes: const <String>['/home', '/rooms', '/explore', '/trending'],
+          create: () => query.snapshots(),
+        )
+        .listen(
+          (snapshot) {
+            pending = pending.then((_) => processSnapshot(snapshot));
+          },
+          onError: controller.addError,
+          onDone: () {
+            debounceTimer?.cancel();
+            controller.close();
+          },
+        );
 
     controller.onCancel = () async {
       debounceTimer?.cancel();
@@ -892,6 +905,7 @@ class RoomService {
 
     await docRef.set({
       'name': trimmedName,
+      'meta': <String, dynamic>{'title': trimmedName},
       'description': description?.trim(),
       'rules': rules?.trim(),
       'hostId': trimmedHostId,

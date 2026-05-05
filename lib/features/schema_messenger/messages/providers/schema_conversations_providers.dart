@@ -67,7 +67,7 @@ final schemaConversationUnreadFlagsProvider = Provider.autoDispose
 /// auth state so callers do not need to thread userId manually).
 final schemaMyConversationsProvider =
     Provider.autoDispose<AsyncValue<List<SchemaConversation>>>((ref) {
-      final userId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+      final userId = ref.watch(schemaAuthUserIdProvider);
       if (userId == null || userId.isEmpty) {
         return const AsyncData(<SchemaConversation>[]);
       }

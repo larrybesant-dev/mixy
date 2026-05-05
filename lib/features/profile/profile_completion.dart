@@ -46,14 +46,17 @@ class ProfileCompletion {
     final items = <String>[];
     if ((state.username ?? '').trim().length < 2) items.add('Set display name');
     if ((state.avatarUrl ?? '').trim().isEmpty) items.add('Upload avatar');
-    if ((state.coverPhotoUrl ?? '').trim().isEmpty)
+    if ((state.coverPhotoUrl ?? '').trim().isEmpty) {
       items.add('Upload cover photo');
+    }
     if ((state.bio ?? '').trim().isEmpty) items.add('Write a short bio');
-    if ((state.aboutMe ?? '').trim().isEmpty)
+    if ((state.aboutMe ?? '').trim().isEmpty) {
       items.add('Tell people about you');
+    }
     if (state.interests.isEmpty) items.add('Add interests');
-    if ((state.introVideoUrl ?? '').trim().isEmpty)
+    if ((state.introVideoUrl ?? '').trim().isEmpty) {
       items.add('Add intro video');
+    }
     return items;
   }
 }

@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/streams/stream_lifecycle_manager.dart';
 import '../features/friends/models/friend_roster_entry.dart';
 import '../features/friends/models/friendship_model.dart';
 import '../models/friend_request_model.dart';
@@ -31,7 +32,8 @@ class FriendService {
            presenceRepository ??
            FirestorePresenceRepository(firestore ?? FirebaseFirestore.instance),
        _mutationService =
-           mutationService ?? SchemaMutationService(firestore: firestore);
+           mutationService ?? SchemaMutationService(firestore: firestore),
+       _streamLifecycleManager = StreamLifecycleManager.instance;
 
   static const int _firestoreWhereInLimit = 30;
 
@@ -40,6 +42,7 @@ class FriendService {
   final ModerationService _moderationService;
   final PresenceRepository _presenceRepository;
   final SchemaMutationService _mutationService;
+  final StreamLifecycleManager _streamLifecycleManager;
 
   bool _isPermissionDenied(Object error) {
     if (error is FirebaseException) {
@@ -214,63 +217,94 @@ class FriendService {
         return query;
       }
 
-      final subA = buildLegacyQuery('userA').snapshots().listen(
-        (snapshot) {
-          userAFriendships = snapshot.docs
-              .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
-              .toList(growable: false);
-          userAReady = true;
-          emit();
-        },
-        onError: (error, stackTrace) {
-          if (_isPermissionDenied(error)) {
-            userAFriendships = const <FriendshipModel>[];
-            userAReady = true;
-            emit();
-            return;
-          }
-          controller.addError(error, stackTrace);
-        },
-      );
+      final subA = _streamLifecycleManager
+          .bind<QuerySnapshot<Map<String, dynamic>>>(
+            key: _streamLifecycleManager.buildDedupeKey(
+              domain: 'friendships-legacy-userA',
+              userId: normalizedUserId,
+              queryHash: normalizedStatuses.join('|'),
+            ),
+            routePrefixes: const <String>['*'],
+            create: () => buildLegacyQuery('userA').snapshots(),
+          )
+          .listen(
+            (snapshot) {
+              userAFriendships = snapshot.docs
+                  .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
+                  .toList(growable: false);
+              userAReady = true;
+              emit();
+            },
+            onError: (error, stackTrace) {
+              if (_isPermissionDenied(error)) {
+                userAFriendships = const <FriendshipModel>[];
+                userAReady = true;
+                emit();
+                return;
+              }
+              controller.addError(error, stackTrace);
+            },
+          );
 
-      final subB = buildLegacyQuery('userB').snapshots().listen(
-        (snapshot) {
-          userBFriendships = snapshot.docs
-              .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
-              .toList(growable: false);
-          userBReady = true;
-          emit();
-        },
-        onError: (error, stackTrace) {
-          if (_isPermissionDenied(error)) {
-            userBFriendships = const <FriendshipModel>[];
-            userBReady = true;
-            emit();
-            return;
-          }
-          controller.addError(error, stackTrace);
-        },
-      );
+      final subB = _streamLifecycleManager
+          .bind<QuerySnapshot<Map<String, dynamic>>>(
+            key: _streamLifecycleManager.buildDedupeKey(
+              domain: 'friendships-legacy-userB',
+              userId: normalizedUserId,
+              queryHash: normalizedStatuses.join('|'),
+            ),
+            routePrefixes: const <String>['*'],
+            create: () => buildLegacyQuery('userB').snapshots(),
+          )
+          .listen(
+            (snapshot) {
+              userBFriendships = snapshot.docs
+                  .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
+                  .toList(growable: false);
+              userBReady = true;
+              emit();
+            },
+            onError: (error, stackTrace) {
+              if (_isPermissionDenied(error)) {
+                userBFriendships = const <FriendshipModel>[];
+                userBReady = true;
+                emit();
+                return;
+              }
+              controller.addError(error, stackTrace);
+            },
+          );
 
-      final schemaSub = buildSchemaQuery().snapshots().listen(
-        (snapshot) {
-          schemaFriendships = snapshot.docs
-              .map((doc) => _friendshipFromSchemaDoc(doc.id, doc.data()))
-              .where((friendship) => friendship.involvesUser(normalizedUserId))
-              .toList(growable: false);
-          schemaReady = true;
-          emit();
-        },
-        onError: (error, stackTrace) {
-          if (_isPermissionDenied(error)) {
-            schemaFriendships = const <FriendshipModel>[];
-            schemaReady = true;
-            emit();
-            return;
-          }
-          controller.addError(error, stackTrace);
-        },
-      );
+      final schemaSub = _streamLifecycleManager
+          .bind<QuerySnapshot<Map<String, dynamic>>>(
+            key: _streamLifecycleManager.buildDedupeKey(
+              domain: 'friendships-schema',
+              userId: normalizedUserId,
+              queryHash: normalizedStatuses.join('|'),
+            ),
+            routePrefixes: const <String>['*'],
+            create: () => buildSchemaQuery().snapshots(),
+          )
+          .listen(
+            (snapshot) {
+              schemaFriendships = snapshot.docs
+                  .map((doc) => _friendshipFromSchemaDoc(doc.id, doc.data()))
+                  .where((friendship) =>
+                      friendship.involvesUser(normalizedUserId))
+                  .toList(growable: false);
+              schemaReady = true;
+              emit();
+            },
+            onError: (error, stackTrace) {
+              if (_isPermissionDenied(error)) {
+                schemaFriendships = const <FriendshipModel>[];
+                schemaReady = true;
+                emit();
+                return;
+              }
+              controller.addError(error, stackTrace);
+            },
+          );
 
       controller.onCancel = () async {
         await subA.cancel();

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/routing/auth_invariant.dart';
 import 'package:mixvy/core/routing/redirect_logic.dart';
 import 'package:mixvy/core/routing/redirect_trace.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/features/after_dark/providers/after_dark_provider.dart';
 import 'package:mixvy/features/auth/register_screen.dart';
@@ -77,21 +78,33 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   bool get isAfterDarkSessionActive => _isAfterDarkSessionActive;
 
   void updateAuthState(AuthState value) {
+    if (_authState == value) {
+      return;
+    }
     _authState = value;
     notifyListeners();
   }
 
   void updateCurrentUser(UserModel? value) {
+    if (_currentUser == value) {
+      return;
+    }
     _currentUser = value;
     notifyListeners();
   }
 
   void updateIsAdmin(bool value) {
+    if (_isAdmin == value) {
+      return;
+    }
     _isAdmin = value;
     notifyListeners();
   }
 
   void updateAfterDarkSession(bool value) {
+    if (_isAfterDarkSessionActive == value) {
+      return;
+    }
     _isAfterDarkSessionActive = value;
     notifyListeners();
   }
@@ -128,6 +141,7 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.read(_routerRefreshNotifierProvider);
+  final streamLifecycleManager = ref.read(streamLifecycleManagerProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -135,11 +149,22 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: kIsWeb
         ? (Uri.base.path.isEmpty ? '/' : Uri.base.path)
         : '/',
+    errorBuilder: (context, state) => FeatureDegradedScreen(
+      title: 'Page Not Found',
+      message: state.error?.toString().isNotEmpty == true
+          ? 'We could not open this route. ${state.error}'
+          : 'The route you requested is unavailable or no longer exists.',
+      primaryLabel: 'Go home',
+      primaryRoute: '/home',
+      icon: Icons.travel_explore_outlined,
+    ),
 
     redirect: (context, state) {
       final authState = refreshNotifier.authState;
+      final location = state.uri.path.isEmpty ? '/' : state.uri.path;
+      streamLifecycleManager.updateRoute(location);
       final evaluation = evaluateAppRedirectWithReason(
-        matchedLocation: state.matchedLocation,
+        matchedLocation: location,
         uid: authState.uid,
         authLoading: !authState.isRoutingStable,
         legalStateResolved: true,
@@ -153,7 +178,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         }
         RedirectTrace.record(
-          from: state.matchedLocation,
+          from: location,
           to: evaluation.redirectTo ?? 'stay',
           reason: evaluation.reason,
         );
@@ -167,11 +192,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       /// Root route resolves directly to the correct entry path.
       GoRoute(
         path: '/',
-        redirect: (context, state) {
-          final uid = refreshNotifier.authState.uid;
-          if (!AuthInvariant.hasAuthenticatedUid(uid)) return '/auth';
-          return '/home';
-        },
+        redirect: (context, state) => '/home',
       ),
 
       GoRoute(path: '/auth', builder: (context, state) => const LoginScreen()),

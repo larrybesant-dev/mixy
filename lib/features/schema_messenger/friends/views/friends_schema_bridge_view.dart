@@ -59,7 +59,7 @@ class _FriendsSchemaBridgeViewState
     final isDesktop = context.isExpandedLayout;
     final showGovernance = currentEnv == Environment.dev;
     final currentUser = ref.watch(userProvider);
-    final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+    final authUserId = ref.watch(schemaAuthUserIdProvider);
     final bootTarget = ref.watch(schemaConversationFirstBootTargetProvider);
     final onStartChat = currentUser == null
         ? null
@@ -200,7 +200,7 @@ class _FriendsSchemaBridgeViewState
   }
 
   void _runParityDiagnostics(FriendPaneRenderMode mode) {
-    final authUserId = ref.watch(schemaAuthUserIdProvider).valueOrNull;
+    final authUserId = ref.watch(schemaAuthUserIdProvider);
     if (authUserId == null || authUserId.isEmpty) return;
 
     final legacyRosterAsync = ref.watch(friendRosterProvider);
