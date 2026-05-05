@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/routing/auth_invariant.dart';
 import 'package:mixvy/core/routing/redirect_logic.dart';
 import 'package:mixvy/core/routing/redirect_trace.dart';
-import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/features/after_dark/providers/after_dark_provider.dart';
 import 'package:mixvy/features/auth/register_screen.dart';
@@ -141,7 +140,6 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.read(_routerRefreshNotifierProvider);
-  final streamLifecycleManager = ref.read(streamLifecycleManagerProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -162,7 +160,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authState = refreshNotifier.authState;
       final location = state.uri.path.isEmpty ? '/' : state.uri.path;
-      streamLifecycleManager.updateRoute(location);
       final evaluation = evaluateAppRedirectWithReason(
         matchedLocation: location,
         uid: authState.uid,

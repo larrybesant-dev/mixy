@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_functions/firebase_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,16 +64,13 @@ class _BetaFeedbackSheetState extends ConsumerState<BetaFeedbackSheet> {
         route = ModalRoute.of(context)?.settings.name ?? 'unknown';
       }
 
-      await ref.read(firestoreProvider).collection('beta_feedback').add({
+      final callable = FirebaseFunctions.instance.httpsCallable('submitBetaFeedback');
+      await callable.call<Map<String, dynamic>>({
         'category': _category,
         'message': message,
         'route': route,
-        'uid': user?.uid,
-        'email': user?.email,
         'platform': defaultTargetPlatform.name,
         'isWeb': kIsWeb,
-        'status': 'new',
-        'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;

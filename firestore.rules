@@ -218,7 +218,13 @@ service cloud.firestore {
       match /stories/{storyId} {
         allow read: if signedIn();
         allow create: if isSelf(userId)
-          && request.resource.data.userId == uid();
+          && request.resource.data.userId == uid()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt > request.time
+          && request.resource.data.viewedBy is list
+          && request.resource.data.viewedBy.hasAny([uid()])
+          && request.resource.data.isDeleted == false;
         allow update: if isSelf(userId)
           && resource.data.userId == uid()
           && request.resource.data.userId == uid();
@@ -914,19 +920,8 @@ service cloud.firestore {
           || isAdmin()
         );
 
-      // Optional client request record. Processing remains server-only.
-      allow create: if signedIn()
-        && request.resource.data.keys().hasOnly([
-          'userId',
-          'amount',
-          'status',
-          'createdAt'
-        ])
-        && request.resource.data.userId == uid()
-        && request.resource.data.amount is number
-        && request.resource.data.amount > 0
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time;
+      // Cash-out submission is server-authoritative only.
+      allow create: if false;
 
       allow update, delete: if false;
     }
@@ -982,7 +977,7 @@ service cloud.firestore {
         && request.resource.data.userId is string
         && request.resource.data.actorId is string
         && request.resource.data.actorId == uid()
-        && request.resource.data.createdAt is timestamp;
+        && request.resource.data.createdAt == request.time;
 
       allow update: if signedIn()
         && (resource.data.userId == uid() || isAdmin())
@@ -1123,7 +1118,14 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if signedIn()
-        && request.resource.data.authorId == uid();
+        && request.resource.data.authorId == uid()
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.likeCount is int
+        && request.resource.data.commentCount is int
+        && request.resource.data.shareCount is int
+        && request.resource.data.likes is list;
       // Allow only like/unlike field mutations from the client.
       // All other post mutations are server-only.
       allow update: if signedIn()
@@ -1134,7 +1136,10 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if signedIn();
         allow create: if signedIn()
-          && request.resource.data.authorId == uid();
+          && request.resource.data.authorId == uid()
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.createdAt == request.time;
         allow update: if false;
         allow delete: if signedIn()
           && resource.data.authorId == uid();

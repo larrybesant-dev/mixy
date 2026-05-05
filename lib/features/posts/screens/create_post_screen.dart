@@ -81,7 +81,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         'videoUrl': _videoUrl,
         'tags': tags,
         'hashtags': tags,
-        'createdAt': Timestamp.fromDate(DateTime.now()),
+        'createdAt': FieldValue.serverTimestamp(),
         'likeCount': 0,
         'commentCount': 0,
         'shareCount': 0,

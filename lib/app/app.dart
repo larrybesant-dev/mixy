@@ -18,6 +18,7 @@ import '../core/services/app_settings_service.dart';
 import 'boot_state.dart';
 import 'boot_state_notifier.dart';
 import '../router/app_router.dart';
+import '../router/route_state_bridge.dart';
 import '../presentation/providers/app_settings_provider.dart';
 import '../theme/font_fallbacks.dart';
 import '../theme/app_theme.dart';
@@ -598,6 +599,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
 
     final authState = ref.watch(authControllerProvider);
     final router = ref.watch(routerProvider);
+    ref.watch(routeStateBridgeProvider);
     _queueStressRunnerIfEnabled(router: router, authState: authState);
     _queueStartupLanes(authState);
 

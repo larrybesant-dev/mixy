@@ -232,6 +232,11 @@ class PushMessagingService {
     }
   }
 
+  /// Public method for Riverpod push messaging coordinator to trigger token re-registration.
+  Future<void> registerCurrentTokenForAuthState() async {
+    await _registerCurrentToken();
+  }
+
   Future<void> _registerTokenIfPossible(String token) async {
     if (!_isPushEnabled) {
       _logPushSuppressed('token_refresh_registration_blocked');

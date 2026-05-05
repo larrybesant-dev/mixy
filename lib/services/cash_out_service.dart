@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_functions/firebase_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/mixvy_economy_config.dart';
@@ -10,12 +11,17 @@ final cashOutServiceProvider = Provider<CashOutService>(
 );
 
 class CashOutService {
-  CashOutService({FirebaseFirestore? firestore, FirebaseAuth? auth})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
-      _auth = auth ?? FirebaseAuth.instance;
+  CashOutService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    FirebaseFunctions? functions,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final FirebaseFunctions _functions;
 
   Stream<List<CashOutRequestModel>> requestsForCurrentUser() {
     final userId = _auth.currentUser?.uid;
@@ -58,38 +64,9 @@ class CashOutService {
       );
     }
 
-    final walletSnapshot = await _firestore
-        .collection('wallets')
-        .doc(userId)
-        .get();
-    final walletData = walletSnapshot.data() ?? const <String, dynamic>{};
-    final cashBalance = (walletData['cashBalance'] as num?)?.toDouble() ?? 0;
-
-    final requestsSnapshot = await _firestore
-        .collection('cash_out_requests')
-        .where('userId', isEqualTo: userId)
-        .get();
-    final pendingTotal = requestsSnapshot.docs
-        .map((doc) => CashOutRequestModel.fromJson(doc.id, doc.data()))
-        .where(
-          (request) =>
-              request.status == 'pending' || request.status == 'processing',
-        )
-        .fold<double>(
-          0,
-          (runningTotal, request) => runningTotal + request.amount,
-        );
-
-    final availableToCashOut = cashBalance - pendingTotal;
-    if (amount > availableToCashOut) {
-      throw Exception('Requested amount exceeds available cash balance.');
-    }
-
-    await _firestore.collection('cash_out_requests').add({
-      'userId': userId,
+    final callable = _functions.httpsCallable('requestCashOut');
+    await callable.call<Map<String, dynamic>>({
       'amount': amount,
-      'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
     });
   }
 }

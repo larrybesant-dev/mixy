@@ -201,8 +201,7 @@ class StoryController {
     String? videoUrl,
     String? content,
   }) async {
-    final now = DateTime.now();
-    final expiresAt = now.add(const Duration(hours: 24));
+    final expiresAt = DateTime.now().add(const Duration(hours: 24));
 
     await _firestore.collection('users').doc(userId).collection('stories').add({
       'userId': userId,
@@ -211,7 +210,7 @@ class StoryController {
       'imageUrl': imageUrl,
       'videoUrl': videoUrl,
       'content': content,
-      'createdAt': Timestamp.fromDate(now),
+      'createdAt': FieldValue.serverTimestamp(),
       'expiresAt': Timestamp.fromDate(expiresAt),
       'viewedBy': [userId],
       'isDeleted': false,
