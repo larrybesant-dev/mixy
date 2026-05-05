@@ -50,8 +50,14 @@ functions/.env.*
 .env
 .env.*
 !.env.example
+assets/.env
 assets/env/app_env
 !assets/env/app_env.example
+
+# Android signing - never commit keystores or key.properties
+android/key.properties
+*.jks
+*.keystore
 
 # Local deployment and audit artifacts
 .firebase/

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,7 +66,19 @@ Future<void> main() async {
   };
 
   try {
+    // Env is optional at boot time. Keep startup alive if the file is missing
+    // or malformed and allow feature-level fallbacks.
     await dotenv.load(fileName: 'assets/.env');
+  } catch (error, stackTrace) {
+    developer.log(
+      'ENV LOAD FAILED: $error',
+      error: error,
+      stackTrace: stackTrace,
+      name: 'main',
+    );
+  }
+
+  try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -79,10 +92,39 @@ Future<void> main() async {
         cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       );
     }
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    PushMessagingService.instance.setNavigatorKey(rootNavigatorKey);
-    await PushMessagingService.instance.initialize();
     initialBootState = BootState.loading;
+
+    // Push is optional per platform/runtime; do not fail app boot if unavailable.
+    try {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      PushMessagingService.instance.setNavigatorKey(rootNavigatorKey);
+      await PushMessagingService.instance.initialize();
+    } catch (error, stackTrace) {
+      developer.log(
+        'PUSH INIT FAILED: $error',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'main',
+      );
+    }
+
+    // Crashlytics is optional for app startup.
+    try {
+      // Enable Crashlytics crash collection on supported platforms in release.
+      // Not enabled in debug (avoids polluting the dashboard during development)
+      // and not available on web (Crashlytics is native-only).
+      if (!kIsWeb && const bool.fromEnvironment('dart.vm.product')) {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'CRASHLYTICS INIT FAILED: $error',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'main',
+      );
+    }
+
     startup.markFirebaseReady(success: true);
   } catch (error, stackTrace) {
     initialBootState = BootState.failed;

@@ -45,16 +45,13 @@
     google_sign_in: ^7.2.0
     logging: ^1.2.0
     package_info_plus: ^10.1.0
-    patrol: ^4.3.0
     path: ^1.9.1
     flutter_webrtc: ^1.4.1
     web: any
-    window_manager: ^0.5.1
     cached_network_image: ^3.4.1
     google_fonts: ^8.0.2
     crypto: ^3.0.3
     rxdart: ^0.28.0
-    webview_flutter: ^4.13.1
     json_annotation: ^4.11.0
     riverpod: 2.4.0
     # state_notifier has been removed
@@ -72,6 +69,7 @@
     mocktail: ^1.0.0
     fake_cloud_firestore: ^4.1.0+1
     flutter_launcher_icons: ^0.14.1
+    patrol: ^4.3.0
 
 
   flutter:

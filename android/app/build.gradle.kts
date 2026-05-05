@@ -18,7 +18,7 @@ if (keyPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.mixvy"
+    namespace = "com.mixvy.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,8 +32,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.mixvy"
+        applicationId = "com.mixvy.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -59,6 +58,28 @@ android {
             if (keyProperties.getProperty("storeFile").isNullOrBlank().not()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+        }
+    }
+
+    // Exclude Agora optional extension .so files that are not called anywhere
+    // in the codebase. Agora bundles all extensions by default; these are safe
+    // to drop because no code in lib/ calls the corresponding Agora APIs:
+    //   - lip sync, spatial audio, segmentation, face capture, clear vision,
+    //     content inspection, AV1 encoder/decoder, audio beauty, FFmpeg.
+    // Expected saving: ~25–35MB from the release AAB.
+    packaging {
+        jniLibs {
+            excludes += setOf(
+                "**/libagora_lip_sync_extension.so",
+                "**/libagora_spatial_audio_extension.so",
+                "**/libagora_segmentation_extension.so",
+                "**/libagora_face_capture_extension.so",
+                "**/libagora_clear_vision_extension.so",
+                "**/libagora_content_inspect_extension.so",
+                "**/libagora_video_av1_encoder_extension.so",
+                "**/libagora_video_av1_decoder_extension.so",
+                "**/libagora_audio_beauty_extension.so",
+            )
         }
     }
 }

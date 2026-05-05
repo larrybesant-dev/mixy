@@ -18,7 +18,12 @@ class GifService {
     String query, {
     String rating = 'pg-13', // g | pg | pg-13 | r
   }) async {
-    final apiKey = dotenv.env['GIPHY_API_KEY'] ?? '';
+    String apiKey = '';
+    try {
+      apiKey = dotenv.env['GIPHY_API_KEY'] ?? '';
+    } catch (_) {
+      apiKey = '';
+    }
     if (apiKey.isEmpty || apiKey == 'YOUR_GIPHY_API_KEY') {
       developer.log(
         'GIPHY_API_KEY not set in app_env — GIFs will not load.',

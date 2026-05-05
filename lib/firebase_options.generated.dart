@@ -71,7 +71,7 @@ class DefaultFirebaseOptions {
         '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
     iosClientId:
         '980846719834-hsn70r4kaghfit4d6t1keohuvjfho9v9.apps.googleusercontent.com',
-    iosBundleId: 'com.example.mixvy',
+    iosBundleId: 'com.mixvy.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
