@@ -13,8 +13,10 @@ final roomParticipantsStateProvider = StreamProvider.autoDispose
       List<RoomParticipantModel>? previous;
       // ignore: deprecated_member_use
       await for (final participants in ref.watch(
-        participantsStreamProvider(roomId).stream,
-      )) {
+        participantsStreamProvider(roomId),
+      ).asStream().map(
+            (asyncValue) => asyncValue.data ?? <RoomParticipantModel>[],
+          )) {
         if (previous != null &&
             !RoomParticipantsContract.shouldRebuild(previous, participants)) {
           continue;

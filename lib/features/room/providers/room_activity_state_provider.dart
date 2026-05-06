@@ -32,11 +32,9 @@ final roomActivityStateProvider = StreamProvider.autoDispose
 
       List<RoomPresenceModel>? previousPresence;
       Map<String, bool>? previousTyping;
-      // ignore: deprecated_member_use
       final presenceStream = ref.watch(
         roomPresenceStreamProvider(roomId).stream,
       );
-      // ignore: deprecated_member_use
       final typingStream = ref.watch(typingStreamProvider(roomId).stream);
       await for (final values in Rx.combineLatest2(
         presenceStream,

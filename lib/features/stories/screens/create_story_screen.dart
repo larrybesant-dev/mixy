@@ -123,7 +123,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
     final task = ref.putData(
       bytes,
       SettableMetadata(contentType: contentType),
-    ); // ignore: unawaited_futures
+    );
     _uploadProgressSub?.cancel();
     _uploadProgressSub = task.snapshotEvents.listen((snap) {
       if (snap.totalBytes > 0 && mounted) {

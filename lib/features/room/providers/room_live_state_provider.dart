@@ -17,20 +17,24 @@ export 'package:mixvy/core/contracts/room_contract.dart'
 
 final roomLiveStateProvider = StreamProvider.autoDispose
     .family<RoomLiveState, String>((ref, roomId) {
-      // ignore: deprecated_member_use
-      final metaStream = ref.watch(roomMetaStateProvider(roomId).stream);
-      // ignore: deprecated_member_use
+      final metaStream = ref.watch(roomMetaStateProvider(roomId).stream).map(
+            (state) => state ?? RoomMetaState(roomDoc: null),
+          );
       final participantsStream = ref.watch(
         roomParticipantsStateProvider(roomId).stream,
-      );
-      // ignore: deprecated_member_use
+      ).map(
+            (state) => state ?? RoomParticipantsState(participants: []),
+          );
       final activityStream = ref.watch(
         roomActivityStateProvider(roomId).stream,
-      );
-      // ignore: deprecated_member_use
+      ).map(
+            (state) => state ?? RoomActivityState(presence: {}, typing: {}),
+          );
       final messagePreviewStream = ref.watch(
         roommessagePreviewStateProvider(roomId).stream,
-      );
+      ).map(
+            (state) => state ?? RoommessagePreviewState(messagePreview: []),
+          );
 
       return Rx.combineLatest4(
         metaStream,

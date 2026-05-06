@@ -141,13 +141,10 @@ final myCamAccessRequestProvider = StreamProvider.autoDispose
       ref,
       params,
     ) {
-      // Derive from canonical owner (no duplicate subscription)
-      // ignore: deprecated_member_use
-      return ref.watch(roomCamAccessRequestsProvider(params.roomId).stream).map(
-        (requests) {
-          final myRequests = requests
-              .where((request) => request.requesterId == params.requesterId)
-              .toList();
+      return ref.watch(roomCamAccessRequestsProvider(params.roomId).stream).map((requests) {
+        final myRequests = requests
+            .where((request) => request.requesterId == params.requesterId)
+            .toList();
           if (myRequests.isEmpty) {
             return null;
           }

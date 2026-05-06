@@ -375,12 +375,10 @@ final myMicAccessRequestProvider = StreamProvider.autoDispose
       params,
     ) {
       // Derive from canonical owner — use .stream to transform as Stream<T>.
-      // ignore: deprecated_member_use
-      return ref.watch(roomMicAccessRequestsProvider(params.roomId).stream).map(
-        (requests) {
-          final myRequests = requests
-              .where((request) => request.requesterId == params.requesterId)
-              .toList();
+      return ref.watch(roomMicAccessRequestsProvider(params.roomId).stream).map((requests) {
+        final myRequests = requests
+            .where((request) => request.requesterId == params.requesterId)
+            .toList();
           if (myRequests.isEmpty) {
             return null;
           }

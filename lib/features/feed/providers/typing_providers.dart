@@ -14,9 +14,6 @@ final typingStreamProvider = StreamProvider.autoDispose
 /// Derived provider: typing user IDs (those with isTyping = true)
 final typingUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
-      // .stream gives the underlying Stream<T> from a StreamProvider so we can
-      // transform it without going through AsyncValue.
-      // ignore: deprecated_member_use
       return ref.watch(typingStreamProvider(roomId).stream).map((typingMap) {
         return typingMap.entries
             .where((entry) => entry.value == true)

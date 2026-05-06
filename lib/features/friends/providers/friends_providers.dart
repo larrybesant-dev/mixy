@@ -52,7 +52,9 @@ final friendsProvider = StreamProvider.autoDispose<List<FriendshipModel>>((
   ref,
 ) {
   final userId = ref.watch(currentFriendUserIdProvider) ?? '';
-  return ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream);
+  return ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream).map(
+        (data) => data,
+      );
 });
 
 /// Derived: shares the canonical accepted stream; opens user-docs + presence streams.
@@ -64,7 +66,9 @@ final friendRosterProvider =
           .watch(friendServiceProvider)
           .watchFriendRosterFromFriendships(
             userId,
-            ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream),
+            ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream).map(
+                  (data) => data,
+                ),
           );
     });
 
@@ -128,7 +132,9 @@ final friendsListProvider = StreamProvider.autoDispose<List<UserModel>>((ref) {
       .watch(friendServiceProvider)
       .watchFriendsFromFriendships(
         userId,
-        ref.watch(rawAcceptedFriendshipsStreamProvider(userId).stream),
+        ref.watch(rawAcceptedFriendshipsStreamProvider(userId)).asStream().map(
+              (asyncValue) => asyncValue.data ?? <FriendshipModel>[],
+            ),
       );
 });
 
@@ -152,7 +158,7 @@ final incomingFriendRequestsProvider =
 
       final service = ref.watch(friendServiceProvider);
       return ref
-          .watch(rawAllFriendshipsStreamProvider(userId).stream)
+          .watch(rawAllFriendshipsStreamProvider(userId)).asStream()
           .map(
             (friendships) =>
                 friendships
@@ -196,7 +202,7 @@ final pendingOutgoingFriendRequestIdsProvider =
       }
 
       return ref
-          .watch(rawAllFriendshipsStreamProvider(userId).stream)
+          .watch(rawAllFriendshipsStreamProvider(userId)).asStream()
           .map(
             (friendships) => friendships
                 .where((f) => f.status == 'pending' && f.requestedBy == userId)

@@ -133,7 +133,6 @@ final roomMessageStreamProvider = StreamProvider.autoDispose
 final roomTypingUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) async* {
       // Forward the canonical typing provider — no duplicate Firestore subscription.
-      // ignore: deprecated_member_use
       await for (final ids in ref.watch(typingUserIdsProvider(roomId).stream)) {
         yield ids;
       }
