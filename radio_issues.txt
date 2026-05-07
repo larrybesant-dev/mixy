@@ -1,0 +1,84 @@
+
+lib\features\after_dark\screens\after_dark_age_gate_screen.dart:187:                onChanged: (_) => setState(() => _error = null),
+lib\features\after_dark\screens\after_dark_age_gate_screen.dart:219:                      onChanged: (v) =>
+lib\features\after_dark\screens\after_dark_create_lounge_screen.dart:665:          return RadioListTile<_Privacy>(
+lib\features\after_dark\screens\after_dark_create_lounge_screen.dart:667:            groupValue: _privacy,
+lib\features\after_dark\screens\after_dark_create_lounge_screen.dart:668:            onChanged: (v) => setState(() => _privacy = v!),
+lib\features\after_dark\screens\after_dark_create_lounge_screen.dart:702:        onChanged: (v) => setState(() => _videoEnabled = v),
+lib\features\after_dark\screens\after_dark_profile_screen.dart:248:                onChanged: (v) => setState(() => _profilePrivate = v),
+lib\features\beta\beta_feedback_screen.dart:254:                        onChanged: () => setState(() {}),
+lib\features\beta\beta_feedback_screen.dart:304:  final VoidCallback onChanged;
+lib\features\beta\beta_feedback_screen.dart:306:  const _CheckItemTile({required this.item, required this.onChanged});
+lib\features\beta\beta_feedback_screen.dart:350:                  widget.onChanged();
+lib\features\beta\beta_feedback_screen.dart:362:                  widget.onChanged();
+lib\features\beta\beta_feedback_screen.dart:374:                  widget.onChanged();
+lib\features\beta\beta_feedback_screen.dart:404:              onChanged: (value) {
+lib\features\beta\beta_feedback_screen.dart:406:                widget.onChanged();
+lib\features\friends\panes\friends_pane_view.dart:120:              onChanged: (v) => setState(() => _query = v),
+lib\features\friends\panes\friends_pane_view.dart:527:  const _FriendSearchBar({required this.controller, required this.onChanged});
+lib\features\friends\panes\friends_pane_view.dart:530:  final ValueChanged<String> onChanged;
+lib\features\friends\panes\friends_pane_view.dart:538:        onChanged: onChanged,
+lib\features\friends\panes\friends_pane_view.dart:557:                    onChanged('');
+lib\features\messaging\screens\create_group_chat_screen.dart:122:              onChanged: (_) => setState(() {}),
+lib\features\messaging\screens\create_group_chat_screen.dart:132:              onChanged: _searchUsers,
+lib\features\messaging\screens\new_message_screen.dart:240:                onChanged: _onSearchChanged,
+lib\features\onboarding\onboarding_screen.dart:595:                    onChanged: (bool? value) =>
+lib\features\payments\payments_screen.dart:753:            onChanged: (value) {
+lib\features\profile\edit_profile_screen.dart:396:          onChanged: (val) => ref
+lib\features\profile\profile_screen.dart:1036:                              onChanged: (value) =>
+lib\features\profile\profile_screen.dart:1063:                        onChanged: (value) =>
+lib\features\profile\profile_screen.dart:1078:                        onChanged: (value) => setState(() => _showAge = value),
+lib\features\profile\profile_screen.dart:1083:                        onChanged: (value) =>
+lib\features\profile\profile_screen.dart:1089:                        onChanged: (value) =>
+lib\features\profile\profile_screen.dart:1095:                        onChanged: (value) =>
+lib\features\profile\profile_screen.dart:1113:                        onChanged: (value) {
+lib\features\profile\profile_screen.dart:1437:                        onChanged: (value) =>
+lib\features\profile\profile_screen.dart:1443:                        onChanged: (value) => setState(
+lib\features\profile\widgets\device_settings_panel.dart:160:              onChanged: _onCameraChanged,
+lib\features\profile\widgets\device_settings_panel.dart:170:              onChanged: _onMicChanged,
+lib\features\profile\widgets\device_settings_panel.dart:191:    required this.onChanged,
+lib\features\profile\widgets\device_settings_panel.dart:198:  final ValueChanged<String?> onChanged;
+lib\features\profile\widgets\device_settings_panel.dart:229:      onChanged: onChanged,
+lib\features\profile\widgets\profile_music_player_web.dart:295:              child: Slider(value: _progress, min: 0, max: 1, onChanged: _seek),
+lib\features\room\widgets\cam_preview_sheet.dart:200:                  onChanged: _onCameraChanged,
+lib\features\room\widgets\cam_preview_sheet.dart:210:                  onChanged: _onMicChanged,
+lib\features\room\widgets\cam_preview_sheet.dart:267:    required this.onChanged,
+lib\features\room\widgets\cam_preview_sheet.dart:274:  final ValueChanged<String?> onChanged;
+lib\features\room\widgets\cam_preview_sheet.dart:325:            onChanged: onChanged,
+lib\features\room\widgets\chat_panel.dart:263:                        onChanged: (_) => widget.onTyping(),
+lib\features\room\widgets\rich_text_toolbar.dart:120:    this.onChanged,
+lib\features\room\widgets\rich_text_toolbar.dart:126:  final VoidCallback? onChanged;
+lib\features\room\widgets\rich_text_toolbar.dart:195:    widget.onChanged?.call();
+lib\features\room\widgets\rich_text_toolbar.dart:211:    widget.onChanged?.call();
+lib\features\room\widgets\room_host_control_panel.dart:346:            onChanged: (_) => roomController.toggleLockRoom(),
+lib\features\room\widgets\room_host_control_panel.dart:355:            onChanged: (_) => roomController.toggleAllowChat(),
+lib\features\room\widgets\room_host_control_panel.dart:364:            onChanged: (_) => roomController.toggleAllowGifts(),
+lib\features\room\widgets\room_host_control_panel.dart:375:            onChanged: (_) => roomController.toggleAllowMicRequests(),
+lib\features\room\widgets\room_host_control_panel.dart:386:            onChanged: (_) => roomController.toggleAllowCamRequests(),
+lib\features\room\widgets\room_host_control_panel.dart:406:            onChanged: (val) {
+lib\features\room\widgets\room_host_control_panel.dart:498:                onChanged: (v) {
+lib\features\room\widgets\room_host_control_panel.dart:537:                onSelectionChanged: (selection) {
+lib\features\room\widgets\room_host_control_panel.dart:571:                onChanged: (v) {
+lib\features\room\widgets\room_host_control_panel.dart:710:          onChanged: onMicChanged,
+lib\features\room\widgets\room_host_control_panel.dart:740:          onChanged: onSpeakerChanged,
+lib\features\room\widgets\room_host_control_panel.dart:767:    required this.onChanged,
+lib\features\room\widgets\room_host_control_panel.dart:777:  final ValueChanged<double> onChanged;
+lib\features\room\widgets\room_host_control_panel.dart:794:              onChanged: onChanged,
+lib\features\schema_messenger\friends\providers\schema_friend_roster_provider.dart:165:          final selectionChanged = lastSelectedFriendId != selectedFriendId;
+lib\features\schema_messenger\friends\providers\schema_friend_roster_provider.dart:169:              selectionChanged) {
+lib\features\schema_messenger\friends\views\friends_schema_bridge_view.dart:506:            onSelectionChanged: (selection) {
+lib\features\schema_messenger\messages\views\messages_schema_bridge_view.dart:142:                onSelectionChanged: (selection) {
+lib\features\search\screens\search_screen.dart:65:              onChanged: (value) {
+lib\features\stories\screens\create_story_screen.dart:543:            onChanged: (_) => setState(() {}),
+lib\presentation\screens\settings_screen.dart:96:              onChanged: controller.setNotificationsEnabled,
+lib\presentation\screens\settings_screen.dart:160:                      onSelectionChanged: (s) =>
+lib\presentation\screens\settings_screen.dart:208:                      onChanged: (v) {
+lib\presentation\screens\settings_screen.dart:483:  final ValueChanged<bool> onChanged;
+lib\presentation\screens\settings_screen.dart:488:    required this.onChanged,
+lib\presentation\screens\settings_screen.dart:520:        onChanged: onChanged,
+lib\services\agora_service.dart:644:          // SDK may not send connectionChangedLeaveChannel as the reason.
+lib\services\agora_service.dart:647:                  ConnectionChangedReasonType.connectionChangedLeaveChannel &&
+lib\services\agora_service.dart:914:    // On web the Agora SDK may not send connectionChangedLeaveChannel as the
+lib\shared\widgets\beta_feedback_overlay.dart:122:            onChanged: _submitting
+lib\widgets\friends_panel_button.dart:135:                  onChanged: (v) =>
+

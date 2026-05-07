@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/services/room_service.dart';
 
@@ -12,6 +13,7 @@ void main() {
     setUp(() {
       firestore = FakeFirebaseFirestore();
       service = RoomService(firestore: firestore);
+      StreamLifecycleManager.instance.updateRoute('/home');
     });
 
     test('createRoom trims input and applies defaults', () async {

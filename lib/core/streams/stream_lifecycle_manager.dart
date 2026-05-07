@@ -16,10 +16,12 @@ class StreamLifecycleManager extends ChangeNotifier {
   final Map<String, int> _activeListenerCounts = <String, int>{};
   final Map<String, Stream<dynamic>> _sharedStreams =
       <String, Stream<dynamic>>{};
+  bool _disposed = false;
 
   String get currentRoutePath => _currentRoutePath;
 
   void updateRoute(String routePath) {
+    if (_disposed) return;
     final normalized = _normalizeRoute(routePath);
     if (_currentRoutePath == normalized) {
       return;
@@ -120,6 +122,13 @@ class StreamLifecycleManager extends ChangeNotifier {
       return trimmed;
     }
     return trimmed.startsWith('/') ? trimmed : '/$trimmed';
+  }
+
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    super.dispose();
   }
 }
 

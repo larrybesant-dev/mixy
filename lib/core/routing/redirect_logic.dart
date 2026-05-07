@@ -15,8 +15,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   final isAuth = uid != null && uid.isNotEmpty;
   if (authLoading) {
     return const RedirectEvaluation(
-      redirectTo: null,
-      reason: 'auth_loading_non_blocking',
+      redirectTo: '/auth',
+      reason: 'auth_loading_safe_default',
     );
   }
 
@@ -30,6 +30,13 @@ RedirectEvaluation evaluateAppRedirectWithReason({
             redirectTo: null,
             reason: 'signed_out_allowed_auth_route',
           );
+  }
+
+  if (!isAuth) {
+    return const RedirectEvaluation(
+      redirectTo: '/auth',
+      reason: 'signed_out_redirect_to_auth',
+    );
   }
 
   return const RedirectEvaluation(
