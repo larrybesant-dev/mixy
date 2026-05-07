@@ -164,7 +164,10 @@ class ErrorState extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.wifi_tethering_error_rounded, color: VelvetNoir.secondary),
+          const Icon(
+            Icons.wifi_tethering_error_rounded,
+            color: VelvetNoir.secondary,
+          ),
           const SizedBox(height: 8),
           Text(
             title,

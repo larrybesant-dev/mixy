@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'participant_providers.dart';
 import 'package:mixvy/models/room_participant_model.dart';
-import '../contracts/room_participants_contract.dart';
 
 class RoomParticipantsState {
   final List<RoomParticipantModel> participants;
@@ -9,19 +8,22 @@ class RoomParticipantsState {
 }
 
 final roomParticipantsStateProvider = StreamProvider.autoDispose
-    .family<RoomParticipantsState, String>((ref, roomId) async* {
-      List<RoomParticipantModel>? previous;
-      // ignore: deprecated_member_use
-      await for (final participants in ref.watch(
-        participantsStreamProvider(roomId),
-      ).asStream().map(
-            (asyncValue) => asyncValue.data ?? <RoomParticipantModel>[],
-          )) {
-        if (previous != null &&
-            !RoomParticipantsContract.shouldRebuild(previous, participants)) {
-          continue;
-        }
-        previous = participants;
-        yield RoomParticipantsState(participants: participants);
-      }
+    .family<RoomParticipantsState, String>((ref, roomId) {
+      return Stream.multi((controller) {
+        final subscription = ref.listen<AsyncValue<List<RoomParticipantModel>>>(
+          participantsStreamProvider(roomId),
+          (_, next) {
+            if (controller.isClosed) return;
+            controller.add(
+              RoomParticipantsState(
+                participants:
+                    next.valueOrNull ?? const <RoomParticipantModel>[],
+              ),
+            );
+          },
+          fireImmediately: true,
+        );
+
+        controller.onCancel = subscription.close;
+      });
     });

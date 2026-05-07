@@ -15,9 +15,7 @@ final _liveAdultRoomsProvider =
     Provider.autoDispose<AsyncValue<List<RoomModel>>>((ref) {
       return ref.watch(roomsStreamProvider).whenData((rooms) {
         final filtered =
-            rooms
-                .where((room) => room.isAdult)
-                .toList(growable: false)
+            rooms.where((room) => room.isAdult).toList(growable: false)
               ..sort((a, b) {
                 final aTs = a.createdAt?.seconds ?? 0;
                 final bTs = b.createdAt?.seconds ?? 0;

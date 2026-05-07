@@ -31,16 +31,25 @@ SchemaConversation _toSchemaConversation(Conversation conversation) {
 final schemaConversationsProvider = StreamProvider.autoDispose
     .family<List<SchemaConversation>, String>((ref, userId) {
       if (userId.isEmpty) {
-        return const Stream<List<SchemaConversation>>.empty();
+        return Stream.empty();
       }
 
-      return ref.watch(rawConversationsStreamProvider(userId).stream).map((
-        all,
-      ) {
-        return all
-            .where((c) => !c.isArchived)
-            .map(_toSchemaConversation)
-            .toList(growable: false);
+      return Stream.multi((controller) {
+        final subscription = ref.listen(
+          rawConversationsStreamProvider(userId),
+          (_, next) {
+            if (controller.isClosed) return;
+            next.whenData((all) {
+              controller.add(
+                all
+                    .where((c) => !c.isArchived)
+                    .map(_toSchemaConversation)
+                    .toList(growable: false),
+              );
+            });
+          },
+        );
+        controller.onCancel = subscription.close;
       });
     });
 

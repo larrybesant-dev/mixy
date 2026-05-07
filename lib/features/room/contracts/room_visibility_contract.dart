@@ -1,12 +1,7 @@
 import 'package:mixvy/core/logger.dart';
 import 'package:mixvy/models/room_model.dart';
 
-enum RoomVisibilityTier {
-  discoverable,
-  warm,
-  cold,
-  invalid,
-}
+enum RoomVisibilityTier { discoverable, warm, cold, invalid }
 
 enum RoomVisibilityReasonCode {
   discoverableFresh,
@@ -155,7 +150,8 @@ class RoomVisibilityContract {
       );
     }
 
-    final freshnessAnchor = room.updatedAt?.toDate() ?? room.createdAt?.toDate();
+    final freshnessAnchor =
+        room.updatedAt?.toDate() ?? room.createdAt?.toDate();
     if (freshnessAnchor == null) {
       return const RoomVisibilityResult(
         tier: RoomVisibilityTier.warm,

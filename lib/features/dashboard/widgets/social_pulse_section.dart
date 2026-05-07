@@ -214,15 +214,15 @@ class _PulseItemRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-            StartupProfiler.instance.markFirstUserAction(
-              context: 'pulse_item_tap',
-            );
-            SessionFunnelTracker.instance.recordPulseTap();
-            SessionFunnelTracker.instance.markFirstSuccessAction(
-              action: 'pulse_item_tap',
-            );
-            onTap();
-          },
+          StartupProfiler.instance.markFirstUserAction(
+            context: 'pulse_item_tap',
+          );
+          SessionFunnelTracker.instance.recordPulseTap();
+          SessionFunnelTracker.instance.markFirstSuccessAction(
+            action: 'pulse_item_tap',
+          );
+          onTap();
+        },
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(10),

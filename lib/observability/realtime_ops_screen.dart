@@ -48,7 +48,10 @@ class RealtimeOpsScreen extends ConsumerWidget {
                   _Metric('Warm', '${ops.warmCount}'),
                   _Metric('Cold', '${ops.coldCount}'),
                   _Metric('Invalid', '${ops.invalidCount}'),
-                  _Metric('Orphan participants', '${ops.orphanParticipantCount}'),
+                  _Metric(
+                    'Orphan participants',
+                    '${ops.orphanParticipantCount}',
+                  ),
                   _Metric('Warnings', '${ops.warningAlertCount}'),
                   _Metric('Criticals', '${ops.criticalAlertCount}'),
                 ],
@@ -88,7 +91,10 @@ class RealtimeOpsScreen extends ConsumerWidget {
                 accent: const Color(0xFF2E7D32),
                 metrics: [
                   _Metric('Active listeners', '${ops.activeListenerCount}'),
-                  _Metric('Duplicate listener keys', '${ops.duplicateListenerCount}'),
+                  _Metric(
+                    'Duplicate listener keys',
+                    '${ops.duplicateListenerCount}',
+                  ),
                 ],
               ),
             ],

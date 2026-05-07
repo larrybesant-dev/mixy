@@ -141,14 +141,23 @@ final myCamAccessRequestProvider = StreamProvider.autoDispose
       ref,
       params,
     ) {
-      return ref.watch(roomCamAccessRequestsProvider(params.roomId).stream).map((requests) {
-        final myRequests = requests
-            .where((request) => request.requesterId == params.requesterId)
-            .toList();
-          if (myRequests.isEmpty) {
-            return null;
-          }
-          return myRequests.first;
-        },
-      );
+      return Stream.multi((controller) {
+        final subscription = ref.listen(
+          roomCamAccessRequestsProvider(params.roomId),
+          (_, next) {
+            if (controller.isClosed) return;
+            next.whenData((requests) {
+              final myRequests = requests
+                  .where((request) => request.requesterId == params.requesterId)
+                  .toList();
+              if (myRequests.isEmpty) {
+                controller.add(null);
+              } else {
+                controller.add(myRequests.first);
+              }
+            });
+          },
+        );
+        controller.onCancel = subscription.close;
+      });
     });

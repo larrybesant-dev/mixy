@@ -40,7 +40,8 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
       return;
     }
     try {
-      final snapshot = await ref.read(firestoreProvider)
+      final snapshot = await ref
+          .read(firestoreProvider)
           .collection('users')
           .where('username', isGreaterThanOrEqualTo: query)
           .where('username', isLessThanOrEqualTo: '$query\uf8ff')

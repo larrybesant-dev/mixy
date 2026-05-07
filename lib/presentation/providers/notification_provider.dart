@@ -28,20 +28,20 @@ final notificationsEnabledProvider = Provider<bool>((ref) {
       true;
 });
 
-final notificationsStreamProvider = StreamProvider.autoDispose<List<NotificationModel>>((
-  ref,
-) {
-  final userId = ref.watch(currentNotificationUserIdProvider);
-  final lifecycle = ref.watch(streamLifecycleManagerProvider);
-  if (userId == null) {
-    return const Stream<List<NotificationModel>>.empty();
-  }
+final notificationsStreamProvider =
+    StreamProvider.autoDispose<List<NotificationModel>>((ref) {
+      final userId = ref.watch(currentNotificationUserIdProvider);
+      final lifecycle = ref.watch(streamLifecycleManagerProvider);
+      if (userId == null) {
+        return const Stream<List<NotificationModel>>.empty();
+      }
 
-  return lifecycle.bind(
-    key: 'notifications:$userId',
-    create: () => ref.watch(notificationServiceProvider).notificationsForUser(userId),
-  );
-});
+      return lifecycle.bind(
+        key: 'notifications:$userId',
+        create: () =>
+            ref.watch(notificationServiceProvider).notificationsForUser(userId),
+      );
+    });
 
 /// Count of unread notifications for the current user. Derived from the
 /// notifications stream so it stays live without an extra Firestore query.

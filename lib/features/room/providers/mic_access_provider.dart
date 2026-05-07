@@ -374,15 +374,23 @@ final myMicAccessRequestProvider = StreamProvider.autoDispose
       ref,
       params,
     ) {
-      // Derive from canonical owner — use .stream to transform as Stream<T>.
-      return ref.watch(roomMicAccessRequestsProvider(params.roomId).stream).map((requests) {
-        final myRequests = requests
-            .where((request) => request.requesterId == params.requesterId)
-            .toList();
-          if (myRequests.isEmpty) {
-            return null;
-          }
-          return myRequests.first;
-        },
-      );
+      return Stream.multi((controller) {
+        final subscription = ref.listen(
+          roomMicAccessRequestsProvider(params.roomId),
+          (_, next) {
+            if (controller.isClosed) return;
+            next.whenData((requests) {
+              final myRequests = requests
+                  .where((request) => request.requesterId == params.requesterId)
+                  .toList();
+              if (myRequests.isEmpty) {
+                controller.add(null);
+              } else {
+                controller.add(myRequests.first);
+              }
+            });
+          },
+        );
+        controller.onCancel = subscription.close;
+      });
     });

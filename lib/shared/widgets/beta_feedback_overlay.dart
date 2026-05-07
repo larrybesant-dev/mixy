@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mixvy/core/providers/firebase_providers.dart';
 
 class BetaFeedbackOverlay extends StatelessWidget {
   const BetaFeedbackOverlay({super.key, required this.child});
@@ -56,7 +54,6 @@ class _BetaFeedbackSheetState extends ConsumerState<BetaFeedbackSheet> {
     setState(() => _submitting = true);
 
     try {
-      final user = ref.read(firebaseAuthProvider).currentUser;
       String route = 'unknown';
       try {
         route = GoRouterState.of(context).uri.toString();
@@ -64,7 +61,9 @@ class _BetaFeedbackSheetState extends ConsumerState<BetaFeedbackSheet> {
         route = ModalRoute.of(context)?.settings.name ?? 'unknown';
       }
 
-      final callable = FirebaseFunctions.instance.httpsCallable('submitBetaFeedback');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'submitBetaFeedback',
+      );
       await callable.call<Map<String, dynamic>>({
         'category': _category,
         'message': message,

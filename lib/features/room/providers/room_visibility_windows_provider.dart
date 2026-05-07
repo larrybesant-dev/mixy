@@ -4,8 +4,7 @@ import 'package:mixvy/core/logger.dart';
 import 'package:mixvy/features/room/contracts/room_visibility_contract.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String _discoverableMinutesKey =
-    'rooms_visibility_discoverable_minutes';
+const String _discoverableMinutesKey = 'rooms_visibility_discoverable_minutes';
 const String _warmMinutesKey = 'rooms_visibility_warm_minutes';
 const String _coldEndedMinutesKey = 'rooms_visibility_cold_ended_minutes';
 
@@ -20,11 +19,7 @@ const String _cacheColdEndedMinutesKey =
     'rooms_visibility_cache_cold_ended_minutes';
 const String _cacheUpdatedAtMsKey = 'rooms_visibility_cache_updated_at_ms';
 
-enum RoomVisibilityPolicySource {
-  defaults,
-  cached,
-  remote,
-}
+enum RoomVisibilityPolicySource { defaults, cached, remote }
 
 class RoomVisibilityPolicyState {
   const RoomVisibilityPolicyState({
@@ -117,8 +112,7 @@ _SanitizedVisibilityWindows _sanitizeWindows(RoomVisibilityWindows input) {
   return _SanitizedVisibilityWindows(
     windows: RoomVisibilityWindows.defaults,
     isValid: false,
-    issue:
-        'Invalid window ordering; expected discoverable < warm < coldEnded.',
+    issue: 'Invalid window ordering; expected discoverable < warm < coldEnded.',
   );
 }
 
@@ -133,13 +127,16 @@ Future<RoomVisibilityPolicyState?> _readCachedPolicyState() async {
   final sanitized = _sanitizeWindows(
     RoomVisibilityWindows(
       discoverableWindow: Duration(
-        minutes: prefs.getInt(_cacheDiscoverableMinutesKey) ??
+        minutes:
+            prefs.getInt(_cacheDiscoverableMinutesKey) ??
             _defaultDiscoverableMinutes,
       ),
-      warmWindow:
-          Duration(minutes: prefs.getInt(_cacheWarmMinutesKey) ?? _defaultWarmMinutes),
+      warmWindow: Duration(
+        minutes: prefs.getInt(_cacheWarmMinutesKey) ?? _defaultWarmMinutes,
+      ),
       coldEndedWindow: Duration(
-        minutes: prefs.getInt(_cacheColdEndedMinutesKey) ?? _defaultColdEndedMinutes,
+        minutes:
+            prefs.getInt(_cacheColdEndedMinutesKey) ?? _defaultColdEndedMinutes,
       ),
     ),
   );
@@ -167,7 +164,10 @@ Future<void> _writeCachedPolicyState(RoomVisibilityWindows windows) async {
     _cacheColdEndedMinutesKey,
     windows.coldEndedWindow.inMinutes,
   );
-  await prefs.setInt(_cacheUpdatedAtMsKey, DateTime.now().millisecondsSinceEpoch);
+  await prefs.setInt(
+    _cacheUpdatedAtMsKey,
+    DateTime.now().millisecondsSinceEpoch,
+  );
 }
 
 final firebaseRemoteConfigProvider = Provider<FirebaseRemoteConfig>((ref) {
@@ -184,7 +184,9 @@ final roomVisibilityPolicyStateProvider =
       );
     });
 
-final roomVisibilityWindowsBootstrapProvider = FutureProvider<void>((ref) async {
+final roomVisibilityWindowsBootstrapProvider = FutureProvider<void>((
+  ref,
+) async {
   final cachedState = await _readCachedPolicyState();
   if (cachedState != null) {
     ref.read(roomVisibilityPolicyStateProvider.notifier).state = cachedState;

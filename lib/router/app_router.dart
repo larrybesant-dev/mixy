@@ -187,10 +187,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     routes: [
       /// Root route resolves directly to the correct entry path.
-      GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
-      ),
+      GoRoute(path: '/', redirect: (context, state) => '/home'),
 
       GoRoute(path: '/auth', builder: (context, state) => const LoginScreen()),
 

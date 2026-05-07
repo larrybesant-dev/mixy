@@ -102,9 +102,14 @@ class _AfterDarkCreateLoungeScreenState
         tags: tags,
       );
       if (_privacy == _Privacy.private) {
-        await ref.read(firestoreProvider).collection('rooms').doc(roomId).update(
-          {'isLocked': true, 'updatedAt': FieldValue.serverTimestamp()},
-        );
+        await ref
+            .read(firestoreProvider)
+            .collection('rooms')
+            .doc(roomId)
+            .update({
+              'isLocked': true,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
       }
       if (mounted) context.go('/room/$roomId');
     } catch (e) {
@@ -656,11 +661,11 @@ class _AfterDarkCreateLoungeScreenState
               Icons.lock_outline_rounded,
             ),
           };
+          // ignore: deprecated_member_use
           return RadioListTile<_Privacy>(
             value: p,
-            groupValue: _privacy, // ignore: deprecated_member_use
-            onChanged: (v) =>
-                setState(() => _privacy = v!), // ignore: deprecated_member_use
+            groupValue: _privacy,
+            onChanged: (v) => setState(() => _privacy = v!),
             title: Text(
               label,
               style: GoogleFonts.raleway(

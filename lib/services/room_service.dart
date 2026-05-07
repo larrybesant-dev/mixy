@@ -235,7 +235,12 @@ class RoomService {
     final subscription = _streamLifecycleManager
         .bind<QuerySnapshot<Map<String, dynamic>>>(
           key: dedupeKey,
-          routePrefixes: const <String>['/home', '/rooms', '/explore', '/trending'],
+          routePrefixes: const <String>[
+            '/home',
+            '/rooms',
+            '/explore',
+            '/trending',
+          ],
           create: () => query.snapshots(),
         )
         .listen(
@@ -295,7 +300,9 @@ class RoomService {
 
       RoomModel room;
       try {
-        room = _normalizeLiveRoomSnapshot(RoomModel.fromJson(doc.data(), doc.id));
+        room = _normalizeLiveRoomSnapshot(
+          RoomModel.fromJson(doc.data(), doc.id),
+        );
       } catch (error, stackTrace) {
         parseDropped += 1;
         Logger.warning(
@@ -311,24 +318,27 @@ class RoomService {
         continue;
       }
 
-        final decision =
-          RoomVisibilityContract.evaluate(room, now: now, windows: windows);
-        final stabilizedDecision = _applyTierHysteresis(
-          roomId: room.id,
-          decision: decision,
-          previousTier: previousTiers?[room.id],
-          windows: windows,
-        );
-        previousTiers?[room.id] = stabilizedDecision.tier;
+      final decision = RoomVisibilityContract.evaluate(
+        room,
+        now: now,
+        windows: windows,
+      );
+      final stabilizedDecision = _applyTierHysteresis(
+        roomId: room.id,
+        decision: decision,
+        previousTier: previousTiers?[room.id],
+        windows: windows,
+      );
+      previousTiers?[room.id] = stabilizedDecision.tier;
 
-        RoomVisibilityContract.logDecision(room, stabilizedDecision);
-        final withVisibility = RoomWithVisibility(
-          room: room,
-          visibility: stabilizedDecision,
-        );
+      RoomVisibilityContract.logDecision(room, stabilizedDecision);
+      final withVisibility = RoomWithVisibility(
+        room: room,
+        visibility: stabilizedDecision,
+      );
       classifiedRooms.add(withVisibility);
 
-        switch (stabilizedDecision.tier) {
+      switch (stabilizedDecision.tier) {
         case RoomVisibilityTier.discoverable:
           discoverableCount += 1;
           break;
@@ -365,14 +375,15 @@ class RoomService {
     bool includeAdultRooms = false,
     String? category,
   }) {
-    return _liveRoomsQuery(limit: limit, category: category)
-        .snapshots()
-        .asyncMap(
-          (snapshot) => _classifyLiveRooms(
-            snapshot.docs,
-            includeAdultRooms: includeAdultRooms,
-          ),
-        );
+    return _liveRoomsQuery(
+      limit: limit,
+      category: category,
+    ).snapshots().asyncMap(
+      (snapshot) => _classifyLiveRooms(
+        snapshot.docs,
+        includeAdultRooms: includeAdultRooms,
+      ),
+    );
   }
 
   Stream<RoomWithVisibility?> watchPendingDirectCallForCallee({
@@ -477,7 +488,8 @@ class RoomService {
 
     if (previousTier == RoomVisibilityTier.discoverable &&
         decision.tier == RoomVisibilityTier.warm) {
-      final holdUntil = windows.discoverableWindow + _discoverableDemotionBuffer;
+      final holdUntil =
+          windows.discoverableWindow + _discoverableDemotionBuffer;
       if (staleness <= holdUntil) {
         return RoomVisibilityResult(
           tier: RoomVisibilityTier.discoverable,

@@ -14,7 +14,8 @@ class StreamLifecycleManager extends ChangeNotifier {
 
   String _currentRoutePath = '/';
   final Map<String, int> _activeListenerCounts = <String, int>{};
-  final Map<String, Stream<dynamic>> _sharedStreams = <String, Stream<dynamic>>{};
+  final Map<String, Stream<dynamic>> _sharedStreams =
+      <String, Stream<dynamic>>{};
 
   String get currentRoutePath => _currentRoutePath;
 
@@ -124,7 +125,7 @@ class StreamLifecycleManager extends ChangeNotifier {
 
 final streamLifecycleManagerProvider =
     ChangeNotifierProvider<StreamLifecycleManager>((ref) {
-  final manager = StreamLifecycleManager();
-  ref.onDispose(manager.dispose);
-  return manager;
-});
+      final manager = StreamLifecycleManager();
+      ref.onDispose(manager.dispose);
+      return manager;
+    });

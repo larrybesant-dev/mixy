@@ -20,6 +20,7 @@ enum StartupCheckpoint {
   bootstrapResolved,
   firstFrameRendered,
   firstInteractiveReady,
+
   /// Fired on the first deliberate user gesture after the app is interactive.
   /// This closes the loop between "system ready" and "user felt ready".
   firstUserAction,
@@ -228,8 +229,7 @@ class StartupProfiler {
     if (!kStartupDebug) return;
 
     final suffix = (detail == null || detail.isEmpty) ? '' : ' $detail';
-    final message =
-        '+${elapsedMs}ms startup.${checkpoint.name}$suffix';
+    final message = '+${elapsedMs}ms startup.${checkpoint.name}$suffix';
 
     if (kIsWeb) {
       emitStartupMessageToRuntime(message);
@@ -381,8 +381,9 @@ class SessionFunnelSnapshot {
     if (pulseImpressions != null) 'pulse_impressions': pulseImpressions,
     if (pulseTaps != null) 'pulse_taps': pulseTaps,
     if (pulseConversionRate != null)
-      'pulse_conversion_rate':
-          double.parse(pulseConversionRate!.toStringAsFixed(3)),
+      'pulse_conversion_rate': double.parse(
+        pulseConversionRate!.toStringAsFixed(3),
+      ),
     if (timeToSuccessMs != null) 'time_to_success_ms': timeToSuccessMs,
   };
 }

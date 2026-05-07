@@ -16,9 +16,7 @@ enum SessionCapability {
 }
 
 class SessionCapabilities {
-  const SessionCapabilities({
-    required this.isAuthenticated,
-  });
+  const SessionCapabilities({required this.isAuthenticated});
 
   final bool isAuthenticated;
 
@@ -63,7 +61,5 @@ final sessionCapabilitiesProvider = Provider<SessionCapabilities>((ref) {
   final authState = ref.watch(authControllerProvider);
   final isAuthenticated = (authState.uid?.isNotEmpty ?? false);
 
-  return SessionCapabilities(
-    isAuthenticated: isAuthenticated,
-  );
+  return SessionCapabilities(isAuthenticated: isAuthenticated);
 });

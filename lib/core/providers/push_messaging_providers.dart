@@ -21,9 +21,7 @@ final pushMessagingAuthCoordinatorProvider = FutureProvider<void>((ref) async {
       // When auth state changes, trigger push token re-registration.
       // The service handles the logic of whether registration is needed.
       // When user logs in, re-register push token with new user context.
-      Future.microtask(
-        () => PushMessagingService.instance.initialize(),
-      );
+      Future.microtask(() => PushMessagingService.instance.initialize());
     });
   });
 });

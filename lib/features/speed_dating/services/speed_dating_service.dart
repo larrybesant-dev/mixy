@@ -13,10 +13,7 @@ class SpeedDatingService {
     FirebaseFunctions? functions,
   }) : _firestore = firestore,
        _moderationService =
-           moderationService ??
-           ModerationService(
-             firestore: firestore,
-           ),
+           moderationService ?? ModerationService(firestore: firestore),
        _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _firestore;
@@ -221,7 +218,9 @@ class SpeedDatingService {
   Stream<SpeedDatingQueueResult?> watchQueueEntry(String userId) {
     return _firestore
         .collection('speed_dating_queue')
-        .doc(userId) // Single-document read — .limit(1) not applicable for document snapshots.
+        .doc(
+          userId,
+        ) // Single-document read — .limit(1) not applicable for document snapshots.
         .snapshots()
         .map((doc) {
           if (!doc.exists) return null;
@@ -239,7 +238,9 @@ class SpeedDatingService {
   Stream<Map<String, dynamic>?> watchSession(String sessionId) {
     return _firestore
         .collection('speed_dating_sessions')
-        .doc(sessionId) // Single-document read — .limit(1) not applicable for document snapshots.
+        .doc(
+          sessionId,
+        ) // Single-document read — .limit(1) not applicable for document snapshots.
         .snapshots()
         .map((doc) => doc.exists ? doc.data() : null);
   }

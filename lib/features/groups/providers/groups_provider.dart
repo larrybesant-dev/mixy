@@ -24,54 +24,51 @@ final groupDetailsProvider = StreamProvider.autoDispose.family<Group?, String>((
   groupId,
 ) {
   final firestore = ref.watch(firestoreProvider);
-  return firestore.collection('groups').doc(groupId) // Single-document read — .limit(1) not applicable here.
-      .snapshots().map((
-    snapshot,
-  ) {
-    if (!snapshot.exists) return null;
-    final data = snapshot.data();
-    if (data == null) return null;
-    return Group.fromJson(data, snapshot.id);
-  });
+  return firestore
+      .collection('groups')
+      .doc(groupId) // Single-document read — .limit(1) not applicable here.
+      .snapshots()
+      .map((snapshot) {
+        if (!snapshot.exists) return null;
+        final data = snapshot.data();
+        if (data == null) return null;
+        return Group.fromJson(data, snapshot.id);
+      });
 });
 
 // Get user's groups
-final userGroupsProvider = StreamProvider.autoDispose.family<List<Group>, String>((
-  ref,
-  userId,
-) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('groups')
-      .where('memberIds', arrayContains: userId)
-      .limit(100)
-      .snapshots()
-      .map(
-        (snapshot) => snapshot.docs
-            .map((doc) => Group.fromJson(doc.data(), doc.id))
-            .toList(),
-      );
-});
+final userGroupsProvider = StreamProvider.autoDispose
+    .family<List<Group>, String>((ref, userId) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('groups')
+          .where('memberIds', arrayContains: userId)
+          .limit(100)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => Group.fromJson(doc.data(), doc.id))
+                .toList(),
+          );
+    });
 
 // Get posts in a group
-final groupPostsProvider = StreamProvider.autoDispose.family<List<GroupPost>, String>((
-  ref,
-  groupId,
-) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('groups')
-      .doc(groupId)
-      .collection('posts')
-      .orderBy('createdAt', descending: true)
-      .limit(50)
-      .snapshots()
-      .map(
-        (snapshot) => snapshot.docs
-            .map((doc) => GroupPost.fromJson(doc.data(), doc.id))
-            .toList(),
-      );
-});
+final groupPostsProvider = StreamProvider.autoDispose
+    .family<List<GroupPost>, String>((ref, groupId) {
+      final firestore = ref.watch(firestoreProvider);
+      return firestore
+          .collection('groups')
+          .doc(groupId)
+          .collection('posts')
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => GroupPost.fromJson(doc.data(), doc.id))
+                .toList(),
+          );
+    });
 
 // Groups controller
 class GroupsController {

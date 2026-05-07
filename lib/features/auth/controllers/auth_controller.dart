@@ -79,13 +79,8 @@ class AuthState {
   }
 
   @override
-  int get hashCode => Object.hash(
-    isLoading,
-    hasResolvedSession,
-    error,
-    uid,
-    phase,
-  );
+  int get hashCode =>
+      Object.hash(isLoading, hasResolvedSession, error, uid, phase);
 }
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(

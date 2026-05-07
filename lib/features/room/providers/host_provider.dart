@@ -21,13 +21,18 @@ final hostProvider = StreamProvider.autoDispose.family<Host?, String>((
   roomId,
 ) {
   final firestore = ref.watch(roomFirestoreProvider);
-  return firestore.collection('rooms').doc(roomId) // Single-document read — .limit(1) not applicable for document snapshots.
-      .snapshots().map((doc) {
-    final data = doc.data();
-    final hostId = _asNullableString(data?['hostId']);
-    if (hostId == null || hostId.isEmpty) {
-      return null;
-    }
-    return Host(hostId);
-  });
+  return firestore
+      .collection('rooms')
+      .doc(
+        roomId,
+      ) // Single-document read — .limit(1) not applicable for document snapshots.
+      .snapshots()
+      .map((doc) {
+        final data = doc.data();
+        final hostId = _asNullableString(data?['hostId']);
+        if (hostId == null || hostId.isEmpty) {
+          return null;
+        }
+        return Host(hostId);
+      });
 });

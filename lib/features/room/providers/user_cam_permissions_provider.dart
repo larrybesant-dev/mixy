@@ -51,7 +51,9 @@ final userCamAllowedViewersProvider = StreamProvider.autoDispose
       final firestore = ref.watch(roomFirestoreProvider);
       return firestore
           .collection('userCamPermissions')
-          .doc(userId) // Single-document read — .limit(1) not applicable for document snapshots.
+          .doc(
+            userId,
+          ) // Single-document read — .limit(1) not applicable for document snapshots.
           .snapshots()
           .map((doc) {
             final data = doc.data();

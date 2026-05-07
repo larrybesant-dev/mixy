@@ -38,22 +38,22 @@ final adultRoomsProvider = StreamProvider.autoDispose
             includeAdultRooms: true,
           )
           .map((classifiedRooms) {
-        final rooms = classifiedRooms
-            .where((item) => item.tier != RoomVisibilityTier.invalid)
-            .map((item) => item.room)
-            .where((room) => room.isAdult)
-            .toList(growable: false);
-        rooms.sort((a, b) {
-          final aTs = a.createdAt?.seconds ?? 0;
-          final bTs = b.createdAt?.seconds ?? 0;
-          final byCreatedAt = bTs.compareTo(aTs);
-          if (byCreatedAt != 0) {
-            return byCreatedAt;
-          }
-          return a.id.compareTo(b.id);
-        });
-        return rooms;
-      });
+            final rooms = classifiedRooms
+                .where((item) => item.tier != RoomVisibilityTier.invalid)
+                .map((item) => item.room)
+                .where((room) => room.isAdult)
+                .toList(growable: false);
+            rooms.sort((a, b) {
+              final aTs = a.createdAt?.seconds ?? 0;
+              final bTs = b.createdAt?.seconds ?? 0;
+              final byCreatedAt = bTs.compareTo(aTs);
+              if (byCreatedAt != 0) {
+                return byCreatedAt;
+              }
+              return a.id.compareTo(b.id);
+            });
+            return rooms;
+          });
     });
 
 class AfterDarkController {

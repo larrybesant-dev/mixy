@@ -13,15 +13,27 @@ final hostControlsRepositoryProvider = Provider<HostControlsRepository>((ref) {
 /// this is a pure transformation of the already-active stream.
 final feedRoomStreamProvider = StreamProvider.autoDispose
     .family<RoomModel, String>((ref, roomId) {
-      return ref.watch(roomDocStreamProvider(roomId).stream).map((data) {
-        if (data != null) {
-          return RoomModel.fromJson(data, roomId);
-        }
-        return RoomModel(
-          id: roomId,
-          name: 'Room unavailable',
-          hostId: '',
-          isLive: false,
-        );
+      return Stream.multi((controller) {
+        final subscription = ref.listen(roomDocStreamProvider(roomId), (
+          _,
+          next,
+        ) {
+          if (controller.isClosed) return;
+          next.whenData((data) {
+            if (data != null) {
+              controller.add(RoomModel.fromJson(data, roomId));
+            } else {
+              controller.add(
+                RoomModel(
+                  id: roomId,
+                  name: 'Room unavailable',
+                  hostId: '',
+                  isLive: false,
+                ),
+              );
+            }
+          });
+        });
+        controller.onCancel = subscription.close;
       });
     });

@@ -110,10 +110,14 @@ final roomMessageStreamProvider = StreamProvider.autoDispose
                     final label = recipientDisplayName.isEmpty
                         ? recipientUserId
                         : recipientDisplayName;
-                    msg = msg.copyWith(content: '[Private to $label] ${msg.content}');
+                    msg = msg.copyWith(
+                      content: '[Private to $label] ${msg.content}',
+                    );
                   } else if (currentUserId != null &&
                       recipientUserId == currentUserId) {
-                    msg = msg.copyWith(content: '[Private to you] ${msg.content}');
+                    msg = msg.copyWith(
+                      content: '[Private to you] ${msg.content}',
+                    );
                   }
                 }
                 return msg;
@@ -131,11 +135,19 @@ final roomMessageStreamProvider = StreamProvider.autoDispose
     });
 
 final roomTypingUserIdsProvider = StreamProvider.autoDispose
-    .family<List<String>, String>((ref, roomId) async* {
-      // Forward the canonical typing provider — no duplicate Firestore subscription.
-      await for (final ids in ref.watch(typingUserIdsProvider(roomId).stream)) {
-        yield ids;
-      }
+    .family<List<String>, String>((ref, roomId) {
+      return Stream.multi((controller) {
+        final subscription = ref.listen(typingUserIdsProvider(roomId), (
+          _,
+          next,
+        ) {
+          if (controller.isClosed) return;
+          next.whenData((ids) {
+            controller.add(ids);
+          });
+        });
+        controller.onCancel = subscription.close;
+      });
     });
 
 final sendmessageProvider = Provider.autoDispose

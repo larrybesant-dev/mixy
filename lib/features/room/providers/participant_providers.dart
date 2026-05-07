@@ -23,7 +23,9 @@ final roomDocStreamProvider = StreamProvider.autoDispose
         itemCount: (value) => value == null ? 0 : 1,
         stream: firestore
             .collection('rooms')
-            .doc(roomId) // Single-document read — .limit(1) not applicable for document snapshots.
+            .doc(
+              roomId,
+            ) // Single-document read — .limit(1) not applicable for document snapshots.
             .snapshots()
             .map((snap) => snap.data()),
       );
@@ -143,7 +145,9 @@ final currentParticipantProvider = StreamProvider.autoDispose
             .collection('rooms')
             .doc(params.roomId)
             .collection('participants')
-            .doc(params.userId) // Single-document read — .limit(1) not applicable for document snapshots.
+            .doc(
+              params.userId,
+            ) // Single-document read — .limit(1) not applicable for document snapshots.
             .snapshots()
             .map((doc) {
               if (!doc.exists) {

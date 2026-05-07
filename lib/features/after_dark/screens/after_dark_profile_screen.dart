@@ -39,7 +39,11 @@ class _AfterDarkProfileScreenState
   Future<void> _loadProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc = await ref.read(firestoreProvider).collection('users').doc(uid).get();
+    final doc = await ref
+        .read(firestoreProvider)
+        .collection('users')
+        .doc(uid)
+        .get();
     if (!mounted) return;
     final data = doc.data() ?? {};
     setState(() {

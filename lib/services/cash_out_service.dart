@@ -15,9 +15,9 @@ class CashOutService {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     FirebaseFunctions? functions,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance,
-        _functions = functions ?? FirebaseFunctions.instance;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _auth = auth ?? FirebaseAuth.instance,
+       _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -65,8 +65,6 @@ class CashOutService {
     }
 
     final callable = _functions.httpsCallable('requestCashOut');
-    await callable.call<Map<String, dynamic>>({
-      'amount': amount,
-    });
+    await callable.call<Map<String, dynamic>>({'amount': amount});
   }
 }

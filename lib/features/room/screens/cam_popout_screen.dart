@@ -77,9 +77,7 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
         'ownerName': callerName,
       });
 
-      await NotificationService(
-        firestore: firestore,
-      ).inAppNotification(
+      await NotificationService(firestore: firestore).inAppNotification(
         widget.targetUserId,
         '📹 $callerName is calling you! Join at mixvy.app/room/$roomId',
       );

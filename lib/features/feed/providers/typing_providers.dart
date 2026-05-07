@@ -14,10 +14,21 @@ final typingStreamProvider = StreamProvider.autoDispose
 /// Derived provider: typing user IDs (those with isTyping = true)
 final typingUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
-      return ref.watch(typingStreamProvider(roomId).stream).map((typingMap) {
-        return typingMap.entries
-            .where((entry) => entry.value == true)
-            .map((entry) => entry.key)
-            .toList(growable: false);
+      return Stream.multi((controller) {
+        final subscription = ref.listen(typingStreamProvider(roomId), (
+          _,
+          next,
+        ) {
+          if (controller.isClosed) return;
+          next.whenData((typingMap) {
+            controller.add(
+              typingMap.entries
+                  .where((entry) => entry.value == true)
+                  .map((entry) => entry.key)
+                  .toList(growable: false),
+            );
+          });
+        });
+        controller.onCancel = subscription.close;
       });
     });

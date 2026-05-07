@@ -128,9 +128,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     SessionFunnelTracker.instance.markFirstSuccessAction(
       action: 'first_session_cta',
     );
-    await ref
-        .read(sessionStageProvider.notifier)
-        .completeFirstSessionAction();
+    await ref.read(sessionStageProvider.notifier).completeFirstSessionAction();
     if (!mounted) {
       return;
     }
@@ -543,7 +541,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ErrorState(
                       title: 'Featured rooms unavailable',
-                      message: 'Room recommendations are temporarily unavailable.',
+                      message:
+                          'Room recommendations are temporarily unavailable.',
                       ctaLabel: 'Retry',
                       onCta: () => ref.invalidate(roomsStreamProvider),
                     ),
@@ -605,7 +604,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ErrorState(
                       title: 'Could not load new members',
-                      message: 'Recent member updates are temporarily unavailable.',
+                      message:
+                          'Recent member updates are temporarily unavailable.',
                       ctaLabel: 'Retry',
                       onCta: () => ref.invalidate(newMembersStreamProvider),
                     ),

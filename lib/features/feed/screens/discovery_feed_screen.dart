@@ -54,7 +54,11 @@ final _hostAvatarProvider = FutureProvider.autoDispose.family<String?, String>((
   ref,
   hostId,
 ) async {
-  final doc = await ref.watch(firestoreProvider).collection('users').doc(hostId).get();
+  final doc = await ref
+      .watch(firestoreProvider)
+      .collection('users')
+      .doc(hostId)
+      .get();
   if (!doc.exists) return null;
   return sanitizeNetworkImageUrl(doc.data()?['avatarUrl'] as String?);
 });

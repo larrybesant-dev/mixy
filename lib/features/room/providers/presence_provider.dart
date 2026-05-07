@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/firestore/firestore_debug_tracing.dart';
 import '../../../models/room_participant_model.dart';
 import '../controllers/room_state.dart';
 import 'participant_providers.dart';
@@ -93,36 +92,38 @@ bool _isRoomParticipantActive(
 
 final roomPresenceStreamProvider = StreamProvider.autoDispose
     .family<List<RoomPresenceModel>, String>((ref, roomId) {
-      return traceFirestoreStream<List<RoomPresenceModel>>(
-        key: 'room_presence/$roomId',
-        query: 'rooms/$roomId/participants (authoritative room presence)',
-        roomId: roomId,
-        itemCount: (value) => value.length,
-        stream: ref.watch(participantsStreamProvider(roomId).stream).map((
-          participants,
+      return Stream.multi((controller) {
+        final subscription = ref.listen(participantsStreamProvider(roomId), (
+          _,
+          next,
         ) {
-          final now = DateTime.now();
-          return participants
-              .map((participant) {
-                final userId = participant.userId.trim();
-                final participantRoomMatch = _isRoomParticipantActive(
-                  participant,
-                  now: now,
-                );
-
-                return RoomPresenceModel(
-                  userId: userId,
-                  isOnline: participantRoomMatch,
-                  lastHeartbeatAt: participant.lastActiveAt,
-                  lastSeenAt: participant.lastActiveAt,
-                  customStatus: participant.customStatus,
-                  userStatus:
-                      participant.userStatus ??
-                      (participantRoomMatch ? 'online' : 'offline'),
-                );
-              })
-              .where((presence) => presence.userId.isNotEmpty)
-              .toList(growable: false);
-        }),
-      );
+          if (controller.isClosed) return;
+          next.whenData((participants) {
+            final now = DateTime.now();
+            controller.add(
+              participants
+                  .map((participant) {
+                    final userId = participant.userId.trim();
+                    final participantRoomMatch = _isRoomParticipantActive(
+                      participant,
+                      now: now,
+                    );
+                    return RoomPresenceModel(
+                      userId: userId,
+                      isOnline: participantRoomMatch,
+                      lastHeartbeatAt: participant.lastActiveAt,
+                      lastSeenAt: participant.lastActiveAt,
+                      customStatus: participant.customStatus,
+                      userStatus:
+                          participant.userStatus ??
+                          (participantRoomMatch ? 'online' : 'offline'),
+                    );
+                  })
+                  .where((presence) => presence.userId.isNotEmpty)
+                  .toList(growable: false),
+            );
+          });
+        });
+        controller.onCancel = subscription.close;
+      });
     });

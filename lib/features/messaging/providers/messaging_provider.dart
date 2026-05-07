@@ -821,38 +821,36 @@ final messageReactionsProvider = StreamProvider.autoDispose
 /// Subscribes to the lightweight `ephemeral/typing` subcollection doc so
 /// message sends (which mutate the parent conversation doc) do not trigger
 /// unnecessary re-emits here.
-final typingUsersProvider = StreamProvider.autoDispose.family<Set<String>, String>((
-  ref,
-  conversationId,
-) {
-  final firestore = ref.watch(firestoreProvider);
-  final lifecycle = ref.watch(streamLifecycleManagerProvider);
-  return lifecycle.bind(
-    key: 'typing:$conversationId',
-    routePrefixes: const <String>['/chat'],
-    create: () => firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('ephemeral')
-        .doc('typing')
-        .snapshots()
-        .map((doc) {
-          final raw = doc.data()?['users'] as Map<String, dynamic>?;
-          if (raw == null) return <String>{};
-          final now = DateTime.now();
-          return raw.entries
-              .where((e) {
-                final ts = e.value;
-                if (ts is Timestamp) {
-                  return now.difference(ts.toDate()).inSeconds < 10;
-                }
-                return false;
-              })
-              .map((e) => e.key)
-              .toSet();
-        }),
-  );
-});
+final typingUsersProvider = StreamProvider.autoDispose
+    .family<Set<String>, String>((ref, conversationId) {
+      final firestore = ref.watch(firestoreProvider);
+      final lifecycle = ref.watch(streamLifecycleManagerProvider);
+      return lifecycle.bind(
+        key: 'typing:$conversationId',
+        routePrefixes: const <String>['/chat'],
+        create: () => firestore
+            .collection('conversations')
+            .doc(conversationId)
+            .collection('ephemeral')
+            .doc('typing')
+            .snapshots()
+            .map((doc) {
+              final raw = doc.data()?['users'] as Map<String, dynamic>?;
+              if (raw == null) return <String>{};
+              final now = DateTime.now();
+              return raw.entries
+                  .where((e) {
+                    final ts = e.value;
+                    if (ts is Timestamp) {
+                      return now.difference(ts.toDate()).inSeconds < 10;
+                    }
+                    return false;
+                  })
+                  .map((e) => e.key)
+                  .toSet();
+            }),
+      );
+    });
 
 /// Count of conversations that have at least one unread message for the current
 /// user. Derived from the live conversations stream — stays real-time.
@@ -870,47 +868,53 @@ final unreadmessageCountProvider = Provider.autoDispose<int>((ref) {
 
 /// Optimized provider that filters conversations by the user's block list.
 /// Hardening: separates the raw Firestore stream from the expensive moderation logic.
-final filteredConversationsProvider =
-    Provider.autoDispose.family<AsyncValue<List<Conversation>>, String>((ref, userId) {
-  final allAsync = ref.watch(rawConversationsStreamProvider(userId));
-  final excludedAsync = ref.watch(excludedUserIdsProvider(userId));
+final filteredConversationsProvider = Provider.autoDispose
+    .family<AsyncValue<List<Conversation>>, String>((ref, userId) {
+      final allAsync = ref.watch(rawConversationsStreamProvider(userId));
+      final excludedAsync = ref.watch(excludedUserIdsProvider(userId));
 
-  return allAsync.when(
-    data: (all) {
-      return excludedAsync.when(
-        data: (excludedIds) {
-          final active = all.where((c) => c.status != 'pending');
+      return allAsync.when(
+        data: (all) {
+          return excludedAsync.when(
+            data: (excludedIds) {
+              final active = all.where((c) => c.status != 'pending');
 
-          if (excludedIds.isEmpty) {
-            final sorted = active.toList();
-            sorted.sort((left, right) => _compareConversationsForUser(left, right, userId));
-            return AsyncValue.data(sorted);
-          }
+              if (excludedIds.isEmpty) {
+                final sorted = active.toList();
+                sorted.sort(
+                  (left, right) =>
+                      _compareConversationsForUser(left, right, userId),
+                );
+                return AsyncValue.data(sorted);
+              }
 
-          final visible = active.where((conv) {
-            final others = conv.participantIds.where((id) => id != userId);
-            return !others.any((id) => excludedIds.contains(id));
-          }).toList();
+              final visible = active.where((conv) {
+                final others = conv.participantIds.where((id) => id != userId);
+                return !others.any((id) => excludedIds.contains(id));
+              }).toList();
 
-          visible.sort((left, right) => _compareConversationsForUser(left, right, userId));
-          return AsyncValue.data(visible);
+              visible.sort(
+                (left, right) =>
+                    _compareConversationsForUser(left, right, userId),
+              );
+              return AsyncValue.data(visible);
+            },
+            loading: () => const AsyncValue.loading(),
+            error: (e, st) => AsyncValue.data(
+              all.where((c) => c.status != 'pending').toList()..sort(
+                (left, right) =>
+                    _compareConversationsForUser(left, right, userId),
+              ),
+            ),
+          );
         },
         loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.data(
-          all
-              .where((c) => c.status != 'pending')
-              .toList()
-            ..sort((left, right) => _compareConversationsForUser(left, right, userId)),
-        ),
+        error: (e, st) => AsyncValue.error(e, st),
       );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
+    });
 
 /// Watches the excluded user IDs for a given user, used for filtering conversations.
-final excludedUserIdsProvider =
-    FutureProvider.autoDispose.family<Set<String>, String>((ref, userId) async {
-  return ModerationService().getExcludedUserIds(userId);
-});
+final excludedUserIdsProvider = FutureProvider.autoDispose
+    .family<Set<String>, String>((ref, userId) async {
+      return ModerationService().getExcludedUserIds(userId);
+    });

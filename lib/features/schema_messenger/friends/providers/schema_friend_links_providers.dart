@@ -33,7 +33,7 @@ final schemaFriendLinksProvider =
         return const Stream<List<SchemaFriendLink>>.empty();
       }
 
-      return ref.watch(rawAllFriendshipsStreamProvider(userId).stream).map((
+      return ref.watch(rawAllFriendshipsStreamProvider(userId)).map((
         friendships,
       ) {
         final links =
@@ -138,7 +138,9 @@ final schemaFriendIdentityProvider = StreamProvider.autoDispose
 
         userSub = firestore
             .collection('users')
-            .doc(friendId) // Single-document read — .limit(1) not applicable for document snapshots.
+            .doc(
+              friendId,
+            ) // Single-document read — .limit(1) not applicable for document snapshots.
             .snapshots()
             .listen((snapshot) {
               if (disposed || controller.isClosed) return;

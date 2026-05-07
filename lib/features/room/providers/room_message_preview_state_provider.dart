@@ -9,19 +9,29 @@ class RoommessagePreviewState {
 }
 
 final roommessagePreviewStateProvider = StreamProvider.autoDispose
-    .family<RoommessagePreviewState, String>((ref, roomId) async* {
-      List<MessageModel>? previous;
-      // ignore: deprecated_member_use
-      await for (final message in ref.watch(
-        roomMessageStreamProvider(roomId),
-      ).asStream().map(
-            (asyncValue) => asyncValue.data ?? <MessageModel>[],
-          )) {
-        if (previous != null &&
-            !RoommessagePreviewContract.shouldRebuild(previous, message)) {
-          continue;
-        }
-        previous = message;
-        yield RoommessagePreviewState(messagePreview: message);
-      }
+    .family<RoommessagePreviewState, String>((ref, roomId) {
+      return Stream.multi((controller) {
+        List<MessageModel>? previous;
+        final subscription = ref.listen<AsyncValue<List<MessageModel>>>(
+          roomMessageStreamProvider(roomId),
+          (_, next) {
+            if (controller.isClosed) return;
+            final List<MessageModel> messages =
+                next.valueOrNull ?? const <MessageModel>[];
+            if (previous != null) {
+              if (!RoommessagePreviewContract.shouldRebuild(
+                previous!,
+                messages,
+              )) {
+                return;
+              }
+            }
+            previous = messages;
+            controller.add(RoommessagePreviewState(messagePreview: messages));
+          },
+          fireImmediately: true,
+        );
+
+        controller.onCancel = subscription.close;
+      });
     });

@@ -105,7 +105,9 @@ final verificationRequestProvider =
       return ref
           .watch(firestoreProvider)
           .collection('verification_requests')
-          .doc(uid) // Single-document read — .limit(1) not applicable for document snapshots.
+          .doc(
+            uid,
+          ) // Single-document read — .limit(1) not applicable for document snapshots.
           .snapshots()
           .map((doc) => doc.exists ? doc.data() : null);
     });

@@ -79,7 +79,9 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     }
 
     if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
     }
 
     FirebaseFirestore.instance.settings = kIsWeb
@@ -99,9 +101,9 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     try {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
       PushMessagingService.instance.setNavigatorKey(rootNavigatorKey);
-      await PushMessagingService.instance
-          .initialize()
-          .timeout(const Duration(seconds: 4));
+      await PushMessagingService.instance.initialize().timeout(
+        const Duration(seconds: 4),
+      );
     } catch (error, stackTrace) {
       developer.log(
         'PUSH INIT FAILED: $error',
@@ -115,7 +117,9 @@ final appBootstrapProvider = FutureProvider<void>((ref) async {
     // Crashlytics is optional for app startup.
     try {
       if (!kIsWeb && const bool.fromEnvironment('dart.vm.product')) {
-        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+          true,
+        );
       }
     } catch (error, stackTrace) {
       developer.log(
@@ -288,7 +292,9 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
 
       final uid = ref.read(authControllerProvider).uid;
       if (uid != null && uid.isNotEmpty) {
-        unawaited(ref.read(profileControllerProvider.notifier).loadCurrentProfile());
+        unawaited(
+          ref.read(profileControllerProvider.notifier).loadCurrentProfile(),
+        );
       }
 
       ref.read(presenceControllerProvider);
@@ -540,8 +546,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
             alignment: Alignment.topCenter,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(10),
@@ -578,7 +583,9 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
   @override
   Widget build(BuildContext context) {
     ref.watch(appBootstrapProvider);
-    ref.watch(pushMessagingAuthCoordinatorProvider);  // Coordinate push auth with canonical auth stream
+    ref.watch(
+      pushMessagingAuthCoordinatorProvider,
+    ); // Coordinate push auth with canonical auth stream
     final bootState = ref.watch(bootStateProvider);
 
     if (bootState == BootState.loading) {
@@ -615,9 +622,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
       StartupProfiler.instance.markFirstFrameRendered();
       if (!_interactiveReadyMarked) {
         _interactiveReadyMarked = true;
-        StartupProfiler.instance.markFirstInteractiveReady(
-          launchType: 'cold',
-        );
+        StartupProfiler.instance.markFirstInteractiveReady(launchType: 'cold');
       }
     });
 
@@ -640,9 +645,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
             : routedChild;
 
         final appChild = DefaultTextStyle.merge(
-          style: const TextStyle(
-            fontFamilyFallback: mixvyFontFamilyFallback,
-          ),
+          style: const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
           child: IncomingCallOverlay(
             child: BetaFeedbackOverlay(child: diagnosticsChild),
           ),

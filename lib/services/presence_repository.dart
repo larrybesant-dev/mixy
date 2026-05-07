@@ -268,7 +268,11 @@ class FirestorePresenceRepository implements PresenceRepository {
 
       for (var index = 0; index < chunks.length; index += 1) {
         final chunk = chunks[index];
-        final queryHash = chunk.join('|').hashCode.toUnsigned(32).toRadixString(16);
+        final queryHash = chunk
+            .join('|')
+            .hashCode
+            .toUnsigned(32)
+            .toRadixString(16);
         final streamKey = _streamLifecycleManager.buildDedupeKey(
           domain: 'presence-batch',
           userId: normalizedIds.join(','),

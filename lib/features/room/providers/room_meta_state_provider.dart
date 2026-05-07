@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'participant_providers.dart';
-import '../contracts/room_meta_contract.dart';
 
 class RoomMetaState {
   final Map<String, dynamic>? roomDoc;
@@ -8,14 +7,17 @@ class RoomMetaState {
 }
 
 final roomMetaStateProvider = StreamProvider.autoDispose
-    .family<RoomMetaState, String>((ref, roomId) async* {
-      Map<String, dynamic>? previous;
-      await for (final doc in ref.watch(roomDocStreamProvider(roomId).stream)) {
-        if (previous != null &&
-            !RoomMetaContract.shouldRebuild(previous, doc)) {
-          continue;
-        }
-        previous = doc;
-        yield RoomMetaState(roomDoc: doc);
-      }
+    .family<RoomMetaState, String>((ref, roomId) {
+      return Stream.multi((controller) {
+        final subscription = ref.listen<AsyncValue<Map<String, dynamic>?>>(
+          roomDocStreamProvider(roomId),
+          (_, next) {
+            if (controller.isClosed) return;
+            controller.add(RoomMetaState(roomDoc: next.valueOrNull));
+          },
+          fireImmediately: true,
+        );
+
+        controller.onCancel = subscription.close;
+      });
     });

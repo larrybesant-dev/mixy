@@ -58,47 +58,46 @@ final roomsWithVisibilityStreamProvider =
           '/after-dark',
           '/trending',
         ],
-        create: () => ref
-            .watch(roomServiceProvider)
-            .watchRoomsWithVisibility(limit: 50),
+        create: () =>
+            ref.watch(roomServiceProvider).watchRoomsWithVisibility(limit: 50),
       );
     });
 
 final userPostsStreamProvider = StreamProvider.autoDispose
     .family<List<PostModel>, String>((ref, userId) {
       final firestore = ref.watch(firestoreProvider);
-  final lifecycle = ref.watch(streamLifecycleManagerProvider);
-  return lifecycle.bind(
-    key: 'feed-user-posts:$userId',
-    routePrefixes: const <String>['/profile'],
-    create: () => firestore
-    .collection('posts')
-    .where('authorId', isEqualTo: userId)
-    .orderBy('createdAt', descending: true)
-    .limit(30)
-    .snapshots()
-    .map(
-      (snap) => snap.docs
-      .map((d) => PostModel.fromDoc(d.id, d.data()))
-      .toList(growable: false),
-    ),
-  );
+      final lifecycle = ref.watch(streamLifecycleManagerProvider);
+      return lifecycle.bind(
+        key: 'feed-user-posts:$userId',
+        routePrefixes: const <String>['/profile'],
+        create: () => firestore
+            .collection('posts')
+            .where('authorId', isEqualTo: userId)
+            .orderBy('createdAt', descending: true)
+            .limit(30)
+            .snapshots()
+            .map(
+              (snap) => snap.docs
+                  .map((d) => PostModel.fromDoc(d.id, d.data()))
+                  .toList(growable: false),
+            ),
+      );
     });
 
-final roomsStreamProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>(
-  (ref) {
-    return ref.watch(roomsWithVisibilityStreamProvider).whenData((classified) {
-      final sections = _toSections(classified);
-      if (sections.primaryLive.isNotEmpty) {
-        return sections.primaryLive
-            .map((item) => item.room)
-            .toList(growable: false);
-      }
+final roomsStreamProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>((
+  ref,
+) {
+  return ref.watch(roomsWithVisibilityStreamProvider).whenData((classified) {
+    final sections = _toSections(classified);
+    if (sections.primaryLive.isNotEmpty) {
+      return sections.primaryLive
+          .map((item) => item.room)
+          .toList(growable: false);
+    }
 
-      return sections.cold.map((item) => item.room).toList(growable: false);
-    });
-  },
-);
+    return sections.cold.map((item) => item.room).toList(growable: false);
+  });
+});
 
 final roomsSnapshotProvider = FutureProvider.autoDispose<List<RoomModel>>((
   ref,
@@ -127,10 +126,15 @@ class RoomVisibilitySections {
   final List<RoomWithVisibility> cold;
   final List<RoomWithVisibility> invalid;
 
-  List<RoomWithVisibility> get primaryLive =>
-      <RoomWithVisibility>[...discoverable, ...warm];
-  List<RoomWithVisibility> get allVisible =>
-      <RoomWithVisibility>[...discoverable, ...warm, ...cold];
+  List<RoomWithVisibility> get primaryLive => <RoomWithVisibility>[
+    ...discoverable,
+    ...warm,
+  ];
+  List<RoomWithVisibility> get allVisible => <RoomWithVisibility>[
+    ...discoverable,
+    ...warm,
+    ...cold,
+  ];
   int get totalClassified => allVisible.length + invalid.length;
 }
 
@@ -210,73 +214,73 @@ final roomVisibilitySectionsProvider =
       return ref.watch(roomsWithVisibilityStreamProvider).whenData(_toSections);
     });
 
-final feedHealthProvider =
-    Provider.autoDispose<AsyncValue<FeedHealthSnapshot>>((ref) {
-      final roomsAsync = ref.watch(roomsWithVisibilityStreamProvider);
-      final policyState = ref.watch(roomVisibilityPolicyStateProvider);
-      return roomsAsync.whenData((rooms) {
-        final sections = _toSections(rooms);
-        final reasonCounts = <RoomVisibilityReasonCode, int>{
-          for (final reason in RoomVisibilityReasonCode.values) reason: 0,
-        };
-        final tierCounts = <RoomVisibilityTier, int>{
-          for (final tier in RoomVisibilityTier.values) tier: 0,
-        };
+final feedHealthProvider = Provider.autoDispose<AsyncValue<FeedHealthSnapshot>>((
+  ref,
+) {
+  final roomsAsync = ref.watch(roomsWithVisibilityStreamProvider);
+  final policyState = ref.watch(roomVisibilityPolicyStateProvider);
+  return roomsAsync.whenData((rooms) {
+    final sections = _toSections(rooms);
+    final reasonCounts = <RoomVisibilityReasonCode, int>{
+      for (final reason in RoomVisibilityReasonCode.values) reason: 0,
+    };
+    final tierCounts = <RoomVisibilityTier, int>{
+      for (final tier in RoomVisibilityTier.values) tier: 0,
+    };
 
-        for (final room in rooms) {
-          reasonCounts[room.visibility.reasonCode] =
-              (reasonCounts[room.visibility.reasonCode] ?? 0) + 1;
-          tierCounts[room.tier] = (tierCounts[room.tier] ?? 0) + 1;
-        }
+    for (final room in rooms) {
+      reasonCounts[room.visibility.reasonCode] =
+          (reasonCounts[room.visibility.reasonCode] ?? 0) + 1;
+      tierCounts[room.tier] = (tierCounts[room.tier] ?? 0) + 1;
+    }
 
-        final usingColdFallback =
-            sections.primaryLive.isEmpty && sections.cold.isNotEmpty;
-        final totalClassified = sections.totalClassified;
-        final staleCount =
-            (reasonCounts[RoomVisibilityReasonCode.warmStale] ?? 0) +
-            (reasonCounts[RoomVisibilityReasonCode.coldDormant] ?? 0);
-        final invalidCount = sections.invalid.length;
-        final staleRate = totalClassified == 0
-          ? 0.0
-          : staleCount / totalClassified;
-        final invalidRate = totalClassified == 0
-          ? 0.0
-          : invalidCount / totalClassified;
-        final warmUnknownFreshnessCount =
-            reasonCounts[RoomVisibilityReasonCode.warmUnknownFreshness] ?? 0;
-        final likelyPresenceDesync = totalClassified >= 4 &&
-            warmUnknownFreshnessCount >= (totalClassified / 2).ceil();
+    final usingColdFallback =
+        sections.primaryLive.isEmpty && sections.cold.isNotEmpty;
+    final totalClassified = sections.totalClassified;
+    final staleCount =
+        (reasonCounts[RoomVisibilityReasonCode.warmStale] ?? 0) +
+        (reasonCounts[RoomVisibilityReasonCode.coldDormant] ?? 0);
+    final invalidCount = sections.invalid.length;
+    final staleRate = totalClassified == 0 ? 0.0 : staleCount / totalClassified;
+    final invalidRate = totalClassified == 0
+        ? 0.0
+        : invalidCount / totalClassified;
+    final warmUnknownFreshnessCount =
+        reasonCounts[RoomVisibilityReasonCode.warmUnknownFreshness] ?? 0;
+    final likelyPresenceDesync =
+        totalClassified >= 4 &&
+        warmUnknownFreshnessCount >= (totalClassified / 2).ceil();
 
-        final state = !policyState.isConfigValid
-            ? FeedHealthState.configInvalid
-            : usingColdFallback
-            ? FeedHealthState.fallbackActive
-            : likelyPresenceDesync
-            ? FeedHealthState.presenceDesynced
-            : (invalidRate >= 0.25 || staleRate >= 0.70)
-            ? FeedHealthState.degraded
-            : FeedHealthState.healthy;
+    final state = !policyState.isConfigValid
+        ? FeedHealthState.configInvalid
+        : usingColdFallback
+        ? FeedHealthState.fallbackActive
+        : likelyPresenceDesync
+        ? FeedHealthState.presenceDesynced
+        : (invalidRate >= 0.25 || staleRate >= 0.70)
+        ? FeedHealthState.degraded
+        : FeedHealthState.healthy;
 
-        if (state != FeedHealthState.healthy) {
-          Logger.warning(
-            'ROOM_FEED_HEALTH state=${state.name} discoverable=${sections.discoverable.length} warm=${sections.warm.length} cold=${sections.cold.length} invalid=${sections.invalid.length} staleRate=${staleRate.toStringAsFixed(3)} invalidRate=${invalidRate.toStringAsFixed(3)} policySource=${policyState.source.name}',
-          );
-        }
+    if (state != FeedHealthState.healthy) {
+      Logger.warning(
+        'ROOM_FEED_HEALTH state=${state.name} discoverable=${sections.discoverable.length} warm=${sections.warm.length} cold=${sections.cold.length} invalid=${sections.invalid.length} staleRate=${staleRate.toStringAsFixed(3)} invalidRate=${invalidRate.toStringAsFixed(3)} policySource=${policyState.source.name}',
+      );
+    }
 
-        return FeedHealthSnapshot(
-          sections: sections,
-          reasonCounts: Map<RoomVisibilityReasonCode, int>.unmodifiable(
-            reasonCounts,
-          ),
-          tierCounts: Map<RoomVisibilityTier, int>.unmodifiable(tierCounts),
-          usingColdFallback: usingColdFallback,
-          state: state,
-          invalidRate: invalidRate,
-          staleRate: staleRate,
-          policyState: policyState,
-        );
-      });
-    });
+    return FeedHealthSnapshot(
+      sections: sections,
+      reasonCounts: Map<RoomVisibilityReasonCode, int>.unmodifiable(
+        reasonCounts,
+      ),
+      tierCounts: Map<RoomVisibilityTier, int>.unmodifiable(tierCounts),
+      usingColdFallback: usingColdFallback,
+      state: state,
+      invalidRate: invalidRate,
+      staleRate: staleRate,
+      policyState: policyState,
+    );
+  });
+});
 
 final eventsStreamProvider = FutureProvider.autoDispose<List<EventModel>>((
   ref,

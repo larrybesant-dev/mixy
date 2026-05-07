@@ -289,8 +289,9 @@ class FriendService {
             (snapshot) {
               schemaFriendships = snapshot.docs
                   .map((doc) => _friendshipFromSchemaDoc(doc.id, doc.data()))
-                  .where((friendship) =>
-                      friendship.involvesUser(normalizedUserId))
+                  .where(
+                    (friendship) => friendship.involvesUser(normalizedUserId),
+                  )
                   .toList(growable: false);
               schemaReady = true;
               emit();

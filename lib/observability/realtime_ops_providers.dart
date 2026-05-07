@@ -96,7 +96,7 @@ final realtimeOpsSnapshotProvider =
       final moderatorPromotionCount = telemetryState.recentEvents
           .where((event) => event.action == 'promote_moderator')
           .length;
-        final hiddenPendingDirectCallCount = telemetryState.recentEvents
+      final hiddenPendingDirectCallCount = telemetryState.recentEvents
           .where((event) => event.action == 'pending_direct_call_hidden')
           .length;
 

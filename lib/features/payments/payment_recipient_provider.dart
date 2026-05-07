@@ -20,10 +20,7 @@ class FirestorePaymentRecipientRepository
     ModerationService? moderationService,
   }) : _firestore = firestore,
        _moderationService =
-           moderationService ??
-           ModerationService(
-             firestore: firestore,
-           );
+           moderationService ?? ModerationService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;

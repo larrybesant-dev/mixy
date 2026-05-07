@@ -173,7 +173,8 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
 
   Future<List<Map<String, String>>> _searchUsers(String query) async {
     final normalized = query.trim();
-    final snapshot = await ref.read(firestoreProvider)
+    final snapshot = await ref
+        .read(firestoreProvider)
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: normalized)
         .where('username', isLessThanOrEqualTo: '$normalized\uf8ff')

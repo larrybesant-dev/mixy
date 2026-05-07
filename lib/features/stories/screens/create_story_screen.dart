@@ -120,11 +120,8 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
         'users/${widget.userId}/stories/$folder/${DateTime.now().millisecondsSinceEpoch}.$extension';
     final ref = FirebaseStorage.instance.ref(path);
     // UploadTask starts immediately; we await it below via task.timeout().
-    final task = ref.putData(
-      bytes,
-      SettableMetadata(contentType: contentType),
-    );
-    _uploadProgressSub?.cancel();
+    final task = ref.putData(bytes, SettableMetadata(contentType: contentType));
+    await _uploadProgressSub?.cancel();
     _uploadProgressSub = task.snapshotEvents.listen((snap) {
       if (snap.totalBytes > 0 && mounted) {
         setState(
@@ -133,7 +130,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
       }
     });
     await task.timeout(const Duration(seconds: 60));
-    return ref.getDownloadURL();
+    return await ref.getDownloadURL();
   }
 
   Future<void> _pickPhoto() async {

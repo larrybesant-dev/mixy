@@ -999,10 +999,7 @@ class _MessageList extends ConsumerWidget {
       itemCount: message.length,
       itemBuilder: (_, i) {
         final msg = message[i];
-        return MessageBubble(
-          message: msg,
-          isMe: msg.senderId == currentUserId,
-        );
+        return MessageBubble(message: msg, isMe: msg.senderId == currentUserId);
       },
     );
   }

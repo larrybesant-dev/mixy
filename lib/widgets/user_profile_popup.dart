@@ -89,7 +89,8 @@ class _UserProfilePopupSheetState
       return;
     }
     try {
-      final doc = await ref.read(firestoreProvider)
+      final doc = await ref
+          .read(firestoreProvider)
           .collection('users')
           .doc(_normalizedUserId)
           .get();

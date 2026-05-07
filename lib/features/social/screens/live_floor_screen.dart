@@ -253,21 +253,21 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
     );
     final streamStateLabel = sectionsAsync.isLoading
         ? 'loading'
-      : sectionsAsync.hasError
+        : sectionsAsync.hasError
         ? 'error'
         : previewRooms.isEmpty
         ? 'empty'
         : 'ready';
     final visibilityHint = sectionsAsync.isLoading
         ? 'Waiting for the stabilized live room stream.'
-      : sectionsAsync.hasError
+        : sectionsAsync.hasError
         ? 'The room stream returned an error, so visible rooms may be temporarily hidden.'
-      : previewSections != null &&
-          previewSections.primaryLive.isEmpty &&
-          previewSections.cold.isNotEmpty
-      ? 'Primary rooms are empty; showing cold fallback while freshness recovers.'
-      : previewRooms.isEmpty
-      ? 'No rooms currently match visibility tiers.'
+        : previewSections != null &&
+              previewSections.primaryLive.isEmpty &&
+              previewSections.cold.isNotEmpty
+        ? 'Primary rooms are empty; showing cold fallback while freshness recovers.'
+        : previewRooms.isEmpty
+        ? 'No rooms currently match visibility tiers.'
         : 'Rooms are visible and sorted for quick entry.';
 
     RoomLayoutV1.debugAssertOrder(const <String>[
@@ -485,7 +485,8 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
                               ),
                               _TierSection(
                                 title: 'Cold',
-                                subtitle: 'Recent rooms while live traffic recovers',
+                                subtitle:
+                                    'Recent rooms while live traffic recovers',
                                 rooms: cold,
                                 color: const Color(0xFF9A7A5A),
                               ),
