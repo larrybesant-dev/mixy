@@ -5,7 +5,9 @@
 
 // ignore_for_file: use_null_aware_elements
 
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme.dart';
 import '../core/utils/network_image_url.dart';
@@ -64,7 +66,12 @@ class MixvyGoldButton extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: (loading || onPressed == null) ? null : onPressed,
+              onTap: (loading || onPressed == null)
+                  ? null
+                  : () {
+                      unawaited(HapticFeedback.lightImpact());
+                      onPressed!();
+                    },
               borderRadius: BorderRadius.circular(999),
               child: Center(
                 child: loading
@@ -118,7 +125,12 @@ class MixvyGoldOutlineButton extends StatelessWidget {
       height: height,
       width: width ?? double.infinity,
       child: OutlinedButton(
-        onPressed: onPressed,
+        onPressed: onPressed == null
+            ? null
+            : () {
+                unawaited(HapticFeedback.lightImpact());
+                onPressed!();
+              },
         style: OutlinedButton.styleFrom(
           foregroundColor: VelvetNoir.primary,
           side: const BorderSide(color: VelvetNoir.primary, width: 1.5),
@@ -156,16 +168,14 @@ class MixvyLiveBadge extends StatefulWidget {
 class _MixvyLiveBadgeState extends State<MixvyLiveBadge>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulse;
-  late Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.5, end: 1.0).animate(_pulse);
   }
 
   @override
@@ -176,45 +186,48 @@ class _MixvyLiveBadgeState extends State<MixvyLiveBadge>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: VelvetNoir.secondary,
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: [
-          BoxShadow(
-            color: VelvetNoir.liveGlow.withAlpha(80),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FadeTransition(
-            opacity: _anim,
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final opacity = 0.6 + (Curves.easeInOut.transform(_pulse.value) * 0.4);
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: VelvetNoir.secondary.withValues(alpha: opacity),
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: [
+              BoxShadow(
+                color: VelvetNoir.liveGlow.withValues(alpha: 0.4 * opacity),
+                blurRadius: 10 * _pulse.value,
+                spreadRadius: 1 * _pulse.value,
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 5),
-          Text(
-            widget.label,
-            style: GoogleFonts.raleway(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                widget.label,
+                style: GoogleFonts.raleway(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

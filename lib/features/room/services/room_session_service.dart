@@ -216,75 +216,93 @@ class RoomSessionService {
 
     final isHostUser = ownerId == normalizedUserId;
 
-    await _firestore.runTransaction((transaction) async {
-      final roomSnap = await transaction.get(
-        _firestore.collection('rooms').doc(normalizedRoomId),
-      );
-      if (!roomSnap.exists) {
-        throw StateError('Room no longer exists');
-      }
-
-      final roomData = roomSnap.data()!;
-      final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
-      final stageIds = List<String>.from(roomData['stageUserIds'] ?? []);
-
-      if (!audienceIds.contains(normalizedUserId) &&
-          !stageIds.contains(normalizedUserId)) {
-        audienceIds.add(normalizedUserId);
-      }
-
-      final currentParticipantSnap = await transaction.get(participantRef);
-
-      if (currentParticipantSnap.exists) {
-        final pData = currentParticipantSnap.data()!;
-        if (pData['isBanned'] == true) {
-          throw StateError('You are banned from this room.');
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final roomSnap = await transaction.get(
+          _firestore.collection('rooms').doc(normalizedRoomId),
+        );
+        if (!roomSnap.exists) {
+          throw StateError('Room no longer exists');
         }
 
-        transaction.set(participantRef, {
+        final roomData = roomSnap.data()!;
+        final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
+        final stageIds = List<String>.from(roomData['stageUserIds'] ?? []);
+
+        if (!audienceIds.contains(normalizedUserId) &&
+            !stageIds.contains(normalizedUserId)) {
+          audienceIds.add(normalizedUserId);
+        }
+
+        final currentParticipantSnap = await transaction.get(participantRef);
+
+        if (currentParticipantSnap.exists) {
+          final pData = currentParticipantSnap.data()!;
+          if (pData['isBanned'] == true) {
+            throw StateError('You are banned from this room.');
+          }
+
+          transaction.set(participantRef, {
+            'userId': normalizedUserId,
+            'camOn': false,
+            'lastActiveAt': now,
+            'userStatus': 'online',
+            if (normalizedDisplayName.isNotEmpty)
+              'displayName': normalizedDisplayName,
+            if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+          }, SetOptions(merge: true));
+        } else {
+          final participantRole = isHostUser ? 'host' : 'audience';
+          transaction.set(participantRef, {
+            'userId': normalizedUserId,
+            'role': participantRole,
+            'isMuted': false,
+            'isBanned': false,
+            'camOn': false,
+            'userStatus': 'online',
+            if (normalizedDisplayName.isNotEmpty)
+              'displayName': normalizedDisplayName,
+            if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+            'joinedAt': now,
+            'lastActiveAt': now,
+          });
+        }
+
+        transaction.set(memberRef, {
           'userId': normalizedUserId,
-          'camOn': false,
+          'role': isHostUser ? 'owner' : 'member',
+          'joinedAt': currentParticipantSnap.exists
+              ? (currentParticipantSnap.data()!['joinedAt'] ?? now)
+              : now,
           'lastActiveAt': now,
-          'userStatus': 'online',
           if (normalizedDisplayName.isNotEmpty)
             'displayName': normalizedDisplayName,
           if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
         }, SetOptions(merge: true));
-      } else {
-        final participantRole = isHostUser ? 'host' : 'audience';
-        transaction.set(participantRef, {
-          'userId': normalizedUserId,
-          'role': participantRole,
-          'isMuted': false,
-          'isBanned': false,
-          'camOn': false,
-          'userStatus': 'online',
-          if (normalizedDisplayName.isNotEmpty)
-            'displayName': normalizedDisplayName,
-          if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-          'joinedAt': now,
-          'lastActiveAt': now,
+
+        transaction.update(_firestore.collection('rooms').doc(normalizedRoomId), {
+          'audienceUserIds': audienceIds,
+          'memberCount': audienceIds.length + stageIds.length,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
-      }
-
-      transaction.set(memberRef, {
-        'userId': normalizedUserId,
-        'role': isHostUser ? 'owner' : 'member',
-        'joinedAt': currentParticipantSnap.exists
-            ? (currentParticipantSnap.data()!['joinedAt'] ?? now)
-            : now,
-        'lastActiveAt': now,
-        if (normalizedDisplayName.isNotEmpty)
-          'displayName': normalizedDisplayName,
-        if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-      }, SetOptions(merge: true));
-
-      transaction.update(_firestore.collection('rooms').doc(normalizedRoomId), {
-        'audienceUserIds': audienceIds,
-        'memberCount': audienceIds.length + stageIds.length,
-        'updatedAt': FieldValue.serverTimestamp(),
       });
-    });
+    } catch (e, stack) {
+      AppTelemetry.logAction(
+        domain: 'room',
+        action: 'join_transaction_failed',
+        message: 'Transaction failed: $e',
+        roomId: normalizedRoomId,
+        userId: normalizedUserId,
+        result: 'error',
+      );
+      AppTelemetry.updateRoomState(
+        roomId: normalizedRoomId,
+        joinedUserId: normalizedUserId,
+        roomPhase: 'error',
+        roomError: 'Failed to join room: ${e.toString()}',
+      );
+      return RoomJoinResult.failure('Failed to join room. Please try again.');
+    }
 
     await _presenceController.setInRoom(normalizedUserId, normalizedRoomId);
     AppTelemetry.updateRoomState(

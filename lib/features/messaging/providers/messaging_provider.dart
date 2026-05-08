@@ -17,7 +17,7 @@ import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 
 // Include userId and a random suffix to prevent cross-user collisions when
 // two senders hit the same microsecond (e.g. in FloatingWhisperPanel paths).
-String _newClientmessageId(String userId) {
+String _newClientMessageId(String userId) {
   final rnd = math.Random().nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0');
   return '${DateTime.now().microsecondsSinceEpoch}-${userId.hashCode.toUnsigned(32).toRadixString(16)}-$rnd';
 }
@@ -218,30 +218,30 @@ final messageStreamProvider = StreamProvider.autoDispose
 // Loads older message on demand (load-more). The live stream above covers the
 // most recent 50; this provider fetches pages of 30 preceding those.
 
-const _kmessagePageSize = 30;
+const _kMessagePageSize = 30;
 
-class _Paginatedmessagestate {
-  const _Paginatedmessagestate({
-    this.oldermessage = const [],
+class _PaginatedMessageState {
+  const _PaginatedMessageState({
+    this.olderMessages = const [],
     this.isLoading = false,
     this.hasMore = true,
     this.oldestDoc,
   });
 
-  final List<MessageModel> oldermessage;
+  final List<MessageModel> olderMessages;
   final bool isLoading;
   final bool hasMore;
   final DocumentSnapshot? oldestDoc;
 
-  _Paginatedmessagestate copyWith({
-    List<MessageModel>? oldermessage,
+  _PaginatedMessageState copyWith({
+    List<MessageModel>? olderMessages,
     bool? isLoading,
     bool? hasMore,
     DocumentSnapshot? oldestDoc,
     bool clearOldest = false,
   }) {
-    return _Paginatedmessagestate(
-      oldermessage: oldermessage ?? this.oldermessage,
+    return _PaginatedMessageState(
+      olderMessages: olderMessages ?? this.olderMessages,
       isLoading: isLoading ?? this.isLoading,
       hasMore: hasMore ?? this.hasMore,
       oldestDoc: clearOldest ? null : (oldestDoc ?? this.oldestDoc),
@@ -249,9 +249,9 @@ class _Paginatedmessagestate {
   }
 }
 
-class _PaginatedmessageNotifier extends StateNotifier<_Paginatedmessagestate> {
-  _PaginatedmessageNotifier(this._firestore, this._conversationId)
-    : super(const _Paginatedmessagestate());
+class _PaginatedMessageNotifier extends StateNotifier<_PaginatedMessageState> {
+  _PaginatedMessageNotifier(this._firestore, this._conversationId)
+    : super(const _PaginatedMessageState());
 
   final FirebaseFirestore _firestore;
   final String _conversationId;
@@ -268,7 +268,7 @@ class _PaginatedmessageNotifier extends StateNotifier<_Paginatedmessagestate> {
           .doc(_conversationId)
           .collection('messages')
           .orderBy('createdAt', descending: true)
-          .limit(_kmessagePageSize);
+          .limit(_kMessagePageSize);
 
       if (cursor != null) query = query.startAfterDocument(cursor);
 
@@ -280,9 +280,9 @@ class _PaginatedmessageNotifier extends StateNotifier<_Paginatedmessagestate> {
           .toList();
 
       state = state.copyWith(
-        oldermessage: [...fetched, ...state.oldermessage],
+        olderMessages: [...fetched, ...state.olderMessages],
         isLoading: false,
-        hasMore: snapshot.docs.length == _kmessagePageSize,
+        hasMore: snapshot.docs.length == _kMessagePageSize,
         oldestDoc: snapshot.docs.isNotEmpty
             ? snapshot.docs.last
             : state.oldestDoc,
@@ -293,9 +293,9 @@ class _PaginatedmessageNotifier extends StateNotifier<_Paginatedmessagestate> {
   }
 }
 
-final paginatedmessageProvider = StateNotifierProvider.autoDispose
-    .family<_PaginatedmessageNotifier, _Paginatedmessagestate, String>(
-      (ref, conversationId) => _PaginatedmessageNotifier(
+final paginatedMessageProvider = StateNotifierProvider.autoDispose
+    .family<_PaginatedMessageNotifier, _PaginatedMessageState, String>(
+      (ref, conversationId) => _PaginatedMessageNotifier(
         ref.watch(firestoreProvider),
         conversationId,
       ),
@@ -423,13 +423,13 @@ class MessagingController {
     }
   }
 
-  Future<void> sendmessage({
+  Future<void> sendMessage({
     required String conversationId,
     required String senderId,
     required String senderName,
     required String? senderAvatarUrl,
     required String content,
-    String? clientmessageId,
+    String? clientMessageId,
   }) async {
     if (!_messagingEnabled()) {
       AppTelemetry.logAction(
@@ -456,8 +456,8 @@ class MessagingController {
       result: 'start',
     );
 
-    final resolvedClientmessageId =
-        clientmessageId ?? _newClientmessageId(authoritativeSenderId);
+    final resolvedClientMessageId =
+        clientMessageId ?? _newClientMessageId(authoritativeSenderId);
     // expiresAt is a retention deadline — compute from client time is acceptable.
     final expiresAt = DateTime.now().add(
       const Duration(days: messageRetentionDays),
@@ -480,7 +480,7 @@ class MessagingController {
         'senderName': senderName,
         'senderAvatarUrl': senderAvatarUrl,
         'content': content,
-        'clientmessageId': resolvedClientmessageId,
+        'clientMessageId': resolvedClientMessageId,
         'createdAt': FieldValue.serverTimestamp(),
         'clientSentAt': Timestamp.now(),
         'expiresAt': Timestamp.fromDate(expiresAt),
@@ -496,7 +496,7 @@ class MessagingController {
         'lastMessagePreview': content,
         'lastMessageSenderId': authoritativeSenderId,
         'lastMessageAt': FieldValue.serverTimestamp(),
-        'lastMessageClientMessageId': resolvedClientmessageId,
+        'lastMessageClientMessageId': resolvedClientMessageId,
       });
 
       await batch.commit();
@@ -519,7 +519,7 @@ class MessagingController {
         userId: authoritativeSenderId,
         result: 'failure',
         metadata: <String, Object?>{
-          'client_message_id': resolvedClientmessageId,
+          'client_message_id': resolvedClientMessageId,
         },
         error: error,
         stackTrace: stackTrace,
@@ -659,7 +659,7 @@ class MessagingController {
     }
   }
 
-  Future<void> deletemessage({
+  Future<void> deleteMessage({
     required String conversationId,
     required String messageId,
   }) async {
@@ -704,7 +704,7 @@ class MessagingController {
     return;
   }
 
-  Future<void> acceptmessageRequest({required String conversationId}) async {
+  Future<void> acceptMessageRequest({required String conversationId}) async {
     final conversationRef = _firestore
         .collection('conversations')
         .doc(conversationId);
@@ -854,13 +854,13 @@ final typingUsersProvider = StreamProvider.autoDispose
 
 /// Count of conversations that have at least one unread message for the current
 /// user. Derived from the live conversations stream — stays real-time.
-final unreadmessageCountProvider = Provider.autoDispose<int>((ref) {
+final unreadMessageCountProvider = Provider.autoDispose<int>((ref) {
   final user = ref.watch(userProvider);
   if (user == null) return 0;
   return ref
           .watch(conversationsStreamProvider(user.id))
           .whenData(
-            (convs) => convs.where((c) => c.hasUnreadmessage(user.id)).length,
+            (convs) => convs.where((c) => c.hasUnreadMessages(user.id)).length,
           )
           .valueOrNull ??
       0;

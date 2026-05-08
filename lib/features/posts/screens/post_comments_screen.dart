@@ -30,7 +30,7 @@ class PostCommentsScreen extends ConsumerStatefulWidget {
 class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
   late final TextEditingController _ctrl;
   late final ScrollController _scroll;
-  bool _submitting = false;
+  bool _clearScheduled = false;
 
   @override
   void initState() {
@@ -48,11 +48,10 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
 
   Future<void> _submitComment() async {
     final text = _ctrl.text.trim();
-    if (text.isEmpty || _submitting) return;
+    if (text.isEmpty) return;
     final user = widget.auth.currentUser;
     if (user == null) return;
 
-    setState(() => _submitting = true);
     try {
       final now = FieldValue.serverTimestamp();
       final postRef = ref
@@ -68,19 +67,25 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
         'createdAt': now,
       });
 
-      _ctrl.clear();
+      if (!_clearScheduled) {
+        _clearScheduled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _ctrl.clear();
+          _clearScheduled = false;
+        });
+      }
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.animateTo(
-            _scroll.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   if (_scroll.hasClients) {
+      //     _scroll.animateTo(
+      //       _scroll.position.maxScrollExtent,
+      //       duration: const Duration(milliseconds: 300),
+      //       curve: Curves.easeOut,
+      //     );
+      //   }
+      // });
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      // if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -126,7 +131,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
               },
               loading: () => const AppLoadingView(label: 'Loading comments'),
               error: (e, _) => AppErrorView(
-                error: friendlyFirestoremessage(e, fallbackContext: 'comments'),
+                error: friendlyFirestoreMessage(e, fallbackContext: 'comments'),
                 fallbackContext: 'Unable to load comments.',
               ),
             ),
@@ -156,22 +161,16 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
                           vertical: 10,
                         ),
                       ),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
+                      maxLines: 1,
+                      textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _submitComment(),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _submitting
-                      ? const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : IconButton.filled(
-                          icon: const Icon(Icons.send),
-                          onPressed: _submitComment,
-                        ),
+                  IconButton.filled(
+                    icon: const Icon(Icons.send),
+                    onPressed: _submitComment,
+                  ),
                 ],
               ),
             ),

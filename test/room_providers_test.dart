@@ -142,8 +142,8 @@ void main() {
       expect(participant.isMuted, true);
     });
 
-    test('sendmessageProvider writes a message document', () async {
-      final sendmessage = container.read(sendmessageProvider('room-a'));
+    test('sendMessageProvider writes a message document', () async {
+      final sendmessage = container.read(sendMessageProvider('room-a'));
 
       await sendmessage('  hello room  ');
 
@@ -158,7 +158,7 @@ void main() {
       expect(snapshot.docs.single.data()['clientSentAt'], isNotNull);
     });
 
-    test('sendmessageProvider rejects message when host is blocked', () async {
+    test('sendMessageProvider rejects message when host is blocked', () async {
       await firestore.collection('rooms').doc('room-a').set({
         'hostId': 'host-1',
       });
@@ -167,7 +167,7 @@ void main() {
         'blockedUserId': 'host-1',
       });
 
-      final sendmessage = container.read(sendmessageProvider('room-a'));
+      final sendmessage = container.read(sendMessageProvider('room-a'));
 
       await expectLater(
         () => sendmessage('blocked message'),
@@ -183,7 +183,7 @@ void main() {
     });
 
     test(
-      'sendmessageProvider rejects when blocked participant is present',
+      'sendMessageProvider rejects when blocked participant is present',
       () async {
         await firestore.collection('rooms').doc('room-a').set({
           'hostId': 'host-1',
@@ -204,7 +204,7 @@ void main() {
           'blockedUserId': 'user-2',
         });
 
-        final sendmessage = container.read(sendmessageProvider('room-a'));
+        final sendmessage = container.read(sendMessageProvider('room-a'));
 
         await expectLater(
           () => sendmessage('blocked in room'),
@@ -221,7 +221,7 @@ void main() {
     );
 
     test(
-      'sendmessageProvider rejects when room policy disables chat',
+      'sendMessageProvider rejects when room policy disables chat',
       () async {
         await firestore.collection('rooms').doc('room-a').set({
           'hostId': 'host-1',
@@ -233,7 +233,7 @@ void main() {
             .doc('settings')
             .set({'allowChat': false});
 
-        final sendmessage = container.read(sendmessageProvider('room-a'));
+        final sendmessage = container.read(sendMessageProvider('room-a'));
 
         await expectLater(
           () => sendmessage('chat disabled'),

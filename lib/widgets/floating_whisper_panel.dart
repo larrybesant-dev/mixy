@@ -64,7 +64,7 @@ class _FloatingWhisperPanelWidgetState
 
   final TextEditingController _controller = TextEditingController();
 
-  Future<void> _sendmessage() async {
+  Future<void> _sendMessage() async {
     final allowed = await GuestAuthGate.requireMessaging(context, ref);
     if (!allowed) return;
 
@@ -79,13 +79,13 @@ class _FloatingWhisperPanelWidgetState
     try {
       await ref
           .read(messagingControllerProvider)
-          .sendmessage(
+          .sendMessage(
             conversationId: widget.conversationId,
             senderId: user.id,
             senderName: user.username,
             senderAvatarUrl: user.avatarUrl,
             content: text,
-            clientmessageId:
+            clientMessageId:
                 '${DateTime.now().microsecondsSinceEpoch}-${user.id}',
           );
     } catch (e, st) {
@@ -188,12 +188,12 @@ class _FloatingWhisperPanelWidgetState
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
-                        onSubmitted: (_) => _sendmessage(),
+                        onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.send),
-                      onPressed: _sendmessage,
+                      onPressed: _sendMessage,
                     ),
                   ],
                 ),

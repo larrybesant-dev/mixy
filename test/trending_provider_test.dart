@@ -1,12 +1,43 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 import 'package:mixvy/features/feed/providers/feed_providers.dart';
 import 'package:mixvy/features/trending/providers/trending_provider.dart';
 
 import 'test_helpers.dart';
+
+/// A local fake to bypass the singleton lifecycle manager in tests.
+/// This prevents "StreamLifecycleManager used after being disposed" errors
+/// caused by the production singleton being marked as disposed between tests.
+class _FakeLifecycleManager extends ChangeNotifier implements StreamLifecycleManager {
+  @override
+  String get currentRoutePath => '/';
+
+  @override
+  void updateRoute(String routePath) {}
+
+  @override
+  bool isRouteActive(List<String> routePrefixes) => true;
+
+  @override
+  Stream<T> bind<T>({
+    required String key,
+    required Stream<T> Function() create,
+    List<String> routePrefixes = const <String>[],
+  }) => create();
+
+  @override
+  String buildDedupeKey({
+    required String domain,
+    String? userId,
+    String? route,
+    String? queryHash,
+  }) => '';
+}
 
 void main() {
   setUpAll(() async {
@@ -20,19 +51,30 @@ void main() {
     setUp(() {
       firestore = FakeFirebaseFirestore();
       container = ProviderContainer(
-        overrides: [firestoreProvider.overrideWithValue(firestore)],
+        overrides: [
+          firestoreProvider.overrideWithValue(firestore),
+          // Override the manager so each test gets a fresh, non-disposed instance.
+          streamLifecycleManagerProvider.overrideWith((ref) => _FakeLifecycleManager()),
+        ],
       );
     });
 
     tearDown(() => container.dispose());
 
     test('returns empty list when no posts exist', () async {
+      // Listen to keep the provider alive during the test
+      container.listen(trendingPostsProvider, (_, _) {});
+
+      // Wait for initial stream emission
       await container.read(postsFeedProvider.future);
-      final posts = container.read(trendingPostsProvider).value ?? [];
+      
+      final postsAsync = container.read(trendingPostsProvider);
+      final posts = postsAsync.value ?? [];
       expect(posts, isEmpty);
     });
 
     test('returns posts created within last 7 days', () async {
+      // 1. Seed the data BEFORE reading the provider
       final recent = DateTime.now().subtract(const Duration(days: 2));
       await firestore.collection('posts').doc('recent-post').set({
         'authorId': 'user-1',
@@ -44,8 +86,16 @@ void main() {
         'commentCount': 5,
       });
 
+      // 2. Listen to keep the provider alive
+      container.listen(trendingPostsProvider, (_, _) {});
+
+      // 3. Wait for the stream to emit the initial snapshot containing our seeded data
       await container.read(postsFeedProvider.future);
-      final posts = container.read(trendingPostsProvider).value!;
+      
+      // 4. Assert
+      final postsAsync = container.read(trendingPostsProvider);
+      final posts = postsAsync.value ?? [];
+      
       expect(posts.length, 1);
       expect(posts.first.id, 'recent-post');
       expect(posts.first.authorName, 'DJ Silk');
@@ -53,6 +103,8 @@ void main() {
 
     test('sorts by engagement score (likeCount + commentCount)', () async {
       final now = DateTime.now().subtract(const Duration(hours: 1));
+      
+      // 1. Seed all data first
       await firestore.collection('posts').doc('low-engage').set({
         'authorId': 'user-1',
         'authorName': 'User A',
@@ -72,9 +124,17 @@ void main() {
         'commentCount': 20,
       });
 
+      // 2. Attach listener to keep alive
+      container.listen(trendingPostsProvider, (_, _) {});
+
+      // 3. Wait for the stream to process the seeded data
       await container.read(postsFeedProvider.future);
-      final posts = container.read(trendingPostsProvider).value!;
-      // Provider sorts by engagement score descending
+      
+      // 4. Assert sorting logic
+      final postsAsync = container.read(trendingPostsProvider);
+      final posts = postsAsync.value ?? [];
+      
+      expect(posts.isNotEmpty, true);
       expect(posts.first.id, 'high-engage');
     });
   });
@@ -118,7 +178,10 @@ void main() {
     setUp(() {
       firestore = FakeFirebaseFirestore();
       container = ProviderContainer(
-        overrides: [firestoreProvider.overrideWithValue(firestore)],
+        overrides: [
+          firestoreProvider.overrideWithValue(firestore),
+          streamLifecycleManagerProvider.overrideWith((ref) => _FakeLifecycleManager()),
+        ],
       );
     });
 
@@ -132,6 +195,7 @@ void main() {
     });
 
     test('returns hashtags ordered by postCount', () async {
+      // Seed data before reading the provider
       await firestore.collection('hashtags').doc('#jazz').set({
         'postCount': 5,
         'trendScore': 0.3,
@@ -144,6 +208,7 @@ void main() {
       final tags = await container.read(
         trendingHashtagsProvider(DateTime.now()).future,
       );
+
       expect(tags.length, 2);
       expect(tags.first['hashtag'], '#velvet');
       expect(tags.first['postCount'], 30);

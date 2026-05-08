@@ -111,7 +111,7 @@ class AppErrorView extends StatelessWidget {
               ),
               SizedBox(height: context.sectionSpacing),
               Text(
-                friendlyFirestoremessage(
+                friendlyFirestoreMessage(
                   error,
                   fallbackContext: fallbackContext,
                 ),

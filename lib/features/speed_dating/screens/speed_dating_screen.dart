@@ -131,7 +131,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           unawaited(currentSessionSub.cancel());
         }
         _sessionSub = null;
-        context.go('/room/$roomId');
+        context.go('/rooms/room/$roomId');
       }
     });
   }
@@ -324,7 +324,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                       matchId: matchId,
                     );
                     if (!mounted || !pageContext.mounted) return;
-                    pageContext.go('/room/$roomId');
+                    pageContext.go('/rooms/room/$roomId');
                   },
                   icon: const Icon(Icons.videocam_rounded, size: 20),
                   label: const Text(
@@ -906,7 +906,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                                   onTap: match.latestRoomId == null
                                       ? null
                                       : () => context.go(
-                                          '/room/${match.latestRoomId}',
+                                          '/rooms/room/${match.latestRoomId}',
                                         ),
                                 ),
                               );

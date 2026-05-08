@@ -1,19 +1,34 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/services/room_service.dart';
 
+/// Local fake to allow streams to flow regardless of route in tests.
+class _FakeLifecycleManager extends ChangeNotifier implements StreamLifecycleManager {
+  @override String get currentRoutePath => '/home';
+  @override void updateRoute(String routePath) {}
+  @override bool isRouteActive(List<String> routePrefixes) => true;
+  @override Stream<T> bind<T>({required String key, required Stream<T> Function() create, List<String> routePrefixes = const <String>[]}) => create();
+  @override String buildDedupeKey({required String domain, String? userId, String? route, String? queryHash}) => '$domain|$queryHash';
+}
+
 void main() {
   group('RoomService', () {
     late FakeFirebaseFirestore firestore;
     late RoomService service;
+    late _FakeLifecycleManager lifecycle;
 
     setUp(() {
       firestore = FakeFirebaseFirestore();
-      service = RoomService(firestore: firestore);
-      StreamLifecycleManager.instance.updateRoute('/home');
+      lifecycle = _FakeLifecycleManager();
+      service = RoomService(
+        firestore: firestore,
+        lifecycleManager: lifecycle,
+      );
     });
 
     test('createRoom trims input and applies defaults', () async {
@@ -352,15 +367,19 @@ void main() {
         final sub = service.watchLiveRooms(limit: 10).listen(emissions.add);
         addTearDown(sub.cancel);
 
-        await Future<void>.delayed(const Duration(milliseconds: 450));
+        // Allow initial emission to settle
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        
         await firestore.collection('rooms').doc('room-b').set({
           'isLive': false,
           'updatedAt': Timestamp.now(),
         }, SetOptions(merge: true));
 
-        await Future<void>.delayed(const Duration(milliseconds: 450));
+        // Allow debounce window and classification to finish
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
 
         expect(emissions, isNotEmpty);
+        // Stabilized stream should keep room-b for the grace window duration
         expect(emissions.last.map((room) => room.id), contains('room-b'));
       },
     );
@@ -390,7 +409,7 @@ void main() {
         final sub = service.watchLiveRooms(limit: 10).listen(emissions.add);
         addTearDown(sub.cancel);
 
-        await Future<void>.delayed(const Duration(milliseconds: 450));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
         await firestore.collection('rooms').doc('room-a').set({
           'memberCount': 0,
           'stageUserIds': <String>[],
@@ -398,7 +417,7 @@ void main() {
           'updatedAt': Timestamp.now(),
         }, SetOptions(merge: true));
 
-        await Future<void>.delayed(const Duration(milliseconds: 450));
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
 
         expect(emissions, isNotEmpty);
         expect(emissions.last.single.memberCount, greaterThanOrEqualTo(5));

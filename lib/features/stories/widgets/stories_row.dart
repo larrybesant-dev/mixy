@@ -101,7 +101,7 @@ class _StoryBubble extends StatelessWidget {
             SessionCapability.createStory,
           );
           if (!allowed || !context.mounted) return;
-          context.go('/create-story');
+          context.go('/home/create-story');
         } else {
           context.go('/stories/$userId');
         }

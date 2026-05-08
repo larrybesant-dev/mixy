@@ -496,7 +496,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
     if (!allowed) return;
     if (!mounted) return;
-    context.go('/create-room');
+    context.go('/rooms/create');
   }
 
   @override
@@ -2823,7 +2823,7 @@ class _GoLiveFab extends StatelessWidget {
         );
         if (!allowed) return;
         if (!context.mounted) return;
-        context.go('/create-room');
+        context.go('/rooms/create');
       },
       backgroundColor: _npPrimary,
       foregroundColor: _npSurface,

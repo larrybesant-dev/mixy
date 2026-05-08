@@ -18,10 +18,6 @@ service cloud.firestore {
       return signedIn() && uid() == userId;
     }
 
-    function userDoc(userId) {
-      return get(/databases/$(database)/documents/users/$(userId));
-    }
-
     function verificationDoc(userId) {
       return get(/databases/$(database)/documents/verification/$(userId));
     }
@@ -60,27 +56,29 @@ service cloud.firestore {
     }
 
     function roomAllowsGuest(roomData) {
-      return roomData.get('allowGuestAccess', false) == true;
+      return ('allowGuestAccess' in roomData && roomData.allowGuestAccess == true);
     }
 
     function roomReadableByRequester(roomData) {
+      // If we already have the roomData (from resource.data), we don't need a get().
       return (
           signedIn()
           && (
-            !roomData.get('isAdult', false)
+            !('isAdult' in roomData && roomData.isAdult == true)
             || isAdultVerified(uid())
           )
         )
         || (
           !signedIn()
           && roomAllowsGuest(roomData)
-          && !roomData.get('isAdult', false)
+          && !('isAdult' in roomData && roomData.isAdult == true)
         );
     }
 
     function canReadRoomById(roomId) {
+      // Use exists() first to avoid unnecessary get() if document is missing.
       return exists(/databases/$(database)/documents/rooms/$(roomId))
-        && roomReadableByRequester(roomDoc(roomId).data);
+        && roomReadableByRequester(get(/databases/$(database)/documents/rooms/$(roomId)).data);
     }
 
     function isRoomParticipant(roomId, userId) {
@@ -111,11 +109,13 @@ service cloud.firestore {
         'role',
         'roles',
         'membershipLevel',
+        'vipLevel',
         'coins',
         'coinBalance',
         'cashBalance',
         'wallet',
         'security',
+        'email',
         'isVerified',
         'isAdultVerified',
         'adultVerified',
@@ -133,17 +133,27 @@ service cloud.firestore {
         'username',
         'usernameLower',
         'displayName',
-        'email',
         'photoUrl',
         'avatarUrl',
         'bio',
+        'aboutMe',
+        'age',
+        'gender',
+        'location',
+        'relationshipStatus',
+        'interests',
         'isPrivate',
         'isComplete',
         'followers',
         'following',
         'createdAt',
         'updatedAt',
-        'favoriteFriendIds'
+        'favoriteFriendIds',
+        'profileAccentColor',
+        'profileBgGradientStart',
+        'profileBgGradientEnd',
+        'profileMusicUrl',
+        'profileMusicTitle'
       ];
     }
 
@@ -169,7 +179,7 @@ service cloud.firestore {
       allow read: if signedIn();
 
       // Client can manage only non-privileged profile identity fields.
-      allow create: if isSelf(userId) && userCreateValid();
+      allow create: if isSelf(userId) && userCreateValid(userId);
       allow update: if isSelf(userId) && userUpdateValid();
       allow delete: if isSelf(userId);
 
@@ -402,10 +412,32 @@ service cloud.firestore {
       // Signed-in host can create a room. Adult rooms require server-verified adult status.
       allow create: if signedIn() && validRoomCreate();
 
-      // Host controls mutable room metadata; cannot rewrite ownership or adult flag.
+      // Host controls mutable room metadata.
+      // Normal participants are ONLY allowed to update their OWN entry in the audience/stage lists.
       allow update: if signedIn()
-        && resource.data.hostId == uid()
-        && validHostRoomUpdate();
+        && (
+          (resource.data.hostId == uid() && validHostRoomUpdate())
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['audienceUserIds', 'stageUserIds', 'memberCount', 'updatedAt'])
+            && (
+              // If audienceUserIds changed, the diff must be exactly the caller's UID.
+              !request.resource.data.diff(resource.data).affectedKeys().hasAny(['audienceUserIds'])
+              || (
+                request.resource.data.audienceUserIds.removeAll(resource.data.audienceUserIds).hasOnly([uid()])
+                || resource.data.audienceUserIds.removeAll(request.resource.data.audienceUserIds).hasOnly([uid()])
+              )
+            )
+            && (
+              // If stageUserIds changed, the diff must be exactly the caller's UID.
+              !request.resource.data.diff(resource.data).affectedKeys().hasAny(['stageUserIds'])
+              || (
+                request.resource.data.stageUserIds.removeAll(resource.data.stageUserIds).hasOnly([uid()])
+                || resource.data.stageUserIds.removeAll(request.resource.data.stageUserIds).hasOnly([uid()])
+              )
+            )
+          )
+        );
 
       // Delete restricted to host/admin.
       allow delete: if signedIn() && (resource.data.hostId == uid() || isAdmin());
@@ -447,6 +479,8 @@ service cloud.firestore {
           && request.resource.data.userId == uid()
           && request.resource.data.role == resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'userId',
+            'role',
             'micOn',
             'isMuted',
             'cameraOn',
@@ -454,6 +488,7 @@ service cloud.firestore {
             'userStatus',
             'displayName',
             'photoUrl',
+            'joinedAt',
             'lastActiveAt',
             'updatedAt'
           ]);
@@ -560,6 +595,13 @@ service cloud.firestore {
           );
 
         allow delete: if signedIn() && typingUserId == uid();
+      }
+
+      match /presence/{userId} {
+        // Guests can see who is in the room if the room is public.
+        allow read: if canReadRoomById(roomId);
+        // Writing to room presence requires being a signed-in participant.
+        allow create, update, delete: if false;
       }
 
       // WebRTC call signaling
@@ -1152,16 +1194,17 @@ service cloud.firestore {
 
     match /hashtags/{tagId} {
       allow read: if signedIn();
-      allow create, update, delete: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
     }
 
     // ---------------------------------------------------------------------
-    // Activity feed (self-generated activity events)
+    // Activity feed (public-facing community pulse)
     // ---------------------------------------------------------------------
 
     match /activity_feed/{activityId} {
-      allow read: if signedIn()
-        && resource.data.userId == uid();
+      // Pulse is global for all registered users to drive engagement.
+      allow read: if signedIn();
       allow create: if signedIn()
         && request.resource.data.userId == uid()
         && request.resource.data.type is string

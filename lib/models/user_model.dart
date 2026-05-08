@@ -238,7 +238,11 @@ class UserModel {
     'profileMusicTitle': profileMusicTitle,
   };
 
-  factory UserModel.fromFirestore(DocumentSnapshot doc) => UserModel.fromJson(
-    (doc.data() as Map<String, dynamic>?) ?? const <String, dynamic>{},
-  );
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    final data = (doc.data() as Map<String, dynamic>?) ?? const <String, dynamic>{};
+    return UserModel.fromJson({
+      ...data,
+      'id': doc.id,
+    });
+  }
 }

@@ -642,48 +642,49 @@ class _AfterDarkCreateLoungeScreenState
           color: EmberDark.outlineVariant.withValues(alpha: 0.4),
         ),
       ),
-      child: Column(
-        children: _Privacy.values.map((p) {
-          final (label, subtitle, icon) = switch (p) {
-            _Privacy.public => (
-              'Public',
-              'Any 18+ user can join',
-              Icons.public_rounded,
-            ),
-            _Privacy.friends => (
-              'Friends Only',
-              'Only your friends can join',
-              Icons.group_rounded,
-            ),
-            _Privacy.private => (
-              'Private',
-              'Invite-only access',
-              Icons.lock_outline_rounded,
-            ),
-          };
-          // ignore: deprecated_member_use
-          return RadioListTile<_Privacy>(
-            value: p,
-            groupValue: _privacy,
-            onChanged: (v) => setState(() => _privacy = v!),
-            title: Text(
-              label,
-              style: GoogleFonts.raleway(
-                color: EmberDark.onSurface,
-                fontWeight: FontWeight.w600,
+      child: RadioGroup<_Privacy>(
+        groupValue: _privacy,
+        onChanged: (v) => setState(() => _privacy = v!),
+        child: Column(
+          children: _Privacy.values.map((p) {
+            final (label, subtitle, icon) = switch (p) {
+              _Privacy.public => (
+                'Public',
+                'Any 18+ user can join',
+                Icons.public_rounded,
               ),
-            ),
-            subtitle: Text(
-              subtitle,
-              style: GoogleFonts.raleway(
-                color: EmberDark.onSurfaceVariant,
-                fontSize: 12,
+              _Privacy.friends => (
+                'Friends Only',
+                'Only your friends can join',
+                Icons.group_rounded,
               ),
-            ),
-            secondary: Icon(icon, color: EmberDark.onSurfaceVariant, size: 20),
-            activeColor: EmberDark.primary,
-          );
-        }).toList(),
+              _Privacy.private => (
+                'Private',
+                'Invite-only access',
+                Icons.lock_outline_rounded,
+              ),
+            };
+            return RadioListTile<_Privacy>(
+              value: p,
+              title: Text(
+                label,
+                style: GoogleFonts.raleway(
+                  color: EmberDark.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                subtitle,
+                style: GoogleFonts.raleway(
+                  color: EmberDark.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+              secondary: Icon(icon, color: EmberDark.onSurfaceVariant, size: 20),
+              activeColor: EmberDark.primary,
+            );
+          }).toList(),
+        ),
       ),
     );
   }

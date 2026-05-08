@@ -253,7 +253,10 @@ class _FriendTile extends ConsumerWidget {
             radius: 22,
             backgroundColor: cs.primaryContainer,
             backgroundImage: safeAvatarUrl != null
-                ? NetworkImage(safeAvatarUrl)
+                ? (safeAvatarUrl.startsWith('asset:')
+                    ? AssetImage(safeAvatarUrl.replaceFirst('asset:', ''))
+                        as ImageProvider
+                    : NetworkImage(safeAvatarUrl))
                 : null,
             child: safeAvatarUrl == null
                 ? Text(

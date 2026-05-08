@@ -13,25 +13,18 @@ final topEightUsersProvider = FutureProvider.autoDispose.family<List<UserModel>,
   return ref.watch(topEightRepositoryProvider).getUsersFromIds(ids);
 });
 
-final topEightControllerProvider = StateNotifierProvider<TopEightController, AsyncValue<List<String>>>((ref) {
-  return TopEightController(ref);
+final topEightControllerProvider = StateNotifierProvider.autoDispose<TopEightController, AsyncValue<List<String>>>((ref) {
+  final userId = ref.watch(authControllerProvider).uid;
+  if (userId == null) return TopEightController(ref, const AsyncValue.data([]));
+  
+  final idsAsync = ref.watch(topEightIdsProvider(userId));
+  return TopEightController(ref, idsAsync);
 });
 
 class TopEightController extends StateNotifier<AsyncValue<List<String>>> {
   final Ref _ref;
 
-  TopEightController(this._ref) : super(const AsyncValue.loading()) {
-    _init();
-  }
-
-  void _init() {
-    final userId = _ref.read(authControllerProvider).uid;
-    if (userId != null) {
-      _ref.listen<AsyncValue<List<String>>>(topEightIdsProvider(userId), (previous, next) {
-        state = next;
-      }, fireImmediately: true);
-    }
-  }
+  TopEightController(this._ref, AsyncValue<List<String>> initialState) : super(initialState);
 
   Future<void> addToTopEight(String friendId) async {
     final userId = _ref.read(authControllerProvider).uid;

@@ -61,7 +61,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.person_outline_rounded,
               label: 'Edit Profile',
-              onTap: () => context.go('/edit-profile'),
+              onTap: () => context.go('/profile/edit'),
             ),
             _SettingsTile(
               icon: Icons.manage_accounts_outlined,
@@ -72,7 +72,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.shield_outlined,
               label: 'Privacy Controls',
               sub: 'Manage profile visibility and account privacy preferences.',
-              onTap: () => context.go('/edit-profile?tab=0'),
+              onTap: () => context.go('/profile/edit?tab=0'),
             ),
             _SettingsTile(
               icon: Icons.block_outlined,

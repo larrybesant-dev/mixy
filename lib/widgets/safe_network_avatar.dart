@@ -51,6 +51,20 @@ class SafeNetworkAvatar extends StatelessWidget {
     final safeUrl = sanitizeNetworkImageUrl(avatarUrl);
     if (safeUrl == null) return _fallback(context);
 
+    // Handle local assets
+    if (safeUrl.startsWith('asset:')) {
+      final assetPath = safeUrl.replaceFirst('asset:', '');
+      return ClipOval(
+        child: Image.asset(
+          assetPath,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _fallback(context),
+        ),
+      );
+    }
+
     return ClipOval(
       child: CachedNetworkImage(
         imageUrl: safeUrl,

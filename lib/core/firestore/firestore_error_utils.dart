@@ -40,7 +40,7 @@ FirestoreErrorInfo parseFirestoreError(Object error) {
   );
 }
 
-String friendlyFirestoremessage(
+String friendlyFirestoreMessage(
   Object error, {
   required String fallbackContext,
 }) {

@@ -193,7 +193,7 @@ class _LiveFloorScreenState extends ConsumerState<LiveFloorScreen> {
     final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
     if (!allowed) return;
     if (!mounted) return;
-    context.go('/create-room');
+    context.go('/rooms/create');
   }
 
   List<RoomModel> _sorted(List<RoomModel> rooms) {

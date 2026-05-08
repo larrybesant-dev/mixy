@@ -50,6 +50,7 @@ class SchemaMutationService {
     'profileBgGradientEnd',
     'profileMusicUrl',
     'profileMusicTitle',
+    'topEightIds',
     // Adult-mode preferences are stored in preferences/{userId}, NOT in the
     // server-managed /verification/{userId} collection (client writes blocked).
     'adultModeEnabled',
@@ -521,6 +522,41 @@ class SchemaMutationService {
       userId: userId,
       result: result,
       metadata: metadata,
+    );
+  }
+
+  Future<void> updateTopEight({
+    required String userId,
+    required List<String> topEightIds,
+  }) async {
+    final now = FieldValue.serverTimestamp();
+    final batch = _firestore.batch();
+
+    batch.set(
+      _firestore.collection('users').doc(userId),
+      {
+        'topEightIds': topEightIds,
+        'updatedAt': now,
+      },
+      SetOptions(merge: true),
+    );
+
+    // Also mirror to preferences as this is considered a personalization feature.
+    batch.set(
+      _firestore.collection('preferences').doc(userId),
+      {
+        'topEightIds': topEightIds,
+        'updatedAt': now,
+      },
+      SetOptions(merge: true),
+    );
+
+    await batch.commit();
+
+    _logEnforcementEvent(
+      action: 'top_eight_update',
+      userId: userId,
+      metadata: <String, Object?>{'count': topEightIds.length},
     );
   }
 }

@@ -62,38 +62,44 @@ class _PostCardState extends ConsumerState<PostCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Author row
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundImage: post.authorAvatarUrl != null
-                      ? CachedNetworkImageProvider(post.authorAvatarUrl!)
-                      : null,
-                  child: post.authorAvatarUrl == null
-                      ? Text(authorInitial)
-                      : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.authorName?.trim().isNotEmpty == true
-                            ? post.authorName!
-                            : post.userId,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        _formatTime(post.createdAt),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-                      ),
-                    ],
+            GestureDetector(
+              onTap: () => context.go('/profile/${post.userId}'),
+              child: Row(
+                children: [
+                  Hero(
+                    tag: 'avatar-${post.userId}',
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundImage: post.authorAvatarUrl != null
+                          ? CachedNetworkImageProvider(post.authorAvatarUrl!)
+                          : null,
+                      child: post.authorAvatarUrl == null
+                          ? Text(authorInitial)
+                          : null,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.authorName?.trim().isNotEmpty == true
+                              ? post.authorName!
+                              : post.userId,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          _formatTime(post.createdAt),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             // Post body

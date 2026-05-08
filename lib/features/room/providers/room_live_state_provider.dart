@@ -18,7 +18,7 @@ export 'package:mixvy/core/contracts/room_contract.dart'
 final roomLiveStateProvider = StreamProvider.autoDispose
     .family<RoomLiveState, String>((ref, roomId) {
       return Stream.multi((controller) {
-        var metaState = RoomMetaState(roomDoc: null);
+        RoomMetaState? metaState;
         var participantsState = RoomParticipantsState(participants: []);
         var activityState = RoomActivityState(
           presence: const <RoomPresenceModel>[],
@@ -28,22 +28,38 @@ final roomLiveStateProvider = StreamProvider.autoDispose
 
         void publish() {
           if (controller.isClosed) return;
-          controller.add(
-            RoomLiveStateMapper.fromFirestore(
-              roomDoc: metaState.roomDoc,
-              participants: participantsState.participants,
-              presence: activityState.presence,
-              messagePreview: messagePreviewState.messagePreview,
-              typing: activityState.typing,
-            ),
-          );
+
+          // We wait until the meta provider emits its first value (terminal state).
+          // Once metaState is non-null, we proceed even if metaState.roomDoc is null
+          // (which indicates the room was deleted).
+          if (metaState == null) return;
+
+          try {
+            controller.add(
+              RoomLiveStateMapper.fromFirestore(
+                roomDoc: metaState!.roomDoc,
+                participants: participantsState.participants,
+                presence: activityState.presence,
+                messagePreview: messagePreviewState.messagePreview,
+                typing: activityState.typing,
+                roomId: roomId,
+              ),
+            );
+          } catch (e, st) {
+            // Propagate validation errors (like "Room not found") to the UI.
+            controller.addError(e, st);
+          }
         }
 
         final metaSubscription = ref.listen<AsyncValue<RoomMetaState>>(
           roomMetaStateProvider(roomId),
           (_, next) {
-            metaState = next.valueOrNull ?? RoomMetaState(roomDoc: null);
-            publish();
+            if (next.hasValue) {
+              metaState = next.value!;
+              publish();
+            } else if (next.hasError) {
+              controller.addError(next.error!, next.stackTrace!);
+            }
           },
           fireImmediately: true,
         );
@@ -52,9 +68,10 @@ final roomLiveStateProvider = StreamProvider.autoDispose
             .listen<AsyncValue<RoomParticipantsState>>(
               roomParticipantsStateProvider(roomId),
               (_, next) {
-                participantsState =
-                    next.valueOrNull ?? RoomParticipantsState(participants: []);
-                publish();
+                if (next.hasValue) {
+                  participantsState = next.value!;
+                  publish();
+                }
               },
               fireImmediately: true,
             );
@@ -62,13 +79,10 @@ final roomLiveStateProvider = StreamProvider.autoDispose
         final activitySubscription = ref.listen<AsyncValue<RoomActivityState>>(
           roomActivityStateProvider(roomId),
           (_, next) {
-            activityState =
-                next.valueOrNull ??
-                RoomActivityState(
-                  presence: const <RoomPresenceModel>[],
-                  typing: const <String, bool>{},
-                );
-            publish();
+            if (next.hasValue) {
+              activityState = next.value!;
+              publish();
+            }
           },
           fireImmediately: true,
         );
@@ -77,10 +91,10 @@ final roomLiveStateProvider = StreamProvider.autoDispose
             .listen<AsyncValue<RoommessagePreviewState>>(
               roommessagePreviewStateProvider(roomId),
               (_, next) {
-                messagePreviewState =
-                    next.valueOrNull ??
-                    RoommessagePreviewState(messagePreview: []);
-                publish();
+                if (next.hasValue) {
+                  messagePreviewState = next.value!;
+                  publish();
+                }
               },
               fireImmediately: true,
             );

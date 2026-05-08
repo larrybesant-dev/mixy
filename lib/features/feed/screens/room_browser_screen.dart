@@ -727,7 +727,7 @@ class _RoomListView extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  friendlyFirestoremessage(e, fallbackContext: 'rooms'),
+                  friendlyFirestoreMessage(e, fallbackContext: 'rooms'),
                   textAlign: TextAlign.center,
                 ),
               ),

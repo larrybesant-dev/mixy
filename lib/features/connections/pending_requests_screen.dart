@@ -51,7 +51,7 @@ class PendingRequestsScreen extends ConsumerWidget {
                     color: const Color(0xFF1A1416),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFFD4AF37).withOpacity(0.2),
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
                     ),
                   ),
                   child: Row(
@@ -148,9 +148,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Icon(icon, color: color, size: 20),
       ),

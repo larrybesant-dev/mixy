@@ -120,7 +120,7 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
           );
 
       if (!mounted) return;
-      context.go('/chat/$conversationId');
+      context.go('/messages/chat/$conversationId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +225,7 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
                   child: const Icon(Icons.group_add, color: Colors.white),
                 ),
                 title: const Text('Create Group Chat'),
-                onTap: () => context.push('/create-group-chat'),
+                onTap: () => context.go('/messages/create-group-chat'),
               ),
               const Divider(),
               TextField(

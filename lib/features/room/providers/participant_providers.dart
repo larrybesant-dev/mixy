@@ -11,6 +11,42 @@ import '../repository/room_repository.dart';
 import 'room_firestore_provider.dart';
 import '../../../core/constants/query_policy.dart';
 
+/// ============================================================================
+/// HARDENING FIX #1: Self-Participant Cache
+/// 
+/// When multiple users join a room simultaneously, participantsStreamProvider
+/// may lag 2-3 seconds for some users. During that window, chat/camera gating
+/// logic checks the stale participant stream and incorrectly denies permissions.
+/// 
+/// This provider caches the current user's participant document immediately
+/// after it's written during joinRoom(), bypassing stream lag. UI falls back to
+/// this cache when participantsStreamProvider is still lagging.
+/// ============================================================================
+
+/// Cached current-user participant for a specific room.
+/// Set by RoomController.joinRoom() immediately after participant doc write.
+/// Expires when the room session ends (leaveRoom called or session invalidated).
+final selfParticipantCacheProvider = StateNotifierProvider.autoDispose
+    .family<SelfParticipantCacheNotifier, RoomParticipantModel?, String>(
+      (ref, roomId) => SelfParticipantCacheNotifier(),
+    );
+
+class SelfParticipantCacheNotifier
+    extends StateNotifier<RoomParticipantModel?> {
+  SelfParticipantCacheNotifier() : super(null);
+
+  /// Called by RoomController immediately after joining a room.
+  /// Caches the participant doc so permission checks don't wait for the stream.
+  void cacheParticipant(RoomParticipantModel participant) {
+    state = participant;
+  }
+
+  /// Clear cache when leaving the room or session ends.
+  void clear() {
+    state = null;
+  }
+}
+
 /// Streams the raw room document map. Used outside of `currentParticipantAsync`
 /// so the host check resolves even before the participant document is written.
 final roomDocStreamProvider = StreamProvider.autoDispose
@@ -158,6 +194,32 @@ final currentParticipantProvider = StreamProvider.autoDispose
               );
             }),
       );
+    });
+
+/// Hydration-lag tolerant current participant accessor.
+/// Falls back to the self-participant cache if participantsStreamProvider
+/// is still lagging. This prevents false permission denials when multiple
+/// users join simultaneously and the Firestore stream is slow.
+/// 
+/// Use this for chat/camera/stage gating logic; use currentParticipantProvider
+/// for display-only (roster, names, etc).
+final currentParticipantWithCacheFallbackProvider = Provider.autoDispose
+    .family<RoomParticipantModel?, CurrentParticipantParams>((ref, params) {
+      // First, try the stream (fresh, authoritative)
+      final streamValue = ref.watch(currentParticipantProvider(params));
+      if (streamValue.hasValue && streamValue.value != null) {
+        return streamValue.value;
+      }
+
+      // Stream is lagging/not ready — fall back to the cache
+      // (set by RoomController immediately upon join)
+      final cached = ref.watch(selfParticipantCacheProvider(params.roomId));
+      if (cached != null && cached.userId == params.userId) {
+        return cached;
+      }
+
+      // No cache and no stream — wait for stream to complete
+      return streamValue.valueOrNull;
     });
 
 const Duration _kParticipantFreshnessWindow = Duration(seconds: 90);

@@ -192,6 +192,9 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     state = const RoomState(lifecycleState: RoomLifecycleState.ended);
     _keepAliveLink?.close();
     _keepAliveLink = null;
+
+    // HARDENING FIX #1: Clear participant cache on session end
+    ref.read(selfParticipantCacheProvider(arg).notifier).clear();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1326,6 +1329,44 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       ),
       joinedAt: _joinedAt,
     );
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // HARDENING FIX #1: Immediately cache current participant to avoid
+    // permission-denied errors during participantsStreamProvider lag.
+    // ═══════════════════════════════════════════════════════════════════════
+    // Fetch the current user's participant doc from Firestore immediately
+    // and cache it. This prevents hydration lag from blocking chat/camera
+    // permission checks when multiple users join simultaneously.
+    try {
+      final firestore = ref.read(roomFirestoreProvider);
+      final participantSnap = await firestore
+          .collection('rooms')
+          .doc(arg)
+          .collection('participants')
+          .doc(normalizedUserId)
+          .get();
+
+      if (participantSnap.exists && participantSnap.data() != null) {
+        final participant = RoomParticipantModel.fromMap(participantSnap.data()!);
+        // Cache it so permission checks can use it immediately
+        ref
+            .read(selfParticipantCacheProvider(arg).notifier)
+            .cacheParticipant(participant);
+      }
+    } catch (e) {
+      // Non-critical: cache miss just means we fall back to the stream.
+      // Log but continue; the stream will eventually deliver the data.
+      AppTelemetry.logAction(
+        level: 'debug',
+        domain: 'room',
+        action: 'cache_participant_miss',
+        message: 'Failed to cache current participant during join (non-critical).',
+        roomId: arg,
+        userId: normalizedUserId,
+        metadata: <String, Object?>{'error': e.toString()},
+      );
+    }
+
     _emitState(
       state.copyWith(
         phase: _phase,

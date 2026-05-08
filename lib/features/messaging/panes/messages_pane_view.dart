@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +53,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
       convs.where((c) => c.status == 'active').toList();
 
   List<Conversation> _filterUnread(List<Conversation> convs) => convs
-      .where((c) => c.status == 'active' && c.hasUnreadmessage(widget.userId))
+      .where((c) => c.status == 'active' && c.hasUnreadMessages(widget.userId))
       .toList();
 
   List<Conversation> _filterGroups(List<Conversation> convs) =>
@@ -130,7 +128,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                   ),
                 ),
                 FilledButton.icon(
-                  onPressed: () => GoRouter.of(context).push('/new-message'),
+                onPressed: () => context.go('/messages/new'),
                   icon: const Icon(Icons.add_comment_outlined),
                   label: const Text('New message'),
                 ),
@@ -308,19 +306,19 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                 _ConversationsList(
                   conversations: _applySearch(_filterAll(conversations)),
                   userId: widget.userId,
-                  emptymessage: _query.isNotEmpty
+                  emptyMessage: _query.isNotEmpty
                       ? 'No results for "$_query"'
                       : 'No conversations yet',
                 ),
                 _ConversationsList(
                   conversations: _applySearch(_filterUnread(conversations)),
                   userId: widget.userId,
-                  emptymessage: 'No unread message',
+                  emptyMessage: 'No unread messages',
                 ),
                 _ConversationsList(
                   conversations: _applySearch(_filterGroups(conversations)),
                   userId: widget.userId,
-                  emptymessage: 'No group chats yet',
+                  emptyMessage: 'No group chats yet',
                 ),
               ],
             ),
@@ -354,7 +352,7 @@ class MessageRequestsSheet extends ConsumerWidget {
               child: Row(
                 children: [
                   Text(
-                    'message Requests',
+                    'Message Requests',
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -399,7 +397,7 @@ class MessageRequestsSheet extends ConsumerWidget {
                       return ListTile(
                         onTap: () {
                           Navigator.of(context).pop();
-                          GoRouter.of(context).push('/chat/${conversation.id}');
+                          context.go('/messages/chat/${conversation.id}');
                         },
                         leading: CircleAvatar(
                           backgroundColor: VelvetNoir.surfaceHigh,
@@ -427,16 +425,12 @@ class MessageRequestsSheet extends ConsumerWidget {
                           onPressed: () async {
                             await ref
                                 .read(messagingControllerProvider)
-                                .acceptmessageRequest(
+                                .acceptMessageRequest(
                                   conversationId: conversation.id,
                                 );
                             if (context.mounted) {
                               Navigator.of(context).pop();
-                              unawaited(
-                                GoRouter.of(
-                                  context,
-                                ).push('/chat/${conversation.id}'),
-                              );
+                              context.go('/messages/chat/${conversation.id}');
                             }
                           },
                           style: TextButton.styleFrom(
@@ -475,12 +469,12 @@ class _ConversationsList extends ConsumerWidget {
   const _ConversationsList({
     required this.conversations,
     required this.userId,
-    required this.emptymessage,
+    required this.emptyMessage,
   });
 
   final List<Conversation> conversations;
   final String userId;
-  final String emptymessage;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -506,7 +500,7 @@ class _ConversationsList extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                emptymessage,
+                emptyMessage,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.raleway(
                   color: VelvetNoir.onSurfaceVariant,
@@ -516,7 +510,7 @@ class _ConversationsList extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: () => GoRouter.of(context).push('/new-message'),
+                onPressed: () => context.go('/messages/new'),
                 child: Text(
                   'Start a conversation',
                   style: GoogleFonts.raleway(
@@ -589,7 +583,7 @@ class _ConversationTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unread = conversation.hasUnreadmessage(userId);
+    final unread = conversation.hasUnreadMessages(userId);
     final pinned = conversation.isPinnedFor(userId);
     final displayName = conversation.getDisplayName(userId);
     final avatarUrl = conversation.groupAvatarUrl;
@@ -607,7 +601,7 @@ class _ConversationTile extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => GoRouter.of(context).push('/chat/${conversation.id}'),
+        onTap: () => context.go('/messages/chat/${conversation.id}'),
         onLongPress: () => _showActionSheet(context, ref),
         child: Container(
           color: unread

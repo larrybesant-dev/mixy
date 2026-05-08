@@ -2,15 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/firebase_providers.dart';
 import '../../models/user_model.dart';
+import '../../services/schema_mutation_service.dart';
+
+final schemaMutationServiceProvider = Provider((ref) {
+  return SchemaMutationService(firestore: ref.watch(firestoreProvider));
+});
 
 final topEightRepositoryProvider = Provider((ref) {
-  return TopEightRepository(ref.watch(firestoreProvider));
+  return TopEightRepository(
+    ref.watch(firestoreProvider),
+    ref.watch(schemaMutationServiceProvider),
+  );
 });
 
 class TopEightRepository {
   final FirebaseFirestore _firestore;
+  final SchemaMutationService _schemaMutationService;
 
-  TopEightRepository(this._firestore);
+  TopEightRepository(this._firestore, this._schemaMutationService);
 
   /// Fetches the list of UIDs for a user's Top 8.
   Stream<List<String>> watchTopEightIds(String userId) {
@@ -40,13 +49,21 @@ class TopEightRepository {
         .toList();
 
     // Re-sort to match the order of IDs provided (since 'whereIn' doesn't guarantee order)
-    return ids.map((id) => users.firstWhere((u) => u.id == id)).toList();
+    // Also filters out any users that might no longer exist in the database.
+    return ids
+        .map((id) => users.cast<UserModel?>().firstWhere(
+              (u) => u?.id == id,
+              orElse: () => null,
+            ))
+        .whereType<UserModel>()
+        .toList();
   }
 
-  /// Updates the user's Top 8 list.
+  /// Updates the user's Top 8 list using [SchemaMutationService] for architectural safety.
   Future<void> updateTopEight(String userId, List<String> topEightIds) async {
-    await _firestore.collection('users').doc(userId).update({
-      'topEightIds': topEightIds,
-    });
+    await _schemaMutationService.updateTopEight(
+      userId: userId,
+      topEightIds: topEightIds,
+    );
   }
 }

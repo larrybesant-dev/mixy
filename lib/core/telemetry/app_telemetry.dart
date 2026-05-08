@@ -310,8 +310,6 @@ class AppTelemetry {
   static final Map<String, DateTime> _roomHealthAlertCooldownByCode =
       <String, DateTime>{};
 
-  static bool _isInReconnectRecoveryWindow = false;
-
   static final ValueNotifier<AppTelemetryState> notifier =
       ValueNotifier<AppTelemetryState>(const AppTelemetryState());
 
@@ -385,15 +383,6 @@ class AppTelemetry {
         staleParticipantIds: nextStaleIds,
       ),
     );
-
-    // Start recovery window on join or reconnect burst
-    if ((next.roomPhase == 'joining' && current.roomPhase != 'joining') ||
-        next.roomHealth.reconnectBurstCount > current.roomHealth.reconnectBurstCount) {
-      _isInReconnectRecoveryWindow = true;
-      Future.delayed(const Duration(seconds: 2), () {
-        _isInReconnectRecoveryWindow = false;
-      });
-    }
 
     _emitIfChanged(current, next);
     _logRoomHealthTransition(

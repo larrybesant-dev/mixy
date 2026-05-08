@@ -12,7 +12,7 @@ void main() {
 
   group('Messaging retention', () {
     test(
-      'sendmessage writes expiresAt and updates conversation summary',
+      'sendMessage writes expiresAt and updates conversation summary',
       () async {
         final firestore = FakeFirebaseFirestore();
         final controller = MessagingController(firestore: firestore);
@@ -31,7 +31,7 @@ void main() {
           'status': 'active',
         });
 
-        await controller.sendmessage(
+        await controller.sendMessage(
           conversationId: 'conv-1',
           senderId: 'user-1',
           senderName: 'User One',

@@ -419,7 +419,7 @@ class _UserProfilePopupSheetState
                 label: 'Edit my profile',
                 onTap: () {
                   Navigator.of(context).pop();
-                  context.go('/edit-profile');
+                  context.go('/profile/edit');
                 },
               ),
             ],

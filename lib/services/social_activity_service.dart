@@ -64,6 +64,20 @@ class SocialActivityService {
     return activities.take(limit).toList(growable: false);
   }
 
+  Future<List<SocialActivity>> getGlobalActivities({
+    int limit = 12,
+  }) async {
+    final snapshot = await _firestore
+        .collection('activity_feed')
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => SocialActivity.fromJson(doc.id, doc.data()))
+        .toList(growable: false);
+  }
+
   Future<void> handleEvent(AppEvent event) async {
     if (event is FollowEvent) {
       await _writeActivity(

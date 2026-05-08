@@ -18,6 +18,9 @@ import 'package:mixvy/models/room_policy_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/flags/feature_flags.dart';
+import '../top_eight/top_eight_carousel.dart';
+import '../connections/connections_providers.dart';
 import '../auth/controllers/auth_controller.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import 'profile_completion.dart';
@@ -57,6 +60,16 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          if (ref.watch(enableFriendRequestsFeature))
+            IconButton(
+              tooltip: 'Friend Requests',
+              icon: Badge(
+                label: Text(ref.watch(dummyPendingRequestsProvider).length.toString()),
+                isLabelVisible: ref.watch(dummyPendingRequestsProvider).isNotEmpty,
+                child: const Icon(Icons.people_outline, color: Color(0xFFAD9585)),
+              ),
+              onPressed: () => context.push('/pending-requests'),
+            ),
           IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout, color: Color(0xFFAD9585)),
@@ -897,6 +910,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                   isUploadingGallery: _isUploadingGallery,
                   isUploadingVideo: _isUploadingVideo,
                 ),
+                if (ref.watch(enableTop8FriendsFeature)) ...[
+                  const SizedBox(height: 18),
+                  const TopEightCarousel(),
+                ],
                 const SizedBox(height: 18),
                 if (state.userId != null) ...[
                   _SectionCard(

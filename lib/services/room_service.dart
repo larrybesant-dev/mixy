@@ -24,6 +24,7 @@ final roomServiceProvider = Provider<RoomService>((ref) {
       }
     },
     visibilityWindowsResolver: () => ref.read(roomVisibilityWindowsProvider),
+    lifecycleManager: ref.watch(streamLifecycleManagerProvider),
   );
 });
 
@@ -39,15 +40,16 @@ class RoomService {
     FirebaseFirestore? firestore,
     bool Function()? isLiveRoomsEnabled,
     RoomVisibilityWindows Function()? visibilityWindowsResolver,
+    StreamLifecycleManager? lifecycleManager,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _isLiveRoomsEnabled = isLiveRoomsEnabled,
-       _visibilityWindowsResolver = visibilityWindowsResolver;
+       _visibilityWindowsResolver = visibilityWindowsResolver,
+       _streamLifecycleManager = lifecycleManager ?? StreamLifecycleManager.instance;
 
   final FirebaseFirestore _firestore;
   final bool Function()? _isLiveRoomsEnabled;
   final RoomVisibilityWindows Function()? _visibilityWindowsResolver;
-  final StreamLifecycleManager _streamLifecycleManager =
-      StreamLifecycleManager.instance;
+  final StreamLifecycleManager _streamLifecycleManager;
 
   RoomVisibilityWindows get _visibilityWindows {
     final resolver = _visibilityWindowsResolver;
@@ -64,7 +66,7 @@ class RoomService {
     required int limit,
     String? category,
   }) {
-    Query<Map<String, dynamic>> query = _roomsCollection;
+    Query<Map<String, dynamic>> query = _roomsCollection.where('isLive', isEqualTo: true);
     final normalizedCategory = category?.trim();
     if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
       query = query.where('category', isEqualTo: normalizedCategory);
@@ -967,6 +969,38 @@ class RoomService {
   Future<void> deleteRoom(String roomId) async {
     final normalizedRoomId = _normalizeRoomId(roomId);
     await _roomsCollection.doc(normalizedRoomId).delete();
+  }
+
+  /// Identifies and removes rooms that have been inactive for more than 24 hours.
+  /// This maintains database hygiene for the Beta launch.
+  Future<int> pruneStaleRooms() async {
+    final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+    final cutoffTimestamp = Timestamp.fromDate(cutoff);
+
+    // 1. Prune rooms marked as Live but not updated in 24h
+    final liveStaleQuery = await _roomsCollection
+        .where('isLive', isEqualTo: true)
+        .where('updatedAt', isLessThan: cutoffTimestamp)
+        .get();
+
+    // 2. Prune rooms that ended more than 24h ago
+    final endedStaleQuery = await _roomsCollection
+        .where('endedAt', isLessThan: cutoffTimestamp)
+        .get();
+
+    final allDocs = [...liveStaleQuery.docs, ...endedStaleQuery.docs];
+    if (allDocs.isEmpty) return 0;
+
+    final batch = _firestore.batch();
+    int count = 0;
+    for (final doc in allDocs) {
+      batch.delete(doc.reference);
+      count++;
+    }
+
+    await batch.commit();
+    Logger.info('DATABASE_HYGIENE pruned_rooms=$count');
+    return count;
   }
 }
 

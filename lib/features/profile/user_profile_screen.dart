@@ -33,6 +33,8 @@ import '../../presentation/providers/friend_provider.dart';
 import '../../presentation/providers/user_provider.dart';
 import 'profile_view_providers.dart';
 import 'widgets/profile_card.dart';
+import '../../core/flags/feature_flags.dart';
+import '../top_eight/top_eight_carousel.dart';
 import 'widgets/profile_music_player_stub.dart'
     if (dart.library.html) 'widgets/profile_music_player_web.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -206,7 +208,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             user2AvatarUrl: peerAvatarUrl,
           );
       if (!mounted) return;
-      context.go('/chat/$conversationId');
+      context.go('/messages/chat/$conversationId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -547,6 +549,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 children: [
                   if (isOwnProfile) ...[
                     _OwnProfileHeroCard(
+                      userId: widget.userId,
                       displayName: displayName,
                       avatarUrl: avatarUrl,
                       usernameHandle: usernameHandle,
@@ -567,6 +570,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   ],
                   if (!isOwnProfile)
                     ProfileCard(
+                      userId: widget.userId,
                       displayName: displayName,
                       avatarUrl: avatarUrl,
                       usernameHandle: usernameHandle,
@@ -576,7 +580,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                           _startConversation(displayName, avatarUrl),
                       onInvite: _inviteToLiveRoom,
                       onJoin: (roomId ?? '').isNotEmpty
-                          ? () => context.go('/room/$roomId')
+                          ? () => context.go('/rooms/room/$roomId')
                           : null,
                       currentRoom: (roomId ?? '').isNotEmpty ? roomId : null,
                       lastMessagePreview: directPreview,
@@ -592,6 +596,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       onReport: _reportUser,
                       blockLabel: isBlocked ? 'Unblock' : 'Block',
                     ),
+                  if (ref.watch(enableTop8FriendsFeature)) ...[
+                    const SizedBox(height: 12),
+                    TopEightCarousel(userId: widget.userId),
+                  ],
                   if (!isOwnProfile) ...[
                     const SizedBox(height: 12),
                     Row(
@@ -665,7 +673,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                                   );
                               if (!allowed || !context.mounted) return;
                               // ignore: use_build_context_synchronously
-                              unawaited(context.push('/edit-profile'));
+                              unawaited(context.push('/profile/edit'));
                             },
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Edit Profile'),
@@ -912,6 +920,7 @@ class _UserPostsTab extends ConsumerWidget {
 
 class _OwnProfileHeroCard extends StatelessWidget {
   const _OwnProfileHeroCard({
+    required this.userId,
     required this.displayName,
     required this.avatarUrl,
     required this.usernameHandle,
@@ -926,6 +935,7 @@ class _OwnProfileHeroCard extends StatelessWidget {
     required this.roomId,
   });
 
+  final String userId;
   final String displayName;
   final String? avatarUrl;
   final String? usernameHandle;
@@ -980,17 +990,20 @@ class _OwnProfileHeroCard extends StatelessWidget {
                     width: 2,
                   ),
                 ),
-                child: SafeNetworkAvatar(
-                  radius: 34,
-                  avatarUrl: avatarUrl,
-                  backgroundColor: VelvetNoir.surfaceHigh,
-                  fallbackText: displayName.isNotEmpty
-                      ? displayName.characters.first.toUpperCase()
-                      : 'M',
-                  fallbackTextStyle: GoogleFonts.playfairDisplay(
-                    color: VelvetNoir.primary,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
+                child: Hero(
+                  tag: 'avatar-$userId',
+                  child: SafeNetworkAvatar(
+                    radius: 34,
+                    avatarUrl: avatarUrl,
+                    backgroundColor: VelvetNoir.surfaceHigh,
+                    fallbackText: displayName.isNotEmpty
+                        ? displayName.characters.first.toUpperCase()
+                        : 'M',
+                    fallbackTextStyle: GoogleFonts.playfairDisplay(
+                      color: VelvetNoir.primary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -1116,7 +1129,7 @@ class _OwnProfileHeroCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => context.go('/room/${roomId!}'),
+                onPressed: () => context.go('/rooms/room/${roomId!}'),
                 icon: const Icon(Icons.headset_mic_rounded),
                 label: const Text('Join Room'),
                 style: FilledButton.styleFrom(
@@ -1164,7 +1177,7 @@ class _LivePulseDotState extends State<_LivePulseDot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 900),
+    duration: const Duration(milliseconds: 1200),
   )..repeat(reverse: true);
 
   @override
@@ -1177,15 +1190,32 @@ class _LivePulseDotState extends State<_LivePulseDot>
   Widget build(BuildContext context) {
     final color = widget.isActive ? VelvetNoir.liveGlow : VelvetNoir.primary;
     if (!widget.isActive) {
-      return Icon(Icons.circle, size: 10, color: color);
+      return Icon(Icons.circle, size: 10, color: color.withValues(alpha: 0.5));
     }
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final scale = 0.88 + (_controller.value * 0.32);
-        return Transform.scale(scale: scale, child: child);
+        final scale = 0.85 + (Curves.easeInOut.transform(_controller.value) * 0.35);
+        final opacity = 0.6 + (Curves.easeInOut.transform(_controller.value) * 0.4);
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: opacity),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.4 * opacity),
+                  blurRadius: 8 * _controller.value,
+                  spreadRadius: 2 * _controller.value,
+                ),
+              ],
+            ),
+          ),
+        );
       },
-      child: Icon(Icons.circle, size: 10, color: color),
     );
   }
 }

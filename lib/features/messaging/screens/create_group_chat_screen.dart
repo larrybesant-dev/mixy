@@ -86,7 +86,7 @@ class _CreateGroupChatScreenState extends ConsumerState<CreateGroupChatScreen> {
             participantIds: participantIds,
             participantNames: participantNames,
           );
-      if (mounted) context.go('/chat/$convId');
+      if (mounted) context.go('/messages/chat/$convId');
     } finally {
       if (mounted) setState(() => _isCreating = false);
     }

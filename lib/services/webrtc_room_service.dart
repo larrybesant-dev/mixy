@@ -143,6 +143,24 @@ class WebRtcRoomService extends RtcRoomService {
   final Map<String, StreamSubscription> _answerIceSubs = {};
   final Map<String, Set<String>> _sentIceCandidateKeys = {};
 
+  // Prevents signaling collisions when viewer refreshes rapidly.
+  final Map<String, Future<void>> _inFlightAnswers = {};
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HARDENING FIX #2: Call Session Versioning
+  // 
+  // Problem: When multiple viewers join simultaneously, Firestore can deliver
+  // offer/answer docs out of order. A stale answer SDP from viewer #1's first
+  // connection attempt can overwrite a fresh answer for viewer #1's reconnect,
+  // leaving the viewer with invalid SDP and frozen video.
+  //
+  // Fix: Track (callId -> version) map. Increment version on each fresh offer.
+  // When an answer is written, check if a newer offer has already arrived. If
+  // so, close the stale PC and discard the answer.
+  // ═══════════════════════════════════════════════════════════════════════════
+  final Map<String, int> _callSessionVersions = {};
+  final Map<String, int> _lastAnsweredVersionByCallId = {};
+
   // ──────────────────────────────────────────────────────────────────────────
   // RtcRoomService callbacks
   // ──────────────────────────────────────────────────────────────────────────
@@ -419,17 +437,35 @@ class WebRtcRoomService extends RtcRoomService {
       if (_broadcasterMode && _localVideoCapturing) return;
 
       try {
-        final stream = await navigator.mediaDevices.getUserMedia({
-          'video': {
-            'facingMode': 'user',
-            'width': {'ideal': 640},
-            'height': {'ideal': 480},
-          },
-          // Always acquire audio alongside video so the mic toggle works
-          // without a separate getUserMedia call. The track starts muted
-          // if the user's mic is currently off.
-          'audio': true,
-        });
+        MediaStream stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            'video': {
+              'facingMode': 'user',
+              'width': {'ideal': 640},
+              'height': {'ideal': 480},
+            },
+            // Always acquire audio alongside video so the mic toggle works
+            // without a separate getUserMedia call.
+            'audio': true,
+          });
+        } catch (e) {
+          // If combined acquisition fails due to missing mic hardware, retry with video-only.
+          if (e.toString().toLowerCase().contains('notfounderror') ||
+              e.toString().toLowerCase().contains('devicesnotfound')) {
+            _log('mic not found during combined acquisition — retrying video-only');
+            stream = await navigator.mediaDevices.getUserMedia({
+              'video': {
+                'facingMode': 'user',
+                'width': {'ideal': 640},
+                'height': {'ideal': 480},
+              },
+              'audio': false,
+            });
+          } else {
+            rethrow;
+          }
+        }
 
         // Mute audio immediately if mic is off — track exists but silent
         if (!publishMicrophoneTrack) {
@@ -1334,8 +1370,12 @@ class WebRtcRoomService extends RtcRoomService {
           _answeredCalls.contains(callId)) {
         continue;
       }
+      if (_inFlightAnswers.containsKey(callId)) continue;
+
       _answeredCalls.add(callId);
-      _answerViewerOffer(callId, data!);
+      _inFlightAnswers[callId] = _answerViewerOffer(callId, data!).whenComplete(() {
+        _inFlightAnswers.remove(callId);
+      });
     }
   }
 
@@ -1350,13 +1390,17 @@ class WebRtcRoomService extends RtcRoomService {
     for (final doc in snapshot.docs) {
       final callId = doc.id;
       if (_answeredCalls.contains(callId)) continue;
+      if (_inFlightAnswers.containsKey(callId)) continue;
+
       final data = doc.data();
       if (data['offer'] == null) continue;
       if (data['answer'] != null) {
         continue; // already answered by another session
       }
       _answeredCalls.add(callId);
-      unawaited(_answerViewerOffer(callId, data));
+      _inFlightAnswers[callId] = _answerViewerOffer(callId, data).whenComplete(() {
+        _inFlightAnswers.remove(callId);
+      });
     }
   }
 

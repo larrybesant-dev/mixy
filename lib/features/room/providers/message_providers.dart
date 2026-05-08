@@ -150,7 +150,7 @@ final roomTypingUserIdsProvider = StreamProvider.autoDispose
       });
     });
 
-final sendmessageProvider = Provider.autoDispose
+final sendMessageProvider = Provider.autoDispose
     .family<Future<void> Function(String), String>((ref, roomId) {
       return (String message) async {
         final user = ref.read(userProvider);
@@ -173,8 +173,8 @@ final sendmessageProvider = Provider.autoDispose
           return;
         }
 
-        final normalizedmessage = message.trim();
-        if (normalizedmessage.isEmpty) {
+        final normalizedMessage = message.trim();
+        if (normalizedMessage.isEmpty) {
           return;
         }
 
@@ -242,14 +242,14 @@ final sendmessageProvider = Provider.autoDispose
           'id': messageRef.id,
           'senderId': user.id,
           'roomId': roomId,
-          'content': normalizedmessage,
+          'content': normalizedMessage,
           'sentAt': FieldValue.serverTimestamp(),
           'clientSentAt': Timestamp.now(),
         });
       };
     });
 
-final sendPrivatemessageProvider = Provider.autoDispose
+final sendPrivateMessageProvider = Provider.autoDispose
     .family<
       Future<void> Function({
         required String content,
@@ -283,9 +283,9 @@ final sendPrivatemessageProvider = Provider.autoDispose
           return;
         }
 
-        final normalizedmessage = content.trim();
+        final normalizedMessage = content.trim();
         final normalizedRecipientId = recipientUserId.trim();
-        if (normalizedmessage.isEmpty || normalizedRecipientId.isEmpty) {
+        if (normalizedMessage.isEmpty || normalizedRecipientId.isEmpty) {
           return;
         }
         if (normalizedRecipientId == user.id) {
@@ -303,7 +303,7 @@ final sendPrivatemessageProvider = Provider.autoDispose
           'id': messageRef.id,
           'senderId': user.id,
           'roomId': roomId,
-          'content': normalizedmessage,
+          'content': normalizedMessage,
           'type': 'private',
           'recipientUserId': normalizedRecipientId,
           'recipientDisplayName': recipientDisplayName.trim(),

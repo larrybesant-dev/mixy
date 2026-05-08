@@ -18,10 +18,11 @@ class MixVyDrawer extends ConsumerWidget {
     '/messages': SessionCapability.startConversation,
     '/groups': SessionCapability.createGroup,
     '/create-post': SessionCapability.createPost,
-    '/create-story': SessionCapability.createStory,
-    '/create-group': SessionCapability.createGroup,
-    '/create-room': SessionCapability.createRoom,
-    '/edit-profile': SessionCapability.editProfile,
+    '/home/create-post': SessionCapability.createPost,
+    '/home/create-story': SessionCapability.createStory,
+    '/profile/create-group': SessionCapability.createGroup,
+    '/rooms/create': SessionCapability.createRoom,
+    '/profile/edit': SessionCapability.editProfile,
   };
 
   final String? userId;
@@ -273,13 +274,13 @@ class MixVyDrawer extends ConsumerWidget {
             context,
             icon: Icons.article_outlined,
             title: 'New Post',
-            route: '/create-post',
+            route: '/home/create-post',
           ),
           _navItem(
             context,
             icon: Icons.auto_stories_outlined,
             title: 'New Story',
-            route: '/create-story',
+            route: '/home/create-story',
           ),
           _navItem(
             context,

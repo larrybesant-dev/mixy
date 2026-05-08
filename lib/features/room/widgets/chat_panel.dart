@@ -10,19 +10,19 @@ import 'message_bubble.dart';
 class ChatPanel extends ConsumerStatefulWidget {
   const ChatPanel({
     super.key,
-    required this.message,
-    required this.isLoadingmessage,
+    required this.messages,
+    required this.isLoadingMessages,
     required this.currentUserId,
     required this.currentUsername,
     required this.isSending,
-    required this.cooldownmessage,
+    required this.cooldownMessage,
     required this.isMuted,
     required this.isBanned,
     required this.allowChat,
     required this.hasBlockedRelationship,
     required this.showEmojiTray,
     required this.onToggleEmojiTray,
-    required this.onSendmessage,
+    required this.onSendMessage,
     required this.onTyping,
     required this.messageController,
     required this.scrollController,
@@ -34,19 +34,19 @@ class ChatPanel extends ConsumerStatefulWidget {
     this.extraHeader,
   });
 
-  final List<MessageModel> message;
-  final bool isLoadingmessage;
+  final List<MessageModel> messages;
+  final bool isLoadingMessages;
   final String currentUserId;
   final String currentUsername;
   final bool isSending;
-  final String cooldownmessage;
+  final String cooldownMessage;
   final bool isMuted;
   final bool isBanned;
   final bool allowChat;
   final bool hasBlockedRelationship;
   final bool showEmojiTray;
   final VoidCallback onToggleEmojiTray;
-  final Future<void> Function(String text) onSendmessage;
+  final Future<void> Function(String text) onSendMessage;
   final VoidCallback onTyping;
   final TextEditingController messageController;
   final ScrollController scrollController;
@@ -104,8 +104,8 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
     const npSurfaceLow = Color(0xFF10131A);
     const npOnVariant = Color(0xFFB09080);
 
-    if (widget.message.length != _lastCount) {
-      _lastCount = widget.message.length;
+    if (widget.messages.length != _lastCount) {
+      _lastCount = widget.messages.length;
       _scrollToBottom();
     }
 
@@ -136,9 +136,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
           // message list
           Expanded(
-            child: widget.isLoadingmessage
+            child: widget.isLoadingMessages
                 ? const Center(child: CircularProgressIndicator())
-                : widget.message.isEmpty
+                : widget.messages.isEmpty
                 ? const Center(
                     child: Text(
                       'No message yet.',
@@ -148,9 +148,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                 : ListView.builder(
                     controller: widget.scrollController,
                     padding: const EdgeInsets.all(6),
-                    itemCount: widget.message.length,
+                    itemCount: widget.messages.length,
                     itemBuilder: (context, i) {
-                      final msg = widget.message[i];
+                      final msg = widget.messages[i];
                       return MessageBubble(
                         message: msg,
                         isMe: msg.senderId == widget.currentUserId,
@@ -168,11 +168,11 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
           ),
 
           // Cooldown notice
-          if (widget.cooldownmessage.isNotEmpty)
+          if (widget.cooldownMessage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
               child: Text(
-                widget.cooldownmessage,
+                widget.cooldownMessage,
                 style: const TextStyle(
                   color: Color(0xFFFF6E84),
                   fontWeight: FontWeight.bold,
@@ -307,7 +307,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                             ? (text) async {
                                 final trimmed = text.trim();
                                 if (trimmed.isNotEmpty) {
-                                  await widget.onSendmessage(trimmed);
+                                  await widget.onSendMessage(trimmed);
                                 }
                               }
                             : null,
@@ -327,7 +327,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                                 final text = widget.messageController.text
                                     .trim();
                                 if (text.isNotEmpty) {
-                                  await widget.onSendmessage(text);
+                                  await widget.onSendMessage(text);
                                 }
                               }
                             : null,

@@ -50,7 +50,7 @@ List<String> _asStringList(dynamic value) {
 
 class MessageModel {
   final String id;
-  final String? clientmessageId;
+  final String? clientMessageId;
 
   final String conversationId;
 
@@ -73,7 +73,7 @@ class MessageModel {
 
   MessageModel({
     required this.id,
-    this.clientmessageId,
+    this.clientMessageId,
     required this.senderId,
     String? conversationId,
     String? roomId,
@@ -94,7 +94,8 @@ class MessageModel {
   factory MessageModel.fromJson(Map<String, dynamic> json, String docId) {
     return MessageModel(
       id: docId,
-      clientmessageId: _asNullableString(json['clientmessageId']),
+      clientMessageId: _asNullableString(json['clientMessageId']) ??
+          _asNullableString(json['clientmessageId']),
       conversationId: _asString(json['conversationId']),
       roomId: _asString(json['roomId']),
       senderId: _asString(json['senderId']),
@@ -119,7 +120,7 @@ class MessageModel {
   Map<String, dynamic> toJson() {
     return {
       'conversationId': conversationId,
-      'clientmessageId': clientmessageId,
+      'clientMessageId': clientMessageId,
       'senderId': senderId,
       'senderName': senderName,
       'senderAvatarUrl': senderAvatarUrl,
@@ -137,7 +138,7 @@ class MessageModel {
 
   MessageModel copyWith({
     String? id,
-    String? clientmessageId,
+    String? clientMessageId,
     String? conversationId,
     String? senderId,
     String? senderName,
@@ -152,7 +153,7 @@ class MessageModel {
   }) {
     return MessageModel(
       id: id ?? this.id,
-      clientmessageId: clientmessageId ?? this.clientmessageId,
+      clientMessageId: clientMessageId ?? this.clientMessageId,
       conversationId: conversationId ?? this.conversationId,
       senderId: senderId ?? this.senderId,
       senderName: senderName ?? this.senderName,

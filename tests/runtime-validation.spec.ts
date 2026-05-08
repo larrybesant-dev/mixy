@@ -256,3 +256,30 @@ test('authenticated room creation validation', async ({ page }, testInfo) => {
 
   await writeSummary(testInfo, summary);
 });
+
+test('deep link survives refresh and auth bootstrap', async ({ page }, testInfo) => {
+  const observer = new RuntimeObserver('deep-link-survival');
+  observer.attach(page);
+
+  // Use a deterministic room ID for testing the deep link path
+  const testRoomId = `pw-deep-link-test-${Date.now()}`;
+  const deepLink = `${liveBaseUrl}/rooms/room/${testRoomId}`;
+
+  // Navigate directly to the deep link
+  observer.recordAction(`goto-deeplink:${deepLink}`);
+  await page.goto(deepLink);
+
+  // Wait for Flutter and Auth bootstrap
+  await waitForFlutterWasmStable(page);
+
+  // Expect to stay on the room route (or be redirected to auth if forced)
+  // The crucial part is that it shouldn't get stuck on / or redirect to /home prematurely
+  await expect(page).toHaveURL(new RegExp(`/rooms/room/${testRoomId}`), { timeout: 30000 });
+
+  // Verify the 'Joining room' loading scaffold appears (means it successfully targeted the room)
+  const joiningText = page.getByText(/Joining room/i).first();
+  await expect(joiningText).toBeVisible({ timeout: 15000 });
+
+  const summary = observer.summary(page.url());
+  await writeSummary(testInfo, summary);
+});

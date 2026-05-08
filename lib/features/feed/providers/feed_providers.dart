@@ -13,7 +13,6 @@ import '../models/post_model.dart';
 import '../../../models/room_model.dart';
 import '../../../models/social_activity_model.dart';
 import '../../../models/user_model.dart';
-import '../../../presentation/providers/user_provider.dart';
 import '../../../services/presence_repository.dart';
 import '../../../services/social_activity_service.dart';
 import '../services/home_feed_service.dart';
@@ -89,13 +88,10 @@ final roomsStreamProvider = Provider.autoDispose<AsyncValue<List<RoomModel>>>((
 ) {
   return ref.watch(roomsWithVisibilityStreamProvider).whenData((classified) {
     final sections = _toSections(classified);
-    if (sections.primaryLive.isNotEmpty) {
-      return sections.primaryLive
-          .map((item) => item.room)
-          .toList(growable: false);
-    }
-
-    return sections.cold.map((item) => item.room).toList(growable: false);
+    // Return only active (discoverable/warm) rooms for "Live Now" feed
+    return sections.primaryLive
+        .map((item) => item.room)
+        .toList(growable: false);
   });
 });
 
@@ -104,13 +100,10 @@ final roomsSnapshotProvider = FutureProvider.autoDispose<List<RoomModel>>((
 ) async {
   final classified = await ref.watch(roomsWithVisibilityStreamProvider.future);
   final sections = _toSections(classified);
-  if (sections.primaryLive.isNotEmpty) {
-    return sections.primaryLive
-        .map((item) => item.room)
-        .toList(growable: false);
-  }
-
-  return sections.cold.map((item) => item.room).toList(growable: false);
+  // Return only active (discoverable/warm) rooms for "Live Now" feed
+  return sections.primaryLive
+      .map((item) => item.room)
+      .toList(growable: false);
 });
 
 class RoomVisibilitySections {
@@ -344,11 +337,9 @@ final homeFeedServiceProvider = Provider<HomeFeedService>((ref) {
 
 final currentUserActivitiesProvider =
     FutureProvider.autoDispose<List<SocialActivity>>((ref) async {
-      final currentUser = ref.watch(userProvider);
-      final userId = currentUser?.id ?? '';
       return ref
           .watch(socialActivityServiceProvider)
-          .getUserActivities(userId, limit: 12);
+          .getGlobalActivities(limit: 12);
     });
 
 final homeFeedSnapshotProvider =

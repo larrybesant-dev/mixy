@@ -13,14 +13,34 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   required bool hasAcceptedLegal,
 }) {
   final isAuth = uid != null && uid.isNotEmpty;
+
+  // ── 1. BOOTSTRAP GATE ──────────────────────────────────────────────────────
+  // If we are still determining the auth state (e.g. Firebase initializing),
+  // we MUST NOT redirect. Redirecting to /auth here would overwrite the deep
+  // link URL before the app knows who the user is.
   if (authLoading) {
     return const RedirectEvaluation(
-      redirectTo: '/auth',
-      reason: 'auth_loading_safe_default',
+      redirectTo: null,
+      reason: 'auth_loading_preserve_location',
     );
   }
 
-  if (matchedLocation == '/auth') {
+  // ── 2. PUBLIC ROUTES ───────────────────────────────────────────────────────
+  // Routes that are allowed regardless of auth state.
+  final isAuthRoute = matchedLocation == '/auth' ||
+      matchedLocation == '/register' ||
+      matchedLocation == '/forgot-password' ||
+      matchedLocation == '/onboarding';
+
+  // Guest access to rooms is allowed — LiveRoomScreen handles its own
+  // internal gates for adult content and messaging.
+  final isRoomRoute = matchedLocation.startsWith('/rooms/room/');
+
+  final isPublicRoute = isAuthRoute || isRoomRoute;
+
+  // ── 3. AUTH ROUTE SPECIAL CASE ─────────────────────────────────────────────
+  // If user is already signed in, don't let them stay on /auth or /register.
+  if (isAuthRoute) {
     return isAuth
         ? const RedirectEvaluation(
             redirectTo: '/home',
@@ -32,7 +52,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
           );
   }
 
-  if (!isAuth) {
+  // ── 4. PRIVATE ROUTES ──────────────────────────────────────────────────────
+  if (!isAuth && !isPublicRoute) {
     return const RedirectEvaluation(
       redirectTo: '/auth',
       reason: 'signed_out_redirect_to_auth',
@@ -41,7 +62,7 @@ RedirectEvaluation evaluateAppRedirectWithReason({
 
   return const RedirectEvaluation(
     redirectTo: null,
-    reason: 'shell_first_keep_location',
+    reason: 'allow_navigation',
   );
 }
 

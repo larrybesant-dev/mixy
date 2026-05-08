@@ -38,7 +38,7 @@ class HomeFeedService {
         PulseFeedItem(
           id: 'activity:${activity.id}',
           type: activity.type,
-          title: 'Fresh activity from your circle',
+          title: _titleForActivity(activity),
           detail: activity.value,
           timestamp: activity.timestamp,
         ),
@@ -60,6 +60,21 @@ class HomeFeedService {
       suggestedUsers: List<UserModel>.unmodifiable(suggestedUsers),
       pulseItems: rankedItems,
     );
+  }
+
+  String _titleForActivity(SocialActivity activity) {
+    switch (activity.type) {
+      case 'followed_user':
+        return 'New connection made';
+      case 'updated_profile':
+        return 'Profile refresh';
+      case 'joined_room':
+        return 'Someone joined a room';
+      case 'went_live':
+        return 'New live energy';
+      default:
+        return 'Fresh activity in your circle';
+    }
   }
 
   bool _isRoomScopedActivity(SocialActivity activity) {

@@ -24,12 +24,19 @@ class TrendingUserCard extends StatelessWidget {
             child: profilePictureUrl == null
                 ? const Icon(Icons.person)
                 : ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: profilePictureUrl,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Center(
+                    child: profilePictureUrl.startsWith('asset:')
+                        ? Image.asset(
+                            profilePictureUrl.replaceFirst('asset:', ''),
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: profilePictureUrl,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Center(
                         child: SizedBox(
                           width: 36,
                           height: 36,

@@ -148,7 +148,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           thumbnailUrl: _thumbnailUrl,
           isLive: true,
         );
-        if (mounted) context.go('/room/$roomId');
+        if (mounted) context.go('/rooms/room/$roomId');
       }
     } catch (e) {
       if (mounted) {

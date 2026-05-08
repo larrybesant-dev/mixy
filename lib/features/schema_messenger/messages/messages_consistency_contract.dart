@@ -95,10 +95,10 @@ class MessageConsistencyContract
       legacyConversationIds: legacy.map((c) => c.id).toList(growable: false),
       schemaConversationIds: schema.map((c) => c.id).toList(growable: false),
       legacyUnreadByConversation: {
-        for (final c in legacy) c.id: c.hasUnreadmessage(userId) ? 1 : 0,
+        for (final c in legacy) c.id: c.hasUnreadMessages(userId) ? 1 : 0,
       },
       schemaUnreadByConversation: {
-        for (final c in schema) c.id: c.hasUnreadmessage(userId) ? 1 : 0,
+        for (final c in schema) c.id: c.hasUnreadMessages(userId) ? 1 : 0,
       },
       legacyReady: legacyAsync.hasValue,
       schemaReady: schemaAsync.hasValue,

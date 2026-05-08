@@ -26,29 +26,36 @@ class UserAvatar extends StatelessWidget {
         ),
         child: safeImageUrl != null
             ? ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: safeImageUrl,
-                  width: radius * 2 - 4,
-                  height: radius * 2 - 4,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Center(
-                    child: SizedBox(
-                      width: radius,
-                      height: radius,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(
-                          theme.colorScheme.primary,
+                child: safeImageUrl.startsWith('asset:')
+                    ? Image.asset(
+                        safeImageUrl.replaceFirst('asset:', ''),
+                        width: radius * 2 - 4,
+                        height: radius * 2 - 4,
+                        fit: BoxFit.cover,
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: safeImageUrl,
+                        width: radius * 2 - 4,
+                        height: radius * 2 - 4,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Center(
+                          child: SizedBox(
+                            width: radius,
+                            height: radius,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(
+                                theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Icon(
+                          Icons.person,
+                          color: theme.colorScheme.primary,
+                          size: radius,
                         ),
                       ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Icon(
-                    Icons.person,
-                    color: theme.colorScheme.primary,
-                    size: radius,
-                  ),
-                ),
               )
             : Icon(
                 Icons.person,

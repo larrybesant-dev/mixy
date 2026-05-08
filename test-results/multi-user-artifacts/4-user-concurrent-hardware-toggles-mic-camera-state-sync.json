@@ -1,0 +1,110 @@
+{
+  "User A": {
+    "flow": "User A-hardware-sync",
+    "finalUrl": "http://127.0.0.1:9100/room/stress-test-123",
+    "urlTransitions": [
+      "about:blank",
+      "http://127.0.0.1:9100/room/stress-test-123"
+    ],
+    "navigationLoopDetected": false,
+    "duplicateActions": [],
+    "actionCounts": {
+      "room-joined": 1
+    },
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "requestFailures": [],
+    "failedSelectors": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "http://127.0.0.1:9100/room/stress-test-123"
+      }
+    ],
+    "roomWriteSignals": 0
+  },
+  "User B": {
+    "flow": "User B-hardware-sync",
+    "finalUrl": "http://127.0.0.1:9100/room/stress-test-123",
+    "urlTransitions": [
+      "about:blank",
+      "http://127.0.0.1:9100/room/stress-test-123"
+    ],
+    "navigationLoopDetected": false,
+    "duplicateActions": [],
+    "actionCounts": {
+      "room-joined": 1
+    },
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "requestFailures": [],
+    "failedSelectors": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "http://127.0.0.1:9100/room/stress-test-123"
+      }
+    ],
+    "roomWriteSignals": 0
+  },
+  "User C": {
+    "flow": "User C-hardware-sync",
+    "finalUrl": "http://127.0.0.1:9100/room/stress-test-123",
+    "urlTransitions": [
+      "about:blank",
+      "http://127.0.0.1:9100/room/stress-test-123"
+    ],
+    "navigationLoopDetected": false,
+    "duplicateActions": [],
+    "actionCounts": {
+      "room-joined": 1
+    },
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "requestFailures": [],
+    "failedSelectors": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "http://127.0.0.1:9100/room/stress-test-123"
+      }
+    ],
+    "roomWriteSignals": 0
+  },
+  "User D": {
+    "flow": "User D-hardware-sync",
+    "finalUrl": "http://127.0.0.1:9100/room/stress-test-123",
+    "urlTransitions": [
+      "about:blank",
+      "http://127.0.0.1:9100/room/stress-test-123"
+    ],
+    "navigationLoopDetected": false,
+    "duplicateActions": [],
+    "actionCounts": {
+      "room-joined": 1
+    },
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "requestFailures": [],
+    "failedSelectors": [],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "http://127.0.0.1:9100/room/stress-test-123"
+      }
+    ],
+    "roomWriteSignals": 0
+  }
+}

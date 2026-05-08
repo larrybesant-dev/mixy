@@ -179,7 +179,7 @@ class Conversation {
     return participantNames[otherUserId] ?? 'Unknown User';
   }
 
-  bool hasUnreadmessage(String userId) {
+  bool hasUnreadMessages(String userId) {
     final latestMessageAt = lastMessageAt;
     if (latestMessageAt == null) {
       return false;

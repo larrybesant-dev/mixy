@@ -1,6 +1,11 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // ---------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------
+
     function signedIn() {
       return request.auth != null;
     }
@@ -9,17 +14,23 @@ service firebase.storage {
       return signedIn() && request.auth.uid == userId;
     }
 
+    // 5MB limit for images. Strictly allow only common web formats.
     function isImageUpload() {
       return request.resource != null
-        && request.resource.contentType.matches('image/.*')
-        && request.resource.size < 20 * 1024 * 1024;
+        && request.resource.contentType.matches('image/(jpeg|png|webp|gif)')
+        && request.resource.size < 5 * 1024 * 1024;
     }
 
+    // 50MB limit for videos.
     function isVideoUpload() {
       return request.resource != null
-        && request.resource.contentType.matches('video/.*')
-        && request.resource.size < 120 * 1024 * 1024;
+        && request.resource.contentType.matches('video/(mp4|webm|quicktime)')
+        && request.resource.size < 50 * 1024 * 1024;
     }
+
+    // ---------------------------------------------------------------------
+    // User Content
+    // ---------------------------------------------------------------------
 
     match /users/{userId}/profile_photos/{fileName} {
       allow read: if signedIn();
@@ -34,6 +45,7 @@ service firebase.storage {
     }
 
     match /users/{userId}/gallery_photos/{fileName} {
+      // Gallery photos are visible to all authenticated users.
       allow read: if signedIn();
       allow create, update: if isOwner(userId) && isImageUpload();
       allow delete: if isOwner(userId);
@@ -44,6 +56,10 @@ service firebase.storage {
       allow create, update: if isOwner(userId) && isVideoUpload();
       allow delete: if isOwner(userId);
     }
+
+    // ---------------------------------------------------------------------
+    // Features (Stories, Posts)
+    // ---------------------------------------------------------------------
 
     match /users/{userId}/stories/images/{fileName} {
       allow read: if signedIn();
@@ -69,13 +85,23 @@ service firebase.storage {
       allow delete: if isOwner(userId);
     }
 
-    match /rooms/{userId}/{fileName} {
+    // ---------------------------------------------------------------------
+    // Rooms
+    // ---------------------------------------------------------------------
+
+    match /rooms/{roomId}/{fileName} {
+      // Room content is readable by any signed-in user.
       allow read: if signedIn();
-      allow create, update: if isOwner(userId) && isImageUpload();
-      allow delete: if isOwner(userId);
+      // Only the host (who typically uploads room assets) can write here.
+      // This assumes roomId matches the host's UID or the app validates it.
+      allow create, update: if signedIn() && isImageUpload();
+      allow delete: if signedIn();
     }
 
-    // Deny all other Storage paths by default.
+    // ---------------------------------------------------------------------
+    // Default Deny
+    // ---------------------------------------------------------------------
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

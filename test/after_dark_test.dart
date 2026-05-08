@@ -112,7 +112,7 @@ Widget _shellApp({required bool sessionActive}) {
     overrides: [
       afterDarkSessionProvider.overrideWith((ref) => sessionActive),
       // Prevent Firebase access in the shell test environment.
-      unreadmessageCountProvider.overrideWith((ref) => 0),
+      unreadMessageCountProvider.overrideWith((ref) => 0),
     ],
     child: MaterialApp.router(routerConfig: router),
   );

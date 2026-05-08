@@ -282,7 +282,7 @@ class _MessengerSidebar extends ConsumerWidget {
               child: _FriendRosterRow(
                 entry: entry,
                 conversation: conversation,
-                unread: conversation?.hasUnreadmessage(currentUser.id) ?? false,
+                unread: conversation?.hasUnreadMessages(currentUser.id) ?? false,
                 canInviteToRoom:
                     currentRoomId != null &&
                     currentRoomId.isNotEmpty &&
@@ -399,7 +399,7 @@ class _MessengerSidebar extends ConsumerWidget {
                                       timestamp:
                                           conversation.lastMessageAt ??
                                           conversation.createdAt,
-                                      unread: conversation.hasUnreadmessage(
+                                      unread: conversation.hasUnreadMessages(
                                         currentUser.id,
                                       ),
                                       onTogglePin: () =>
@@ -602,7 +602,7 @@ class _DesktopSocialRail extends ConsumerWidget {
         .where((entry) => (entry.roomId ?? '').isNotEmpty)
         .length;
     final unreadCount = conversations
-        .where((c) => c.hasUnreadmessage(currentUser.id))
+        .where((c) => c.hasUnreadMessages(currentUser.id))
         .length;
     final pinnedCount = conversations
         .where((c) => c.isPinnedFor(currentUser.id))

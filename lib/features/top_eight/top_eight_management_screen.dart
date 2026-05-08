@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../models/user_model.dart';
 import '../friends/providers/friends_providers.dart';
 import 'top_eight_controller.dart';
 import '../auth/controllers/auth_controller.dart';
@@ -178,8 +177,9 @@ class _TopEightManagementScreenState extends ConsumerState<TopEightManagementScr
                             trailing: IconButton(
                               icon: const Icon(Icons.add_circle_outline, color: Color(0xFFD4AF37)),
                               onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
                                 if (topEightIds.length >= 8) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     const SnackBar(content: Text('You can only have 8 friends in your Top 8!')),
                                   );
                                   return;
@@ -188,7 +188,7 @@ class _TopEightManagementScreenState extends ConsumerState<TopEightManagementScr
                                   await ref.read(topEightControllerProvider.notifier).addToTopEight(friend.id);
                                 } catch (e) {
                                   if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(content: Text(e.toString())),
                                     );
                                   }

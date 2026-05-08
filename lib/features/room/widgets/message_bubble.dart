@@ -151,7 +151,7 @@ class MessageBubble extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  _buildmessageBody(message.content),
+                  _buildMessageBody(message.content),
                 ],
               ),
             ),
@@ -274,7 +274,7 @@ class MessageBubble extends StatelessWidget {
                   ],
                 ),
                 // message body — parse markup when tags present
-                _buildmessageBody(message.content),
+                _buildMessageBody(message.content),
               ],
             ),
           ),
@@ -283,7 +283,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildmessageBody(String content) {
+  Widget _buildMessageBody(String content) {
     const baseStyle = TextStyle(
       color: Color(0xEBFFFFFF),
       fontSize: 13,

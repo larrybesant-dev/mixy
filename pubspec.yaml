@@ -71,28 +71,28 @@ dev_dependencies:
   patrol: ^4.3.0
   firebase_core_platform_interface: any
 flutter:
-    assets:
-      - assets/images/
-      - assets/images/branding/
-      - assets/icons/
-      - assets/fonts/
-      - assets/env/
-      - assets/.env
-      - assets/emojis/
-    fonts:
-      - family: NotoColorEmoji
-        fonts:
-          - asset: assets/fonts/NotoColorEmoji-Regular.ttf
-      - family: NotoSans
-        fonts:
-          - asset: assets/fonts/NotoSans-Regular.ttf
-      - family: NotoSansSymbols
-        fonts:
-          - asset: assets/fonts/NotoSansSymbols-Regular.ttf
-      - family: NotoSansSymbols2
-        fonts:
-          - asset: assets/fonts/NotoSansSymbols2-Regular.ttf
-    uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/branding/
+    - assets/icons/
+    - assets/fonts/
+    - assets/env/
+    - assets/.env
+    - assets/emojis/
+  fonts:
+    - family: NotoColorEmoji
+      fonts:
+        - asset: assets/fonts/NotoColorEmoji-Regular.ttf
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+    - family: NotoSansSymbols
+      fonts:
+        - asset: assets/fonts/NotoSansSymbols-Regular.ttf
+    - family: NotoSansSymbols2
+      fonts:
+        - asset: assets/fonts/NotoSansSymbols2-Regular.ttf
+  uses-material-design: true
 
 flutter_launcher_icons:
   android: true

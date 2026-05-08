@@ -1375,7 +1375,7 @@ class _MessageInputState extends ConsumerState<_MessageInput> {
     if (text.isEmpty) return;
     _controller.clear();
     unawaited(
-      ref.read(sendmessageProvider(widget.roomId))(text).catchError((_) {}),
+      ref.read(sendMessageProvider(widget.roomId))(text).catchError((_) {}),
     );
   }
 }

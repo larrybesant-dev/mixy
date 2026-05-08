@@ -4,6 +4,11 @@ String? sanitizeNetworkImageUrl(String? rawUrl) {
     return null;
   }
 
+  // Handle local assets prefixed with 'asset:'
+  if (trimmed.startsWith('asset:')) {
+    return trimmed;
+  }
+
   final uri = Uri.tryParse(trimmed);
   if (uri == null || !uri.hasScheme) {
     return null;

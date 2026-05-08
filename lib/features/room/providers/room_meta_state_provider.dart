@@ -13,7 +13,14 @@ final roomMetaStateProvider = StreamProvider.autoDispose
           roomDocStreamProvider(roomId),
           (_, next) {
             if (controller.isClosed) return;
-            controller.add(RoomMetaState(roomDoc: next.valueOrNull));
+
+            // Only emit when we have a terminal state (data or error).
+            // Initial loading should remain in AsyncLoading.
+            if (next.hasValue) {
+              controller.add(RoomMetaState(roomDoc: next.value));
+            } else if (next.hasError) {
+              controller.addError(next.error!, next.stackTrace!);
+            }
           },
           fireImmediately: true,
         );

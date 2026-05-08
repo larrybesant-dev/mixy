@@ -54,7 +54,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   bool _allowEmptyState = false;
   bool _hydrationComplete = false;
   late final double? _savedScrollOffset;
-  final List<_Pendingmessage> _pendingmessage = <_Pendingmessage>[];
+  final List<_PendingMessage> _pendingMessages = <_PendingMessage>[];
   late final DateTime _entryTime;
 
   void _guardAsync(Future<void> future, {required String contextLabel}) {
@@ -213,7 +213,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         _scrollController.offset <=
             _scrollController.position.minScrollExtent + 120) {
       ref
-          .read(paginatedmessageProvider(widget.conversationId).notifier)
+          .read(paginatedMessageProvider(widget.conversationId).notifier)
           .loadMore(null);
     }
     if (_scrollController.hasClients &&
@@ -292,7 +292,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     super.dispose();
   }
 
-  Future<void> _sendmessage() async {
+  Future<void> _sendMessage() async {
     final allowed = await GuestAuthGate.requireMessaging(context, ref);
     if (!allowed) return;
 
@@ -304,8 +304,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     _draftCacheNotifier.clearDraft(widget.conversationId);
     _messageController.clear();
 
-    final pendingmessage = _Pendingmessage(
-      clientmessageId:
+    final pendingMessage = _PendingMessage(
+      clientMessageId:
           '${DateTime.now().microsecondsSinceEpoch}-${widget.userId}',
       content: content,
       createdAt: DateTime.now(),
@@ -314,7 +314,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
       senderAvatarUrl: widget.avatarUrl,
     );
     setState(() {
-      _pendingmessage.add(pendingmessage);
+      _pendingMessages.add(pendingMessage);
     });
 
     _scheduleScrollToBottom(
@@ -323,20 +323,20 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     );
 
     try {
-      await _messagingController.sendmessage(
+      await _messagingController.sendMessage(
         conversationId: widget.conversationId,
         senderId: widget.userId,
         senderName: widget.username,
         senderAvatarUrl: widget.avatarUrl,
         content: content,
-        clientmessageId: pendingmessage.clientmessageId,
+        clientMessageId: pendingMessage.clientMessageId,
       );
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _pendingmessage.removeWhere(
+        _pendingMessages.removeWhere(
           (message) =>
-              message.clientmessageId == pendingmessage.clientmessageId,
+              message.clientMessageId == pendingMessage.clientMessageId,
         );
       });
       ScaffoldMessenger.of(
@@ -357,7 +357,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
       messageStreamProvider(widget.conversationId),
     );
     final paginatedState = ref.watch(
-      paginatedmessageProvider(widget.conversationId),
+      paginatedMessageProvider(widget.conversationId),
     );
     final conversationAsync = ref.watch(
       conversationDocProvider(widget.conversationId),
@@ -365,7 +365,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     if (conversationAsync.hasError) {
       _markHydrationComplete('conversation_error');
       return AppErrorView(
-        error: friendlyFirestoremessage(
+        error: friendlyFirestoreMessage(
           conversationAsync.error!,
           fallbackContext: 'conversation',
         ),
@@ -470,35 +470,35 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
           ),
         Expanded(
           child: messageStream.when(
-            data: (livemessage) {
-              final pendingClientIds = _pendingmessage
-                  .map((message) => message.clientmessageId)
+            data: (liveMessages) {
+              final pendingClientIds = _pendingMessages
+                  .map((message) => message.clientMessageId)
                   .toSet();
-              final liveClientIds = livemessage
-                  .map((message) => message.clientmessageId)
+              final liveClientIds = liveMessages
+                  .map((message) => message.clientMessageId)
                   .whereType<String>()
                   .toSet();
-              final pendingmessage = _pendingmessage
+              final pendingMessages = _pendingMessages
                   .where(
                     (message) =>
-                        !liveClientIds.contains(message.clientmessageId),
+                        !liveClientIds.contains(message.clientMessageId),
                   )
                   .toList(growable: false);
-              final allmessage = [
-                ...paginatedState.oldermessage,
-                ...livemessage,
-                ...pendingmessage.map(
-                  (message) => message.tomessage(widget.conversationId),
+              final allMessages = [
+                ...paginatedState.olderMessages,
+                ...liveMessages,
+                ...pendingMessages.map(
+                  (message) => message.toMessage(widget.conversationId),
                 ),
               ];
 
-              if (_pendingmessage.length != pendingmessage.length) {
+              if (_pendingMessages.length != pendingMessages.length) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted) return;
                   setState(() {
-                    _pendingmessage
+                    _pendingMessages
                       ..clear()
-                      ..addAll(pendingmessage);
+                      ..addAll(pendingMessages);
                   });
                 });
               }
@@ -521,7 +521,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                 );
               }
 
-              if (allmessage.isEmpty) {
+              if (allMessages.isEmpty) {
                 if (!_allowEmptyState) {
                   return const AppLoadingView(label: 'Hydrating conversation');
                 }
@@ -548,7 +548,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
               return ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                itemCount: allmessage.length + (paginatedState.hasMore ? 1 : 0),
+                itemCount: allMessages.length + (paginatedState.hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == 0 && paginatedState.hasMore) {
                     return Center(
@@ -565,7 +565,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                             : TextButton(
                                 onPressed: () => ref
                                     .read(
-                                      paginatedmessageProvider(
+                                      paginatedMessageProvider(
                                         widget.conversationId,
                                       ).notifier,
                                     )
@@ -577,10 +577,10 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   }
 
                   final message =
-                      allmessage[index - (paginatedState.hasMore ? 1 : 0)];
+                      allMessages[index - (paginatedState.hasMore ? 1 : 0)];
                   final isOwn = message.senderId == widget.userId;
                   final isPending = pendingClientIds.contains(
-                    message.clientmessageId,
+                    message.clientMessageId,
                   );
                   bool isReadByOther = false;
                   if (isOwn) {
@@ -807,14 +807,14 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
               );
             },
             loading: () {
-              if (_pendingmessage.isNotEmpty) {
+              if (_pendingMessages.isNotEmpty) {
                 return _buildPendingWhileLoading();
               }
               return const AppLoadingView(label: 'Loading message');
             },
             skipLoadingOnRefresh: true,
             error: (error, stackTrace) => AppErrorView(
-              error: friendlyFirestoremessage(
+              error: friendlyFirestoreMessage(
                 error,
                 fallbackContext: 'message',
               ),
@@ -869,7 +869,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                       ref,
                       onSelected: (item) async {
                         try {
-                          await messagingController.sendmessage(
+                          await messagingController.sendMessage(
                             conversationId: widget.conversationId,
                             senderId: widget.userId,
                             senderName: widget.username,
@@ -920,12 +920,12 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                     ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendmessage(),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 4),
                 GestureDetector(
-                  onTap: _sendmessage,
+                  onTap: _sendMessage,
                   child: Container(
                     width: 38,
                     height: 38,
@@ -953,9 +953,9 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _pendingmessage.length,
+      itemCount: _pendingMessages.length,
       itemBuilder: (context, index) {
-        final pending = _pendingmessage[index];
+        final pending = _pendingMessages[index];
         return Align(
           alignment: Alignment.centerRight,
           child: Padding(
@@ -1284,9 +1284,9 @@ class _ReactionRow extends ConsumerWidget {
   }
 }
 
-class _Pendingmessage {
-  const _Pendingmessage({
-    required this.clientmessageId,
+class _PendingMessage {
+  const _PendingMessage({
+    required this.clientMessageId,
     required this.content,
     required this.createdAt,
     required this.senderId,
@@ -1294,17 +1294,17 @@ class _Pendingmessage {
     required this.senderAvatarUrl,
   });
 
-  final String clientmessageId;
+  final String clientMessageId;
   final String content;
   final DateTime createdAt;
   final String senderId;
   final String senderName;
   final String? senderAvatarUrl;
 
-  MessageModel tomessage(String conversationId) {
+  MessageModel toMessage(String conversationId) {
     return MessageModel(
-      id: clientmessageId,
-      clientmessageId: clientmessageId,
+      id: clientMessageId,
+      clientMessageId: clientMessageId,
       conversationId: conversationId,
       senderId: senderId,
       senderName: senderName,

@@ -24,22 +24,22 @@ class _DelayedMessagingController extends messaging.MessagingController {
   final Completer<void> sendCompleter;
 
   @override
-  Future<void> sendmessage({
+  Future<void> sendMessage({
     required String conversationId,
     required String senderId,
     required String senderName,
     required String? senderAvatarUrl,
     required String content,
-    String? clientmessageId,
+    String? clientMessageId,
   }) async {
     await sendCompleter.future;
-    return super.sendmessage(
+    return super.sendMessage(
       conversationId: conversationId,
       senderId: senderId,
       senderName: senderName,
       senderAvatarUrl: senderAvatarUrl,
       content: content,
-      clientmessageId: clientmessageId,
+      clientMessageId: clientMessageId,
     );
   }
 }
@@ -184,7 +184,7 @@ void main() {
         expect(deliveredData['content'], 'Instant hello');
         expect(deliveredData['senderId'], 'user-1');
         expect(
-          (deliveredData['clientmessageId'] as String?)?.isNotEmpty,
+          (deliveredData['clientMessageId'] as String?)?.isNotEmpty,
           isTrue,
         );
 

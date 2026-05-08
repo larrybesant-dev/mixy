@@ -9,6 +9,7 @@ enum ProfilePresenceState { online, recentlyActive, inRoom, offline }
 class ProfileCard extends StatelessWidget {
   const ProfileCard({
     super.key,
+    required this.userId,
     required this.displayName,
     required this.avatarUrl,
     this.usernameHandle,
@@ -27,6 +28,7 @@ class ProfileCard extends StatelessWidget {
     this.blockLabel = 'Block',
   });
 
+  final String userId;
   final String displayName;
   final String? avatarUrl;
   final String? usernameHandle;
@@ -49,6 +51,7 @@ class ProfileCard extends StatelessWidget {
     return Column(
       children: [
         ProfileHeader(
+          userId: userId,
           displayName: displayName,
           avatarUrl: avatarUrl,
           usernameHandle: usernameHandle,
@@ -76,6 +79,7 @@ class ProfileCard extends StatelessWidget {
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({
     super.key,
+    required this.userId,
     required this.displayName,
     required this.avatarUrl,
     this.usernameHandle,
@@ -83,6 +87,7 @@ class ProfileHeader extends StatelessWidget {
     required this.presenceState,
   });
 
+  final String userId;
   final String displayName;
   final String? avatarUrl;
   final String? usernameHandle;
@@ -115,17 +120,20 @@ class ProfileHeader extends StatelessWidget {
                       ),
                     ],
             ),
-            child: SafeNetworkAvatar(
-              radius: 36,
-              avatarUrl: avatarUrl,
-              backgroundColor: VelvetNoir.surfaceHigh,
-              fallbackText: displayName.isNotEmpty
-                  ? displayName[0].toUpperCase()
-                  : '?',
-              fallbackTextStyle: GoogleFonts.raleway(
-                color: VelvetNoir.primary,
-                fontWeight: FontWeight.w800,
-                fontSize: 26,
+            child: Hero(
+              tag: 'avatar-$userId',
+              child: SafeNetworkAvatar(
+                radius: 36,
+                avatarUrl: avatarUrl,
+                backgroundColor: VelvetNoir.surfaceHigh,
+                fallbackText: displayName.isNotEmpty
+                    ? displayName[0].toUpperCase()
+                    : '?',
+                fallbackTextStyle: GoogleFonts.raleway(
+                  color: VelvetNoir.primary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 26,
+                ),
               ),
             ),
           ),
@@ -215,7 +223,7 @@ class ProfileActionsRow extends StatelessWidget {
           child: FilledButton.icon(
             onPressed: onmessage,
             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-            label: const Text('message'),
+            label: const Text('Message'),
           ),
         ),
         const SizedBox(width: 8),

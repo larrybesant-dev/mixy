@@ -216,7 +216,7 @@ class _AfterDarkLoungesScreenState
                   24,
                 ),
                 child: AppErrorView(
-                  error: friendlyFirestoremessage(
+                  error: friendlyFirestoreMessage(
                     e,
                     fallbackContext: 'lounges',
                   ),

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,7 +60,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _showNavigationError('This room is unavailable right now.');
       return;
     }
-    context.go('/room/${Uri.encodeComponent(normalizedRoomId)}');
+    context.go('/rooms/room/${Uri.encodeComponent(normalizedRoomId)}');
   }
 
   void _openProfile(String? userId) {
@@ -86,7 +88,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
 
-    context.go('/search');
+    context.go('/home/search');
   }
 
   String _greeting() {
@@ -122,6 +124,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _completeFirstSessionAndGo(String route) async {
+    unawaited(HapticFeedback.mediumImpact());
     StartupProfiler.instance.markFirstUserAction(
       context: 'first_session_entry',
     );
@@ -278,7 +281,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Icons.notifications_outlined,
                   color: VelvetNoir.onSurface,
                 ),
-                onPressed: () => context.go('/notifications'),
+                onPressed: () => context.go('/home/notifications'),
               ),
             ],
           ),
@@ -343,7 +346,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             message:
                                 'Start a room and set the energy for everyone arriving now.',
                             ctaLabel: 'Start a Room',
-                            onCta: () => context.go('/create-room'),
+                            onCta: () => context.go('/rooms/create'),
                             icon: Icons.mic_rounded,
                           ),
                         )
@@ -395,7 +398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     suggestionCount: snapshot.suggestedUsers.length,
                     onOpenPulseItem: _openPulseItem,
                     onOpenRooms: () => context.go('/rooms'),
-                    onOpenDiscover: () => context.go('/search'),
+                    onOpenDiscover: () => context.go('/home/search'),
                   ),
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -413,7 +416,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ],
                     onOpenPulseItem: _openPulseItem,
                     onOpenRooms: () => context.go('/rooms'),
-                    onOpenDiscover: () => context.go('/search'),
+                    onOpenDiscover: () => context.go('/home/search'),
                   ),
                 ),
               ),
@@ -425,7 +428,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   dotColor: VelvetNoir.secondary,
                   topPadding: 24,
                   trailing: TextButton(
-                    onPressed: () => context.go('/search'),
+                    onPressed: () => context.go('/home/search'),
                     child: const Text(
                       'See all',
                       style: TextStyle(color: VelvetNoir.primary, fontSize: 13),
@@ -443,7 +446,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             message:
                                 'Explore profiles and connect with your first matches.',
                             ctaLabel: 'Find People',
-                            onCta: () => context.go('/search'),
+                            onCta: () => context.go('/home/search'),
                             icon: Icons.favorite_outline_rounded,
                           ),
                         )
@@ -508,7 +511,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             message:
                                 'Create one room to spark conversation and pull people in.',
                             ctaLabel: 'Start a Room',
-                            onCta: () => context.go('/create-room'),
+                            onCta: () => context.go('/rooms/create'),
                             icon: Icons.graphic_eq_rounded,
                           ),
                         )
@@ -642,7 +645,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       message:
                           'Share the first moment so people have something to react to.',
                       ctaLabel: 'Create a Post',
-                      onCta: () => context.go('/create-post'),
+                      onCta: () => context.go('/home/create-post'),
                       icon: Icons.edit_note_rounded,
                     ),
                   ),
@@ -798,12 +801,14 @@ class _StatsBarWidget extends StatelessWidget {
           dot: VelvetNoir.primary,
           label: onlineLabel,
           tooltip: 'online now',
+          onTap: () => context.go('/search'),
         ),
         const SizedBox(width: 6),
         _StatPill(
           dot: VelvetNoir.liveGlow,
           label: liveLabel,
           tooltip: 'live rooms',
+          onTap: () => context.go('/rooms'),
         ),
       ],
     );
@@ -814,41 +819,47 @@ class _StatPill extends StatelessWidget {
   final Color dot;
   final String label;
   final String tooltip;
+  final VoidCallback? onTap;
+
   const _StatPill({
     required this.dot,
     required this.label,
     required this.tooltip,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: VelvetNoir.surfaceHigh,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: VelvetNoir.outlineVariant),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: VelvetNoir.onSurface,
+    return GestureDetector(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: VelvetNoir.surfaceHigh,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: VelvetNoir.outlineVariant),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: VelvetNoir.onSurface,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1048,28 +1059,10 @@ class _LiveNowTile extends StatelessWidget {
                   ),
                 ),
                 // LIVE badge
-                Positioned(
+                const Positioned(
                   bottom: 0,
                   left: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: VelvetNoir.liveGlow,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'LIVE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
+                  child: MixvyLiveBadge(),
                 ),
                 // Participant count
                 if (room.memberCount > 0)
@@ -1299,25 +1292,28 @@ class _PopularRoomCard extends StatelessWidget {
                 left: 10,
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VelvetNoir.liveGlow,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        room.isLive ? 'LIVE' : 'ROOM',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                    if (room.isLive)
+                      const MixvyLiveBadge()
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: VelvetNoir.surfaceHigh,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'ROOM',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ),
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1386,7 +1382,7 @@ class _VipLoungeBanner extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
       child: GestureDetector(
-        onTap: () => context.go('/vip'),
+        onTap: () => context.go('/profile/vip'),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -1517,7 +1513,7 @@ class _ProfileNudge extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           final tab = _nudgeTab(setupItems);
-          context.go('/edit-profile?tab=$tab');
+          context.go('/profile/edit?tab=$tab');
         },
         child: Container(
           width: double.infinity,
@@ -1619,7 +1615,7 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             );
             if (!allowed || !context.mounted) return;
             Navigator.pop(context);
-            context.go('/create-post');
+            context.go('/home/create-post');
           },
         ),
         ListTile(
@@ -1638,7 +1634,7 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             );
             if (!allowed || !context.mounted) return;
             Navigator.pop(context);
-            context.go('/create-story');
+            context.go('/home/create-story');
           },
         ),
         ListTile(
@@ -1657,7 +1653,7 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             );
             if (!allowed || !context.mounted) return;
             Navigator.pop(context);
-            context.go('/create-room');
+            context.go('/rooms/create');
           },
         ),
         ListTile(
@@ -1676,7 +1672,7 @@ void _showCreateMenu(BuildContext context, WidgetRef ref) {
             );
             if (!allowed || !context.mounted) return;
             Navigator.pop(context);
-            context.go('/create-group');
+            context.go('/profile/create-group');
           },
         ),
         const SizedBox(height: 16),
@@ -1735,7 +1731,7 @@ class _BrandNavCards extends StatelessWidget {
               sub: 'Discover people',
               icon: Icons.people_alt_rounded,
               accent: VelvetNoir.primary,
-              onTap: () => context.go('/search'),
+              onTap: () => context.go('/home/search'),
             ),
             const SizedBox(width: 10),
             _NavCard(
@@ -1743,7 +1739,7 @@ class _BrandNavCards extends StatelessWidget {
               sub: 'Messages',
               icon: Icons.chat_bubble_outline_rounded,
               accent: VelvetNoir.secondaryBright,
-              onTap: () => context.go('/home?tab=1'),
+              onTap: () => context.go('/messages'),
             ),
             const SizedBox(width: 10),
             _NavCard(
@@ -1786,7 +1782,10 @@ class _NavCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        unawaited(HapticFeedback.lightImpact());
+        onTap();
+      },
       child: SizedBox(
         width: 116,
         child: Container(
