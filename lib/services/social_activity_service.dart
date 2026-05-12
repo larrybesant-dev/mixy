@@ -140,7 +140,11 @@ class SocialActivityService {
         type: 'went_live',
         targetId: event.roomId,
         occurredAt: event.timestamp,
-        metadata: const <String, dynamic>{'detail': 'Grabbed the mic'},
+        metadata: <String, dynamic>{
+          'detail': 'Grabbed the mic',
+          if ((event.roomName ?? '').trim().isNotEmpty)
+            'roomName': event.roomName!.trim(),
+        },
       );
       return;
     }
@@ -151,7 +155,11 @@ class SocialActivityService {
         type: 'went_live',
         targetId: event.roomId,
         occurredAt: event.timestamp,
-        metadata: const <String, dynamic>{'detail': 'Turned on camera'},
+        metadata: <String, dynamic>{
+          'detail': 'Turned on camera',
+          if ((event.roomName ?? '').trim().isNotEmpty)
+            'roomName': event.roomName!.trim(),
+        },
       );
     }
   }

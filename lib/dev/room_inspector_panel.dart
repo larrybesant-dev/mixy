@@ -112,7 +112,7 @@ class RoomInspectorPanel extends ConsumerWidget {
                       children: [
                         _KV('title', s.title.isEmpty ? '(empty)' : s.title),
                         _KV('message', '${s.message.length}'),
-                        _KV('participants', '${s.participants.length}'),
+                        _KV('participants', '${s.speakers.length + s.audience.length}'),
                         _KV('typing', '${s.typingUsers.length}'),
                         _KV('schema', 'v$kRoomSchemaVersion'),
                       ],

@@ -69,6 +69,12 @@ final roomDocStreamProvider = StreamProvider.autoDispose
 
 final roomMemberUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
+      // Guard: do not attempt to stream members until the room metadata is ready.
+      final roomDocValue = ref.watch(roomDocStreamProvider(roomId));
+      if (!roomDocValue.hasValue || roomDocValue.value == null) {
+        return Stream.value(const <String>[]);
+      }
+
       final firestore = ref.watch(roomFirestoreProvider);
       return traceFirestoreStream<List<String>>(
         key: 'room_members/$roomId',
@@ -244,14 +250,27 @@ List<RoomParticipantModel> _mapParticipants(
   QuerySnapshot<Map<String, dynamic>> snapshot,
 ) {
   final now = DateTime.now();
-  return snapshot.docs
+  final participants = snapshot.docs
       .map((doc) => RoomParticipantModel.fromMap(doc.data()))
       .where((participant) => _isParticipantFresh(participant, now: now))
       .toList(growable: false);
+
+  // Deduplicate by userId — ensures a user only appears once in the roster
+  final uniqueMap = <String, RoomParticipantModel>{};
+  for (final p in participants) {
+    uniqueMap[p.userId] = p;
+  }
+  return uniqueMap.values.toList(growable: false);
 }
 
 final participantsStreamProvider = StreamProvider.autoDispose
     .family<List<RoomParticipantModel>, String>((ref, roomId) {
+      // Guard: do not attempt to stream participants until the room metadata is ready.
+      final roomDocValue = ref.watch(roomDocStreamProvider(roomId));
+      if (!roomDocValue.hasValue || roomDocValue.value == null) {
+        return Stream.value(const <RoomParticipantModel>[]);
+      }
+
       final firestore = ref.watch(roomFirestoreProvider);
       return traceFirestoreStream<List<RoomParticipantModel>>(
         key: 'participants/$roomId',

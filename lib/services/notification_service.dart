@@ -4,13 +4,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/events/app_event.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
 import '../models/notification_model.dart';
 
 class NotificationService {
-  NotificationService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  NotificationService({
+    FirebaseFirestore? firestore,
+    StreamLifecycleManager? streamLifecycleManager,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _streamLifecycleManager = streamLifecycleManager;
 
   final FirebaseFirestore _firestore;
+  final StreamLifecycleManager? _streamLifecycleManager;
 
   String _asString(dynamic value, {String fallback = ''}) {
     if (value is String) {
@@ -58,20 +63,25 @@ class NotificationService {
   }
 
   Stream<List<NotificationModel>> notificationsForUser(String userId) {
-    // Limit to 50 most-recent notifications. Firestore already returns docs
-    // ordered by createdAt descending — the secondary client sort is removed
-    // (it was redundant dead code).
-    return _firestore
+    final snapshots = _firestore
         .collection('notifications')
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .limit(50)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => NotificationModel.fromJson(doc.id, doc.data()))
-              .toList(growable: false),
-        );
+        .snapshots();
+
+    final managed = _streamLifecycleManager != null
+        ? _streamLifecycleManager.bind<QuerySnapshot<Map<String, dynamic>>>(
+            key: 'notifications/$userId',
+            create: () => snapshots,
+          )
+        : snapshots;
+
+    return managed.map(
+      (snapshot) => snapshot.docs
+          .map((doc) => NotificationModel.fromJson(doc.id, doc.data()))
+          .toList(growable: false),
+    );
   }
 
   Future<void> markAllRead(String userId) async {

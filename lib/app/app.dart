@@ -606,7 +606,7 @@ class _MixVyAppState extends ConsumerState<MixVyApp>
 
     final authState = ref.watch(authControllerProvider);
     final router = ref.watch(routerProvider);
-    ref.watch(routeStateBridgeProvider);
+    ref.watch(routeStateBridgeProvider(router));
     _queueStressRunnerIfEnabled(router: router, authState: authState);
     _queueStartupLanes(authState);
 

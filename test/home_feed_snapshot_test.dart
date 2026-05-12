@@ -61,10 +61,47 @@ void main() {
       expect(snapshot.pulseItems.length, 2);
       expect(
         snapshot.pulseItems.first.title,
-        'Fresh activity from your circle',
+        'New connection made',
       );
       expect(snapshot.pulseItems[1].title, 'Velvet Lounge is hot right now');
       expect(snapshot.pulseItems[1].detail, '12 inside • 2 on mic');
+    },
+  );
+
+  test(
+    'buildSnapshot filters out raw Firestore Document IDs as room names',
+    () {
+      final snapshot = const HomeFeedService().buildSnapshot(
+        activities: [
+          SocialActivity(
+            id: 'a1',
+            userId: 'u1',
+            type: 'went_live',
+            targetId: 'zS7z8x9C0v1B2n3M4m5L', // Raw Document ID
+            timestamp: DateTime(2026, 4, 14, 22, 10),
+            metadata: {'roomName': 'zS7z8x9C0v1B2n3M4m5L'},
+          ),
+        ],
+        liveRooms: [
+          RoomModel(
+            id: 'zS7z8x9C0v1B2n3M4m5L',
+            name: '', // Empty name or will fallback to ID
+            hostId: 'host-1',
+            isLive: true,
+            memberCount: 5,
+            stageUserIds: const ['host-1'],
+            audienceUserIds: const [],
+            createdAt: Timestamp.fromDate(DateTime(2026, 4, 14, 21, 55)),
+          ),
+        ],
+        suggestedUsers: const [],
+      );
+
+      // Should fallback to 'Summer Blast Gathering'
+      expect(
+        snapshot.pulseItems.first.title,
+        'Summer Blast Gathering is active right now',
+      );
     },
   );
 

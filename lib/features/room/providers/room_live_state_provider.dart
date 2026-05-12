@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/contracts/room_contract.dart';
 import 'room_meta_state_provider.dart';
 import 'room_participants_state_provider.dart';
+import 'participant_providers.dart';
 import 'room_activity_state_provider.dart';
 import 'presence_provider.dart';
 import 'room_message_preview_state_provider.dart';
@@ -15,11 +16,14 @@ export 'package:mixvy/core/contracts/room_contract.dart'
         RoomSchemaException,
         kRoomSchemaVersion;
 
+export 'participant_providers.dart' show roomSpeakerUserIdsProvider;
+
 final roomLiveStateProvider = StreamProvider.autoDispose
     .family<RoomLiveState, String>((ref, roomId) {
       return Stream.multi((controller) {
         RoomMetaState? metaState;
         var participantsState = RoomParticipantsState(participants: []);
+        var speakerIds = const <String>[];
         var activityState = RoomActivityState(
           presence: const <RoomPresenceModel>[],
           typing: const <String, bool>{},
@@ -39,6 +43,7 @@ final roomLiveStateProvider = StreamProvider.autoDispose
               RoomLiveStateMapper.fromFirestore(
                 roomDoc: metaState!.roomDoc,
                 participants: participantsState.participants,
+                speakerIds: speakerIds,
                 presence: activityState.presence,
                 messagePreview: messagePreviewState.messagePreview,
                 typing: activityState.typing,
@@ -76,6 +81,17 @@ final roomLiveStateProvider = StreamProvider.autoDispose
               fireImmediately: true,
             );
 
+        final speakersSubscription = ref.listen<AsyncValue<List<String>>>(
+          roomSpeakerUserIdsProvider(roomId),
+          (_, next) {
+            if (next.hasValue) {
+              speakerIds = next.value!;
+              publish();
+            }
+          },
+          fireImmediately: true,
+        );
+
         final activitySubscription = ref.listen<AsyncValue<RoomActivityState>>(
           roomActivityStateProvider(roomId),
           (_, next) {
@@ -102,6 +118,7 @@ final roomLiveStateProvider = StreamProvider.autoDispose
         controller.onCancel = () {
           metaSubscription.close();
           participantsSubscription.close();
+          speakersSubscription.close();
           activitySubscription.close();
           messagePreviewSubscription.close();
         };

@@ -43,6 +43,11 @@ void main() {
 
     test('participantCountProvider returns number of participants', () async {
       final now = Timestamp.fromDate(DateTime.now());
+      await firestore.collection('rooms').doc('room-a').set({
+        'hostId': 'user-1',
+        'isLocked': false,
+      });
+
       await firestore
           .collection('rooms')
           .doc('room-a')
@@ -68,6 +73,7 @@ void main() {
 
       // participantCountProvider is a sync Provider derived from the stream;
       // await the stream first so the count is populated, then read sync.
+      await container.read(roomDocStreamProvider('room-a').future);
       await container.read(participantsStreamProvider('room-a').future);
       final count = container.read(participantCountProvider('room-a'));
 
@@ -83,7 +89,12 @@ void main() {
           now.subtract(const Duration(minutes: 5)),
         );
 
-        await firestore
+        await firestore.collection('rooms').doc('room-a').set({
+        'hostId': 'user-1',
+        'isLocked': false,
+      });
+
+      await firestore
             .collection('rooms')
             .doc('room-a')
             .collection('participants')
@@ -106,6 +117,7 @@ void main() {
               'lastActiveAt': stale,
             });
 
+        await container.read(roomDocStreamProvider('room-a').future);
         final participants = await container.read(
           participantsStreamProvider('room-a').future,
         );

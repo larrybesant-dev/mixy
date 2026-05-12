@@ -11,7 +11,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mixvy/models/moderation_model.dart';
 import 'package:mixvy/services/follow_service.dart';
 import 'package:mixvy/features/follow/providers/follow_provider.dart';
-import 'package:mixvy/services/friend_service.dart';
 import 'package:mixvy/services/moderation_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -52,7 +51,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     with SingleTickerProviderStateMixin {
   final ModerationService _moderationService = ModerationService();
   final FollowService _followService = FollowService();
-  final FriendService _friendService = FriendService();
   late Future<Map<String, dynamic>> _profileFuture;
   late TabController _tabController;
   bool _sendingFriendRequest = false;
@@ -166,7 +164,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
     setState(() => _sendingFriendRequest = true);
     try {
-      await _friendService.sendFriendRequest(currentUser.uid, widget.userId);
+      await ref.read(friendServiceProvider).sendFriendRequest(currentUser.uid, widget.userId);
       ref.invalidate(pendingOutgoingFriendRequestIdsProvider);
       ref.invalidate(currentFriendIdsProvider);
       if (!mounted) return;

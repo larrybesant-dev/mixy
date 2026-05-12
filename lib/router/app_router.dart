@@ -74,43 +74,76 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   UserModel? _currentUser;
   bool _isAdmin = false;
   bool _isAfterDarkSessionActive = false;
+  bool _isReady = false;
 
   AuthState get authState => _authState;
   UserModel? get currentUser => _currentUser;
   bool get isAdmin => _isAdmin;
   bool get isAfterDarkSessionActive => _isAfterDarkSessionActive;
+  bool get isReady => _isReady;
+
+  void init({
+    required AuthState authState,
+    required UserModel? currentUser,
+    required bool isAdmin,
+    required bool isAfterDarkSessionActive,
+  }) {
+    _authState = authState;
+    _currentUser = currentUser;
+    _isAdmin = isAdmin;
+    _isAfterDarkSessionActive = isAfterDarkSessionActive;
+  }
+
+  void markReady() {
+    if (_isReady) return;
+    _isReady = true;
+    notifyListeners();
+  }
 
   void updateAuthState(AuthState value) {
     if (_authState == value) return;
     _authState = value;
+    if (!_isReady) return;
     notifyListeners();
   }
 
   void updateCurrentUser(UserModel? value) {
     if (_currentUser == value) return;
     _currentUser = value;
+    if (!_isReady) return;
     notifyListeners();
   }
 
   void updateIsAdmin(bool value) {
     if (_isAdmin == value) return;
     _isAdmin = value;
+    if (!_isReady) return;
     notifyListeners();
   }
 
   void updateAfterDarkSession(bool value) {
     if (_isAfterDarkSessionActive == value) return;
     _isAfterDarkSessionActive = value;
+    if (!_isReady) return;
     notifyListeners();
   }
 }
 
 final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
   final notifier = _RouterRefreshNotifier();
-  ref.listen<AuthState>(authControllerProvider, (_, next) => notifier.updateAuthState(next), fireImmediately: true);
-  ref.listen<UserModel?>(userProvider, (_, next) => notifier.updateCurrentUser(next), fireImmediately: true);
-  ref.listen<AsyncValue<bool>>(isAdminProvider, (_, next) => notifier.updateIsAdmin(next.valueOrNull ?? false), fireImmediately: true);
-  ref.listen<bool>(afterDarkSessionProvider, (_, next) => notifier.updateAfterDarkSession(next), fireImmediately: true);
+
+  // Initialize with the current provider state before the router uses this notifier.
+  notifier.init(
+    authState: ref.read(authControllerProvider),
+    currentUser: ref.read(userProvider),
+    isAdmin: ref.read(isAdminProvider).valueOrNull ?? false,
+    isAfterDarkSessionActive: ref.read(afterDarkSessionProvider),
+  );
+
+  ref.listen<AuthState>(authControllerProvider, (_, next) => notifier.updateAuthState(next), fireImmediately: false);
+  ref.listen<UserModel?>(userProvider, (_, next) => notifier.updateCurrentUser(next), fireImmediately: false);
+  ref.listen<AsyncValue<bool>>(isAdminProvider, (_, next) => notifier.updateIsAdmin(next.valueOrNull ?? false), fireImmediately: false);
+  ref.listen<bool>(afterDarkSessionProvider, (_, next) => notifier.updateAfterDarkSession(next), fireImmediately: false);
   ref.onDispose(notifier.dispose);
   return notifier;
 });
@@ -118,7 +151,7 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.read(_routerRefreshNotifierProvider);
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     refreshListenable: refreshNotifier,
     initialLocation: kIsWeb ? (Uri.base.path.isEmpty ? '/' : Uri.base.path) : '/',
@@ -394,4 +427,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
     ],
   );
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!refreshNotifier.isReady) {
+      refreshNotifier.markReady();
+    }
+  });
+
+  return router;
 });

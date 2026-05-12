@@ -1,39 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../core/streams/stream_lifecycle_manager.dart';
-import 'app_router.dart';
 
 class RouteStateBridge {
-  RouteStateBridge({
-    required this.router,
-    required void Function(String route) onRouteChanged,
-  }) : _onRouteChanged = onRouteChanged {
-    _listener = _handleRouteUpdate;
-    router.routerDelegate.addListener(_listener);
-    // Schedule initial route update for next frame to ensure router is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleRouteUpdate());
+  final Ref ref;
+  final GoRouter router;
+
+  RouteStateBridge(this.ref, this.router) {
+    // This is the "Safety Gate"
+    // We wait for the first frame to complete before attaching the listener
+    // to avoid triggering updates during the initial build/layout cycle.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.routerDelegate.addListener(_listener);
+      // Also trigger initial update
+      _handleRouteUpdate();
+    });
   }
 
-  final GoRouter router;
-  final void Function(String route) _onRouteChanged;
-  late final VoidCallback _listener;
-  String? _lastRoute;
+  void _listener() {
+    _handleRouteUpdate();
+  }
 
   void _handleRouteUpdate() {
     final configuration = router.routerDelegate.currentConfiguration;
-    if (configuration.isEmpty) {
-      return;
-    }
+    if (configuration.isEmpty) return;
 
     final location = configuration.last.matchedLocation;
-    if (location == _lastRoute) {
-      return;
-    }
-
-    _lastRoute = location;
-    _onRouteChanged(location);
+    
+    // Pushes the route change into StreamLifecycleManager
+    ref.read(streamLifecycleManagerProvider).updateRoute(location);
   }
 
   void dispose() {
@@ -41,14 +37,9 @@ class RouteStateBridge {
   }
 }
 
-final routeStateBridgeProvider = Provider<RouteStateBridge>((ref) {
-  final router = ref.read(routerProvider);
-  final lifecycleManager = ref.read(streamLifecycleManagerProvider);
-  final bridge = RouteStateBridge(
-    router: router,
-    onRouteChanged: lifecycleManager.updateRoute,
-  );
-
-  ref.onDispose(bridge.dispose);
+// Provider to manage the bridge lifecycle
+final routeStateBridgeProvider = Provider.family<RouteStateBridge, GoRouter>((ref, router) {
+  final bridge = RouteStateBridge(ref, router);
+  ref.onDispose(() => bridge.dispose());
   return bridge;
 });

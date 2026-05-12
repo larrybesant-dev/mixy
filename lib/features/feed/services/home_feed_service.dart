@@ -195,9 +195,21 @@ class _RoomSignal {
     }
   }
 
+  bool _isRawDocumentId(String name) {
+    // Firestore Document IDs are typically 20 characters long and alphanumeric.
+    final idRegex = RegExp(r'^[a-zA-Z0-9]{20}$');
+    return idRegex.hasMatch(name.trim());
+  }
+
   PulseFeedItem toPulseItem() {
     final intensity =
         liveMemberCount >= 8 || onMicCount >= 2 || activityCount >= 2;
+
+    String finalRoomName = roomName;
+    if (finalRoomName == 'Live room' || _isRawDocumentId(finalRoomName)) {
+      finalRoomName = 'Summer Blast Gathering';
+    }
+
     final detail = onMicCount > 0
         ? '$liveMemberCount inside • $onMicCount on mic'
         : liveMemberCount > 0
@@ -207,7 +219,7 @@ class _RoomSignal {
     return PulseFeedItem(
       id: key,
       type: 'room_momentum',
-      title: '$roomName is ${intensity ? 'hot' : 'active'} right now',
+      title: '$finalRoomName is ${intensity ? 'hot' : 'active'} right now',
       detail: detail,
       timestamp: timestamp,
     );

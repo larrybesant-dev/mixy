@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show protected;
+import 'package:flutter/foundation.dart' show protected, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export '../../models/room_participant_model.dart'
@@ -36,6 +36,7 @@ import 'providers/host_controls_provider.dart';
 import 'providers/mic_access_provider.dart';
 import 'providers/participant_providers.dart';
 import 'providers/room_firestore_provider.dart';
+import 'providers/message_providers.dart';
 import 'repository/room_repository.dart';
 import 'providers/room_policy_provider.dart';
 import 'providers/user_cam_permissions_provider.dart';
@@ -1163,7 +1164,29 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   }) async {
     _keepAliveLink ??= ref.keepAlive();
     final normalizedUserId = userId.trim();
-    final normalizedDisplayName = displayName?.trim() ?? '';
+    var normalizedDisplayName = displayName?.trim() ?? '';
+    
+    // Identity Correction: If username is raw/anonymous, fetch actual profile before join
+    if (_isPlaceholderDisplayName(normalizedDisplayName) && normalizedUserId.isNotEmpty) {
+      try {
+        final profile = await ref.read(roomRepositoryProvider).loadUserLookup([normalizedUserId]);
+        final actualName = profile[normalizedUserId]?.profileUsername;
+        if (actualName != null && actualName.isNotEmpty) {
+          normalizedDisplayName = actualName;
+          debugPrint('LOG: [Web] Corrected join username from $displayName to $normalizedDisplayName');
+        }
+      } catch (e) {
+        debugPrint('LOG: [Web] Profile fetch failed during join: $e');
+      }
+    }
+
+    // Guard: ignore redundant join if already joined/joining for this user
+    if (_currentUserId == normalizedUserId && (_phase == LiveRoomPhase.joined || _phase == LiveRoomPhase.joining)) {
+      return RoomJoinResult.success(
+        joinedAt: _joinedAt ?? DateTime.now(),
+        excludedUserIds: _excludedUserIds,
+      );
+    }
 
     // Kill switch check. During dependency churn, ref.read may assert that
     // this provider is outdated; in that brief window, treat rooms as enabled
@@ -1241,14 +1264,20 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       ),
     );
 
+    final firestore = ref.read(roomFirestoreProvider);
     RoomJoinResult result;
     try {
-      result = await _sessionService.joinRoom(
-        roomId: arg,
-        userId: normalizedUserId,
-        displayName: normalizedDisplayName,
-        photoUrl: avatarUrl,
-      );
+      // Hardening: Own the transaction at the controller level to ensure
+      // atomic join sequence and roster integrity.
+      result = await firestore.runTransaction((transaction) async {
+        return await _sessionService.joinRoom(
+          roomId: arg,
+          userId: normalizedUserId,
+          displayName: normalizedDisplayName,
+          photoUrl: avatarUrl,
+          transaction: transaction,
+        );
+      });
     } catch (error) {
       final info = parseFirestoreError(error);
       final message = info.isPermissionOrAuth
@@ -1418,7 +1447,16 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         sessionId == null ||
         _isSessionOwner(roomId: arg, userId: userId, sessionId: sessionId);
     if (ownsSession) {
-      await _sessionService.leaveRoom(roomId: arg, userId: userId);
+      final firestore = ref.read(roomFirestoreProvider);
+      // Hardening: Use transaction to ensure memberCount is perfectly
+      // synchronized with audience/stage arrays during leave.
+      await firestore.runTransaction((transaction) async {
+        await _sessionService.leaveRoom(
+          roomId: arg,
+          userId: userId,
+          transaction: transaction,
+        );
+      });
     }
 
     // Hardening: Clear persisted room session on clean exit
@@ -1488,6 +1526,12 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   Future<void> setSpotlightUser(String? userId) {
     return _sessionService.setSpotlightUser(roomId: arg, userId: userId);
+  }
+
+  Future<void> sendMessage(String content) async {
+    final normalized = content.trim();
+    if (normalized.isEmpty) return;
+    await ref.read(sendMessageProvider(arg))(normalized);
   }
 
   Future<MicRequestResult> requestMic({required String userId}) async {
@@ -1870,6 +1914,34 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   Future<void> expireMicRequest(String requestId) async {
     await _requireStageAuthority();
     return _micAccess.expireNow(arg, requestId);
+  }
+
+  Future<void> dropFromMic(String targetUserId) async {
+    final normalizedTargetUserId = targetUserId.trim();
+    if (normalizedTargetUserId.isEmpty) return;
+    await _requireStageAuthority();
+    await _roomRepository.dropFromMic(
+      roomId: arg,
+      userId: normalizedTargetUserId,
+      actorId: _actorUserId,
+    );
+    _logModerationAction('drop_from_mic', targetUserId: normalizedTargetUserId);
+  }
+
+  Future<void> muteUserToggle(String userId, bool muted) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return;
+    await _requireModerationAuthority();
+    await _roomRepository.muteParticipant(
+      roomId: arg,
+      userId: normalizedUserId,
+      muted: muted,
+      actorId: _actorUserId,
+    );
+    _logModerationAction(
+      muted ? 'mute_user' : 'unmute_user',
+      targetUserId: normalizedUserId,
+    );
   }
 
   Future<void> endRoom() async {

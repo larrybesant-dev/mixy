@@ -66,10 +66,11 @@ class _FlakyRoomSessionService extends RoomSessionService {
 
   @override
   Future<RoomJoinResult> joinRoom({
-    required String roomId,
-    required String userId,
     String? displayName,
     String? photoUrl,
+    required String roomId,
+    Transaction? transaction, // Add this line!
+    required String userId,
   }) async {
     if (joinFailuresRemaining > 0) {
       joinFailuresRemaining -= 1;

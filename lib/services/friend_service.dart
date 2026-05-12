@@ -21,6 +21,7 @@ class FriendService {
     ModerationService? moderationService,
     PresenceRepository? presenceRepository,
     SchemaMutationService? mutationService,
+    required StreamLifecycleManager streamLifecycleManager,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _analyticsService = analyticsService ?? AnalyticsService(),
        _moderationService =
@@ -30,10 +31,13 @@ class FriendService {
            ),
        _presenceRepository =
            presenceRepository ??
-           FirestorePresenceRepository(firestore ?? FirebaseFirestore.instance),
+           FirestorePresenceRepository(
+             firestore ?? FirebaseFirestore.instance,
+             streamLifecycleManager: streamLifecycleManager,
+           ),
        _mutationService =
            mutationService ?? SchemaMutationService(firestore: firestore),
-       _streamLifecycleManager = StreamLifecycleManager.instance;
+       _streamLifecycleManager = streamLifecycleManager;
 
   static const int _firestoreWhereInLimit = 30;
 

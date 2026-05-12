@@ -11,8 +11,39 @@ import 'package:mixvy/services/presence_controller.dart';
 import 'package:mixvy/services/presence_repository.dart';
 import 'package:mixvy/services/presence_service.dart';
 import 'package:mixvy/services/rtdb_presence_service.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 
 import 'test_helpers.dart';
+
+class _FakeLifecycle extends ChangeNotifier implements StreamLifecycleManager {
+  @override
+  String buildDedupeKey({
+    required String domain,
+    String? userId,
+    String? route,
+    String? queryHash,
+  }) {
+    return '$domain|$userId';
+  }
+
+  @override
+  Stream<T> bind<T>({
+    required String key,
+    required Stream<T> Function() create,
+    List<String> routePrefixes = const <String>[],
+  }) {
+    return create();
+  }
+
+  @override
+  String get currentRoutePath => '/';
+
+  @override
+  bool isRouteActive(List<String> routePrefixes) => true;
+
+  @override
+  void updateRoute(String routePath) {}
+}
 
 class _MockFirebaseDatabase extends Mock implements FirebaseDatabase {}
 
@@ -121,7 +152,10 @@ void main() {
       'reads presence snapshots through PresenceModel normalization',
       () async {
         final firestore = FakeFirebaseFirestore();
-        final service = PresenceService(firestore: firestore);
+        final service = PresenceService(
+          firestore: firestore,
+          streamLifecycleManager: _FakeLifecycle(),
+        );
         await firestore.collection('users').doc('placeholder').set({
           'ok': true,
         });
@@ -145,7 +179,10 @@ void main() {
       'holds recent online presence through a transient offline flip',
       () async {
         final firestore = FakeFirebaseFirestore();
-        final repository = FirestorePresenceRepository(firestore);
+        final repository = FirestorePresenceRepository(
+          firestore,
+          streamLifecycleManager: _FakeLifecycle(),
+        );
         final emissions = <PresenceModel>[];
 
         final sub = repository

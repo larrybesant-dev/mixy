@@ -23,6 +23,7 @@ class RoomModel {
   final List<String> tags;
   final List<String> coHosts;
   final bool isLocked;
+  final bool allowGuestAccess;
   final int? slowModeSeconds;
   final int maxBroadcasters;
 
@@ -58,6 +59,7 @@ class RoomModel {
     this.tags = const [],
     this.coHosts = const [],
     this.isLocked = false,
+    this.allowGuestAccess = true,
     this.slowModeSeconds,
     this.maxBroadcasters = 4,
     this.scheduledAt,
@@ -145,6 +147,7 @@ class RoomModel {
       tags: _asStringList(json['tags']),
       coHosts: _asStringList(json['coHosts']),
       isLocked: _asBool(json['isLocked']),
+      allowGuestAccess: _asBool(json['allowGuestAccess'], fallback: true),
       slowModeSeconds: json['slowModeSeconds'] is num
           ? (json['slowModeSeconds'] as num).toInt()
           : null,
@@ -182,6 +185,7 @@ class RoomModel {
       'tags': tags,
       'coHosts': coHosts,
       'isLocked': isLocked,
+      'allowGuestAccess': allowGuestAccess,
       'slowModeSeconds': slowModeSeconds,
       'maxBroadcasters': maxBroadcasters,
       'scheduledAt': scheduledAt,
@@ -211,6 +215,7 @@ class RoomModel {
     List<String>? tags,
     List<String>? coHosts,
     bool? isLocked,
+    bool? allowGuestAccess,
     int? slowModeSeconds,
     int? maxBroadcasters,
     Timestamp? scheduledAt,
@@ -238,6 +243,7 @@ class RoomModel {
       tags: tags ?? this.tags,
       coHosts: coHosts ?? this.coHosts,
       isLocked: isLocked ?? this.isLocked,
+      allowGuestAccess: allowGuestAccess ?? this.allowGuestAccess,
       slowModeSeconds: slowModeSeconds ?? this.slowModeSeconds,
       maxBroadcasters: maxBroadcasters ?? this.maxBroadcasters,
       scheduledAt: scheduledAt ?? this.scheduledAt,

@@ -27,9 +27,8 @@ final presenceRepositoryProvider = Provider<PresenceRepository>((ref) {
 class FirestorePresenceRepository implements PresenceRepository {
   FirestorePresenceRepository(
     this._firestore, {
-    StreamLifecycleManager? streamLifecycleManager,
-  }) : _streamLifecycleManager =
-           streamLifecycleManager ?? StreamLifecycleManager.instance;
+    required StreamLifecycleManager streamLifecycleManager,
+  }) : _streamLifecycleManager = streamLifecycleManager;
 
   static const int _firestoreWhereInLimit = 30;
   static const Duration _transientOfflineHold = Duration(seconds: 8);

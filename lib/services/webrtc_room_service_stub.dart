@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'rtc_room_service.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
 
 /// Non-web stub for [WebRtcRoomService].
 ///
@@ -12,6 +13,7 @@ class WebRtcRoomService extends RtcRoomService {
   WebRtcRoomService({
     required FirebaseFirestore firestore,
     required String localUserId,
+    required StreamLifecycleManager streamLifecycleManager,
     int maxMeshPeers = 6,
     List<Map<String, dynamic>>? iceServers,
   });

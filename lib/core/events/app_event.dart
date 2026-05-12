@@ -146,11 +146,13 @@ class MicStateChangedEvent extends AppEvent {
     required this.userId,
     required this.roomId,
     required this.isSpeaker,
+    this.roomName,
   });
 
   final String userId;
   final String roomId;
   final bool isSpeaker;
+  final String? roomName;
 
   @override
   String get defaultSessionId =>
@@ -171,11 +173,13 @@ class CameraStateChangedEvent extends AppEvent {
     required this.userId,
     required this.roomId,
     required this.isCameraOn,
+    this.roomName,
   });
 
   final String userId;
   final String roomId;
   final bool isCameraOn;
+  final String? roomName;
 
   @override
   String get defaultSessionId =>

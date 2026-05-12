@@ -56,7 +56,8 @@ service cloud.firestore {
     }
 
     function roomAllowsGuest(roomData) {
-      return ('allowGuestAccess' in roomData && roomData.allowGuestAccess == true);
+      return !('isAdult' in roomData && roomData.isAdult == true)
+        && (!('allowGuestAccess' in roomData) || roomData.allowGuestAccess == true);
     }
 
     function roomReadableByRequester(roomData) {
@@ -444,10 +445,15 @@ service cloud.firestore {
 
       // Participant roster
       match /participants/{participantId} {
-        allow read: if canReadRoomById(roomId);
+        // Relax read access: if you can read the room, you can see who is in it.
+        // This avoids race conditions where a user joining cannot see the roster
+        // until their own participant doc is committed.
+        allow read: if roomReadableByRequester(roomDoc(roomId).data);
 
         // Self-only participant heartbeat/mic state updates.
-        // Role elevation is blocked client-side to prevent spoofing.
+        // Explicitly allow owner to update their own participant state.
+        allow update: if signedIn() && (participantId == uid() || isSelf(participantId));
+
         allow create: if signedIn()
           && participantId == uid()
           && canReadRoomById(roomId)
@@ -513,7 +519,7 @@ service cloud.firestore {
       }
 
       match /members/{memberId} {
-        allow read: if canReadRoomById(roomId);
+        allow read: if roomReadableByRequester(roomDoc(roomId).data);
         allow create, update: if signedIn()
           && memberId == uid()
           && canReadRoomById(roomId)
@@ -532,7 +538,7 @@ service cloud.firestore {
 
       // WebRTC peer presence
       match /webrtc_peers/{peerId} {
-        allow read: if canReadRoomById(roomId);
+        allow read: if roomReadableByRequester(roomDoc(roomId).data);
         allow create, update: if signedIn()
           && peerId == uid()
           && canReadRoomById(roomId)
@@ -666,7 +672,7 @@ service cloud.firestore {
 
       match /speakers/{speakerId} {
         // Explicitly server-only to prevent role/mic spoofing.
-        allow read: if canReadRoomById(roomId);
+        allow read: if roomReadableByRequester(roomDoc(roomId).data);
         allow create, update, delete: if false;
       }
 

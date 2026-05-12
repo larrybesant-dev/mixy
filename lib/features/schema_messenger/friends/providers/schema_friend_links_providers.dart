@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/services/friend_service.dart';
 
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/streams/stream_lifecycle_manager.dart';
 import '../../../../services/presence_repository.dart';
 import '../../../friends/providers/friends_providers.dart'
     show rawAllFriendshipsStreamProvider;
@@ -233,6 +234,9 @@ class SchemaFriendLinksController {
 final schemaFriendLinksControllerProvider =
     Provider<SchemaFriendLinksController>((ref) {
       return SchemaFriendLinksController(
-        FriendService(firestore: ref.watch(schemaFriendFirestoreProvider)),
+        FriendService(
+          firestore: ref.watch(schemaFriendFirestoreProvider),
+          streamLifecycleManager: ref.watch(streamLifecycleManagerProvider),
+        ),
       );
     });

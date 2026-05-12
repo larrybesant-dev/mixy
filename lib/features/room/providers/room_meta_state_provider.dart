@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'participant_providers.dart';
 
@@ -17,6 +18,9 @@ final roomMetaStateProvider = StreamProvider.autoDispose
             // Only emit when we have a terminal state (data or error).
             // Initial loading should remain in AsyncLoading.
             if (next.hasValue) {
+              if (next.value == null) {
+                debugPrint('[RoomMetaState] Warning: Room document for $roomId is null (not found).');
+              }
               controller.add(RoomMetaState(roomDoc: next.value));
             } else if (next.hasError) {
               controller.addError(next.error!, next.stackTrace!);

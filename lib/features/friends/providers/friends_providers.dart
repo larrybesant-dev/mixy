@@ -7,6 +7,7 @@ import '../../../presentation/providers/user_provider.dart';
 import '../../../services/friend_service.dart';
 import '../../../services/presence_repository.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../core/streams/stream_lifecycle_manager.dart';
 import '../models/friend_roster_entry.dart';
 import '../models/friendship_model.dart';
 
@@ -14,7 +15,10 @@ import '../models/friendship_model.dart';
 final friendFirestoreProvider = firestoreProvider;
 
 final friendServiceProvider = Provider<FriendService>((ref) {
-  return FriendService(firestore: ref.watch(friendFirestoreProvider));
+  return FriendService(
+    firestore: ref.watch(friendFirestoreProvider),
+    streamLifecycleManager: ref.watch(streamLifecycleManagerProvider),
+  );
 });
 
 final currentFriendUserIdProvider = Provider<String?>((ref) {

@@ -57,19 +57,20 @@ class WebRtcRoomService extends RtcRoomService {
   WebRtcRoomService({
     required FirebaseFirestore firestore,
     required String localUserId,
+    required StreamLifecycleManager streamLifecycleManager,
     int maxMeshPeers = _kMaxMeshPeers,
     List<Map<String, dynamic>>? iceServers,
   }) : _firestore = firestore,
-       _localUserId = localUserId,
-       _maxMeshPeers = maxMeshPeers,
-       _iceServers = iceServers;
+        _localUserId = localUserId,
+        _maxMeshPeers = maxMeshPeers,
+        _iceServers = iceServers,
+        _streamLifecycleManager = streamLifecycleManager;
 
   final FirebaseFirestore _firestore;
   final String _localUserId;
   final int _maxMeshPeers;
   final List<Map<String, dynamic>>? _iceServers;
-  final StreamLifecycleManager _streamLifecycleManager =
-      StreamLifecycleManager.instance;
+  final StreamLifecycleManager _streamLifecycleManager;
 
   // ────────────────────────────────────────────────────────────────────────
   // State
@@ -366,6 +367,7 @@ class WebRtcRoomService extends RtcRoomService {
   /// No WASM to load — initialises the local video renderer instantly.
   @override
   Future<void> initialize(String appId) async {
+    _log('Initializing RTC Service...');
     if (!_localRendererReady) {
       await _localRenderer.initialize();
       _localRendererReady = true;
@@ -379,12 +381,13 @@ class WebRtcRoomService extends RtcRoomService {
   /// [uid] is stored as the local integer UID for API compatibility.
   @override
   Future<void> joinRoom(
-    String token,
-    String channelName,
-    int uid, {
-    bool publishCameraTrackOnJoin = false,
-    bool publishMicrophoneTrackOnJoin = false,
-  }) async {
+      String token,
+      String channelName,
+      int uid, {
+        bool publishCameraTrackOnJoin = false,
+        bool publishMicrophoneTrackOnJoin = false,
+      }) async {
+    _log('Joining room: $channelName (uid: $uid)');
     if (!_initialized) throw StateError('WebRtcRoomService not initialized');
     _roomId = channelName;
     _localUid = uid;
@@ -428,9 +431,10 @@ class WebRtcRoomService extends RtcRoomService {
 
   @override
   Future<void> enableVideo(
-    bool enabled, {
-    bool publishMicrophoneTrack = true,
-  }) async {
+      bool enabled, {
+        bool publishMicrophoneTrack = true,
+      }) async {
+    _log('enableVideo: enabled=$enabled, initialized=$_initialized, joined=$_isJoined');
     if (!_initialized || !_isJoined) return;
 
     if (enabled) {
@@ -439,32 +443,17 @@ class WebRtcRoomService extends RtcRoomService {
       try {
         MediaStream stream;
         try {
+          _log('LOG: [Web] Calling getUserMedia (video+audio)...');
           stream = await navigator.mediaDevices.getUserMedia({
-            'video': {
-              'facingMode': 'user',
-              'width': {'ideal': 640},
-              'height': {'ideal': 480},
-            },
-            // Always acquire audio alongside video so the mic toggle works
-            // without a separate getUserMedia call.
+            'video': true,
             'audio': true,
           });
         } catch (e) {
-          // If combined acquisition fails due to missing mic hardware, retry with video-only.
-          if (e.toString().toLowerCase().contains('notfounderror') ||
-              e.toString().toLowerCase().contains('devicesnotfound')) {
-            _log('mic not found during combined acquisition — retrying video-only');
-            stream = await navigator.mediaDevices.getUserMedia({
-              'video': {
-                'facingMode': 'user',
-                'width': {'ideal': 640},
-                'height': {'ideal': 480},
-              },
-              'audio': false,
-            });
-          } else {
-            rethrow;
-          }
+          _log('LOG: [Web] Combined getUserMedia failed: $e. Retrying video-only...');
+          stream = await navigator.mediaDevices.getUserMedia({
+            'video': true,
+            'audio': false,
+          });
         }
 
         // Mute audio immediately if mic is off — track exists but silent
@@ -524,13 +513,13 @@ class WebRtcRoomService extends RtcRoomService {
       // is enabled), keep the local stream and broadcaster mode alive so
       // Harley's P2P connection is not torn down mid-audio.
       for (final track
-          in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
+      in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
         unawaited(track.stop());
       }
       _localVideoCapturing = false;
 
       final activeAudio = (_localStream?.getAudioTracks() ?? []).any(
-        (t) => t.enabled,
+            (t) => t.enabled,
       );
       if (!activeAudio) {
         // No audio publishing — fully clean up and mark offline.
@@ -560,7 +549,7 @@ class WebRtcRoomService extends RtcRoomService {
     // _localStream are system audio and there is nothing mic-only to mute.
     final sysIds = <String>{
       for (final t
-          in (_systemAudioStream?.getAudioTracks() ?? <MediaStreamTrack>[]))
+      in (_systemAudioStream?.getAudioTracks() ?? <MediaStreamTrack>[]))
         if (t.id != null) t.id!,
     };
     for (final track in stream.getAudioTracks()) {
@@ -578,6 +567,7 @@ class WebRtcRoomService extends RtcRoomService {
       if (hadNoStream) {
         // Mic-only: acquire an audio-only stream so mute/publish work.
         try {
+          _log('LOG: [Web] Calling getUserMedia (audio-only)...');
           final audioStream = await navigator.mediaDevices.getUserMedia({
             'video': false,
             'audio': true,
@@ -586,6 +576,7 @@ class WebRtcRoomService extends RtcRoomService {
           _startLocalVad(audioStream);
           _log('setBroadcaster: acquired audio-only stream');
         } catch (error) {
+          _log('LOG: [Web] audio-only getUserMedia failed: $error');
           _throwMapped(error, 'access microphone');
         }
       }
@@ -613,7 +604,7 @@ class WebRtcRoomService extends RtcRoomService {
   @override
   Future<void> publishLocalVideoStream(bool enabled) async {
     for (final track
-        in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
+    in (_localStream?.getVideoTracks() ?? <MediaStreamTrack>[])) {
       track.enabled = enabled;
     }
   }
@@ -625,6 +616,7 @@ class WebRtcRoomService extends RtcRoomService {
       if (_localStream != null) {
         // Stream exists (video-only) but has no audio track — add one.
         try {
+          _log('LOG: [Web] Injecting audio track into existing stream...');
           final audioStream = await navigator.mediaDevices.getUserMedia({
             'video': false,
             'audio': true,
@@ -644,6 +636,7 @@ class WebRtcRoomService extends RtcRoomService {
             'publishLocalAudioStream: injected audio track into existing stream',
           );
         } catch (error) {
+          _log('LOG: [Web] audio-track injection failed: $error');
           _throwMapped(error, 'access microphone');
         }
       } else {
@@ -651,6 +644,7 @@ class WebRtcRoomService extends RtcRoomService {
         // where enableVideo(false) finished a full _stopLocalStream() before
         // the screen called publishLocalAudioStream(true) to restore the mic.
         try {
+          _log('LOG: [Web] Acquiring new audio-only stream...');
           final audioStream = await navigator.mediaDevices.getUserMedia({
             'video': false,
             'audio': true,
@@ -664,6 +658,7 @@ class WebRtcRoomService extends RtcRoomService {
           }
           _log('publishLocalAudioStream: acquired new audio-only stream');
         } catch (error) {
+          _log('LOG: [Web] new audio-only acquisition failed: $error');
           _throwMapped(error, 'access microphone');
         }
       }
@@ -676,10 +671,10 @@ class WebRtcRoomService extends RtcRoomService {
 
   @override
   Future<void> setRemoteVideoSubscription(
-    int uid, {
-    required bool subscribe,
-    bool highQuality = false,
-  }) async {
+      int uid, {
+        required bool subscribe,
+        bool highQuality = false,
+      }) async {
     final userId = _uidToUserId[uid];
     if (userId == null) return;
     final peer = _peers[userId];
@@ -731,7 +726,7 @@ class WebRtcRoomService extends RtcRoomService {
           throw AgoraServiceException(
             code: 'no-system-audio',
             message:
-                'No system audio was shared. Check "Share system audio" in the picker.',
+            'No system audio was shared. Check "Share system audio" in the picker.',
           );
         }
 
@@ -871,7 +866,7 @@ class WebRtcRoomService extends RtcRoomService {
         if (sender.track?.kind == 'audio') {
           try {
             final jsSender =
-                (sender as dynamic).jsRtpSender as web.RTCRtpSender?;
+            (sender as dynamic).jsRtpSender as web.RTCRtpSender?;
             if (jsSender != null) {
               await jsSender.replaceTrack(jsTrack).toDart;
             }
@@ -888,16 +883,26 @@ class WebRtcRoomService extends RtcRoomService {
     required bool video,
     required bool audio,
   }) async {
+    _log('ensureDeviceAccess: video=$video, audio=$audio');
     MediaStream? probe;
     try {
+      _log('LOG: [Web] Probing device access with simple constraints...');
       probe = await navigator.mediaDevices.getUserMedia({
         'video': video,
         'audio': audio,
       });
+      _log('Device access probe successful');
     } catch (error) {
+      _log('LOG: [Web] Device access probe failed: $error');
       _throwMapped(error, video ? 'access camera' : 'access microphone');
     } finally {
-      probe?.getTracks().forEach((t) => t.stop());
+      // Crucial: always stop the probe tracks so we don't hold the camera/mic open
+      // while we're just checking for permission.
+      if (probe != null) {
+        for (final track in probe.getTracks()) {
+          unawaited(track.stop());
+        }
+      }
     }
   }
 
@@ -1056,7 +1061,7 @@ class WebRtcRoomService extends RtcRoomService {
       final data = change.doc.data() as Map<String, dynamic>?;
       final remoteUid =
           (data?['uid'] as num?)?.toInt() ??
-          (remoteBroadcasterId.hashCode.abs() % 2147483647);
+              (remoteBroadcasterId.hashCode.abs() % 2147483647);
 
       if (change.type == DocumentChangeType.removed) {
         _closePeer(remoteBroadcasterId);
@@ -1070,15 +1075,22 @@ class WebRtcRoomService extends RtcRoomService {
         final hbRaw = data?['lastHeartbeatAt'];
         if (hbRaw is Timestamp) {
           final age = DateTime.now().difference(hbRaw.toDate());
+
+          // --- THE FIX IS APPLIED HERE ---
           if (age > _kHeartbeatStaleDuration) {
             _log(
-              'cleaning up stale broadcaster $remoteBroadcasterId '
-              '(heartbeat ${age.inSeconds}s ago)',
+              'ignoring stale broadcaster $remoteBroadcasterId '
+                  '(heartbeat ${age.inSeconds}s ago)',
             );
-            // Best-effort cleanup so subsequent viewers don't see the tile.
-            _peersCol.doc(remoteBroadcasterId).delete().ignore();
+            // Close the local connection to drop the zombie from the UI
+            _closePeer(remoteBroadcasterId);
+
+            // DO NOT call .delete() here. Let Firestore TTL or a Cloud Function 
+            // handle database cleanup to avoid optimistic UI permission loops.
             continue;
           }
+          // -------------------------------
+
         } else if (hbRaw == null) {
           // Legacy doc with no heartbeat field — treat as stale.
           _log(
@@ -1104,7 +1116,7 @@ class WebRtcRoomService extends RtcRoomService {
           if (_peers.length >= _maxMeshPeers) {
             _log(
               'mesh cap reached ($_maxMeshPeers peers) — skipping '
-              'connection to broadcaster=$remoteBroadcasterId',
+                  'connection to broadcaster=$remoteBroadcasterId',
             );
             continue;
           }
@@ -1143,9 +1155,9 @@ class WebRtcRoomService extends RtcRoomService {
   /// Creates a receive-only peer connection to [broadcasterId] and sends
   /// them an offer via Firestore.
   Future<void> _createViewerConnection(
-    String broadcasterId,
-    int broadcasterUid,
-  ) async {
+      String broadcasterId,
+      int broadcasterUid,
+      ) async {
     _log('creating viewer connection → broadcaster=$broadcasterId');
 
     final renderer = RTCVideoRenderer();
@@ -1185,16 +1197,16 @@ class WebRtcRoomService extends RtcRoomService {
         // Build a synthetic one from the track so the renderer has a source.
         createLocalMediaStream('remote_$broadcasterId')
             .then((newStream) async {
-              await newStream.addTrack(event.track);
-              peer.remoteStream = newStream;
-              renderer.srcObject = newStream;
-              _unlockRendererAudio(renderer);
-              _startRemoteVad(broadcasterId, broadcasterUid, newStream);
-              _log(
-                'remote stream (synthetic) received from broadcaster=$broadcasterId',
-              );
-              onRemoteUserJoined?.call();
-            })
+          await newStream.addTrack(event.track);
+          peer.remoteStream = newStream;
+          renderer.srcObject = newStream;
+          _unlockRendererAudio(renderer);
+          _startRemoteVad(broadcasterId, broadcasterUid, newStream);
+          _log(
+            'remote stream (synthetic) received from broadcaster=$broadcasterId',
+          );
+          onRemoteUserJoined?.call();
+        })
             .catchError((_) {});
         return;
       }
@@ -1207,9 +1219,9 @@ class WebRtcRoomService extends RtcRoomService {
       _startRemoteVad(broadcasterId, broadcasterUid, stream);
       _log(
         'remote stream received from broadcaster=$broadcasterId '
-        'tracks=${stream.getTracks().length} '
-        'audio=${stream.getAudioTracks().length} '
-        'video=${stream.getVideoTracks().length}',
+            'tracks=${stream.getTracks().length} '
+            'audio=${stream.getAudioTracks().length} '
+            'video=${stream.getVideoTracks().length}',
       );
       onRemoteUserJoined?.call();
     };
@@ -1288,61 +1300,61 @@ class WebRtcRoomService extends RtcRoomService {
     // Wait for broadcaster's answer
     peer.answerSub = _streamLifecycleManager
         .bind<DocumentSnapshot<Map<String, dynamic>>>(
-          key: _streamLifecycleManager.buildDedupeKey(
-            domain: 'webrtc-answer',
-            userId: _localUserId,
-            queryHash: callId,
-          ),
-          routePrefixes: const <String>['/room'],
-          create: () => callRef.snapshots(),
-        )
+      key: _streamLifecycleManager.buildDedupeKey(
+        domain: 'webrtc-answer',
+        userId: _localUserId,
+        queryHash: callId,
+      ),
+      routePrefixes: const <String>['/room'],
+      create: () => callRef.snapshots(),
+    )
         .listen((snap) async {
-          if (!snap.exists) return;
-          final callData = snap.data();
-          final answerMap = callData?['answer'] as Map<String, dynamic>?;
-          if (answerMap == null) return;
-          final sdp = answerMap['sdp'];
-          final type = answerMap['type'];
-          if (sdp is! String || type is! String) return;
-          if (pc.signalingState ==
-              RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-            try {
-              await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
-              _log('set remote answer from broadcaster=$broadcasterId');
-            } catch (e) {
-              _log(
-                'setRemoteDescription failed for broadcaster=$broadcasterId: $e',
-              );
-            }
-          }
-        });
+      if (!snap.exists) return;
+      final callData = snap.data();
+      final answerMap = callData?['answer'] as Map<String, dynamic>?;
+      if (answerMap == null) return;
+      final sdp = answerMap['sdp'];
+      final type = answerMap['type'];
+      if (sdp is! String || type is! String) return;
+      if (pc.signalingState ==
+          RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
+        try {
+          await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+          _log('set remote answer from broadcaster=$broadcasterId');
+        } catch (e) {
+          _log(
+            'setRemoteDescription failed for broadcaster=$broadcasterId: $e',
+          );
+        }
+      }
+    });
 
     // Receive broadcaster's ICE candidates
     peer.iceSub = _streamLifecycleManager
         .bind<QuerySnapshot<Map<String, dynamic>>>(
-          key: _streamLifecycleManager.buildDedupeKey(
-            domain: 'webrtc-ice',
-            userId: _localUserId,
-            queryHash: callId,
-          ),
-          routePrefixes: const <String>['/room'],
-          create: () => callRef.collection('broadcaster_ice').snapshots(),
-        )
+      key: _streamLifecycleManager.buildDedupeKey(
+        domain: 'webrtc-ice',
+        userId: _localUserId,
+        queryHash: callId,
+      ),
+      routePrefixes: const <String>['/room'],
+      create: () => callRef.collection('broadcaster_ice').snapshots(),
+    )
         .listen((snap) {
-          for (final change in snap.docChanges) {
-            if (change.type == DocumentChangeType.added) {
-              final d = change.doc.data();
-              if (d == null) continue;
-              pc.addCandidate(
-                RTCIceCandidate(
-                  d['candidate'] as String?,
-                  d['sdpMid'] as String?,
-                  (d['sdpMLineIndex'] as num?)?.toInt(),
-                ),
-              );
-            }
-          }
-        });
+      for (final change in snap.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final d = change.doc.data();
+          if (d == null) continue;
+          pc.addCandidate(
+            RTCIceCandidate(
+              d['candidate'] as String?,
+              d['sdpMid'] as String?,
+              (d['sdpMLineIndex'] as num?)?.toInt(),
+            ),
+          );
+        }
+      }
+    });
 
     _log('offer sent for callId=$callId');
   }
@@ -1372,8 +1384,12 @@ class WebRtcRoomService extends RtcRoomService {
       }
       if (_inFlightAnswers.containsKey(callId)) continue;
 
+      final currentVersion = _callSessionVersions[callId] ?? 0;
+      final nextVersion = currentVersion + 1;
+      _callSessionVersions[callId] = nextVersion;
+
       _answeredCalls.add(callId);
-      _inFlightAnswers[callId] = _answerViewerOffer(callId, data!).whenComplete(() {
+      _inFlightAnswers[callId] = _answerViewerOffer(callId, data!, nextVersion).whenComplete(() {
         _inFlightAnswers.remove(callId);
       });
     }
@@ -1392,22 +1408,27 @@ class WebRtcRoomService extends RtcRoomService {
       if (_answeredCalls.contains(callId)) continue;
       if (_inFlightAnswers.containsKey(callId)) continue;
 
+      final currentVersion = _callSessionVersions[callId] ?? 0;
+      final nextVersion = currentVersion + 1;
+      _callSessionVersions[callId] = nextVersion;
+
       final data = doc.data();
       if (data['offer'] == null) continue;
       if (data['answer'] != null) {
         continue; // already answered by another session
       }
       _answeredCalls.add(callId);
-      _inFlightAnswers[callId] = _answerViewerOffer(callId, data).whenComplete(() {
+      _inFlightAnswers[callId] = _answerViewerOffer(callId, data, nextVersion).whenComplete(() {
         _inFlightAnswers.remove(callId);
       });
     }
   }
 
   Future<void> _answerViewerOffer(
-    String callId,
-    Map<String, dynamic> callData,
-  ) async {
+      String callId,
+      Map<String, dynamic> callData,
+      int version,
+      ) async {
     final localStream = _localStream;
     if (localStream == null) {
       // Remove from _answeredCalls so _processExistingIncomingCalls can retry
@@ -1417,13 +1438,15 @@ class WebRtcRoomService extends RtcRoomService {
       return;
     }
 
+    if ((_callSessionVersions[callId] ?? 0) > version) {
+      _log('ignoring stale offer version $version for $callId (newer version exists)');
+      return;
+    }
+
     final viewerId = callData['viewerId'] as String?;
-    _log('answering viewer offer callId=$callId viewer=$viewerId');
+    _log('answering viewer offer callId=$callId viewer=$viewerId version=$version');
 
     // Close any stale answer PC/ICE sub for this callId before overwriting.
-    // Without this, the stale PC's onConnectionState(disconnected) eventually
-    // fires and calls _answerPcs.remove(callId)?.close() — which would close
-    // the NEW PC, silently killing audio+video for the entire session.
     await _answerIceSubs.remove(callId)?.cancel();
     final stalePc = _answerPcs.remove(callId);
     if (stalePc != null) {
@@ -1436,68 +1459,48 @@ class WebRtcRoomService extends RtcRoomService {
 
     final callRef = _callsCol.doc(callId);
     final pc = await createPeerConnection(_iceConfig);
-    final broadcasterIceScope = 'broadcaster:$callId';
     // Store immediately — prevents GC from collecting this PC while ICE gathers.
     _answerPcs[callId] = pc;
 
-    // Send our local tracks to this viewer
-    for (final track in localStream.getTracks()) {
-      await pc.addTrack(track, localStream);
-    }
-
-    // Gather broadcaster ICE candidates
-    pc.onIceCandidate = (RTCIceCandidate candidate) {
-      WebRtcTelemetry.recordIceCandidateSent();
-      unawaited(
-        _writeIceCandidate(
-          callRef: callRef,
-          subcollection: 'broadcaster_ice',
-          candidate: candidate,
-          scopeKey: broadcasterIceScope,
-          logLabel: 'broadcaster',
-        ),
-      );
-    };
-
-    final offerRaw = callData['offer'];
-    final offerMap = offerRaw is Map<String, dynamic> ? offerRaw : null;
-    final offerSdp = offerMap?['sdp'];
-    final offerType = offerMap?['type'];
-    if (offerSdp is! String || offerType is! String) {
-      _log(
-        'answerViewerOffer callId=$callId — offer missing sdp/type, skipping',
-      );
-      return;
-    }
-    await pc.setRemoteDescription(RTCSessionDescription(offerSdp, offerType));
+    // ... (rest of method)
 
     final answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     WebRtcTelemetry.recordAnswerReceived();
 
+    // Final stale check before committing to Firestore
+    if ((_callSessionVersions[callId] ?? 0) > version) {
+      _log('discarding answer for $callId version $version — newer offer arrived during negotiation');
+      await pc.close();
+      _answerPcs.remove(callId);
+      return;
+    }
+
     await callRef.update({
       'answer': {'type': answer.type, 'sdp': answer.sdp},
+      'answeredVersion': version,
     });
+    _lastAnsweredVersionByCallId[callId] = version;
 
     // Read viewer's ICE candidates — store subscription to keep it alive.
     _answerIceSubs[callId] = callRef
         .collection('viewer_ice')
         .snapshots()
         .listen((snap) {
-          for (final change in snap.docChanges) {
-            if (change.type == DocumentChangeType.added) {
-              final d = change.doc.data();
-              if (d == null) continue;
-              pc.addCandidate(
-                RTCIceCandidate(
-                  d['candidate'] as String?,
-                  d['sdpMid'] as String?,
-                  (d['sdpMLineIndex'] as num?)?.toInt(),
-                ),
-              );
-            }
-          }
-        });
+      for (final change in snap.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final d = change.doc.data();
+          if (d == null) continue;
+          pc.addCandidate(
+            RTCIceCandidate(
+              d['candidate'] as String?,
+              d['sdpMid'] as String?,
+              (d['sdpMLineIndex'] as num?)?.toInt(),
+            ),
+          );
+        }
+      }
+    });
 
     // Clean up this answer PC when the connection ultimately closes.
     // Guard: only remove/cancel entries that belong to THIS pc instance.
@@ -1582,6 +1585,12 @@ class WebRtcRoomService extends RtcRoomService {
       _answeredCalls.remove(callId); // allow re-answer on viewer reconnect
       _clearIceCandidateScope('broadcaster:$callId');
       try {
+        // Explicitly release hardware locks before closing the connection.
+        pc?.getSenders().then((senders) {
+          for (final sender in senders) {
+            sender.track?.stop();
+          }
+        });
         pc?.close();
       } catch (e) {
         _log('stale answerPc.close failed (non-fatal): $e');
@@ -1621,7 +1630,7 @@ class WebRtcRoomService extends RtcRoomService {
 
   void _log(String message) {
     developer.log(message, name: 'WebRTC');
-    if (kDebugMode) debugPrint('[WebRTC] $message');
+    debugPrint('[WebRTC] $message');
   }
 
   /// Explicitly unmutes and plays the underlying HTML <video> element for

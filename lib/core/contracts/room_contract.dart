@@ -41,9 +41,14 @@ const int kRoomSchemaVersion = 1;
 
 abstract class RoomStateContract {
   String get title;
+  int get memberCount;
+  bool get allowGuestAccess;
+  bool get isAdult;
+  List<String> get speakerIds;
   List<MessageModel> get message;
   Map<String, bool> get typingUsers;
-  List<RoomParticipantModel> get participants;
+  List<RoomParticipantModel> get speakers;
+  List<RoomParticipantModel> get audience;
   List<RoomPresenceModel> get presence;
 }
 
@@ -55,11 +60,17 @@ abstract class RoomStateContract {
 
 class RoomNormalizedDoc {
   final String title;
+  final int memberCount;
+  final bool allowGuestAccess;
+  final bool isAdult;
   final int schemaVersion;
   final Map<String, dynamic> rawDoc;
 
   const RoomNormalizedDoc({
     required this.title,
+    required this.memberCount,
+    required this.allowGuestAccess,
+    required this.isAdult,
     required this.schemaVersion,
     required this.rawDoc,
   });
@@ -74,11 +85,21 @@ class RoomLiveState implements RoomStateContract {
   @override
   final String title;
   @override
+  final int memberCount;
+  @override
+  final bool allowGuestAccess;
+  @override
+  final bool isAdult;
+  @override
+  final List<String> speakerIds;
+  @override
   final List<MessageModel> message;
   @override
   final Map<String, bool> typingUsers;
   @override
-  final List<RoomParticipantModel> participants;
+  final List<RoomParticipantModel> speakers;
+  @override
+  final List<RoomParticipantModel> audience;
   @override
   final List<RoomPresenceModel> presence;
 
@@ -88,9 +109,14 @@ class RoomLiveState implements RoomStateContract {
 
   const RoomLiveState({
     required this.title,
+    required this.memberCount,
+    required this.allowGuestAccess,
+    required this.isAdult,
+    required this.speakerIds,
     required this.message,
     required this.typingUsers,
-    required this.participants,
+    required this.speakers,
+    required this.audience,
     required this.presence,
     required this.roomDoc,
   });
@@ -125,52 +151,34 @@ class RoomSchemaException implements Exception {
 }
 
 class RoomSchemaValidator {
-  static const _requiredRootKeys = ['meta'];
-  static const _requiredMetaKeys = ['title'];
-
   static void validate(Map<String, dynamic>? roomDoc, {String roomId = ''}) {
-    if (roomDoc == null || roomDoc.isEmpty) {
+    if (roomDoc == null) {
       throw RoomSchemaException(
         roomId: roomId,
-        message: 'Room document is null or empty',
-        missingKeys: _requiredRootKeys,
+        message: 'Room document not found in Firestore.',
+        missingKeys: ['ROOT'],
         docKeyCount: 0,
       );
     }
 
-    final missingRoot = _requiredRootKeys
-        .where((k) => !roomDoc.containsKey(k))
-        .toList();
-
-    if (missingRoot.isNotEmpty) {
-      throw RoomSchemaException(
-        roomId: roomId,
-        message: 'Room document missing required root keys',
-        missingKeys: missingRoot,
-        docKeyCount: roomDoc.length,
+    if (roomDoc.isEmpty) {
+      debugPrint(
+        '[RoomSchemaValidator] roomDoc is empty, falling back to defaults. roomId=$roomId',
       );
+      return;
     }
 
     final meta = roomDoc['meta'];
     if (meta is! Map<String, dynamic>) {
-      throw RoomSchemaException(
-        roomId: roomId,
-        message: "Room 'meta' is not a valid map",
-        missingKeys: _requiredMetaKeys,
-        docKeyCount: roomDoc.length,
+      debugPrint(
+        '[RoomSchemaValidator] room.meta is missing or invalid, falling back to defaults. roomId=$roomId',
       );
+      return;
     }
 
-    final missingMeta = _requiredMetaKeys
-        .where((k) => !meta.containsKey(k))
-        .toList();
-
-    if (missingMeta.isNotEmpty) {
-      throw RoomSchemaException(
-        roomId: roomId,
-        message: 'Room meta missing required keys',
-        missingKeys: missingMeta,
-        docKeyCount: meta.length,
+    if (meta['title'] is! String) {
+      debugPrint(
+        '[RoomSchemaValidator] room.meta.title is missing or invalid, falling back to default title. roomId=$roomId',
       );
     }
   }
@@ -184,7 +192,10 @@ class RoomSchemaValidator {
 
 class RoomDocNormalizer {
   static RoomNormalizedDoc normalize(Map<String, dynamic> validatedDoc) {
-    final meta = validatedDoc['meta'] as Map<String, dynamic>;
+    // Some rooms store data in a 'meta' object (contract-first),
+    // others at the root (entity-first). We check both for maximum resilience.
+    final meta = validatedDoc['meta'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
     final schemaVersion =
         (validatedDoc['schemaVersion'] as int?) ?? kRoomSchemaVersion;
 
@@ -195,8 +206,28 @@ class RoomDocNormalizer {
       );
     }
 
+    // Resilience helpers to handle Firestore Number (int/double) vs Dart int
+    int asInt(dynamic value, int fallback) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return fallback;
+    }
+
+    final isInitialLoad = (validatedDoc.isEmpty || (meta['title'] == null && validatedDoc['name'] == null));
     return RoomNormalizedDoc(
-      title: (meta['title'] as String?) ?? '',
+      title: (meta['title'] as String?) ??
+          (validatedDoc['name'] as String?) ??
+          (isInitialLoad ? 'Loading...' : 'Untitled Room'),
+      memberCount: asInt(
+        meta['memberCount'],
+        asInt(validatedDoc['memberCount'], 0),
+      ),
+      allowGuestAccess: (meta['allowGuestAccess'] as bool?) ??
+          (validatedDoc['allowGuestAccess'] as bool?) ??
+          true,
+      isAdult: (meta['isAdult'] as bool?) ??
+          (validatedDoc['isAdult'] as bool?) ??
+          false,
       schemaVersion: schemaVersion,
       rawDoc: validatedDoc,
     );
@@ -244,7 +275,9 @@ class RoomStateDiff {
   ) {
     final titleChanged = prev.title != curr.title;
     final msgDelta = curr.message.length - prev.message.length;
-    final partDelta = curr.participants.length - prev.participants.length;
+    final prevPartCount = prev.speakers.length + prev.audience.length;
+    final currPartCount = curr.speakers.length + curr.audience.length;
+    final partDelta = currPartCount - prevPartCount;
     final typDelta = curr.typingUsers.length - prev.typingUsers.length;
 
     return RoomStateDiff(
@@ -325,7 +358,7 @@ class RoomContractGuard {
         '[RoomContractGuard] initial '
         '| title="${state.title}" '
         '| message=${state.message.length} '
-        '| participants=${state.participants.length} '
+        '| participants=${state.speakers.length + state.audience.length} '
         '| typing=${state.typingUsers.length}',
       );
       _lastDiff = const RoomStateDiff.initial();
@@ -358,6 +391,7 @@ class RoomLiveStateMapper {
   static RoomLiveState fromFirestore({
     required Map<String, dynamic>? roomDoc,
     required List<RoomParticipantModel> participants,
+    required List<String> speakerIds,
     required List<RoomPresenceModel> presence,
     required List<MessageModel> messagePreview,
     required Map<String, bool> typing,
@@ -367,12 +401,13 @@ class RoomLiveStateMapper {
     RoomSchemaValidator.validate(roomDoc, roomId: roomId);
 
     // Stage 2 — normalize to typed intermediate
-    final normalized = RoomDocNormalizer.normalize(roomDoc!);
+    final normalized = RoomDocNormalizer.normalize(roomDoc ?? <String, dynamic>{});
 
     // Stage 3 — assemble final state
     return fromNormalized(
       normalized: normalized,
       participants: participants,
+      speakerIds: speakerIds,
       presence: presence,
       message: messagePreview,
       typingUsers: typing,
@@ -384,15 +419,32 @@ class RoomLiveStateMapper {
   static RoomLiveState fromNormalized({
     required RoomNormalizedDoc normalized,
     required List<RoomParticipantModel> participants,
+    required List<String> speakerIds,
     required List<RoomPresenceModel> presence,
     required List<MessageModel> message,
     required Map<String, bool> typingUsers,
   }) {
+    final speakers = <RoomParticipantModel>[];
+    final audience = <RoomParticipantModel>[];
+
+    for (final p in participants) {
+      if (speakerIds.contains(p.userId)) {
+        speakers.add(p);
+      } else {
+        audience.add(p);
+      }
+    }
+
     final state = RoomLiveState(
       title: normalized.title,
+      memberCount: normalized.memberCount,
+      allowGuestAccess: normalized.allowGuestAccess,
+      isAdult: normalized.isAdult,
+      speakerIds: speakerIds,
       message: message,
       typingUsers: typingUsers,
-      participants: participants,
+      speakers: speakers,
+      audience: audience,
       presence: presence,
       roomDoc: normalized.rawDoc,
     );

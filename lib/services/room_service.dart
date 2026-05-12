@@ -44,7 +44,7 @@ class RoomService {
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _isLiveRoomsEnabled = isLiveRoomsEnabled,
        _visibilityWindowsResolver = visibilityWindowsResolver,
-       _streamLifecycleManager = lifecycleManager ?? StreamLifecycleManager.instance;
+       _streamLifecycleManager = lifecycleManager!;
 
   final FirebaseFirestore _firestore;
   final bool Function()? _isLiveRoomsEnabled;

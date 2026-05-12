@@ -5,12 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class StreamLifecycleManager extends ChangeNotifier {
-  StreamLifecycleManager._internal();
-
-  static final StreamLifecycleManager instance =
-      StreamLifecycleManager._internal();
-
-  factory StreamLifecycleManager() => instance;
+  StreamLifecycleManager();
 
   String _currentRoutePath = '/';
   final Map<String, int> _activeListenerCounts = <String, int>{};

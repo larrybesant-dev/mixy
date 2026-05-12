@@ -22,6 +22,7 @@ class UserListPanel extends StatelessWidget {
     this.onMute,
     this.onBan,
     this.onBuzz,
+    this.onDropFromMic,
     this.isCurrentUserHost = false,
   });
 
@@ -42,6 +43,7 @@ class UserListPanel extends StatelessWidget {
   final void Function(RoomParticipantModel participant)? onMute;
   final void Function(RoomParticipantModel participant)? onBan;
   final void Function(RoomParticipantModel participant)? onBuzz;
+  final void Function(RoomParticipantModel participant)? onDropFromMic;
 
   /// Whether the current user is a host/cohost/moderator (shows mod menu).
   final bool isCurrentUserHost;
@@ -59,22 +61,22 @@ class UserListPanel extends StatelessWidget {
           p.userId,
     };
 
-    // ── Role groups ────────────────────────────────────────────────────────
+    // ── Role groups (Exclusive) ──────────────────────────────────────────
     final hosts = participants.where((p) => isHostLikeRole(p.role)).toList();
-    final onStage =
-        participants.where((p) {
-            final role = normalizeRoomRole(p.role, fallbackRole: '');
-            return canManageStageRole(role) || role == roomRoleStage;
-          }).toList()
-          ..sort((a, b) => _roleOrder(a.role).compareTo(_roleOrder(b.role)));
-    final audience =
-        participants.where((p) {
-            final role = normalizeRoomRole(p.role, fallbackRole: '');
-            return !isHostLikeRole(role) &&
-                !canManageStageRole(role) &&
-                role != roomRoleStage;
-          }).toList()
-          ..sort((a, b) => _roleOrder(a.role).compareTo(_roleOrder(b.role)));
+    
+    final onStage = participants.where((p) {
+      final role = normalizeRoomRole(p.role, fallbackRole: '');
+      final isSpeaker = canManageStageRole(role) || role == roomRoleStage;
+      // Exclude users already in hosts list
+      return isSpeaker && !isHostLikeRole(role);
+    }).toList()..sort((a, b) => _roleOrder(a.role).compareTo(_roleOrder(b.role)));
+    
+    final audience = participants.where((p) {
+      final role = normalizeRoomRole(p.role, fallbackRole: '');
+      final isSpeaker = isHostLikeRole(role) || canManageStageRole(role) || role == roomRoleStage;
+      // Exclude anyone in Host or On Mic sections
+      return !isSpeaker;
+    }).toList()..sort((a, b) => _roleOrder(a.role).compareTo(_roleOrder(b.role)));
 
     if (hosts.isEmpty && onStage.isEmpty && audience.isEmpty) {
       return const Center(
@@ -186,6 +188,9 @@ class UserListPanel extends StatelessWidget {
                   onMute: (onMute == null || isMe) ? null : () => onMute!(p),
                   onBan: (onBan == null || isMe) ? null : () => onBan!(p),
                   onBuzz: (onBuzz == null || isMe) ? null : () => onBuzz!(p),
+                  onDropFromMic: (onDropFromMic == null || isMe)
+                      ? null
+                      : () => onDropFromMic!(p),
                   showModMenu: isCurrentUserHost && !isMe,
                 );
               }, childCount: audience.length),
@@ -303,6 +308,7 @@ class _UserListTile extends StatelessWidget {
     this.onMute,
     this.onBan,
     this.onBuzz,
+    this.onDropFromMic,
     this.showModMenu = false,
   });
 
@@ -318,6 +324,7 @@ class _UserListTile extends StatelessWidget {
   final VoidCallback? onMute;
   final VoidCallback? onBan;
   final VoidCallback? onBuzz;
+  final VoidCallback? onDropFromMic;
   final bool showModMenu;
 
   void _showContextMenu(BuildContext context, Offset globalPosition) async {
@@ -397,14 +404,35 @@ class _UserListTile extends StatelessWidget {
             value: 'mute',
             child: Row(
               children: [
-                const Icon(
-                  Icons.mic_off_outlined,
-                  color: Color(0xFFFFA040),
+                Icon(
+                  participant.isMuted ? Icons.mic_none : Icons.mic_off_outlined,
+                  color: const Color(0xFFFFA040),
                   size: 16,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Mute',
+                  participant.isMuted ? 'Unmute' : 'Mute',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (showModMenu && onDropFromMic != null && participant.micOn)
+          PopupMenuItem(
+            value: 'drop',
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.arrow_downward,
+                  color: Color(0xFFC45E7A),
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Drop from Mic',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 13,
@@ -459,6 +487,8 @@ class _UserListTile extends StatelessWidget {
         onBuzz?.call();
       case 'mute':
         onMute?.call();
+      case 'drop':
+        onDropFromMic?.call();
       case 'kick':
         onKick?.call();
       case 'ban':

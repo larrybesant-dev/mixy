@@ -7,10 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/providers/firebase_providers.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
 import '../models/user_model.dart';
 import '../features/messaging/providers/messaging_provider.dart';
-import '../services/friend_service.dart';
 import '../services/moderation_service.dart';
+import '../features/friends/providers/friends_providers.dart';
 import '../presentation/providers/user_provider.dart';
 import '../shared/widgets/guest_auth_gate.dart';
 import 'gift_picker_sheet.dart';
@@ -31,23 +32,32 @@ class UserProfilePopup {
     /// Pre-loaded user — skips the Firestore fetch if you already have it.
     UserModel? preloadedUser,
   }) {
+    final lifecycle = ref.read(streamLifecycleManagerProvider);
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) =>
-          _UserProfilePopupSheet(userId: userId, preloadedUser: preloadedUser),
+      builder: (ctx) => _UserProfilePopupSheet(
+        userId: userId,
+        preloadedUser: preloadedUser,
+        streamLifecycleManager: lifecycle,
+      ),
     );
   }
 }
 
 class _UserProfilePopupSheet extends ConsumerStatefulWidget {
-  const _UserProfilePopupSheet({required this.userId, this.preloadedUser});
+  const _UserProfilePopupSheet({
+    required this.userId,
+    this.preloadedUser,
+    required this.streamLifecycleManager,
+  });
 
   final String userId;
   final UserModel? preloadedUser;
+  final StreamLifecycleManager streamLifecycleManager;
 
   @override
   ConsumerState<_UserProfilePopupSheet> createState() =>
@@ -62,7 +72,6 @@ class _UserProfilePopupSheetState
   bool _isBlocked = false;
   bool _requestPending = false;
 
-  final _friendService = FriendService();
   final _moderationService = ModerationService();
 
   String get _normalizedUserId => widget.userId.trim();
@@ -116,7 +125,7 @@ class _UserProfilePopupSheetState
       return;
     }
     try {
-      final friendIds = await _friendService.getFriendIds(currentUser.id);
+      final friendIds = await ref.read(friendServiceProvider).getFriendIds(currentUser.id);
       final blocked = await _moderationService.isBlocked(_normalizedUserId);
       if (!mounted) return;
       setState(() {
@@ -307,7 +316,7 @@ class _UserProfilePopupSheetState
                       : () async {
                           final me = ref.read(userProvider);
                           if (me == null || _normalizedUserId.isEmpty) return;
-                          await _friendService.sendFriendRequest(
+                          await ref.read(friendServiceProvider).sendFriendRequest(
                             me.id,
                             _normalizedUserId,
                           );

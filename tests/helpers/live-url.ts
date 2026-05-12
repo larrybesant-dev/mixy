@@ -1,4 +1,5 @@
 import http from 'node:http';
+import https from 'node:https';
 import { execSync } from 'node:child_process';
 
 const URL_ENV_KEYS = [
@@ -28,8 +29,9 @@ function htmlLooksLikeFlutterOrMixVy(html: string): boolean {
 }
 
 async function probeUrl(url: string, timeoutMs = 1300): Promise<boolean> {
+  const protocol = url.startsWith('https') ? https : http;
   return new Promise((resolve) => {
-    const req = http.get(url, { timeout: timeoutMs }, (res) => {
+    const req = protocol.get(url, { timeout: timeoutMs }, (res) => {
       const chunks: Buffer[] = [];
       res.on('data', (d) => chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)));
       res.on('end', () => {

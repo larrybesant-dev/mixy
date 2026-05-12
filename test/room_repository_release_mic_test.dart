@@ -1,13 +1,17 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/room/repository/room_repository.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 
 void main() {
   test(
     'loadUserLookup falls back to displayName when username is missing',
     () async {
       final firestore = FakeFirebaseFirestore();
-      final repository = RoomRepository(firestore: firestore);
+      final repository = RoomRepository(
+        firestore: firestore,
+        streamLifecycleManager: StreamLifecycleManager(),
+      );
 
       await firestore.collection('users').doc('host-1').set({
         'displayName': 'DJ Curve',
@@ -26,7 +30,10 @@ void main() {
     'releaseMic demotes non-staff to audience without mutating room fields',
     () async {
       final firestore = FakeFirebaseFirestore();
-      final repository = RoomRepository(firestore: firestore);
+      final repository = RoomRepository(
+        firestore: firestore,
+        streamLifecycleManager: StreamLifecycleManager(),
+      );
 
       await firestore.collection('rooms').doc('room-a').set({
         'hostId': 'host-1',

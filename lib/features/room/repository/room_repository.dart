@@ -7,6 +7,7 @@ import '../../../services/agora_service.dart';
 import '../../../services/friend_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../core/streams/stream_lifecycle_manager.dart';
 import '../controllers/room_state.dart';
 import '../providers/room_firestore_provider.dart';
 
@@ -21,6 +22,7 @@ final roomRepositoryProvider = Provider<RoomRepository>((ref) {
   return RoomRepository(
     firestore: ref.watch(roomFirestoreProvider),
     functions: functions,
+    streamLifecycleManager: ref.watch(streamLifecycleManagerProvider),
   );
 });
 
@@ -42,11 +44,14 @@ class RoomRepository {
   RoomRepository({
     required FirebaseFirestore firestore,
     FirebaseFunctions? functions,
+    required StreamLifecycleManager streamLifecycleManager,
   }) : _firestore = firestore,
-       _functions = functions;
+       _functions = functions,
+       _streamLifecycleManager = streamLifecycleManager;
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions? _functions;
+  final StreamLifecycleManager _streamLifecycleManager;
 
   static const List<Map<String, dynamic>> _fallbackIceServers = [
     {
@@ -361,15 +366,60 @@ class RoomRepository {
     }
   }
 
+  Future<void> dropFromMic({
+    required String roomId,
+    required String userId,
+    required String actorId,
+  }) async {
+    final functions = _functions;
+    if (functions == null) {
+      throw StateError('Live media backend is unavailable.');
+    }
+
+    try {
+      final callable = functions.httpsCallable('dropFromMic');
+      await callable.call<Map<String, dynamic>>({
+        'roomId': roomId,
+        'targetUserId': userId,
+        'actorId': actorId,
+      });
+    } catch (e) {
+      throw StateError('Failed to remove speaker: ${e.toString()}');
+    }
+  }
+
+  /// Force remove a speaker from the stage (bypasses cloud functions).
+  /// Used for moderation and cleanup.
   Future<void> forceRemoveSpeaker({
     required String roomId,
     required String userId,
-  }) {
-    return releaseMic(roomId: roomId, userId: userId);
+  }) async {
+    final speakerRef = _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .collection('speakers')
+        .doc(userId);
+    await speakerRef.delete();
+  }
+
+  Future<void> muteParticipant({
+    required String roomId,
+    required String userId,
+    required bool muted,
+    required String actorId,
+  }) async {
+    await _participantRef(roomId, userId).update({
+      'isMuted': muted,
+      'mutedBy': actorId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<List<UserModel>> getFriends(String userId) {
-    return FriendService(firestore: _firestore).getFriends(userId);
+    return FriendService(
+      firestore: _firestore,
+      streamLifecycleManager: _streamLifecycleManager,
+    ).getFriends(userId);
   }
 
   Future<void> sendRoomInviteToFriends({
@@ -379,7 +429,10 @@ class RoomRepository {
     required String roomId,
     required String roomName,
   }) {
-    return NotificationService(firestore: _firestore).sendRoomInviteToFriends(
+    return NotificationService(
+      firestore: _firestore,
+      streamLifecycleManager: _streamLifecycleManager,
+    ).sendRoomInviteToFriends(
       friendIds: friendIds,
       inviterId: inviterId,
       inviterName: inviterName,

@@ -6,11 +6,13 @@ import '../../../services/agora_service.dart';
 import '../../../services/rtc_room_service.dart';
 import '../../../services/webrtc_room_service_shim.dart';
 import '../providers/room_firestore_provider.dart';
+import '../../../core/streams/stream_lifecycle_manager.dart';
 
 class WebRtcController {
-  WebRtcController(this._firestore);
+  WebRtcController(this._firestore, this._ref);
 
   final FirebaseFirestore _firestore;
+  final Ref _ref;
 
   Future<RtcRoomService> createTransport({
     required String userId,
@@ -20,6 +22,7 @@ class WebRtcController {
       return WebRtcRoomService(
         firestore: _firestore,
         localUserId: userId,
+        streamLifecycleManager: _ref.read(streamLifecycleManagerProvider),
         iceServers: iceServers,
       );
     }
@@ -28,5 +31,5 @@ class WebRtcController {
 }
 
 final webrtcControllerProvider = Provider<WebRtcController>((ref) {
-  return WebRtcController(ref.watch(roomFirestoreProvider));
+  return WebRtcController(ref.watch(roomFirestoreProvider), ref);
 });

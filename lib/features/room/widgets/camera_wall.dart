@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/rtc_service_provider.dart';
+
 import '../providers/camera_wall_provider.dart';
 
 class CameraWallRemoteTileData {
@@ -52,6 +54,9 @@ class CameraWall extends ConsumerWidget {
     this.onDetachRemote,
     this.localAvatarUrl,
     this.localViewerCount,
+    this.isHost = false,
+    this.onDropUser,
+    this.onMuteUser,
   });
 
   final String roomId;
@@ -84,8 +89,16 @@ class CameraWall extends ConsumerWidget {
   /// Viewer count badge for the local camera tile.
   final int? localViewerCount;
 
+  final bool isHost;
+  final void Function(String userId)? onDropUser;
+  final void Function(String userId, bool mute)? onMuteUser;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final npSurfaceLow = Theme.of(context).colorScheme.surfaceContainerHighest;
+    const double maxTileH = 280.0;
+    const double mobileH = 160.0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 600;
@@ -158,9 +171,32 @@ class CameraWall extends ConsumerWidget {
           ...mainGridRemoteTiles.where((t) => t.isSpeaking).map((t) => t.label),
         ];
 
+        // Estimate tile dimensions before building tiles (avoids circular dependency).
+        // Initial estimate based on constraint width.
+        const double spacing = 8;
+        const double headerH = 24;
+        final int estimatedTileCount = (showLocalTile ? 1 : 0) + mainGridRemoteTiles.length;
+        final int estimatedCrossAxisCount = isDesktop
+            ? (estimatedTileCount <= 1
+                  ? 1
+                  : estimatedTileCount <= 4
+                  ? 2
+                  : estimatedTileCount <= 9
+                  ? 3
+                  : 4)
+            : (estimatedTileCount <= 2
+                  ? 1
+                  : estimatedTileCount <= 4
+                  ? 2
+                  : 3);
+        final double estimatedWidth = constraints.maxWidth - 20;
+        final double effectiveTileW = estimatedWidth / estimatedCrossAxisCount - (spacing * (estimatedCrossAxisCount - 1) / estimatedCrossAxisCount);
+        final double tileHeight = effectiveTileW * (3 / 4) + headerH;
+
         final mainGridTiles = <Widget>[
           if (showLocalTile)
             _CameraWallTileFrame(
+              roomId: roomId,
               label: localLabel,
               speaking: localSpeaking,
               hasMic: localHasMic,
@@ -170,16 +206,25 @@ class CameraWall extends ConsumerWidget {
               child: localTile,
             ),
           ...mainGridRemoteTiles.map(
-            (tile) => _CameraWallTileFrame(
-              label: tile.label,
-              speaking: tile.isSpeaking,
-              hasMic: tile.hasMic,
-              compact: false,
-              viewerCount: tile.viewerCount,
-              onDetach: onDetachRemote == null
-                  ? null
-                  : () => onDetachRemote!(tile),
-              child: remoteTileBuilder(tile),
+            (tile) => _ResizableTile(
+              key: ValueKey('rtile_${tile.uid}'),
+              defaultWidth: effectiveTileW,
+              defaultHeight: tileHeight,
+              child: _CameraWallTileFrame(
+                roomId: roomId,
+                label: tile.label,
+                speaking: tile.isSpeaking,
+                hasMic: tile.hasMic,
+                compact: false,
+                viewerCount: tile.viewerCount,
+                onDetach: onDetachRemote == null
+                    ? null
+                    : () => onDetachRemote!(tile),
+                showAdminTools: isHost && tile.userId != null,
+                onDrop: tile.userId == null ? null : () => onDropUser?.call(tile.userId!),
+                onMute: tile.userId == null ? null : (m) => onMuteUser?.call(tile.userId!, m),
+                child: remoteTileBuilder(tile),
+              ),
             ),
           ),
         ];
@@ -198,16 +243,8 @@ class CameraWall extends ConsumerWidget {
                   : tileCount <= 4
                   ? 2
                   : 3);
-        const double spacing = 8;
         final int rows = ((tileCount == 0 ? 1 : tileCount) / crossAxisCount)
             .ceil();
-        // tileHeight is computed from available width inside the Row, so we
-        // use a LayoutBuilder. For the initial calc here we derive a fallback;
-        // the real sizing is done inside LayoutBuilder below.
-        const double headerH = 24;
-        const double maxTileH = 280; // cap so a single cam doesn't dominate
-        const double mobileH = 160;
-        const npSurfaceLow = Color(0xFF0B0B0B); // Jet Black
 
         return ColoredBox(
           color: npSurfaceLow,
@@ -332,7 +369,7 @@ class CameraWall extends ConsumerWidget {
                       // full ~800 px panel — makes the tile a reasonable size and
                       // leaves no wasted space beside it.
                       final effectiveTileW = tileCount <= 1
-                          ? (gridW / crossAxisCount).clamp(80.0, 480.0)
+                          ? (gridW / crossAxisCount).clamp(80.0, 800.0)
                           : (gridW - spacing * (crossAxisCount - 1)) /
                                 crossAxisCount;
                       // Use 4:3 ratio for tile height — matches typical webcam output so
@@ -345,8 +382,8 @@ class CameraWall extends ConsumerWidget {
                       Widget grid = Wrap(
                         spacing: spacing,
                         runSpacing: spacing,
-                        alignment: WrapAlignment.start,
-                        crossAxisAlignment: WrapCrossAlignment.start,
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           if (showLocalTile)
                             _ResizableTile(
@@ -354,6 +391,7 @@ class CameraWall extends ConsumerWidget {
                               defaultWidth: effectiveTileW,
                               defaultHeight: tileHeight,
                               child: _CameraWallTileFrame(
+                                roomId: roomId,
                                 label: localLabel,
                                 speaking: localSpeaking,
                                 hasMic: localHasMic,
@@ -369,6 +407,7 @@ class CameraWall extends ConsumerWidget {
                               defaultWidth: effectiveTileW,
                               defaultHeight: tileHeight,
                               child: _CameraWallTileFrame(
+                                roomId: roomId,
                                 label: tile.label,
                                 speaking: tile.isSpeaking,
                                 hasMic: tile.hasMic,
@@ -385,7 +424,7 @@ class CameraWall extends ConsumerWidget {
                       );
                       if (tileCount <= 1) {
                         grid = Align(
-                          alignment: Alignment.centerLeft,
+                          alignment: Alignment.center,
                           child: SizedBox(width: effectiveTileW, child: grid),
                         );
                       }
@@ -442,6 +481,7 @@ class CameraWall extends ConsumerWidget {
                                             final tile =
                                                 visibleOverflowTiles[index];
                                             return _CameraWallTileFrame(
+                                              roomId: roomId,
                                               label: tile.label,
                                               speaking: tile.isSpeaking,
                                               hasMic: tile.hasMic,
@@ -494,6 +534,7 @@ class CameraWall extends ConsumerWidget {
                           return SizedBox(
                             width: 132,
                             child: _CameraWallTileFrame(
+                              roomId: roomId,
                               label: tile.label,
                               speaking: tile.isSpeaking,
                               hasMic: tile.hasMic,
@@ -530,6 +571,7 @@ class CameraWall extends ConsumerWidget {
 
 class _CameraWallTileFrame extends StatefulWidget {
   const _CameraWallTileFrame({
+    required this.roomId,
     required this.label,
     required this.speaking,
     this.hasMic = false,
@@ -537,8 +579,12 @@ class _CameraWallTileFrame extends StatefulWidget {
     required this.child,
     this.onDetach,
     this.viewerCount,
+    this.showAdminTools = false,
+    this.onDrop,
+    this.onMute,
   });
 
+  final String roomId;
   final String label;
   final bool speaking;
 
@@ -553,6 +599,10 @@ class _CameraWallTileFrame extends StatefulWidget {
 
   /// If non-null and > 0, a viewer count badge is shown on the tile.
   final int? viewerCount;
+
+  final bool showAdminTools;
+  final VoidCallback? onDrop;
+  final void Function(bool mute)? onMute;
 
   @override
   State<_CameraWallTileFrame> createState() => _CameraWallTileFrameState();
@@ -642,21 +692,25 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> {
                     ),
                     // Pop-out button: visible on hover (desktop) or always on mobile
                     if (widget.onDetach != null && (_hovered || widget.compact))
-                      Tooltip(
-                        message: 'Detach window',
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(4),
-                          onTap: widget.onDetach,
-                          child: const Padding(
-                            padding: EdgeInsets.all(2),
-                            child: Icon(
-                              Icons.open_in_new,
-                              size: 12,
-                              color: npOnVariant,
-                            ),
-                          ),
-                        ),
+                      _TileActionButton(
+                        tooltip: 'Detach window',
+                        icon: Icons.open_in_new,
+                        onTap: widget.onDetach!,
                       ),
+                    if (widget.showAdminTools) ...[
+                      _TileActionButton(
+                        tooltip: 'Mute user',
+                        icon: Icons.mic_off_rounded,
+                        onTap: () => widget.onMute?.call(true),
+                        color: Colors.orange,
+                      ),
+                      _TileActionButton(
+                        tooltip: 'Drop from mic',
+                        icon: Icons.arrow_downward_rounded,
+                        onTap: widget.onDrop!,
+                        color: Colors.redAccent,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -673,13 +727,29 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> {
                       Positioned(
                         left: 5,
                         bottom: 8,
-                        child: _SoundWaveEq(active: widget.hasMic),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final rtc = ref.watch(rtcServiceProvider(widget.roomId));
+                            final audioLevel = widget.label == 'You' 
+                              ? (rtc?.localAudioLevel ?? 0.0)
+                              : (rtc?.remoteAudioLevelForUid(rtc.remoteUids.firstWhere((id) => true, orElse: () => -1)) ?? 0.0); // Simple fallback for now
+                            return _SoundWaveEq(active: widget.hasMic, audioLevel: audioLevel);
+                          }
+                        ),
                       ),
                     if (widget.hasMic)
                       Positioned(
                         right: 5,
                         bottom: 8,
-                        child: _SoundWaveEq(active: widget.hasMic),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final rtc = ref.watch(rtcServiceProvider(widget.roomId));
+                            final audioLevel = widget.label == 'You' 
+                              ? (rtc?.localAudioLevel ?? 0.0)
+                              : (rtc?.remoteAudioLevelForUid(rtc.remoteUids.firstWhere((id) => true, orElse: () => -1)) ?? 0.0);
+                            return _SoundWaveEq(active: widget.hasMic, audioLevel: audioLevel);
+                          }
+                        ),
                       ),
                     // Viewer count badge (bottom-right corner, shifted left when speaking)
                     if (widget.viewerCount != null && widget.viewerCount! > 0)
@@ -729,8 +799,9 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> {
 
 /// Animated equalizer bars shown beside the cam while a participant is speaking.
 class _SoundWaveEq extends StatefulWidget {
-  const _SoundWaveEq({required this.active});
+  const _SoundWaveEq({required this.active, this.audioLevel = 0.0});
   final bool active;
+  final double audioLevel;
 
   @override
   State<_SoundWaveEq> createState() => _SoundWaveEqState();
@@ -798,11 +869,15 @@ class _SoundWaveEqState extends State<_SoundWaveEq>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: List.generate(4, (i) {
+            // Scale bar height by audio energy (0.0 - 1.0)
+            final energyScale = 0.3 + (widget.audioLevel * 0.7);
+            final h = _barAnims[i].value * energyScale;
+            
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 1.5),
               child: Container(
                 width: 3,
-                height: _barAnims[i].value,
+                height: h,
                 decoration: BoxDecoration(
                   color: const Color(
                     0xFFC45E7A,
@@ -822,6 +897,40 @@ class _SoundWaveEqState extends State<_SoundWaveEq>
 // Resizable tile wrapper — drag the bottom-right handle to resize any cam tile.
 // State is preserved across rebuilds via the widget's stable ValueKey.
 // ---------------------------------------------------------------------------
+class _TileActionButton extends StatelessWidget {
+  const _TileActionButton({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+    this.color,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String tooltip;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    const npOnVariant = Color(0xFFAD9585);
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(4),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Icon(
+            icon,
+            size: 14,
+            color: color ?? npOnVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ResizableTile extends StatefulWidget {
   const _ResizableTile({
     super.key,

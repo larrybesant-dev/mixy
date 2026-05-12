@@ -94,6 +94,7 @@ class RoomSessionService {
     required String userId,
     String? displayName,
     String? photoUrl,
+    Transaction? transaction,
   }) async {
     final normalizedRoomId = roomId.trim();
     final normalizedUserId = userId.trim();
@@ -217,8 +218,8 @@ class RoomSessionService {
     final isHostUser = ownerId == normalizedUserId;
 
     try {
-      await _firestore.runTransaction((transaction) async {
-        final roomSnap = await transaction.get(
+      Future<void> executeJoin(Transaction tx) async {
+        final roomSnap = await tx.get(
           _firestore.collection('rooms').doc(normalizedRoomId),
         );
         if (!roomSnap.exists) {
@@ -234,7 +235,7 @@ class RoomSessionService {
           audienceIds.add(normalizedUserId);
         }
 
-        final currentParticipantSnap = await transaction.get(participantRef);
+        final currentParticipantSnap = await tx.get(participantRef);
 
         if (currentParticipantSnap.exists) {
           final pData = currentParticipantSnap.data()!;
@@ -242,7 +243,7 @@ class RoomSessionService {
             throw StateError('You are banned from this room.');
           }
 
-          transaction.set(participantRef, {
+          tx.set(participantRef, {
             'userId': normalizedUserId,
             'camOn': false,
             'lastActiveAt': now,
@@ -253,7 +254,7 @@ class RoomSessionService {
           }, SetOptions(merge: true));
         } else {
           final participantRole = isHostUser ? 'host' : 'audience';
-          transaction.set(participantRef, {
+          tx.set(participantRef, {
             'userId': normalizedUserId,
             'role': participantRole,
             'isMuted': false,
@@ -268,7 +269,7 @@ class RoomSessionService {
           });
         }
 
-        transaction.set(memberRef, {
+        tx.set(memberRef, {
           'userId': normalizedUserId,
           'role': isHostUser ? 'owner' : 'member',
           'joinedAt': currentParticipantSnap.exists
@@ -280,13 +281,19 @@ class RoomSessionService {
           if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
         }, SetOptions(merge: true));
 
-        transaction.update(_firestore.collection('rooms').doc(normalizedRoomId), {
+        tx.update(_firestore.collection('rooms').doc(normalizedRoomId), {
           'audienceUserIds': audienceIds,
           'memberCount': audienceIds.length + stageIds.length,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-      });
-    } catch (e, stack) {
+      }
+
+      if (transaction != null) {
+        await executeJoin(transaction);
+      } else {
+        await _firestore.runTransaction(executeJoin);
+      }
+    } catch (e, _) {
       AppTelemetry.logAction(
         domain: 'room',
         action: 'join_transaction_failed',
@@ -329,6 +336,7 @@ class RoomSessionService {
   Future<void> leaveRoom({
     required String roomId,
     required String userId,
+    Transaction? transaction,
   }) async {
     final normalizedRoomId = roomId.trim();
     final normalizedUserId = userId.trim();
@@ -336,40 +344,38 @@ class RoomSessionService {
       return;
     }
 
-    final batch = _firestore.batch();
     final roomRef = _firestore.collection('rooms').doc(normalizedRoomId);
+    final participantRef = roomRef.collection('participants').doc(normalizedUserId);
+    final memberRef = roomRef.collection('members').doc(normalizedUserId);
 
-    batch.delete(
-      _firestore
-          .collection('rooms')
-          .doc(normalizedRoomId)
-          .collection('participants')
-          .doc(normalizedUserId),
-    );
-    batch.delete(
-      _firestore
-          .collection('rooms')
-          .doc(normalizedRoomId)
-          .collection('members')
-          .doc(normalizedUserId),
-    );
+    Future<void> executeLeave(Transaction tx) async {
+      final roomSnap = await tx.get(roomRef);
+      if (!roomSnap.exists) return;
 
-    // Also remove from parent room doc arrays and decrement count
-    batch.update(roomRef, {
-      'audienceUserIds': FieldValue.arrayRemove([normalizedUserId]),
-      'stageUserIds': FieldValue.arrayRemove([normalizedUserId]),
-      'memberCount': FieldValue.increment(-1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+      final roomData = roomSnap.data()!;
+      final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
+      final stageIds = List<String>.from(roomData['stageUserIds'] ?? []);
+
+      audienceIds.remove(normalizedUserId);
+      stageIds.remove(normalizedUserId);
+
+      tx.delete(participantRef);
+      tx.delete(memberRef);
+
+      tx.update(roomRef, {
+        'audienceUserIds': audienceIds,
+        'stageUserIds': stageIds,
+        'memberCount': audienceIds.length + stageIds.length,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
 
     try {
-      await traceFirestoreWrite<void>(
-        path: 'rooms/$normalizedRoomId/batch_leave',
-        operation: 'batch_leave_room',
-        roomId: normalizedRoomId,
-        userId: normalizedUserId,
-        action: batch.commit,
-      );
+      if (transaction != null) {
+        await executeLeave(transaction);
+      } else {
+        await _firestore.runTransaction(executeLeave);
+      }
     } finally {
       await _presenceController.clearInRoom(normalizedUserId);
       AppTelemetry.logAction(
