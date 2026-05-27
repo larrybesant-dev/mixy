@@ -158,12 +158,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Future<void> _shareReferralCode(String code) async {
-    await SharePlus.instance.share(
-      ShareParams(
-        text:
-            'Join me on MixVy and use my referral code: $code\nhttps://mixvy.app',
-        subject: 'Join me on MixVy',
-      ),
+    await Share.share(
+      'Join me on MixVy and use my referral code: $code\nhttps://mixvy.app',
+      subject: 'Join me on MixVy',
     );
   }
 
@@ -342,6 +339,29 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
   }
 
+  Widget _statusChip(String label, bool enabled) {
+    return Chip(
+      avatar: Icon(
+        enabled ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+        size: 18,
+        color: enabled ? const Color(0xFFD4AF37) : const Color(0xFFAD9585),
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: enabled ? const Color(0xFFD4AF37) : const Color(0xFFAD9585),
+          fontWeight: enabled ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      backgroundColor: const Color(0xFF1A1416),
+      side: BorderSide(
+        color: enabled
+            ? const Color(0xFFD4AF37).withValues(alpha: 0.40)
+            : const Color(0xFFAD9585).withValues(alpha: 0.25),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = ref.watch(currentPaymentUserIdProvider);
@@ -424,8 +444,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                 );
               }
 
-              final status =
-                  snapshot.data ??
+              final status = snapshot.data ??
                   const StripeConnectStatus(
                     hasAccount: false,
                     chargesEnabled: false,
@@ -536,8 +555,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       )
                       .fold<double>(
                         0,
-                        (runningTotal, request) =>
-                            runningTotal + request.amount,
+                        (runningTotal, request) => runningTotal + request.amount,
                       );
 
                   return Card(
@@ -571,8 +589,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                           ),
                           const SizedBox(height: 12),
                           FilledButton.icon(
-                            onPressed:
-                                (wallet.cashBalance - pendingCashOut) >=
+                            onPressed: (wallet.cashBalance - pendingCashOut) >=
                                     MixVyEconomyConfig.creatorPayoutMinimumCash
                                 ? () => _requestCashOut(wallet, pendingCashOut)
                                 : null,
@@ -590,9 +607,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                               style: Theme.of(context).textTheme.titleSmall,
                             ),
                             const SizedBox(height: 8),
-                            ...requests
-                                .take(3)
-                                .map(
+                            ...requests.take(3).map(
                                   (request) => ListTile(
                                     dense: true,
                                     contentPadding: EdgeInsets.zero,
@@ -619,8 +634,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               );
             },
             loading: () => const AppLoadingView(label: 'Loading wallet'),
-            error: (e, _) =>
-                AppErrorView(error: e, fallbackContext: 'Wallet unavailable.'),
+            error: (e, _) => AppErrorView(
+                error: e, fallbackContext: 'Wallet unavailable.'),
           ),
           const SizedBox(height: 14),
           Card(
@@ -664,8 +679,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                         ],
                       ],
                     ),
-                    loading: () =>
-                        const AppLoadingView(label: 'Loading referral code'),
+                    loading: () => const AppLoadingView(
+                        label: 'Loading referral code'),
                     error: (e, _) => AppErrorView(
                       error: e,
                       fallbackContext: 'Referral code unavailable.',
@@ -720,9 +735,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       ),
                       if (requests.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        ...requests
-                            .take(3)
-                            .map(
+                        ...requests.take(3).map(
                               (request) => ListTile(
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
@@ -815,9 +828,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    ...recipients
-                        .take(6)
-                        .map(
+                    ...recipients.take(6).map(
                           (recipient) => Card(
                             child: ListTile(
                               onTap: () => _selectRecipient(recipient),
@@ -1027,8 +1038,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                               }
                             },
                             itemBuilder: (context) {
-                              final canRequestRefund =
-                                  isSent &&
+                              final canRequestRefund = isSent &&
                                   (tx.status == 'completed' ||
                                       tx.status == 'sent');
                               final items = <PopupMenuEntry<String>>[
@@ -1070,27 +1080,4 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
       ),
     );
   }
-}
-
-Widget _statusChip(String label, bool enabled) {
-  return Chip(
-    avatar: Icon(
-      enabled ? Icons.check_circle_outline : Icons.radio_button_unchecked,
-      size: 18,
-      color: enabled ? const Color(0xFFD4AF37) : const Color(0xFFAD9585),
-    ),
-    label: Text(
-      label,
-      style: TextStyle(
-        color: enabled ? const Color(0xFFD4AF37) : const Color(0xFFAD9585),
-        fontWeight: enabled ? FontWeight.w600 : FontWeight.normal,
-      ),
-    ),
-    backgroundColor: const Color(0xFF1A1416),
-    side: BorderSide(
-      color: enabled
-          ? const Color(0xFFD4AF37).withValues(alpha: 0.40)
-          : const Color(0xFFAD9585).withValues(alpha: 0.25),
-    ),
-  );
 }
