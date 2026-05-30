@@ -12,9 +12,13 @@ import 'package:mixvy/widgets/brand_ui_kit.dart';
 /// 
 /// Binds dynamically to the system's live rooms state with:
 /// - Real-time stream data binding via Riverpod (no mock data).
-/// - Elegant pulsing skeleton shimmers for the loading state.
+/// - Elegant pulsing skeleton shimmers for the loading state (Column-based).
 /// - High-contrast "Empty State" UI matching our Digital Premium Lounge theme.
 /// - Polished error state with a retry option for connection failures.
+///
+/// NOTE: To prevent "Vertical viewport was given unbounded height" exceptions
+/// inside parent scroll containers, this widget uses non-scrolling [Column] layouts
+/// rather than nested [ListView]s.
 class LiveRoomList extends ConsumerWidget {
   const LiveRoomList({
     super.key,
@@ -31,7 +35,7 @@ class LiveRoomList extends ConsumerWidget {
   /// If null, navigates automatically to `/rooms/create`.
   final VoidCallback? onStartRoomTap;
 
-  /// Layout padding applied around the list.
+  /// Layout padding applied around the column list.
   final EdgeInsetsGeometry padding;
 
   void _handleRoomNavigation(BuildContext context, RoomModel room) {
@@ -64,31 +68,38 @@ class LiveRoomList extends ConsumerWidget {
           );
         }
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+        return Padding(
           padding: padding,
-          itemCount: rooms.length,
-          itemBuilder: (context, index) {
-            final room = rooms[index];
-            return SocialRoomCard(
-              key: ValueKey<String>('live-room-list-${room.id}'),
-              room: room,
-              onTap: () => _handleRoomNavigation(context, room),
-            );
-          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final room in rooms)
+                SocialRoomCard(
+                  key: ValueKey<String>('live-room-list-${room.id}'),
+                  room: room,
+                  onTap: () => _handleRoomNavigation(context, room),
+                ),
+            ],
+          ),
         );
       },
-      loading: () => const _LoadingShimmerView(),
-      error: (error, _) => _ErrorStateView(
-        onRetry: () => ref.invalidate(roomsStreamProvider),
+      loading: () => Padding(
+        padding: padding,
+        child: const _LoadingShimmerView(),
+      ),
+      error: (error, _) => Padding(
+        padding: padding,
+        child: _ErrorStateView(
+          onRetry: () => ref.invalidate(roomsStreamProvider),
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Loading State (Elegant, self-contained pulsing shimmer cards)
+// Loading State (Elegant, self-contained pulsing shimmer columns)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _LoadingShimmerView extends StatefulWidget {
@@ -123,20 +134,18 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
       animation: _pulseController,
       builder: (context, child) {
         final opacity = 0.4 + (_pulseController.value * 0.45);
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: 3,
-          itemBuilder: (context, index) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(3, (index) {
             return Container(
               height: 98,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: VelvetNoir.surfaceContainer.withOpacity(opacity),
+                color: VelvetNoir.surfaceContainer.withValues(alpha: opacity),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: VelvetNoir.outlineVariant.withOpacity(0.4),
+                  color: VelvetNoir.outlineVariant.withValues(alpha: 0.4),
                   width: 1,
                 ),
               ),
@@ -146,7 +155,7 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
                     width: 4,
                     height: 98,
                     decoration: BoxDecoration(
-                      color: VelvetNoir.primary.withOpacity(opacity * 0.3),
+                      color: VelvetNoir.primary.withValues(alpha: opacity * 0.3),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(16),
                         bottomLeft: Radius.circular(16),
@@ -158,7 +167,7 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: VelvetNoir.surfaceHigh.withOpacity(opacity),
+                      color: VelvetNoir.surfaceHigh.withValues(alpha: opacity),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -174,7 +183,7 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
                             width: 120,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: VelvetNoir.surfaceHigh.withOpacity(opacity),
+                              color: VelvetNoir.surfaceHigh.withValues(alpha: opacity),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -182,7 +191,7 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
                             width: 180,
                             height: 18,
                             decoration: BoxDecoration(
-                              color: VelvetNoir.surfaceHigh.withOpacity(opacity),
+                              color: VelvetNoir.surfaceHigh.withValues(alpha: opacity),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -190,7 +199,7 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
                             width: 80,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: VelvetNoir.surfaceHigh.withOpacity(opacity),
+                              color: VelvetNoir.surfaceHigh.withValues(alpha: opacity),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -201,7 +210,7 @@ class _LoadingShimmerViewState extends State<_LoadingShimmerView>
                 ],
               ),
             );
-          },
+          }),
         );
       },
     );
@@ -228,12 +237,12 @@ class _EmptyStateView extends StatelessWidget {
             color: VelvetNoir.surfaceContainer,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: VelvetNoir.outlineVariant.withOpacity(0.5),
+              color: VelvetNoir.outlineVariant.withValues(alpha: 0.5),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.24),
+                color: Colors.black.withValues(alpha: 0.24),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
@@ -250,12 +259,12 @@ class _EmptyStateView extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: VelvetNoir.surfaceHigh,
                   border: Border.all(
-                    color: VelvetNoir.primary.withOpacity(0.35),
+                    color: VelvetNoir.primary.withValues(alpha: 0.35),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: VelvetNoir.primary.withOpacity(0.12),
+                      color: VelvetNoir.primary.withValues(alpha: 0.12),
                       blurRadius: 16,
                       spreadRadius: 2,
                     ),
@@ -324,7 +333,7 @@ class _ErrorStateView extends StatelessWidget {
             color: VelvetNoir.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: VelvetNoir.error.withOpacity(0.25),
+              color: VelvetNoir.error.withValues(alpha: 0.25),
               width: 1,
             ),
           ),
@@ -368,3 +377,6 @@ class _ErrorStateView extends StatelessWidget {
     );
   }
 }
+
+
+

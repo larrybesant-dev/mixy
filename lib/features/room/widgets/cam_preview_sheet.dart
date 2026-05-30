@@ -68,7 +68,7 @@ class _CamPreviewSheetState extends State<CamPreviewSheet> {
 
   Future<void> _loadDevices() async {
     try {
-      final devices = await device_enum.enumerateMediaDevices();
+      final devices = await device_enum.enumerateWebDevices();
       final savedCam = await _prefs.getPreferredCameraId();
       final savedMic = await _prefs.getPreferredMicId();
       if (!mounted) return;
@@ -329,3 +329,6 @@ class _DeviceRow extends StatelessWidget {
     );
   }
 }
+
+
+

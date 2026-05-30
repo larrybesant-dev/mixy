@@ -33,3 +33,6 @@ class FriendModel {
     'isFavorite': isFavorite,
   };
 }
+
+
+

@@ -68,7 +68,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
     }).toList();
   }
 
-  void _showRequestsSheet(AsyncValue<List<Conversation>> requestsAsync) {
+  void _showRequestsSheet() {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: VelvetNoir.surface,
@@ -77,7 +77,6 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => MessageRequestsSheet(
-        requestsAsync: requestsAsync,
         userId: widget.userId,
       ),
     );
@@ -195,7 +194,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
               8,
             ),
             child: InkWell(
-              onTap: () => _showRequestsSheet(requestsAsync),
+              onTap: () => _showRequestsSheet(),
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -332,15 +331,14 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
 class MessageRequestsSheet extends ConsumerWidget {
   const MessageRequestsSheet({
     super.key,
-    required this.requestsAsync,
     required this.userId,
   });
 
-  final AsyncValue<List<Conversation>> requestsAsync;
   final String userId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final requestsAsync = ref.watch(requestsStreamProvider(userId));
     return SafeArea(
       top: false,
       child: SizedBox(
@@ -386,7 +384,7 @@ class MessageRequestsSheet extends ConsumerWidget {
                 data: (requests) {
                   return ListView.separated(
                     itemCount: requests.length,
-                    separatorBuilder: (_, _) => Divider(
+                    separatorBuilder: (__, _) => Divider(
                       height: 1,
                       indent: 72,
                       color: VelvetNoir.outlineVariant.withValues(alpha: 0.2),
@@ -995,3 +993,8 @@ class _TypingDotsState extends State<_TypingDots>
     );
   }
 }
+
+
+
+
+

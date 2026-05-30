@@ -24,3 +24,6 @@ class EventCard extends StatelessWidget {
     );
   }
 }
+
+
+

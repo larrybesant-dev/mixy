@@ -51,3 +51,6 @@ class VerificationBadgeRow extends StatelessWidget {
     );
   }
 }
+
+
+

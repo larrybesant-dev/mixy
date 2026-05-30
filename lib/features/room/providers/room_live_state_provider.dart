@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/contracts/room_contract.dart';
 import 'room_meta_state_provider.dart';
@@ -33,15 +34,17 @@ final roomLiveStateProvider = StreamProvider.autoDispose
         void publish() {
           if (controller.isClosed) return;
 
-          // We wait until the meta provider emits its first value (terminal state).
-          // Once metaState is non-null, we proceed even if metaState.roomDoc is null
-          // (which indicates the room was deleted).
-          if (metaState == null) return;
+          // Capture a stable local reference to avoid race conditions 
+          // or force-unwraps on mutable fields.
+          final currentMeta = metaState;
+          if (currentMeta == null) return;
 
           try {
+            // RoomLiveStateMapper handles null roomDoc by throwing RoomSchemaException
+            // which is caught and propagated as a clean stream error.
             controller.add(
               RoomLiveStateMapper.fromFirestore(
-                roomDoc: metaState!.roomDoc,
+                roomDoc: currentMeta.roomDoc,
                 participants: participantsState.participants,
                 speakerIds: speakerIds,
                 presence: activityState.presence,
@@ -124,3 +127,7 @@ final roomLiveStateProvider = StreamProvider.autoDispose
         };
       });
     });
+
+
+
+

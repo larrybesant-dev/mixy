@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../consistency/consistency_template.dart';
@@ -166,3 +167,7 @@ final messageConsistencyContractProvider = Provider<MessageConsistencyContract>(
     return const MessageConsistencyContract();
   },
 );
+
+
+
+

@@ -34,7 +34,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
 
   // Guest access to rooms is allowed — LiveRoomScreen handles its own
   // internal gates for adult content and messaging.
-  final isRoomRoute = matchedLocation.startsWith('/rooms/room/');
+  final isRoomRoute = matchedLocation.startsWith('/rooms/room/') ||
+      matchedLocation.startsWith('/room/');
 
   final isPublicRoute = isAuthRoute || isRoomRoute;
 
@@ -81,3 +82,6 @@ String? evaluateAppRedirect({
     hasAcceptedLegal: hasAcceptedLegal,
   ).redirectTo;
 }
+
+
+

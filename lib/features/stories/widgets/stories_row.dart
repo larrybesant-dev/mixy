@@ -29,7 +29,7 @@ class StoriesRow extends ConsumerWidget {
 
     return storiesAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
       data: (stories) {
         // Group stories by userId, preserving first occurrence order
         final seen = <String>{};
@@ -140,7 +140,7 @@ class _StoryBubble extends StatelessWidget {
                             width: 52,
                             height: 52,
                             fit: BoxFit.cover,
-                            errorWidget: (_, _, _) =>
+                            errorWidget: (___, __, _) =>
                                 const Icon(Icons.person, size: 26),
                           ),
                         )
@@ -185,3 +185,6 @@ class _StoryBubble extends StatelessWidget {
     );
   }
 }
+
+
+

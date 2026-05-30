@@ -513,7 +513,7 @@ class _Thumbnail extends StatelessWidget {
           width: w,
           height: size,
           fit: BoxFit.cover,
-          errorWidget: (_, _, _) =>
+          errorWidget: (___, __, _) =>
               _FallbackThumb(category: category, size: size, width: w),
         ),
       );
@@ -821,3 +821,6 @@ String _capitalize(String s) {
   if (s.isEmpty) return s;
   return s[0].toUpperCase() + s.substring(1);
 }
+
+
+

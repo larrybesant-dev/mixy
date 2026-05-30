@@ -42,7 +42,7 @@ class GroupsScreen extends ConsumerWidget {
                 color: VelvetNoir.primary,
               ),
               tooltip: 'Create group',
-              onPressed: () => context.push('/create-group?userId=$userId'),
+              onPressed: () => context.push('/create-groupif (userId != null) userId=$userId'),
             ),
           ],
         ),
@@ -219,3 +219,6 @@ class GroupsScreen extends ConsumerWidget {
     );
   }
 }
+
+
+

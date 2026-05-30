@@ -1,45 +1,46 @@
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use, avoid_dynamic_calls
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+
 import 'dart:html' as html;
+import 'dart:async';
 
 class MediaDeviceInfo {
   final String deviceId;
   final String label;
-  final String kind; // 'audioinput' | 'videoinput'
-  const MediaDeviceInfo({
-    required this.deviceId,
-    required this.label,
-    required this.kind,
-  });
+  final String kind;
+  MediaDeviceInfo({required this.deviceId, required this.label, required this.kind});
 }
 
-Future<List<MediaDeviceInfo>> enumerateMediaDevices() async {
+Future<List<MediaDeviceInfo>> enumerateWebDevices() async {
   final devices = html.window.navigator.mediaDevices;
-  if (devices == null) return const [];
+  if (devices == null) return [];
+
+  html.MediaStream? stream;
   try {
-    // Request permission first so labels are populated.
-    html.MediaStream? stream;
-    try {
-      stream = await devices.getUserMedia({'audio': true, 'video': true});
-    } catch (_) {
-      // Permission denied or not available — proceed anyway; labels may be empty.
-    }
+    stream = await devices.getUserMedia({'audio': true, 'video': true}).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => throw TimeoutException('Browser device enumeration timed out.'),
+    );
+    
+    final list = await devices.enumerateDevices();
+    return list.map((d) {
+      final jsDevice = d as html.MediaDeviceInfo;
+      return MediaDeviceInfo(
+        deviceId: jsDevice.deviceId ?? '',
+        label: jsDevice.label ?? '',
+        kind: jsDevice.kind ?? '',
+      );
+    }).toList();
+  } catch (e) {
+    print('LOG: [WebDeviceEnum] Device enumeration skipped or denied: $e');
+    return [];
+  } finally {
     if (stream != null) {
       for (final track in stream.getTracks()) {
         track.stop();
       }
     }
-    final raw = await devices.enumerateDevices();
-    return raw
-        .where((d) => d.kind == 'audioinput' || d.kind == 'videoinput')
-        .map(
-          (d) => MediaDeviceInfo(
-            deviceId: d.deviceId ?? '',
-            label: (d.label?.isNotEmpty == true) ? d.label! : d.deviceId ?? '',
-            kind: d.kind ?? '',
-          ),
-        )
-        .toList(growable: false);
-  } catch (_) {
-    return const [];
   }
 }
+
+
+

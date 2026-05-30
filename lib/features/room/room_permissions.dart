@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'controllers/room_state.dart';
 
 class RoomPermissions {
@@ -92,3 +93,7 @@ bool shouldEjectJoinedUserFromRoom({
   final effectiveNow = now ?? DateTime.now();
   return effectiveNow.difference(lastMembership) > _ejectGraceWindow;
 }
+
+
+
+

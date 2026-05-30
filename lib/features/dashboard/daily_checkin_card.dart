@@ -29,7 +29,7 @@ class DailyCheckinCard extends ConsumerWidget {
 
     return async.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
       data: (status) => _CheckinContent(status: status),
     );
   }
@@ -291,3 +291,6 @@ class _DayPip extends StatelessWidget {
     );
   }
 }
+
+
+

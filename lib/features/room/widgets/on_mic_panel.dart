@@ -135,7 +135,7 @@ class OnMicPanel extends ConsumerWidget {
                   vertical: 8,
                 ),
                 itemCount: sorted.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                separatorBuilder: (__, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   final p = sorted[index];
                   final name =
@@ -202,3 +202,6 @@ class _PulsingMicIconState extends State<_PulsingMicIcon>
     );
   }
 }
+
+
+

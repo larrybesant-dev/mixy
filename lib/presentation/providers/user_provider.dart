@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/controllers/auth_controller.dart';
@@ -103,3 +104,7 @@ final userProvider = Provider<UserModel?>((ref) {
     createdAt: DateTime.now(),
   );
 });
+
+
+
+

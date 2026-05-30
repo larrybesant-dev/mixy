@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 /// Frozen semantics for architecture interpretation.
 ///
 /// This file is the only place where interpretation meaning may be revised.
@@ -29,3 +30,7 @@ class ArchitectureHealthInterpretationContract {
 
   static const String reasonAligned = 'aligned:contracts_and_behavior';
 }
+
+
+
+

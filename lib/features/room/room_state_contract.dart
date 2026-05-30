@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'controllers/room_state.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -234,3 +235,7 @@ abstract final class RoomStateContract {
   static bool hasMicAuthority(String role) =>
       kRoomMicRoles.contains(normalizeRoomRole(role, fallbackRole: ''));
 }
+
+
+
+

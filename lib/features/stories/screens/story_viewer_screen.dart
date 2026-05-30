@@ -288,8 +288,8 @@ class _StoryBackground extends StatelessWidget {
       return CachedNetworkImage(
         imageUrl: story.imageUrl!,
         fit: BoxFit.cover,
-        placeholder: (_, _) => const ColoredBox(color: Colors.black),
-        errorWidget: (_, _, _) => const ColoredBox(color: Colors.black),
+        placeholder: (__, _) => const ColoredBox(color: Colors.black),
+        errorWidget: (___, __, _) => const ColoredBox(color: Colors.black),
       );
     }
     return Container(
@@ -337,7 +337,7 @@ class _ProgressBar extends StatelessWidget {
           child: active
               ? AnimatedBuilder(
                   animation: animation,
-                  builder: (_, _) => FractionallySizedBox(
+                  builder: (__, _) => FractionallySizedBox(
                     widthFactor: animation.value,
                     child: Container(
                       height: 2.5,
@@ -357,3 +357,6 @@ class _ProgressBar extends StatelessWidget {
     );
   }
 }
+
+
+

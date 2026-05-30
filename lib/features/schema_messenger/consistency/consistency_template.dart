@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Shared trend classification for module health providers.
@@ -205,3 +206,7 @@ evaluateConsistencyGate<TResult extends ConsistencyParityResult>({
     ),
   );
 }
+
+
+
+

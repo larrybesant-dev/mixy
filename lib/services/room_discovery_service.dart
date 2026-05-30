@@ -195,3 +195,6 @@ abstract final class RoomDiscoveryService {
     room.stageUserIds.length + room.audienceUserIds.length,
   );
 }
+
+
+

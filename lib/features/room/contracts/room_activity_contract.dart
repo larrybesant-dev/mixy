@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../providers/presence_provider.dart';
 
 class RoomActivityContract {
@@ -29,3 +30,7 @@ class RoomActivityContract {
     return false;
   }
 }
+
+
+
+

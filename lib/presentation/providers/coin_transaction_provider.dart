@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/payment_api.dart';
 // Unused import removed: 'payment_api_provider.dart';
@@ -8,3 +9,7 @@ final coinTransactionStreamProvider = StreamProvider.autoDispose
       // Removed unused variable: paymentApi
       return PaymentApi.getTransactions(userId);
     });
+
+
+
+

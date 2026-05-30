@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import '../repository/typing_repository.dart';
@@ -32,3 +33,7 @@ final typingUserIdsProvider = StreamProvider.autoDispose
         controller.onCancel = subscription.close;
       });
     });
+
+
+
+

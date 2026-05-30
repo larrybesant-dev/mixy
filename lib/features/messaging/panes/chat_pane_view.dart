@@ -362,6 +362,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     final conversationAsync = ref.watch(
       conversationDocProvider(widget.conversationId),
     );
+    
+    if (kDebugMode && conversationAsync.hasValue) {
+       debugPrint('DEBUG: ChatPaneView conversation loaded: ${conversationAsync.value != null}');
+    }
+
     if (conversationAsync.hasError) {
       _markHydrationComplete('conversation_error');
       return AppErrorView(
@@ -374,14 +379,17 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     }
 
     if (conversationAsync.isLoading && !_allowEmptyState) {
+      debugPrint('DEBUG: ChatPaneView rendering AppLoadingView (Connecting)');
       return const AppLoadingView(label: 'Connecting conversation');
     }
 
     final conversation = conversationAsync.valueOrNull;
     if (conversation == null) {
       if (!_allowEmptyState) {
+        debugPrint('DEBUG: ChatPaneView rendering AppLoadingView (Hydrating)');
         return const AppLoadingView(label: 'Hydrating conversation');
       }
+      debugPrint('DEBUG: ChatPaneView rendering AppEmptyView');
       _markHydrationComplete('conversation_unavailable');
       SystemEventBus.instance.emit(
         SystemEvent(
@@ -1153,7 +1161,7 @@ class _TypingIndicatorRow extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -1279,7 +1287,7 @@ class _ReactionRow extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -1316,3 +1324,6 @@ class _PendingMessage {
     );
   }
 }
+
+
+

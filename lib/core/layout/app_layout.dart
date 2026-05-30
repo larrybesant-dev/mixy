@@ -37,3 +37,6 @@ extension AppLayoutContext on BuildContext {
   EdgeInsets get pagePadding =>
       EdgeInsets.symmetric(horizontal: pageHorizontalPadding);
 }
+
+
+

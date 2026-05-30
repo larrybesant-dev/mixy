@@ -34,3 +34,6 @@ class FirebaseEmulatorBootstrap {
     FirebaseFunctions.instance.useFunctionsEmulator(host, functionsPort);
   }
 }
+
+
+

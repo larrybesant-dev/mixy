@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../../../models/room_participant_model.dart';
 
 enum LiveRoomPhase { idle, joining, joined, leaving, error }
@@ -372,6 +373,7 @@ class RoomState {
     this.micRequested = false,
     this.hasMicPermission = true,
     this.hasSpeakerSeat = false,
+    this.spotlightUserId,
   }) : _lifecycleState = lifecycleState;
 
   static const int maxSpeakers = 4;
@@ -395,6 +397,7 @@ class RoomState {
   final bool micRequested;
   final bool hasMicPermission;
   final bool hasSpeakerSeat;
+  final String? spotlightUserId;
 
   String? get userId => currentUserId;
 
@@ -767,6 +770,7 @@ class RoomState {
     bool? micRequested,
     bool? hasMicPermission,
     bool? hasSpeakerSeat,
+    Object? spotlightUserId = _unset,
   }) {
     return RoomState(
       phase: phase ?? this.phase,
@@ -796,8 +800,15 @@ class RoomState {
       micRequested: micRequested ?? this.micRequested,
       hasMicPermission: hasMicPermission ?? this.hasMicPermission,
       hasSpeakerSeat: hasSpeakerSeat ?? this.hasSpeakerSeat,
+      spotlightUserId: identical(spotlightUserId, _unset)
+          ? this.spotlightUserId
+          : spotlightUserId as String?,
     );
   }
 }
 
 const Object _unset = Object();
+
+
+
+

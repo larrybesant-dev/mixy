@@ -153,7 +153,14 @@ abstract class RtcRoomService {
   /// Default no-op — implementations that support it override this.
   Future<void> setSpeakerVolume(double volume) async {}
 
+  /// Suggests the encoding quality for the local outgoing stream.
+  /// Used in Mesh to save bandwidth when the user is not the active speaker.
+  Future<void> setEncodingQuality(bool highQuality) async {}
+
   Future<void> dispose();
 
   Future<void> ensureDeviceAccess({required bool video, required bool audio});
 }
+
+
+

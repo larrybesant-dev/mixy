@@ -21,6 +21,9 @@ enum StartupCheckpoint {
   firstFrameRendered,
   firstInteractiveReady,
 
+  /// Fired when the first WebRTC channel successfully connects.
+  rtcConnected,
+
   /// Fired on the first deliberate user gesture after the app is interactive.
   /// This closes the loop between "system ready" and "user felt ready".
   firstUserAction,
@@ -119,6 +122,10 @@ class StartupProfiler {
     );
     // Keep funnel tracker in sync — first interactive = first screen visible.
     SessionFunnelTracker.instance.markFirstScreenVisible();
+  }
+
+  void markRtcConnected() {
+    _mark(StartupCheckpoint.rtcConnected);
   }
 
   void markWarmStartBegin() {
@@ -478,3 +485,6 @@ class SessionFunnelTracker {
     pulseTaps: _pulseTaps > 0 ? _pulseTaps : null,
   );
 }
+
+
+

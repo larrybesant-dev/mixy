@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -228,20 +229,14 @@ final currentParticipantWithCacheFallbackProvider = Provider.autoDispose
       return streamValue.valueOrNull;
     });
 
-const Duration _kParticipantFreshnessWindow = Duration(seconds: 90);
+const Duration _kParticipantFreshnessWindow = Duration(seconds: 30);
 
 bool _isParticipantFresh(RoomParticipantModel participant, {DateTime? now}) {
-  final normalizedRole = normalizeRoomRole(participant.role, fallbackRole: '');
-  final shouldKeepActiveSeatVisible =
-      canManageStageRole(normalizedRole) ||
-      normalizedRole == roomRoleStage ||
-      participant.camOn ||
-      participant.micOn;
-  if (shouldKeepActiveSeatVisible) {
-    return true;
-  }
+  // If the user drops connection, they should be evicted even if they are host/stage/camOn.
+  // Otherwise, "Ghost Tiles" will remain frozen on stage.
 
   final currentTime = now ?? DateTime.now();
+  // Using lastActiveAt which now includes our heartbeat update
   return currentTime.difference(participant.lastActiveAt) <=
       _kParticipantFreshnessWindow;
 }
@@ -349,17 +344,17 @@ final onMicParticipantsProvider = StreamProvider.autoDispose
 
       ref.listen<AsyncValue<List<RoomParticipantModel>>>(
         participantsStreamProvider(roomId),
-        (_, _) => publish(),
+        (__, _) => publish(),
         fireImmediately: true,
       );
       ref.listen<AsyncValue<List<String>>>(
         roomSpeakerUserIdsProvider(roomId),
-        (_, _) => publish(),
+        (__, _) => publish(),
         fireImmediately: true,
       );
       ref.listen<AsyncValue<Map<String, dynamic>?>>(
         roomDocStreamProvider(roomId),
-        (_, _) => publish(),
+        (__, _) => publish(),
         fireImmediately: true,
       );
       ref.onDispose(controller.close);
@@ -385,3 +380,7 @@ final modLogStreamProvider = StreamProvider.autoDispose
                 .toList(growable: false),
           );
     });
+
+
+
+

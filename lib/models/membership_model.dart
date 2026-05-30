@@ -11,3 +11,6 @@ class MembershipModel {
     required this.spotlightMultiplier,
   });
 }
+
+
+

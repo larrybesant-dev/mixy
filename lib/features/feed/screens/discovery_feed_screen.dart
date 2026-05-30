@@ -744,7 +744,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   scrollDirection: Axis.horizontal,
                   itemCount: feedState.trendingUsers.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  separatorBuilder: (__, _) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final user = feedState.trendingUsers[index];
                     return TrendingUserCard(
@@ -820,7 +820,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
         ),
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (__, _) => const SizedBox(width: 8),
         itemBuilder: (ctx, i) {
           final cat = _categories[i];
           final selected = _selectedCategory == cat.value;
@@ -1203,12 +1203,12 @@ class _BentoHeroCard extends ConsumerWidget {
                                 ? CachedNetworkImage(
                                     imageUrl: url,
                                     fit: BoxFit.cover,
-                                    errorWidget: (_, _, _) =>
+                                    errorWidget: (___, __, _) =>
                                         Container(color: _npPrimaryDim),
                                   )
                                 : Container(color: _npPrimaryDim),
                             loading: () => Container(color: _npPrimaryDim),
-                            error: (_, _) => Container(color: _npPrimaryDim),
+                            error: (__, _) => Container(color: _npPrimaryDim),
                           ),
                         ),
                       ),
@@ -1445,12 +1445,12 @@ class _RoomGridCard extends ConsumerWidget {
                             ? CachedNetworkImage(
                                 imageUrl: url,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, _, _) =>
+                                errorWidget: (___, __, _) =>
                                     Container(color: _npPrimaryDim),
                               )
                             : Container(color: _npPrimaryDim),
                         loading: () => Container(color: _npPrimaryDim),
-                        error: (_, _) => Container(color: _npPrimaryDim),
+                        error: (__, _) => Container(color: _npPrimaryDim),
                       ),
                     ),
                   ),
@@ -1838,7 +1838,7 @@ class _FollowingFeedTabState extends ConsumerState<_FollowingFeedTab> {
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: feedState.posts.length + (feedState.hasMore ? 1 : 0),
-        separatorBuilder: (_, _) => Divider(height: 1, color: _npGhost),
+        separatorBuilder: (__, _) => Divider(height: 1, color: _npGhost),
         itemBuilder: (context, i) {
           if (i == feedState.posts.length) {
             return Center(
@@ -1990,7 +1990,7 @@ class _LiveNowStrip extends ConsumerWidget {
             ),
             scrollDirection: Axis.horizontal,
             itemCount: rooms.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 14),
+            separatorBuilder: (__, _) => const SizedBox(width: 14),
             itemBuilder: (ctx, i) => _LiveNowBubble(
               room: rooms[i],
               onTap: () => context.go('/room/${rooms[i].id}', extra: rooms[i]),
@@ -2100,12 +2100,12 @@ class _LiveNowBubble extends ConsumerWidget {
                           ? CachedNetworkImage(
                               imageUrl: url,
                               fit: BoxFit.cover,
-                              errorWidget: (_, _, _) =>
+                              errorWidget: (___, __, _) =>
                                   _EmojiAvatar(emoji: emoji),
                             )
                           : _EmojiAvatar(emoji: emoji),
                       loading: () => _EmojiAvatar(emoji: emoji),
-                      error: (_, _) => _EmojiAvatar(emoji: emoji),
+                      error: (__, _) => _EmojiAvatar(emoji: emoji),
                     ),
                   ),
                 ),
@@ -2905,7 +2905,7 @@ class _FriendsLiveSection extends ConsumerWidget {
                 padding: EdgeInsets.zero,
                 scrollDirection: Axis.horizontal,
                 itemCount: friendRooms.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 14),
+                separatorBuilder: (__, _) => const SizedBox(width: 14),
                 itemBuilder: (ctx, i) => _LiveNowBubble(
                   room: friendRooms[i],
                   friendCount: RoomDiscoveryService.friendCountIn(
@@ -2923,7 +2923,10 @@ class _FriendsLiveSection extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
     );
   }
 }
+
+
+

@@ -194,7 +194,7 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
         'category': room.category ?? 'unknown',
         'members': _stablePeopleCount(room),
         'speakers': room.stageUserIds.length,
-        'dwell_ms': ?dwellMs,
+        if (dwellMs != null) 'dwell_ms': dwellMs,
       },
     );
 
@@ -271,7 +271,7 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
               // Main sections composed from shared room stream
               roomsAsync.when(
                 loading: () => const SliverToBoxAdapter(child: _HomeShimmer()),
-                error: (_, _) => SliverToBoxAdapter(
+                error: (__, _) => SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.all(hp),
                     child: Center(
@@ -326,7 +326,7 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
                             padding: EdgeInsets.symmetric(horizontal: hp),
                             scrollDirection: Axis.horizontal,
                             itemCount: liveNow.length,
-                            separatorBuilder: (_, _) =>
+                            separatorBuilder: (__, _) =>
                                 const SizedBox(width: 10),
                             itemBuilder: (ctx, i) => SocialRoomCardCompact(
                               key: ValueKey(liveNow[i].id),
@@ -351,7 +351,7 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
                       ),
                       followingLiveAsync.when(
                         loading: () => const _MiniLoadingStrip(),
-                        error: (_, _) => const SizedBox.shrink(),
+                        error: (__, _) => const SizedBox.shrink(),
                         data: (followRooms) {
                           if (followRooms.isEmpty) {
                             final suggestions = rooms.take(3).toList();
@@ -454,7 +454,7 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
                       ),
                       forYouAsync.when(
                         loading: () => const _MiniLoadingStrip(),
-                        error: (_, _) => const SizedBox.shrink(),
+                        error: (__, _) => const SizedBox.shrink(),
                         data: (suggestions) {
                           if (suggestions.isEmpty) {
                             return Padding(
@@ -525,7 +525,7 @@ class _SectionHeader extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: VelvetNoir.onSurface,
-            ),
+          ),
           ),
           const SizedBox(height: 2),
           Text(

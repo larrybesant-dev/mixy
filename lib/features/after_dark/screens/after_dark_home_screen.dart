@@ -342,7 +342,7 @@ class _QuickActions extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: actions.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        separatorBuilder: (__, _) => const SizedBox(width: 10),
         itemBuilder: (ctx, i) {
           final (icon, label, route) = actions[i];
           return _AfterDarkReveal(
@@ -545,3 +545,6 @@ class _AfterDarkReveal extends StatelessWidget {
     );
   }
 }
+
+
+

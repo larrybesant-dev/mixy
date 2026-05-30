@@ -259,3 +259,22 @@ class CamViewEvent extends AppEvent {
     targetUserId: targetUserId,
   );
 }
+
+class RoomSessionStateChangedEvent extends AppEvent {
+  const RoomSessionStateChangedEvent({
+    required super.id,
+    required super.timestamp,
+    super.sessionId,
+    super.correlationId,
+    super.tags = const <String>['room', 'internal'],
+    required this.roomId,
+  });
+
+  final String roomId;
+
+  @override
+  String get defaultSessionId => 'room:$roomId';
+}
+
+
+

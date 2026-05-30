@@ -83,23 +83,25 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
     final totalWidth = constraints.maxWidth;
 
     // Clamp widths so panels don't overflow
+    final double safeTotalWidth = totalWidth.isFinite ? totalWidth : 1000.0;
+    
     final effectiveCamWidth = _camMinimized
         ? 0.0
         : _camWidth.clamp(
             widget.minCamWidth,
-            totalWidth -
+            (safeTotalWidth -
                 widget.minChatWidth -
                 widget.minUsersWidth -
-                dividerWidth * 2,
+                dividerWidth * 2).clamp(widget.minCamWidth, double.infinity),
           );
     final effectiveUsersWidth = _usersMinimized
         ? 0.0
         : _usersWidth.clamp(
             widget.minUsersWidth,
-            totalWidth -
+            (safeTotalWidth -
                 effectiveCamWidth -
                 widget.minChatWidth -
-                dividerWidth * 2,
+                dividerWidth * 2).clamp(widget.minUsersWidth, double.infinity),
           );
 
     return Stack(
@@ -132,12 +134,14 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
               _ResizeDivider(
                 onDelta: (delta) {
                   setState(() {
+                    final maxPossible = (totalWidth -
+                            widget.minChatWidth -
+                            effectiveUsersWidth -
+                            dividerWidth * 2)
+                        .clamp(widget.minCamWidth, double.infinity);
                     _camWidth = (_camWidth + delta).clamp(
                       widget.minCamWidth,
-                      totalWidth -
-                          widget.minChatWidth -
-                          effectiveUsersWidth -
-                          dividerWidth * 2,
+                      maxPossible,
                     );
                   });
                 },
@@ -157,12 +161,14 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
               _ResizeDivider(
                 onDelta: (delta) {
                   setState(() {
+                    final maxPossible = (totalWidth -
+                            effectiveCamWidth -
+                            widget.minChatWidth -
+                            dividerWidth * 2)
+                        .clamp(widget.minUsersWidth, double.infinity);
                     _usersWidth = (_usersWidth - delta).clamp(
                       widget.minUsersWidth,
-                      totalWidth -
-                          effectiveCamWidth -
-                          widget.minChatWidth -
-                          dividerWidth * 2,
+                      maxPossible,
                     );
                   });
                 },
@@ -224,41 +230,44 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
               ),
             ),
             // Bottom nav bar (Paltalk-style tab strip)
-            Container(
-              height: 48,
-              color: npSurfaceHigh,
-              child: Row(
-                children: List.generate(tabs.length, (i) {
-                  final tab = tabs[i];
-                  final selected = _mobileTab == i;
-                  return Expanded(
-                    child: InkWell(
-                      onTap: () => setState(() => _mobileTab = i),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            tab.icon,
-                            size: 18,
-                            color: selected ? npPrimary : npOnVariant,
-                          ),
-                          Text(
-                            tab.label,
-                            style: TextStyle(
-                              fontSize: 10,
+            // Hardening: Only show tab strip if there is sufficient vertical space.
+            // On extreme small screens (e.g. 10x10), this prevents overflow exceptions.
+            if (MediaQuery.of(context).size.height > 60)
+              Container(
+                height: 48,
+                color: npSurfaceHigh,
+                child: Row(
+                  children: List.generate(tabs.length, (i) {
+                    final tab = tabs[i];
+                    final selected = _mobileTab == i;
+                    return Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _mobileTab = i),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              tab.icon,
+                              size: 18,
                               color: selected ? npPrimary : npOnVariant,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.normal,
                             ),
-                          ),
-                        ],
+                            Text(
+                              tab.label,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: selected ? npPrimary : npOnVariant,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
-            ),
           ],
         ),
         // Floating windows / overlays
@@ -332,3 +341,6 @@ class _MinimizedTabButton extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -214,3 +214,6 @@ class PresenceModel {
     'rtdbActiveSessionCount': activeSessionCount,
   };
 }
+
+
+

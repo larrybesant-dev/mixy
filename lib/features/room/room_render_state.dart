@@ -196,3 +196,6 @@ class _RoomRenderStateArgs {
   @override
   int get hashCode => Object.hash(roomId, hasRtcService, hasVideoStreams);
 }
+
+
+

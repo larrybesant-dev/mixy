@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SchemaFriendPresence {
@@ -120,3 +121,7 @@ class SchemaFriendPresence {
 }
 
 enum SchemaFriendPresenceGroup { inRoom, online, offline }
+
+
+
+

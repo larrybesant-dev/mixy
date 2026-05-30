@@ -28,3 +28,6 @@ class QueryPolicy {
   // ── Notifications ──────────────────────────────────────────────────────────
   static const int notificationsLimit = 50;
 }
+
+
+

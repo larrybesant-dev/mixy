@@ -49,3 +49,6 @@ class PresenceService {
   Stream<bool> userPresenceStream(String userId) =>
       watchUserPresence(userId).map((presence) => presence.isOnline == true);
 }
+
+
+

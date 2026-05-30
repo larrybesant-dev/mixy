@@ -6,3 +6,6 @@ class AddFriendUseCase {
   AddFriendUseCase(this.repository);
   Future<void> call(FriendModel friend) => repository.addFriend(friend);
 }
+
+
+

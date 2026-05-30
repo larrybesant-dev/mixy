@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
@@ -395,14 +396,14 @@ class HostControls {
     final entry = <String, dynamic>{
       'action': action,
       'actorId': actorId,
-      'targetId': ?targetId,
+      if (targetId != null) 'targetId': targetId,
       'ts': FieldValue.serverTimestamp(),
       if (meta != null) ...meta,
     };
+    
     _roomRef(roomId)
         .collection('mod_log')
         .add(entry)
-        // ignore: avoid_types_on_closure_parameters
         .catchError((Object _) => _roomRef(roomId).collection('mod_log').doc());
   }
 
@@ -504,3 +505,7 @@ class HostControls {
 final hostControlsProvider = Provider<HostControls>(
   (ref) => HostControls(ref.watch(roomFirestoreProvider)),
 );
+
+
+
+

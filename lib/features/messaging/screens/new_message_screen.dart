@@ -267,7 +267,7 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
           Expanded(
             child: ListView.separated(
               itemCount: _searchResults.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
+              separatorBuilder: (__, _) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final user = _searchResults[index];
                 final userId = (user['id'] ?? '').trim();
@@ -300,3 +300,6 @@ class _NewMessagePaneViewState extends ConsumerState<NewMessagePaneView> {
     );
   }
 }
+
+
+

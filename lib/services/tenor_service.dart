@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../config/app_env.dart';
 import 'package:http/http.dart' as http;
 
 /// Lightweight wrapper around the Giphy API.
@@ -18,12 +18,7 @@ class GifService {
     String query, {
     String rating = 'pg-13', // g | pg | pg-13 | r
   }) async {
-    String apiKey = '';
-    try {
-      apiKey = dotenv.env['GIPHY_API_KEY'] ?? '';
-    } catch (_) {
-      apiKey = '';
-    }
+    final String apiKey = AppEnv.giphyApiKey;
     if (apiKey.isEmpty || apiKey == 'YOUR_GIPHY_API_KEY') {
       developer.log(
         'GIPHY_API_KEY not set in app_env — GIFs will not load.',
@@ -78,3 +73,6 @@ class GifService {
     }
   }
 }
+
+
+

@@ -55,3 +55,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     await controller.resetPassword(_email.text.trim());
   }
 }
+
+
+

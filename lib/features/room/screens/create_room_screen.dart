@@ -441,7 +441,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
               ? Image.network(
                   _thumbnailUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const Icon(
+                  errorBuilder: (___, __, _) => const Icon(
                     Icons.image_outlined,
                     color: _onVariant,
                     size: 28,
@@ -994,7 +994,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       ? Image.network(
                           _thumbnailUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Icon(
+                          errorBuilder: (___, __, _) => Icon(
                             _mode == _RoomMode.video
                                 ? Icons.videocam_rounded
                                 : Icons.mic_rounded,
@@ -1152,3 +1152,6 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     );
   }
 }
+
+
+

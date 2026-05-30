@@ -15,7 +15,7 @@ class LeaderboardStrip extends ConsumerWidget {
 
     return async.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
       data: (users) {
         if (users.isEmpty) return const SizedBox.shrink();
         return Column(
@@ -48,7 +48,7 @@ class LeaderboardStrip extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: users.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                separatorBuilder: (__, _) => const SizedBox(width: 12),
                 itemBuilder: (context, i) =>
                     _LeaderCard(rank: i + 1, user: users[i]),
               ),
@@ -176,3 +176,6 @@ class _LeaderCard extends StatelessWidget {
     return '$n';
   }
 }
+
+
+

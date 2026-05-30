@@ -215,12 +215,12 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
     const npPrimary = Color(0xFFD4A853);
     const headerHeight = 32.0;
 
-    final panelHeight = _minimized ? headerHeight : _height;
+    final panelHeight = _minimized ? headerHeight : (_height.isFinite ? _height : 260.0);
 
     return Positioned(
-      left: _position.dx,
-      top: _position.dy,
-      width: _width,
+      left: _position.dx.isFinite ? _position.dx : 80.0,
+      top: _position.dy.isFinite ? _position.dy : 120.0,
+      width: _width.isFinite ? _width : 320.0,
       height: panelHeight,
       child: Material(
         color: Colors.transparent,
@@ -368,3 +368,6 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
     );
   }
 }
+
+
+

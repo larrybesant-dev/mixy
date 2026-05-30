@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/friend_request_model.dart';
@@ -295,3 +296,7 @@ final friendSuggestionsProvider = FutureProvider.autoDispose<List<UserModel>>((
       .watch(friendServiceProvider)
       .getFriendSuggestions(userId, limit: 15);
 });
+
+
+
+

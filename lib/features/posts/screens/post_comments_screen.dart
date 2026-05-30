@@ -105,7 +105,7 @@ class _PostCommentsScreenState extends ConsumerState<PostCommentsScreen> {
                 ? const SizedBox.shrink()
                 : PostCard(post: post, currentUserId: currentUser?.uid ?? ''),
             loading: () => const LinearProgressIndicator(),
-            error: (_, _) => const SizedBox.shrink(),
+            error: (__, _) => const SizedBox.shrink(),
           ),
           const Divider(height: 1),
           // Comment list
@@ -245,3 +245,6 @@ class _CommentTile extends StatelessWidget {
     return '${diff.inDays}d';
   }
 }
+
+
+

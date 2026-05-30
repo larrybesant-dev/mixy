@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -72,6 +73,10 @@ final walletProvider = StreamProvider<double>((ref) {
       .when(
         data: (wallet) => Stream<double>.value(wallet.coinBalance.toDouble()),
         loading: () => const Stream<double>.empty(),
-        error: (_, _) => const Stream<double>.empty(),
+        error: (__, _) => const Stream<double>.empty(),
       );
 });
+
+
+
+

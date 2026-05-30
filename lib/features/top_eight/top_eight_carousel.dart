@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'top_eight_providers.dart';
 
 class TopEightCarousel extends ConsumerWidget {
@@ -14,7 +14,8 @@ class TopEightCarousel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Determine which user's Top 8 to show. Default to current user if none provided.
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final auth = ref.watch(firebaseAuthProvider);
+    final currentUserId = auth.currentUser?.uid;
     final targetUserId = userId ?? currentUserId ?? '';
     
     final friendsAsync = ref.watch(topEightDisplayProvider(targetUserId));
@@ -121,3 +122,6 @@ class TopEightCarousel extends ConsumerWidget {
     );
   }
 }
+
+
+

@@ -70,7 +70,10 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
     _subscriptions.add(
       audio.onLoadedMetadata.listen((_) {
         if (!mounted) return;
-        setState(() => _duration = _fmt(audio.duration.toInt()));
+        final dur = audio.duration;
+        setState(() {
+          _duration = (dur.isFinite && dur > 0) ? _fmt(dur.toInt()) : '--:--';
+        });
       }),
     );
 
@@ -80,7 +83,7 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
         final dur = audio.duration;
         final cur = audio.currentTime.toDouble();
         setState(() {
-          _progress = dur > 0 ? (cur / dur).clamp(0.0, 1.0) : 0.0;
+          _progress = (dur.isFinite && dur > 0) ? (cur / dur).clamp(0.0, 1.0) : 0.0;
           _elapsed = _fmt(cur.toInt());
         });
       }),
@@ -268,7 +271,7 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
                     ] else ...[
                       const SizedBox(height: 2),
                       Text(
-                        _error!,
+                        _error ?? 'Unknown error',
                         style: const TextStyle(
                           fontSize: 11,
                           color: Color(0xFFFF6E84),
@@ -300,3 +303,6 @@ class _ProfileMusicPlayerState extends State<ProfileMusicPlayer> {
     );
   }
 }
+
+
+

@@ -32,7 +32,7 @@ class BookmarksScreen extends ConsumerWidget {
         data: (posts) => ListView.separated(
           padding: EdgeInsets.fromLTRB(0, 8, 0, context.sectionSpacing * 3),
           itemCount: posts.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (__, _) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final raw = posts[index];
             final id = raw['id'] as String? ?? '';
@@ -86,3 +86,6 @@ class _BookmarkRemoveButton extends StatelessWidget {
     );
   }
 }
+
+
+

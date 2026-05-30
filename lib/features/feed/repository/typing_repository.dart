@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/query_policy.dart';
 
@@ -47,3 +48,7 @@ class TypingRepository {
         .set({'typing': typing, 'timestamp': FieldValue.serverTimestamp()});
   }
 }
+
+
+
+

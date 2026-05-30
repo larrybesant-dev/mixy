@@ -322,7 +322,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             return ListView.separated(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, _) => const Divider(
+                              separatorBuilder: (__, _) => const Divider(
                                 height: 1,
                                 color: VelvetNoir.outlineVariant,
                                 indent: 72,
@@ -572,3 +572,6 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
+
+
+

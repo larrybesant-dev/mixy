@@ -907,7 +907,7 @@ class _UserPostsTab extends ConsumerWidget {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: posts.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (ctx, i) =>
               PostCard(post: posts[i], currentUserId: viewerId),
         );
@@ -1340,3 +1340,7 @@ class _ProfileSectionCard extends StatelessWidget {
     );
   }
 }
+
+
+
+

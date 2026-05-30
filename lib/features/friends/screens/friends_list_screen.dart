@@ -25,3 +25,6 @@ class _FriendsAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(title: const Text('Friends'));
   }
 }
+
+
+

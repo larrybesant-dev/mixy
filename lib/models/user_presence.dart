@@ -35,3 +35,6 @@ class UserPresence {
     'currentRoomId': currentRoomId,
   };
 }
+
+
+

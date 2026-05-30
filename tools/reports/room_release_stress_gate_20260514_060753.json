@@ -1,0 +1,193 @@
+﻿{
+    "generatedAtUtc":  "2026-05-14T11:07:53.9632525Z",
+    "validationMode":  "enforce",
+    "releaseGate":  "room_release_stress_gate_v1",
+    "verdict":  "FAIL",
+    "totalRuns":  6,
+    "passedRuns":  5,
+    "failedRuns":  1,
+    "failedCaseIds":  [
+                          "RS-2"
+                      ],
+    "failureClassificationSummary":  {
+                                         "primaryFailureBucket":  "TIMEOUT / INFRA FAILURE",
+                                         "counts":  {
+                                                        "ROOM FAILURE":  0,
+                                                        "PAYMENT FAILURE":  0,
+                                                        "RULES FAILURE":  0,
+                                                        "TIMEOUT / INFRA FAILURE":  1
+                                                    },
+                                         "failedClassifications":  [
+                                                                       {
+                                                                           "caseId":  "RS-2",
+                                                                           "caseName":  "Listener Leak Verification",
+                                                                           "failureBucket":  "TIMEOUT / INFRA FAILURE"
+                                                                       }
+                                                                   ]
+                                     },
+    "categorySummary":  [
+                            {
+                                "category":  "System Stability",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Infrastructure Health",
+                                "total":  1,
+                                "passed":  0,
+                                "failed":  1
+                            },
+                            {
+                                "category":  "Authority Correctness",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Realtime Consistency",
+                                "total":  2,
+                                "passed":  2,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Observability",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            }
+                        ],
+    "cases":  [
+                  {
+                      "caseId":  "RS-1",
+                      "caseName":  "Reconnect Storm",
+                      "category":  "System Stability",
+                      "failureClass":  "ghost_leave|duplicate_join|reconnect_loop",
+                      "command":  "flutter test --no-pub test/room_session_stress_test.dart",
+                      "passCriteria":  "No reconnect chaos regression; stress suite must pass end-to-end.",
+                      "startedAtUtc":  "2026-05-14T11:07:16.7905759Z",
+                      "endedAtUtc":  "2026-05-14T11:07:23.0058829Z",
+                      "durationMs":  6215,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_session_stress_test.dart",
+                                              "stress simulates room churn without duplicates or presence drift"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "retryCount":  0,
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-2",
+                      "caseName":  "Listener Leak Verification",
+                      "category":  "Infrastructure Health",
+                      "failureClass":  "listener_leak|duplicate_streams",
+                      "command":  "flutter test --no-pub test/room_chaos_master_test.dart",
+                      "passCriteria":  "No duplicate listener drift or leak regressions; chaos suite must pass.",
+                      "startedAtUtc":  "2026-05-14T11:07:23.1022339Z",
+                      "endedAtUtc":  "2026-05-14T11:07:29.3515217Z",
+                      "durationMs":  6249,
+                      "exitCode":  1,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_chaos_master_test.dart",
+                                              "same user joining from two controllers remains deduped"
+                                          ],
+                      "negativeMatches":  [
+                                              "Some tests failed"
+                                          ],
+                      "retryCount":  0,
+                      "passed":  false
+                  },
+                  {
+                      "caseId":  "RS-3",
+                      "caseName":  "Host Authority Stress",
+                      "category":  "Authority Correctness",
+                      "failureClass":  "split_brain|host_missing",
+                      "command":  "flutter test --no-pub test/room_state_machine_test.dart",
+                      "passCriteria":  "Host count must converge deterministically and authority tests must pass.",
+                      "startedAtUtc":  "2026-05-14T11:07:29.3594912Z",
+                      "endedAtUtc":  "2026-05-14T11:07:33.6690572Z",
+                      "durationMs":  4310,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_state_machine_test.dart",
+                                              "ignores stale host claims after migration to a new host"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "retryCount":  0,
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-4",
+                      "caseName":  "Mic Pressure Test",
+                      "category":  "Realtime Consistency",
+                      "failureClass":  "mic_desync|speaker_overflow",
+                      "command":  "flutter test --no-pub test/room_slot_service_test.dart test/room_host_control_panel_stage_tab_test.dart",
+                      "passCriteria":  "Mic grants, revokes, and slot limits stay aligned under pressure.",
+                      "startedAtUtc":  "2026-05-14T11:07:33.6720656Z",
+                      "endedAtUtc":  "2026-05-14T11:07:43.3940324Z",
+                      "durationMs":  9722,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_slot_service_test.dart",
+                                              "room_host_control_panel_stage_tab_test.dart"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "retryCount":  0,
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-5",
+                      "caseName":  "Late Join Sync",
+                      "category":  "Realtime Consistency",
+                      "failureClass":  "late_join_sync|ui_desync",
+                      "command":  "flutter test --no-pub test/live_room_screen_test.dart test/room_state_test.dart",
+                      "passCriteria":  "Late-join hydration and UI authority sync must pass.",
+                      "startedAtUtc":  "2026-05-14T11:07:43.4453882Z",
+                      "endedAtUtc":  "2026-05-14T11:07:49.2496561Z",
+                      "durationMs":  5804,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "live_room_screen_test.dart"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "retryCount":  0,
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-6",
+                      "caseName":  "Telemetry Truth Validation",
+                      "category":  "Observability",
+                      "failureClass":  "false_positive|silent_failure|bad_alerting",
+                      "command":  "flutter test --no-pub test/app_telemetry_test.dart",
+                      "passCriteria":  "Health alerts and suppression model must match deterministic telemetry tests.",
+                      "startedAtUtc":  "2026-05-14T11:07:49.2533987Z",
+                      "endedAtUtc":  "2026-05-14T11:07:53.7702389Z",
+                      "durationMs":  4517,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "app_telemetry_test.dart",
+                                              "All tests passed!"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "retryCount":  0,
+                      "passed":  true
+                  }
+              ]
+}

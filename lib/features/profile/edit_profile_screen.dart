@@ -270,7 +270,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   borderRadius: BorderRadius.circular(12),
                   image: (_coverPhotoUrl != null && _coverPhotoUrl!.isNotEmpty)
                       ? DecorationImage(
-                          image: NetworkImage(_coverPhotoUrl!),
+                          image: NetworkImage(_coverPhotoUrl ?? ''),
                           fit: BoxFit.cover,
                         )
                       : null,
@@ -278,7 +278,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 child: Center(
                   child: _isUploadingCover
                       ? const CircularProgressIndicator()
-                      : (_coverPhotoUrl == null || _coverPhotoUrl!.isEmpty)
+                      : (_coverPhotoUrl == null || (_coverPhotoUrl ?? '').isEmpty)
                       ? Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -330,11 +330,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                           : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                           ? ClipOval(
                               child: CachedNetworkImage(
-                                imageUrl: _avatarUrl!,
+                                imageUrl: _avatarUrl ?? '',
                                 width: 72,
                                 height: 72,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, _, _) =>
+                                errorWidget: (___, __, _) =>
                                     const Icon(Icons.person, size: 32),
                               ),
                             )
@@ -595,7 +595,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 0,
               ),
               child: Text(
-                state.error!,
+                state.error ?? 'Unknown error',
                 style: const TextStyle(color: Colors.redAccent, fontSize: 13),
               ),
             ),
@@ -710,3 +710,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     );
   }
 }
+
+
+

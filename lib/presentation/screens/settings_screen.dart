@@ -72,7 +72,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.shield_outlined,
               label: 'Privacy Controls',
               sub: 'Manage profile visibility and account privacy preferences.',
-              onTap: () => context.go('/profile/edit?tab=0'),
+              onTap: () => context.go('/profile/editif (tab != null) tab=0'),
             ),
             _SettingsTile(
               icon: Icons.block_outlined,
@@ -566,7 +566,7 @@ class _AfterDarkSettingsCard extends ConsumerWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
-        error: (_, _) => const ListTile(
+        error: (__, _) => const ListTile(
           leading: Icon(
             Icons.local_fire_department_rounded,
             color: Color(0xFFE0142A),
@@ -745,3 +745,6 @@ class _AfterDarkSettingsCard extends ConsumerWidget {
     if (confirmed == true) await controller.disable();
   }
 }
+
+
+

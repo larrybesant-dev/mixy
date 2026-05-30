@@ -87,7 +87,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             // Status banner
             isVerifiedAsync.when(
               loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
+              error: (__, _) => const SizedBox.shrink(),
               data: (isVerified) {
                 if (isVerified) {
                   return _StatusBanner(
@@ -327,3 +327,6 @@ class _ExistingRequestView extends StatelessWidget {
     );
   }
 }
+
+
+

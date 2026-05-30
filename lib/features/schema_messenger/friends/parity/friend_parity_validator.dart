@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 class FriendParitySnapshot {
   const FriendParitySnapshot({
     required this.legacyIdsOrdered,
@@ -112,3 +113,7 @@ FriendParityResult evaluateFriendParity(FriendParitySnapshot snapshot) {
     paritySignature: signature,
   );
 }
+
+
+
+

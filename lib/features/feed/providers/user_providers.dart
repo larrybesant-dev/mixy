@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import '../../../models/user_model.dart';
@@ -13,3 +14,7 @@ final userProvider = FutureProvider.family<UserModel?, String>((
   if (data == null) return null;
   return UserModel.fromJson({...data, 'id': doc.id});
 });
+
+
+
+

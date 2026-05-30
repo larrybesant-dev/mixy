@@ -77,3 +77,6 @@ class SafeNetworkAvatar extends StatelessWidget {
     );
   }
 }
+
+
+

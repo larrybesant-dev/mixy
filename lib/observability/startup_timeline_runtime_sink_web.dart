@@ -68,3 +68,6 @@ void emitStartupMessageToRuntime(String message) {
 
   _updateAppReadyContract(message);
 }
+
+
+

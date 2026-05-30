@@ -63,7 +63,7 @@ class _RoomAvatarRing extends StatelessWidget {
             ? CachedNetworkImage(
                 imageUrl: url!,
                 fit: BoxFit.cover,
-                errorWidget: (_, _, _) =>
+                errorWidget: (___, __, _) =>
                     Container(color: VelvetNoir.surfaceHighest),
               )
             : Container(color: VelvetNoir.surfaceHighest),
@@ -71,3 +71,6 @@ class _RoomAvatarRing extends StatelessWidget {
     );
   }
 }
+
+
+

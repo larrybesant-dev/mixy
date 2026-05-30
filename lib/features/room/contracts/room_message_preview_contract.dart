@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 
 class RoommessagePreviewContract {
@@ -12,3 +13,7 @@ class RoommessagePreviewContract {
     return oldLast.id != newLast.id || oldLast.createdAt != newLast.createdAt;
   }
 }
+
+
+
+

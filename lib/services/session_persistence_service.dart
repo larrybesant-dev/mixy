@@ -74,3 +74,6 @@ class SessionPersistence {
     return prefs.getBool(_kIsSpeedDatingActive) ?? false;
   }
 }
+
+
+

@@ -85,17 +85,49 @@ class ChatPanel extends ConsumerStatefulWidget {
 
 class _ChatPanelState extends ConsumerState<ChatPanel> {
   int _lastCount = 0;
+  bool _userHasScrolledUp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_scrollListener);
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (!widget.scrollController.hasClients) return;
+
+    final pos = widget.scrollController.position;
+    // If we are more than 100 pixels away from the bottom, assume user is reading history.
+    final double offsetFromBottom = pos.maxScrollExtent - pos.pixels;
+    
+    if (offsetFromBottom > 100) {
+      if (!_userHasScrolledUp) {
+        setState(() => _userHasScrolledUp = true);
+      }
+    } else {
+      if (_userHasScrolledUp) {
+        setState(() => _userHasScrolledUp = false);
+      }
+    }
+  }
 
   void _scrollToBottom() {
+    if (_userHasScrolledUp) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (widget.scrollController.hasClients &&
-            widget.scrollController.position.hasContentDimensions) {
-          widget.scrollController.jumpTo(
-            widget.scrollController.position.maxScrollExtent,
-          );
-        }
-      });
+      if (!mounted) return;
+      if (widget.scrollController.hasClients &&
+          widget.scrollController.position.hasContentDimensions) {
+        widget.scrollController.jumpTo(
+          widget.scrollController.position.maxScrollExtent,
+        );
+      }
     });
   }
 
@@ -149,9 +181,12 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                     controller: widget.scrollController,
                     padding: const EdgeInsets.all(6),
                     itemCount: widget.messages.length,
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: true,
                     itemBuilder: (context, i) {
                       final msg = widget.messages[i];
                       return MessageBubble(
+                        key: ValueKey('msg_${msg.id}'),
                         message: msg,
                         isMe: msg.senderId == widget.currentUserId,
                         senderLabel: widget.senderLabelResolver(msg.senderId),
@@ -166,6 +201,23 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                     },
                   ),
           ),
+
+          // Scroll-to-bottom fab overlay
+          if (_userHasScrolledUp)
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12, bottom: 8),
+                child: FloatingActionButton.small(
+                  backgroundColor: const Color(0xFFD4A853),
+                  onPressed: () {
+                    setState(() => _userHasScrolledUp = false);
+                    _scrollToBottom();
+                  },
+                  child: const Icon(Icons.arrow_downward, size: 18, color: Colors.white),
+                ),
+              ),
+            ),
 
           // Cooldown notice
           if (widget.cooldownMessage.isNotEmpty)
@@ -359,3 +411,6 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
     );
   }
 }
+
+
+

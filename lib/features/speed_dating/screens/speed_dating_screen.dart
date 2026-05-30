@@ -297,7 +297,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorWidget: (_, _, _) => const CircleAvatar(
+                    errorWidget: (___, __, _) => const CircleAvatar(
                       radius: 40,
                       child: Icon(Icons.person),
                     ),
@@ -1046,3 +1046,6 @@ class _StatBadge extends StatelessWidget {
     );
   }
 }
+
+
+

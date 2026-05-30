@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import '../auth/controllers/auth_controller.dart';
@@ -18,3 +19,7 @@ final isBetaTesterProvider = Provider.autoDispose<AsyncValue<bool>>((ref) {
     return false;
   });
 });
+
+
+
+

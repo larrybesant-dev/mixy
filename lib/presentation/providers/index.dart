@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 export 'user_provider.dart';
 export 'room_provider.dart';
 export 'message_provider.dart';
@@ -7,3 +8,7 @@ export 'presence_provider.dart';
 export 'coin_transaction_provider.dart';
 export 'wallet_provider.dart';
 export 'referral_provider.dart';
+
+
+
+

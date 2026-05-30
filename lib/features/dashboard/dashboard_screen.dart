@@ -1,34 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../widgets/safe_network_avatar.dart';
-import '../../core/layout/app_layout.dart';
-import '../../core/routing/auth_invariant.dart';
-import '../../core/theme.dart';
-import '../../shared/widgets/app_page_scaffold.dart';
-import '../../shared/widgets/guest_auth_gate.dart';
-import '../feed/controllers/paginated_posts_controller.dart';
-import '../feed/providers/feed_providers.dart';
-import '../feed/widgets/post_card.dart';
-import '../profile/profile_completion.dart';
-import '../profile/profile_controller.dart';
-import 'leaderboard_provider.dart';
-import '../../presentation/providers/user_provider.dart';
-import '../../models/room_model.dart';
-import '../stories/widgets/stories_row.dart';
-import 'daily_checkin_card.dart';
-import 'leaderboard_strip.dart';
-import 'widgets/social_pulse_section.dart';
-import '../onboarding/session_stage_controller.dart';
-import '../feed/models/home_feed_snapshot.dart';
-import '../../models/user_model.dart';
-import '../../widgets/brand_ui_kit.dart';
-import '../../shared/widgets/canonical_ui_state.dart';
-import '../../observability/startup_timeline.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -404,7 +375,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: _HorizontalSkeleton(height: 190),
                   ),
-                  error: (_, _) => SocialPulseSection(
+                  error: (_, __) => SocialPulseSection(
                     pulseItems: [
                       PulseFeedItem(
                         id: 'pulse:fallback',
@@ -474,7 +445,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       subtitle: 'Finding profiles worth your attention.',
                     ),
                   ),
-                  error: (_, _) => Padding(
+                  error: (_, __) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ErrorState(
                       title: 'Could not load people right now',
@@ -540,7 +511,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       subtitle: 'Curating live rooms for quick join.',
                     ),
                   ),
-                  error: (_, _) => Padding(
+                  error: (_, __) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ErrorState(
                       title: 'Featured rooms unavailable',
@@ -587,7 +558,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               vertical: 4,
                             ),
                             itemCount: members.length,
-                            separatorBuilder: (_, _) =>
+                            separatorBuilder: (_, __) =>
                                 const SizedBox(width: 16),
                             itemBuilder: (ctx, i) => _NewMemberChip(
                               key: ValueKey(members[i].id),
@@ -603,7 +574,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       subtitle: 'Bringing recent arrivals into view.',
                     ),
                   ),
-                  error: (_, _) => Padding(
+                  error: (_, __) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ErrorState(
                       title: 'Could not load new members',
@@ -907,7 +878,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          ?trailing,
+          if (trailing != null) trailing!,
         ],
       ),
     );
@@ -1824,3 +1795,10 @@ class _NavCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+

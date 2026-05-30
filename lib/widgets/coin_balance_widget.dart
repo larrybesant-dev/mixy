@@ -55,3 +55,6 @@ class CoinBalanceWidget extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -84,7 +84,7 @@ class SocialCircleScreen extends ConsumerWidget {
           ),
           liveFollowingAsync.when(
             loading: () => const SliverToBoxAdapter(child: _ShimmerStrip()),
-            error: (_, _) => const SliverToBoxAdapter(child: SizedBox()),
+            error: (__, _) => const SliverToBoxAdapter(child: SizedBox()),
             data: (rooms) {
               if (rooms.isEmpty) {
                 return SliverToBoxAdapter(
@@ -107,7 +107,7 @@ class SocialCircleScreen extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(horizontal: hp),
                     scrollDirection: Axis.horizontal,
                     itemCount: rooms.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    separatorBuilder: (__, _) => const SizedBox(width: 10),
                     itemBuilder: (ctx, i) => SocialRoomCardCompact(
                       key: ValueKey(rooms[i].id),
                       room: rooms[i],
@@ -133,7 +133,7 @@ class SocialCircleScreen extends ConsumerWidget {
           ),
           followingUsersAsync.when(
             loading: () => const SliverToBoxAdapter(child: _ShimmerList()),
-            error: (_, _) => const SliverToBoxAdapter(child: SizedBox()),
+            error: (__, _) => const SliverToBoxAdapter(child: SizedBox()),
             data: (users) {
               if (users.isEmpty) {
                 return SliverToBoxAdapter(
@@ -157,7 +157,7 @@ class SocialCircleScreen extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(horizontal: hp),
                     scrollDirection: Axis.horizontal,
                     itemCount: users.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    separatorBuilder: (__, _) => const SizedBox(width: 10),
                     itemBuilder: (ctx, i) => _UserPill(
                       user: users[i],
                       onTap: () => ctx.go('/profile/${users[i].id}'),
@@ -182,7 +182,7 @@ class SocialCircleScreen extends ConsumerWidget {
           ),
           newMembersAsync.when(
             loading: () => const SliverToBoxAdapter(child: _ShimmerList()),
-            error: (_, _) => const SliverToBoxAdapter(child: SizedBox()),
+            error: (__, _) => const SliverToBoxAdapter(child: SizedBox()),
             data: (users) {
               if (isWideLayout) {
                 return SliverPadding(
@@ -674,3 +674,6 @@ class _ShimmerList extends StatelessWidget {
     );
   }
 }
+
+
+

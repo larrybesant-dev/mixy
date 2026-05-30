@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/schema_engine/schema_compliance_checker.dart';
@@ -75,3 +76,7 @@ final crossModuleEquivalenceProvider = Provider<CrossModuleEquivalenceReport>((
     violations: violations,
   );
 });
+
+
+
+

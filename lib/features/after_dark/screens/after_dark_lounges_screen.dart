@@ -135,7 +135,7 @@ class _AfterDarkLoungesScreenState
                         horizontal: context.pageHorizontalPadding,
                       ),
                       itemCount: _loungeCategories.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      separatorBuilder: (__, _) => const SizedBox(width: 8),
                       itemBuilder: (ctx, i) {
                         final cat = _loungeCategories[i];
                         final isSelected = _selectedCategory == cat.value;
@@ -558,3 +558,6 @@ class _AfterDarkGridReveal extends StatelessWidget {
     );
   }
 }
+
+
+

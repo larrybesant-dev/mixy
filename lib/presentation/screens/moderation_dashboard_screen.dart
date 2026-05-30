@@ -97,7 +97,7 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
           return ListView.separated(
             padding: EdgeInsets.all(context.pageHorizontalPadding),
             itemCount: reports.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            separatorBuilder: (__, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final report = reports[index];
               final createdAt = report.createdAt;
@@ -168,3 +168,6 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> {
     );
   }
 }
+
+
+

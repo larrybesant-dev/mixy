@@ -123,6 +123,9 @@ class MessageBubble extends StatelessWidget {
     }
 
     if (message.type == 'private') {
+      final String safeSenderLabel = senderLabel?.trim().isNotEmpty == true
+          ? senderLabel!.trim()
+          : message.senderId;
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -141,9 +144,7 @@ class MessageBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    senderLabel?.trim().isNotEmpty == true
-                        ? senderLabel!.trim()
-                        : message.senderId,
+                    safeSenderLabel,
                     style: const TextStyle(
                       color: Color(0xFFD4A853),
                       fontWeight: FontWeight.w700,
@@ -168,7 +169,7 @@ class MessageBubble extends StatelessWidget {
       );
     }
 
-    final resolvedSenderLabel = senderLabel?.trim().isNotEmpty == true
+    final String resolvedSenderLabel = (senderLabel != null && senderLabel!.trim().isNotEmpty)
         ? senderLabel!.trim()
         : (isMe ? 'You' : message.senderId);
 
@@ -183,6 +184,10 @@ class MessageBubble extends StatelessWidget {
     final Color? rowTint = isMe
         ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.10)
         : null;
+
+    final String firstLetter = resolvedSenderLabel.isNotEmpty
+        ? resolvedSenderLabel[0].toUpperCase()
+        : '?';
 
     return Container(
       color: rowTint,
@@ -204,9 +209,7 @@ class MessageBubble extends StatelessWidget {
                   : null,
               child: (senderAvatarUrl == null || senderAvatarUrl!.isEmpty)
                   ? Text(
-                      resolvedSenderLabel.isNotEmpty
-                          ? resolvedSenderLabel[0].toUpperCase()
-                          : '?',
+                      firstLetter,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -302,3 +305,6 @@ class MessageBubble extends StatelessWidget {
     return Text(content, style: baseStyle);
   }
 }
+
+
+

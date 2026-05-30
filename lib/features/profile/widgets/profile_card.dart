@@ -98,6 +98,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ringColor = _presenceColor(presenceState);
     final glowColor = _presenceGlowColor(presenceState);
+    final handle = usernameHandle?.trim() ?? '';
 
     return Center(
       child: Column(
@@ -126,8 +127,8 @@ class ProfileHeader extends StatelessWidget {
                 radius: 36,
                 avatarUrl: avatarUrl,
                 backgroundColor: VelvetNoir.surfaceHigh,
-                fallbackText: displayName.isNotEmpty
-                    ? displayName[0].toUpperCase()
+                fallbackText: displayName.trim().isNotEmpty
+                    ? displayName.trim().characters.first.toUpperCase()
                     : '?',
                 fallbackTextStyle: GoogleFonts.raleway(
                   color: VelvetNoir.primary,
@@ -148,10 +149,10 @@ class ProfileHeader extends StatelessWidget {
               letterSpacing: 0.1,
             ),
           ),
-          if ((usernameHandle ?? '').trim().isNotEmpty) ...[
+          if (handle.isNotEmpty) ...[
             const SizedBox(height: 2),
             Text(
-              usernameHandle!.trim(),
+              handle,
               textAlign: TextAlign.center,
               style: GoogleFonts.raleway(
                 fontSize: 12,
@@ -292,23 +293,25 @@ class ProfileActivitySection extends StatelessWidget {
       );
     }
 
-    if ((currentRoom ?? '').isNotEmpty) {
+    final room = currentRoom;
+    if (room != null && room.isNotEmpty) {
       rows.add(
         _ActivityRow(
           icon: Icons.mic_rounded,
           label: 'Current room',
-          value: currentRoom!,
+          value: room,
           accent: VelvetNoir.secondaryBright,
         ),
       );
     }
 
-    if ((lastMessagePreview ?? '').isNotEmpty) {
+    final message = lastMessagePreview;
+    if (message != null && message.isNotEmpty) {
       rows.add(
         _ActivityRow(
           icon: Icons.chat_bubble_outline_rounded,
           label: 'Last message',
-          value: lastMessagePreview!,
+          value: message,
         ),
       );
     }
@@ -469,3 +472,6 @@ class _SecondaryActionsRow extends StatelessWidget {
     );
   }
 }
+
+
+

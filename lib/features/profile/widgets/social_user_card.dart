@@ -40,6 +40,8 @@ class SocialUserCard extends StatelessWidget {
       ProfilePresenceState.offline => VelvetNoir.onSurfaceVariant,
     };
 
+    final label = secondaryLabel;
+
     return Card(
       elevation: 0,
       color: VelvetNoir.surfaceHigh,
@@ -139,13 +141,14 @@ class SocialUserCard extends StatelessWidget {
                       child: Text(primaryLabel),
                     ),
                   ),
-                  if ((secondaryLabel ?? '').isNotEmpty &&
+                  if (label != null &&
+                      label.isNotEmpty &&
                       onSecondaryPressed != null) ...[
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: onSecondaryPressed,
-                        child: Text(secondaryLabel!),
+                        child: Text(label),
                       ),
                     ),
                   ],
@@ -158,3 +161,6 @@ class SocialUserCard extends StatelessWidget {
     );
   }
 }
+
+
+

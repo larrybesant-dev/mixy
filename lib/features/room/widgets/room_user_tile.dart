@@ -343,7 +343,7 @@ class _RoomUserTileState extends State<RoomUserTile>
       decoration: avatarDecoration,
       child: Padding(
         padding: EdgeInsets.all(ringColor != null ? 2.0 : 0.0),
-        child: Stack(clipBehavior: Clip.none, children: [avatar, ?micOverlay]),
+        child: Stack(clipBehavior: Clip.none, children: [avatar, if (micOverlay != null) micOverlay]),
       ),
     );
 
@@ -424,3 +424,6 @@ class _RoomUserTileState extends State<RoomUserTile>
     );
   }
 }
+
+
+

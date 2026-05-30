@@ -60,8 +60,8 @@ class BuyCoinsSheet {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProviderScope(
-        parent: ProviderScope.containerOf(context),
+      builder: (_) => UncontrolledProviderScope(
+        container: ProviderScope.containerOf(context),
         child: const _BuyCoinsSheetContent(),
       ),
     );
@@ -400,3 +400,7 @@ String _asString(dynamic value) {
   if (value is String) return value.trim();
   return '';
 }
+
+
+
+

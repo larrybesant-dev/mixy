@@ -497,7 +497,7 @@ class MixvyLogoFull extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          'assets/images/branding/mixvy_logo.png',
+          'images/branding/mixvy_logo.png',
           width: logoWidth,
           fit: BoxFit.contain,
         ),
@@ -533,7 +533,7 @@ class MixvyAppBarLogo extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(fontSize * 0.22),
           child: Image.asset(
-            'assets/images/branding/mixvy_logo.png',
+            'images/branding/mixvy_logo.png',
             height: fontSize * 1.55,
             width: fontSize * 1.55,
             fit: BoxFit.cover,
@@ -703,3 +703,6 @@ class MixvyRoomCard extends StatelessWidget {
     );
   }
 }
+
+
+

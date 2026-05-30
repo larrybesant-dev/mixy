@@ -374,7 +374,7 @@ class _BackgroundPickerSheetState extends State<BackgroundPickerSheet>
                               _draft.backgroundUrl!,
                               height: 140,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => Container(
+                              errorBuilder: (___, __, _) => Container(
                                 height: 140,
                                 color: const Color(0xFF1A1D2A),
                                 child: const Center(
@@ -470,3 +470,6 @@ class _SafeUrlInputFormatter extends TextInputFormatter {
     return newValue;
   }
 }
+
+
+

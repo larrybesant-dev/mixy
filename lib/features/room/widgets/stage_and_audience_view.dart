@@ -35,9 +35,10 @@ class StageAndAudienceView extends ConsumerWidget {
     // CRITICAL: Watch media controller for reactive local-video updates
     final mediaState = ref.watch(liveRoomMediaControllerProvider(roomId));
     
+    final roomControllerState = ref.watch(roomControllerProvider(roomId));
+    
     final hasVideoStreams = (rtcService?.remoteUids.isNotEmpty ?? false) ||
-        (rtcService?.isLocalVideoCapturing ?? false) ||
-        mediaState.isVideoEnabled;
+        (mediaState.isVideoEnabled);
     final currentUserId = ref.watch(userProvider)?.id ?? '';
     final isHost = roomState.roomDoc['hostId'] == currentUserId;
     final controller = ref.read(roomControllerProvider(roomId).notifier);
@@ -45,8 +46,8 @@ class StageAndAudienceView extends ConsumerWidget {
     final filteredAudience = roomState.audience.where((p) {
       if (p.userId == currentUserId) {
         // If current user is on mic or has video, hide from audience list
-        return !((rtcService?.isLocalVideoCapturing ?? false) || 
-               (ref.read(roomControllerProvider(roomId)).isOnMicByAuthority(currentUserId)));
+        return !((mediaState.isVideoEnabled) ||
+               (roomControllerState.isOnMicByAuthority(currentUserId)));
       }
       return true;
     }).toList();
@@ -63,17 +64,21 @@ class StageAndAudienceView extends ConsumerWidget {
                     roomName: roomState.title,
                     localLabel: 'You',
                     localSpeaking: rtcService?.localSpeaking ?? false,
-                    showLocalTile: rtcService?.isLocalVideoCapturing ?? false,
-                    localTile: rtcService?.getLocalView() ?? const SizedBox.shrink(),
+                    showLocalTile: mediaState.isVideoEnabled,
+                    localTile: (rtcService != null) ? rtcService.getLocalView() : const SizedBox.shrink(),
                     remoteTiles: _buildRemoteTiles(rtcService, roomState),
                     remoteTileBuilder: (tile) =>
                         rtcService?.getRemoteView(tile.uid, roomId) ??
                         const SizedBox.shrink(),
+                    spotlightUserId: roomControllerState.spotlightUserId,
                     
                     // ── BANDWIDTH GOVERNOR ───────────────────────────
                     // Tells the RTC engine which streams to prioritize in HD
-                    onSubscriptionPlanChanged: (highQualityUids, lowQualityUids) {
+                    onSubscriptionPlanChanged: (isLocalHighQuality, highQualityUids, lowQualityUids) {
                       if (rtcService == null) return;
+                      
+                      rtcService.setEncodingQuality(isLocalHighQuality);
+
                       for (final uid in highQualityUids) {
                         rtcService.setRemoteVideoSubscription(uid, subscribe: true, highQuality: true);
                       }
@@ -185,3 +190,6 @@ class StageAndAudienceView extends ConsumerWidget {
     }).toList();
   }
 }
+
+
+

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Username uniqueness validator
@@ -16,3 +17,7 @@ class UsernameValidator {
     return query.docs.isEmpty;
   }
 }
+
+
+
+

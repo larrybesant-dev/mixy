@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:mixvy/features/room/contracts/room_visibility_contract.dart';
 import 'package:mixvy/models/room_model.dart';
 
@@ -10,3 +11,7 @@ class RoomWithVisibility {
   RoomVisibilityTier get tier => visibility.tier;
   bool get isVisible => visibility.isVisible;
 }
+
+
+
+

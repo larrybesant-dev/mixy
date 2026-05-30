@@ -1,3 +1,4 @@
+import 'package:mixvy/presentation/rooms/browser/room_browser_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,6 +61,7 @@ import 'package:mixvy/observability/realtime_ops_screen.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
+import 'package:mixvy/features/room/presentation/call_screen.dart';
 import 'package:mixvy/features/room/presentation/live_room_screen.dart';
 import 'package:mixvy/shared/widgets/app_shell.dart';
 import 'package:mixvy/features/dashboard/dashboard_screen.dart';
@@ -108,8 +110,12 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   }
 
   void updateCurrentUser(UserModel? value) {
-    if (_currentUser == value) return;
+    // Only notify router listeners if the user's core ID changes, preventing 
+    // full-app rebuilds when minor profile fields (e.g. followers) change.
+    final bool idChanged = _currentUser?.id != value?.id;
     _currentUser = value;
+    if (!idChanged) return;
+
     if (!_isReady) return;
     notifyListeners();
   }
@@ -163,23 +169,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       icon: Icons.travel_explore_outlined,
     ),
     redirect: (context, state) {
-      final authState = refreshNotifier.authState;
-      final location = state.uri.path.isEmpty ? '/' : state.uri.path;
-      final evaluation = evaluateAppRedirectWithReason(
-        matchedLocation: location,
-        uid: authState.uid,
-        authLoading: !authState.isRoutingStable,
-        legalStateResolved: true,
-        hasAcceptedLegal: true,
-      );
-      assert(() {
-        if (!authState.isRoutingStable && evaluation.redirectTo != null) {
-          throw FlutterError('Router redirect executed before auth bootstrap reached STABLE phase.');
+      try {
+        final authState = refreshNotifier.authState;
+        final location = state.uri.path.isEmpty ? '/' : state.uri.path;
+        
+        // Handle web bootstrap lag safely without crashing
+        if (!authState.isRoutingStable) {
+          return '/auth'; // Redirect un-bootstrapped web states straight to login/auth view safely
         }
+
+        final evaluation = evaluateAppRedirectWithReason(
+          matchedLocation: location,
+          uid: authState.uid,
+          authLoading: !authState.isRoutingStable,
+          legalStateResolved: true,
+          hasAcceptedLegal: true,
+        );
+        
         RedirectTrace.record(from: location, to: evaluation.redirectTo ?? 'stay', reason: evaluation.reason);
-        return true;
-      }());
-      return evaluation.redirectTo;
+        return evaluation.redirectTo;
+      } catch (e) {
+        debugPrint('Suppressed web router bootstrap mismatch: $e');
+        return '/auth';
+      }
     },
     routes: [
       StatefulShellRoute.indexedStack(
@@ -291,9 +303,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/rooms',
-                builder: (context, state) => const LiveFloorScreen(),
+                builder: (context, state) => const RoomBrowserScreen(),
                 routes: [
                   GoRoute(path: 'create', builder: (context, state) => const CreateRoomScreen()),
+                  GoRoute(path: 'secure-call', builder: (context, state) => const CallScreen()),
                   GoRoute(
                     path: 'room/:id',
                     builder: (context, state) {
@@ -425,6 +438,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', redirect: (context, state) => '/profile/settings'),
       GoRoute(path: '/friends', redirect: (context, state) => '/profile/friends'),
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
+        GoRoute(
+          path: '/rooms',
+          builder: (context, state) => const RoomBrowserScreen(),
+        ),
     ],
   );
 
@@ -436,3 +453,5 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
+
+

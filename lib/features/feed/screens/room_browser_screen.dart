@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,19 +44,23 @@ class _RoomBrowserScreenState extends ConsumerState<RoomBrowserScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(
-      () => setState(
-        () => _searchQuery = _searchController.text.trim().toLowerCase(),
-      ),
-    );
+    _searchController.addListener(_onSearchChanged);
     if (widget.initialCategory != null) {
       _selectedCategory = widget.initialCategory;
       _showGrid = true;
     }
   }
 
+  void _onSearchChanged() {
+    final cleanQuery = _searchController.text.trim().toLowerCase();
+    if (_searchQuery != cleanQuery) {
+      setState(() => _searchQuery = cleanQuery);
+    }
+  }
+
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -64,25 +69,32 @@ class _RoomBrowserScreenState extends ConsumerState<RoomBrowserScreen> {
   Widget build(BuildContext context) {
     return AppPageScaffold(
       safeArea: false,
-      body: _showGrid
-          ? _RoomListView(
-              category: _selectedCategory,
-              categoryLabel: _categoryLabel(_selectedCategory),
-              searchQuery: _searchQuery,
-              searchController: _searchController,
-              onBack: () => setState(() {
-                _showGrid = false;
-                _selectedCategory = null;
-                _searchController.clear();
-              }),
-            )
-          : _CategoryDirectory(
-              categories: _categories,
-              onCategorySelected: (cat) => setState(() {
-                _selectedCategory = cat;
-                _showGrid = true;
-              }),
-            ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        child: _showGrid
+            ? _RoomListView(
+                key: const ValueKey('room_list_view'),
+                category: _selectedCategory,
+                categoryLabel: _categoryLabel(_selectedCategory),
+                searchQuery: _searchQuery,
+                searchController: _searchController,
+                onBack: () => setState(() {
+                  _showGrid = false;
+                  _selectedCategory = null;
+                  _searchController.clear();
+                }),
+              )
+            : _CategoryDirectory(
+                key: const ValueKey('category_directory_view'),
+                categories: _categories,
+                onCategorySelected: (cat) => setState(() {
+                  _selectedCategory = cat;
+                  _showGrid = true;
+                }),
+              ),
+      ),
     );
   }
 
@@ -97,6 +109,7 @@ class _RoomBrowserScreenState extends ConsumerState<RoomBrowserScreen> {
 
 class _CategoryDirectory extends StatelessWidget {
   const _CategoryDirectory({
+    super.key,
     required this.categories,
     required this.onCategorySelected,
   });
@@ -104,7 +117,6 @@ class _CategoryDirectory extends StatelessWidget {
   final List<({String label, String emoji, String? value})> categories;
   final void Function(String? value) onCategorySelected;
 
-  // Per-category gradient pairs (dark → accent)
   static const Map<String?, List<Color>> _gradients = {
     null: [Color(0xFF1A1210), Color(0xFF3D2B10), Color(0xFFD4A853)],
     'music': [Color(0xFF140D14), Color(0xFF3A0F28), Color(0xFFC45E7A)],
@@ -130,8 +142,8 @@ class _CategoryDirectory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
+      key: const PageStorageKey('category_scroll_position'),
       slivers: [
-        // ── Header ──
         SliverToBoxAdapter(
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
@@ -169,8 +181,6 @@ class _CategoryDirectory extends StatelessWidget {
             ),
           ),
         ),
-
-        // ── Go Live CTA ──
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -182,8 +192,6 @@ class _CategoryDirectory extends StatelessWidget {
             child: _GoLiveBanner(),
           ),
         ),
-
-        // ── Section label ──
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -203,8 +211,6 @@ class _CategoryDirectory extends StatelessWidget {
             ),
           ),
         ),
-
-        // ── Category grid ──
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             context.pageHorizontalPadding,
@@ -215,11 +221,7 @@ class _CategoryDirectory extends StatelessWidget {
           sliver: SliverLayoutBuilder(
             builder: (ctx, constraints) {
               final w = constraints.crossAxisExtent;
-              final cols = w > 900
-                  ? 4
-                  : w > 600
-                  ? 3
-                  : 2;
+              final cols = w > 900 ? 4 : (w > 600 ? 3 : 2);
               return SliverGrid(
                 delegate: SliverChildBuilderDelegate((_, i) {
                   final cat = categories[i];
@@ -282,7 +284,6 @@ class _GoLiveBanner extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Decorative circles
             Positioned(
               right: -10,
               top: -18,
@@ -307,12 +308,10 @@ class _GoLiveBanner extends StatelessWidget {
                 ),
               ),
             ),
-            // Content
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Row(
                 children: [
-                  // Mic icon with glow
                   Container(
                     width: 48,
                     height: 48,
@@ -430,7 +429,6 @@ class _CategoryCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            // Soft glow circle behind emoji
             Positioned(
               top: -20,
               right: -20,
@@ -443,13 +441,11 @@ class _CategoryCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Main content
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Emoji in bubble
                   Container(
                     width: 48,
                     height: 48,
@@ -463,7 +459,6 @@ class _CategoryCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  // Label
                   Text(
                     label,
                     style: GoogleFonts.raleway(
@@ -475,7 +470,6 @@ class _CategoryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  // Accent underline dot
                   Container(
                     width: 20,
                     height: 2,
@@ -496,15 +490,24 @@ class _CategoryCard extends StatelessWidget {
 
 // ── Room list for a category ─────────────────────────────────────────────────
 
+// Swapped to keepAlive to avoid aggressive stream cancellation during screen filter swaps
 final _roomsByCategoryProvider = StreamProvider.autoDispose
     .family<List<RoomModel>, String?>((ref, category) {
+      ref.keepAlive();
       return ref
           .read(roomServiceProvider)
-          .watchLiveRoomsByCategory(category: category, limit: 50);
+          .watchLiveRoomsByCategory(category: category, limit: 50)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: (sink) {
+              sink.addError(TimeoutException('Connection dropped or timed out while fetching live rooms. Check your internet connectivity.'));
+            },
+          );
     });
 
 class _RoomListView extends ConsumerWidget {
   const _RoomListView({
+    super.key,
     required this.category,
     required this.categoryLabel,
     required this.searchQuery,
@@ -522,8 +525,8 @@ class _RoomListView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roomsAsync = ref.watch(_roomsByCategoryProvider(category));
     return CustomScrollView(
+      key: PageStorageKey('rooms_scroll_position_$category'),
       slivers: [
-        // ── Back header ──
         SliverToBoxAdapter(
           child: Container(
             padding: const EdgeInsets.fromLTRB(8, 52, 16, 16),
@@ -557,7 +560,6 @@ class _RoomListView extends ConsumerWidget {
             ),
           ),
         ),
-        // ── Search bar ──
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -619,23 +621,21 @@ class _RoomListView extends ConsumerWidget {
             ),
           ),
         ),
-        // ── Room grid ──
         roomsAsync.when(
           data: (allRooms) {
             final rooms = searchQuery.isEmpty
                 ? allRooms
                 : allRooms
-                      .where(
-                        (r) =>
-                            r.name.toLowerCase().contains(searchQuery) ||
-                            (r.description?.toLowerCase().contains(
-                                  searchQuery,
-                                ) ??
-                                false),
-                      )
-                      .toList();
+                    .where(
+                      (r) =>
+                          r.name.toLowerCase().contains(searchQuery) ||
+                          (r.description?.toLowerCase().contains(searchQuery) ??
+                              false),
+                    )
+                    .toList();
             if (rooms.isEmpty) {
               return SliverFillRemaining(
+                hasScrollBody: false,
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -690,9 +690,7 @@ class _RoomListView extends ConsumerWidget {
               builder: (ctx, constraints) {
                 final cols = constraints.crossAxisExtent > 900
                     ? 4
-                    : constraints.crossAxisExtent > 600
-                    ? 3
-                    : 2;
+                    : (constraints.crossAxisExtent > 600 ? 3 : 2);
                 return SliverPadding(
                   padding: EdgeInsets.fromLTRB(
                     context.pageHorizontalPadding,
@@ -723,6 +721,7 @@ class _RoomListView extends ConsumerWidget {
           },
           loading: () => const _RoomBrowserLoadingSliver(),
           error: (e, _) => SliverFillRemaining(
+            hasScrollBody: false,
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -755,9 +754,7 @@ class _RoomBrowserLoadingSliver extends StatelessWidget {
         builder: (context, constraints) {
           final cols = constraints.crossAxisExtent > 900
               ? 4
-              : constraints.crossAxisExtent > 600
-              ? 3
-              : 2;
+              : (constraints.crossAxisExtent > 600 ? 3 : 2);
           return SliverGrid(
             delegate: SliverChildBuilderDelegate(
               (context, index) => DecoratedBox(

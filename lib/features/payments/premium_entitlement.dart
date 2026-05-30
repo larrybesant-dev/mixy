@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 
@@ -35,3 +36,7 @@ bool hasVipEntitlement(Map<String, dynamic>? userData) {
 
   return vip['active'] == true;
 }
+
+
+
+

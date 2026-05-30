@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 // AdManager handles ad display and user preferences
 class AdManager {
   // Show popup ad only for users without VIP entitlement.
@@ -5,3 +6,7 @@ class AdManager {
     return !hasVipEntitlement;
   }
 }
+
+
+
+

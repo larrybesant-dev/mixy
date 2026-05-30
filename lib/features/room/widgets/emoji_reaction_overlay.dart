@@ -111,7 +111,9 @@ class _EmojiParticleState extends State<_EmojiParticle>
 /// The reaction button row is shown at the bottom-right of the cam panel and lets
 /// users tap to send ephemeral floating emojis.
 class EmojiReactionOverlay extends StatefulWidget {
-  const EmojiReactionOverlay({super.key});
+  const EmojiReactionOverlay({super.key, this.onReact});
+
+  final void Function(String emoji)? onReact;
 
   @override
   EmojiReactionOverlayState createState() => EmojiReactionOverlayState();
@@ -133,6 +135,11 @@ class EmojiReactionOverlayState extends State<EmojiReactionOverlay> {
         _ParticleEntry(id: id, emoji: emoji, leftFraction: fraction),
       );
     });
+  }
+
+  void _onInternalReact(String emoji) {
+    spawnEmoji(emoji);
+    widget.onReact?.call(emoji);
   }
 
   void _remove(int id) {
@@ -159,7 +166,7 @@ class EmojiReactionOverlayState extends State<EmojiReactionOverlay> {
         Positioned(
           right: 12,
           bottom: 80,
-          child: _ReactionButtonRow(onReact: spawnEmoji),
+          child: _ReactionButtonRow(onReact: _onInternalReact),
         ),
       ],
     );
@@ -292,3 +299,6 @@ class _EmojiBtn extends StatelessWidget {
     );
   }
 }
+
+
+

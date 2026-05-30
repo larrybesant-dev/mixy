@@ -43,3 +43,5 @@ final routeStateBridgeProvider = Provider.family<RouteStateBridge, GoRouter>((re
   ref.onDispose(() => bridge.dispose());
   return bridge;
 });
+
+

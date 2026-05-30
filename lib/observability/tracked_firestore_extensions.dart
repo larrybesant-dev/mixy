@@ -94,3 +94,6 @@ String _queryPath(Query<Object?> q) {
   if (q is CollectionReference) return q.path;
   return q.runtimeType.toString();
 }
+
+
+

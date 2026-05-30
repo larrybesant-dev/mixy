@@ -380,7 +380,7 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
             CachedNetworkImage(
               imageUrl: _imageUrl!,
               fit: BoxFit.cover,
-              placeholder: (_, _) =>
+              placeholder: (__, _) =>
                   const ColoredBox(color: VelvetNoir.surfaceHigh),
             )
           else
@@ -627,3 +627,6 @@ class _CreateStoryScreenState extends ConsumerState<CreateStoryScreen> {
     );
   }
 }
+
+
+

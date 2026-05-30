@@ -41,3 +41,6 @@ class UserProfile {
     'followersCount': followersCount,
   };
 }
+
+
+

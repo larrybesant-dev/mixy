@@ -38,7 +38,7 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
     try {
-      final devices = await device_enum.enumerateMediaDevices();
+      final devices = await device_enum.enumerateWebDevices();
       final savedCam = await _prefs.getPreferredCameraId();
       final savedMic = await _prefs.getPreferredMicId();
       if (!mounted) return;
@@ -140,7 +140,7 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
         else if (_error != null)
           _InfoTile(
             icon: Icons.warning_amber_outlined,
-            message: _error!,
+            message: _error ?? 'An unknown error occurred.',
             color: scheme.error,
           )
         else if (_cameras.isEmpty && _mics.isEmpty)
@@ -264,3 +264,6 @@ class _InfoTile extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -20,3 +20,6 @@ void reportError(dynamic error, StackTrace stack) {
     FirebaseCrashlytics.instance.recordError(error, stack);
   }
 }
+
+
+

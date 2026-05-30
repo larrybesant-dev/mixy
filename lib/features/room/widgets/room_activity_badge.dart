@@ -44,3 +44,6 @@ class RoomActivityBadge extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -48,11 +48,11 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget build(BuildContext context) {
     final post = widget.post;
     final liked = post.isLikedBy(widget.currentUserId);
-    final authorInitial =
-        (post.authorName?.trim().isNotEmpty == true
-                ? post.authorName!
-                : post.userId)[0]
-            .toUpperCase();
+    final authorInitial = (post.authorName?.trim().isNotEmpty == true)
+        ? post.authorName!.trim().characters.first.toUpperCase()
+        : (post.userId.isNotEmpty
+            ? post.userId.characters.first.toUpperCase()
+            : 'M');
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
@@ -86,7 +86,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                         Text(
                           post.authorName?.trim().isNotEmpty == true
                               ? post.authorName!
-                              : post.userId,
+                              : (post.userId.isNotEmpty ? post.userId : 'MixVy User'),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
@@ -233,3 +233,6 @@ class _PostCardState extends ConsumerState<PostCard> {
     return '${dt.month}/${dt.day}/${dt.year}';
   }
 }
+
+
+

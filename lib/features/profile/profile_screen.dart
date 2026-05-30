@@ -715,7 +715,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     _nameController.text = state.username ?? '';
     _bioController.text = state.bio ?? '';
     _aboutMeController.text = state.aboutMe ?? '';
-    _ageController.text = state.age?.toString() ?? '';
+   _ageController.text = state.age.toString();
     _locationController.text = state.location ?? '';
     _interestsController.text = state.interests.join(', ');
     _vibeController.text = state.vibePrompt ?? '';
@@ -726,7 +726,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     _adultBoundariesController.text = state.adultBoundaries.join(', ');
     _selectedGender = state.gender;
     _selectedRelationshipStatus = state.relationshipStatus;
-    _selectedThemeId = state.themeId;
+    _selectedThemeId = state.themeId ?? "midnight";
     _selectedCamViewPolicy = state.camViewPolicy;
     // Personalisation
     _profileAccentColor = state.profileAccentColor;
@@ -746,7 +746,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     _adultConsentAccepted = state.adultConsentAccepted;
     _adultLookingFor
       ..clear()
-      ..addAll(state.adultLookingFor);
+      ..addAll(state.adultLookingFor.cast<AdultRelationshipIntent>());
   }
 
   Future<void> _saveProfile() async {
@@ -929,7 +929,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Center(child: CircularProgressIndicator()),
                           ),
-                          error: (_, _) => const Padding(
+                          error: (__, _) => const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Text('Could not load posts.'),
                           ),
@@ -1673,9 +1673,9 @@ class _HeroCard extends StatelessWidget {
                     ).colorScheme.surfaceContainerHighest,
                     child: (state.coverPhotoUrl ?? '').trim().isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: state.coverPhotoUrl!.trim(),
+                            imageUrl: (state.coverPhotoUrl ?? "").trim(),
                             fit: BoxFit.cover,
-                            errorWidget: (_, _, _) =>
+                            errorWidget: (___, __, _) =>
                                 const Icon(Icons.landscape_rounded, size: 40),
                           )
                         : const Icon(Icons.landscape_rounded, size: 40),
@@ -1769,7 +1769,7 @@ class _HeroCard extends StatelessWidget {
                         : (state.avatarUrl ?? '').trim().isNotEmpty
                         ? ClipOval(
                             child: CachedNetworkImage(
-                              imageUrl: state.avatarUrl!.trim(),
+                              imageUrl: (state.avatarUrl ?? "").trim(),
                               width: 84,
                               height: 84,
                               fit: BoxFit.cover,
@@ -1785,7 +1785,7 @@ class _HeroCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              errorWidget: (_, _, _) =>
+                              errorWidget: (___, __, _) =>
                                   const Icon(Icons.person, size: 32),
                             ),
                           )
@@ -1811,7 +1811,7 @@ class _HeroCard extends StatelessWidget {
           Text(
             (state.username ?? '').trim().isEmpty
                 ? 'Your profile'
-                : state.username!.trim(),
+                : (state.username ?? "Guest").trim(),
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
@@ -1822,22 +1822,22 @@ class _HeroCard extends StatelessWidget {
             runSpacing: 8,
             alignment: WrapAlignment.center,
             children: [
-              if ((state.age?.toString() ?? '').isNotEmpty)
+              if (state.age.toString().isNotEmpty)
                 _FactChip(icon: Icons.cake_outlined, text: '${state.age}'),
               if ((state.location ?? '').trim().isNotEmpty)
                 _FactChip(
                   icon: Icons.place_outlined,
-                  text: state.location!.trim(),
+                  text: (state.location ?? "Unknown").trim(),
                 ),
               if ((state.gender ?? '').trim().isNotEmpty)
                 _FactChip(
                   icon: Icons.person_outline,
-                  text: state.gender!.trim(),
+                  text: (state.gender ?? "Not Specified").trim(),
                 ),
               if ((state.relationshipStatus ?? '').trim().isNotEmpty)
                 _FactChip(
                   icon: Icons.favorite_border,
-                  text: state.relationshipStatus!.trim(),
+                  text: (state.relationshipStatus ?? "Single").trim(),
                 ),
             ],
           ),
@@ -1931,7 +1931,7 @@ class _HeroCard extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: state.galleryUrls.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                separatorBuilder: (__, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final url = state.galleryUrls[index];
                   return ClipRRect(
@@ -1941,7 +1941,7 @@ class _HeroCard extends StatelessWidget {
                       child: CachedNetworkImage(
                         imageUrl: url,
                         fit: BoxFit.cover,
-                        errorWidget: (_, _, _) => Container(
+                        errorWidget: (___, __, _) => Container(
                           color: Theme.of(
                             context,
                           ).colorScheme.surfaceContainerHighest,
@@ -2343,3 +2343,8 @@ Color _hexToColor(String hex) {
     return Colors.grey;
   }
 }
+
+
+
+
+

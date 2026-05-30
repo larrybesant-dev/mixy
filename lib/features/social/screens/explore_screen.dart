@@ -211,7 +211,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
           // Live rooms matching filter
           roomsAsync.when(
             loading: () => const SliverToBoxAdapter(child: _ShimmerList()),
-            error: (_, _) => const SliverToBoxAdapter(child: SizedBox()),
+            error: (__, _) => const SliverToBoxAdapter(child: SizedBox()),
             data: (rooms) {
               final filtered = _filterRooms(rooms);
               if (filtered.isEmpty &&
@@ -261,14 +261,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 height: 200,
                 child: newRoomsAsync.when(
                   loading: () => const _HorizontalShimmer(),
-                  error: (_, _) => const SizedBox(),
+                  error: (__, _) => const SizedBox(),
                   data: (rooms) {
                     if (rooms.isEmpty) return const SizedBox();
                     return ListView.separated(
                       padding: EdgeInsets.symmetric(horizontal: hp),
                       scrollDirection: Axis.horizontal,
                       itemCount: rooms.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      separatorBuilder: (__, _) => const SizedBox(width: 10),
                       itemBuilder: (ctx, i) => SocialRoomCardCompact(
                         key: ValueKey(rooms[i].id),
                         room: rooms[i],
@@ -297,14 +297,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 height: 130,
                 child: trendingUsersAsync.when(
                   loading: () => const _HorizontalShimmer(height: 130),
-                  error: (_, _) => const SizedBox(),
+                  error: (__, _) => const SizedBox(),
                   data: (users) {
                     if (users.isEmpty) return const SizedBox();
                     return ListView.separated(
                       padding: EdgeInsets.symmetric(horizontal: hp),
                       scrollDirection: Axis.horizontal,
                       itemCount: users.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 12),
+                      separatorBuilder: (__, _) => const SizedBox(width: 12),
                       itemBuilder: (ctx, i) => TrendingUserCard(
                         key: ValueKey(users[i].id),
                         user: users[i],
@@ -356,7 +356,7 @@ class _SearchBar extends StatelessWidget {
           ),
           suffixIcon: ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
-            builder: (_, value, _) => value.text.isNotEmpty
+            builder: (__, value, ___) => value.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(
                       Icons.close_rounded,
@@ -551,3 +551,6 @@ class _HorizontalShimmer extends StatelessWidget {
     );
   }
 }
+
+
+

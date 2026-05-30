@@ -530,7 +530,7 @@ class _AfterDarkCreateLoungeScreenState
               ? Image.network(
                   _thumbnailUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const Icon(
+                  errorBuilder: (___, __, _) => const Icon(
                     Icons.image_outlined,
                     color: EmberDark.onSurfaceVariant,
                     size: 28,
@@ -882,3 +882,6 @@ class _AfterDarkCreateLoungeScreenState
     );
   }
 }
+
+
+

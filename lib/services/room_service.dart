@@ -44,7 +44,7 @@ class RoomService {
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _isLiveRoomsEnabled = isLiveRoomsEnabled,
        _visibilityWindowsResolver = visibilityWindowsResolver,
-       _streamLifecycleManager = lifecycleManager!;
+       _streamLifecycleManager = lifecycleManager ?? StreamLifecycleManager();
 
   final FirebaseFirestore _firestore;
   final bool Function()? _isLiveRoomsEnabled;
@@ -1010,3 +1010,7 @@ class _StableLiveRoomBufferEntry {
   RoomModel room;
   DateTime? missingSince;
 }
+
+
+
+

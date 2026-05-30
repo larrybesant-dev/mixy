@@ -156,7 +156,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         data: (users) => ListView.separated(
           itemCount: users.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (__, _) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final user = users[index];
             return ListTile(
@@ -202,7 +202,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         data: (posts) => ListView.separated(
           itemCount: posts.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (__, _) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final post = posts[index];
             final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -233,7 +233,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         data: (hashtags) => ListView.separated(
           itemCount: hashtags.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (__, _) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final tag = hashtags[index];
             return ListTile(
@@ -376,3 +376,6 @@ class _FollowButtonState extends ConsumerState<_FollowButton> {
     );
   }
 }
+
+
+

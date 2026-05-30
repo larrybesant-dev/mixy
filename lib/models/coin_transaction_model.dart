@@ -32,3 +32,6 @@ class CoinTransactionModel {
     'createdAt': createdAt?.toIso8601String(),
   };
 }
+
+
+

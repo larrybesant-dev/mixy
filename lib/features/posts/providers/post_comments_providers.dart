@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,15 +24,31 @@ class PostCommentEntry {
   final DateTime createdAt;
 
   factory PostCommentEntry.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data() ?? {};
-    return PostCommentEntry(
-      id: doc.id,
-      authorId: d['authorId'] as String? ?? '',
-      authorName: d['authorName'] as String? ?? 'User',
-      authorAvatarUrl: d['authorAvatarUrl'] as String?,
-      text: d['text'] as String? ?? '',
-      createdAt: _parseTs(d['createdAt']),
-    );
+    try {
+      final d = doc.data() ?? const <String, dynamic>{};
+      final authorId = d['authorId']?.toString().trim() ?? '';
+      final authorName = d['authorName']?.toString().trim() ?? 'MixVy Member';
+      final text = d['text']?.toString().trim() ?? '';
+      final createdAt = _parseTs(d['createdAt']);
+
+      return PostCommentEntry(
+        id: doc.id,
+        authorId: authorId,
+        authorName: authorName,
+        authorAvatarUrl: d['authorAvatarUrl'] as String?,
+        text: text,
+        createdAt: createdAt,
+      );
+    } catch (e) {
+      // Fallback for corrupt comment data
+      return PostCommentEntry(
+        id: doc.id,
+        authorId: '',
+        authorName: 'Deleted User',
+        text: 'Comment unavailable',
+        createdAt: DateTime.now(),
+      );
+    }
   }
 
   static DateTime _parseTs(dynamic v) {
@@ -69,3 +86,7 @@ final postCommentsProvider = StreamProvider.autoDispose
             (s) => s.docs.map(PostCommentEntry.fromDoc).toList(growable: false),
           );
     });
+
+
+
+

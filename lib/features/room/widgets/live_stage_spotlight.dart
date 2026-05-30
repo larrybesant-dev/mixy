@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme.dart';
 import '../../../models/room_participant_model.dart';
 import '../controllers/live_room_controller.dart';
 import '../providers/participant_providers.dart';
@@ -141,15 +142,15 @@ class _StageBackground extends StatelessWidget {
       animation: bgAnim,
       builder: (context, child) {
         final t = bgAnim.value;
-        // Shift between deep purple-black and nightclub indigo
+        // Shift between deep charcoal and premium lounge black
         final topColor = Color.lerp(
-          const Color(0xFF0A0510),
-          const Color(0xFF110820),
+          VelvetNoir.surface,
+          const Color(0xFF16181F),
           t,
         )!;
         final bottomColor = Color.lerp(
           const Color(0xFF0D0A0C),
-          const Color(0xFF150C18),
+          VelvetNoir.surfaceLow,
           t,
         )!;
         return DecoratedBox(
@@ -195,8 +196,8 @@ class _GlowPainter extends CustomPainter {
     final paint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF7C5FFF).withValues(alpha: opacity),
-          const Color(0xFFD4A853).withValues(alpha: opacity * 0.3),
+          VelvetNoir.primary.withValues(alpha: opacity),
+          VelvetNoir.gold.withValues(alpha: opacity * 0.3),
           Colors.transparent,
         ],
         stops: const [0.0, 0.5, 1.0],
@@ -289,14 +290,14 @@ class _TopBar extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.visibility_outlined,
-                  color: Color(0xFFD4A853),
+                  color: VelvetNoir.gold,
                   size: 14,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '$viewerCount',
                   style: const TextStyle(
-                    color: Color(0xFFD4A853),
+                    color: VelvetNoir.gold,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -380,9 +381,9 @@ class _SpeakerCard extends StatelessWidget {
   final double pulse;
 
   Color get _glowColor {
-    if (isHost) return const Color(0xFFD4A853); // gold for host
-    if (isCohost) return const Color(0xFF7C5FFF); // purple for cohost
-    return const Color(0xFF4EC9B0); // teal for stage
+    if (isHost) return VelvetNoir.gold; // gold for host
+    if (isCohost) return VelvetNoir.secondary; // purple for cohost
+    return VelvetNoir.primary; // cyan for stage
   }
 
   String get _roleBadge {
@@ -525,12 +526,12 @@ class _InitialsAvatar extends StatelessWidget {
                   ? name.trim().split(' ').last[0].toUpperCase()
                   : name.trim()[1].toUpperCase());
     return ColoredBox(
-      color: const Color(0xFF2A1F35),
+      color: VelvetNoir.surfaceHigh,
       child: Center(
         child: Text(
           initials,
           style: TextStyle(
-            color: const Color(0xFFD4A853),
+            color: VelvetNoir.gold,
             fontSize: size * 0.35,
             fontWeight: FontWeight.w700,
           ),
@@ -559,8 +560,8 @@ class _EmptyStage extends StatelessWidget {
             height: 96,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0x40D4A853), width: 2),
-              color: const Color(0xFF1A1225),
+              border: Border.all(color: VelvetNoir.gold.withValues(alpha: 0.25), width: 2),
+              color: VelvetNoir.surfaceLow,
             ),
             child: const Center(
               child: Text('🎤', style: TextStyle(fontSize: 40)),
@@ -579,7 +580,7 @@ class _EmptyStage extends StatelessWidget {
           const Text(
             'Be the first to take the mic\nand set the vibe',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFFB09080), fontSize: 13),
+            style: TextStyle(color: VelvetNoir.onSurfaceVariant, fontSize: 13),
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 24),
@@ -604,12 +605,12 @@ class _GlowButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF7C5FFF), Color(0xFF9B2535)],
+            colors: [VelvetNoir.primary, VelvetNoir.secondary],
           ),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7C5FFF).withValues(alpha: 0.4),
+              color: VelvetNoir.primary.withValues(alpha: 0.4),
               blurRadius: 16,
               spreadRadius: 2,
             ),
@@ -628,3 +629,6 @@ class _GlowButton extends StatelessWidget {
     );
   }
 }
+
+
+

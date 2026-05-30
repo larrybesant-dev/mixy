@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 /// Calculates a priority score for a participant used by the media tier engine.
 ///
 /// Higher score → higher tier (fullVideo > lowVideo > audioOnly).
@@ -19,3 +20,7 @@ int calculateMediaScore({
 
   return score;
 }
+
+
+
+

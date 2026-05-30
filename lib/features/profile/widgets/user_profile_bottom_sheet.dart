@@ -70,7 +70,9 @@ class _UserProfileBottomSheetState extends ConsumerState<UserProfileBottomSheet>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          maxHeight: maxHeight,
+          constraints: BoxConstraints(
+            maxHeight: maxHeight,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xCC111319), // 80% opacity Jet Black for premium contrast
             borderRadius: const BorderRadius.only(
@@ -517,3 +519,6 @@ class _ErrorSheetState extends StatelessWidget {
     );
   }
 }
+
+
+

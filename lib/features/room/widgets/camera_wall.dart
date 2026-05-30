@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme.dart';
+import '../../../presentation/providers/user_provider.dart';
 import '../providers/rtc_service_provider.dart';
+import '../room_controller.dart';
 
 import '../providers/camera_wall_provider.dart';
 
@@ -35,7 +38,7 @@ class CameraWallRemoteTileData {
   final String? avatarUrl;
 }
 
-class CameraWall extends ConsumerWidget {
+class CameraWall extends ConsumerStatefulWidget {
   const CameraWall({
     super.key,
     required this.roomId,
@@ -57,6 +60,7 @@ class CameraWall extends ConsumerWidget {
     this.isHost = false,
     this.onDropUser,
     this.onMuteUser,
+    this.spotlightUserId,
   });
 
   final String roomId;
@@ -71,7 +75,7 @@ class CameraWall extends ConsumerWidget {
   final Widget localTile;
   final List<CameraWallRemoteTileData> remoteTiles;
   final Widget Function(CameraWallRemoteTileData tile) remoteTileBuilder;
-  final void Function(Set<int> highQualityUids, Set<int> lowQualityUids)
+  final void Function(bool isLocalHighQuality, Set<int> highQualityUids, Set<int> lowQualityUids)
   onSubscriptionPlanChanged;
   final String roomName;
   final int maxMainGridRemoteTiles;
@@ -93,26 +97,71 @@ class CameraWall extends ConsumerWidget {
   final void Function(String userId)? onDropUser;
   final void Function(String userId, bool mute)? onMuteUser;
 
+  /// Current user pinned in spotlight (escalated to high quality).
+  final String? spotlightUserId;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final npSurfaceLow = Theme.of(context).colorScheme.surfaceContainerHighest;
+  ConsumerState<CameraWall> createState() => _CameraWallState();
+}
+
+class _CameraWallState extends ConsumerState<CameraWall> {
+  // Cached state to optimize and govern WebRTC quality changes
+  bool? _lastIsLocalHighQuality;
+  Set<int>? _lastHighQualityUids;
+  Set<int>? _lastLowQualityUids;
+
+  bool _setsEqual(Set<int> a, Set<int> b) {
+    if (a.length != b.length) return false;
+    return a.every(b.contains);
+  }
+
+  void _checkAndNotifySubscriptionPlan(
+    bool isLocalHighQuality,
+    Set<int> highQualityUids,
+    Set<int> lowQualityUids,
+  ) {
+    final bool changed = _lastIsLocalHighQuality != isLocalHighQuality ||
+        _lastHighQualityUids == null ||
+        _lastLowQualityUids == null ||
+        !_setsEqual(_lastHighQualityUids!, highQualityUids) ||
+        !_setsEqual(_lastLowQualityUids!, lowQualityUids);
+
+    if (changed) {
+      _lastIsLocalHighQuality = isLocalHighQuality;
+      _lastHighQualityUids = highQualityUids;
+      _lastLowQualityUids = lowQualityUids;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onSubscriptionPlanChanged(isLocalHighQuality, highQualityUids, lowQualityUids);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final npSurfaceLow = VelvetNoir.surfaceLow;
     const double maxTileH = 280.0;
     const double mobileH = 160.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 600;
-        final mainGridRemoteLimit = isDesktop
-            ? maxMainGridRemoteTiles + 4
-            : maxMainGridRemoteTiles;
-        final effectiveOverflowPageSize = isDesktop
-            ? overflowPageSize * 2
-            : overflowPageSize;
+        // Strict clamps on constraints to avoid infinite or zero/negative dimensions throwing rendering exceptions
+        final double safeMaxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 600.0;
+        final isDesktop = safeMaxWidth >= 600;
 
-        final viewableRemoteTiles = remoteTiles
+        final mainGridRemoteLimit = isDesktop
+            ? widget.maxMainGridRemoteTiles + 4
+            : widget.maxMainGridRemoteTiles;
+        final effectiveOverflowPageSize = isDesktop
+            ? widget.overflowPageSize * 2
+            : widget.overflowPageSize;
+
+        final viewableRemoteTiles = widget.remoteTiles
             .where((tile) => tile.canView)
             .toList(growable: false);
-        final blockedRemoteTiles = remoteTiles
+        final blockedRemoteTiles = widget.remoteTiles
             .where((tile) => !tile.canView)
             .toList(growable: false);
         final mainGridRemoteTiles = viewableRemoteTiles
@@ -127,15 +176,17 @@ class CameraWall extends ConsumerWidget {
             ? 0
             : ((overflowTiles.length - 1) ~/ effectiveOverflowPageSize) + 1;
         final rawOverflowPage = ref.watch(
-          cameraWallOverflowPageProvider(roomId),
+          cameraWallOverflowPageProvider(widget.roomId),
         );
         final overflowPage = overflowPageCount == 0
             ? 0
             : rawOverflowPage.clamp(0, overflowPageCount - 1);
         if (overflowPage != rawOverflowPage) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(cameraWallOverflowPageProvider(roomId).notifier).state =
-                overflowPage;
+            if (mounted) {
+              ref.read(cameraWallOverflowPageProvider(widget.roomId).notifier).state =
+                  overflowPage;
+            }
           });
         }
 
@@ -150,33 +201,61 @@ class CameraWall extends ConsumerWidget {
           overflowEnd,
         );
 
-        final highQualityUids = mainGridRemoteTiles
-            .map((tile) => tile.uid)
-            .toSet();
-        final lowQualityUids = visibleOverflowTiles
-            .where((tile) => tile.canView)
-            .map((tile) => tile.uid)
-            .toSet();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          onSubscriptionPlanChanged(highQualityUids, lowQualityUids);
-        });
+        // ── BANDWIDTH GOVERNOR (Dual-Stream Architecture) ───────────────────
+        final speakingInMainGrid = mainGridRemoteTiles.where((tile) => tile.isSpeaking).toList();
+        final pinnedInMainGrid = mainGridRemoteTiles.where((tile) => tile.userId == widget.spotlightUserId).toList();
+        
+        final currentUserId = ref.watch(userProvider)?.id;
+        final isLocalPinned = widget.spotlightUserId != null && currentUserId == widget.spotlightUserId;
+        final bool isLocalHighQuality;
+        
+        final Set<int> highQualityUids;
+        if (isLocalPinned) {
+          isLocalHighQuality = true;
+          highQualityUids = const {};
+        } else if (pinnedInMainGrid.isNotEmpty) {
+          isLocalHighQuality = false;
+          highQualityUids = pinnedInMainGrid.map((tile) => tile.uid).toSet();
+        } else if (widget.localSpeaking && widget.showLocalTile) {
+          isLocalHighQuality = true;
+          highQualityUids = const {};
+        } else if (speakingInMainGrid.isNotEmpty) {
+          isLocalHighQuality = false;
+          highQualityUids = speakingInMainGrid.map((tile) => tile.uid).toSet();
+        } else if (widget.showLocalTile) {
+          isLocalHighQuality = true;
+          highQualityUids = const {};
+        } else if (mainGridRemoteTiles.isNotEmpty) {
+          isLocalHighQuality = false;
+          highQualityUids = {mainGridRemoteTiles.first.uid};
+        } else {
+          isLocalHighQuality = true;
+          highQualityUids = const {};
+        }
 
-        // Collect speaking names for the compact names strip.
-        // Tiles stay in the main grid — the cyan glow border on each tile already
-        // provides per-tile speaking feedback.  Physically lifting tiles into a
-        // separate section changes tileCount/crossAxisCount on every VAD event,
-        // causing the entire grid to reflow and tiles to jump positions.
+        final lowQualityUids = {
+          ...mainGridRemoteTiles
+              .where((tile) => !highQualityUids.contains(tile.uid))
+              .map((tile) => tile.uid),
+          ...visibleOverflowTiles
+              .where((tile) => tile.canView)
+              .map((tile) => tile.uid),
+        };
+
+        // Governs quality subscription plan changes and cuts layout circular dependencies
+        _checkAndNotifySubscriptionPlan(isLocalHighQuality, highQualityUids, lowQualityUids);
+
+        // Collect speaking names for compact status display
         final speakingNames = <String>[
-          if (localSpeaking && showLocalTile) localLabel,
+          if (widget.localSpeaking && widget.showLocalTile) widget.localLabel,
           ...mainGridRemoteTiles.where((t) => t.isSpeaking).map((t) => t.label),
         ];
 
-        // Estimate tile dimensions before building tiles (avoids circular dependency).
-        // Initial estimate based on constraint width.
+        // Ensure negative numbers can't cause layout overflow
         const double spacing = 8;
         const double headerH = 24;
-        final int estimatedTileCount = (showLocalTile ? 1 : 0) + mainGridRemoteTiles.length;
-        final int estimatedCrossAxisCount = isDesktop
+        final int estimatedTileCount = (widget.showLocalTile ? 1 : 0) + mainGridRemoteTiles.length;
+        final int estimatedCrossAxisCount = (isDesktop
             ? (estimatedTileCount <= 1
                   ? 1
                   : estimatedTileCount <= 4
@@ -188,49 +267,68 @@ class CameraWall extends ConsumerWidget {
                   ? 1
                   : estimatedTileCount <= 4
                   ? 2
-                  : 3);
-        final double estimatedWidth = constraints.maxWidth - 20;
-        final double effectiveTileW = estimatedWidth / estimatedCrossAxisCount - (spacing * (estimatedCrossAxisCount - 1) / estimatedCrossAxisCount);
-        final double tileHeight = effectiveTileW * (3 / 4) + headerH;
+                  : 3)).clamp(1, 10);
+        final double estimatedWidth = (safeMaxWidth - 20).clamp(10.0, double.infinity);
+        final double effectiveTileW = (estimatedCrossAxisCount > 0)
+            ? (estimatedWidth / estimatedCrossAxisCount - (spacing * (estimatedCrossAxisCount - 1) / estimatedCrossAxisCount)).clamp(40.0, 1200.0)
+            : 120.0;
+        final double tileHeight = (effectiveTileW.isFinite && effectiveTileW > 0)
+            ? (effectiveTileW * (3 / 4) + headerH).clamp(100.0, maxTileH)
+            : 120.0;
 
         final mainGridTiles = <Widget>[
-          if (showLocalTile)
+          if (widget.showLocalTile)
             _CameraWallTileFrame(
-              roomId: roomId,
-              label: localLabel,
-              speaking: localSpeaking,
-              hasMic: localHasMic,
+              roomId: widget.roomId,
+              label: widget.localLabel,
+              speaking: widget.localSpeaking,
+              hasMic: widget.localHasMic,
               compact: false,
-              onDetach: onDetachLocal,
-              viewerCount: localViewerCount,
-              child: localTile,
+              onDetach: widget.onDetachLocal,
+              viewerCount: widget.localViewerCount,
+              child: widget.localTile,
             ),
           ...mainGridRemoteTiles.map(
-            (tile) => _ResizableTile(
-              key: ValueKey('rtile_${tile.uid}'),
-              defaultWidth: effectiveTileW,
-              defaultHeight: tileHeight,
-              child: _CameraWallTileFrame(
-                roomId: roomId,
-                label: tile.label,
-                speaking: tile.isSpeaking,
-                hasMic: tile.hasMic,
-                compact: false,
-                viewerCount: tile.viewerCount,
-                onDetach: onDetachRemote == null
-                    ? null
-                    : () => onDetachRemote!(tile),
-                showAdminTools: isHost && tile.userId != null,
-                onDrop: tile.userId == null ? null : () => onDropUser?.call(tile.userId!),
-                onMute: tile.userId == null ? null : (m) => onMuteUser?.call(tile.userId!, m),
-                child: remoteTileBuilder(tile),
-              ),
-            ),
+            (tile) {
+              final frame = _ResizableTile(
+                key: ValueKey('rtile_${tile.uid}'),
+                defaultWidth: effectiveTileW,
+                defaultHeight: tileHeight,
+                child: _CameraWallTileFrame(
+                  roomId: widget.roomId,
+                  label: tile.label,
+                  speaking: tile.isSpeaking,
+                  hasMic: tile.hasMic,
+                  compact: false,
+                  viewerCount: tile.viewerCount,
+                  onDetach: widget.onDetachRemote == null
+                      ? null
+                      : () => widget.onDetachRemote!(tile),
+                  showAdminTools: widget.isHost && tile.userId != null,
+                  onDrop: tile.userId == null ? null : () => widget.onDropUser?.call(tile.userId!),
+                  onMute: tile.userId == null ? null : (m) => widget.onMuteUser?.call(tile.userId!, m),
+                  isPinned: tile.userId == widget.spotlightUserId,
+                  child: widget.remoteTileBuilder(tile),
+                ),
+              );
+
+              return GestureDetector(
+                key: ValueKey('rtile_gesture_${tile.uid}'),
+                onDoubleTap: () {
+                  if (tile.userId != null) {
+                    ref.read(roomControllerProvider(widget.roomId).notifier).setSpotlightUser(
+                      widget.spotlightUserId == tile.userId ? null : tile.userId
+                    );
+                  }
+                },
+                child: frame,
+              );
+            },
           ),
         ];
 
         final tileCount = mainGridTiles.length;
-        final crossAxisCount = isDesktop
+        final crossAxisCount = (isDesktop
             ? (tileCount <= 1
                   ? 1
                   : tileCount <= 4
@@ -242,13 +340,14 @@ class CameraWall extends ConsumerWidget {
                   ? 1
                   : tileCount <= 4
                   ? 2
-                  : 3);
-        final int rows = ((tileCount == 0 ? 1 : tileCount) / crossAxisCount)
-            .ceil();
+                  : 3)).clamp(1, 10);
+        final int rows = (crossAxisCount > 0)
+            ? ((tileCount == 0 ? 1 : tileCount) / crossAxisCount).ceil()
+            : 1;
 
         return ColoredBox(
           color: npSurfaceLow,
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +373,7 @@ class CameraWall extends ConsumerWidget {
                                 ref
                                         .read(
                                           cameraWallOverflowPageProvider(
-                                            roomId,
+                                            widget.roomId,
                                           ).notifier,
                                         )
                                         .state =
@@ -291,7 +390,7 @@ class CameraWall extends ConsumerWidget {
                                 ref
                                         .read(
                                           cameraWallOverflowPageProvider(
-                                            roomId,
+                                            widget.roomId,
                                           ).notifier,
                                         )
                                         .state =
@@ -304,10 +403,6 @@ class CameraWall extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                 ],
-                // ── Compact "Talking Now" names strip ───────────────────
-                // Shows who is speaking without moving any tiles.  Tiles stay
-                // in their stable grid positions; the cyan border/glow on each
-                // tile already provides visual speaking feedback in-place.
                 if (speakingNames.isNotEmpty) ...[
                   Container(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -316,10 +411,10 @@ class CameraWall extends ConsumerWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161012),
+                      color: VelvetNoir.surface,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0x409B2535), // wine red @ 25%
+                        color: VelvetNoir.primary.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
@@ -328,7 +423,7 @@ class CameraWall extends ConsumerWidget {
                           width: 7,
                           height: 7,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF9B2535), // wine red live dot
+                            color: VelvetNoir.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -336,7 +431,7 @@ class CameraWall extends ConsumerWidget {
                         const Text(
                           'Talking: ',
                           style: TextStyle(
-                            color: Color(0xFFD4AF37), // gold label
+                            color: VelvetNoir.gold,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -359,64 +454,61 @@ class CameraWall extends ConsumerWidget {
                 if (isDesktop)
                   LayoutBuilder(
                     builder: (context, lbConstraints) {
-                      // Overflow sidebar takes 208 + 10px; ignore if not present.
                       final sideW = overflowTiles.isNotEmpty ? 218.0 : 0.0;
                       final gridW = (lbConstraints.maxWidth - sideW).clamp(
                         80.0,
                         double.infinity,
                       );
-                      // For a single tile, cap its width so it doesn't span the
-                      // full ~800 px panel — makes the tile a reasonable size and
-                      // leaves no wasted space beside it.
-                      final effectiveTileW = tileCount <= 1
-                          ? (gridW / crossAxisCount).clamp(80.0, 800.0)
-                          : (gridW - spacing * (crossAxisCount - 1)) /
-                                crossAxisCount;
-                      // Use 4:3 ratio for tile height — matches typical webcam output so
-                      // RTCVideoViewObjectFitContain fills the frame with minimal black bars.
-                      final tileHeight = (effectiveTileW * (3 / 4) + headerH)
-                          .clamp(120.0, maxTileH);
+                      final double desktopEffectiveTileW = (crossAxisCount > 0)
+                          ? (tileCount <= 1
+                              ? (gridW / crossAxisCount).clamp(80.0, 800.0)
+                              : (gridW - spacing * (crossAxisCount - 1)) /
+                                    crossAxisCount)
+                          : 80.0;
+                      final desktopTileHeight = (desktopEffectiveTileW.isFinite && desktopEffectiveTileW > 0)
+                          ? (desktopEffectiveTileW * (3 / 4) + headerH).clamp(100.0, maxTileH)
+                          : 120.0;
                       final mainGridHeight =
-                          rows * (tileHeight + spacing) - spacing;
-                      // For a single centered tile, wrap the grid in a centered box.
+                          (rows * (desktopTileHeight + spacing) - spacing).clamp(0.0, double.infinity);
+
                       Widget grid = Wrap(
                         spacing: spacing,
                         runSpacing: spacing,
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          if (showLocalTile)
+                          if (widget.showLocalTile)
                             _ResizableTile(
                               key: const ValueKey('rtile_local'),
-                              defaultWidth: effectiveTileW,
-                              defaultHeight: tileHeight,
+                              defaultWidth: desktopEffectiveTileW,
+                              defaultHeight: desktopTileHeight,
                               child: _CameraWallTileFrame(
-                                roomId: roomId,
-                                label: localLabel,
-                                speaking: localSpeaking,
-                                hasMic: localHasMic,
+                                roomId: widget.roomId,
+                                label: widget.localLabel,
+                                speaking: widget.localSpeaking,
+                                hasMic: widget.localHasMic,
                                 compact: false,
-                                onDetach: onDetachLocal,
-                                viewerCount: localViewerCount,
-                                child: localTile,
+                                onDetach: widget.onDetachLocal,
+                                viewerCount: widget.localViewerCount,
+                                child: widget.localTile,
                               ),
                             ),
                           ...mainGridRemoteTiles.map(
                             (tile) => _ResizableTile(
                               key: ValueKey('rtile_${tile.uid}'),
-                              defaultWidth: effectiveTileW,
-                              defaultHeight: tileHeight,
+                              defaultWidth: desktopEffectiveTileW,
+                              defaultHeight: desktopTileHeight,
                               child: _CameraWallTileFrame(
-                                roomId: roomId,
+                                roomId: widget.roomId,
                                 label: tile.label,
                                 speaking: tile.isSpeaking,
                                 hasMic: tile.hasMic,
                                 compact: false,
                                 viewerCount: tile.viewerCount,
-                                onDetach: onDetachRemote == null
+                                onDetach: widget.onDetachRemote == null
                                     ? null
-                                    : () => onDetachRemote!(tile),
-                                child: remoteTileBuilder(tile),
+                                    : () => widget.onDetachRemote!(tile),
+                                child: widget.remoteTileBuilder(tile),
                               ),
                             ),
                           ),
@@ -425,7 +517,7 @@ class CameraWall extends ConsumerWidget {
                       if (tileCount <= 1) {
                         grid = Align(
                           alignment: Alignment.center,
-                          child: SizedBox(width: effectiveTileW, child: grid),
+                          child: SizedBox(width: desktopEffectiveTileW, child: grid),
                         );
                       }
                       return Row(
@@ -438,10 +530,10 @@ class CameraWall extends ConsumerWidget {
                               width: 208,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF161A21),
+                                  color: VelvetNoir.surfaceLow,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: const Color(0x1A73757D),
+                                    color: VelvetNoir.outlineVariant,
                                   ),
                                 ),
                                 child: Padding(
@@ -481,15 +573,15 @@ class CameraWall extends ConsumerWidget {
                                             final tile =
                                                 visibleOverflowTiles[index];
                                             return _CameraWallTileFrame(
-                                              roomId: roomId,
+                                              roomId: widget.roomId,
                                               label: tile.label,
                                               speaking: tile.isSpeaking,
                                               hasMic: tile.hasMic,
                                               compact: true,
-                                              onDetach: onDetachRemote == null
+                                              onDetach: widget.onDetachRemote == null
                                                   ? null
-                                                  : () => onDetachRemote!(tile),
-                                              child: remoteTileBuilder(tile),
+                                                  : () => widget.onDetachRemote!(tile),
+                                              child: widget.remoteTileBuilder(tile),
                                             );
                                           },
                                         ),
@@ -506,7 +598,7 @@ class CameraWall extends ConsumerWidget {
                   )
                 else ...[
                   SizedBox(
-                    height: rows * (mobileH + spacing) - spacing,
+                    height: (rows * (mobileH + spacing) - spacing).clamp(0.0, double.infinity),
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -534,21 +626,21 @@ class CameraWall extends ConsumerWidget {
                           return SizedBox(
                             width: 132,
                             child: _CameraWallTileFrame(
-                              roomId: roomId,
+                              roomId: widget.roomId,
                               label: tile.label,
                               speaking: tile.isSpeaking,
                               hasMic: tile.hasMic,
                               compact: true,
-                              onDetach: onDetachRemote == null
+                              onDetach: widget.onDetachRemote == null
                                   ? null
-                                  : () => onDetachRemote!(tile),
-                              child: remoteTileBuilder(tile),
+                                  : () => widget.onDetachRemote!(tile),
+                              child: widget.remoteTileBuilder(tile),
                             ),
                           );
                         },
                       ),
                     )
-                  else if (remoteTiles.isEmpty)
+                  else if (widget.remoteTiles.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Text(
@@ -582,14 +674,14 @@ class _CameraWallTileFrame extends StatefulWidget {
     this.showAdminTools = false,
     this.onDrop,
     this.onMute,
+    this.isPinned = false,
   });
 
   final String roomId;
   final String label;
   final bool speaking;
 
-  /// True when this participant is the current mic holder. EQ bars are only
-  /// shown for the mic holder, not for everyone who is speaking.
+  /// True when this participant is the current mic holder.
   final bool hasMic;
   final bool compact;
   final Widget child;
@@ -604,195 +696,265 @@ class _CameraWallTileFrame extends StatefulWidget {
   final VoidCallback? onDrop;
   final void Function(bool mute)? onMute;
 
+  final bool isPinned;
+
   @override
   State<_CameraWallTileFrame> createState() => _CameraWallTileFrameState();
 }
 
-class _CameraWallTileFrameState extends State<_CameraWallTileFrame> {
+class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleTickerProviderStateMixin {
   bool _hovered = false;
+  late final AnimationController _pulseCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    // ONLY repeat the controller if the widget is actively speaking, preventing continuous idle frame builds on inactive widgets
+    if (widget.speaking) {
+      _pulseCtrl.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_CameraWallTileFrame oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.speaking != oldWidget.speaking) {
+      if (widget.speaking) {
+        _pulseCtrl.repeat(reverse: true);
+      } else {
+        _pulseCtrl.stop();
+        _pulseCtrl.value = 0.0;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     const npSurfaceContainer = Color(0xFF0B0B0B); // Jet Black
     const npSurfaceHigh = Color(0xFF1C1617); // elevated surface
-    const npGold = Color(0xFFD4AF37); // Gold — host/mic holder
-    const npWineRed = Color(0xFF9B2535); // Wine Red — speaking glow
+    final npGold = VelvetNoir.gold; // Gold — host/mic holder
+    final npCyan = VelvetNoir.primary; // Cyan — speaking glow
     const npOnVariant = Color(0xFFAD9585); // muted cream
 
     final radius = widget.compact ? 8.0 : 10.0;
-    // Host (hasMic) gets gold frame; speaking gets wine-red glow; else subtle
-    final Color borderColor = widget.hasMic
-        ? npGold
-        : widget.speaking
-        ? npWineRed
-        : const Color(0x20D4AF37);
-    final double borderWidth = (widget.hasMic || widget.speaking) ? 2.0 : 1.0;
-    final glowShadow = widget.hasMic
-        ? [
-            BoxShadow(
-              color: npGold.withAlpha(70),
-              blurRadius: 12,
-              spreadRadius: 1,
-            ),
-          ]
-        : widget.speaking
-        ? [
-            BoxShadow(
-              color: npWineRed.withAlpha(80),
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
-          ]
-        : const <BoxShadow>[];
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: npSurfaceContainer,
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: borderColor, width: borderWidth),
-          boxShadow: glowShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(radius),
-          child: Column(
-            children: [
-              Container(
-                height: widget.compact ? 20 : 24,
-                color: npSurfaceHigh,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: widget.hasMic
-                            ? npGold
-                            : widget.speaking
-                            ? npWineRed
-                            : npOnVariant,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        widget.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    // Pop-out button: visible on hover (desktop) or always on mobile
-                    if (widget.onDetach != null && (_hovered || widget.compact))
-                      _TileActionButton(
-                        tooltip: 'Detach window',
-                        icon: Icons.open_in_new,
-                        onTap: widget.onDetach!,
-                      ),
-                    if (widget.showAdminTools) ...[
-                      _TileActionButton(
-                        tooltip: 'Mute user',
-                        icon: Icons.mic_off_rounded,
-                        onTap: () => widget.onMute?.call(true),
-                        color: Colors.orange,
-                      ),
-                      _TileActionButton(
-                        tooltip: 'Drop from mic',
-                        icon: Icons.arrow_downward_rounded,
-                        onTap: widget.onDrop!,
-                        color: Colors.redAccent,
-                      ),
-                    ],
-                  ],
+    
+    return AnimatedBuilder(
+      animation: _pulseCtrl,
+      builder: (context, child) {
+        final pulseValue = widget.speaking ? _pulseCtrl.value : 0.0;
+        
+        // Pin (spotlight) gets primary cyan; Host (hasMic) gets gold frame; speaking gets neon cyan glow; else subtle
+        final Color borderColor = widget.isPinned
+            ? VelvetNoir.primary
+            : widget.hasMic
+            ? npGold
+            : widget.speaking
+            ? npCyan
+            : const Color(0x20D4AF37);
+            
+        final double borderWidth = (widget.isPinned || widget.hasMic || widget.speaking) ? 2.0 : 1.0;
+        
+        final glowShadow = widget.isPinned
+            ? [
+                BoxShadow(
+                  color: VelvetNoir.primary.withValues(alpha: 0.4 + (pulseValue * 0.2)),
+                  blurRadius: 16 + (pulseValue * 8),
+                  spreadRadius: 2 + (pulseValue * 2),
                 ),
-              ),
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ColoredBox(
-                      color: const Color(0xFF0D0A0C),
-                      child: widget.child,
-                    ),
-                    // EQ sound-wave bars only on the mic holder
-                    if (widget.hasMic)
-                      Positioned(
-                        left: 5,
-                        bottom: 8,
-                        child: Consumer(
-                          builder: (context, ref, _) {
-                            final rtc = ref.watch(rtcServiceProvider(widget.roomId));
-                            final audioLevel = widget.label == 'You' 
-                              ? (rtc?.localAudioLevel ?? 0.0)
-                              : (rtc?.remoteAudioLevelForUid(rtc.remoteUids.firstWhere((id) => true, orElse: () => -1)) ?? 0.0); // Simple fallback for now
-                            return _SoundWaveEq(active: widget.hasMic, audioLevel: audioLevel);
-                          }
-                        ),
-                      ),
-                    if (widget.hasMic)
-                      Positioned(
-                        right: 5,
-                        bottom: 8,
-                        child: Consumer(
-                          builder: (context, ref, _) {
-                            final rtc = ref.watch(rtcServiceProvider(widget.roomId));
-                            final audioLevel = widget.label == 'You' 
-                              ? (rtc?.localAudioLevel ?? 0.0)
-                              : (rtc?.remoteAudioLevelForUid(rtc.remoteUids.firstWhere((id) => true, orElse: () => -1)) ?? 0.0);
-                            return _SoundWaveEq(active: widget.hasMic, audioLevel: audioLevel);
-                          }
-                        ),
-                      ),
-                    // Viewer count badge (bottom-right corner, shifted left when speaking)
-                    if (widget.viewerCount != null && widget.viewerCount! > 0)
-                      Positioned(
-                        right: widget.speaking ? 36 : 6,
-                        bottom: 6,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(160),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+              ]
+            : widget.hasMic
+            ? [
+                BoxShadow(
+                  color: npGold.withValues(alpha: 0.25 + (pulseValue * 0.15)),
+                  blurRadius: 12 + (pulseValue * 6),
+                  spreadRadius: 1 + (pulseValue * 1),
+                ),
+              ]
+            : widget.speaking
+            ? [
+                BoxShadow(
+                  color: npCyan.withValues(alpha: 0.3 + (pulseValue * 0.3)),
+                  blurRadius: 10 + (pulseValue * 10),
+                  spreadRadius: 1 + (pulseValue * 2),
+                ),
+              ]
+            : const <BoxShadow>[];
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool showHeader = constraints.maxHeight > 40;
+              final double effectiveHeaderH = widget.compact ? 20 : 24;
+
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  color: npSurfaceContainer,
+                  borderRadius: BorderRadius.circular(radius),
+                  border: Border.all(color: borderColor, width: borderWidth),
+                  boxShadow: glowShadow,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(radius),
+                  child: Column(
+                    children: [
+                      if (showHeader)
+                        Container(
+                          height: effectiveHeaderH,
+                          color: npSurfaceHigh,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                Icons.visibility,
-                                color: Color(0xFFC45E7A),
-                                size: 10,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${widget.viewerCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: widget.isPinned
+                                      ? VelvetNoir.primary
+                                      : widget.hasMic
+                                      ? npGold
+                                      : widget.speaking
+                                      ? npCyan
+                                      : npOnVariant,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
+                              const SizedBox(width: 6),
+                              if (widget.isPinned) ...[
+                                const Icon(
+                                  Icons.push_pin_rounded,
+                                  size: 10,
+                                  color: VelvetNoir.primary,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  widget.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              if (widget.onDetach != null && (_hovered || widget.compact))
+                                _TileActionButton(
+                                  tooltip: 'Detach window',
+                                  icon: Icons.open_in_new,
+                                  onTap: widget.onDetach!,
+                                ),
+                              if (widget.showAdminTools) ...[
+                                _TileActionButton(
+                                  tooltip: 'Mute user',
+                                  icon: Icons.mic_off_rounded,
+                                  onTap: () => widget.onMute?.call(true),
+                                  color: Colors.orange,
+                                ),
+                                _TileActionButton(
+                                  tooltip: 'Drop from mic',
+                                  icon: Icons.arrow_downward_rounded,
+                                  onTap: widget.onDrop!,
+                                  color: Colors.redAccent,
+                                ),
+                              ],
                             ],
                           ),
                         ),
+                      Expanded(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ColoredBox(
+                              color: const Color(0xFF0D0A0C),
+                              child: widget.child,
+                            ),
+                            if (widget.hasMic)
+                              Positioned(
+                                left: 5,
+                                bottom: 8,
+                                child: Consumer(
+                                  builder: (context, ref, _) {
+                                    final rtc = ref.watch(rtcServiceProvider(widget.roomId));
+                                    final audioLevel = widget.label == 'You' 
+                                      ? (rtc?.localAudioLevel ?? 0.0)
+                                      : (rtc?.remoteAudioLevelForUid(rtc.remoteUids.firstWhere((id) => true, orElse: () => -1)) ?? 0.0);
+                                    return _SoundWaveEq(active: widget.hasMic, audioLevel: audioLevel);
+                                  }
+                                ),
+                              ),
+                            if (widget.hasMic)
+                              Positioned(
+                                right: 5,
+                                bottom: 8,
+                                child: Consumer(
+                                  builder: (context, ref, _) {
+                                    final rtc = ref.watch(rtcServiceProvider(widget.roomId));
+                                    final audioLevel = widget.label == 'You' 
+                                      ? (rtc?.localAudioLevel ?? 0.0)
+                                      : (rtc?.remoteAudioLevelForUid(rtc.remoteUids.firstWhere((id) => true, orElse: () => -1)) ?? 0.0);
+                                    return _SoundWaveEq(active: widget.hasMic, audioLevel: audioLevel);
+                                  }
+                                ),
+                              ),
+                            if (widget.viewerCount != null && widget.viewerCount! > 0)
+                              Positioned(
+                                right: widget.speaking ? 36 : 6,
+                                bottom: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(160),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.visibility,
+                                        color: VelvetNoir.secondary,
+                                        size: 10,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '${widget.viewerCount}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 }
@@ -870,7 +1032,8 @@ class _SoundWaveEqState extends State<_SoundWaveEq>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: List.generate(4, (i) {
             // Scale bar height by audio energy (0.0 - 1.0)
-            final energyScale = 0.3 + (widget.audioLevel * 0.7);
+            final double energy = (widget.audioLevel.isFinite) ? widget.audioLevel.clamp(0.0, 1.0) : 0.0;
+            final energyScale = 0.3 + (energy * 0.7);
             final h = _barAnims[i].value * energyScale;
             
             return Padding(
@@ -879,9 +1042,9 @@ class _SoundWaveEqState extends State<_SoundWaveEq>
                 width: 3,
                 height: h,
                 decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFC45E7A,
-                  ).withAlpha(widget.active ? 220 : 80),
+                  color: VelvetNoir.secondary.withValues(
+                    alpha: widget.active ? 0.85 : 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -893,10 +1056,6 @@ class _SoundWaveEqState extends State<_SoundWaveEq>
   }
 }
 
-// ---------------------------------------------------------------------------
-// Resizable tile wrapper — drag the bottom-right handle to resize any cam tile.
-// State is preserved across rebuilds via the widget's stable ValueKey.
-// ---------------------------------------------------------------------------
 class _TileActionButton extends StatelessWidget {
   const _TileActionButton({
     required this.icon,
@@ -959,6 +1118,17 @@ class _ResizableTileState extends State<_ResizableTile> {
   }
 
   @override
+  void didUpdateWidget(_ResizableTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Explicit didUpdateWidget handler to correctly update dimensions on layout adjustments (e.g. participant count changes)
+    if (widget.defaultWidth != oldWidget.defaultWidth ||
+        widget.defaultHeight != oldWidget.defaultHeight) {
+      _width = widget.defaultWidth;
+      _height = widget.defaultHeight;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: _width,
@@ -968,7 +1138,6 @@ class _ResizableTileState extends State<_ResizableTile> {
         clipBehavior: Clip.none,
         children: [
           widget.child,
-          // Drag this handle to resize the cam tile.
           Positioned(
             right: 0,
             bottom: 0,
@@ -1006,3 +1175,6 @@ class _ResizableTileState extends State<_ResizableTile> {
     );
   }
 }
+
+
+

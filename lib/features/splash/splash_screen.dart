@@ -242,3 +242,6 @@ class _GlowBackgroundPainter extends CustomPainter {
   @override
   bool shouldRepaint(_GlowBackgroundPainter old) => old.opacity != opacity;
 }
+
+
+

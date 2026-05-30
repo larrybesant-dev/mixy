@@ -7,3 +7,6 @@ class AddCoinTransactionUseCase {
   Future<void> call(CoinTransactionModel transaction) =>
       repository.addTransaction(transaction);
 }
+
+
+

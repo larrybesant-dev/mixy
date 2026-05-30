@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'message_providers.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
@@ -17,7 +18,7 @@ final roommessagePreviewStateProvider = StreamProvider.autoDispose
           (_, next) {
             if (controller.isClosed) return;
             final List<MessageModel> messages =
-                next.valueOrNull ?? const <MessageModel>[];
+                next.value ?? const <MessageModel>[];
             if (previous != null) {
               if (!RoommessagePreviewContract.shouldRebuild(
                 previous!,
@@ -35,3 +36,7 @@ final roommessagePreviewStateProvider = StreamProvider.autoDispose
         controller.onCancel = subscription.close;
       });
     });
+
+
+
+

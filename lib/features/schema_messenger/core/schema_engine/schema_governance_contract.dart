@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 class SchemaGovernanceContract {
   const SchemaGovernanceContract._();
 
@@ -5,3 +6,7 @@ class SchemaGovernanceContract {
   static const int stableMismatchThreshold = 2;
   static const int reconcileEveryMinutes = 2;
 }
+
+
+
+

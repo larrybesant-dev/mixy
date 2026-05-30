@@ -30,7 +30,7 @@ class FollowersScreen extends ConsumerWidget {
         ),
         data: (followers) => ListView.separated(
           itemCount: followers.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (__, _) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final follower = followers[index];
             return _FollowUserTile(
@@ -68,7 +68,7 @@ class FollowingScreen extends ConsumerWidget {
         ),
         data: (following) => ListView.separated(
           itemCount: following.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
+          separatorBuilder: (__, _) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final user = following[index];
             return _FollowUserTile(
@@ -140,3 +140,6 @@ class _FollowUserTile extends ConsumerWidget {
     );
   }
 }
+
+
+

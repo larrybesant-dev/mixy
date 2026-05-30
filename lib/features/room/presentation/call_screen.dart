@@ -1,126 +1,129 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../../../services/webrtc_room_service.dart'; 
+import '../../../core/streams/stream_lifecycle_manager.dart';
+import '../../auth/controllers/auth_controller.dart';
 
-class CallScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/firebase_providers.dart';
+
+class CallScreen extends ConsumerStatefulWidget {
   const CallScreen({super.key});
 
   @override
-  _CallScreenState createState() => _CallScreenState();
+  ConsumerState<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends State<CallScreen> {
-  // 1. Initialize our hardened engine
-  final WebRTCRoomService _signaling = WebRTCRoomService();
-  
-  // 2. These renderers are the "TV screens" that show the video
-  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
-  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+class _CallScreenState extends ConsumerState<CallScreen> {
+  late final WebRtcRoomService _signaling;
   final TextEditingController _roomIdController = TextEditingController();
-
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   MediaStream? _localStream;
   String? _roomId;
 
   @override
   void initState() {
     super.initState();
-    _initRenderers();
-    // Warm up the production servers
-    _signaling.initializeProductionNetworking();
-  }
+    _signaling = WebRtcRoomService(
+      firestore: ref.read(firestoreProvider),
+      localUserId: ref.read(authControllerProvider).uid ?? 'legacy_call',
+      streamLifecycleManager: ref.read(streamLifecycleManagerProvider),
+    );
+    
+    _localRenderer.initialize();
 
-  Future<void> _initRenderers() async {
-    await _localRenderer.initialize();
-    await _remoteRenderer.initialize();
-  }
-
-  // 3. Ask for permissions and turn on the camera
-  Future<void> _openCamera() async {
-    final Map<String, dynamic> mediaConstraints = {
-      'audio': true,
-      'video': {
-        'facingMode': 'user', // Uses the front camera
+    _signaling.onLocalVideoCaptureChanged = () async {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (mounted) {
+        setState(() {});
       }
     };
 
-    _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    _localRenderer.srcObject = _localStream;
-    setState(() {}); // Tell Flutter to redraw the screen with the video
+    _signaling.onRemoteUserJoined = () {
+      if (mounted) {
+        setState(() {});
+      }
+    };
+
+    _signaling.onRemoteUserLeft = () {
+      if (mounted) {
+        setState(() {});
+      }
+    };
+
+    _signaling.initializeProductionNetworking();
   }
 
-  // 4. Phone A: Creates the room
+  Future<void> _openCamera() async {
+    final Map<String, dynamic> mediaConstraints = {
+      'audio': true,
+      'video': {'facingMode': 'user'}
+    };
+    _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    _localRenderer.srcObject = _localStream;
+    await _signaling.enableVideo(true);
+    
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Future<void> _startCall() async {
     if (_localStream == null) await _openCamera();
     
     final id = await _signaling.createRoom(_localStream!, (remoteStream) {
-      // When Phone B connects, put their video on the remote screen
-      setState(() {
-        _remoteRenderer.srcObject = remoteStream;
-      });
+      if (mounted) setState(() {});
     });
-
+    
     setState(() {
       _roomId = id;
       _roomIdController.text = id;
     });
   }
 
-  // 5. Phone B: Joins the room
   Future<void> _joinCall() async {
+    final targetRoomId = _roomIdController.text.trim();
+    if (targetRoomId.isEmpty) return;
+    
     if (_localStream == null) await _openCamera();
     
-    await _signaling.joinRoom(
-      _roomIdController.text.trim(),
-      _localStream!,
-      (remoteStream) {
-        // When connected to Phone A, put their video on the remote screen
-        setState(() {
-          _remoteRenderer.srcObject = remoteStream;
-        });
-      },
-    );
+    await _signaling.joinRoomById(targetRoomId, _localStream!, (remoteStream) {
+      if (mounted) setState(() {});
+    });
+    
+    setState(() {
+      _roomId = targetRoomId;
+    });
   }
 
   @override
   void dispose() {
+    _roomIdController.dispose();
     _localRenderer.dispose();
-    _remoteRenderer.dispose();
     _localStream?.dispose();
-    _signaling.disposeAll(); // Cleans up the hardware locks
+    _signaling.disposeAll(); 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<int> activeRemotePeers = _signaling.remoteUids;
+    final bool showingLocalCam = _signaling.isLocalVideoCapturing;
+
     return Scaffold(
       appBar: AppBar(title: const Text('MixVy Secure Call')),
       body: Column(
         children: [
-          // TOP HALF: The Video Screens
           Expanded(
-            child: Row(
-              children: [
-                // Our Camera
-                Expanded(
-                  child: Container(
-                    color: Colors.black,
-                    child: RTCVideoView(_localRenderer, mirror: true),
-                  ),
-                ),
-                // Their Camera
-                Expanded(
-                  child: Container(
-                    color: Colors.black87,
-                    child: RTCVideoView(_remoteRenderer),
-                  ),
-                ),
-              ],
+            child: Container(
+              color: const Color(0xFF121214), 
+              padding: const EdgeInsets.all(8.0),
+              child: _buildAdaptiveVideoGrid(showingLocalCam, activeRemotePeers),
             ),
           ),
-          
-          // BOTTOM HALF: The Controls
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.only(bottom: 24.0, left: 16.0, right: 16.0),
             child: Column(
               children: [
                 Text('Room ID: ${_roomId ?? "Not connected"}', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -136,17 +139,25 @@ class _CallScreenState extends State<CallScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ElevatedButton(
-                      onPressed: _openCamera,
-                      child: const Text('1. Camera'),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await _openCamera();
+                        if (mounted) {
+                          setState(() {});
+                        }
+                      },
+                      icon: Icon(_signaling.isLocalVideoCapturing ? Icons.videocam : Icons.videocam_off),
+                      label: const Text('1. Camera'),
                     ),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed: _startCall,
-                      child: const Text('2. Create Call'),
+                      icon: const Icon(Icons.add_call),
+                      label: const Text('2. Create Call'),
                     ),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed: _joinCall,
-                      child: const Text('3. Join Call'),
+                      icon: const Icon(Icons.call_received),
+                      label: const Text('3. Join Call'),
                     ),
                   ],
                 )
@@ -157,4 +168,85 @@ class _CallScreenState extends State<CallScreen> {
       ),
     );
   }
+
+  Widget _buildAdaptiveVideoGrid(bool showLocal, List<int> remotePeers) {
+    const int totalGridSlots = 16;
+    final List<Widget> structuralTiles = [];
+
+    Widget localTile = Container(
+      color: const Color(0xFF1E1E24),
+      child: const Center(
+        child: Icon(Icons.person, color: Colors.white24, size: 40),
+      ),
+    );
+
+    if (showLocal) {
+      localTile = Stack(
+        children: [
+          SizedBox.expand(child: RTCVideoView(_localRenderer, mirror: true, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover)),
+          Positioned(
+            bottom: 6,
+            left: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: const BoxDecoration(
+                color: Colors.black87, 
+                borderRadius: BorderRadius.all(Radius.circular(4)),
+              ),
+              child: const Text(
+                'Curve (You)', 
+                style: TextStyle(color: Color(0xFF00E6FF), fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    structuralTiles.add(localTile);
+
+    if (remotePeers.isNotEmpty) {
+      for (final int uid in remotePeers) {
+        structuralTiles.add(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              color: Colors.black,
+              child: _signaling.getRemoteView(uid, _roomId ?? ''),
+            ),
+          ),
+        );
+      }
+    }
+
+    while (structuralTiles.length < totalGridSlots) {
+      structuralTiles.add(
+        Container(
+          color: const Color(0xFF16161A), 
+          child: const Center(
+            child: Icon(Icons.person, color: Colors.white10, size: 32),
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      itemCount: totalGridSlots,
+      physics: const NeverScrollableScrollPhysics(), 
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,         
+        crossAxisSpacing: 4,       
+        mainAxisSpacing: 4,
+        childAspectRatio: 4 / 3,   
+      ),
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: structuralTiles[index],
+        );
+      },
+    );
+  }
 }
+
+
+

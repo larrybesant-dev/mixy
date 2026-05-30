@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum MessagePaneRenderMode { legacy, schema, dual }
@@ -15,3 +16,7 @@ final messagePaneRenderModeProvider =
     NotifierProvider<MessagePaneRenderModeController, MessagePaneRenderMode>(
       MessagePaneRenderModeController.new,
     );
+
+
+
+

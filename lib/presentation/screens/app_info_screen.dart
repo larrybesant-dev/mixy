@@ -110,3 +110,6 @@ class AppInfoScreen extends StatelessWidget {
     );
   }
 }
+
+
+

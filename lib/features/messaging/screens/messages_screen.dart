@@ -41,7 +41,6 @@ class MessagesScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 builder: (_) => MessageRequestsSheet(
-                  requestsAsync: requestsAsync,
                   userId: userId,
                 ),
               );
@@ -57,3 +56,7 @@ class MessagesScreen extends ConsumerWidget {
     );
   }
 }
+
+
+
+
