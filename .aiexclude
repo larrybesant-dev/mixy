@@ -1,0 +1,52 @@
+# ==============================================================================
+# MixVy AI Agent Ignore Configuration (.aiexclude)
+# Prevents LLM Agents from scanning binary caches, heavy artifacts, and secrets.
+# ==============================================================================
+
+# ── Flutter & Dart Internals ──────────────────────────────────────────────────
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+**/*.g.dart
+**/*.freezed.dart
+
+# ── Local Dependencies & Libraries ────────────────────────────────────────────
+node_modules/
+functions/node_modules/
+.pub-cache/
+
+# ── Private Credentials, Keys & Environment Secrets ───────────────────────────
+.env
+**/*.env
+**/*.properties
+**/*.keystore
+**/*.jks
+**/google-services.json
+**/GoogleService-Info.plist
+secrets.yaml
+service-account.json
+
+# ── Firebase Emulator & Local State ───────────────────────────────────────────
+.firebase/
+.firebaserc
+firestore.rules.backup.*
+functions/lib/
+
+# ── Heavy OS & IDE Caches ─────────────────────────────────────────────────────
+.idea/
+.vscode/
+**/.DS_Store
+Thumbs.db
+
+# ── Log Files & Audit Dumps ───────────────────────────────────────────────────
+*.log
+*build_log.txt
+analyze_raw.txt
+analyze_report.txt
+analyze_result.txt
+violations.txt
+mixvy_audit.txt
+*.txt
+.bak
