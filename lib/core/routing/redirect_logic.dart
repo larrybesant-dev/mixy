@@ -58,8 +58,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
             redirectTo: '/home',
             reason: 'signed_in_redirect_to_home',
           )
-        : RedirectEvaluation(
-            redirectTo: matchedLocation,
+        : const RedirectEvaluation(
+            redirectTo: null,
             reason: 'signed_out_allowed_auth_route',
           );
   }
@@ -72,8 +72,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
     );
   }
 
-  return RedirectEvaluation(
-    redirectTo: matchedLocation,
+  return const RedirectEvaluation(
+    redirectTo: null,
     reason: 'allow_navigation',
   );
 }

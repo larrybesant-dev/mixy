@@ -1,4 +1,4 @@
-import 'package:mixvy/presentation/rooms/browser/room_browser_screen.dart';
+import 'package:mixvy/features/rooms/live_rooms_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -349,7 +349,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/rooms',
-                builder: (context, state) => const RoomBrowserScreen(),
+                pageBuilder: (context, state) => NoTransitionPage(
+                  key: state.pageKey,
+                  child: const LiveRoomsScreen(),
+                ),
                 routes: [
                   GoRoute(
                       path: 'create',
@@ -604,7 +607,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
       GoRoute(
         path: '/rooms',
-        builder: (context, state) => const RoomBrowserScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const LiveRoomsScreen(),
+        ),
       ),
     ],
   );

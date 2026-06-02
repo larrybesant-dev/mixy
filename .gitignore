@@ -64,3 +64,16 @@ android/key.properties
 code-scan.txt
 *.bak
 .env
+
+# Test artifacts and reports (never commit)
+playwright-report/
+test-results/
+coverage/
+*.png
+*.md5
+test_failures.txt
+test_results.txt
+test_report.txt
+
+# Untracked feature directories (auto-generated or experimental)
+lib/features/rooms/
