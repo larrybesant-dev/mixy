@@ -439,6 +439,22 @@
         { "fieldPath": "category",  "order": "ASCENDING" },
         { "fieldPath": "memberCount", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recipientUserId", "order": "ASCENDING" },
+        { "fieldPath": "sentAt",          "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "participants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId",          "order": "ASCENDING" },
+        { "fieldPath": "joinedAt",        "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

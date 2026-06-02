@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../config/app_env.dart';
 import 'dart:developer' as developer;
 import 'package:mixvy/services/rtc_room_service.dart';
+import 'package:mixvy/services/webrtc_diagnostics_service.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 
 /// WebRtcRoomService
@@ -927,9 +928,25 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
           _log(
               '⚠️ Connection for $peerId disconnected. Waiting for recovery...');
+          WebRtcCrashlyticsDiagnostics.logConnectionError(
+            roomId: _currentChannelId ?? 'UNKNOWN',
+            localUserId: _localUserId,
+            participantCount: _pcs.length,
+            connectionState: state.name,
+            errorDetail: 'ICE Connection transitioned to Disconnected for peer $peerId. Awaiting potential ICE restart.',
+            peerIceStates: _pcs.map((peer, conn) => MapEntry(peer, conn.iceConnectionState?.name ?? 'unknown')),
+          );
           break;
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
           _log('❌ Connection for $peerId failed.');
+          WebRtcCrashlyticsDiagnostics.logConnectionError(
+            roomId: _currentChannelId ?? 'UNKNOWN',
+            localUserId: _localUserId,
+            participantCount: _pcs.length,
+            connectionState: state.name,
+            errorDetail: 'ICE Connection transitioned to Failed for peer $peerId. WebRTC connection severed.',
+            peerIceStates: _pcs.map((peer, conn) => MapEntry(peer, conn.iceConnectionState?.name ?? 'unknown')),
+          );
           onConnectionLost?.call();
           break;
         case RTCIceConnectionState.RTCIceConnectionStateClosed:

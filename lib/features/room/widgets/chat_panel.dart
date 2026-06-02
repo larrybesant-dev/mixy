@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import 'package:mixvy/core/velvet_noir_constants.dart';
+import 'package:mixvy/core/theme/velvet_noir_remote_config.dart';
 import 'message_bubble.dart';
 
 /// Self-contained chat panel widget for the Paltalk-style room layout.
@@ -135,6 +136,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final visualConfig = ref.watch(velvetVisualConfigProvider);
     final npOnVariant = kVelvetGold.withValues(alpha: 0.65);
 
     if (widget.messages.length != _lastCount) {
@@ -161,18 +163,18 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
     return Container(
       decoration: BoxDecoration(
-        color: kVelvetJet.withValues(alpha: 0.65), // Translucent backdrop matching Velvet Noir
+        color: kVelvetJet.withValues(alpha: visualConfig.glassBackgroundAlpha), // Translucent backdrop matching Velvet Noir
         borderRadius: BorderRadius.zero,
         border: Border(
           left: BorderSide(
-            color: kVelvetGold.withValues(alpha: 0.18), // Ultra thin premium gold border
+            color: kVelvetGold.withValues(alpha: visualConfig.goldBorderAlpha), // Ultra thin premium gold border
             width: 1,
           ),
         ),
       ),
       child: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), // Premium glassmorphic blur
+          filter: ImageFilter.blur(sigmaX: visualConfig.glassBlurSigma, sigmaY: visualConfig.glassBlurSigma), // Premium glassmorphic blur
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -180,7 +182,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                 end: Alignment.bottomCenter,
                 colors: [
                   kVelvetJet.withValues(alpha: 0.5),
-                  kVelvetWine.withValues(alpha: 0.08), // Subtle, elegant undertone of wine red
+                  kVelvetWine.withValues(alpha: visualConfig.wineGlowAlpha), // Subtle, elegant undertone of wine red
                   kVelvetJet.withValues(alpha: 0.7),
                 ],
               ),
