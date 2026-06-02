@@ -9,6 +9,9 @@ import 'package:mixvy/features/room/providers/rtc_service_provider.dart';
 import 'package:mixvy/features/room/controllers/live_room_media_controller.dart';
 import 'package:mixvy/features/room/widgets/chat_panel.dart';
 import 'package:mixvy/core/velvet_noir_constants.dart';
+import 'package:mixvy/features/room/providers/message_providers.dart';
+import 'package:mixvy/features/room/providers/participant_providers.dart';
+import 'package:mixvy/models/room_participant_model.dart';
 
 // ignore_for_file: unused_element, unused_import
 
@@ -245,100 +248,196 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final snapshot = ref.watch(roomLiveStateProvider(widget.roomId));
-
-    return snapshot.when(
-      data: (liveState) => Scaffold(
-        backgroundColor: kVelvetJet,
-        body: Column(
-          children: [
-            // ── Persistent Header with Room Metadata ──
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('rooms')
-                  .doc(widget.roomId)
-                  .snapshots(),
-              builder: (context, roomSnap) {
-                final data = (roomSnap.data?.data() as Map<String, dynamic>?) ?? {};
-                return RoomHeaderWidget(
-                  roomTitle: data['name'] ?? data['title'] ?? 'Live Lounge',
-                  hostName: data['hostUsername'] ?? 'MixVy Host',
-                  participantCount: (data['memberCount'] as int?) ?? 0,
-                );
-              },
-            ),
-            // ── 70/30 Split Layout ──
-            Expanded(
-              child: Row(
-                children: [
-                  // 70% Video Feed
-                  Expanded(
-                    flex: 7,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: kVelvetJet,
-                        border: Border(
-                          right: BorderSide(
-                            color: kVelvetGold.withOpacity(0.3),
-                            width: 2,
-                          ),
+    return Scaffold(
+      backgroundColor: kVelvetJet,
+      body: Column(
+        children: [
+          // ── Persistent Header with Room Metadata ──
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('rooms')
+                .doc(widget.roomId)
+                .snapshots(),
+            builder: (context, roomSnap) {
+              final data = (roomSnap.data?.data() as Map<String, dynamic>?) ?? {};
+              return RoomHeaderWidget(
+                roomTitle: data['name'] ?? data['title'] ?? 'Live Lounge',
+                hostName: data['hostUsername'] ?? 'MixVy Host',
+                participantCount: (data['memberCount'] as int?) ?? 0,
+              );
+            },
+          ),
+          // ── 70/30 Split Layout ──
+          Expanded(
+            child: Row(
+              children: [
+                // 70% Video Feed
+                Expanded(
+                  flex: 7,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: kVelvetJet,
+                      border: Border(
+                        right: BorderSide(
+                          color: kVelvetGold.withOpacity(0.3),
+                          width: 2,
                         ),
                       ),
-                      child: VideoFeedWidget(roomId: widget.roomId),
                     ),
+                    child: VideoFeedWidget(roomId: widget.roomId),
                   ),
-                  // 30% Chat Panel
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      color: kVelvetJet.withOpacity(0.98),
-                      child: ChatPanel(
-                        messages: liveState.message,
-                        isLoadingMessages: false,
-                        currentUserId: ref.watch(userProvider)?.id ?? '',
-                        currentUsername:
-                            ref.watch(userProvider)?.username ?? 'Anonymous',
-                        isSending: false,
-                        cooldownMessage: '',
-                        isMuted: false,
-                        isBanned: false,
-                        allowChat: true,
-                        hasBlockedRelationship: false,
-                        showEmojiTray: false,
-                        onToggleEmojiTray: () {},
-                        onSendMessage: (t) => _roomController.sendMessage(t),
-                        onTyping: () {},
-                        messageController: TextEditingController(),
-                        scrollController: ScrollController(),
-                        senderLabelResolver: (id) => '',
-                        senderVipLevelResolver: (id) => 0,
-                        senderAvatarResolver: (id) => '',
-                      ),
-                    ),
+                ),
+                // 30% Chat Panel (Locally Subscribed Section)
+                Expanded(
+                  flex: 3,
+                  child: _LiveRoomChatSection(
+                    roomId: widget.roomId,
+                    roomController: _roomController,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      loading: () => Scaffold(
-        backgroundColor: kVelvetJet,
-        body: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(kVelvetGold),
           ),
-        ),
+        ],
       ),
-      error: (e, stack) => Scaffold(
-        backgroundColor: kVelvetJet,
-        body: Center(
-          child: Text(
-            'Error: $e',
-            style: const TextStyle(color: kVelvetGold),
-          ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _LiveRoomChatSection — Locally subscribed chat consumer for maximum performance
+// ─────────────────────────────────────────────────────────────────────────────
+class _LiveRoomChatSection extends ConsumerStatefulWidget {
+  final String roomId;
+  final RoomController roomController;
+
+  const _LiveRoomChatSection({
+    required this.roomId,
+    required this.roomController,
+  });
+
+  @override
+  ConsumerState<_LiveRoomChatSection> createState() => _LiveRoomChatSectionState();
+}
+
+class _LiveRoomChatSectionState extends ConsumerState<_LiveRoomChatSection> {
+  late final TextEditingController _messageController;
+  late final ScrollController _scrollController;
+  bool _showEmojiTray = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _messageController = TextEditingController();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messagesAsync = ref.watch(roomMessageStreamProvider(widget.roomId));
+    final participantsAsync = ref.watch(participantsStreamProvider(widget.roomId));
+    final typingIdsAsync = ref.watch(roomTypingUserIdsProvider(widget.roomId));
+    final currentUser = ref.watch(userProvider);
+
+    final participants = participantsAsync.valueOrNull ?? const [];
+    final messages = messagesAsync.valueOrNull ?? const [];
+    final typingIds = typingIdsAsync.valueOrNull ?? const [];
+
+    // Map typingIds to display names
+    final typingNames = typingIds.map((id) {
+      final p = participants.firstWhere(
+        (p) => p.userId == id,
+        orElse: () => RoomParticipantModel(
+          userId: id,
+          role: 'audience',
+          joinedAt: DateTime.now(),
+          lastActiveAt: DateTime.now(),
         ),
-      ),
+      );
+      return p.displayName ?? p.userId;
+    }).toList();
+
+    // Resolvers for sender details
+    String senderLabelResolver(String senderId) {
+      if (senderId == currentUser?.id) return currentUser?.username ?? 'You';
+      final p = participants.firstWhere(
+        (p) => p.userId == senderId,
+        orElse: () => RoomParticipantModel(
+          userId: senderId,
+          role: 'audience',
+          joinedAt: DateTime.now(),
+          lastActiveAt: DateTime.now(),
+        ),
+      );
+      return p.displayName ?? senderId;
+    }
+
+    int senderVipLevelResolver(String senderId) {
+      final p = participants.firstWhere(
+        (p) => p.userId == senderId,
+        orElse: () => RoomParticipantModel(
+          userId: senderId,
+          role: 'audience',
+          joinedAt: DateTime.now(),
+          lastActiveAt: DateTime.now(),
+        ),
+      );
+      if (p.role == 'host') return 5;
+      if (p.role == 'cohost') return 3;
+      return 0;
+    }
+
+    String senderAvatarResolver(String senderId) {
+      if (senderId == currentUser?.id) return currentUser?.photoUrl ?? '';
+      final p = participants.firstWhere(
+        (p) => p.userId == senderId,
+        orElse: () => RoomParticipantModel(
+          userId: senderId,
+          role: 'audience',
+          joinedAt: DateTime.now(),
+          lastActiveAt: DateTime.now(),
+        ),
+      );
+      return p.photoUrl ?? '';
+    }
+
+    return ChatPanel(
+      messages: messages,
+      isLoadingMessages: messagesAsync.isLoading,
+      currentUserId: currentUser?.id ?? '',
+      currentUsername: currentUser?.username ?? 'Anonymous',
+      isSending: false,
+      cooldownMessage: '',
+      isMuted: false,
+      isBanned: false,
+      allowChat: true,
+      hasBlockedRelationship: false,
+      showEmojiTray: _showEmojiTray,
+      onToggleEmojiTray: () {
+        setState(() {
+          _showEmojiTray = !_showEmojiTray;
+        });
+      },
+      onSendMessage: (text) async {
+        await widget.roomController.sendMessage(text);
+        _messageController.clear();
+      },
+      onTyping: () {
+        // Handle typing notifier if needed
+      },
+      messageController: _messageController,
+      scrollController: _scrollController,
+      senderLabelResolver: senderLabelResolver,
+      senderVipLevelResolver: senderVipLevelResolver,
+      senderAvatarResolver: senderAvatarResolver,
+      typingNames: typingNames,
     );
   }
 }

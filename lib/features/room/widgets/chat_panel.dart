@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import 'package:mixvy/core/velvet_noir_constants.dart';
 import 'message_bubble.dart';
 
 /// Self-contained chat panel widget for the Paltalk-style room layout.
@@ -133,8 +135,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
   @override
   Widget build(BuildContext context) {
-    const npSurfaceLow = Color(0xFF10131A);
-    const npOnVariant = Color(0xFFB09080);
+    final npOnVariant = kVelvetGold.withValues(alpha: 0.65);
 
     if (widget.messages.length != _lastCount) {
       _lastCount = widget.messages.length;
@@ -158,10 +159,34 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
         widget.allowChat &&
         !widget.hasBlockedRelationship;
 
-    return ColoredBox(
-      color: npSurfaceLow,
-      child: Column(
-        children: [
+    return Container(
+      decoration: BoxDecoration(
+        color: kVelvetJet.withValues(alpha: 0.65), // Translucent backdrop matching Velvet Noir
+        borderRadius: BorderRadius.zero,
+        border: Border(
+          left: BorderSide(
+            color: kVelvetGold.withValues(alpha: 0.18), // Ultra thin premium gold border
+            width: 1,
+          ),
+        ),
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), // Premium glassmorphic blur
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  kVelvetJet.withValues(alpha: 0.5),
+                  kVelvetWine.withValues(alpha: 0.08), // Subtle, elegant undertone of wine red
+                  kVelvetJet.withValues(alpha: 0.7),
+                ],
+              ),
+            ),
+            child: Column(
+              children: [
           // Extra header (gift row, blocked warning, etc.)
           if (widget.extraHeader != null) widget.extraHeader!,
 
@@ -170,7 +195,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
             child: widget.isLoadingMessages
                 ? const Center(child: CircularProgressIndicator())
                 : widget.messages.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No message yet.',
                           style: TextStyle(color: npOnVariant),
@@ -244,7 +269,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                   widget.typingNames.length == 1
                       ? '${widget.typingNames[0]} is typing…'
                       : '${widget.typingNames.join(', ')} are typing…',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: npOnVariant,
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
@@ -326,7 +351,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                         ),
                         decoration: InputDecoration(
                           hintText: hintText,
-                          hintStyle: const TextStyle(
+                          hintStyle: TextStyle(
                             color: npOnVariant,
                             fontSize: 12,
                           ),
@@ -337,24 +362,24 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20),
-                            borderSide: const BorderSide(
-                              color: Color(0x30D4A853),
+                            borderSide: BorderSide(
+                              color: kVelvetGold.withValues(alpha: 0.2),
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20),
-                            borderSide: const BorderSide(
-                              color: Color(0x30D4A853),
+                            borderSide: BorderSide(
+                              color: kVelvetGold.withValues(alpha: 0.2),
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20),
                             borderSide: const BorderSide(
-                              color: Color(0xFFD4A853),
+                              color: kVelvetGold,
                             ),
                           ),
                           filled: true,
-                          fillColor: const Color(0xFF241820),
+                          fillColor: kVelvetJet.withValues(alpha: 0.55),
                         ),
                         onSubmitted: canSend
                             ? (text) async {
@@ -371,9 +396,17 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                       height: 36,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4A853),
+                          backgroundColor: kVelvetGold,
+                          foregroundColor: kVelvetJet,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           minimumSize: Size.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: kVelvetGold.withValues(alpha: 0.5),
+                              width: 1,
+                            ),
+                          ),
                         ),
                         onPressed: canSend
                             ? () async {
@@ -396,8 +429,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                             : const Text(
                                 'Send',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: kVelvetJet,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                       ),
@@ -409,6 +443,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
           ),
         ],
       ),
+    ),
+    ),
+    ),
     );
   }
 }

@@ -84,6 +84,17 @@ CI launch gate profiles:
 Run full suite:
 - flutter test
 
+## Live Room Architecture & Optimization
+The `LiveRoomScreen` (`lib/features/room/presentation/live_room_screen.dart`) implements a high-performance **70/30 split layout** optimized for high-concurrency real-time sessions:
+- **70% Video Feed Area (`VideoFeedWidget`)**: Manages hardware WebRTC rendering and media players.
+- **30% Chat Panel Area (`_LiveRoomChatSection` / `ChatPanel`)**: Manages high-frequency text streams and typing indicators.
+
+### Rebuild Isolation Guidelines
+To prevent the high-frequency churn of chat events (typing indicator ticks, incoming messages) from triggering expensive re-renders of the WebRTC rendering engine:
+- **Zero Root-Level Chat Watchers**: Never read or watch chat/message/typing streams in `LiveRoomScreen`'s root `build` method.
+- **Granular Local Subscriptions**: Confine real-time subscriptions to localized `ConsumerWidget` zones like `_LiveRoomChatSection`.
+- **Targeted Providers**: Subscribe to narrow family streams (`roomMessageStreamProvider(roomId)`, `participantsStreamProvider(roomId)`) rather than a giant monolithic combined state.
+
 ## Key Project Docs
 - MIXVY_PRODUCT_AUDIT_2026-03-29.md
 - MIXVY_AUDIT_SUMMARY.md

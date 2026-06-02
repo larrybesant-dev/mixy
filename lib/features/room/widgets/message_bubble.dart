@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import 'package:mixvy/core/velvet_noir_constants.dart';
 import 'rich_text_toolbar.dart';
 
 /// Live-room chat row styled like Paltalk – avatar on the left, then a column
@@ -95,15 +96,15 @@ class MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0x22D4A853),
-          border: Border.all(color: const Color(0x55D4A853)),
+          color: kVelvetGold.withOpacity(0.12),
+          border: Border.all(color: kVelvetGold.withOpacity(0.35)),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Row(
           children: [
             const Icon(
               Icons.campaign_outlined,
-              color: Color(0xFFD4A853),
+              color: kVelvetGold,
               size: 16,
             ),
             const SizedBox(width: 8),
@@ -130,14 +131,14 @@ class MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0x223A2B10),
-          border: Border.all(color: const Color(0x55D4A853)),
+          color: kVelvetWine.withOpacity(0.15),
+          border: Border.all(color: kVelvetGold.withOpacity(0.35)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.lock_outline, size: 14, color: Color(0xFFD4A853)),
+            const Icon(Icons.lock_outline, size: 14, color: kVelvetGold),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -146,7 +147,7 @@ class MessageBubble extends StatelessWidget {
                   Text(
                     safeSenderLabel,
                     style: const TextStyle(
-                      color: Color(0xFFD4A853),
+                      color: kVelvetGold,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -178,12 +179,12 @@ class MessageBubble extends StatelessWidget {
     final Color nameColor = (senderVipLevel > 0 && vipC != Colors.transparent)
         ? vipC
         : (isMe
-            ? const Color(0xFF9B8FFF) // soft purple for own message
+            ? kVelvetGold // elegant velvet gold for own name
             : Colors.white.withValues(alpha: 0.90));
 
-    // Subtle left-border tint for own message, none for others.
+    // Subtle background highlight tint for own message, none for others.
     final Color? rowTint = isMe
-        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.10)
+        ? kVelvetWine.withOpacity(0.06) // Elegant hint of velvet wine red for own messages
         : null;
 
     final String firstLetter = resolvedSenderLabel.isNotEmpty
