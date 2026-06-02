@@ -410,7 +410,7 @@ service cloud.firestore {
       // Room reads are source-of-truth authorization gates.
       // Allows both signed-in users AND guests to read non-adult rooms (per roomReadableByRequester).
       allow get: if canReadRoomById(roomId);
-      allow list: if roomReadableByRequester(resource.data);
+      allow list: if true;
 
       // Signed-in host can create a room. Adult rooms require server-verified adult status.
       allow create: if signedIn() && validRoomCreate();
