@@ -55,6 +55,3 @@ class StartupRunSchemaValidator {
     return failures;
   }
 }
-
-
-

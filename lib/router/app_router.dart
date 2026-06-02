@@ -31,7 +31,6 @@ import 'package:mixvy/features/top_eight/top_eight_management_screen.dart';
 import 'package:mixvy/features/connections/pending_requests_screen.dart';
 import 'package:mixvy/features/groups/screens/create_group_screen.dart';
 import 'package:mixvy/features/room/screens/cam_popout_screen.dart';
-import 'package:mixvy/features/social/screens/live_floor_screen.dart';
 import 'package:mixvy/features/social/screens/explore_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
 import 'package:mixvy/features/room/screens/create_room_screen.dart';
@@ -52,6 +51,7 @@ import 'package:mixvy/features/auth/providers/admin_provider.dart';
 import 'package:mixvy/presentation/screens/account_center_screen.dart';
 import 'package:mixvy/presentation/screens/app_info_screen.dart';
 import 'package:mixvy/presentation/screens/feature_degraded_screen.dart';
+import 'package:mixvy/presentation/screens/not_found_screen.dart';
 import 'package:mixvy/presentation/screens/legal_privacy_screen.dart';
 import 'package:mixvy/presentation/screens/legal_terms_screen.dart';
 import 'package:mixvy/presentation/screens/moderation_dashboard_screen.dart';
@@ -110,7 +110,7 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   }
 
   void updateCurrentUser(UserModel? value) {
-    // Only notify router listeners if the user's core ID changes, preventing 
+    // Only notify router listeners if the user's core ID changes, preventing
     // full-app rebuilds when minor profile fields (e.g. followers) change.
     final bool idChanged = _currentUser?.id != value?.id;
     _currentUser = value;
@@ -146,10 +146,18 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
     isAfterDarkSessionActive: ref.read(afterDarkSessionProvider),
   );
 
-  ref.listen<AuthState>(authControllerProvider, (_, next) => notifier.updateAuthState(next), fireImmediately: false);
-  ref.listen<UserModel?>(userProvider, (_, next) => notifier.updateCurrentUser(next), fireImmediately: false);
-  ref.listen<AsyncValue<bool>>(isAdminProvider, (_, next) => notifier.updateIsAdmin(next.valueOrNull ?? false), fireImmediately: false);
-  ref.listen<bool>(afterDarkSessionProvider, (_, next) => notifier.updateAfterDarkSession(next), fireImmediately: false);
+  ref.listen<AuthState>(
+      authControllerProvider, (_, next) => notifier.updateAuthState(next),
+      fireImmediately: false);
+  ref.listen<UserModel?>(
+      userProvider, (_, next) => notifier.updateCurrentUser(next),
+      fireImmediately: false);
+  ref.listen<AsyncValue<bool>>(isAdminProvider,
+      (_, next) => notifier.updateIsAdmin(next.valueOrNull ?? false),
+      fireImmediately: false);
+  ref.listen<bool>(afterDarkSessionProvider,
+      (_, next) => notifier.updateAfterDarkSession(next),
+      fireImmediately: false);
   ref.onDispose(notifier.dispose);
   return notifier;
 });
@@ -160,19 +168,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     refreshListenable: refreshNotifier,
-    initialLocation: kIsWeb ? (Uri.base.path.isEmpty ? '/' : Uri.base.path) : '/',
-    errorBuilder: (context, state) => FeatureDegradedScreen(
-      title: 'Page Not Found',
-      message: state.error?.toString().isNotEmpty == true ? 'We could not open this route. ${state.error}' : 'The route you requested is unavailable or no longer exists.',
-      primaryLabel: 'Go home',
-      primaryRoute: '/home',
-      icon: Icons.travel_explore_outlined,
+    initialLocation:
+        kIsWeb ? (Uri.base.path.isEmpty ? '/' : Uri.base.path) : '/',
+    errorBuilder: (context, state) => NotFoundScreen(
+      path: state.uri.path.isNotEmpty ? state.uri.path : '/',
     ),
     redirect: (context, state) {
       try {
         final authState = refreshNotifier.authState;
         final location = state.uri.path.isEmpty ? '/' : state.uri.path;
-        
+
         // Handle web bootstrap lag safely without crashing
         if (!authState.isRoutingStable) {
           return '/auth'; // Redirect un-bootstrapped web states straight to login/auth view safely
@@ -185,8 +190,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           legalStateResolved: true,
           hasAcceptedLegal: true,
         );
-        
-        RedirectTrace.record(from: location, to: evaluation.redirectTo ?? 'stay', reason: evaluation.reason);
+
+        RedirectTrace.record(
+            from: location,
+            to: evaluation.redirectTo ?? 'stay',
+            reason: evaluation.reason);
         return evaluation.redirectTo;
       } catch (e) {
         debugPrint('Suppressed web router bootstrap mismatch: $e');
@@ -195,7 +203,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
         branches: [
           // Branch 0: Feed
           StatefulShellBranch(
@@ -204,10 +213,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/home',
                 builder: (context, state) => const DashboardScreen(),
                 routes: [
-                  GoRoute(path: 'notifications', builder: (context, state) => const NotificationsScreen()),
-                  GoRoute(path: 'search', builder: (context, state) => const SearchScreen()),
-                  GoRoute(path: 'explore', builder: (context, state) => const ExploreScreen()),
-                  GoRoute(path: 'trending', builder: (context, state) => const TrendingScreen()),
+                  GoRoute(
+                      path: 'notifications',
+                      builder: (context, state) => const NotificationsScreen()),
+                  GoRoute(
+                      path: 'search',
+                      builder: (context, state) => const SearchScreen()),
+                  GoRoute(
+                      path: 'explore',
+                      builder: (context, state) => const ExploreScreen()),
+                  GoRoute(
+                      path: 'trending',
+                      builder: (context, state) => const TrendingScreen()),
                   GoRoute(
                     path: 'bookmarks',
                     builder: (context, state) {
@@ -231,14 +248,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final uid = refreshNotifier.authState.uid ?? '';
                       final userId = user?.id ?? uid;
                       if (userId.isEmpty) return const LoginScreen();
-                      return CreatePostScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
+                      return CreatePostScreen(
+                          userId: userId,
+                          username: user?.username ?? 'User',
+                          avatarUrl: user?.avatarUrl);
                     },
                   ),
                   GoRoute(
                     path: 'post/:id/comments',
                     builder: (context, state) {
                       final postId = state.pathParameters['id'] ?? '';
-                      if (postId.isEmpty) return const FeatureDegradedScreen(title: 'Comments unavailable', message: 'Could not resolve a post id.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.comment_bank_outlined);
+                      if (postId.isEmpty)
+                        return const FeatureDegradedScreen(
+                            title: 'Comments unavailable',
+                            message: 'Could not resolve a post id.',
+                            primaryLabel: 'Go home',
+                            primaryRoute: '/home',
+                            icon: Icons.comment_bank_outlined);
                       return PostCommentsScreen(postId: postId);
                     },
                   ),
@@ -249,11 +275,19 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final uid = refreshNotifier.authState.uid ?? '';
                       final userId = user?.id ?? uid;
                       if (userId.isEmpty) return const LoginScreen();
-                      return CreateStoryScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
+                      return CreateStoryScreen(
+                          userId: userId,
+                          username: user?.username ?? 'User',
+                          avatarUrl: user?.avatarUrl);
                     },
                   ),
-                  GoRoute(path: 'stories/:userId', builder: (context, state) => StoryViewerScreen(userId: state.pathParameters['userId'] ?? '')),
-                  GoRoute(path: 'ops', builder: (context, state) => const RealtimeOpsScreen()),
+                  GoRoute(
+                      path: 'stories/:userId',
+                      builder: (context, state) => StoryViewerScreen(
+                          userId: state.pathParameters['userId'] ?? '')),
+                  GoRoute(
+                      path: 'ops',
+                      builder: (context, state) => const RealtimeOpsScreen()),
                 ],
               ),
             ],
@@ -265,8 +299,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/messages',
                 builder: (context, state) {
                   final user = ref.read(userProvider);
-                  if (user == null) return AuthInvariant.authRequiredScreen(message: 'Please sign in to access your inbox.');
-                  return MessagesScreen(userId: user.id, username: user.username);
+                  if (user == null)
+                    return AuthInvariant.authRequiredScreen(
+                        message: 'Please sign in to access your inbox.');
+                  return MessagesScreen(
+                      userId: user.id, username: user.username);
                 },
                 routes: [
                   GoRoute(
@@ -274,7 +311,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final user = refreshNotifier.currentUser;
                       final uid = refreshNotifier.authState.uid ?? '';
-                      return NewMessageScreen(userId: user?.id ?? uid, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
+                      return NewMessageScreen(
+                          userId: user?.id ?? uid,
+                          username: user?.username ?? 'User',
+                          avatarUrl: user?.avatarUrl);
                     },
                   ),
                   GoRoute(
@@ -282,7 +322,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final user = refreshNotifier.currentUser;
                       final uid = refreshNotifier.authState.uid ?? '';
-                      return CreateGroupChatScreen(userId: user?.id ?? uid, username: user?.username ?? 'User');
+                      return CreateGroupChatScreen(
+                          userId: user?.id ?? uid,
+                          username: user?.username ?? 'User');
                     },
                   ),
                   GoRoute(
@@ -291,7 +333,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final user = refreshNotifier.currentUser;
                       final conversationId = state.pathParameters['id'] ?? '';
                       final uid = refreshNotifier.authState.uid ?? '';
-                      return ChatScreen(conversationId: conversationId, userId: user?.id ?? uid, username: user?.username ?? 'Chat', avatarUrl: user?.avatarUrl);
+                      return ChatScreen(
+                          conversationId: conversationId,
+                          userId: user?.id ?? uid,
+                          username: user?.username ?? 'Chat',
+                          avatarUrl: user?.avatarUrl);
                     },
                   ),
                 ],
@@ -305,21 +351,41 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/rooms',
                 builder: (context, state) => const RoomBrowserScreen(),
                 routes: [
-                  GoRoute(path: 'create', builder: (context, state) => const CreateRoomScreen()),
-                  GoRoute(path: 'secure-call', builder: (context, state) => const CallScreen()),
+                  GoRoute(
+                      path: 'create',
+                      builder: (context, state) => const CreateRoomScreen()),
+                  GoRoute(
+                      path: 'secure-call',
+                      builder: (context, state) => const CallScreen()),
                   GoRoute(
                     path: 'room/:id',
                     builder: (context, state) {
                       final roomId = state.pathParameters['id'] ?? '';
-                      final previewRoom = state.extra is RoomModel ? state.extra as RoomModel : null;
+                      final previewRoom = state.extra is RoomModel
+                          ? state.extra as RoomModel
+                          : null;
                       // Adult room protection
-                      if ((previewRoom?.isAdult ?? false) && (refreshNotifier.authState.uid?.isEmpty ?? true)) {
-                        return const FeatureDegradedScreen(title: 'Sign in required', message: 'This room contains adult content. Please sign in.', primaryLabel: 'Sign in', primaryRoute: '/auth', icon: Icons.lock_outline);
+                      if ((previewRoom?.isAdult ?? false) &&
+                          (refreshNotifier.authState.uid?.isEmpty ?? true)) {
+                        return const FeatureDegradedScreen(
+                            title: 'Sign in required',
+                            message:
+                                'This room contains adult content. Please sign in.',
+                            primaryLabel: 'Sign in',
+                            primaryRoute: '/auth',
+                            icon: Icons.lock_outline);
                       }
-                      return LiveRoomScreen(roomId: roomId, previewRoom: previewRoom?.id == roomId ? previewRoom : null);
+                      return LiveRoomScreen(
+                          roomId: roomId,
+                          previewRoom:
+                              previewRoom?.id == roomId ? previewRoom : null);
                     },
                   ),
-                  GoRoute(path: 'cam', builder: (context, state) => CamPopoutScreen(targetUserId: state.uri.queryParameters['userId'] ?? '')),
+                  GoRoute(
+                      path: 'cam',
+                      builder: (context, state) => CamPopoutScreen(
+                          targetUserId:
+                              state.uri.queryParameters['userId'] ?? '')),
                 ],
               ),
             ],
@@ -327,7 +393,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Branch 3: Dating
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/speed-dating', builder: (context, state) => const SpeedDatingScreen()),
+              GoRoute(
+                  path: '/speed-dating',
+                  builder: (context, state) => const SpeedDatingScreen()),
             ],
           ),
           // Branch 4: Profile
@@ -342,27 +410,69 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return null;
                 },
                 routes: [
-                  GoRoute(path: ':id', builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id'] ?? '')),
-                  GoRoute(path: 'edit', builder: (context, state) => EditProfileScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0)),
-                  GoRoute(path: 'settings', builder: (context, state) => const SettingsScreen()),
-                  GoRoute(path: 'friends', builder: (context, state) => const FriendListScreen()),
-                  GoRoute(path: 'groups', builder: (context, state) => GroupsScreen(userId: refreshNotifier.authState.uid ?? '')),
+                  GoRoute(
+                      path: ':id',
+                      builder: (context, state) => UserProfileScreen(
+                          userId: state.pathParameters['id'] ?? '')),
+                  GoRoute(
+                      path: 'edit',
+                      builder: (context, state) => EditProfileScreen(
+                          initialTab: int.tryParse(
+                                  state.uri.queryParameters['tab'] ?? '') ??
+                              0)),
+                  GoRoute(
+                      path: 'settings',
+                      builder: (context, state) => const SettingsScreen()),
+                  GoRoute(
+                      path: 'friends',
+                      builder: (context, state) => const FriendListScreen()),
+                  GoRoute(
+                      path: 'groups',
+                      builder: (context, state) => GroupsScreen(
+                          userId: refreshNotifier.authState.uid ?? '')),
                   GoRoute(
                     path: 'group/:id',
                     builder: (context, state) {
                       final groupId = state.pathParameters['id'] ?? '';
-                      if (groupId.isEmpty) return const FeatureDegradedScreen(title: 'Group unavailable', message: 'Could not resolve a group id.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.error_outline);
-                      return GroupDetailsScreen(groupId: groupId, userId: refreshNotifier.authState.uid ?? '');
+                      if (groupId.isEmpty)
+                        return const FeatureDegradedScreen(
+                            title: 'Group unavailable',
+                            message: 'Could not resolve a group id.',
+                            primaryLabel: 'Go home',
+                            primaryRoute: '/home',
+                            icon: Icons.error_outline);
+                      return GroupDetailsScreen(
+                          groupId: groupId,
+                          userId: refreshNotifier.authState.uid ?? '');
                     },
                   ),
-                  GoRoute(path: 'create-group', builder: (context, state) => CreateGroupScreen(userId: refreshNotifier.authState.uid ?? '')),
-                  GoRoute(path: 'manage-top-8', builder: (context, state) => const TopEightManagementScreen()),
-                  GoRoute(path: 'pending-requests', builder: (context, state) => const PendingRequestsScreen()),
-                  GoRoute(path: 'verification', builder: (context, state) => const VerificationScreen()),
-                  GoRoute(path: 'account', builder: (context, state) => const AccountCenterScreen()),
-                  GoRoute(path: 'about', builder: (context, state) => const AppInfoScreen()),
-                  GoRoute(path: 'legal/terms', builder: (context, state) => const LegalTermsScreen()),
-                  GoRoute(path: 'legal/privacy', builder: (context, state) => const LegalPrivacyScreen()),
+                  GoRoute(
+                      path: 'create-group',
+                      builder: (context, state) => CreateGroupScreen(
+                          userId: refreshNotifier.authState.uid ?? '')),
+                  GoRoute(
+                      path: 'manage-top-8',
+                      builder: (context, state) =>
+                          const TopEightManagementScreen()),
+                  GoRoute(
+                      path: 'pending-requests',
+                      builder: (context, state) =>
+                          const PendingRequestsScreen()),
+                  GoRoute(
+                      path: 'verification',
+                      builder: (context, state) => const VerificationScreen()),
+                  GoRoute(
+                      path: 'account',
+                      builder: (context, state) => const AccountCenterScreen()),
+                  GoRoute(
+                      path: 'about',
+                      builder: (context, state) => const AppInfoScreen()),
+                  GoRoute(
+                      path: 'legal/terms',
+                      builder: (context, state) => const LegalTermsScreen()),
+                  GoRoute(
+                      path: 'legal/privacy',
+                      builder: (context, state) => const LegalPrivacyScreen()),
                   GoRoute(
                     path: 'payments',
                     builder: (context, state) {
@@ -371,18 +481,33 @@ final routerProvider = Provider<GoRouter>((ref) {
                       return const PaymentsScreen();
                     },
                   ),
-                  GoRoute(path: 'vip', builder: (context, state) => const VipScreen()),
+                  GoRoute(
+                      path: 'vip',
+                      builder: (context, state) => const VipScreen()),
                   GoRoute(
                     path: 'admin-entitlements',
                     builder: (context, state) {
-                      if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to admin tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
+                      if (!refreshNotifier.isAdmin)
+                        return const FeatureDegradedScreen(
+                            title: 'Admin only',
+                            message: 'You do not have access to admin tools.',
+                            primaryLabel: 'Go home',
+                            primaryRoute: '/home',
+                            icon: Icons.lock_outline);
                       return const AdminEntitlementViewerScreen();
                     },
                   ),
                   GoRoute(
                     path: 'moderation',
                     builder: (context, state) {
-                      if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to moderation tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
+                      if (!refreshNotifier.isAdmin)
+                        return const FeatureDegradedScreen(
+                            title: 'Admin only',
+                            message:
+                                'You do not have access to moderation tools.',
+                            primaryLabel: 'Go home',
+                            primaryRoute: '/home',
+                            icon: Icons.lock_outline);
                       return const ModerationDashboardScreen();
                     },
                   ),
@@ -396,52 +521,91 @@ final routerProvider = Provider<GoRouter>((ref) {
       /// Root level routes
       GoRoute(path: '/', redirect: (context, state) => '/home'),
       GoRoute(path: '/auth', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
-      GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
+      GoRoute(
+          path: '/register',
+          builder: (context, state) => const RegisterScreen()),
+      GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen()),
+      GoRoute(
+          path: '/onboarding',
+          builder: (context, state) => const OnboardingScreen()),
 
       // After Dark routes
-      GoRoute(path: '/after-dark/setup', redirect: (context, state) => '/after-dark/age-gate'),
+      GoRoute(
+          path: '/after-dark/setup',
+          redirect: (context, state) => '/after-dark/age-gate'),
       GoRoute(
         path: '/after-dark',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive ? '/after-dark/unlock' : null,
-        builder: (context, state) => const AfterDarkShell(child: AfterDarkHomeScreen()),
+        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
+            ? '/after-dark/unlock'
+            : null,
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkHomeScreen()),
       ),
-      GoRoute(path: '/after-dark/age-gate', builder: (context, state) => const AfterDarkAgeGateScreen()),
-      GoRoute(path: '/after-dark/pin-setup', builder: (context, state) => const AfterDarkPinScreen.setup()),
-      GoRoute(path: '/after-dark/unlock', builder: (context, state) => const AfterDarkPinScreen.unlock()),
+      GoRoute(
+          path: '/after-dark/age-gate',
+          builder: (context, state) => const AfterDarkAgeGateScreen()),
+      GoRoute(
+          path: '/after-dark/pin-setup',
+          builder: (context, state) => const AfterDarkPinScreen.setup()),
+      GoRoute(
+          path: '/after-dark/unlock',
+          builder: (context, state) => const AfterDarkPinScreen.unlock()),
       GoRoute(
         path: '/after-dark/lounges',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive ? '/after-dark/unlock' : null,
-        builder: (context, state) => const AfterDarkShell(child: AfterDarkLoungesScreen()),
+        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
+            ? '/after-dark/unlock'
+            : null,
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkLoungesScreen()),
       ),
       GoRoute(
         path: '/after-dark/profile',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive ? '/after-dark/unlock' : null,
-        builder: (context, state) => const AfterDarkShell(child: AfterDarkProfileScreen()),
+        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
+            ? '/after-dark/unlock'
+            : null,
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkProfileScreen()),
       ),
       GoRoute(
         path: '/after-dark/create-lounge',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive ? '/after-dark/unlock' : null,
-        builder: (context, state) => const AfterDarkShell(child: AfterDarkCreateLoungeScreen()),
+        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
+            ? '/after-dark/unlock'
+            : null,
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkCreateLoungeScreen()),
       ),
 
-      GoRoute(path: '/beta-feedback', builder: (context, state) => const BetaFeedbackScreen()),
+      GoRoute(
+          path: '/beta-feedback',
+          builder: (context, state) => const BetaFeedbackScreen()),
 
       // Global redirects for deep links and legacy paths
       GoRoute(path: '/live', redirect: (context, state) => '/rooms'),
       GoRoute(path: '/search', redirect: (context, state) => '/home/search'),
-      GoRoute(path: '/notifications', redirect: (context, state) => '/home/notifications'),
-      GoRoute(path: '/chat/:id', redirect: (context, state) => '/messages/chat/${state.pathParameters['id']}'),
-      GoRoute(path: '/room/:id', redirect: (context, state) => '/rooms/room/${state.pathParameters['id']}'),
-      GoRoute(path: '/edit-profile', redirect: (context, state) => '/profile/edit'),
-      GoRoute(path: '/settings', redirect: (context, state) => '/profile/settings'),
-      GoRoute(path: '/friends', redirect: (context, state) => '/profile/friends'),
+      GoRoute(
+          path: '/notifications',
+          redirect: (context, state) => '/home/notifications'),
+      GoRoute(
+          path: '/chat/:id',
+          redirect: (context, state) =>
+              '/messages/chat/${state.pathParameters['id']}'),
+      GoRoute(
+          path: '/room/:id',
+          redirect: (context, state) =>
+              '/rooms/room/${state.pathParameters['id']}'),
+      GoRoute(
+          path: '/edit-profile', redirect: (context, state) => '/profile/edit'),
+      GoRoute(
+          path: '/settings', redirect: (context, state) => '/profile/settings'),
+      GoRoute(
+          path: '/friends', redirect: (context, state) => '/profile/friends'),
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
-        GoRoute(
-          path: '/rooms',
-          builder: (context, state) => const RoomBrowserScreen(),
-        ),
+      GoRoute(
+        path: '/rooms',
+        builder: (context, state) => const RoomBrowserScreen(),
+      ),
     ],
   );
 
@@ -453,5 +617,3 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
-
-

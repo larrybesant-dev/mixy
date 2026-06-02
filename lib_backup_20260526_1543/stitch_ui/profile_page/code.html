@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#4cd6ff",
+                    "surface-dim": "#131313",
+                    "primary-fixed": "#e9ddff",
+                    "on-secondary-fixed-variant": "#095300",
+                    "on-error": "#690005",
+                    "on-tertiary": "#003543",
+                    "inverse-primary": "#7212ff",
+                    "on-surface": "#e5e2e1",
+                    "inverse-on-surface": "#313030",
+                    "surface-variant": "#353534",
+                    "tertiary-fixed-dim": "#4cd6ff",
+                    "on-error-container": "#ffdad6",
+                    "error-container": "#93000a",
+                    "on-surface-variant": "#ccc3da",
+                    "inverse-surface": "#e5e2e1",
+                    "outline-variant": "#4a4457",
+                    "on-primary-container": "#ddcdff",
+                    "surface-tint": "#d1bcff",
+                    "secondary-fixed-dim": "#2ae500",
+                    "on-secondary-fixed": "#022100",
+                    "surface-container-low": "#1c1b1b",
+                    "surface": "#131313",
+                    "surface-container-high": "#2a2a2a",
+                    "on-secondary": "#053900",
+                    "on-tertiary-container": "#89e0ff",
+                    "primary-fixed-dim": "#d1bcff",
+                    "secondary": "#d7ffc5",
+                    "tertiary-fixed": "#b7eaff",
+                    "secondary-container": "#2ff801",
+                    "on-primary-fixed-variant": "#5700c9",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed-variant": "#004e60",
+                    "on-background": "#e5e2e1",
+                    "secondary-fixed": "#79ff5b",
+                    "on-secondary-container": "#0f6d00",
+                    "outline": "#958da3",
+                    "tertiary-container": "#00647c",
+                    "primary": "#d1bcff",
+                    "surface-container-highest": "#353534",
+                    "surface-bright": "#3a3939",
+                    "on-primary": "#3c0090",
+                    "surface-container": "#201f1f",
+                    "primary-container": "#7000ff",
+                    "on-tertiary-fixed": "#001f28",
+                    "on-primary-fixed": "#23005b",
+                    "background": "#131313",
+                    "surface-container-lowest": "#0e0e0e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "margin": "24px",
+                    "xl": "40px",
+                    "unit": "4px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "gutter": "20px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Space Grotesk"],
+                    "label-bold": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display": ["Space Grotesk"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Space Grotesk"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(26, 26, 26, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .hero-gradient {
+            background: linear-gradient(180deg, rgba(13,13,13,0) 0%, rgba(13,13,13,1) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary-container selection:text-white">
+<!-- TopAppBar Shell -->
+<header class="bg-[#0D0D0D] dark:bg-[#0D0D0D] docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-purple-500/10 flex justify-between items-center w-full px-6 h-16 fixed">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 font-['Space_Grotesk']">MixVy</span>
+<div class="hidden md:flex items-center bg-white/5 rounded-full px-4 py-2 gap-3 border border-white/5 group focus-within:border-purple-500 transition-all duration-300">
+<span class="material-symbols-outlined text-white/40 group-focus-within:text-purple-500" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 text-white placeholder-white/20" placeholder="Search creators, rooms..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-white/60 hover:bg-white/5 transition-colors active:scale-95 duration-200 rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-white/60 hover:bg-white/5 transition-colors active:scale-95 duration-200 rounded-full">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/20">
+<img alt="Creator profile avatar" data-alt="Close up portrait of a stylish young man with minimalist neon lighting reflecting on his face and sharp focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRHbL__1KjOaa2LeUw7d8FHtQKiBZfCCQt3QdIdxK-Dm-MgDxP1oqcQcAqaNIuMw5x8BFBvab7MHvoFE942JgpBTx2ARTRlxoYTUCAlZmjlKaIJJortqtn5wgaMvcYgCyWqgfbpGFyIAzn7hooQHInF4pv300F-fjMkV9Wu5gp4puosS8DuqCoQt64WNnRh27Mep5F6DREAfoYjZkWd1LGfgBCK6qm-Nordaq8er6oYXu_dn1wUkih-Uy682kjqB9oA5SY6wqNq-18"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar Shell -->
+<aside class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 border-r border-white/10 bg-[#1A1A1A]/80 backdrop-blur-2xl z-40 py-8 gap-4 pt-20">
+<nav class="flex flex-col h-full py-4 px-3 gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="home_max">home_max</span>
+                Home
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+                Search
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+                messages
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600/20 to-blue-500/20 border-r-2 border-purple-500 text-white font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+                Profile
+            </a>
+<div class="mt-auto px-4 pb-4">
+<button class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-500 rounded-xl text-white font-bold text-sm tracking-tight hover:brightness-110 active:scale-95 transition-all">
+                    Go Live
+                </button>
+</div>
+</nav>
+</aside>
+<!-- Main Canvas -->
+<main class="md:ml-64 pt-16 min-h-screen">
+<!-- Hero Banner Section -->
+<section class="relative h-[320px] w-full overflow-hidden">
+<img alt="Profile Banner" class="w-full h-full object-cover" data-alt="Cinematic abstract wide background with dark violet and deep blue digital waves and cinematic lighting effects" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjDOwUKB0LK8Y1xSZQbA2i_W0pqoaqfmvVFBd2xj3d_0otTnxXEPtUyGTtEaU8ry56XBGKIGxNGj-xk5l7ZW-dtB7BHlM2Cl_zboK3NzMaqvkJBapXI14jdSR7MxKbuh3fV2O1NtW33HjN-qmclOdgAF_ZONlQwQWVtA7zeVj7f8eHALXmJJ6JOpR49O99Xc4nf0GhbVD1QL7BzUmiAilK_COF-e3eloaGoA3MNLTOAixYv_X8xujPl2rqx2QdZ-ajJZBaz4BpwUfy"/>
+<div class="absolute inset-0 hero-gradient"></div>
+<div class="absolute bottom-0 left-0 w-full px-lg flex items-end justify-between pb-lg">
+<div class="flex items-end gap-lg">
+<div class="relative group">
+<div class="h-32 w-32 md:h-40 md:w-40 rounded-3xl border-4 border-[#0D0D0D] overflow-hidden bg-surface-container shadow-2xl">
+<img alt="Creator Profile" class="h-full w-full object-cover" data-alt="High quality close up headshot of a young male creator with modern urban style and soft neon accent lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA63NDVC_HeDLd7Pl6QpQ3mxwMoDi55RjQtb2bozJcbUYiQ_7yU0nWARf_cY0vrBSMV9TlIzqbEC-Sev6wt3-XVSw1EbiDiRh4n28BRU6HNd_tmHBINFywtoZwdKARVruWw_O4P0ebnt_4V3afsegTplyWgI-o3MXTPIPsDYWNSXpsiFLIQ4cuMfoqC0V8rZUufPIhrU3XdM6_m8qA_P1ljNDu-QVXq9212dSTsGUqte0czRi5pO5tutWsz-wJ0b0Wnm72CdzXMNOKd"/>
+</div>
+<div class="absolute -bottom-2 -right-2 h-8 w-8 bg-secondary-container rounded-full border-4 border-[#0D0D0D] animate-pulse flex items-center justify-center">
+<div class="h-2 w-2 bg-on-secondary-container rounded-full"></div>
+</div>
+</div>
+<div class="mb-2">
+<div class="flex items-center gap-2">
+<h1 class="font-display text-headline-lg text-white">Alex Rivera</h1>
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="text-white/60 font-body-md">@rivera_mixes</p>
+</div>
+</div>
+<div class="hidden md:flex gap-3 mb-2">
+<button class="px-6 py-2.5 rounded-full border border-white/10 glass-card text-white font-label-bold hover:bg-white/10 transition-all">Share</button>
+<button class="px-6 py-2.5 rounded-full bg-white text-[#0D0D0D] font-label-bold hover:bg-white/90 transition-all">Edit Profile</button>
+</div>
+</div>
+</section>
+<!-- Stats and Content Grid -->
+<div class="px-lg py-lg grid grid-cols-12 gap-gutter max-w-7xl mx-auto">
+<!-- Left Column: Info & Badges -->
+<div class="col-span-12 lg:col-span-4 space-y-gutter">
+<!-- Bio Card -->
+<div class="glass-card rounded-2xl p-lg">
+<h3 class="font-headline-md text-white mb-md">About</h3>
+<p class="text-white/60 font-body-md leading-relaxed">
+                        Digital architect &amp; vibe curator. Exploring the intersection of kinetic audio and neon aesthetics. Join my nightly mix sessions. 🌌
+                    </p>
+<div class="mt-lg pt-lg border-t border-white/5 grid grid-cols-3 gap-4">
+<div class="text-center">
+<div class="font-display text-headline-md text-white">12.4k</div>
+<div class="text-label-sm text-white/40 uppercase tracking-widest">Followers</div>
+</div>
+<div class="text-center">
+<div class="font-display text-headline-md text-white">842</div>
+<div class="text-label-sm text-white/40 uppercase tracking-widest">Following</div>
+</div>
+<div class="text-center">
+<div class="font-display text-headline-md text-white">156</div>
+<div class="text-label-sm text-white/40 uppercase tracking-widest">Rooms</div>
+</div>
+</div>
+</div>
+<!-- Badges & Roles -->
+<div class="glass-card rounded-2xl p-lg">
+<h3 class="font-headline-md text-white mb-md">Creator Roles</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="star">star</span>
+                            Top Tier Host
+                        </span>
+<span class="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="music_note">music_note</span>
+                            Audio Engineer
+                        </span>
+<span class="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="bolt">bolt</span>
+                            Early Adopter
+                        </span>
+<span class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="diamond">diamond</span>
+                            MixVy Partner
+                        </span>
+</div>
+</div>
+</div>
+<!-- Right Column: Room History (Bento Layout) -->
+<div class="col-span-12 lg:col-span-8">
+<div class="flex items-center justify-between mb-lg">
+<h3 class="font-headline-md text-white">Hosted Rooms History</h3>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg bg-white/5 text-white/40 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+</button>
+<button class="p-2 rounded-lg bg-white/5 text-white/40 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="reorder">reorder</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Room Card 1 (Active/Recent) -->
+<div class="group relative aspect-[16/10] rounded-2xl overflow-hidden glass-card border-purple-500/30">
+<img alt="Room Cover" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Dynamic shot of a professional DJ controller with glowing purple and blue buttons in a dark club environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4-1rwB2OhaOjCrgXCtzBcUs8UxKulur19h3EDfxhBmSsaID4DM5sYyl4fPHfYrw3SLHqZYe98yDdmmQi_BU3wf6mmxeV1riS0fyCpwlfhHhCsxxPKwPXNXzzmnGi5ZNOQddFi3EXaL-2GzK26uR43q3hyOJQeSysuCYSfNQIFcjcNE-VohiKuqyuTCBHOq3WlVWG5Uy6hDI_jCruY-v0tziIkMy9X6H5SGNj0ppNho7g0PJIIwKQm6SXSLnjGI8KKgVOaxj_RY-kE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute top-4 left-4">
+<span class="px-3 py-1 rounded-full bg-secondary text-black text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1 shadow-lg shadow-secondary/20">
+<span class="h-1.5 w-1.5 bg-black rounded-full animate-pulse"></span>
+                                Featured
+                            </span>
+</div>
+<div class="absolute bottom-4 left-4 right-4">
+<h4 class="text-white font-headline-md text-lg leading-tight mb-1">Cyberpunk Beats &amp; Chill</h4>
+<div class="flex items-center gap-4 text-white/60 text-label-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="group">group</span> 2.4k</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span> 2h ago</span>
+</div>
+</div>
+</div>
+<!-- Room Card 2 -->
+<div class="group relative aspect-[16/10] rounded-2xl overflow-hidden glass-card">
+<img alt="Room Cover" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close up of high-end studio headphones resting on an illuminated mixing console with colorful signal lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8QC68tMHEiSjvhaVoXcd7CeKYBtDAuktK77_r0lBDNMeTC821uJAVAoUQon_FLR4wgMd4b_G6yWXTCsicdZxg0oz4diDHk503dvkz6Oh0LD5xEQVzCeYF8Ym9fLe84D2co7uzkW4UIez8P_kOVPeU5p23Oj2pQApJzngBwepX67BqZ36xM-eMAZCDF9nF7M98l_Xm5a3gJmshSUYspypJPty9cVLL9McxMeV8bp0wwqmIPbHZdCucvKVt1WnFCXZF6feAZzrz1l4Z"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<h4 class="text-white font-headline-md text-lg leading-tight mb-1">Analog Synth Deep Dive</h4>
+<div class="flex items-center gap-4 text-white/60 text-label-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="group">group</span> 1.8k</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span> Yesterday</span>
+</div>
+</div>
+</div>
+<!-- Room Card 3 -->
+<div class="group relative aspect-[16/10] rounded-2xl overflow-hidden glass-card">
+<img alt="Room Cover" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Wide angle shot of a silhouettes of people in a concert venue with dramatic purple laser beams cutting through smoke" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmAL8wA1VEV7IezfiXXsLo4iOpjOqSMTwyJDgYhiGvy1zoxgNXnFfT0opzTU_w0wVAQCWRQyyJh8uE67-x3PaCdFQB7sxL1D-EzaHAxuOgX7clC--GITt2_SkXBdpzY1a_-QL8YGJdlJBph8oqi93cim5-q6u_njf0P2JC8NrYVf4nQ1s-WWtHVfBRDHzQa9v0eF2DHz6-GZ5h8JM92_jWH5y7k0H4MRY18JxDU3gt6I15KgjV2eKZNxemIil6EdRgyyXoo5ZHWNr2"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<h4 class="text-white font-headline-md text-lg leading-tight mb-1">Underground Pulse #42</h4>
+<div class="flex items-center gap-4 text-white/60 text-label-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="group">group</span> 3.1k</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span> 3 days ago</span>
+</div>
+</div>
+</div>
+<!-- Room Card 4 -->
+<div class="group relative aspect-[16/10] rounded-2xl overflow-hidden glass-card">
+<img alt="Room Cover" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Moody image of music equipment in a dark studio with bright turquoise and magenta lighting reflections on metallic surfaces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuP1KEUwkACEiwxSQK-kGA7t8kZ7qK6H5DRfJjcr03S5fPfB8Ks8mG5wXo5XJuOJu7Fmdu4AmARIinuqlRsSDW2rEyQNTNgaE_pTMyTkt2jglngJ9Kox04Tlhq7ZES5oVQ61IfGPRXcHpc8zcznWKIZyQwKXGQrLXPXfXM-yirpswVD0zVJi1Ig2qExkp-2_dmzJzzHOMYtjrRC6ZZI6OpwGWng0gTpAZKwizTdj5tUblvJQi8MKiuRokDxvgRhRGd_CQipMhRXJts"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<h4 class="text-white font-headline-md text-lg leading-tight mb-1">Techno Theory Session</h4>
+<div class="flex items-center gap-4 text-white/60 text-label-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="group">group</span> 940</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span> Last week</span>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full mt-lg py-4 rounded-xl border border-white/5 text-white/40 font-label-bold hover:bg-white/5 transition-all text-sm uppercase tracking-widest">
+                    View Full Archive
+                </button>
+</div>
+</div>
+</main>
+<!-- Mobile BottomNavBar (Suppressed for Desktop) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-card border-t border-white/10 z-50 flex items-center justify-around px-4">
+<a class="flex flex-col items-center text-white/40" href="#"><span class="material-symbols-outlined" data-icon="home_max">home_max</span></a>
+<a class="flex flex-col items-center text-white/40" href="#"><span class="material-symbols-outlined" data-icon="search">search</span></a>
+<button class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20 -mt-6">
+<span class="material-symbols-outlined text-white" data-icon="add">add</span>
+</button>
+<a class="flex flex-col items-center text-white/40" href="#"><span class="material-symbols-outlined" data-icon="forum">forum</span></a>
+<a class="flex flex-col items-center text-white" href="#"><span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 1;">account_circle</span></a>
+</nav>
+</body></html>

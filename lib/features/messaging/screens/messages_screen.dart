@@ -18,7 +18,7 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final requestsAsync = ref.watch(requestsStreamProvider(userId));
+    ref.watch(requestsStreamProvider(userId));
 
     return Scaffold(
       appBar: AppBar(
@@ -56,7 +56,3 @@ class MessagesScreen extends ConsumerWidget {
     );
   }
 }
-
-
-
-

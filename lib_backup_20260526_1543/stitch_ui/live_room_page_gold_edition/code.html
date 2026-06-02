@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#D4AF37",
+            "on-primary": "#000000",
+            "primary-container": "#4A3B00",
+            "on-primary-container": "#FFECB3",
+            "secondary": "#E5E2E1",
+            "on-secondary": "#313030",
+            "secondary-container": "#D4AF37",
+            "on-secondary-container": "#131313",
+            "tertiary": "#F9F6EE",
+            "surface": "#0D0D0D",
+            "surface-dim": "#080808",
+            "surface-bright": "#1A1A1A",
+            "surface-container-lowest": "#050505",
+            "surface-container-low": "#0D0D0D",
+            "surface-container": "#131313",
+            "surface-container-high": "#1E1E1E",
+            "surface-container-highest": "#282828",
+            "on-surface": "#E5E2E1",
+            "on-surface-variant": "#D4AF37",
+            "outline": "#4A3B00",
+            "outline-variant": "#2A2410",
+            "error": "#FFB4AB",
+            "on-error": "#690005"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "sm": "8px",
+            "margin": "24px",
+            "xl": "40px",
+            "unit": "4px",
+            "md": "16px",
+            "xs": "4px",
+            "lg": "24px",
+            "gutter": "20px"
+          },
+          "fontFamily": {
+            "serif": ["Noto Serif", "serif"],
+            "headline-md": ["Noto Serif"],
+            "label-bold": ["Inter"],
+            "body-md": ["Inter"],
+            "display": ["Noto Serif"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Noto Serif"],
+            "label-sm": ["Inter"]
+          },
+          "fontSize": {
+            "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .glass-card {
+      background: rgba(13, 13, 13, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+    }
+    .kinetic-border {
+      position: relative;
+      overflow: hidden;
+    }
+    .kinetic-border::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px solid transparent;
+      background: linear-gradient(90deg, #D4AF37, #F9F6EE) border-box;
+      mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+    .waveform-pill {
+      height: 12px;
+      width: 2px;
+      background: #D4AF37;
+      display: inline-block;
+      margin: 0 1px;
+    }
+    .gold-halo {
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md overflow-hidden h-screen flex flex-col antialiased">
+<!-- Top Navigation Shell (TopAppBar Implementation) -->
+<header class="bg-black/90 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-yellow-900/30 shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-md">
+<span class="text-2xl font-black italic text-yellow-500 tracking-tight drop-shadow-[0_0_8px_rgba(212,175,55,0.4)] font-serif">MixVy</span>
+<div class="h-6 w-px bg-yellow-900/30 mx-2"></div>
+<div class="flex flex-col">
+<h1 class="text-white font-serif font-bold tracking-tight leading-tight">Neon Pulse: Late Night Crypto</h1>
+<div class="flex items-center gap-xs">
+<span class="bg-secondary-container text-on-secondary-container text-[10px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-on-secondary-container rounded-full animate-pulse"></span>
+            LIVE
+          </span>
+<span class="text-white/40 text-label-sm">4.2k Viewers</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="hidden md:flex bg-yellow-900/10 border border-yellow-900/30 rounded-full px-4 py-1.5 items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[18px]">sensors</span>
+<span class="text-label-sm font-medium text-primary">Ultra-Low Latency</span>
+<span class="text-white/20">|</span>
+<span class="text-label-sm text-white/60">Connection: 24ms</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-yellow-500/60 hover:text-yellow-500 transition-colors">notifications</button>
+<button class="material-symbols-outlined text-yellow-500/60 hover:text-yellow-500 transition-colors">diamond</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary">
+<img alt="Premium user profile avatar" data-alt="Creator profile avatar in a cyberpunk aesthetic with neon backlighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoMeXt_1ZMOkbvWbnp8YPKRBR9tV4mE-Zzi8uFuHzvHRYUJetU0WOcJ8hxLqkJbzudJJbB-A-qXdzV6aiKN0sDMNJ8FK9s1Yn0yA6KawjSzDq-mNVvuS7EaUd3Yf_Hzj_TmCBlFfa5LXQPYdvHuOaUDsVVoDy-eiNFi41OMhOFMUoDA8x69ok-pi2azE7MsdhMgWPp0sv9FNdpqqlR8IPDHsjBcinXDkzA2N6mklfHtNm2wIYky4LaNls3MZDoj9DbwaqwbdQvR0KX"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Stage -->
+<main class="flex-1 relative overflow-hidden p-gutter mt-16">
+<!-- Tiered Presence Grid -->
+<div class="h-full grid grid-cols-12 grid-rows-6 gap-gutter">
+<!-- Tier 1: Full Video Tile (Main Speakers) -->
+<div class="col-span-12 lg:col-span-8 row-span-4 lg:row-span-6 relative rounded-xl overflow-hidden glass-card group">
+<img alt="Main Streamer" class="w-full h-full object-cover opacity-60" data-alt="close-up of a charismatic digital content creator in a dark studio with purple and blue rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOB6i7cD6yOKkD9_EPt14XYQ03CZ8i-CHKZRllKKXUM5y2TP3lBE9gtutUhiPutKenJPJirynJE80XErrhGIDhBquVt5NMXAUnIjEavWH3tXaHnUwUr5vYctQLwQv5BwLXweAt3A-D1nYoOifDUYvS7a9uAPs0Ys5Cvi7uA5asaWs97ku79K2W26FgaS8YlvJ7X_jCcV3XjqzcrR1WZXUik3HmoE6Jh9A-vmFARj-o_t9qwcOCpvFzHjWKQYEemaWXMoKxOt_mf4uq"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+<!-- UI Overlays on Video -->
+<div class="absolute top-md left-md flex items-center gap-sm">
+<div class="bg-black/60 backdrop-blur-md border border-primary/30 px-3 py-1 rounded-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">verified</span>
+<span class="text-label-bold text-primary uppercase tracking-widest text-[10px]">Host</span>
+</div>
+</div>
+<div class="absolute bottom-md left-md">
+<div class="flex items-center gap-md">
+<h2 class="text-white font-serif text-2xl font-bold">Alex Rivera</h2>
+<div class="flex items-end gap-[2px] h-4">
+<div class="waveform-pill h-full animate-[bounce_1s_infinite]"></div>
+<div class="waveform-pill h-2/3 animate-[bounce_1.2s_infinite]"></div>
+<div class="waveform-pill h-1/2 animate-[bounce_0.8s_infinite]"></div>
+<div class="waveform-pill h-3/4 animate-[bounce_1.1s_infinite]"></div>
+</div>
+</div>
+<p class="text-primary/60 text-label-sm font-serif italic">Talking about: Ethereum ETF Trends</p>
+</div>
+</div>
+<!-- Tier 2: Low Video Tiles (Secondary Panelists) -->
+<div class="col-span-12 lg:col-span-4 row-span-2 lg:row-span-3 flex flex-col gap-gutter">
+<!-- Panelist 1 -->
+<div class="flex-1 relative rounded-xl overflow-hidden glass-card group">
+<img alt="Panelist 1" class="w-full h-full object-cover opacity-40 grayscale hover:grayscale-0 transition-all duration-700" data-alt="professional trader looking at multiple monitors in a dark office environment with soft blue glows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYAbEyX0Ejz-9v1fXEhH4-0sL54ZrI3AdZyWN6HwMlZ4wT3Aa9rCBIxu1TmV_A6Dxn6P-jFrOIhasMx4hI-b3rs-g61uCKVJB-eACOozZEhfEwztJOmqQQgWZTbXXRppuAPpyVwsW3_y_gpiY2m_EszwZIk2yQcSpsixsbAa16jqQBvQVDVV1ktiHAr8n1TslwoMS1ENk8P5sSz-iZW_0IMxrmGTz0gP-5tGl3HPnDG9OzbddlkZkubgCINDejaiIM2pj9IBOvPZXV"/>
+<div class="absolute inset-0 border-2 border-transparent group-hover:border-primary/40 transition-colors"></div>
+<div class="absolute bottom-sm left-sm bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-primary/20 text-[12px] text-primary">Sarah Chen</div>
+<div class="absolute top-sm right-sm">
+<span class="material-symbols-outlined text-white/40 text-[18px]">mic_off</span>
+</div>
+</div>
+<!-- Panelist 2 -->
+<div class="flex-1 relative rounded-xl overflow-hidden glass-card group">
+<img alt="Panelist 2" class="w-full h-full object-cover opacity-40" data-alt="stylish individual in a dimly lit apartment with atmospheric purple neon lights in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBngwYSTpsgFtCDpWZY5Eymws0TlznfDFi68egF9tjwlgJsKAMrNR7TTgnzAsO04S41e9WKgzPzS4BtlEHffKSLr-CTRknwEuMFEK3vQPpmEPZDHmDYLwVxRrB5XZC7V8zvnqc1D8ybCZEa7Hk4IBJVW9Rr8ERPuVmn37sB5rxqMs3YpZisVkrEonzvfHVZZwgU2eI3JjjZ9kqlSQq4PKQpy2hpGupOHaPkPHPKmi-gNOB_989XCVCquqoTv1cTWgtC9ncPUKH80J_E"/>
+<div class="absolute bottom-sm left-sm bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-primary/20 text-[12px] text-primary">Marcus V.</div>
+<div class="absolute top-sm right-sm flex items-end gap-[1px] h-3">
+<div class="waveform-pill h-full bg-primary animate-pulse"></div>
+<div class="waveform-pill h-1/2 bg-primary animate-pulse"></div>
+</div>
+</div>
+</div>
+<!-- Tier 3: Audio-Only Participants (Bento Grid Style) -->
+<div class="col-span-12 lg:col-span-4 row-span-2 lg:row-span-3 glass-card rounded-xl p-md flex flex-col gap-md">
+<h3 class="text-primary/40 font-serif font-bold text-[11px] uppercase tracking-[0.2em] mb-xs">Active Audio Speakers</h3>
+<div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-3 gap-md overflow-y-auto pr-xs">
+<!-- Audio Speaker 1 -->
+<div class="flex flex-col items-center gap-xs group">
+<div class="relative">
+<div class="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-yellow-200 opacity-75 blur-[2px] animate-pulse gold-halo"></div>
+<div class="relative w-12 h-12 rounded-full overflow-hidden border border-primary/30">
+<img alt="User" data-alt="user avatar profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHpbZDUtQIFXQdeENOnJlNKYicmWl6S9lmMfC7oPQZ9Tnqd9GAM5Dh9C9cn_kNffPOnzBREhmfAjBDC9rtG2Z0f4f-Frv1jVQAbA_Yu9S5A-sC1iY7MIZyTLXE_c-t33h4FTrnIzCljy5S6rMLbibqkOfi9esSYZm_xQYDB3F-WgvbgQXUeIyijVfaTBhSZhwy8YS2nC3k35zaSpQupE5TCArXmMYHQwB12i0M2OKHOpvVG2Z2gG10eG__v4lAiuqvMmazqQ2H70IK"/>
+</div>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-surface"></div>
+</div>
+<span class="text-[10px] text-primary truncate w-14 text-center">CryptoWhale</span>
+</div>
+<!-- Audio Speaker 2 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-yellow-900/20 opacity-50 grayscale">
+<img alt="User" data-alt="user avatar profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG1HP0KGP9aHeAUBmRCWJIKSp_zEluwpRskiTRRlPxF_zwAAmZRSgLKxfwwI-NLZaE0nT0tk0GfUOBj6WvnJShpTbjMLKRZIvVpW6kV1FfAFEsHPbdFNsw0n8q3H2yYrFb3kBnTXJvV53n6eDRQK4kS-hvJFIhBr-u2yBEyWE2kiQv7W6BnCtVHR_nwN99reggJ_Rsky0sqQDbviDDf8sE7Lp3-kBWwwXrKeMQJuyulvavG3g-7HhxJLCVho6tA7HSPJPD8EG9Q2wZ"/>
+</div>
+<span class="text-[10px] text-white/40 truncate w-14 text-center">ETH_Maxi</span>
+</div>
+<!-- Audio Speaker 3 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="relative">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-yellow-900/20">
+<img alt="User" data-alt="user avatar profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIW0KYvqH38Xr1q54GVQeJScWq_Z0O4CHAlmuxfFwpwGgwBRchYnFiPIddcAHxScuC-3ZKkbuRIYjlQ_jl6YmDlXws_JjrgKNjL9PmGji_yaHeA1fbO9K_crfPZQgfocm52bq1cwMr7mDPZis3q9qLfyQqLFbfIsef7wf7xTFE7981ZtSnpe7m_CwFEdE4_EAPYANxkhwgnGEQOzx64_A6HrnptmR1ABQgv2IhPnu-T9RDfVkE8eidowxE5OyCBzvU8qx_b3uneijz"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-surface-container-high rounded-full p-0.5 border border-primary/20">
+<span class="material-symbols-outlined text-[12px] text-error">mic_off</span>
+</div>
+</div>
+<span class="text-[10px] text-white/40 truncate w-14 text-center">Luna_T</span>
+</div>
+<!-- Repeat items for layout density -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-yellow-900/20">
+<img alt="User" data-alt="user avatar profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlEsByWc4Spt_ENhKmGWdhEgVeW8PrP53z0vlxGIeHoRqCH3uKYzC4loKZWR_eIss01B6LGD2VWCn72KR-R8kZcPo1gYdbwvZ4ji9yJdOM0VDK_8dGnGuIPnKyFhKEl6I7Kix2UM_IZMYkBeF6nTw_0FQAQ4kghbCmFS2L-b2s3icR1Z-8wjV5Kne1FGTeP6HpzG9fsqrhk-wm2wMYTbLrYERhv4a3PVmmBR_0BQ45YFJtHuF2Jm-EntxlYwXhfQktIOQ-esl3Oaqy"/>
+</div>
+<span class="text-[10px] text-white/40 truncate w-14 text-center">J.Doe</span>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-full bg-white/5 border border-yellow-900/20 flex items-center justify-center">
+<span class="text-primary/60 text-[12px] font-bold">+82</span>
+</div>
+<span class="text-[10px] text-white/40 truncate w-14 text-center">Listeners</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Reaction Emojis -->
+<div class="absolute bottom-xl right-margin flex flex-col gap-sm">
+<div class="glass-card p-sm rounded-full flex flex-col gap-md border-primary/20">
+<button class="hover:scale-125 transition-transform active:scale-95 text-xl">🔥</button>
+<button class="hover:scale-125 transition-transform active:scale-95 text-xl">💎</button>
+<button class="hover:scale-125 transition-transform active:scale-95 text-xl">🚀</button>
+<button class="hover:scale-125 transition-transform active:scale-95 text-xl">👏</button>
+<div class="h-px w-full bg-primary/10"></div>
+<button class="material-symbols-outlined text-primary/40 hover:text-primary transition-colors text-[20px]">add_reaction</button>
+</div>
+</div>
+</main>
+<!-- Bottom Control Bar -->
+<footer class="h-24 bg-surface-dim border-t border-yellow-900/30 px-gutter flex items-center justify-between z-50">
+<div class="flex-1 hidden md:flex items-center gap-md">
+<button class="flex items-center gap-sm bg-yellow-900/10 hover:bg-yellow-900/20 transition-all border border-primary/30 px-4 py-2 rounded-xl text-primary">
+<span class="material-symbols-outlined">group</span>
+<span class="text-label-sm font-serif">Participants</span>
+<span class="bg-primary text-on-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">14</span>
+</button>
+</div>
+<!-- Central Controls -->
+<div class="flex items-center gap-md">
+<button class="w-14 h-14 rounded-full glass-card flex items-center justify-center hover:bg-yellow-900/20 transition-all duration-300 active:scale-95 group">
+<span class="material-symbols-outlined text-primary/80 group-hover:text-primary">mic</span>
+</button>
+<button class="w-14 h-14 rounded-full glass-card flex items-center justify-center hover:bg-yellow-900/20 transition-all duration-300 active:scale-95 group">
+<span class="material-symbols-outlined text-primary/80 group-hover:text-primary">videocam</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-700 to-primary shadow-lg shadow-yellow-900/40 flex items-center justify-center hover:brightness-110 transition-all duration-300 active:scale-90">
+<span class="material-symbols-outlined text-on-primary font-bold text-[32px]">front_hand</span>
+</button>
+<button class="w-14 h-14 rounded-full glass-card flex items-center justify-center hover:bg-yellow-900/20 transition-all duration-300 active:scale-95 group">
+<span class="material-symbols-outlined text-primary/80 group-hover:text-primary">screen_share</span>
+</button>
+<button class="w-14 h-14 rounded-full bg-error/10 border border-error/20 flex items-center justify-center hover:bg-error/20 transition-all duration-300 active:scale-90 group ml-md">
+<span class="material-symbols-outlined text-error" data-weight="fill">logout</span>
+</button>
+</div>
+<div class="flex-1 flex justify-end">
+<div class="flex items-center gap-sm">
+<button class="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:bg-yellow-900/20 transition-colors">
+<span class="material-symbols-outlined text-primary/60">chat_bubble</span>
+</button>
+<button class="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:bg-yellow-900/20 transition-colors">
+<span class="material-symbols-outlined text-primary/60">more_vert</span>
+</button>
+</div>
+</div>
+</footer>
+<!-- Notification Overlay (Premium Alert Detail) -->
+<div class="fixed top-20 right-gutter z-[100] max-w-sm">
+<div class="glass-card p-md rounded-xl border-l-4 border-primary flex items-start gap-md animate-[slideInRight_0.5s_ease-out] shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+<div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-primary/50">
+<img alt="System Alert" data-alt="user avatar profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtEyPoHxFNnSu8Im6x5bVm-2mRgGIHvmorRcKHgATHhPFSn7GjmlEe5wiGENWLgCi6XYki6GyvNT7JruriKaePUEfoDhjXTPHHsdSJcfpgPiN4UNFiDFcRJnyNb3hJrdXI2dMmiDUGyKoilvCZYgkLmm7dePYbyNm2eZIhyY3BW6PAvwduCcqxIqdBVT3OPRKsTIuzPYsu16BbJinO7me9JIrVzr4doDwexmEW_YP7Fq5gMYDaOEp0JOdFKdk-C5mD1yvVV-yNupee"/>
+</div>
+<div>
+<h4 class="text-primary text-label-bold font-serif">CryptoWhale just tipped 500 Credits</h4>
+<p class="text-white/60 text-label-sm italic">"Great insights on the layer 2 narrative!"</p>
+</div>
+</div>
+</div>
+</body></html>

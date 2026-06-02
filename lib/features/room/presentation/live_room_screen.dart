@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
-// ignore_for_file: unused_element, unused_import
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mixvy/models/room_model.dart';
+import 'package:mixvy/presentation/providers/user_provider.dart';
+import 'package:mixvy/features/room/room_controller.dart';
+import 'package:mixvy/features/room/providers/room_live_state_provider.dart';
+import 'package:mixvy/features/room/providers/rtc_service_provider.dart';
+import 'package:mixvy/features/room/controllers/live_room_media_controller.dart';
+import 'package:mixvy/features/room/widgets/chat_panel.dart';
+
+// ignore_for_file: unused_element, unused_import
 
 class _ControlIconButton extends StatelessWidget {
   final IconData icon;
@@ -33,9 +42,11 @@ class _ControlIconButton extends StatelessWidget {
 
 class _FloatingControlBar extends ConsumerWidget {
   final String roomId;
-  final dynamic controllerState; // Swapped to dynamic to match structural scope if type isn't exported here
+  final dynamic
+      controllerState; // Swapped to dynamic to match structural scope if type isn't exported here
 
-  const _FloatingControlBar({required this.roomId, required this.controllerState});
+  const _FloatingControlBar(
+      {required this.roomId, required this.controllerState});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +67,8 @@ class _FloatingControlBar extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ControlIconButton(
-            icon: mediaState.isVideoEnabled ? Icons.videocam : Icons.videocam_off,
+            icon:
+                mediaState.isVideoEnabled ? Icons.videocam : Icons.videocam_off,
             label: 'Camera',
             isActive: mediaState.isVideoEnabled,
             onPressed: () async {
@@ -81,7 +93,7 @@ class LiveRoomScreen extends ConsumerStatefulWidget {
 
 class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
   late RoomController _roomController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -98,42 +110,61 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
           children: [
             Expanded(
               child: ChatPanel(
-                  extraHeader: StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
-                    builder: (context, roomSnap) {
-                      if (!roomSnap.hasData || !roomSnap.data!.exists) return const SizedBox.shrink();
-                      final data = roomSnap.data!.data() as Map<String, dynamic>? ?? {};
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF12121A),
-                          border: Border(bottom: BorderSide(color: Color(0xFF1F1F2E), width: 0.8)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.graphic_eq_rounded, color: Colors.cyanAccent, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(data['title'] ?? 'Live Lounge', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                                  Text('Hosted by ' + (data['hostName'] ?? 'MixVy Host'), style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
-                                ],
-                              ),
+                extraHeader: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('rooms')
+                      .doc(widget.roomId)
+                      .snapshots(),
+                  builder: (context, roomSnap) {
+                    if (!roomSnap.hasData || !roomSnap.data!.exists)
+                      return const SizedBox.shrink();
+                    final data =
+                        roomSnap.data!.data() as Map<String, dynamic>? ?? {};
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF12121A),
+                        border: Border(
+                            bottom: BorderSide(
+                                color: Color(0xFF1F1F2E), width: 0.8)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.graphic_eq_rounded,
+                              color: Colors.cyanAccent, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(data['title'] ?? 'Live Lounge',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14)),
+                                Text(
+                                    'Hosted by ' +
+                                        (data['hostName'] ?? 'MixVy Host'),
+                                    style: TextStyle(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.4),
+                                        fontSize: 11)),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 messages: liveState.message,
                 isLoadingMessages: false,
                 currentUserId: ref.watch(userProvider)?.id ?? '',
-                currentUsername: ref.watch(userProvider)?.username ?? 'Anonymous',
+                currentUsername:
+                    ref.watch(userProvider)?.username ?? 'Anonymous',
                 isSending: false,
                 cooldownMessage: '',
                 isMuted: false,
@@ -154,12 +185,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
           ],
         ),
       ),
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, stack) => Scaffold(body: Center(child: Text('Error: $e'))),
     );
   }
 }
-
-
-
-

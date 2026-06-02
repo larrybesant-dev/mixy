@@ -122,6 +122,3 @@ class StartupMetricEngine {
     return sorted[index];
   }
 }
-
-
-

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
 import 'dart:html' as html;
@@ -18,9 +17,3 @@ void unregisterBrowserUnloadListener() {
     _unloadListener = null;
   }
 }
-
-
-
-
-
-

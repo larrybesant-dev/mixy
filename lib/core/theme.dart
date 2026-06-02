@@ -62,6 +62,7 @@ TextStyle _raleway(TextStyle style) => withMixvyFontFallback(style);
 final ThemeData midnightCreativeTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.dark,
+  fontFamily: GoogleFonts.raleway().fontFamily,
   scaffoldBackgroundColor: VelvetNoir.surface,
   colorScheme: const ColorScheme.dark(
     primary: VelvetNoir.primary,
@@ -322,6 +323,3 @@ final ThemeData midnightCreativeTheme = ThemeData(
     elevation: 0,
   ),
 );
-
-
-

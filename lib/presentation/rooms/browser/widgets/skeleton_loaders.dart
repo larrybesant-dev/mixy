@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme.dart';
 
 class RoomBrowserSkeletonBlock extends StatelessWidget {
-  const RoomBrowserSkeletonBlock({super.key, required this.height, required this.radius});
+  const RoomBrowserSkeletonBlock(
+      {super.key, required this.height, required this.radius});
   final double height;
   final double radius;
 

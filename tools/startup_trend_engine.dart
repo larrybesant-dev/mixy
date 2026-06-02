@@ -54,9 +54,8 @@ class StartupTrendEngine {
     }
 
     final double denominator = (n * sumXX) - (sumX * sumX);
-    final double slope = denominator == 0
-        ? 0
-        : ((n * sumXY) - (sumX * sumY)) / denominator;
+    final double slope =
+        denominator == 0 ? 0 : ((n * sumXY) - (sumX * sumY)) / denominator;
 
     final double mean = sumY / n;
     final double slopePct = mean == 0 ? 0 : slope / mean;
@@ -90,6 +89,3 @@ class StartupTrendEngine {
     );
   }
 }
-
-
-

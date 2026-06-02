@@ -80,8 +80,8 @@ Future<void> main(List<String> args) async {
   }
 
   final RunHistoryStore historyStore = RunHistoryStore(config.historyPath);
-  final List<Map<String, Object?>> historyEntries = await historyStore
-      .loadEntries();
+  final List<Map<String, Object?>> historyEntries =
+      await historyStore.loadEntries();
 
   final StartupRunSchemaValidator schemaValidator =
       const StartupRunSchemaValidator();
@@ -96,11 +96,11 @@ Future<void> main(List<String> args) async {
   final StartupBaselineEngine baselineEngine = const StartupBaselineEngine();
   final StartupTrendEngine trendEngine = const StartupTrendEngine();
 
-  final Map<StartupCheckpoint, int> baseline = baselineEngine
-      .computeFromHistory(
-        entries: historyEntries,
-        window: config.historyWindow,
-      );
+  final Map<StartupCheckpoint, int> baseline =
+      baselineEngine.computeFromHistory(
+    entries: historyEntries,
+    window: config.historyWindow,
+  );
   final Map<StartupCheckpoint, int> lastGreen = baselineEngine.lastGreenMetrics(
     entries: historyEntries,
   );
@@ -150,8 +150,7 @@ Future<void> main(List<String> args) async {
     _printHuman(output);
   }
 
-  final bool shouldFail =
-      scoring.decision == GateDecision.fail ||
+  final bool shouldFail = scoring.decision == GateDecision.fail ||
       (scoring.decision == GateDecision.warn && policy.blockOnWarn);
   exitCode = shouldFail ? 1 : 0;
 }
@@ -404,13 +403,11 @@ Map<String, Object?> _buildOutput({
       'slaMs': sla[cp],
       'p95CeilingMs': sla[cp] == null ? null : (sla[cp]! * 1.2).ceil(),
       'baselineP95Ms': baseline[cp],
-      'baselineP95CeilingMs': baseline[cp] == null
-          ? null
-          : (baseline[cp]! * 1.2).ceil(),
+      'baselineP95CeilingMs':
+          baseline[cp] == null ? null : (baseline[cp]! * 1.2).ceil(),
       'lastGreenP95Ms': lastGreen[cp],
-      'regressionDiffVsLastGreenMs': lastGreen[cp] == null
-          ? null
-          : (stats.p95 - lastGreen[cp]!),
+      'regressionDiffVsLastGreenMs':
+          lastGreen[cp] == null ? null : (stats.p95 - lastGreen[cp]!),
     };
   });
 
@@ -453,13 +450,11 @@ Map<String, Object?> _buildHistoryEntry({
   required TrendAnalysis trend,
   required int runCount,
 }) {
-  final String commit =
-      Platform.environment['GITHUB_SHA'] ??
+  final String commit = Platform.environment['GITHUB_SHA'] ??
       Platform.environment['CI_COMMIT_SHA'] ??
       Platform.environment['BUILD_SOURCEVERSION'] ??
       'unknown';
-  final String runId =
-      Platform.environment['GITHUB_RUN_ID'] ??
+  final String runId = Platform.environment['GITHUB_RUN_ID'] ??
       Platform.environment['CI_PIPELINE_ID'] ??
       Platform.environment['BUILD_BUILDID'] ??
       DateTime.now().millisecondsSinceEpoch.toString();
@@ -557,6 +552,3 @@ void _fail(String message) {
   stderr.writeln('- $message');
   exitCode = 1;
 }
-
-
-

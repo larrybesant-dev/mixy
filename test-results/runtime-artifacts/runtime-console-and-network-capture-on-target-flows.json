@@ -1,0 +1,577 @@
+{
+  "flow": "runtime-capture",
+  "finalUrl": "https://mix-and-mingle-v2.web.app/create-room",
+  "urlTransitions": [
+    "about:blank",
+    "https://mix-and-mingle-v2.web.app/",
+    "https://mix-and-mingle-v2.web.app/auth",
+    "https://mix-and-mingle-v2.web.app/auth",
+    "https://mix-and-mingle-v2.web.app/auth",
+    "https://mix-and-mingle-v2.web.app/",
+    "https://mix-and-mingle-v2.web.app/auth",
+    "https://mix-and-mingle-v2.web.app/home",
+    "https://mix-and-mingle-v2.web.app/home",
+    "https://mix-and-mingle-v2.web.app/home",
+    "https://mix-and-mingle-v2.web.app/",
+    "https://mix-and-mingle-v2.web.app/home",
+    "https://mix-and-mingle-v2.web.app/profile/runtime-capture-profile",
+    "https://mix-and-mingle-v2.web.app/profile/runtime-capture-profile",
+    "https://mix-and-mingle-v2.web.app/profile/runtime-capture-profile",
+    "https://mix-and-mingle-v2.web.app/",
+    "https://mix-and-mingle-v2.web.app/profile/runtime-capture-profile",
+    "https://mix-and-mingle-v2.web.app/room/runtime-capture-room",
+    "https://mix-and-mingle-v2.web.app/room/runtime-capture-room",
+    "https://mix-and-mingle-v2.web.app/room/runtime-capture-room",
+    "https://mix-and-mingle-v2.web.app/",
+    "https://mix-and-mingle-v2.web.app/room/runtime-capture-room",
+    "https://mix-and-mingle-v2.web.app/create-room",
+    "https://mix-and-mingle-v2.web.app/create-room",
+    "https://mix-and-mingle-v2.web.app/create-room",
+    "https://mix-and-mingle-v2.web.app/",
+    "https://mix-and-mingle-v2.web.app/create-room"
+  ],
+  "navigationLoopDetected": true,
+  "duplicateActions": [],
+  "actionCounts": {
+    "goto:https://mix-and-mingle-v2.web.app/": 1,
+    "goto:https://mix-and-mingle-v2.web.app/auth": 1,
+    "goto:https://mix-and-mingle-v2.web.app/home": 1,
+    "goto:https://mix-and-mingle-v2.web.app/profile/runtime-capture-profile": 1,
+    "goto:https://mix-and-mingle-v2.web.app/room/runtime-capture-room": 1,
+    "goto:https://mix-and-mingle-v2.web.app/create-room": 1
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2",
+      "errorText": "net::ERR_ABORTED"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf",
+      "errorText": "net::ERR_ABORTED"
+    }
+  ],
+  "failedSelectors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/main.dart.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSans-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols2-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/auth"
+    },
+    {
+      "method": "GET",
+      "url": "https://accounts.google.com/gsi/client"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/main.dart.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSans-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols2-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://accounts.google.com/gsi/client"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/.env"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/home"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/main.dart.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSans-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols2-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://accounts.google.com/gsi/client"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/.env"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore-pipelines.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-remote-config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/6909027d44d53e9a64ea940b0a7aea9d04187d1bb8ab17a178d99a46bf9ef320.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/ff847b201647579bb6cd0f46de344b5731f9e4932308842b7b4dce64fc27c0ef.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/529bffba18f383c1e3d0c1851b77b3bccfdd841ab051a5517543efca15b65038.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/3c987ca1cd072b77f250319c61804a49616563ed1d8b85e31c4fe2097f140348.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/profile/runtime-capture-profile"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/main.dart.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSans-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols2-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://accounts.google.com/gsi/client"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/.env"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/room/runtime-capture-room"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore-pipelines.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-remote-config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/6909027d44d53e9a64ea940b0a7aea9d04187d1bb8ab17a178d99a46bf9ef320.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/ff847b201647579bb6cd0f46de344b5731f9e4932308842b7b4dce64fc27c0ef.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/529bffba18f383c1e3d0c1851b77b3bccfdd841ab051a5517543efca15b65038.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/a/3c987ca1cd072b77f250319c61804a49616563ed1d8b85e31c4fe2097f140348.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/main.dart.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSans-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols2-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://accounts.google.com/gsi/client"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/.env"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/AssetManifest.bin.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/create-room"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore-pipelines.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-remote-config.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/flutter_bootstrap.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm"
+    },
+    {
+      "method": "GET",
+      "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/main.dart.js"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/FontManifest.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/fonts/MaterialIcons-Regular.otf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoColorEmoji-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSans-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/assets/fonts/NotoSansSymbols2-Regular.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://accounts.google.com/gsi/client"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/.env"
+    },
+    {
+      "method": "GET",
+      "url": "https://mix-and-mingle-v2.web.app/assets/AssetManifest.bin.json"
+    }
+  ],
+  "roomWriteSignals": 0
+}

@@ -64,9 +64,12 @@ class ProfileScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Friend Requests',
               icon: Badge(
-                label: Text(ref.watch(dummyPendingRequestsProvider).length.toString()),
-                isLabelVisible: ref.watch(dummyPendingRequestsProvider).isNotEmpty,
-                child: const Icon(Icons.people_outline, color: Color(0xFFAD9585)),
+                label: Text(
+                    ref.watch(dummyPendingRequestsProvider).length.toString()),
+                isLabelVisible:
+                    ref.watch(dummyPendingRequestsProvider).isNotEmpty,
+                child:
+                    const Icon(Icons.people_outline, color: Color(0xFFAD9585)),
               ),
               onPressed: () => context.push('/pending-requests'),
             ),
@@ -214,7 +217,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   String _mapStorageError(FirebaseException e, {required String kind}) {
     final code = e.code.toLowerCase();
     return switch (code) {
-      'unauthenticated' || 'permission-denied' || 'unauthorized' =>
+      'unauthenticated' ||
+      'permission-denied' ||
+      'unauthorized' =>
         'Upload blocked by auth permissions. Please sign out and sign in again.',
       'quota-exceeded' => 'Storage quota exceeded. Please try again later.',
       'cancelled' => 'Upload was cancelled.',
@@ -369,8 +374,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       }
     } on FirebaseException catch (e) {
       final code = e.code.toLowerCase();
-      final shouldRetry =
-          code == 'unauthenticated' ||
+      final shouldRetry = code == 'unauthenticated' ||
           code == 'permission-denied' ||
           code == 'unauthorized';
       if (!shouldRetry) rethrow;
@@ -467,8 +471,8 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       );
       if (file == null) return;
       final bytes = await file.readAsBytes().timeout(
-        const Duration(seconds: 20),
-      );
+            const Duration(seconds: 20),
+          );
       if (bytes.lengthInBytes > _maxPhotoBytes) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -715,7 +719,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     _nameController.text = state.username ?? '';
     _bioController.text = state.bio ?? '';
     _aboutMeController.text = state.aboutMe ?? '';
-   _ageController.text = state.age.toString();
+    _ageController.text = state.age.toString();
     _locationController.text = state.location ?? '';
     _interestsController.text = state.interests.join(', ');
     _vibeController.text = state.vibePrompt ?? '';
@@ -828,8 +832,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     final guidedItems = ProfileCompletion.guidedSetupItems(state);
     final isSetupComplete = requiredItems.isEmpty;
     final profileStrength = ProfileCompletion.completeness(state);
-    final hasPendingUploads =
-        _isUploadingPhoto ||
+    final hasPendingUploads = _isUploadingPhoto ||
         _isUploadingCover ||
         _isUploadingGallery ||
         _isUploadingVideo;
@@ -869,7 +872,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       children: [
                         Text(
                           'Finish setup to unlock all pages',
-                          style: Theme.of(context).textTheme.titleSmall
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 6),
@@ -1236,8 +1241,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       Text(
                         'Used for text highlights on your profile.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       _ColorSwatchRow(
@@ -1255,8 +1262,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       Text(
                         'Overrides the theme gradient on your profile card.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -1729,11 +1738,11 @@ class _HeroCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '${(100 * profileStrength).round()}% ready',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                     ],
                   ),
@@ -1744,9 +1753,8 @@ class _HeroCard extends StatelessWidget {
           Transform.translate(
             offset: const Offset(0, -24),
             child: GestureDetector(
-              onTap: isUploadingPhoto
-                  ? null
-                  : () => safeRunUpload(onUploadAvatar),
+              onTap:
+                  isUploadingPhoto ? null : () => safeRunUpload(onUploadAvatar),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -1767,29 +1775,29 @@ class _HeroCard extends StatelessWidget {
                             ),
                           )
                         : (state.avatarUrl ?? '').trim().isNotEmpty
-                        ? ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: (state.avatarUrl ?? "").trim(),
-                              width: 84,
-                              height: 84,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Center(
-                                child: SizedBox(
-                                  width: 42,
-                                  height: 42,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Theme.of(context).colorScheme.primary,
+                            ? ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: (state.avatarUrl ?? "").trim(),
+                                  width: 84,
+                                  height: 84,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Center(
+                                    child: SizedBox(
+                                      width: 42,
+                                      height: 42,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation(
+                                          Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
                                     ),
                                   ),
+                                  errorWidget: (___, __, _) =>
+                                      const Icon(Icons.person, size: 32),
                                 ),
-                              ),
-                              errorWidget: (___, __, _) =>
-                                  const Icon(Icons.person, size: 32),
-                            ),
-                          )
-                        : const Icon(Icons.person, size: 32),
+                              )
+                            : const Icon(Icons.person, size: 32),
                   ),
                   Positioned(
                     bottom: 0,
@@ -2117,9 +2125,9 @@ class _SectionCard extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFD4AF37),
-            ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFD4AF37),
+                ),
           ),
           const SizedBox(height: 4),
           Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
@@ -2153,9 +2161,9 @@ class _StatTile extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFFD4AF37),
-            ),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFD4AF37),
+                ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -2343,8 +2351,3 @@ Color _hexToColor(String hex) {
     return Colors.grey;
   }
 }
-
-
-
-
-

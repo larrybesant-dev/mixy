@@ -125,7 +125,8 @@ class _UserProfilePopupSheetState
       return;
     }
     try {
-      final friendIds = await ref.read(friendServiceProvider).getFriendIds(currentUser.id);
+      final friendIds =
+          await ref.read(friendServiceProvider).getFriendIds(currentUser.id);
       final blocked = await _moderationService.isBlocked(_normalizedUserId);
       if (!mounted) return;
       setState(() {
@@ -316,10 +317,12 @@ class _UserProfilePopupSheetState
                       : () async {
                           final me = ref.read(userProvider);
                           if (me == null || _normalizedUserId.isEmpty) return;
-                          await ref.read(friendServiceProvider).sendFriendRequest(
-                            me.id,
-                            _normalizedUserId,
-                          );
+                          await ref
+                              .read(friendServiceProvider)
+                              .sendFriendRequest(
+                                me.id,
+                                _normalizedUserId,
+                              );
                           if (mounted) setState(() => _requestPending = true);
                         },
                 ),
@@ -330,9 +333,9 @@ class _UserProfilePopupSheetState
                   onTap: () async {
                     final allowed =
                         await GuestAuthGate.requireConversationStart(
-                          context,
-                          ref,
-                        );
+                      context,
+                      ref,
+                    );
                     if (!allowed) return;
 
                     final currentUser = ref.read(userProvider);
@@ -400,9 +403,8 @@ class _UserProfilePopupSheetState
                       context,
                       ref,
                       recipientId: _normalizedUserId,
-                      recipientName: profile.username.isEmpty
-                          ? 'user'
-                          : profile.username,
+                      recipientName:
+                          profile.username.isEmpty ? 'user' : profile.username,
                     );
                   },
                 ),

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MixVy - Search</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#4cd6ff",
+                        "surface-dim": "#131313",
+                        "primary-fixed": "#e9ddff",
+                        "on-secondary-fixed-variant": "#095300",
+                        "on-error": "#690005",
+                        "on-tertiary": "#003543",
+                        "inverse-primary": "#7212ff",
+                        "on-surface": "#e5e2e1",
+                        "inverse-on-surface": "#313030",
+                        "surface-variant": "#353534",
+                        "tertiary-fixed-dim": "#4cd6ff",
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "on-surface-variant": "#ccc3da",
+                        "inverse-surface": "#e5e2e1",
+                        "outline-variant": "#4a4457",
+                        "on-primary-container": "#ddcdff",
+                        "surface-tint": "#d1bcff",
+                        "secondary-fixed-dim": "#2ae500",
+                        "on-secondary-fixed": "#022100",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary": "#053900",
+                        "on-tertiary-container": "#89e0ff",
+                        "primary-fixed-dim": "#d1bcff",
+                        "secondary": "#d7ffc5",
+                        "tertiary-fixed": "#b7eaff",
+                        "secondary-container": "#2ff801",
+                        "on-primary-fixed-variant": "#5700c9",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#004e60",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#79ff5b",
+                        "on-secondary-container": "#0f6d00",
+                        "outline": "#958da3",
+                        "tertiary-container": "#00647c",
+                        "primary": "#d1bcff",
+                        "surface-container-highest": "#353534",
+                        "surface-bright": "#3a3939",
+                        "on-primary": "#3c0090",
+                        "surface-container": "#201f1f",
+                        "primary-container": "#7000ff",
+                        "on-tertiary-fixed": "#001f28",
+                        "on-primary-fixed": "#23005b",
+                        "background": "#131313",
+                        "surface-container-lowest": "#0e0e0e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "margin": "24px",
+                        "xl": "40px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Space Grotesk"],
+                        "label-bold": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display": ["Space Grotesk"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Space Grotesk"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-glow-purple:focus-within {
+            box-shadow: 0 0 15px rgba(114, 18, 255, 0.3);
+            border-color: #7212ff;
+        }
+        .live-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-[#0D0D0D] text-on-surface font-body-md overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-[#0D0D0D] dark:bg-[#0D0D0D] docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-purple-500/10 flex justify-between items-center w-full px-6 h-16 fixed">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 font-['Space_Grotesk'] tracking-tight">MixVy</span>
+<!-- Search Bar (on_left mandate) -->
+<div class="hidden md:flex items-center bg-[#1A1A1A] rounded-full px-4 py-2 w-96 border border-white/5 neon-glow-purple transition-all">
+<span class="material-symbols-outlined text-white/40 mr-2">search</span>
+<input class="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-white/20 focus:ring-0" placeholder="Search MixVy..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-white/60 hover:text-white transition-colors active:scale-95 duration-200">notifications</button>
+<button class="material-symbols-outlined text-white/60 hover:text-white transition-colors active:scale-95 duration-200">sensors</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10 ml-2">
+<img alt="Creator profile avatar" class="w-full h-full object-cover" data-alt="close-up portrait of a stylish digital creator with soft futuristic lighting and purple rim light on dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIekrWCYbu9i_dSAmkeXh-8AdoPslf1oLqsGG6p9SbKSqD7wocTitO9ZrfM6HtToI1_8ua0XToXnfOpDBetb0kalzDtTAg5UyNClhLuWcc45huk_jVhVN1Auvz0IGkDsAzkW95-BV5gwqDpyNjiqcH7kHbPKOx6x_vlQLGJj2gTxH6lcybmS2BXodU4b4g7tg6b_JAnArQu5aHnepORL8ljjeSMc2VlC-ljnft5UrN03oddfe9DSX_vK8ofjeaKdWZatJ0poEnmNGi"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="hidden md:flex bg-[#1A1A1A]/80 backdrop-blur-2xl h-screen w-64 fixed left-0 top-0 border-r border-white/10 flex flex-col h-full py-8 gap-4 z-40 pt-20">
+<div class="px-6 mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">electric_bolt</span>
+</div>
+<div>
+<p class="text-sm font-bold text-white font-['Space_Grotesk']">MixVy User</p>
+<p class="text-[10px] text-secondary uppercase tracking-widest font-black flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-secondary rounded-full live-pulse"></span>
+                        Live Now
+                    </p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 px-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined">home_max</span>
+                Home
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600/20 to-blue-500/20 border-r-2 border-purple-500 text-white transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+                Search
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined">forum</span>
+                messages
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+                Profile
+            </a>
+</div>
+<div class="mt-auto px-6">
+<button class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white py-3 rounded-xl font-bold text-sm tracking-tight active:scale-95 transition-transform">
+                Go Live
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 pt-20 pb-12 px-6 lg:px-margin">
+<!-- Categorized Sections: Live Rooms (Hero/Bento) -->
+<section class="mb-12">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-white mb-2">Live Rooms</h2>
+<p class="text-white/40 text-sm">Active broadcasts happening right now</p>
+</div>
+<button class="text-primary text-sm font-label-bold flex items-center gap-1 hover:opacity-80 transition-opacity">
+                    View All <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Main Live Card (Large) -->
+<div class="md:col-span-2 relative group overflow-hidden rounded-2xl glass-card aspect-video lg:aspect-[21/9]">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="cinematic wide shot of a futuristic neon-lit DJ booth in a dark club setting with purple and blue volumetric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI74B2VseZeOpLTO0wlnD6cmzyDO6nektaUOQcEEwU6c6VgvElAK3kgugpbVTUsRFCcBTJLpB8hJx_A8aUirCBlqzdOEyzyFHGmChrXif7fZ8k9FDdpb-sUJydAMecDVc6-4pRbxNg6QXpMGg_Bn5Qhc9djA9UZKD09AA2Qef9cRhjERGclIHu0Yh9h5kAyz3gcPAL1Cc0ghQ8n5djHhdK3Cw8BJ-whY5yZ0Hr7kzjRBxfPXv3CkaW0QopojZpGP_RjB6Htpq3-Jvx"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-transparent to-transparent opacity-90"></div>
+<div class="absolute top-4 left-4">
+<span class="bg-secondary text-black px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-lg shadow-secondary/20">
+<span class="w-1.5 h-1.5 bg-black rounded-full live-pulse"></span>
+                            Live
+                        </span>
+</div>
+<div class="absolute bottom-6 left-6 right-6">
+<h3 class="text-white font-headline-md text-headline-md mb-2">Neon Pulse: Tokyo Underground Session</h3>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full border border-white/20" data-alt="close-up avatar of a tech-savvy creator wearing sleek silver headphones and neon glasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeTZn9xS_B1eBlnip_sIi9owenKhv42I5iUP8QlCKP06BeisxQ-XSAIFpljUaGbGVh_d1II9m5W7XSFCNuTqkFW9vTDQXA7OGDSS7yktjO3EbmCMS4ohwSSh0uimsAV9lL3HoHCl_QzLUjQUvuC8hvTf-o18-eTikfN5HoIS_xgoIKTnQGs1OcehDs7UOS4URG56mxSGGS3aTbEBvMhiBKHJ6x5-bPT9jzhsUTGXW8e1r6NL02j7Dkw34c4A96fiW8VoUs-5wjkvBE"/>
+<span class="text-white/80 text-sm font-medium">@djkinesis</span>
+</div>
+<div class="flex items-center gap-1 text-white/40 text-sm">
+<span class="material-symbols-outlined text-sm">group</span>
+                                12.4k
+                            </div>
+</div>
+</div>
+</div>
+<!-- Secondary Live Card -->
+<div class="flex flex-col gap-gutter">
+<div class="flex-1 glass-card rounded-2xl p-6 flex flex-col justify-between border-t-2 border-t-tertiary/30">
+<div>
+<span class="bg-white/10 text-tertiary px-2 py-0.5 rounded text-[10px] font-bold uppercase mb-4 inline-block">Tech Talk</span>
+<h4 class="text-white font-label-bold text-lg leading-tight mb-2">Web3 Architecture with V0-Devs</h4>
+<p class="text-white/40 text-xs line-clamp-2">Discussing the future of decentralized interfaces and real-time state management.</p>
+</div>
+<div class="flex justify-between items-center pt-4">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-[#1A1A1A] bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="minimalist avatar icon of a programmer in high-contrast black and white style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZLRV3WzKa2YbJQIMlzxdpUq5uQsMMcF7piOqOnA-zDOHrXEv4juWMSB-7HzwfTBRCXrj0zviK2VLQmXwYfVFG0JvOiUUSxH7GSqVnzEWTpZzO8LC8GwmGkjott2kOuDzwbgmdTCLmSZ5M6F2f-ssiGhHV91SyhBkVMIEQD8T7RbBKCT7bTk1IsdxCTvCcaRKlLyLTKvQUtkmGrdQtRx9fBaO409PN-heKj5eSPZE-wciDuE1thsyKvnDRqhnVrsUvTXpWVAhXJdVc"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-[#1A1A1A] bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="abstract profile picture with vibrant blue gradient and geometric shapes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnSrmrwAVPHslwe5JpOenWivz_R9JHCsuE6eVxfaXiPPtmYg06w_jkaqNjiM7DtL_elM8Xkse8nbOfg-IEOvtgzyRwikOXwH_03whddC6rZsmFeD7EbM4V3XkoXc-N6TPQbYkkMldUi-kEKfHhFBWnBjsMuUf6sv_vVVB3HaHUUQyItsR6zTjICWJab1Ed7GLJRn7FSWX9cudmwL2qJKbZRkG6_otL3beLgEqYc3M-5bxI0dCHD8lu9rM-7VRVtywpkEo4vnjYHyap"/>
+</div>
+</div>
+<span class="text-tertiary text-xs font-bold">JOIN ROOM</span>
+</div>
+</div>
+<div class="flex-1 glass-card rounded-2xl overflow-hidden group relative">
+<img class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" data-alt="dynamic gaming setup with triple monitors glowing in cyber blue and purple ambient light on dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzTVi03C-OzRT3by-yNrsWkna-toZWE6Y6VkDp3wsENsMZ2sHTLkWTCEEFF55spa2-3qFFW77zgYNfnxKFf2s5qKqiOaYL2fGCNed1rstW-4Lc7lQ0kWZICvgWLYODOasaUAy8TGUMo9yyxwG8_PU-jc5QCOpatBbW4RLTNxITVNtO6AjlmMNk49_oPaC0hBhpw93P5kp_mglwKaPr-tEyAP7i4RUbwvGHZPmqoQdYWM6-rtF7kup3Edqn1Re_wVrkJvQLx8oC-owO"/>
+<div class="relative p-6 h-full flex flex-col justify-end">
+<h4 class="text-white font-label-bold text-md leading-tight">Valorant Pro League Scrims</h4>
+<p class="text-secondary text-[10px] font-black uppercase flex items-center gap-1">
+<span class="w-1 h-1 bg-secondary rounded-full"></span>
+                                842 watching
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- People & Trending Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- People Section -->
+<section class="lg:col-span-2">
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-md text-headline-md text-white">Suggested People</h2>
+<button class="text-white/40 text-xs hover:text-white transition-colors">Refresh</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Person 1 -->
+<div class="glass-card p-4 rounded-xl flex items-center gap-4 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close-up high-fashion portrait of a woman with electric blue hair and glowing cybernetic eye makeup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbNi954rirkZ79kLNqIf3Nx3y91gdXHgvZWmmgyZcSpN18H_PA-MbnTvaPqGuxcBkcPmM7-_tAgQ9zcCFnBSkAvnxk-HAs501CyQeRpqd6GXD-oCjwSmPNzY83sascMFMuporAIFOgsQ66mrybTJyW51MI4ndEWb750jxRDr0ZMqruKu-YaDwkwzvBeC57FyhuCidV7JBOsI1KmMeelWngF5I2nJaSoWv3kO_2Ujh2Rnxjo3KDyhuVZ00STUCFDkzPiTzWxl3GfLCt"/>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-[#2ae500] rounded-full border-2 border-[#1A1A1A]"></div>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-bold text-sm">Luna X</h5>
+<p class="text-white/40 text-xs">@lunax_digital</p>
+</div>
+<button class="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-full active:scale-95 transition-transform">Follow</button>
+</div>
+<!-- Person 2 -->
+<div class="glass-card p-4 rounded-xl flex items-center gap-4 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-tertiary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a man in a dark turtleneck against a background of blurred city lights at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvC6Z33Vsij5Tx397Kha7T91PH3kkSZl3_WUnApvO01ggRaKdVXsgVLH-_94GzTxPsJUJH2ft7ZnyAZHZARimgPPTLv1qvnC8VkYGPyEu9v7CPLZnHNBxb_P6xIkXhbsFwMxwbfQOSTXlpmHcRT1cFHSLoFfzGq4mNtEUq6lQJD7iG-fv7ZGmh1Gwg9ackRhlVksGRgOkOZ1ioIT8m0lkBxmpYrxeSRmkb035jSm8g9U0cvZ_FZL2stz8MB8sPLO_mouvrUZeGtSF_"/>
+</div>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-bold text-sm">Vector Core</h5>
+<p class="text-white/40 text-xs">@vcore_live</p>
+</div>
+<button class="px-4 py-1.5 border border-white/20 text-white text-xs font-bold rounded-full hover:bg-white/5 transition-colors active:scale-95">Follow</button>
+</div>
+<!-- Person 3 -->
+<div class="glass-card p-4 rounded-xl flex items-center gap-4 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="w-14 h-14 rounded-full border-2 border-white/10 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="artistic profile shot of a person with geometric face paint under warm neon orange light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIc2lx0XQwY_TjnirJJ6JEYiRvPr5Ng6kx6gsDEh8FVNsqTelpdea00F0363tZ5ZGKkA0qE08HYsWqcPAN2QTuAD6oZKln_naWs3QzoAnn2cM-sV9H812bGB6W-K5B4KEYdxGqv34GdQ9EoMojjJQPneavmCp6YisREKl130QxqjTMc_TpUxUkTC-wqnSC2KgIgOjNeCbQVKQk90dM9COUDuFckxpoCaK6iCJwEFOe5gnb9etYcuZqQVwF0qhU-DdB9iOwL9Yitfnn"/>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-bold text-sm">Azura</h5>
+<p class="text-white/40 text-xs">@azura_waves</p>
+</div>
+<button class="px-4 py-1.5 border border-white/20 text-white text-xs font-bold rounded-full hover:bg-white/5 transition-colors active:scale-95">Follow</button>
+</div>
+<!-- Person 4 -->
+<div class="glass-card p-4 rounded-xl flex items-center gap-4 hover:bg-white/5 transition-colors group cursor-pointer">
+<div class="w-14 h-14 rounded-full border-2 border-white/10 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="cool portrait of a musician in a dark hoodie with subtle purple backlighting and smoky atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTgwPamw3hKPSWDbMlRUaFqyvWMqQmAdtYJBFh4kkRwle-W9Op27SgBPSY5hWucDjfMpM8__Ol4MokZMJcnM54YMNy1mh3Iy7_hUfQJWxz0h8kFeirGQ0SUhuY74vMwBgOPSNoh6FOfd4UbtRXOGil8xXhTJyicZqYYlyeX2YAvekNP2zCq3ByeN0_7YYOqdb0cILY6ohUlckFSa3NH7p7GsvewQ0V1uxq689eZZuHlnRQhhlaYnlyS6Am_Dx_Do8xocpOVQ1L5htO"/>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-bold text-sm">Moro</h5>
+<p class="text-white/40 text-xs">@moro_beats</p>
+</div>
+<button class="px-4 py-1.5 border border-white/20 text-white text-xs font-bold rounded-full hover:bg-white/5 transition-colors active:scale-95">Follow</button>
+</div>
+</div>
+</section>
+<!-- Trending Section -->
+<aside>
+<div class="glass-card rounded-2xl overflow-hidden flex flex-col h-full border-l-2 border-l-primary/30">
+<div class="p-6 border-b border-white/10">
+<h2 class="font-headline-md text-headline-md text-white">Trending Now</h2>
+</div>
+<div class="p-0">
+<div class="group flex flex-col p-6 hover:bg-white/5 transition-colors border-b border-white/5 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-primary text-[10px] font-black uppercase tracking-tighter">Technology</span>
+<span class="material-symbols-outlined text-white/20 text-sm">more_horiz</span>
+</div>
+<p class="text-white font-bold text-md mb-1">#MixVyCreators2024</p>
+<p class="text-white/40 text-xs">154.2k rooms active</p>
+</div>
+<div class="group flex flex-col p-6 hover:bg-white/5 transition-colors border-b border-white/5 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-tertiary text-[10px] font-black uppercase tracking-tighter">Gaming</span>
+<span class="material-symbols-outlined text-white/20 text-sm">more_horiz</span>
+</div>
+<p class="text-white font-bold text-md mb-1">Grand Theft Auto VI Teaser</p>
+<p class="text-white/40 text-xs">92k interactions</p>
+</div>
+<div class="group flex flex-col p-6 hover:bg-white/5 transition-colors border-b border-white/5 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-secondary text-[10px] font-black uppercase tracking-tighter">Music</span>
+<span class="material-symbols-outlined text-white/20 text-sm">more_horiz</span>
+</div>
+<p class="text-white font-bold text-md mb-1">Synthwave Revival</p>
+<p class="text-white/40 text-xs">42.5k listeners</p>
+</div>
+<div class="group flex flex-col p-6 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-white/40 text-[10px] font-black uppercase tracking-tighter">Lifestyle</span>
+<span class="material-symbols-outlined text-white/20 text-sm">more_horiz</span>
+</div>
+<p class="text-white font-bold text-md mb-1">Cyberpunk Aesthetic</p>
+<p class="text-white/40 text-xs">12k posts</p>
+</div>
+</div>
+<div class="mt-auto p-6 bg-white/5">
+<button class="w-full text-center text-xs font-bold text-white/60 hover:text-white transition-colors">Show more</button>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- FAB (Suppressed based on search page rule, but included contextually for "Go Live" search if required. Using Design System suppression logic: "Search" is top level but FAB is suppressed on search results per specific task-focused rules if they imply temporary departure. Re-evaluating: This is a top-level Search Dashboard, so FAB may be visible. Task asks for CLEAN search bar at the top.) -->
+<!-- Mobile Bottom Navigation Shell -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#1A1A1A]/90 backdrop-blur-xl border-t border-white/10 z-50 flex justify-around items-center">
+<a class="flex flex-col items-center gap-1 text-white/40" href="#">
+<span class="material-symbols-outlined">home_max</span>
+<span class="text-[9px] uppercase font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-white" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="text-[9px] uppercase font-bold">Search</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-white/40" href="#">
+<div class="w-8 h-8 bg-gradient-to-tr from-purple-600 to-blue-500 rounded-full flex items-center justify-center -mt-8 shadow-lg shadow-purple-500/40">
+<span class="material-symbols-outlined text-white">add</span>
+</div>
+<span class="text-[9px] uppercase font-bold mt-1">Live</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-white/40" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="text-[9px] uppercase font-bold">Inbox</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-white/40" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="text-[9px] uppercase font-bold">Me</span>
+</a>
+</div>
+</body></html>

@@ -103,6 +103,3 @@ class StartupPolicyEngine {
     return violations;
   }
 }
-
-
-

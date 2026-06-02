@@ -23,8 +23,8 @@ class StartupScoringEngine {
     required Map<StartupCheckpoint, int> baseline,
     required TrendAnalysis trend,
   }) {
-    final Map<StartupCheckpoint, CheckpointStats> stats = _metricEngine
-        .computeStats(parsed.runs);
+    final Map<StartupCheckpoint, CheckpointStats> stats =
+        _metricEngine.computeStats(parsed.runs);
 
     final StartupPolicyEngine policyEngine = StartupPolicyEngine(sla: sla);
     final List<PolicyViolation> violations = policyEngine.evaluateViolations(
@@ -47,7 +47,7 @@ class StartupScoringEngine {
 
     final CheckpointStats startupStats =
         stats[StartupCheckpoint.firstFrameRendered] ??
-        const CheckpointStats(p50: 0, p95: 0, worst: 0);
+            const CheckpointStats(p50: 0, p95: 0, worst: 0);
 
     final double score = decisionEngine.computeScore(
       stats: stats,
@@ -73,6 +73,3 @@ class StartupScoringEngine {
   Map<StartupCheckpoint, CheckpointStats> computeStats(List<RunSample> runs) =>
       _metricEngine.computeStats(runs);
 }
-
-
-

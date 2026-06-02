@@ -26,15 +26,15 @@ class RoomBrowserScreen extends ConsumerStatefulWidget {
 class _RoomBrowserScreenState extends ConsumerState<RoomBrowserScreen> {
   static const List<({String label, String emoji, String? value})> _categories =
       [
-        (label: 'All Rooms', emoji: '✨', value: null),
-        (label: 'Music', emoji: '🎵', value: 'music'),
-        (label: 'Talk', emoji: '💬', value: 'talk'),
-        (label: 'Gaming', emoji: '🎮', value: 'gaming'),
-        (label: 'Dance', emoji: '💃', value: 'dance'),
-        (label: 'Dating', emoji: '💕', value: 'dating'),
-        (label: 'Study', emoji: '📚', value: 'study'),
-        (label: 'Art', emoji: '🎨', value: 'art'),
-      ];
+    (label: 'All Rooms', emoji: '✨', value: null),
+    (label: 'Music', emoji: '🎵', value: 'music'),
+    (label: 'Talk', emoji: '💬', value: 'talk'),
+    (label: 'Gaming', emoji: '🎮', value: 'gaming'),
+    (label: 'Dance', emoji: '💃', value: 'dance'),
+    (label: 'Dating', emoji: '💕', value: 'dating'),
+    (label: 'Study', emoji: '📚', value: 'study'),
+    (label: 'Art', emoji: '🎨', value: 'art'),
+  ];
 
   String? _selectedCategory;
   bool _showGrid = false;
@@ -493,17 +493,18 @@ class _CategoryCard extends StatelessWidget {
 // Swapped to keepAlive to avoid aggressive stream cancellation during screen filter swaps
 final _roomsByCategoryProvider = StreamProvider.autoDispose
     .family<List<RoomModel>, String?>((ref, category) {
-      ref.keepAlive();
-      return ref
-          .read(roomServiceProvider)
-          .watchLiveRoomsByCategory(category: category, limit: 50)
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: (sink) {
-              sink.addError(TimeoutException('Connection dropped or timed out while fetching live rooms. Check your internet connectivity.'));
-            },
-          );
-    });
+  ref.keepAlive();
+  return ref
+      .read(roomServiceProvider)
+      .watchLiveRoomsByCategory(category: category, limit: 50)
+      .timeout(
+    const Duration(seconds: 5),
+    onTimeout: (sink) {
+      sink.addError(TimeoutException(
+          'Connection dropped or timed out while fetching live rooms. Check your internet connectivity.'));
+    },
+  );
+});
 
 class _RoomListView extends ConsumerWidget {
   const _RoomListView({
@@ -663,9 +664,9 @@ class _RoomListView extends ConsumerWidget {
                         onPressed: () async {
                           final allowed =
                               await GuestAuthGate.requireRoomCreation(
-                                context,
-                                ref,
-                              );
+                            context,
+                            ref,
+                          );
                           if (!allowed || !context.mounted) return;
                           context.go('/create-room');
                         },

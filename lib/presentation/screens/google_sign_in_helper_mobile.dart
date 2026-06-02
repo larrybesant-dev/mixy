@@ -13,19 +13,20 @@ class GoogleSignInHelperMobile implements GoogleSignInHelper {
     try {
       // Use signIn() instead of authenticate()
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+
       // If the user cancelled the dialog, googleUser will be null
       if (googleUser == null) {
-        return; 
+        return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      
+
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
       debugPrint("Error signing in with Google: $e");
@@ -41,5 +42,3 @@ class GoogleSignInHelperMobile implements GoogleSignInHelper {
 }
 
 GoogleSignInHelper getGoogleSignInHelper() => GoogleSignInHelperMobile();
-
-

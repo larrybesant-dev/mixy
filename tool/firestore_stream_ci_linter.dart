@@ -143,8 +143,7 @@ const _domainLocks = <String, _DomainLock>{
     rule: 'FSL-004',
     domain: 'Room',
     canonicalFile: 'lib/features/room/providers/participant_providers.dart',
-    fix:
-        'All participant streams MUST come from participantsStreamProvider '
+    fix: 'All participant streams MUST come from participantsStreamProvider '
         'in participant_providers.dart. Derive — do not re-subscribe.',
   ),
   'conversations': _DomainLock(
@@ -271,8 +270,7 @@ final _lineRules = <_LineRule>[
     id: 'FSL-001',
     severity: _Severity.critical,
     description: 'StreamProvider.family declared without autoDispose',
-    fix:
-        'Change to StreamProvider.autoDispose.family<...>. '
+    fix: 'Change to StreamProvider.autoDispose.family<...>. '
         'Per-user/per-id StreamProviders MUST autoDispose — without it, '
         'stale listeners accumulate as users navigate between rooms/profiles. '
         'Exceptions: auth, presence heartbeat, notification badge (explicitly documented).',
@@ -286,8 +284,7 @@ final _lineRules = <_LineRule>[
     id: 'FCI-001',
     severity: _Severity.high,
     description: 'Direct Firestore .snapshots() call in feature layer',
-    fix:
-        'Replace with a canonical StreamProvider from stream_registry.dart. '
+    fix: 'Replace with a canonical StreamProvider from stream_registry.dart. '
         'Never open .snapshots() outside lib/services/ or lib/core/.',
     pattern: RegExp(r'\.snapshots\('),
     pathExemptions: const ['_test.dart'],
@@ -309,8 +306,7 @@ final _lineRules = <_LineRule>[
     id: 'FCI-003',
     severity: _Severity.medium,
     description: 'Raw .listen() on a Firestore stream in feature layer',
-    fix:
-        'Replace with a canonical StreamProvider. '
+    fix: 'Replace with a canonical StreamProvider. '
         '.listen() creates an unmanaged subscription that leaks across navigation.',
     pattern: RegExp(
       r'\.collection\([^)]+\).*\.listen\(|\.doc\([^)]+\).*\.listen\(',
@@ -322,8 +318,7 @@ final _lineRules = <_LineRule>[
     id: 'FCI-004',
     severity: _Severity.medium,
     description: 'StreamProvider declared outside canonical provider files',
-    fix:
-        'StreamProviders that open Firestore streams must be declared in a '
+    fix: 'StreamProviders that open Firestore streams must be declared in a '
         'canonical file and registered in kCanonicalStreamProviderNames. '
         'Derived providers (no .snapshots()) are always permitted.',
     pattern: RegExp(r'StreamProvider(?:\.autoDispose)?(?:\.family)?[<(]'),
@@ -354,8 +349,7 @@ final _lineRules = <_LineRule>[
     id: 'FCI-006',
     severity: _Severity.low,
     description: 'Direct Firestore collection()/doc() access in feature layer',
-    fix:
-        'Firestore access must go through the service layer (lib/services/) '
+    fix: 'Firestore access must go through the service layer (lib/services/) '
         'or canonical stream providers.',
     pattern: RegExp(
       r'(?:_firestore|firestore|FirebaseFirestore\.instance)\s*\.\s*(?:collection|doc)\(',
@@ -389,11 +383,9 @@ List<_Violation> _analyzeFileCritical(List<String> lines, String relativePath) {
           file: relativePath,
           line: i + 1,
           lineContent: line,
-          issue:
-              'Unbounded .snapshots() — no .limit() within 10 lines. '
+          issue: 'Unbounded .snapshots() — no .limit() within 10 lines. '
               'Unbounded queries cause runaway Firestore read costs at scale.',
-          fix:
-              'Add .limit(N) before .snapshots(): '
+          fix: 'Add .limit(N) before .snapshots(): '
               'feeds/messages/notifications → .limit(50), '
               'social graphs/friend lists → .limit(100). '
               'QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.',
@@ -435,8 +427,7 @@ List<_Violation> _analyzeFileCritical(List<String> lines, String relativePath) {
           file: relativePath,
           line: i + 1,
           lineContent: line,
-          issue:
-              '${lock.domain} domain .snapshots() on "$keyword" collection '
+          issue: '${lock.domain} domain .snapshots() on "$keyword" collection '
               'outside canonical file. '
               'Canonical: ${lock.canonicalFile}',
           fix: lock.fix,
@@ -528,8 +519,7 @@ List<_Violation> _detectIllegalRoomCollectionReads(
         continue;
       }
 
-      final touchesRoomsCollection =
-          _roomsCollectionRe.hasMatch(line) ||
+      final touchesRoomsCollection = _roomsCollectionRe.hasMatch(line) ||
           line.contains(".where('isLive'") ||
           line.contains('.where("isLive"');
       if (!touchesRoomsCollection) {
@@ -553,8 +543,7 @@ List<_Violation> _detectIllegalRoomCollectionReads(
           issue:
               'Top-level rooms collection query/read found outside RoomService. '
               'Discovery and visibility reads must be owned by $_roomReadAuthorityFile.',
-          fix:
-              'Delete this rooms collection read and route through '
+          fix: 'Delete this rooms collection read and route through '
               'RoomService.watchRoomsWithVisibility() or a RoomService-owned '
               'classified helper. Do not query the rooms collection directly '
               'from providers, UI, or non-RoomService services.',
@@ -719,9 +708,8 @@ void main(List<String> args) {
     if (entity is! File) continue;
     final normalized = entity.path.replaceAll('\\', '/');
     final libIdx = normalized.lastIndexOf('/lib/');
-    final relativePath = libIdx >= 0
-        ? normalized.substring(libIdx + 1)
-        : normalized;
+    final relativePath =
+        libIdx >= 0 ? normalized.substring(libIdx + 1) : normalized;
 
     if (!relativePath.endsWith('.dart')) continue;
 
@@ -801,9 +789,8 @@ void main(List<String> args) {
 
   // ── Summary ──────────────────────────────────────────────────────────────
 
-  final criticals = allViolations
-      .where((v) => v.severity == _Severity.critical)
-      .toList();
+  final criticals =
+      allViolations.where((v) => v.severity == _Severity.critical).toList();
   final errors = allViolations
       .where((v) => v.severity != _Severity.critical && v.isError)
       .toList();
@@ -832,8 +819,8 @@ void main(List<String> args) {
   for (final v in allViolations) {
     byRule[v.ruleId] = (byRule[v.ruleId] ?? 0) + 1;
   }
-  for (final entry
-      in byRule.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
+  for (final entry in byRule.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key))) {
     final isCrit = allViolations.any(
       (v) => v.ruleId == entry.key && v.severity == _Severity.critical,
     );

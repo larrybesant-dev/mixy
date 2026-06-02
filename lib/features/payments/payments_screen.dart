@@ -90,9 +90,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   void _selectRecipient(UserModel recipient) {
-    final safeName = recipient.username.isNotEmpty
-        ? recipient.username
-        : 'MixVy user';
+    final safeName =
+        recipient.username.isNotEmpty ? recipient.username : 'MixVy user';
     setState(() {
       _selectedRecipient = recipient;
       _recipientController.text = safeName;
@@ -555,7 +554,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       )
                       .fold<double>(
                         0,
-                        (runningTotal, request) => runningTotal + request.amount,
+                        (runningTotal, request) =>
+                            runningTotal + request.amount,
                       );
 
                   return Card(
@@ -634,8 +634,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               );
             },
             loading: () => const AppLoadingView(label: 'Loading wallet'),
-            error: (e, _) => AppErrorView(
-                error: e, fallbackContext: 'Wallet unavailable.'),
+            error: (e, _) =>
+                AppErrorView(error: e, fallbackContext: 'Wallet unavailable.'),
           ),
           const SizedBox(height: 14),
           Card(
@@ -679,8 +679,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                         ],
                       ],
                     ),
-                    loading: () => const AppLoadingView(
-                        label: 'Loading referral code'),
+                    loading: () =>
+                        const AppLoadingView(label: 'Loading referral code'),
                     error: (e, _) => AppErrorView(
                       error: e,
                       fallbackContext: 'Referral code unavailable.',
@@ -1013,61 +1013,58 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               }
 
               return Column(
-                children: transactions
-                    .map((tx) {
-                      final isSent = tx.senderId == currentUserId;
-                      return Card(
-                        child: ListTile(
-                          leading: Icon(
-                            isSent ? Icons.call_made : Icons.call_received,
-                            color: isSent
-                                ? const Color(0xFF9B2535)
-                                : const Color(0xFFD4AF37),
-                          ),
-                          title: Text(
-                            '${isSent ? '-' : '+'}${tx.amount.toStringAsFixed(2)}',
-                          ),
-                          subtitle: Text(
-                            'To: ${tx.receiverId}\nStatus: ${tx.status}',
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            tooltip: 'Transaction actions',
-                            onSelected: (value) {
-                              if (value == 'refund') {
-                                _requestRefundForTransaction(tx);
-                              }
-                            },
-                            itemBuilder: (context) {
-                              final canRequestRefund = isSent &&
-                                  (tx.status == 'completed' ||
-                                      tx.status == 'sent');
-                              final items = <PopupMenuEntry<String>>[
-                                PopupMenuItem<String>(
-                                  enabled: false,
-                                  value: 'timestamp',
-                                  child: Text(
-                                    '${tx.timestamp.month}/${tx.timestamp.day} '
-                                    '${tx.timestamp.hour.toString().padLeft(2, '0')}:'
-                                    '${tx.timestamp.minute.toString().padLeft(2, '0')}',
-                                  ),
-                                ),
-                              ];
-                              if (canRequestRefund) {
-                                items.add(
-                                  const PopupMenuItem<String>(
-                                    value: 'refund',
-                                    child: Text('Request refund'),
-                                  ),
-                                );
-                              }
-                              return items;
-                            },
-                            child: const Icon(Icons.more_vert),
-                          ),
-                        ),
-                      );
-                    })
-                    .toList(growable: false),
+                children: transactions.map((tx) {
+                  final isSent = tx.senderId == currentUserId;
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        isSent ? Icons.call_made : Icons.call_received,
+                        color: isSent
+                            ? const Color(0xFF9B2535)
+                            : const Color(0xFFD4AF37),
+                      ),
+                      title: Text(
+                        '${isSent ? '-' : '+'}${tx.amount.toStringAsFixed(2)}',
+                      ),
+                      subtitle: Text(
+                        'To: ${tx.receiverId}\nStatus: ${tx.status}',
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        tooltip: 'Transaction actions',
+                        onSelected: (value) {
+                          if (value == 'refund') {
+                            _requestRefundForTransaction(tx);
+                          }
+                        },
+                        itemBuilder: (context) {
+                          final canRequestRefund = isSent &&
+                              (tx.status == 'completed' || tx.status == 'sent');
+                          final items = <PopupMenuEntry<String>>[
+                            PopupMenuItem<String>(
+                              enabled: false,
+                              value: 'timestamp',
+                              child: Text(
+                                '${tx.timestamp.month}/${tx.timestamp.day} '
+                                '${tx.timestamp.hour.toString().padLeft(2, '0')}:'
+                                '${tx.timestamp.minute.toString().padLeft(2, '0')}',
+                              ),
+                            ),
+                          ];
+                          if (canRequestRefund) {
+                            items.add(
+                              const PopupMenuItem<String>(
+                                value: 'refund',
+                                child: Text('Request refund'),
+                              ),
+                            );
+                          }
+                          return items;
+                        },
+                        child: const Icon(Icons.more_vert),
+                      ),
+                    ),
+                  );
+                }).toList(growable: false),
               );
             },
             loading: () => const AppLoadingView(label: 'Loading transactions'),

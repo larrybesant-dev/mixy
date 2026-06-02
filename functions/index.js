@@ -2444,6 +2444,52 @@ exports.cleanupExpiredMessages = onSchedule("every 6 hours", async () => {
   );
 });
 
+/**
+ * cleanupWebRtcSessions – scheduled maintenance for the WebRTC signaling mesh.
+ * Runs every 2 minutes to prune "ghost" participants and inactive sessions.
+ */
+exports.cleanupWebRtcSessions = onSchedule("every 2 minutes", async () => {
+  const now = Date.now();
+  const sessionStaleCutoff = admin.firestore.Timestamp.fromMillis(now - 5 * 60 * 1000);
+  const participantStaleCutoff = admin.firestore.Timestamp.fromMillis(now - 2 * 60 * 1000);
+
+  // 1. Prune inactive sessions (entirely)
+  const staleSessions = await db
+    .collection("webrtc_sessions")
+    .where("updatedAt", "<=", sessionStaleCutoff)
+    .limit(100)
+    .get();
+
+  for (const sessionDoc of staleSessions.docs) {
+    // Note: Recursive delete is used to nuke sub-collections (participants, candidates, signaling)
+    await admin.firestore().recursiveDelete(sessionDoc.ref);
+    logger.info(`Cleaned up stale WebRTC session: ${sessionDoc.id}`);
+  }
+
+  // 2. Prune ghost participants from active sessions
+  const staleParticipants = await db
+    .collectionGroup("participants")
+    .where("lastSeen", "<=", participantStaleCutoff)
+    .limit(200)
+    .get();
+
+  const participantCleanupBatch = db.batch();
+  let participantCount = 0;
+
+  for (const pDoc of staleParticipants.docs) {
+    // We only care about participants under webrtc_sessions for this job
+    if (!pDoc.ref.path.includes("webrtc_sessions")) continue;
+
+    participantCleanupBatch.delete(pDoc.ref);
+    participantCount++;
+  }
+
+  if (participantCount > 0) {
+    await participantCleanupBatch.commit();
+    logger.info(`Pruned ${participantCount} ghost WebRTC participants`);
+  }
+});
+
 // ── RTDB presence -> Firestore aggregate sync ───────────────────────────────
 // Keeps Firestore `presence/{userId}` truthful using RTDB onDisconnect-driven
 // session state. This is the canonical bridge from transport truth to UI truth.

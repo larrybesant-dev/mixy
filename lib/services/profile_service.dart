@@ -11,12 +11,11 @@ class ProfileService {
     return UserModel.fromJson({'id': doc.id, ...doc.data()!});
   }
 
-  Future<void> saveProfile({
-    required String userId, 
-    required Map<String, dynamic> userData, 
-    required bool privacy, 
-    required bool adultProfile
-  }) async {
+  Future<void> saveProfile(
+      {required String userId,
+      required Map<String, dynamic> userData,
+      required bool privacy,
+      required bool adultProfile}) async {
     await firestore.collection('users').doc(userId).update({
       ...userData,
       'privacy': privacy,

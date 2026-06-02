@@ -38,9 +38,8 @@ class StartupBaselineEngine {
       return <StartupCheckpoint, int>{};
     }
 
-    final int start = greenEntries.length > window
-        ? greenEntries.length - window
-        : 0;
+    final int start =
+        greenEntries.length > window ? greenEntries.length - window : 0;
     final List<Map<String, Object?>> recent = greenEntries.sublist(start);
 
     final Map<StartupCheckpoint, int> baseline = <StartupCheckpoint, int>{};
@@ -69,6 +68,3 @@ class StartupBaselineEngine {
     return baseline;
   }
 }
-
-
-

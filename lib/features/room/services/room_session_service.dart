@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,19 +21,19 @@ class RoomJoinResult {
     required DateTime joinedAt,
     Set<String> excludedUserIds = const <String>{},
   }) : this._(
-         isSuccess: true,
-         joinedAt: joinedAt,
-         excludedUserIds: excludedUserIds,
-       );
+          isSuccess: true,
+          joinedAt: joinedAt,
+          excludedUserIds: excludedUserIds,
+        );
 
   const RoomJoinResult.failure(
     String errormessage, {
     Set<String> excludedUserIds = const <String>{},
   }) : this._(
-         isSuccess: false,
-         errormessage: errormessage,
-         excludedUserIds: excludedUserIds,
-       );
+          isSuccess: false,
+          errormessage: errormessage,
+          excludedUserIds: excludedUserIds,
+        );
 
   final bool isSuccess;
   final String? errormessage;
@@ -53,8 +52,8 @@ class RoomSessionService {
   RoomSessionService({
     required FirebaseFirestore firestore,
     required PresenceController presenceController,
-  }) : _firestore = firestore,
-       _presenceController = presenceController;
+  })  : _firestore = firestore,
+        _presenceController = presenceController;
 
   static const Duration participantSyncInterval = Duration(seconds: 30);
 
@@ -228,7 +227,8 @@ class RoomSessionService {
         }
 
         final roomData = roomSnap.data()!;
-        final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
+        final audienceIds =
+            List<String>.from(roomData['audienceUserIds'] ?? []);
         final stageIds = List<String>.from(roomData['stageUserIds'] ?? []);
 
         if (!audienceIds.contains(normalizedUserId) &&
@@ -244,15 +244,19 @@ class RoomSessionService {
             throw StateError('You are banned from this room.');
           }
 
-          tx.set(participantRef, {
-            'userId': normalizedUserId,
-            'camOn': false,
-            'lastActiveAt': now,
-            'userStatus': 'online',
-            if (normalizedDisplayName.isNotEmpty)
-              'displayName': normalizedDisplayName,
-            if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-          }, SetOptions(merge: true));
+          tx.set(
+              participantRef,
+              {
+                'userId': normalizedUserId,
+                'camOn': false,
+                'lastActiveAt': now,
+                'userStatus': 'online',
+                if (normalizedDisplayName.isNotEmpty)
+                  'displayName': normalizedDisplayName,
+                if (normalizedPhotoUrl.isNotEmpty)
+                  'photoUrl': normalizedPhotoUrl,
+              },
+              SetOptions(merge: true));
         } else {
           final participantRole = isHostUser ? 'host' : 'audience';
           tx.set(participantRef, {
@@ -270,17 +274,20 @@ class RoomSessionService {
           });
         }
 
-        tx.set(memberRef, {
-          'userId': normalizedUserId,
-          'role': isHostUser ? 'owner' : 'member',
-          'joinedAt': currentParticipantSnap.exists
-              ? (currentParticipantSnap.data()!['joinedAt'] ?? now)
-              : now,
-          'lastActiveAt': now,
-          if (normalizedDisplayName.isNotEmpty)
-            'displayName': normalizedDisplayName,
-          if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-        }, SetOptions(merge: true));
+        tx.set(
+            memberRef,
+            {
+              'userId': normalizedUserId,
+              'role': isHostUser ? 'owner' : 'member',
+              'joinedAt': currentParticipantSnap.exists
+                  ? (currentParticipantSnap.data()!['joinedAt'] ?? now)
+                  : now,
+              'lastActiveAt': now,
+              if (normalizedDisplayName.isNotEmpty)
+                'displayName': normalizedDisplayName,
+              if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
+            },
+            SetOptions(merge: true));
 
         tx.update(_firestore.collection('rooms').doc(normalizedRoomId), {
           'audienceUserIds': audienceIds,
@@ -346,7 +353,8 @@ class RoomSessionService {
     }
 
     final roomRef = _firestore.collection('rooms').doc(normalizedRoomId);
-    final participantRef = roomRef.collection('participants').doc(normalizedUserId);
+    final participantRef =
+        roomRef.collection('participants').doc(normalizedUserId);
     final memberRef = roomRef.collection('members').doc(normalizedUserId);
 
     Future<void> executeLeave(Transaction tx) async {
@@ -475,4 +483,3 @@ class RoomSessionService {
     );
   }
 }
-

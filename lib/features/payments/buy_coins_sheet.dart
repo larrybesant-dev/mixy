@@ -289,9 +289,8 @@ class _PackageTile extends StatelessWidget {
                   : null,
               color: isPopular ? null : VelvetNoir.surfaceHigh,
               border: Border.all(
-                color: isPopular
-                    ? VelvetNoir.primary
-                    : VelvetNoir.outlineVariant,
+                color:
+                    isPopular ? VelvetNoir.primary : VelvetNoir.outlineVariant,
                 width: isPopular ? 1.5 : 1,
               ),
             ),
@@ -400,7 +399,3 @@ String _asString(dynamic value) {
   if (value is String) return value.trim();
   return '';
 }
-
-
-
-

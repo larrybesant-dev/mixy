@@ -351,9 +351,8 @@ class MixvyGoldAvatar extends StatelessWidget {
           child: CircleAvatar(
             radius: radius,
             backgroundColor: VelvetNoir.surfaceHigh,
-            backgroundImage: safeImageUrl != null
-                ? NetworkImage(safeImageUrl)
-                : null,
+            backgroundImage:
+                safeImageUrl != null ? NetworkImage(safeImageUrl) : null,
             child: safeImageUrl == null
                 ? Text(
                     fallbackInitial.isNotEmpty
@@ -703,6 +702,3 @@ class MixvyRoomCard extends StatelessWidget {
     );
   }
 }
-
-
-

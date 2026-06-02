@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -64,15 +63,13 @@ class MicAccessController {
     final pendingSnapshot = await _requestCollection(
       roomId,
     ).where('status', isEqualTo: 'pending').get();
-    final staleDocs = pendingSnapshot.docs
-        .where((doc) {
-          final expiresAt = doc.data()['expiresAt'];
-          if (expiresAt is! Timestamp) {
-            return false;
-          }
-          return !expiresAt.toDate().isAfter(now);
-        })
-        .toList(growable: false);
+    final staleDocs = pendingSnapshot.docs.where((doc) {
+      final expiresAt = doc.data()['expiresAt'];
+      if (expiresAt is! Timestamp) {
+        return false;
+      }
+      return !expiresAt.toDate().isAfter(now);
+    }).toList(growable: false);
     if (staleDocs.isEmpty) {
       return;
     }
@@ -109,16 +106,14 @@ class MicAccessController {
     ).where('status', isEqualTo: 'pending').get();
 
     final relatedDocs = requesterSnapshot.docs;
-    final conflictingPendingDocs = relatedDocs
-        .where((doc) {
-          final data = doc.data();
-          final status = _asNullableString(data['status']) ?? '';
-          final expiresAt = _asDateTime(data['expiresAt']);
-          return doc.id != requestId &&
-              status == 'pending' &&
-              (expiresAt == null || expiresAt.isAfter(now));
-        })
-        .toList(growable: false);
+    final conflictingPendingDocs = relatedDocs.where((doc) {
+      final data = doc.data();
+      final status = _asNullableString(data['status']) ?? '';
+      final expiresAt = _asDateTime(data['expiresAt']);
+      return doc.id != requestId &&
+          status == 'pending' &&
+          (expiresAt == null || expiresAt.isAfter(now));
+    }).toList(growable: false);
 
     final hasRecentClosedRequest = relatedDocs.any((doc) {
       final data = doc.data();
@@ -164,25 +159,31 @@ class MicAccessController {
       final nextPriority = priority ?? highestPendingPriority + 1;
 
       for (final conflictingDoc in conflictingPendingDocs) {
-        tx.set(conflictingDoc.reference, {
-          'status': 'superseded',
-          'updatedAt': FieldValue.serverTimestamp(),
-          'expiresAt': Timestamp.fromDate(now),
-        }, SetOptions(merge: true));
+        tx.set(
+            conflictingDoc.reference,
+            {
+              'status': 'superseded',
+              'updatedAt': FieldValue.serverTimestamp(),
+              'expiresAt': Timestamp.fromDate(now),
+            },
+            SetOptions(merge: true));
       }
 
       shouldNotifyHost = true;
-      tx.set(requestRef, {
-        'id': requestId,
-        'roomId': roomId,
-        'requesterId': requesterId,
-        'hostId': hostId,
-        'status': 'pending',
-        'priority': nextPriority,
-        'expiresAt': Timestamp.fromDate(now.add(_kRequestTtl)),
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      tx.set(
+          requestRef,
+          {
+            'id': requestId,
+            'roomId': roomId,
+            'requesterId': requesterId,
+            'hostId': hostId,
+            'status': 'pending',
+            'priority': nextPriority,
+            'expiresAt': Timestamp.fromDate(now.add(_kRequestTtl)),
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
     });
 
     if (!shouldNotifyHost) {
@@ -255,19 +256,6 @@ class MicAccessController {
     });
   }
 
-  /// Deprecated: grabMicDirectly is no longer called. Mic authority is now
-  /// exclusively granted through the guarded grabMic Cloud Function.
-  /// This method is retained for backward compatibility but should not be used.
-  @Deprecated('Use grabMic callable instead')
-  Future<void> grabMicDirectly({
-    required String roomId,
-    required String userId,
-  }) async {
-    throw UnsupportedError(
-      'Direct mic grants are no longer supported. Use the grabMic callable.',
-    );
-  }
-
   /// Releases the mic by demoting the user from stage role.
   /// This is a safe operation: the user is releasing their own mic.
   Future<void> releaseMic({
@@ -281,11 +269,11 @@ class MicAccessController {
           .collection('participants')
           .doc(userId)
           .set({
-            'userId': userId,
-            'role': 'member',
-            'micOn': false,
-            'lastActiveAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'userId': userId,
+        'role': 'member',
+        'micOn': false,
+        'lastActiveAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       // Best effort; if update fails, user remains in current state.
     }
@@ -332,70 +320,65 @@ final micAccessControllerProvider = Provider<MicAccessController>((ref) {
 
 final roomMicAccessRequestsProvider = StreamProvider.autoDispose
     .family<List<MicAccessRequestModel>, String>((ref, roomId) {
-      final firestore = ref.watch(roomFirestoreProvider);
-      return firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('mic_access_requests')
-          .orderBy('createdAt', descending: true)
-          .limit(50)
-          .snapshots()
-          .map((snapshot) {
-            final requests = snapshot.docs
-                .map(
-                  (doc) => MicAccessRequestModel.fromJson({
-                    'id': doc.id,
-                    ...doc.data(),
-                  }),
-                )
-                .where(
-                  (request) =>
-                      !(request.status == 'pending' && request.isExpired),
-                )
-                .toList(growable: false);
-            requests.sort((left, right) {
-              if (left.status == 'pending' && right.status != 'pending') {
-                return -1;
-              }
-              if (left.status != 'pending' && right.status == 'pending') {
-                return 1;
-              }
-              final priorityCompare = left.priority.compareTo(right.priority);
-              if (priorityCompare != 0) {
-                return priorityCompare;
-              }
-              return left.createdAt.compareTo(right.createdAt);
-            });
-            return requests;
-          });
+  final firestore = ref.watch(roomFirestoreProvider);
+  return firestore
+      .collection('rooms')
+      .doc(roomId)
+      .collection('mic_access_requests')
+      .orderBy('createdAt', descending: true)
+      .limit(50)
+      .snapshots()
+      .map((snapshot) {
+    final requests = snapshot.docs
+        .map(
+          (doc) => MicAccessRequestModel.fromJson({
+            'id': doc.id,
+            ...doc.data(),
+          }),
+        )
+        .where(
+          (request) => !(request.status == 'pending' && request.isExpired),
+        )
+        .toList(growable: false);
+    requests.sort((left, right) {
+      if (left.status == 'pending' && right.status != 'pending') {
+        return -1;
+      }
+      if (left.status != 'pending' && right.status == 'pending') {
+        return 1;
+      }
+      final priorityCompare = left.priority.compareTo(right.priority);
+      if (priorityCompare != 0) {
+        return priorityCompare;
+      }
+      return left.createdAt.compareTo(right.createdAt);
     });
+    return requests;
+  });
+});
 
 final myMicAccessRequestProvider = StreamProvider.autoDispose
     .family<MicAccessRequestModel?, ({String roomId, String requesterId})>((
-      ref,
-      params,
-    ) {
-      return Stream.multi((controller) {
-        final subscription = ref.listen(
-          roomMicAccessRequestsProvider(params.roomId),
-          (_, next) {
-            if (controller.isClosed) return;
-            next.whenData((requests) {
-              final myRequests = requests
-                  .where((request) => request.requesterId == params.requesterId)
-                  .toList();
-              if (myRequests.isEmpty) {
-                controller.add(null);
-              } else {
-                controller.add(myRequests.first);
-              }
-            });
-          },
-        );
-        controller.onCancel = subscription.close;
-      });
-    });
-
-
-
-
+  ref,
+  params,
+) {
+  return Stream.multi((controller) {
+    final subscription = ref.listen(
+      roomMicAccessRequestsProvider(params.roomId),
+      (_, next) {
+        if (controller.isClosed) return;
+        next.whenData((requests) {
+          final myRequests = requests
+              .where((request) => request.requesterId == params.requesterId)
+              .toList();
+          if (myRequests.isEmpty) {
+            controller.add(null);
+          } else {
+            controller.add(myRequests.first);
+          }
+        });
+      },
+    );
+    controller.onCancel = subscription.close;
+  });
+});

@@ -61,7 +61,7 @@ Future<void> main() async {
 
   final sessionCost =
       (AppTelemetry.state.firestoreReadCount / 1000 * readCostPer1k) +
-      (AppTelemetry.state.firestoreWriteCount / 1000 * writeCostPer1k);
+          (AppTelemetry.state.firestoreWriteCount / 1000 * writeCostPer1k);
 
   print(
     '\nEstimated Cost per 1000 Sessions: \$${(sessionCost * 1000).toStringAsFixed(4)}',
@@ -76,6 +76,3 @@ Future<void> main() async {
     );
   }
 }
-
-
-

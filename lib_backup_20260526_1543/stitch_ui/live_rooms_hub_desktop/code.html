@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .kinetic-glow {
+      box-shadow: 0 0 15px rgba(112, 0, 255, 0.2);
+    }
+    .glass-panel {
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    .live-pulse {
+      position: relative;
+    }
+    .live-pulse::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: inherit;
+      border-radius: inherit;
+      animation: pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#0f6d00",
+            "on-tertiary": "#003543",
+            "on-primary-fixed-variant": "#5700c9",
+            "on-error": "#690005",
+            "on-secondary-fixed": "#022100",
+            "outline": "#958da3",
+            "surface-container-low": "#1c1b1b",
+            "on-secondary": "#053900",
+            "surface-dim": "#131313",
+            "secondary-fixed-dim": "#2ae500",
+            "surface-container-lowest": "#0e0e0e",
+            "surface-container": "#201f1f",
+            "surface": "#131313",
+            "on-surface-variant": "#ccc3da",
+            "inverse-on-surface": "#313030",
+            "surface-container-high": "#2a2a2a",
+            "on-tertiary-fixed": "#001f28",
+            "on-primary": "#3c0090",
+            "tertiary-fixed-dim": "#4cd6ff",
+            "surface-tint": "#d1bcff",
+            "primary-container": "#7000ff",
+            "on-error-container": "#ffdad6",
+            "surface-variant": "#353534",
+            "surface-bright": "#3a3939",
+            "on-background": "#e5e2e1",
+            "secondary": "#d7ffc5",
+            "on-surface": "#e5e2e1",
+            "inverse-surface": "#e5e2e1",
+            "inverse-primary": "#7212ff",
+            "on-secondary-fixed-variant": "#095300",
+            "outline-variant": "#4a4457",
+            "background": "#131313",
+            "error": "#ffb4ab",
+            "surface-container-highest": "#353534",
+            "secondary-fixed": "#79ff5b",
+            "on-primary-fixed": "#23005b",
+            "on-primary-container": "#ddcdff",
+            "primary-fixed": "#e9ddff",
+            "tertiary-container": "#00647c",
+            "primary": "#d1bcff",
+            "on-tertiary-fixed-variant": "#004e60",
+            "secondary-container": "#2ff801",
+            "error-container": "#93000a",
+            "on-tertiary-container": "#89e0ff",
+            "tertiary": "#4cd6ff",
+            "primary-fixed-dim": "#d1bcff",
+            "tertiary-fixed": "#b7eaff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "unit": "4px",
+            "xs": "4px",
+            "sm": "8px",
+            "gutter": "20px",
+            "md": "16px",
+            "lg": "24px",
+            "xl": "40px",
+            "margin": "24px"
+          },
+          "fontFamily": {
+            "body-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Space Grotesk"],
+            "label-sm": ["Inter"],
+            "label-bold": ["Inter"],
+            "headline-md": ["Space Grotesk"],
+            "display": ["Space Grotesk"]
+          },
+          "fontSize": {
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen selection:bg-primary/30 selection:text-primary">
+<header class="bg-black/80 backdrop-blur-2xl text-[#7000FF] font-['Space_Grotesk'] tracking-tight docked full-width top-0 z-50 border-b border-white/10 shadow-[0_0_20px_rgba(112,0,255,0.1)] flex justify-between items-center px-6 h-16 w-full sticky">
+<div class="flex items-center gap-8">
+<div class="text-2xl font-black text-white italic">MixVy</div>
+<div class="hidden md:flex gap-6 items-center">
+<span class="text-[#7000FF] font-bold border-b-2 border-[#7000FF] font-label-bold text-label-bold cursor-pointer h-16 flex items-center">Live</span>
+<span class="text-zinc-400 hover:text-white transition-colors font-label-bold text-label-bold cursor-pointer hover:bg-white/5 px-2 h-16 flex items-center transition-all duration-300">Hub</span>
+<span class="text-zinc-400 hover:text-white transition-colors font-label-bold text-label-bold cursor-pointer hover:bg-white/5 px-2 h-16 flex items-center transition-all duration-300">Events</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center bg-white/5 border border-white/10 rounded-full px-4 py-1 gap-2">
+<span class="material-symbols-outlined text-zinc-400 text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 text-white placeholder-zinc-500" placeholder="Find a room..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors" data-icon="settings">settings</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/50">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="close-up portrait of a stylish young man with a modern haircut in dramatic blue and purple neon lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4FtE2uoUPgRvAaN7t9qe_1Qgh95FRGIQ-9gNy1aWDjKa1C5bRJvCxtCxE8sIOaG2qTtmYmZTvUNOGGUWn9Nj8mNxUzrleEETR1WBydggMsMIlHqbLPqTVQfTQZs-mZnqNNdhtqaVp1AulOGEQThaUlTJZWAr-bFmzSvSUVSMXN5P8Hc62fWqWx1Z27SVKzC_8fY8mxhhxVjPX2wbNiQtISQ1QCNL8ThmhugrL3l3Uj3cR0w59p5FtwaPoO481Dg8R4CQArgvFg7Uj"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex max-w-[1600px] mx-auto min-h-[calc(100vh-64px)]">
+<aside class="bg-[#0D0D0D] h-[calc(100vh-64px)] sticky top-16 w-64 border-r border-white/10 flex flex-col gap-8 py-8 px-4 hidden xl:flex">
+<div class="px-2">
+<div class="text-xl font-black text-white font-headline-md text-headline-md">MixVy</div>
+<div class="text-zinc-500 font-medium text-[10px] uppercase tracking-widest">The Pulse of Now</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">home</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Home</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-[#7000FF] font-bold bg-gradient-to-l from-[#7000FF]/10 to-transparent border-r-4 border-[#7000FF] transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined scale-110" data-weight="fill">sensors</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Live</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">favorite</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Dating</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">mail</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">messages</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">person</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Profile</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">nights_stay</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">After Dark</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<button class="w-full py-4 bg-gradient-to-r from-[#7000FF] to-[#00B2FF] rounded-xl font-headline-md text-headline-md text-white font-bold tracking-tight shadow-lg shadow-primary/20 active:scale-95 transition-all">
+          GO LIVE
+        </button>
+</div>
+</aside>
+<main class="flex-1 bg-background px-gutter py-xl">
+<div class="flex justify-between items-end mb-xl">
+<div>
+<h1 class="font-display text-display text-white mb-sm">Live Rooms</h1>
+<div class="flex gap-4">
+<span class="px-4 py-1 rounded-full bg-secondary-container/10 border border-secondary-container/20 text-secondary-fixed text-label-bold font-label-bold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container live-pulse"></span>
+              2.4k Active Now
+            </span>
+<span class="text-zinc-500 text-body-md font-body-md">Showing rooms in Los Angeles</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors border border-white/5">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors border border-white/5">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 @2xl:grid-cols-3 gap-gutter">
+<!-- Room Card 1 -->
+<div class="glass-panel rounded-xl overflow-hidden group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(112,0,255,0.15)]">
+<div class="relative aspect-video">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="energetic club scene with purple stage lights, silhouettes of a crowd, and atmospheric smoke during a live music performance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6FO_xWAnXIojafWrHyegmo3Fu7hveM_WyX3yd6pFEylUDvLy1ShohOZUWH65eFpiCfx7OWic9LzwUj4ZpyuBb9xAjZdUJX3xe76S51r-VUcEi27FjF_aUmM2wDO6YzVZkUrE3FgQ4nR9Ld_BhpEcQi62GFqNB08tLX3HXts0BafWbT9EDpZ71X12FIDs6S0nlpO6IpUaPdP9iF-d7em22taSm1tnzAx4BMs_N3O93Vn-UibCaIls4nc3iQfZvOpvNmPmbvTKv9lWZ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2 py-0.5 rounded-sm bg-red-600 text-white text-[10px] font-bold tracking-widest uppercase">Live</span>
+<span class="px-2 py-0.5 rounded-sm bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span> 1.2k
+              </span>
+</div>
+</div>
+<div class="p-lg">
+<div class="flex items-start gap-4">
+<div class="relative">
+<div class="w-12 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-background">
+<img class="w-full h-full object-cover" data-alt="close-up of a smiling young woman with bright makeup in a modern studio with cool lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkimLlq-MZyOJZJdg7O0hgwInNxVz1fIGkzIWqhXTZI2i_YMUF5lDGk5XSoH2A-IHPjYhhpJ0lmGKmb_wWtIzs9quxFBfdWbYynbHokJfPttjeDLbuQOvuAyLjUxzX1m-GJY9fxLcNf013uROOTNCkGKGiXaA0xZfk6YEzeppBUJ2Y1gdUNQeL23xV98wZokl0v0m1tEGzY3ydwVFvCXe7vFpwLGrBHvLm8BHgm3MueU7_a7xpRkCNb92E47xdOP-SXkM3yYzONsb7"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-secondary-container border-2 border-background"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-white font-headline-md text-headline-md truncate leading-tight mb-1 group-hover:text-primary transition-colors">Late Night Techno Mix &amp; Chat</h3>
+<p class="text-zinc-500 font-label-bold text-label-bold truncate">@lexi_beats • Electronic</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Room Card 2 -->
+<div class="glass-panel rounded-xl overflow-hidden group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(112,0,255,0.15)]">
+<div class="relative aspect-video">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="DJ console with glowing buttons and sliders in a dark venue with vibrant cyan and magenta backlighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEkTolrLZWVtt7ZQMoz9Ikdj36uEF9ytANV2ydeE5x4wyCfACnGdNEa1LYpNaLrKqsNopYzsCcW2ERRelPyr1I_2utTZc0xcSqYV_pt7dHJ1MV0JML5yu24lIbaVcFT63jGGZu6Unq48BxbM4965548cZu7X7p4nEtYqR5yg3efSnU1mXqgiNNm5YYb1ZKDZSEXPKHRp4GU3K6kKD10ll63eCu2yqtiaJc5naqNgicoY0-8B3eejCnGyKpNk9NnAy_eqwzG2KaU-GK"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2 py-0.5 rounded-sm bg-red-600 text-white text-[10px] font-bold tracking-widest uppercase">Live</span>
+<span class="px-2 py-0.5 rounded-sm bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span> 842
+              </span>
+</div>
+</div>
+<div class="p-lg">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20">
+<img class="w-full h-full object-cover" data-alt="professional headshot of a creative man with short hair in cinematic moody lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr5W8RJHHDQHC7Nlv6kyKNAKev_O59AilIY_JbAhPzAW9PCmoPpOGi2fF9h99RvTZvWW7fNExnSvF3XkjUYqV-QC781cWAzESUgL_kHjATmR8718zA2O0noLaaMR8BJY_FTVLJL2XwL_U6Tt0gnCc2kT7_1l1qGuwExYs51k4HfDOum8zssftqrEdQa7XYlS9QJBes572ZIaF3dxPMwxxbG50zI-Dh8Z2W_IdiSU7zLTsGZ6qZVUMItQdz9Txp1YS6M6SVNMAPHHBw"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-white font-headline-md text-headline-md truncate leading-tight mb-1 group-hover:text-primary transition-colors">Deep Tech Q&amp;A - Building Apps</h3>
+<p class="text-zinc-500 font-label-bold text-label-bold truncate">@marco_dev • Tech</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Room Card 3 -->
+<div class="glass-panel rounded-xl overflow-hidden group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(112,0,255,0.15)]">
+<div class="relative aspect-video">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="smooth abstract gradient flowing from deep violet to vivid electric blue with a subtle digital grain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaDMQ0bTdd1LBINungZN1Uao-vSSb_wtP7U1KGMT4nXgpHXBQR-D3itt-lhpj0yZk8XMJ9Vh0PDg0TQJzE1nD5mLa66p2gQrzhSakqfPETcvMuNSb0fVxG5mn84VfwkvFQKr8X_CiJ0JZ7D_ZPDlr9a71geVQKD4FqCbvudG3IbuFrCxQEzgH02H9lp2Ch21i1Qo1v-XMZ2TrdoA07XaufOZicg_4EjeUK4QlKxmf-rfpgwOyMx3OBxdnHkvJKTx0qxqY00zba_G_f"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2 py-0.5 rounded-sm bg-red-600 text-white text-[10px] font-bold tracking-widest uppercase">Live</span>
+<span class="px-2 py-0.5 rounded-sm bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span> 3.1k
+              </span>
+</div>
+</div>
+<div class="p-lg">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl overflow-hidden border-2 border-tertiary">
+<img class="w-full h-full object-cover" data-alt="side profile of a woman with braided hair, softly lit by pink and blue neon lights in a futuristic setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpBIZnefg4-9ls10fAv9sVewTSWI4OHmQC8D2XZ6bFONvxC0ah7JglKiRZCRoUNWYWfe15maMc6W1hjj7PG9VMUrxhWhwLGADNGpBnvLKRgu98vlTC4nfTpykf8IaPA7zWitm50JkFho8-JagrGMMwKe_x4INRfycXxCxjYDyhrzjGGKEUwmFG259OPkj4YcUi6wBW69C_QeI6DCENZv_B_OYb2kpd9_wWnE0nmZoUNXnWMxzMdEUYkdH-Xc2kRi27keUO1LtD_fJs"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-white font-headline-md text-headline-md truncate leading-tight mb-1 group-hover:text-primary transition-colors">MixVy Official: New Features!</h3>
+<p class="text-zinc-500 font-label-bold text-label-bold truncate">@mixvy_hq • Events</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Room Card 4 -->
+<div class="glass-panel rounded-xl overflow-hidden group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(112,0,255,0.15)]">
+<div class="relative aspect-video">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="vibrant indoor event space with neon strips on the ceiling, modern furniture, and a cool urban atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3jZ44B_2v-4nTSGj4R2pr1ycU8tI6r1GskrDIgQHpVoAFuolvUFR9IvdwK7pl4UTdcfivLLiHqlJDe6LwpNDUHazvuWcvUa8Edcb9PTHTP5flTifF018O_hzSvZAt5Hnux3GzEtj8InHSb8_byWrFM_pqK1bKaaSNxxD0WJbjj3Hecw9KyHqKWHNwU0lPjfRZPFslP1UmL4bijUTHRVsXxTr7VU63sOHKpetaU0qFNJaO2iGNLnvR1dh9qaRZzyP1gEaOFS__kyEu"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2 py-0.5 rounded-sm bg-red-600 text-white text-[10px] font-bold tracking-widest uppercase">Live</span>
+<span class="px-2 py-0.5 rounded-sm bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span> 560
+              </span>
+</div>
+</div>
+<div class="p-lg">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20">
+<img class="w-full h-full object-cover" data-alt="close-up of a man with glasses and a beard in soft natural indoor lighting with a slight digital bokeh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiuA6ZIYpw4kEuV2dGtInkN-RgJ8iukk2AbLgFWPuOFGXwjpoUpLVOYVRqkhRxEBEntiE8asPQ-dN8VONWhPKMVNjrLVXaDRePva8LUeQYxk8_6-LLBhQdmFgdT-jakFA7ubTQrN5pBDp7jHbu5pFxPcPPO-l196wH9tuBdPs83feCwspUsvch6D5mnyel2DZmk5qSZohINYoLM45rr377pXo6Ey0EFOaSDiH4i_4q84e-vY6Qjko_wj17BgznbT-h0c8Y38e5utZ7"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-white font-headline-md text-headline-md truncate leading-tight mb-1 group-hover:text-primary transition-colors">Productivity Hour: Lofi &amp; Focus</h3>
+<p class="text-zinc-500 font-label-bold text-label-bold truncate">@creative_dan • Lofi</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Room Card 5 -->
+<div class="glass-panel rounded-xl overflow-hidden group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(112,0,255,0.15)]">
+<div class="relative aspect-video">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="dramatic stage lighting with vertical light beams through heavy haze in a dark concert venue" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVyb-MiQPfAX0QdP_YgSLhtNzwDlSP1__ygcOt9g88O6s_55zGr02sVyJD4PNzz3HVkzpZS75KRocZv0E48ypTIq-r2ETyyo0KbZrswI-9_1hwcFTTVyJ3EM4lOCYu6qQj5svfgIVLbY-FYw09itvNbeUU8xgVUGUM3Xgejurybf_bSThsB5B2lCobBVSWPezOf09ZdZpQwMRokdcGAYQicwyslgMR_nzxBN6m_D_JOBYXEotcYLNxfATOZUTyrSaYEFIFsg4RAVEH"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-2 py-0.5 rounded-sm bg-red-600 text-white text-[10px] font-bold tracking-widest uppercase">Live</span>
+<span class="px-2 py-0.5 rounded-sm bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">visibility</span> 2.8k
+              </span>
+</div>
+</div>
+<div class="p-lg">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl overflow-hidden border-2 border-secondary">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a woman with vibrant blue hair and futuristic eyeliner in high-contrast neon lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdMd6cWErdGkQ7GSB8cLJHvgsQkjkozM__ebwKjdSwg0LkdSC9nz05Qy8asxVzGHh7fCJLbqcHgU7AkbTyq77V1v8u-oYjDzzy0FogHAYN0q6NE23tK8waVEA2PEZbxYbHL_10T9HUPMCGQqImwzZ65l7qPwczjCdRjMBzeRy9MLFGAl5EvaXqmvjFkHBoUKMoQCFdkRP-GStYs7q-pPYFDPqcwmWFQLtGc78Ye9mSiVvysB9RUyJmJlsEZiaTsAcJnWJhLcP47bNg"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-white font-headline-md text-headline-md truncate leading-tight mb-1 group-hover:text-primary transition-colors">Digital Art Live Stream: Cyberpunk</h3>
+<p class="text-zinc-500 font-label-bold text-label-bold truncate">@aero_viz • Art</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<aside class="w-80 bg-background border-l border-white/10 p-gutter hidden lg:flex flex-col gap-xl">
+<div>
+<h2 class="text-white font-headline-md text-headline-md mb-lg flex items-center gap-2">
+          Quick Join
+          <span class="px-2 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-bold uppercase">Pulse</span>
+</h2>
+<div class="flex flex-col gap-4">
+<!-- Suggestion 1 -->
+<div class="flex items-center gap-4 group cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors">
+<div class="w-12 h-12 rounded-full border-2 border-primary/40 p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="portrait of a professional woman in a sleek dark outfit with soft backlight in a modern office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDE52lEsfrMhhBI2zCusz5hDicy-Wyo_wLnq_0uCDSivUv0EMjanHn8xQPaBDNeMEupaTRrHPa7fjsLM12PU3GzOJVsINzGQZ6dooBRP2sKpfV8G30SylObtk6qQt-ftADF9zpvrfr6U7iDTvS4ozOcFoXacsxAUGoiOa3SvW9CyaUxZ9yQAtJWtdIHZMq9LW29zUrwOfJhdB3BbLFnj3yDT9fLbb0vVoux0L6wuzfAO33DtW20uXKDT6z9v_eips4UNSWylxz7NtWu"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-white font-label-bold text-label-bold truncate">Startup Secrets Live</div>
+<div class="text-zinc-500 text-xs flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-secondary-container"></span>
+                @sara_inc • 240 joined
+              </div>
+</div>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">login</span>
+</div>
+<!-- Suggestion 2 -->
+<div class="flex items-center gap-4 group cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors">
+<div class="w-12 h-12 rounded-full border-2 border-primary/40 p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="man with thoughtful expression in low key moody lighting with deep shadows and subtle highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEdFW4POWdNWTCmJHcjB1uDi48OIXAuDoJsJPUhgSODNwS9PTMtr54ySak3V5s6BKzOz-NMWeaZve3VLunIGQKs4lEDDO5XzGsb039yBCjRI2VO4xlc2LXwHYaHG1ZjbQ8PZE59Pk-AdoblG3boF_3MuytPA88SQDGsX4DSyd2nfYK_byGX2X2ScCzcNEw1EaUakdi78Pn5ikMaqlCGD8fFKAMRjhBqhyIsOvkP8N0y17J1DeknNQNmYzSzxJFXQ3_PjQqIesONlXT"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-white font-label-bold text-label-bold truncate">Vinyl Session Vol. 4</div>
+<div class="text-zinc-500 text-xs flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-secondary-container"></span>
+                @dj_retro • 112 joined
+              </div>
+</div>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity">login</span>
+</div>
+</div>
+</div>
+<div class="glass-panel p-lg rounded-2xl relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-white font-headline-md text-headline-md mb-2">After Dark</h3>
+<p class="text-zinc-400 text-sm mb-4 leading-relaxed">Exclusive high-energy rooms for verified members only.</p>
+<button class="w-full py-2 border border-primary/50 text-primary font-bold rounded-lg hover:bg-primary/10 transition-colors">
+            EXPLORE ACCESS
+          </button>
+</div>
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/20 blur-3xl"></div>
+</div>
+<div class="mt-auto">
+<div class="p-lg rounded-2xl bg-surface-container-high border border-white/5">
+<div class="flex items-center gap-3 mb-3 text-zinc-300">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<span class="font-label-bold text-label-bold">Pulse Credits</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="text-white font-headline-lg text-headline-lg">1,240 <span class="text-primary text-sm">PV</span></div>
+<button class="p-1 px-3 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors">Top up</button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<div class="fixed bottom-gutter right-gutter z-50">
+<button class="w-16 h-16 rounded-full bg-primary-container text-on-primary-container shadow-2xl flex items-center justify-center kinetic-glow hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+</div>
+</body></html>

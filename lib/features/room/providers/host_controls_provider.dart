@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
@@ -212,9 +211,8 @@ class HostControls {
 
     final roomSnapshot = await _roomRef(roomId).get();
     final rawMaxSpeakers = roomSnapshot.data()?['maxSpeakers'];
-    final maxSpeakers = rawMaxSpeakers is num
-        ? rawMaxSpeakers.toInt().clamp(1, 4)
-        : 4;
+    final maxSpeakers =
+        rawMaxSpeakers is num ? rawMaxSpeakers.toInt().clamp(1, 4) : 4;
     final speakersSnapshot = await _roomRef(
       roomId,
     ).collection('speakers').get();
@@ -236,20 +234,26 @@ class HostControls {
     final participantRole = canManageStageRole(role) ? role : roomRoleStage;
 
     final batch = _db.batch();
-    batch.set(_roomRef(roomId), {
-      'maxSpeakers': maxSpeakers,
-      'speakerSyncVersion': 1,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        _roomRef(roomId),
+        {
+          'maxSpeakers': maxSpeakers,
+          'speakerSyncVersion': 1,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     // NOTE: speakers subcollection is server-only (Cloud Function: inviteToMic).
     // Client writes are explicitly denied by Firestore rules.
-    batch.set(_participantRef(roomId, normalizedUserId), {
-      'userId': normalizedUserId,
-      'role': participantRole,
-      'micOn': true,
-      'isMuted': false,
-      'lastActiveAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        _participantRef(roomId, normalizedUserId),
+        {
+          'userId': normalizedUserId,
+          'role': participantRole,
+          'micOn': true,
+          'isMuted': false,
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
   }
 
@@ -272,17 +276,23 @@ class HostControls {
     final batch = _db.batch();
     // NOTE: speakers subcollection is server-only (Cloud Function: grabMic).
     // Client writes are explicitly denied by Firestore rules.
-    batch.set(_roomRef(roomId), {
-      'maxSpeakers': 4,
-      'speakerSyncVersion': 1,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-    batch.set(_participantRef(roomId, normalizedUserId), {
-      'userId': normalizedUserId,
-      'role': nextRole,
-      'micOn': false,
-      'lastActiveAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        _roomRef(roomId),
+        {
+          'maxSpeakers': 4,
+          'speakerSyncVersion': 1,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
+    batch.set(
+        _participantRef(roomId, normalizedUserId),
+        {
+          'userId': normalizedUserId,
+          'role': nextRole,
+          'micOn': false,
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
     _modLog(
       roomId,
@@ -342,16 +352,22 @@ class HostControls {
       'hostId': toUserId,
       'updatedAt': FieldValue.serverTimestamp(),
     });
-    batch.set(_participantRef(roomId, toUserId), {
-      'userId': toUserId,
-      'role': 'host',
-      'lastActiveAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-    batch.set(_participantRef(roomId, fromUserId), {
-      'userId': fromUserId,
-      'role': 'cohost',
-      'lastActiveAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        _participantRef(roomId, toUserId),
+        {
+          'userId': toUserId,
+          'role': 'host',
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
+    batch.set(
+        _participantRef(roomId, fromUserId),
+        {
+          'userId': fromUserId,
+          'role': 'cohost',
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
 
     AppTelemetry.logAction(
@@ -400,7 +416,7 @@ class HostControls {
       'ts': FieldValue.serverTimestamp(),
       if (meta != null) ...meta,
     };
-    
+
     _roomRef(roomId)
         .collection('mod_log')
         .add(entry)
@@ -423,10 +439,13 @@ class HostControls {
       'maxSpeakers': max,
       'speakerSyncVersion': 1,
     });
-    batch.set(_policyRef(roomId), {
-      'micLimit': max,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        _policyRef(roomId),
+        {
+          'micLimit': max,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
   }
 
@@ -505,7 +524,3 @@ class HostControls {
 final hostControlsProvider = Provider<HostControls>(
   (ref) => HostControls(ref.watch(roomFirestoreProvider)),
 );
-
-
-
-

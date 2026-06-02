@@ -83,13 +83,15 @@ class CategoryDirectory extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(context.pageHorizontalPadding, 0, context.pageHorizontalPadding, 8),
+            padding: EdgeInsets.fromLTRB(context.pageHorizontalPadding, 0,
+                context.pageHorizontalPadding, 8),
             child: const GoLiveBanner(),
           ),
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(context.pageHorizontalPadding + 4, 24, context.pageHorizontalPadding + 4, 12),
+            padding: EdgeInsets.fromLTRB(context.pageHorizontalPadding + 4, 24,
+                context.pageHorizontalPadding + 4, 12),
             child: Text(
               'BROWSE BY VIBE',
               style: GoogleFonts.raleway(
@@ -102,7 +104,8 @@ class CategoryDirectory extends StatelessWidget {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(context.pageHorizontalPadding, 0, context.pageHorizontalPadding, 32),
+          padding: EdgeInsets.fromLTRB(context.pageHorizontalPadding, 0,
+              context.pageHorizontalPadding, 32),
           sliver: SliverLayoutBuilder(
             builder: (ctx, constraints) {
               final w = constraints.crossAxisExtent;

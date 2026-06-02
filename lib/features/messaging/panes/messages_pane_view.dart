@@ -127,7 +127,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                   ),
                 ),
                 FilledButton.icon(
-                onPressed: () => context.go('/messages/new'),
+                  onPressed: () => context.go('/messages/new'),
                   icon: const Icon(Icons.add_comment_outlined),
                   label: const Text('New message'),
                 ),
@@ -534,7 +534,7 @@ class _ConversationsList extends ConsumerWidget {
     final presenceBatchKey = buildPresenceBatchKey(visiblePeerIds);
     final presenceMap =
         ref.watch(batchedPresenceProvider(presenceBatchKey)).valueOrNull ??
-        const <String, PresenceModel>{};
+            const <String, PresenceModel>{};
 
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 24),
@@ -558,11 +558,10 @@ class _ConversationsList extends ConsumerWidget {
       itemBuilder: (context, index) => _ConversationTile(
         conversation: conversations[index],
         userId: userId,
-        peerPresence:
-            presenceMap[_otherParticipantIdForConversation(
-              conversations[index],
-              userId,
-            )],
+        peerPresence: presenceMap[_otherParticipantIdForConversation(
+          conversations[index],
+          userId,
+        )],
       ),
     );
   }
@@ -590,7 +589,7 @@ class _ConversationTile extends ConsumerWidget {
     final peerUserId = _otherParticipantId();
     final typingUsers =
         ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
-        const <String>{};
+            const <String>{};
     final isPeerTyping = peerUserId != null && typingUsers.contains(peerUserId);
     final resolvedPresence = isGroup ? null : peerPresence;
     final presenceColor = _presenceColor(resolvedPresence);
@@ -723,9 +722,8 @@ class _ConversationTile extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.raleway(
-                              fontWeight: unread
-                                  ? FontWeight.w800
-                                  : FontWeight.w700,
+                              fontWeight:
+                                  unread ? FontWeight.w800 : FontWeight.w700,
                               fontSize: 14,
                               color: VelvetNoir.onSurface,
                               letterSpacing: 0.1,
@@ -737,9 +735,8 @@ class _ConversationTile extends ConsumerWidget {
                           _formatTime(conversation.lastMessageAt),
                           style: GoogleFonts.raleway(
                             fontSize: 11,
-                            fontWeight: unread
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight:
+                                unread ? FontWeight.w700 : FontWeight.w500,
                             color: unread
                                 ? VelvetNoir.primary
                                 : VelvetNoir.onSurfaceVariant,
@@ -906,9 +903,7 @@ class _ConversationActionSheet extends ConsumerWidget {
               style: const TextStyle(color: VelvetNoir.onSurface, fontSize: 15),
             ),
             onTap: () {
-              ref
-                  .read(messagingControllerProvider)
-                  .setConversationPinned(
+              ref.read(messagingControllerProvider).setConversationPinned(
                     conversationId: conversation.id,
                     userId: userId,
                     pinned: !pinned,
@@ -993,8 +988,3 @@ class _TypingDotsState extends State<_TypingDots>
     );
   }
 }
-
-
-
-
-

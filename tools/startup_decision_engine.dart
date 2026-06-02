@@ -53,6 +53,3 @@ class StartupDecisionEngine {
     return GateDecision.fail;
   }
 }
-
-
-

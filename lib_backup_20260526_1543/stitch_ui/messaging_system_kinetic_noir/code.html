@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-high": "#2a2a2a",
+            "secondary-fixed": "#79ff5b",
+            "on-secondary": "#053900",
+            "on-tertiary-container": "#89e0ff",
+            "on-secondary-container": "#0f6d00",
+            "on-primary-fixed-variant": "#5700c9",
+            "on-background": "#e5e2e1",
+            "inverse-surface": "#e5e2e1",
+            "surface-container": "#201f1f",
+            "surface-container-lowest": "#0e0e0e",
+            "surface-dim": "#131313",
+            "surface-tint": "#d1bcff",
+            "background": "#131313",
+            "surface-bright": "#3a3939",
+            "on-tertiary": "#003543",
+            "on-error": "#690005",
+            "inverse-on-surface": "#313030",
+            "primary-container": "#7000ff",
+            "on-secondary-fixed": "#022100",
+            "error": "#ffb4ab",
+            "on-surface-variant": "#ccc3da",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#00647c",
+            "on-tertiary-fixed-variant": "#004e60",
+            "surface-container-highest": "#353534",
+            "secondary": "#d7ffc5",
+            "primary": "#d1bcff",
+            "tertiary-fixed-dim": "#4cd6ff",
+            "secondary-fixed-dim": "#2ae500",
+            "on-primary-container": "#ddcdff",
+            "outline-variant": "#4a4457",
+            "surface-container-low": "#1c1b1b",
+            "primary-fixed-dim": "#d1bcff",
+            "surface-variant": "#353534",
+            "on-tertiary-fixed": "#001f28",
+            "error-container": "#93000a",
+            "on-secondary-fixed-variant": "#095300",
+            "on-primary-fixed": "#23005b",
+            "tertiary": "#4cd6ff",
+            "tertiary-fixed": "#b7eaff",
+            "surface": "#131313",
+            "on-primary": "#3c0090",
+            "secondary-container": "#2ff801",
+            "primary-fixed": "#e9ddff",
+            "outline": "#958da3",
+            "on-surface": "#e5e2e1",
+            "inverse-primary": "#7212ff",
+            "neon-pink": "#FF00E5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "label-sm": ["Inter"],
+            "display": ["Space Grotesk"],
+            "headline-md": ["Space Grotesk"],
+            "label-bold": ["Inter"],
+            "headline-lg": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .glass-card {
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .whisper-glow {
+      box-shadow: 0 0 20px rgba(255, 0, 229, 0.2);
+    }
+    .live-pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-white">
+<!-- Main Shell Layout -->
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar (Predicted Component) -->
+<nav class="fixed left-0 top-0 h-screen w-64 border-r border-white/10 bg-[#1A1A1A]/90 backdrop-blur-2xl flex flex-col h-full py-8 z-40">
+<div class="px-6 mb-12">
+<div class="flex items-center gap-2">
+<span class="text-2xl font-black tracking-tighter bg-gradient-to-r from-[#7000FF] to-blue-500 bg-clip-text text-transparent font-display">PULSE</span>
+<div class="px-2 py-0.5 rounded-full bg-secondary-container/10 border border-secondary-container/20">
+<span class="text-[10px] text-secondary-container font-bold tracking-widest font-label-sm">LIVE</span>
+</div>
+</div>
+<p class="text-[10px] text-gray-500 font-bold tracking-[0.2em] mt-1 font-label-sm">NETWORK ACTIVE</p>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<!-- Home Feed -->
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all group duration-300" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">home</span>
+<span class="font-label-bold uppercase text-xs tracking-widest">Home Feed</span>
+</a>
+<!-- Live Rooms -->
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all group duration-300" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">sensors</span>
+<span class="font-label-bold uppercase text-xs tracking-widest">Live Rooms</span>
+</a>
+<!-- Speed Dating -->
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all group duration-300" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">bolt</span>
+<span class="font-label-bold uppercase text-xs tracking-widest">Speed Dating</span>
+</a>
+<!-- messages (Active State) -->
+<a class="bg-gradient-to-r from-[#7000FF]/20 to-transparent border-l-4 border-[#7000FF] text-white py-4 px-6 flex items-center gap-4 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="font-label-bold uppercase text-xs tracking-widest">messages</span>
+</a>
+<!-- Profile -->
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all group duration-300" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">person</span>
+<span class="font-label-bold uppercase text-xs tracking-widest">Profile</span>
+</a>
+<!-- After Dark -->
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all group duration-300" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dark_mode</span>
+<span class="font-label-bold uppercase text-xs tracking-widest">After Dark</span>
+</a>
+</div>
+<div class="px-6 mt-auto">
+<button class="w-full bg-gradient-to-r from-[#7000FF] to-blue-500 text-white font-label-bold tracking-widest text-[10px] py-4 rounded-lg hover:brightness-110 transition-all active:scale-95">
+          GO LIVE
+        </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex flex-1 ml-64 h-full">
+<!-- Inbox / Directs List -->
+<section class="w-96 border-r border-white/10 flex flex-col bg-[#0D0D0D]">
+<header class="h-16 flex items-center justify-between px-6 border-b border-white/5">
+<h2 class="font-headline-md text-white text-lg tracking-tight">Directs</h2>
+<button class="text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</header>
+<!-- Search Bar -->
+<div class="p-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">search</span>
+<input class="w-full bg-surface-container-low border-white/5 rounded-lg py-2 pl-10 pr-4 text-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-white placeholder:text-gray-600" placeholder="Search pulses..." type="text"/>
+</div>
+</div>
+<!-- Scrollable Conversations List -->
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Active Conversation -->
+<div class="bg-white/5 border-l-2 border-primary py-4 px-6 flex items-center gap-4 cursor-pointer">
+<div class="relative">
+<img alt="Cyberpunk style portrait" class="w-12 h-12 rounded-full object-cover grayscale brightness-125 border border-primary/30" data-alt="close-up portrait of a woman with neon light reflections and cyberpunk aesthetic in dark moody setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAedgLJXPj6MoH54CE59ugH1hql7kJ2Y13nykp8DwpqvRXEKKCFzbMIyorsdewKTdR_YHroMYtpSpnPCM0Cij-NOCJ1x3q5JUqusKCPVkX_KRP1fUYQ2T-HqTHn6WE8kbtGE9ZHxJGh9hlrTlO8KHQNRTUfxodPjax8x_lqUDydtLxxhG610HzPkmphe25DcdMm4FVi4AgRAHhMElv9cAhB9l_g52oEBKcpx1-YdHfcM8YAeVjf4lWWqmWbOlPS6IirBiNB_qST87u0"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-secondary-fixed rounded-full border-2 border-[#0D0D0D] live-pulse"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-white font-label-bold truncate">NeonViper</h3>
+<span class="text-[10px] text-gray-500">2m</span>
+</div>
+<p class="text-xs text-primary truncate">Sent a high-res asset...</p>
+</div>
+</div>
+<!-- Other Conversations -->
+<div class="py-4 px-6 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors border-l-2 border-transparent">
+<div class="relative">
+<img alt="Male portrait" class="w-12 h-12 rounded-full object-cover grayscale border border-white/10" data-alt="high-contrast studio portrait of a man with dramatic lighting and deep shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOCAckk4FWKMHox5bo0L6fir5T0dcEn6Gxh_LIiJTAg7XxooO-EDXvEfn7ahHj4Pb-XNDBF4Bxjk9vuSam3g02G957GE_W236g4znd_T0d8yMNjBbdJ4wyu8wcIn5To1IEGicDDBwG8q1ZS4IRyGPM2MoCpaw0MXfOfAKD-Ke-PFldVFgx0WAOMsjbNN-8Yfj5Wpm-Yo_wenGMOXGSWkWRHbvHPbhhsYlXVIeq6sXBwDBZU1p0AmT8TlQn0u6WYwp7pbw2yO1qbGGa"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-gray-300 font-label-bold truncate">Circuit_Breaker</h3>
+<span class="text-[10px] text-gray-500">1h</span>
+</div>
+<p class="text-xs text-gray-500 truncate">The speed dating room was wild tonight.</p>
+</div>
+</div>
+<div class="py-4 px-6 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors border-l-2 border-transparent">
+<div class="relative">
+<img alt="Female portrait" class="w-12 h-12 rounded-full object-cover grayscale border border-white/10" data-alt="artistic fashion portrait of a woman with wet look hair and soft futuristic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDBKWl2P07iH2hoT60BbO8ROsdgqiQwGzK7fiz8hoGEfE8ydg-z2H3DPfYGydEngXQ-Qp21DvV3X6z6UCp0PlzpD3bD-z-jF9CApXbOh47uyztErnONdAPacXDJmRpxE6rOLlFLtuN-vhShtO4cgiixSPyleihblqFIYezPCkAPt4MQP7LrW7afqx_kh9pUh7LVS90nuJk77A3xcQp9M_DODHxmpT6humY9j7b4nh7MfkRoC255OU2XCVeSD03cPwuZ9J79dlG0sNN"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-gray-300 font-label-bold truncate">Ether_Ghost</h3>
+<span class="text-[10px] text-gray-500">3h</span>
+</div>
+<p class="text-xs text-gray-500 truncate">Are we still syncing at midnight?</p>
+</div>
+</div>
+<!-- Archived Section Divider -->
+<div class="px-6 py-2 mt-4">
+<span class="text-[10px] text-gray-600 font-bold tracking-widest font-label-sm uppercase">Earlier</span>
+</div>
+<div class="py-4 px-6 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors border-l-2 border-transparent opacity-60">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center border border-white/5">
+<span class="material-symbols-outlined text-gray-600">groups</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="text-gray-400 font-label-bold truncate">The Grid (Group)</h3>
+<span class="text-[10px] text-gray-500">Yesterday</span>
+</div>
+<p class="text-xs text-gray-500 truncate">System maintenance scheduled...</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Chat Window -->
+<section class="flex-1 flex flex-col bg-[#131313] relative">
+<!-- Chat Header -->
+<header class="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-[#131313]/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Active Chat Partner" class="w-10 h-10 rounded-full object-cover grayscale border border-primary/50" data-alt="cyberpunk woman portrait with soft violet rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkQHrQiI70QnC2XQYgr205EB-i7_y_JWBg4jowRCIMAKa_nbtkmsg7IUPDG2rzvk-KFzOjw2e3NvlfJBkAdfb2pS7wUutcmOFclU7GZ4m4y4NISmfWDstK_u_9pQhLcvkiJdvB5UW4wYVjC0x8LAC7v6TRVZ6TUAVRcUkC55J6jW_-GiJJVLSeCiO-Ts4yixBqWuKAtEl_dmrDP2fHZKOMHptx7IJNoHZ8O2NzvR1bGXXEKwyN7vny6lPMP_Fki_qcNvl4AgIX-6Ga"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary-fixed rounded-full border-4 border-[#131313]"></div>
+</div>
+<div>
+<h2 class="text-white font-headline-md text-base leading-none">NeonViper</h2>
+<span class="text-[10px] text-secondary-fixed font-bold tracking-widest font-label-sm">ENCRYPTED SESSION ACTIVE</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">info</span>
+</button>
+</div>
+</header>
+<!-- Chat messages -->
+<div class="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+<div class="flex flex-col items-center py-8">
+<span class="text-[10px] bg-white/5 px-3 py-1 rounded-full text-gray-500 font-label-sm tracking-widest uppercase">Encryption Key Exchanged — Today</span>
+</div>
+<!-- Received MessageModel -->
+<div class="flex items-end gap-3 max-w-[70%]">
+<img class="w-8 h-8 rounded-full grayscale" data-alt="cyberpunk portrait small avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDE96-gS0zFuM2MLT6t-8Fe0Wlu26FYADUUE83CvH5NkYWSG_rV71JaiJuZurxPCmaGo2QHeqFRjpknjert0K1RGQpaq1sGFvpFvjnldEfrRL3Xt8RfFgE20iLG72kM2vUhQUJLfa2_wQAy66efg3G-Rt2NZppmNF_nhFBZwb8pFK8In0UwF4Q0wa7mtn_pfyfpyNTznYIJi3EDIhkzMBRucQQbS5lVt6Ri5HxR8iytx-taYDQcQGObqIFnrH2zaOx21z1FiBt53JiB"/>
+<div class="glass-card p-4 rounded-2xl rounded-bl-none">
+<p class="text-sm text-gray-200 font-body-md">Did you see the latest drop on the speed dating floor? Some really intense visuals tonight.</p>
+<span class="text-[9px] text-gray-500 mt-2 block">21:42</span>
+</div>
+</div>
+<!-- Sent MessageModel -->
+<div class="flex items-end gap-3 max-w-[70%] ml-auto flex-row-reverse">
+<div class="bg-primary-container p-4 rounded-2xl rounded-br-none shadow-lg shadow-purple-900/20">
+<p class="text-sm text-white font-body-md">Just checking it out now. The latency is practically zero. You're heading to the After Dark room later?</p>
+<span class="text-[9px] text-white/50 mt-2 block text-right">21:45</span>
+</div>
+</div>
+<!-- Media MessageModel (Received) -->
+<div class="flex items-end gap-3 max-w-[70%]">
+<img class="w-8 h-8 rounded-full grayscale" data-alt="cyberpunk portrait small avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2TbOqSFk5CcSexE6hKgCnPRkrWhn7PYn9z4OB36Ff6MOpCtJUHAuenyWrcjimSjCMaDTNal3EZK8i3Rvz8Gr8PIjLGx1aaBZef-HsvV2rI-N8RBbvxr2yThIsnuWBUP5gmKDvSdIGsD19EzlOg_8m8328QNggEhCsCEan3FZwkjhjooZWPlh5u6TecA5SCQ5MTSHGYiDLsLckok6qLqh0rtGQr76w6Mkz_hi8nYDh4AEnx556CiuaaWQNyouCn_KCzB773rCJScpX"/>
+<div class="glass-card p-2 rounded-2xl rounded-bl-none">
+<img class="rounded-xl w-full max-h-60 object-cover brightness-75" data-alt="retro-futuristic computer hardware with glowing pink and blue lights in a dark room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAR4l5DMlOh3HIP23Jn7GopB2jB_CdOsb7Cbfh_aeS8LkVu3mOxZKV6Ha_3Fflz3BKif3unTQoYB_I0GRdgvOpef-3badL7krmCgiqHIADgShprN64MtueEb4p5pAM6nshE5fUN4WJqsqQzZKfmTs-3F8TObAcfslh62avIJjGdLmfsRt61YMPjAA9ju3Wp5z1uD26xZCU2V-PC13g4tH7UBdgics7hWjJevSwyvk3QRbEj8ysmCFa8dzcHo_VwU4AFOvwW0Rec2lG"/>
+<div class="p-2">
+<p class="text-xs text-gray-400">Sent a high-res asset... decrypted successfully.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Chat Input -->
+<footer class="p-6 bg-[#131313]">
+<div class="glass-card rounded-2xl p-2 flex items-center gap-2 border border-white/5">
+<button class="p-2 text-gray-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<input class="flex-1 bg-transparent border-none text-white focus:ring-0 placeholder:text-gray-600 font-body-md text-sm" placeholder="Pulse your MessageModel..." type="text"/>
+<div class="flex items-center gap-1">
+<button class="p-2 text-gray-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</button>
+<button class="p-3 bg-primary text-on-primary rounded-xl hover:brightness-110 transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-base">send</span>
+</button>
+</div>
+</div>
+</footer>
+<!-- Whisper Pop-out (Overlay) -->
+<div class="absolute bottom-24 right-8 w-80 glass-card rounded-2xl whisper-glow overflow-hidden flex flex-col border border-neon-pink/30 z-30">
+<div class="bg-gradient-to-r from-neon-pink/20 to-transparent p-3 flex items-center justify-between border-b border-neon-pink/20">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-neon-pink text-sm" style="font-variation-settings: 'FILL' 1;">visibility_off</span>
+<span class="text-[10px] font-bold text-neon-pink tracking-[0.2em] font-label-sm uppercase">WHISPER: Anonymous</span>
+</div>
+<div class="flex gap-2">
+<button class="text-neon-pink/50 hover:text-neon-pink"><span class="material-symbols-outlined text-xs">remove</span></button>
+<button class="text-neon-pink/50 hover:text-neon-pink"><span class="material-symbols-outlined text-xs">close</span></button>
+</div>
+</div>
+<div class="h-48 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+<div class="text-[10px] text-center text-neon-pink/40 font-label-sm italic py-2">History is not saved. Stay hidden.</div>
+<div class="bg-neon-pink/10 p-2 rounded-lg rounded-tl-none border border-neon-pink/10">
+<p class="text-[11px] text-neon-pink/90">Seen you in the Live Room. Nice handle.</p>
+</div>
+<div class="bg-white/5 p-2 rounded-lg rounded-tr-none border border-white/5 ml-auto w-[80%]">
+<p class="text-[11px] text-gray-300">Who's this?</p>
+</div>
+<div class="bg-neon-pink/10 p-2 rounded-lg rounded-tl-none border border-neon-pink/10">
+<p class="text-[11px] text-neon-pink/90">Just a shadow in the circuit.</p>
+</div>
+</div>
+<div class="p-3 bg-black/40 border-t border-neon-pink/10">
+<div class="relative">
+<input class="w-full bg-black/60 border border-neon-pink/20 rounded-lg py-1.5 px-3 text-[11px] text-neon-pink focus:border-neon-pink focus:ring-0 placeholder:text-neon-pink/30" placeholder="Whisper back..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 text-neon-pink">
+<span class="material-symbols-outlined text-xs">bolt</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<style>
+    /* Custom Scrollbar Styling */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(112, 0, 255, 0.1);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(112, 0, 255, 0.3);
+    }
+  </style>
+</body></html>

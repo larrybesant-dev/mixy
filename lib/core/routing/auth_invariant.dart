@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../presentation/screens/feature_degraded_screen.dart';
+import 'package:mixvy/presentation/screens/feature_degraded_screen.dart';
 
 abstract final class AuthInvariant {
   static bool hasAuthenticatedUid(String? uid) {
@@ -44,6 +43,3 @@ class _AuthInvariantRedirectState extends State<_AuthInvariantRedirect> {
     return const SizedBox.shrink();
   }
 }
-
-
-

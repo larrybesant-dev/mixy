@@ -164,7 +164,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
     setState(() => _sendingFriendRequest = true);
     try {
-      await ref.read(friendServiceProvider).sendFriendRequest(currentUser.uid, widget.userId);
+      await ref
+          .read(friendServiceProvider)
+          .sendFriendRequest(currentUser.uid, widget.userId);
       ref.invalidate(pendingOutgoingFriendRequestIdsProvider);
       ref.invalidate(currentFriendIdsProvider);
       if (!mounted) return;
@@ -195,16 +197,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       return;
     }
     try {
-      final conversationId = await ref
-          .read(messagingControllerProvider)
-          .createDirectConversation(
-            userId1: currentUser.id,
-            user1Name: currentUser.username,
-            user1AvatarUrl: currentUser.avatarUrl,
-            userId2: widget.userId,
-            user2Name: peerName,
-            user2AvatarUrl: peerAvatarUrl,
-          );
+      final conversationId =
+          await ref.read(messagingControllerProvider).createDirectConversation(
+                userId1: currentUser.id,
+                user1Name: currentUser.username,
+                user1AvatarUrl: currentUser.avatarUrl,
+                userId2: widget.userId,
+                user2Name: peerName,
+                user2AvatarUrl: peerAvatarUrl,
+              );
       if (!mounted) return;
       context.go('/messages/chat/$conversationId');
     } catch (e) {
@@ -391,9 +392,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       return normalized;
     }
     final compact = normalized.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9_]+'),
-      '',
-    );
+          RegExp(r'[^a-z0-9_]+'),
+          '',
+        );
     return compact.isEmpty ? '@mixvy' : '@$compact';
   }
 
@@ -403,7 +404,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         ref.watch(currentFriendIdsProvider).valueOrNull ?? const <String>[];
     final pendingIds =
         ref.watch(pendingOutgoingFriendRequestIdsProvider).valueOrNull ??
-        const <String>{};
+            const <String>{};
     final isFriend = friendIds.contains(widget.userId);
     final isRequestPending = pendingIds.contains(widget.userId);
     return AppPageScaffold(
@@ -475,13 +476,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
               final presence = isOwnProfile
                   ? ref.watch(currentUserPresenceProvider).valueOrNull
                   : ref
-                        .watch(friendPresenceProvider(widget.userId))
-                        .valueOrNull;
+                      .watch(friendPresenceProvider(widget.userId))
+                      .valueOrNull;
               final roomId = presence?.inRoom;
               String? directPreview;
               if (!isOwnProfile && viewerId != null) {
-                final conversations =
-                    ref
+                final conversations = ref
                         .watch(conversationsStreamProvider(viewerId))
                         .valueOrNull ??
                     const <Conversation>[];
@@ -556,10 +556,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       aboutMe: aboutMe,
                       interests: interests,
                       galleryCount: galleryUrls.length,
-                      promptCount:
-                          [vibePrompt, firstDatePrompt, musicTastePrompt]
-                              .where((entry) => (entry ?? '').trim().isNotEmpty)
-                              .length,
+                      promptCount: [
+                        vibePrompt,
+                        firstDatePrompt,
+                        musicTastePrompt
+                      ]
+                          .where((entry) => (entry ?? '').trim().isNotEmpty)
+                          .length,
                       hasIntroVideo: (introVideoUrl ?? '').isNotEmpty,
                       isLiveNow: (roomId ?? '').isNotEmpty,
                       roomId: roomId,
@@ -604,8 +607,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed:
-                                (isFriend ||
+                            onPressed: (isFriend ||
                                     isRequestPending ||
                                     _sendingFriendRequest)
                                 ? null
@@ -614,17 +616,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                               isFriend
                                   ? Icons.check_circle_outline
                                   : isRequestPending
-                                  ? Icons.schedule_rounded
-                                  : Icons.person_add_alt_1_outlined,
+                                      ? Icons.schedule_rounded
+                                      : Icons.person_add_alt_1_outlined,
                             ),
                             label: Text(
                               isFriend
                                   ? 'Already Friends'
                                   : isRequestPending
-                                  ? 'Request Sent'
-                                  : (_sendingFriendRequest
-                                        ? 'Sending...'
-                                        : 'Add Friend'),
+                                      ? 'Request Sent'
+                                      : (_sendingFriendRequest
+                                          ? 'Sending...'
+                                          : 'Add Friend'),
                             ),
                           ),
                         ),
@@ -666,9 +668,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                             onPressed: () async {
                               final allowed =
                                   await GuestAuthGate.requireProfileEdit(
-                                    context,
-                                    ref,
-                                  );
+                                context,
+                                ref,
+                              );
                               if (!allowed || !context.mounted) return;
                               // ignore: use_build_context_synchronously
                               unawaited(context.push('/profile/edit'));
@@ -1193,8 +1195,10 @@ class _LivePulseDotState extends State<_LivePulseDot>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final scale = 0.85 + (Curves.easeInOut.transform(_controller.value) * 0.35);
-        final opacity = 0.6 + (Curves.easeInOut.transform(_controller.value) * 0.4);
+        final scale =
+            0.85 + (Curves.easeInOut.transform(_controller.value) * 0.35);
+        final opacity =
+            0.6 + (Curves.easeInOut.transform(_controller.value) * 0.4);
         return Transform.scale(
           scale: scale,
           child: Container(
@@ -1340,7 +1344,3 @@ class _ProfileSectionCard extends StatelessWidget {
     );
   }
 }
-
-
-
-

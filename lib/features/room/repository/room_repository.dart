@@ -50,9 +50,9 @@ class RoomRepository {
     required FirebaseFirestore firestore,
     FirebaseFunctions? functions,
     required StreamLifecycleManager streamLifecycleManager,
-  }) : _firestore = firestore,
-       _functions = functions,
-       _streamLifecycleManager = streamLifecycleManager;
+  })  : _firestore = firestore,
+        _functions = functions,
+        _streamLifecycleManager = streamLifecycleManager;
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions? _functions;
@@ -122,20 +122,23 @@ class RoomRepository {
 
     if (secretKey.isNotEmpty) {
       try {
-        final url = "https://$domain/api/v1/turn/credentialif (secretKey != null) secretKey=$secretKey";
-        final response = await http.post(
-          Uri.parse(url),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            "expiryInSeconds": 3600,
-            "label": "mixvy-session"
-          }),
-        ).timeout(const Duration(seconds: 5));
+        final url =
+            "https://$domain/api/v1/turn/credentialif (secretKey != null) secretKey=$secretKey";
+        final response = await http
+            .post(
+              Uri.parse(url),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode(
+                  {"expiryInSeconds": 3600, "label": "mixvy-session"}),
+            )
+            .timeout(const Duration(seconds: 5));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           return [
-            {'urls': ['stun:stun.l.google.com:19302']},
+            {
+              'urls': ['stun:stun.l.google.com:19302']
+            },
             {
               'urls': ['turn:open.metered.ca:443', 'turn:open.metered.ca:80'],
               'username': data['username'] as String,
@@ -197,9 +200,8 @@ class RoomRepository {
         );
       }
 
-      final resolvedAppId = serverAppId.isNotEmpty
-          ? serverAppId
-          : fallbackAppId.trim();
+      final resolvedAppId =
+          serverAppId.isNotEmpty ? serverAppId : fallbackAppId.trim();
       if (resolvedAppId.length != 32) {
         throw const AgoraServiceException(
           code: 'agora-appid-invalid',
@@ -252,9 +254,8 @@ class RoomRepository {
 
     final results = <String, RoomUserLookup>{};
     for (var i = 0; i < normalizedIds.length; i += 10) {
-      final upperBound = (i + 10 > normalizedIds.length)
-          ? normalizedIds.length
-          : i + 10;
+      final upperBound =
+          (i + 10 > normalizedIds.length) ? normalizedIds.length : i + 10;
       final batchIds = normalizedIds.sublist(i, upperBound);
       final snapshot = await _firestore
           .collection('users')
@@ -268,9 +269,8 @@ class RoomRepository {
         final gender = _asString(data['gender']);
         final resolvedDisplayName = user.username.trim();
         results[doc.id] = RoomUserLookup(
-          profileUsername: resolvedDisplayName.isEmpty
-              ? null
-              : resolvedDisplayName,
+          profileUsername:
+              resolvedDisplayName.isEmpty ? null : resolvedDisplayName,
           avatarUrl: user.avatarUrl,
           vipLevel: vip is int ? vip : (vip is num ? vip.toInt() : 0),
           gender: gender.isEmpty ? null : gender,
@@ -379,9 +379,8 @@ class RoomRepository {
       _asString(participantData['role'], fallback: roomRoleAudience),
       fallbackRole: roomRoleAudience,
     );
-    final nextRole = canModerateRole(currentRole)
-        ? currentRole
-        : roomRoleAudience;
+    final nextRole =
+        canModerateRole(currentRole) ? currentRole : roomRoleAudience;
 
     // Demote from stage to audience. This is a safe operation (user releasing their own mic).
     // Direct update is acceptable here; caller is the one being demoted.
@@ -500,7 +499,3 @@ class RoomRepository {
         .map((snap) => snap.docs.map((doc) => doc.data()).toList());
   }
 }
-
-
-
-

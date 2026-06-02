@@ -73,7 +73,8 @@ class _RoomSessionState {
   final Map<String, DateTime> pendingRoleSetAtByUser = {};
 }
 
-final _roomSessionStateProvider = Provider.family<_RoomSessionState, String>((ref, roomId) => _RoomSessionState());
+final _roomSessionStateProvider = Provider.family<_RoomSessionState, String>(
+    (ref, roomId) => _RoomSessionState());
 
 /// A simple notifier to trigger rebuilds of RoomController when session state changes.
 /// Listens to the global event bus to synchronize multiple instances if needed.
@@ -89,9 +90,13 @@ class _RoomSessionRefreshNotifier extends FamilyNotifier<int, String> {
     ref.onDispose(sub.cancel);
     return 0;
   }
+
   void refresh() => state++;
 }
-final _roomSessionRefreshProvider = NotifierProvider.family<_RoomSessionRefreshNotifier, int, String>(_RoomSessionRefreshNotifier.new);
+
+final _roomSessionRefreshProvider =
+    NotifierProvider.family<_RoomSessionRefreshNotifier, int, String>(
+        _RoomSessionRefreshNotifier.new);
 
 class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   RoomSessionService get _sessionService => _cachedSessionService!;
@@ -252,27 +257,30 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
     // Watch lifecycle to pause heartbeats when backgrounded.
     final lifecycle = ref.watch(appLifecycleProvider);
-    if (lifecycle == AppLifecycleState.paused || lifecycle == AppLifecycleState.inactive) {
+    if (lifecycle == AppLifecycleState.paused ||
+        lifecycle == AppLifecycleState.inactive) {
       _stopRoomHeartbeat();
-    } else if (lifecycle == AppLifecycleState.resumed && _session.phase == LiveRoomPhase.joined) {
+    } else if (lifecycle == AppLifecycleState.resumed &&
+        _session.phase == LiveRoomPhase.joined) {
       _startRoomHeartbeat();
     }
 
     final roomDoc = ref.watch(roomDocStreamProvider(roomId)).valueOrNull;
     final participants =
         ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
-        const <RoomParticipantModel>[];
+            const <RoomParticipantModel>[];
     final memberUserIds =
         ref.watch(roomMemberUserIdsProvider(roomId)).valueOrNull ??
-        const <String>[];
+            const <String>[];
     final speakerUserIds =
         ref.watch(roomSpeakerUserIdsProvider(roomId)).valueOrNull ??
-        const <String>[];
+            const <String>[];
 
     // HARDENING: Ensure the current user's stabilization window is active if needed.
     final currentId = _session.currentUserId?.trim() ?? '';
     if (currentId.isNotEmpty && _session.pendingUserIds.contains(currentId)) {
-      if (!_joinStabilizationTimers.containsKey(_roomUserKey(roomId: roomId, userId: currentId))) {
+      if (!_joinStabilizationTimers
+          .containsKey(_roomUserKey(roomId: roomId, userId: currentId))) {
         Future.microtask(() {
           if (!_isDisposed && _session.pendingUserIds.contains(currentId)) {
             _scheduleStabilization(currentId);
@@ -352,8 +360,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       resolvedRole,
       fallbackRole: roomRoleAudience,
     );
-    final hasSpeakerSeat =
-        currentUserId.isNotEmpty &&
+    final hasSpeakerSeat = currentUserId.isNotEmpty &&
         (nextState.isSpeaker(currentUserId) || normalizedRole == roomRoleStage);
     final resolvedAudioState = RoomStateMachine.resolveAudioState(
       roomState: resolvedLifecycleState,
@@ -440,46 +447,43 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         for (final participant in participants)
           participant.userId.trim(): participant,
       };
-      final resolvedUserIds =
-          speakerUserIds
-              .map((userId) => userId.trim())
-              .where((userId) => userId.isNotEmpty)
-              .toSet()
-              .toList(growable: false)
-            ..sort((left, right) {
-              final leftParticipant = participantsByUser[left];
-              final rightParticipant = participantsByUser[right];
-              final leftRank = _speakerRank(
-                leftParticipant ??
-                    RoomParticipantModel(
-                      userId: left,
-                      role: left == hostId ? 'host' : 'stage',
-                      joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
-                      lastActiveAt: DateTime.fromMillisecondsSinceEpoch(0),
-                    ),
-                hostId: hostId,
-              );
-              final rightRank = _speakerRank(
-                rightParticipant ??
-                    RoomParticipantModel(
-                      userId: right,
-                      role: right == hostId ? 'host' : 'stage',
-                      joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
-                      lastActiveAt: DateTime.fromMillisecondsSinceEpoch(0),
-                    ),
-                hostId: hostId,
-              );
-              if (leftRank != rightRank) {
-                return leftRank.compareTo(rightRank);
-              }
-              final leftJoinedAt =
-                  leftParticipant?.joinedAt ??
-                  DateTime.fromMillisecondsSinceEpoch(0);
-              final rightJoinedAt =
-                  rightParticipant?.joinedAt ??
-                  DateTime.fromMillisecondsSinceEpoch(0);
-              return leftJoinedAt.compareTo(rightJoinedAt);
-            });
+      final resolvedUserIds = speakerUserIds
+          .map((userId) => userId.trim())
+          .where((userId) => userId.isNotEmpty)
+          .toSet()
+          .toList(growable: false)
+        ..sort((left, right) {
+          final leftParticipant = participantsByUser[left];
+          final rightParticipant = participantsByUser[right];
+          final leftRank = _speakerRank(
+            leftParticipant ??
+                RoomParticipantModel(
+                  userId: left,
+                  role: left == hostId ? 'host' : 'stage',
+                  joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  lastActiveAt: DateTime.fromMillisecondsSinceEpoch(0),
+                ),
+            hostId: hostId,
+          );
+          final rightRank = _speakerRank(
+            rightParticipant ??
+                RoomParticipantModel(
+                  userId: right,
+                  role: right == hostId ? 'host' : 'stage',
+                  joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  lastActiveAt: DateTime.fromMillisecondsSinceEpoch(0),
+                ),
+            hostId: hostId,
+          );
+          if (leftRank != rightRank) {
+            return leftRank.compareTo(rightRank);
+          }
+          final leftJoinedAt = leftParticipant?.joinedAt ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          final rightJoinedAt = rightParticipant?.joinedAt ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          return leftJoinedAt.compareTo(rightJoinedAt);
+        });
       return resolvedUserIds
           .take(RoomState.maxSpeakers)
           .toList(growable: false);
@@ -514,8 +518,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       participant.role,
       fallbackRole: '',
     );
-    final stageRole =
-        canManageStageRole(normalizedRole) ||
+    final stageRole = canManageStageRole(normalizedRole) ||
         normalizedRole == roomRoleStage ||
         normalizedRole == roomRoleTrustedSpeaker;
 
@@ -597,8 +600,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       final pendingRole = _session.pendingRoleByUser[userId];
       if (pendingRole != null) {
         final setAt = _session.pendingRoleSetAtByUser[userId];
-        final isExpired =
-            setAt != null &&
+        final isExpired = setAt != null &&
             DateTime.now().difference(setAt) > _kPendingRoleTtl;
         if (isExpired) {
           // Firestore never confirmed the write — let the server doc win.
@@ -608,8 +610,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
             level: 'warning',
             domain: 'room',
             action: 'pending_role_expired',
-            message:
-                'Pending role "$pendingRole" for user $userId expired '
+            message: 'Pending role "$pendingRole" for user $userId expired '
                 'without Firestore confirmation.',
             roomId: arg,
             metadata: <String, Object?>{
@@ -689,10 +690,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   }
 
   String _safeRoomDisplayName(String userId) {
-    final compact = userId
-        .trim()
-        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
-        .toUpperCase();
+    final compact =
+        userId.trim().replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
     if (compact.isEmpty) {
       return 'MixVy Member';
     }
@@ -708,7 +707,9 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     List<RoomParticipantModel> participants, {
     required String hostId,
   }) {
-    final result = <String, RoomSessionSnapshot>{..._session.sessionSnapshotsByUser};
+    final result = <String, RoomSessionSnapshot>{
+      ..._session.sessionSnapshotsByUser
+    };
 
     for (final participant in participants) {
       final userId = participant.userId.trim();
@@ -767,7 +768,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
   @protected
   List<String> _resolveStableUserIds(List<String> userIds) {
-    // Hard filter: a user is only stable if they are in the active roster 
+    // Hard filter: a user is only stable if they are in the active roster
     // (or manually stabilized) AND NOT in the pending stabilization window.
     final candidates = <String>{...userIds, ..._session.stableUserIds};
     return candidates
@@ -827,8 +828,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
           level: 'warning',
           domain: 'room',
           action: 'self_heal_host_role',
-          message:
-              'Corrected participantRolesByUser["$hostId"] from '
+          message: 'Corrected participantRolesByUser["$hostId"] from '
               '"$existingRole" to "host".',
           roomId: arg,
           metadata: <String, Object?>{'userId': hostId, 'was': existingRole},
@@ -860,9 +860,10 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         .where((id) => !nextState.pendingUserIds.contains(id.trim()))
         .toList(growable: false);
 
-    final validatedState = reconciledStable.length == nextState.stableUserIds.length
-        ? nextState
-        : nextState.copyWith(stableUserIds: reconciledStable);
+    final validatedState =
+        reconciledStable.length == nextState.stableUserIds.length
+            ? nextState
+            : nextState.copyWith(stableUserIds: reconciledStable);
 
     // Self-healing runs first so that assertions check post-repair state.
     // If an invariant still fires after healing, it is a programming bug.
@@ -915,19 +916,19 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   @protected
   void _notifySessionChanged() {
     if (_isDisposed) {
-       // If the instance is disposed, we can't use 'ref', 
-       // but we still want to notify other instances of the same roomId.
-       AppEventBus.instance.emit(RoomSessionStateChangedEvent(
-          id: 'refresh-$arg-${DateTime.now().microsecondsSinceEpoch}',
-          timestamp: DateTime.now(),
-          roomId: arg,
-       ));
-       return;
+      // If the instance is disposed, we can't use 'ref',
+      // but we still want to notify other instances of the same roomId.
+      AppEventBus.instance.emit(RoomSessionStateChangedEvent(
+        id: 'refresh-$arg-${DateTime.now().microsecondsSinceEpoch}',
+        timestamp: DateTime.now(),
+        roomId: arg,
+      ));
+      return;
     }
-    
+
     // If not disposed, we can also manually trigger the rebuild via the provider.
     ref.read(_roomSessionRefreshProvider(arg).notifier).refresh();
-    
+
     // Also emit the event to sync other instances (e.g. in multi-instance scenarios).
     AppEventBus.instance.emit(RoomSessionStateChangedEvent(
       id: 'refresh-$arg-${DateTime.now().microsecondsSinceEpoch}',
@@ -961,12 +962,12 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         if (_userStabilizationEpochs[userKey] != epoch) {
           return;
         }
-        
+
         _joinStabilizationTimers.remove(userKey);
         _userStabilizationEpochs.remove(userKey);
         _session.pendingUserIds.remove(normalizedUserId);
         _session.stableUserIds.add(normalizedUserId);
-        
+
         _notifySessionChanged();
       },
     );
@@ -1028,7 +1029,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       if (_isInGraceWindow || info.code.toLowerCase() == 'not-found') {
         return;
       }
-      _session.errormessage = 'Room state is reconnecting. Try again in a moment.';
+      _session.errormessage =
+          'Room state is reconnecting. Try again in a moment.';
       _emitState(state.copyWith(errormessage: _session.errormessage));
     }
   }
@@ -1103,7 +1105,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     final normalizedCurrentUserId = _session.currentUserId?.trim() ?? '';
     final canAffectRosterVisibility =
         normalizedUserId == normalizedCurrentUserId ||
-        state.userIds.contains(normalizedUserId);
+            state.userIds.contains(normalizedUserId);
     if (canAffectRosterVisibility) {
       _session.stableUserIds.add(normalizedUserId);
       _session.pendingUserIds.remove(normalizedUserId);
@@ -1155,8 +1157,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   @protected
   void _requireActiveLifecycle() {
     final lifecycleState = state.lifecycleState;
-    final isReadyForMutation =
-        lifecycleState == RoomLifecycleState.active ||
+    final isReadyForMutation = lifecycleState == RoomLifecycleState.active ||
         (state.phase == LiveRoomPhase.joined &&
             lifecycleState != RoomLifecycleState.ended);
     if (!isReadyForMutation) {
@@ -1262,15 +1263,19 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     _keepAliveLink ??= ref.keepAlive();
     final normalizedUserId = userId.trim();
     var normalizedDisplayName = displayName?.trim() ?? '';
-    
+
     // Identity Correction: If username is raw/anonymous, fetch actual profile before join
-    if (_isPlaceholderDisplayName(normalizedDisplayName) && normalizedUserId.isNotEmpty) {
+    if (_isPlaceholderDisplayName(normalizedDisplayName) &&
+        normalizedUserId.isNotEmpty) {
       try {
-        final profile = await ref.read(roomRepositoryProvider).loadUserLookup([normalizedUserId]);
+        final profile = await ref
+            .read(roomRepositoryProvider)
+            .loadUserLookup([normalizedUserId]);
         final actualName = profile[normalizedUserId]?.profileUsername;
         if (actualName != null && actualName.isNotEmpty) {
           normalizedDisplayName = actualName;
-          debugPrint('LOG: [Web] Corrected join username from $displayName to $normalizedDisplayName');
+          debugPrint(
+              'LOG: [Web] Corrected join username from $displayName to $normalizedDisplayName');
         }
       } catch (e) {
         debugPrint('LOG: [Web] Profile fetch failed during join: $e');
@@ -1278,7 +1283,9 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     }
 
     // Guard: ignore redundant join if already joined/joining for this user
-    if (_session.currentUserId == normalizedUserId && (_session.phase == LiveRoomPhase.joined || _session.phase == LiveRoomPhase.joining)) {
+    if (_session.currentUserId == normalizedUserId &&
+        (_session.phase == LiveRoomPhase.joined ||
+            _session.phase == LiveRoomPhase.joining)) {
       return RoomJoinResult.success(
         joinedAt: _session.joinedAt ?? DateTime.now(),
         excludedUserIds: _session.excludedUserIds,
@@ -1340,7 +1347,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       displayName: normalizedDisplayName.isNotEmpty
           ? normalizedDisplayName
           : (_session.sessionSnapshotsByUser[normalizedUserId]?.displayName ??
-                _safeRoomDisplayName(normalizedUserId)),
+              _safeRoomDisplayName(normalizedUserId)),
       role: normalizeRoomRole(
         _session.sessionSnapshotsByUser[normalizedUserId]?.role,
         fallbackRole: roomRoleAudience,
@@ -1451,7 +1458,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       displayName: normalizedDisplayName.isNotEmpty
           ? normalizedDisplayName
           : (existingSnapshot?.displayName ??
-                _safeRoomDisplayName(normalizedUserId)),
+              _safeRoomDisplayName(normalizedUserId)),
       role: normalizeRoomRole(
         existingSnapshot?.role,
         fallbackRole: roomRoleAudience,
@@ -1476,7 +1483,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
           .get();
 
       if (participantSnap.exists && participantSnap.data() != null) {
-        final participant = RoomParticipantModel.fromMap(participantSnap.data()!);
+        final participant =
+            RoomParticipantModel.fromMap(participantSnap.data()!);
         // Cache it so permission checks can use it immediately.
         // Wrap in microtask to avoid "!_didChangeDependency" assertion if joinRoom
         // completes during a provider rebuild cycle.
@@ -1495,7 +1503,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
         level: 'debug',
         domain: 'room',
         action: 'cache_participant_miss',
-        message: 'Failed to cache current participant during join (non-critical).',
+        message:
+            'Failed to cache current participant during join (non-critical).',
         roomId: arg,
         userId: normalizedUserId,
         metadata: <String, Object?>{'error': e.toString()},
@@ -1549,8 +1558,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     _stopRoomHeartbeat();
     _session.phase = LiveRoomPhase.leaving;
     _emitState(state.copyWith(phase: _session.phase, errormessage: null));
-    final ownsSession =
-        sessionId == null ||
+    final ownsSession = sessionId == null ||
         _isSessionOwner(roomId: arg, userId: userId, sessionId: sessionId);
     if (ownsSession) {
       final firestore = _firestore;
@@ -1682,8 +1690,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     final otherSpeakerIds = state.speakerIds
         .where((speakerId) => speakerId != normalizedUserId)
         .toList(growable: false);
-    final canGrabDirectly =
-        otherSpeakerIds.isEmpty &&
+    final canGrabDirectly = otherSpeakerIds.isEmpty &&
         state.speakerIds.length < RoomState.maxSpeakers;
 
     if (canGrabDirectly) {
@@ -1803,8 +1810,8 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     required String targetUserId,
   }) async {
     final normalizedControllerActor = _actorUserId;
-    final normalizedActorUserId = (actorUserId ?? normalizedControllerActor)
-        .trim();
+    final normalizedActorUserId =
+        (actorUserId ?? normalizedControllerActor).trim();
     final normalizedTargetUserId = targetUserId.trim();
     if (normalizedControllerActor.isNotEmpty &&
         normalizedActorUserId != normalizedControllerActor) {
@@ -2122,7 +2129,3 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     );
   }
 }
-
-
-
-

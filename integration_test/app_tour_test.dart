@@ -17,7 +17,8 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('MixVy Live Visual Integration Tour', () {
-    testWidgets('Step-by-step walkthrough of Live Rooms and Profile Sheets', (WidgetTester tester) async {
+    testWidgets('Step-by-step walkthrough of Live Rooms and Profile Sheets',
+        (WidgetTester tester) async {
       // 1. Prepare fully bound mock payloads to prevent database state pollution on target device
       final mockRoom = RoomModel(
         id: 'room-integration-1',
@@ -49,14 +50,18 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            roomsStreamProvider.overrideWith((ref) => AsyncValue.data([mockRoom])),
-            userProfileFutureProvider('user-abc').overrideWith((ref) => mockProfile),
-            userPresenceStreamProvider('user-abc').overrideWith((ref) => Stream.value(mockPresence)),
+            roomsStreamProvider
+                .overrideWith((ref) => AsyncValue.data([mockRoom])),
+            userProfileFutureProvider('user-abc')
+                .overrideWith((ref) => mockProfile),
+            userPresenceStreamProvider('user-abc')
+                .overrideWith((ref) => Stream.value(mockPresence)),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
             home: Scaffold(
-              backgroundColor: const Color(0xFF111319), // Digital Premium Lounge Background
+              backgroundColor:
+                  const Color(0xFF111319), // Digital Premium Lounge Background
               body: SafeArea(
                 child: CustomScrollView(
                   slivers: [

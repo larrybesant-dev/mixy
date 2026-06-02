@@ -38,7 +38,8 @@ class MixVyApp extends ConsumerWidget {
       title: 'MixVy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0A0A0E), // VelvetNoir surface tint
+        scaffoldBackgroundColor:
+            const Color(0xFF0A0A0E), // VelvetNoir surface tint
       ),
       routerConfig: router,
     );

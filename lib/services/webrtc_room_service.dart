@@ -11,7 +11,7 @@ import 'package:mixvy/services/rtc_room_service.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 
 /// WebRtcRoomService
-/// 
+///
 /// The production-hardened engine for MixVy's real-time communication.
 /// Manages peer connections, Firestore signaling, and professional NAT traversal.
 class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
@@ -38,9 +38,10 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     if (kIsWeb) {
       if (state == AppLifecycleState.hidden) {
         // Prevent browser layout initialization shifts from killing the track
-        if (_rtcConnectedAt != null && 
+        if (_rtcConnectedAt != null &&
             DateTime.now().difference(_rtcConnectedAt!).inSeconds < 5) {
-          _log('Ignored ghost hidden event during initialization stabilization.');
+          _log(
+              'Ignored ghost hidden event during initialization stabilization.');
           return;
         }
         _log('App tab hidden. Suspending WebRTC tracks.');
@@ -55,7 +56,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         }
       }
     } else {
-      if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive) {
         _log('App backgrounded. Suspending WebRTC tracks.');
         _wasVideoActiveBeforePause = _localVideoCapturing;
         if (_localVideoCapturing) {
@@ -73,12 +75,12 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   // Active Peer Connections and Subscriptions
   final Map<String, RTCPeerConnection> _pcs = {};
   final Map<String, List<StreamSubscription>> _roomSubscriptions = {};
-  
+
   MediaStream? _localStream;
   RTCVideoRenderer? _localRenderer;
   final Map<int, RTCVideoRenderer> _remoteRenderers = {};
   final Map<int, String> _uidToUserId = {};
-  
+
   // Audio Level Monitoring (VAD)
   final Map<int, double> _remoteAudioLevels = {};
   double _localAudioLevel = 0.0;
@@ -117,23 +119,25 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
 
     final String secretKey = AppEnv.meteredSecretKey;
     if (secretKey.isEmpty) {
-      _log('⚠️ Metered Secret Key is empty. Skipping production networking setup.');
+      _log(
+          '⚠️ Metered Secret Key is empty. Skipping production networking setup.');
       return;
     }
 
     final String domain = AppEnv.meteredDomain;
-    final String url = "https://$domain/api/v1/turn/credentialif (secretKey != null) secretKey=$secretKey";
+    final String url =
+        "https://$domain/api/v1/turn/credentialif (secretKey != null) secretKey=$secretKey";
 
     developer.Timeline.startSync('MixVy:WebRTC:FetchTurnCredentials');
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "expiryInSeconds": 3600,
-          "label": "mixvy-prod-session"
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(
+                {"expiryInSeconds": 3600, "label": "mixvy-prod-session"}),
+          )
+          .timeout(const Duration(seconds: 10));
       developer.Timeline.finishSync();
 
       if (response.statusCode == 200) {
@@ -141,7 +145,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         if (data is Map<String, dynamic>) {
           final username = data['username']?.toString();
           final password = data['password']?.toString();
-          
+
           if (username != null && password != null) {
             _productionIceServers = [
               {'urls': 'stun:stun.l.google.com:19302'},
@@ -157,7 +161,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      _log('[WebRTC][WARN] Networking error during TURN fetch: $e. Falling back to STUN.');
+      _log(
+          '[WebRTC][WARN] Networking error during TURN fetch: $e. Falling back to STUN.');
     } finally {
       if (_productionIceServers == null) {
         _log('[WebRTC] Initialized with STUN fallback topology.');
@@ -166,9 +171,10 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   }
 
   Map<String, dynamic> get _iceConfig => {
-        'iceServers': (_productionIceServers != null && _productionIceServers!.isNotEmpty)
-            ? _productionIceServers
-            : _defaultIceServers,
+        'iceServers':
+            (_productionIceServers != null && _productionIceServers!.isNotEmpty)
+                ? _productionIceServers
+                : _defaultIceServers,
         'sdpSemantics': 'unified-plan',
         'iceCandidatePoolSize': 8,
       };
@@ -178,7 +184,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   // ──────────────────────────────────────────────────────────────────────────
 
   String _iceCandidateFingerprint(RTCIceCandidate candidate) {
-    final raw = '${candidate.sdpMid}|${candidate.sdpMLineIndex}|${candidate.candidate}';
+    final raw =
+        '${candidate.sdpMid}|${candidate.sdpMLineIndex}|${candidate.candidate}';
     return raw.hashCode.toUnsigned(32).toRadixString(16);
   }
 
@@ -196,14 +203,11 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     if (!seen.add(fingerprint)) return;
 
     try {
-      await signalRef
-          .collection(subcollection)
-          .doc(fingerprint)
-          .set({
-            ...candidate.toMap(),
-            'userId': _localUserId,
-            'timestamp': FieldValue.serverTimestamp(),
-          });
+      await signalRef.collection(subcollection).doc(fingerprint).set({
+        ...candidate.toMap(),
+        'userId': _localUserId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     } catch (error) {
       seen.remove(fingerprint);
       _log('failed to write ICE candidate: $error');
@@ -264,14 +268,17 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   Widget getLocalView() {
     final renderer = _localRenderer;
     if (renderer == null) return const SizedBox.shrink();
-    return RTCVideoView(renderer, mirror: true, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
+    return RTCVideoView(renderer,
+        mirror: true,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
   }
-  
+
   @override
   Widget getRemoteView(int uid, String channelId) {
     final renderer = _remoteRenderers[uid];
     if (renderer == null) return const SizedBox.shrink();
-    return RTCVideoView(renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
+    return RTCVideoView(renderer,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
   }
 
   @override
@@ -291,9 +298,10 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     _currentChannelId = channelName;
 /* Unused: /* Deprecated/Unused:     _localUid = uid; */ */
     _isJoinedChannel = true;
-    
+
     // Register participant in the signaling session
-    final sessionRef = _firestore.collection('webrtc_sessions').doc(channelName);
+    final sessionRef =
+        _firestore.collection('webrtc_sessions').doc(channelName);
     await sessionRef.set({
       'updatedAt': FieldValue.serverTimestamp(),
       'active': true,
@@ -310,7 +318,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       try {
         final now = DateTime.now();
         final staleThreshold = now.subtract(const Duration(seconds: 60));
-        final participantsQuery = await sessionRef.collection('participants').get();
+        final participantsQuery =
+            await sessionRef.collection('participants').get();
         for (var doc in participantsQuery.docs) {
           final pId = doc.id;
           if (pId == _localUserId) continue;
@@ -320,14 +329,21 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
           if (lastSeenTimestamp != null) {
             final lastSeen = lastSeenTimestamp.toDate();
             if (lastSeen.isBefore(staleThreshold)) {
-              _log('Purging stale/ghost signaling participant: $pId (last seen: $lastSeen)');
+              _log(
+                  'Purging stale/ghost signaling participant: $pId (last seen: $lastSeen)');
               await doc.reference.delete();
-              
+
               // Also clean up any stale signaling or candidates for this ghost user
               final signalDocId = _signalingDocId(_localUserId, pId);
-              await sessionRef.collection('signaling').doc(signalDocId).delete();
-              
-              final candidates = await sessionRef.collection('candidates').where('userId', isEqualTo: pId).get();
+              await sessionRef
+                  .collection('signaling')
+                  .doc(signalDocId)
+                  .delete();
+
+              final candidates = await sessionRef
+                  .collection('candidates')
+                  .where('userId', isEqualTo: pId)
+                  .get();
               for (var cDoc in candidates.docs) {
                 await cDoc.reference.delete();
               }
@@ -344,13 +360,15 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     _subscribeToParticipants(channelName);
 
     if (publishCameraTrackOnJoin || publishMicrophoneTrackOnJoin) {
-      await enableVideo(publishCameraTrackOnJoin, publishMicrophoneTrack: publishMicrophoneTrackOnJoin);
+      await enableVideo(publishCameraTrackOnJoin,
+          publishMicrophoneTrack: publishMicrophoneTrackOnJoin);
     }
   }
 
   void _startAudioLevelMonitoring() {
     _audioLevelTimer?.cancel();
-    _audioLevelTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) async {
+    _audioLevelTimer =
+        Timer.periodic(const Duration(milliseconds: 200), (timer) async {
       if (!_isJoinedChannel) {
         timer.cancel();
         return;
@@ -366,10 +384,12 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
           final stats = await pc.getStats();
           for (var stat in stats) {
             if (stat.type == 'media-source' && stat.values['kind'] == 'audio') {
-              _localAudioLevel = (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
+              _localAudioLevel =
+                  (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
             }
             if (stat.type == 'inbound-rtp' && stat.values['kind'] == 'audio') {
-              final level = (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
+              final level =
+                  (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
               _remoteAudioLevels[uid] = level;
             }
           }
@@ -377,12 +397,12 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
           // Stats might fail during connection transition state parameters
         }
       }
-      
+
       if (_pcs.isEmpty) {
         _localAudioLevel = 0.0;
         _remoteAudioLevels.clear();
       }
-      
+
       onSpeakerActivityChanged?.call();
       _monitorNetworkMetrics().ignore();
     });
@@ -390,18 +410,20 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
 
   void _startSignalingHeartbeat() {
     _signalingHeartbeatTimer?.cancel();
-    _signalingHeartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+    _signalingHeartbeatTimer =
+        Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (!_isJoinedChannel || _currentChannelId == null) {
         timer.cancel();
         return;
       }
-      
+
       try {
-        final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+        final sessionRef =
+            _firestore.collection('webrtc_sessions').doc(_currentChannelId);
         await sessionRef.collection('participants').doc(_localUserId).update({
           'lastSeen': FieldValue.serverTimestamp(),
         });
-        
+
         await sessionRef.update({
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -447,7 +469,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   Future<void> _setupPC(String peerId, String roomId, bool isOfferer) async {
     if (_pcs.containsKey(peerId)) return;
 
-    developer.Timeline.startSync('MixVy:WebRTC:SetupPC', arguments: {'peerId': peerId, 'isOfferer': isOfferer});
+    developer.Timeline.startSync('MixVy:WebRTC:SetupPC',
+        arguments: {'peerId': peerId, 'isOfferer': isOfferer});
     final pc = await createPeerConnection(_iceConfig);
     _pcs[peerId] = pc;
     _uidToUserId[_stableUid(peerId)] = peerId;
@@ -473,7 +496,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       if (event.streams.isNotEmpty) {
         final stream = event.streams[0];
         final uid = _stableUid(peerId);
-        
+
         final renderer = RTCVideoRenderer();
         await renderer.initialize();
         renderer.srcObject = stream;
@@ -555,7 +578,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   }
 
   @override
-  Future<void> enableVideo(bool enabled, {bool publishMicrophoneTrack = true}) async {
+  Future<void> enableVideo(bool enabled,
+      {bool publishMicrophoneTrack = true}) async {
     _log('enableVideo: $enabled');
     if (enabled) {
       if (_localStream == null) {
@@ -571,7 +595,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
           _localStream = await navigator.mediaDevices.getUserMedia(constraints);
           _log('Successfully acquired local stream.');
         } catch (e) {
-          _log('Failed to get user media with constraints, trying fallback: $e');
+          _log(
+              'Failed to get user media with constraints, trying fallback: $e');
           _localStream = await navigator.mediaDevices.getUserMedia({
             'audio': publishMicrophoneTrack,
             'video': true,
@@ -581,14 +606,17 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         final videoTracks = _localStream!.getVideoTracks();
         if (videoTracks.isEmpty || videoTracks.any((t) => t.enabled == false)) {
           _log('Video track missing or ended. Re-acquiring...');
-          final videoStream = await navigator.mediaDevices.getUserMedia({'video': true});
+          final videoStream =
+              await navigator.mediaDevices.getUserMedia({'video': true});
           final newTrack = videoStream.getVideoTracks().first;
           await _localStream!.addTrack(newTrack);
         } else {
-          for (var t in videoTracks) { t.enabled = true; }
+          for (var t in videoTracks) {
+            t.enabled = true;
+          }
         }
       }
-      
+
       if (_localRenderer == null) {
         _localRenderer = RTCVideoRenderer();
         await _localRenderer!.initialize();
@@ -602,7 +630,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       if (videoTrack != null) {
         for (var pc in _pcs.values) {
           final senders = await pc.getSenders();
-          final videoSender = senders.where((s) => s.track?.kind == 'video').firstOrNull;
+          final videoSender =
+              senders.where((s) => s.track?.kind == 'video').firstOrNull;
           if (videoSender != null) {
             await videoSender.replaceTrack(videoTrack);
           } else {
@@ -614,7 +643,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     } else {
       _localVideoCapturing = false;
       _localRenderer?.srcObject = null;
-      
+
       final videoTracks = _localStream?.getVideoTracks();
       if (videoTracks != null) {
         for (var track in videoTracks) {
@@ -680,20 +709,22 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         if (sender.track?.kind == 'video') {
           try {
             final parameters = sender.parameters;
-            if (parameters.encodings != null && parameters.encodings!.isNotEmpty) {
+            if (parameters.encodings != null &&
+                parameters.encodings!.isNotEmpty) {
               for (var encoding in parameters.encodings!) {
                 if (highQuality) {
-                  encoding.maxBitrate = 1500000; 
+                  encoding.maxBitrate = 1500000;
                   encoding.maxFramerate = 30;
                   encoding.scaleResolutionDownBy = 1.0;
                 } else {
-                  encoding.maxBitrate = 300000; 
+                  encoding.maxBitrate = 300000;
                   encoding.maxFramerate = 15;
-                  encoding.scaleResolutionDownBy = 2.0; 
+                  encoding.scaleResolutionDownBy = 2.0;
                 }
               }
               await sender.setParameters(parameters);
-              _log('Successfully updated encoding parameters for highQuality=$highQuality');
+              _log(
+                  'Successfully updated encoding parameters for highQuality=$highQuality');
             }
           } catch (e) {
             _log('Failed to set encoding parameters: $e');
@@ -705,41 +736,46 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
 
   Future<void> _monitorNetworkMetrics() async {
     if (!_isJoinedChannel || _pcs.isEmpty) return;
-    
+
     double totalPacketsLost = 0;
     double totalPacketsReceived = 0;
     double maxRtt = 0.0;
-    
+
     for (var pc in _pcs.values) {
       try {
         final stats = await pc.getStats();
         for (var stat in stats) {
           if (stat.type == 'inbound-rtp') {
-            totalPacketsLost += (stat.values['packetsLost'] as num?)?.toDouble() ?? 0.0;
-            totalPacketsReceived += (stat.values['packetsReceived'] as num?)?.toDouble() ?? 0.0;
+            totalPacketsLost +=
+                (stat.values['packetsLost'] as num?)?.toDouble() ?? 0.0;
+            totalPacketsReceived +=
+                (stat.values['packetsReceived'] as num?)?.toDouble() ?? 0.0;
           }
-          if (stat.type == 'candidate-pair' && stat.values['state'] == 'succeeded') {
-            final rtt = (stat.values['currentRoundTripTime'] as num?)?.toDouble() ?? 0.0;
+          if (stat.type == 'candidate-pair' &&
+              stat.values['state'] == 'succeeded') {
+            final rtt =
+                (stat.values['currentRoundTripTime'] as num?)?.toDouble() ??
+                    0.0;
             if (rtt > maxRtt) maxRtt = rtt;
           }
         }
       } catch (_) {}
     }
-    
+
     double lossRatio = 0.0;
     if (totalPacketsReceived > 0) {
       lossRatio = totalPacketsLost / (totalPacketsLost + totalPacketsReceived);
     }
-    
+
     final bool isLossDegraded = lossRatio > 0.05;
     final bool isRttDegraded = maxRtt > 0.4;
-    
+
     if (isLossDegraded || isRttDegraded) {
       _consecutiveHighLossTicks++;
     } else {
       _consecutiveHighLossTicks = 0;
     }
-    
+
     if (_consecutiveHighLossTicks >= 3 && !_networkDegraded) {
       _networkDegraded = true;
       _log('⚠️ High network degradation detected. Throttling bitrates.');
@@ -758,16 +794,17 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         if (sender.track?.kind == 'video') {
           try {
             final parameters = sender.parameters;
-            if (parameters.encodings != null && parameters.encodings!.isNotEmpty) {
+            if (parameters.encodings != null &&
+                parameters.encodings!.isNotEmpty) {
               for (var encoding in parameters.encodings!) {
                 if (_networkDegraded) {
-                  encoding.maxBitrate = 100000; 
-                  encoding.maxFramerate = 8;    
-                  encoding.scaleResolutionDownBy = 4.0; 
+                  encoding.maxBitrate = 100000;
+                  encoding.maxFramerate = 8;
+                  encoding.scaleResolutionDownBy = 4.0;
                 } else {
-                  encoding.maxBitrate = 300000; 
+                  encoding.maxBitrate = 300000;
                   encoding.maxFramerate = 15;
-                  encoding.scaleResolutionDownBy = 2.0; 
+                  encoding.scaleResolutionDownBy = 2.0;
                 }
               }
               await sender.setParameters(parameters);
@@ -778,7 +815,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         }
       }
     }
-    
+
     for (var entry in _remoteRenderers.entries) {
       final renderer = entry.value;
       renderer.srcObject?.getVideoTracks().forEach((track) {
@@ -796,7 +833,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   Future<void> setSpeakerVolume(double volume) async {}
 
   @override
-  Future<void> ensureDeviceAccess({required bool video, required bool audio}) async {
+  Future<void> ensureDeviceAccess(
+      {required bool video, required bool audio}) async {
     _log('Ensuring device access: video=$video, audio=$audio');
     try {
       final Map<String, dynamic> constraints = {
@@ -825,13 +863,17 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     _signalingHeartbeatTimer = null;
     _audioLevelTimer?.cancel();
     _audioLevelTimer = null;
-    
+
     if (_currentChannelId != null) {
       try {
-        final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+        final sessionRef =
+            _firestore.collection('webrtc_sessions').doc(_currentChannelId);
         await sessionRef.collection('participants').doc(_localUserId).delete();
-        
-        final candidates = await sessionRef.collection('candidates').where('userId', isEqualTo: _localUserId).get();
+
+        final candidates = await sessionRef
+            .collection('candidates')
+            .where('userId', isEqualTo: _localUserId)
+            .get();
         for (var doc in candidates.docs) {
           await doc.reference.delete();
         }
@@ -851,7 +893,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       await pc.dispose();
     }
     _pcs.clear();
-    
+
     if (_localStream != null) {
       for (var track in _localStream!.getTracks()) {
         track.enabled = false;
@@ -877,13 +919,14 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   void _setupIceConnectionStateListener(RTCPeerConnection pc, String peerId) {
     pc.onIceConnectionState = (RTCIceConnectionState state) {
       _log('ICE Connection State changed for $peerId: $state');
-      
+
       switch (state) {
         case RTCIceConnectionState.RTCIceConnectionStateConnected:
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
           break;
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
-          _log('⚠️ Connection for $peerId disconnected. Waiting for recovery...');
+          _log(
+              '⚠️ Connection for $peerId disconnected. Waiting for recovery...');
           break;
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
           _log('❌ Connection for $peerId failed.');
@@ -900,13 +943,16 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
 
   static int _stableUid(String userId) {
     int h = 0;
-    for (final c in userId.codeUnits) { h = (h * 31 + c) & 0x7FFFFFFF; }
+    for (final c in userId.codeUnits) {
+      h = (h * 31 + c) & 0x7FFFFFFF;
+    }
     return h == 0 ? 1 : h;
   }
 
   // --- 1-to-1 Compatibility Methods (Phase 2 Legacy) ---
 
-  Future<String> createRoom(MediaStream localStream, void Function(MediaStream) onRemoteStream) async {
+  Future<String> createRoom(MediaStream localStream,
+      void Function(MediaStream) onRemoteStream) async {
     final roomId = _firestore.collection('webrtc_sessions').doc().id;
     _localStream = localStream;
     onRemoteUserJoined = () {
@@ -914,12 +960,13 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         onRemoteStream(_remoteRenderers.values.first.srcObject!);
       }
     };
-    await joinRoom('', roomId, _stableUid(_localUserId), publishCameraTrackOnJoin: true);
+    await joinRoom('', roomId, _stableUid(_localUserId),
+        publishCameraTrackOnJoin: true);
     return roomId;
   }
 
   Future<void> joinRoomById(
-    String roomId, 
+    String roomId,
     MediaStream localStream, [
     void Function(MediaStream)? onRemoteStream,
   ]) async {
@@ -931,10 +978,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         }
       };
     }
-    await joinRoom('', roomId, _stableUid(_localUserId), publishCameraTrackOnJoin: true);
+    await joinRoom('', roomId, _stableUid(_localUserId),
+        publishCameraTrackOnJoin: true);
   }
 }
-
-
-
-

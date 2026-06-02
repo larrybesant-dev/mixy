@@ -1,11 +1,11 @@
-import 'dart:ui' as ui;                   
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:mixvy/firebase_options.dart'; 
+import 'package:mixvy/firebase_options.dart';
 import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
 import 'app/app.dart';

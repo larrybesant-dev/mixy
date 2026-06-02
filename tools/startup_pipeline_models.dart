@@ -138,15 +138,12 @@ class PolicyViolation {
   final double? contributionWeight;
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'rule_id': ruleId,
-    'checkpoint': checkpoint,
-    'message': message,
-    'trigger_value': triggerValue,
-    'threshold_value': thresholdValue,
-    'delta': delta,
-    'contribution_weight': contributionWeight,
-  };
+        'rule_id': ruleId,
+        'checkpoint': checkpoint,
+        'message': message,
+        'trigger_value': triggerValue,
+        'threshold_value': thresholdValue,
+        'delta': delta,
+        'contribution_weight': contributionWeight,
+      };
 }
-
-
-

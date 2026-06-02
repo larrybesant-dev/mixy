@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MixVy | Mode Selection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;700;900&amp;family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#353534",
+                        "on-tertiary-fixed": "#221b00",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary-container": "#514406",
+                        "on-secondary": "#462a00",
+                        "on-primary-container": "#554300",
+                        "primary": "#f2ca50",
+                        "inverse-on-surface": "#313030",
+                        "surface": "#131313",
+                        "surface-container-high": "#2a2a2a",
+                        "on-surface-variant": "#d0c5af",
+                        "on-background": "#e5e2e1",
+                        "primary-fixed": "#ffe088",
+                        "surface-variant": "#353534",
+                        "on-primary": "#3c2f00",
+                        "surface-dim": "#131313",
+                        "on-tertiary": "#3a3000",
+                        "inverse-primary": "#735c00",
+                        "outline-variant": "#4d4635",
+                        "secondary": "#fcba64",
+                        "surface-tint": "#e9c349",
+                        "surface-container": "#201f1f",
+                        "primary-container": "#d4af37",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#fcba64",
+                        "primary-fixed-dim": "#e9c349",
+                        "tertiary-fixed-dim": "#dac67d",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary-container": "#845400",
+                        "on-surface": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#643f00",
+                        "on-tertiary-fixed-variant": "#534608",
+                        "on-primary-fixed": "#241a00",
+                        "outline": "#99907c",
+                        "on-secondary-fixed": "#2a1800",
+                        "on-secondary-container": "#ffd199",
+                        "tertiary": "#e2ce84",
+                        "secondary-fixed": "#ffddb6",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#c5b26b",
+                        "surface-container-low": "#1c1b1b",
+                        "tertiary-fixed": "#f7e296",
+                        "surface-bright": "#3a3939",
+                        "error-container": "#93000a",
+                        "background": "#131313"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "4rem",
+                        "margin": "32px",
+                        "stack-sm": "1rem",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "stack-md": "2rem"
+                    },
+                    "fontFamily": {
+                        "headline-xl": ["Noto Serif"],
+                        "headline-md": ["Noto Serif"],
+                        "body-lg": ["Manrope"],
+                        "headline-lg": ["Noto Serif"],
+                        "body-md": ["Manrope"],
+                        "label-sm": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(13, 13, 13, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(242, 202, 80, 0.2);
+            border-left: 1px solid rgba(242, 202, 80, 0.1);
+        }
+        .kinetic-glow:hover {
+            box-shadow: 0 0 40px rgba(242, 202, 80, 0.15);
+        }
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #f2ca50 0%, #d4af37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gold-btn-gradient {
+            background: linear-gradient(135deg, #f2ca50 0%, #d4af37 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30 min-h-screen overflow-x-hidden">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full border-b border-yellow-500/20 bg-black/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex justify-between items-center px-6 h-20 w-full z-50">
+<div class="text-2xl font-black italic text-yellow-500 uppercase tracking-widest font-serif">MixVy</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Social</a>
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Live Rooms</a>
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Speed Dating</a>
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Adult Lounge</a>
+</div>
+<div class="flex items-center space-x-6">
+<button class="active:scale-95 transition-transform hover:bg-yellow-500/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-yellow-500">notifications</span>
+</button>
+<button class="active:scale-95 transition-transform hover:bg-yellow-500/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-yellow-500">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar (Desktop Only) -->
+<aside class="hidden lg:flex fixed left-0 top-0 h-full flex-col z-40 h-screen w-64 border-r border-yellow-500/10 bg-[#0D0D0D]/90 backdrop-blur-2xl shadow-2xl shadow-black pt-24">
+<div class="px-6 mb-8">
+<h2 class="text-yellow-500 font-bold font-serif text-sm uppercase tracking-widest">MixVy Elite</h2>
+<p class="text-neutral-500 text-[10px] uppercase tracking-tighter">Prestige Membership</p>
+</div>
+<nav class="flex-grow">
+<a class="flex items-center space-x-4 bg-gradient-to-r from-yellow-500/20 to-transparent text-yellow-500 border-l-4 border-yellow-500 py-4 px-6 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">dynamic_feed</span>
+<span class="font-serif text-sm uppercase tracking-widest">Social Feed</span>
+</a>
+<a class="flex items-center space-x-4 text-neutral-500 py-4 px-6 hover:text-neutral-200 hover:bg-white/5 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span class="font-serif text-sm uppercase tracking-widest">Live Rooms</span>
+</a>
+<a class="flex items-center space-x-4 text-neutral-500 py-4 px-6 hover:text-neutral-200 hover:bg-white/5 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">timer_3</span>
+<span class="font-serif text-sm uppercase tracking-widest">Speed Dating</span>
+</a>
+<a class="flex items-center space-x-4 text-neutral-500 py-4 px-6 hover:text-neutral-200 hover:bg-white/5 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">nightlife</span>
+<span class="font-serif text-sm uppercase tracking-widest">Adult Lounge</span>
+</a>
+</nav>
+<div class="p-6 border-t border-yellow-500/10 space-y-4">
+<button class="w-full gold-btn-gradient text-on-primary py-3 rounded text-label-sm font-bold active:scale-95 transition-transform">
+                Upgrade to Gold
+            </button>
+<div class="flex flex-col space-y-2">
+<a class="flex items-center space-x-3 text-neutral-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">settings</span>
+<span class="text-[10px] uppercase tracking-widest">Settings</span>
+</a>
+<a class="flex items-center space-x-3 text-neutral-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="text-[10px] uppercase tracking-widest">Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 pt-28 px-6 md:px-12 pb-12">
+<!-- Header Section -->
+<header class="max-w-container-max mx-auto mb-stack-lg">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-gutter">
+<div>
+<span class="text-primary font-label-sm tracking-[0.3em] uppercase block mb-4">Choose Your Atmosphere</span>
+<h1 class="text-headline-xl font-headline-xl text-on-background leading-tight">The Gateway to <br/><span class="gold-gradient-text">Elite Experiences.</span></h1>
+</div>
+<div class="max-w-xs">
+<p class="text-on-surface-variant font-body-md border-l-2 border-primary/30 pl-4 py-2">
+                        Welcome back, Julian. Four distinct realms of prestige await your presence.
+                    </p>
+</div>
+</div>
+</header>
+<!-- Bento Grid for Modes -->
+<div class="max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Social Feed Tile (Presence & Discovery) -->
+<div class="md:col-span-8 group relative overflow-hidden glass-card rounded-xl kinetic-glow transition-all duration-500 cursor-pointer h-[400px]">
+<div class="absolute inset-0 z-0 opacity-40 group-hover:opacity-60 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="luxury rooftop bar at night with city lights golden warm bokeh and elegant crowds mingling in sophisticated atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLWOLBGllZMKeDx8nwRIz_T9rr-TtHwuU-iX_9I1GbghoEjqtH00hwLfquAjZToXLm_fblVvTDe8S81b_HUMFXfrasWaI6KKbWMAu4DiBHgLKsLwprGc9R2K5lZ5cUUHCYNh4S2BNhodcqx-eQeEFVtTYAA5yg7xleMiAzWSfnHg1hReL1THDwc2wAIX0MFqmJv_gIJfEIQGMrfHWMfAw3d76RUfl_U7HuYiYb3pDmNNPb_2eOynem6TKJByGiR19YKsjyQpBgkdyB"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+</div>
+<div class="relative z-10 h-full p-10 flex flex-col justify-end">
+<div class="flex items-center space-x-2 mb-4">
+<span class="bg-primary/20 border border-primary/40 px-3 py-1 rounded-full text-[10px] text-primary font-bold tracking-widest uppercase">Presence &amp; Discovery</span>
+</div>
+<h3 class="text-headline-lg font-headline-lg text-white mb-2">Social Feed</h3>
+<p class="text-on-surface-variant font-body-md max-w-md">Chronicles of the night. Share your lifestyle, follow high-profile influencers, and discover curated events.</p>
+<div class="mt-6 flex items-center space-x-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="gold-btn-gradient px-8 py-3 rounded font-bold text-black uppercase text-xs tracking-widest active:scale-95 transition-transform">Enter Lounge</button>
+<span class="text-primary text-xs font-bold uppercase tracking-widest">1.2k Active Now</span>
+</div>
+</div>
+<div class="absolute top-6 right-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-4xl">dynamic_feed</span>
+</div>
+</div>
+<!-- Stats/Mini Tile -->
+<div class="md:col-span-4 glass-card rounded-xl p-8 flex flex-col justify-between border border-yellow-500/5">
+<div>
+<h4 class="text-primary font-label-sm uppercase tracking-widest mb-6">Your Status</h4>
+<div class="space-y-6">
+<div class="flex justify-between items-center border-b border-white/5 pb-4">
+<span class="text-neutral-400 text-sm">Prestige Points</span>
+<span class="text-primary font-bold">12,450</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/5 pb-4">
+<span class="text-neutral-400 text-sm">Profile Tier</span>
+<span class="text-secondary font-bold">Gold Elite</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-neutral-400 text-sm">Active Connections</span>
+<span class="text-white font-bold">42</span>
+</div>
+</div>
+</div>
+<div class="mt-8">
+<div class="relative h-2 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="absolute top-0 left-0 h-full w-2/3 gold-btn-gradient"></div>
+</div>
+<p class="text-[10px] text-neutral-500 mt-2 uppercase tracking-widest">65% to Platinum Level</p>
+</div>
+</div>
+<!-- Live Rooms Tile (Tiered Media) -->
+<div class="md:col-span-4 group relative overflow-hidden glass-card rounded-xl kinetic-glow transition-all duration-500 cursor-pointer h-[450px]">
+<div class="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="professional recording studio or podcast booth with neon ambient lights and high-end tech equipment in dark moody setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWiTpG74xOVHOcQgdjxxx9rZs-rICzPEOmpzAxz_2jH0qcbOFPQq6fxDFvBP2zk9ug2oGEOav5g8XaZcHUMV4sw04UaPzgKSdAD52TqXM40-K_Y0SvTWXT42-0YS5LxEZe2M-g9MZnqS7J_jp2TPdF_gcUta3t61aAN6LKqX1wDdeaLSJcfW79qt0KJ70Q-mcgTTytcJpMjtpzQzJLRyfeL41op42hAbgy1_zIQTzZ2x5rz_mgw1QD0Z8HZNXE_wd0BSV--4bZIBMp"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+</div>
+<div class="relative z-10 h-full p-8 flex flex-col justify-end">
+<div class="mb-4">
+<span class="bg-primary/20 border border-primary/40 px-3 py-1 rounded-full text-[10px] text-primary font-bold tracking-widest uppercase">Tiered Media</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-white mb-2">Live Rooms</h3>
+<p class="text-on-surface-variant font-body-md text-sm mb-6">Interactive high-definition broadcasts, exclusive interviews, and premium virtual table service.</p>
+<button class="w-full py-3 border border-primary/40 text-primary hover:bg-primary/10 rounded uppercase text-xs font-bold tracking-widest transition-all">Join Session</button>
+</div>
+<div class="absolute top-6 right-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-3xl">sensors</span>
+</div>
+</div>
+<!-- Speed Dating (Real-time Matchmaking) -->
+<div class="md:col-span-4 group relative overflow-hidden glass-card rounded-xl kinetic-glow transition-all duration-500 cursor-pointer h-[450px]">
+<div class="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="vibrant energy of a dance floor with motion blur lights and elegant people in formal attire caught in kinetic movement" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdZhzchkMx7Nv5n2c5k8lXakLUgWdC46ylAnxT5KoYiu8MZw9WduGxNhlc_AFxVCW2fyC8LjU2ebBRfjApVQ55VdagRXxlE_kGEpDMP1sic53XJ7x3HMf_TvbqCe4WBb4--1Mr0VKN0RKlYzTd3kWEQwo7pxiTFp2h8AUcxcPOcldIOYvFBGaXxUYge38tftnSgjkIrr2y7nWgRRLwnZ3MqZh6qKHlvaAbrGeyUwIgyNebQmdeq11SQCMmACdUgywmrarurHPm0iZF"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+</div>
+<div class="relative z-10 h-full p-8 flex flex-col justify-end">
+<div class="mb-4 flex space-x-2">
+<span class="bg-secondary/20 border border-secondary/40 px-3 py-1 rounded-full text-[10px] text-secondary font-bold tracking-widest uppercase">Real-time Matchmaking</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-white mb-2">Speed Dating</h3>
+<p class="text-on-surface-variant font-body-md text-sm mb-6">Experience 3-minute high-energy connections. Filter by prestige, interests, and proximity.</p>
+<button class="w-full py-3 border border-secondary/40 text-secondary hover:bg-secondary/10 rounded uppercase text-xs font-bold tracking-widest transition-all">Start Matching</button>
+</div>
+<div class="absolute top-6 right-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-secondary text-3xl">timer_3</span>
+</div>
+</div>
+<!-- Adult Lounge (Secure & Private) -->
+<div class="md:col-span-4 group relative overflow-hidden glass-card rounded-xl kinetic-glow transition-all duration-500 cursor-pointer h-[450px]">
+<div class="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="luxury speakeasy lounge with plush velvet seating dimly lit by amber lamps and fine crystal glassware on marble tables" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8O_-6h_EumQrGGk5i64TMa9j2QmiVne9sJIiGzs2FhIusDLUI6uCGFTZF3kF-8IDZDcL8VQWUcddD2sTTiPsp3Skdr3JxtrWLzVr3iCkVz_qT_G3Om01SOd3TyGycbK1yViJNF5B-nQ1u1q3Md6zeja9riZfFjxebJ13fn7CxtFPwDgLnpaJVwEvHG1_5bRDUPj8m7ZaHWHMHwSmsvkt-QlP_ORUOHD0R9bW1JPN-vpqeZ1H9tTLOEBkFigqy0soeTtx2u9DWvJuP"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+</div>
+<div class="relative z-10 h-full p-8 flex flex-col justify-end">
+<div class="mb-4">
+<span class="bg-error/20 border border-error/40 px-3 py-1 rounded-full text-[10px] text-error font-bold tracking-widest uppercase">Secure &amp; Private</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-white mb-2">Adult Lounge</h3>
+<p class="text-on-surface-variant font-body-md text-sm mb-6">Discreet environment with advanced end-to-end encryption for the truly uninhibited elite.</p>
+<button class="w-full py-3 border border-error/40 text-error hover:bg-error/10 rounded uppercase text-xs font-bold tracking-widest transition-all">Verify &amp; Enter</button>
+</div>
+<div class="absolute top-6 right-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-error text-3xl">nightlife</span>
+</div>
+</div>
+</div>
+<!-- Secondary Highlights Section -->
+<section class="max-w-container-max mx-auto mt-stack-lg border-t border-white/5 pt-stack-md">
+<h2 class="text-headline-md font-headline-md text-white mb-gutter">Trending Now</h2>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<!-- Trending Card 1 -->
+<div class="glass-card p-4 rounded-lg flex items-center space-x-4 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="w-16 h-16 rounded overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="elegant dark cocktail with gold leaf garnish on a black reflective surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAO3zrfiXX7SyQymcQqdNZyVaBpaGs5tY_Dpwlld4DhmS-Tr0H-v4pl2517mVkpZ5gqcnZ89-eIDCQMsI0yliKraVav8HeCE92qnFsWgPCD_T_PtY5loMhg1mx5mUKKPtdaLK75kUv4Fpe1jISahT7OMt-ydw9acg45BAHTNbBmeywF1fdPiK2oUR5B7ksY1SgrGbMKhhLCsvNm5N6P0Jg57Rrk4X8GZC_OhqrxpppWDrqXzbodiVPuLanYwOSkNDdXgn85BfEkxYg9"/>
+</div>
+<div>
+<p class="text-primary text-[10px] font-bold uppercase tracking-widest">Live Room</p>
+<p class="text-white text-sm font-bold">Midnight Mixology</p>
+<p class="text-neutral-500 text-[10px]">240 watching</p>
+</div>
+</div>
+<!-- Trending Card 2 -->
+<div class="glass-card p-4 rounded-lg flex items-center space-x-4 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="w-16 h-16 rounded overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="blurred nightclub lights with intense purple and gold beams cutting through smoke" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrY-cLC3q7LX9W5an9apDm8uq4iTKFLpm7Up32Fkzk404NI7u6OCx0AUOgXFCB5so5-qSDZecKjOAo0qBKWdwmAiCIJEGkuQCggM26iCJe9x34LqGXlbS0ojdTZNfLYkmGTg-8hHFBa1ItvTDtSuoOV9v4AOKtOxqHNwAE1qnE_GqXpWCjmZB15tJ47Z95UsJTqPBP_gMAY1-kSUKxxm4fgbNgq0UPOTsTYlPNyoEyNgmuAr8TW27W74zXmo9osrXKiprC4WUSyFki"/>
+</div>
+<div>
+<p class="text-secondary text-[10px] font-bold uppercase tracking-widest">Speed Event</p>
+<p class="text-white text-sm font-bold">Monaco Grand Prix Elite</p>
+<p class="text-neutral-500 text-[10px]">Starts in 2h</p>
+</div>
+</div>
+<!-- Trending Card 3 -->
+<div class="glass-card p-4 rounded-lg flex items-center space-x-4 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="w-16 h-16 rounded overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="luxury private jet interior with champagne and fine leather seats" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDi0HAzggyON81Wuy5hoKf16qsAEv7DzgtOOgxn0WNeIGqwBc3bMBbVfEsiE0KQuWYoOl4hzIAB6uW4RGVZf9bxB9mYIfkzbdjeWR65g7HzNsP1OP8IhIPhLGbx6rVCOYYCYT9jJWhT-JtJDNQXpYMnWHI9wyO1VL68j13ae8rplrJgO4TWGzcT-V7oL4l0N9Qm0UFVfsEYkeReDN-9jnzEG4A-XYrHa3IhWGvqcsZ2tDs1tiImJjnFtqLcCr0RQGKilCw32xP4frh7"/>
+</div>
+<div>
+<p class="text-primary text-[10px] font-bold uppercase tracking-widest">Social</p>
+<p class="text-white text-sm font-bold">Horizon Travels</p>
+<p class="text-neutral-500 text-[10px]">14.2k likes</p>
+</div>
+</div>
+<!-- Trending Card 4 -->
+<div class="glass-card p-4 rounded-lg flex items-center space-x-4 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="w-16 h-16 rounded overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="mysterious figure in a masquerade mask under dramatic shadow and gold light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFoX3guL4eIbA5OmEMnRVUgDDsdA7l998NZhnilPrJQol9hoEj7qdxawcS4z2JedMvusk6l9Z_JT3apl2gZ-QGegZvPj2IOvKsBAGmyrvezs0MJZ103PMnVZRuz3Oidm3qLQPHtZjs13ZT9yvV5TbfdN2Jsa_JXdoQ8P0oFrh0Wqx3Qpc4XDXNZibDbQqZnBRFlkt-qxMbYtFxz7w_M1vogbqBV4_4J7f9oYpopWiH0U6ozPbor29fiVNO0rIede5KRv81Mm8LhG7i"/>
+</div>
+<div>
+<p class="text-error text-[10px] font-bold uppercase tracking-widest">Secret Lounge</p>
+<p class="text-white text-sm font-bold">Masquerade Ball</p>
+<p class="text-neutral-500 text-[10px]">Invite Only</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Mobile Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0D0D0D]/90 backdrop-blur-2xl border-t border-yellow-500/10 flex justify-around items-center h-20 z-50 px-4">
+<button class="flex flex-col items-center space-y-1 text-yellow-500">
+<span class="material-symbols-outlined">dynamic_feed</span>
+<span class="text-[10px] uppercase font-bold">Social</span>
+</button>
+<button class="flex flex-col items-center space-y-1 text-neutral-500">
+<span class="material-symbols-outlined">sensors</span>
+<span class="text-[10px] uppercase font-bold">Live</span>
+</button>
+<button class="bg-yellow-500 text-black p-3 rounded-full -mt-10 shadow-lg shadow-yellow-500/20 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="flex flex-col items-center space-y-1 text-neutral-500">
+<span class="material-symbols-outlined">timer_3</span>
+<span class="text-[10px] uppercase font-bold">Dating</span>
+</button>
+<button class="flex flex-col items-center space-y-1 text-neutral-500">
+<span class="material-symbols-outlined">nightlife</span>
+<span class="text-[10px] uppercase font-bold">Lounge</span>
+</button>
+</nav>
+<!-- Decorative kinetic accent -->
+<div class="fixed bottom-12 right-12 pointer-events-none z-0 opacity-10">
+<div class="w-96 h-96 rounded-full bg-primary/20 blur-[120px]"></div>
+</div>
+</body></html>

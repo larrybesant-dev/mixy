@@ -45,12 +45,12 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
     final audienceBand = total >= 20
         ? 20
         : total >= 10
-        ? 14
-        : total >= 5
-        ? 8
-        : total >= 2
-        ? 4
-        : total;
+            ? 14
+            : total >= 5
+                ? 8
+                : total >= 2
+                    ? 4
+                    : total;
     return audienceBand + (speakers * 3) + recencyBoost;
   }
 
@@ -136,9 +136,8 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
           ...FeedAttentionExperiment.telemetryMetadata(),
           'section': section,
           'category': room.category ?? 'unknown',
-          'dwell_ms': DateTime.now()
-              .difference(_featuredVisibleAt!)
-              .inMilliseconds,
+          'dwell_ms':
+              DateTime.now().difference(_featuredVisibleAt!).inMilliseconds,
         },
       );
     });
@@ -292,9 +291,8 @@ class _HomeLobbyScreenState extends ConsumerState<HomeLobbyScreen> {
                       ? trending.first
                       : (liveNow.isNotEmpty ? liveNow.first : null);
                   final featuredRoomId = featuredRoom?.id;
-                  final featuredSection = trending.isNotEmpty
-                      ? 'trending'
-                      : 'live_now';
+                  final featuredSection =
+                      trending.isNotEmpty ? 'trending' : 'live_now';
 
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) {
@@ -525,7 +523,7 @@ class _SectionHeader extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: VelvetNoir.onSurface,
-          ),
+            ),
           ),
           const SizedBox(height: 2),
           Text(

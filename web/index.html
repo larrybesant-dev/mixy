@@ -18,6 +18,23 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="icons/Icon-192.png"/>
+  <script>
+    // BOOTSTRAP HARDENING: Catch CanvasKit font measurement panics
+    window.addEventListener('error', function(e) {
+      if (e.message && e.message.includes('Could not find a set of Noto fonts')) {
+        console.warn('[Bootstrap Hardening] CanvasKit font fallback error intercepted. Skipping measurement panic to prevent render halt.');
+        e.preventDefault(); // Prevent the error from bubbling up and crashing the engine
+        return true;
+      }
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var reason = e.reason && (e.reason.message || e.reason.toString());
+      if (reason && reason.includes('Could not find a set of Noto fonts')) {
+        console.warn('[Bootstrap Hardening] CanvasKit font fallback rejection intercepted.');
+        e.preventDefault();
+      }
+    });
+  </script>
   <style>
     html, body {
       width: 100%;

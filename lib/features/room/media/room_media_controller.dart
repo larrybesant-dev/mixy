@@ -114,8 +114,8 @@ class RoomMediaController {
       final newTier = i < _fullVideoMax
           ? MediaTier.fullVideo
           : i < _lowVideoMax
-          ? MediaTier.lowVideo
-          : MediaTier.audioOnly;
+              ? MediaTier.lowVideo
+              : MediaTier.audioOnly;
 
       if (p.tier != newTier) {
         _states[p.userId] = p.copyWith(tier: newTier);
@@ -131,7 +131,3 @@ class RoomMediaController {
     );
   }
 }
-
-
-
-

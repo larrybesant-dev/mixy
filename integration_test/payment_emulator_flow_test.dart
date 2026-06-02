@@ -64,10 +64,8 @@ Future<UserCredential> _createAndSeedUser({
 }
 
 Future<Map<String, dynamic>> _userDoc(String uid) async {
-  final snapshot = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid)
-      .get();
+  final snapshot =
+      await FirebaseFirestore.instance.collection('users').doc(uid).get();
   return snapshot.data() ?? <String, dynamic>{};
 }
 

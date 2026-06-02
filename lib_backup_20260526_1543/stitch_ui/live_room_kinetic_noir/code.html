@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "surface-container-high": "#2a2a2a",
+                "secondary-fixed": "#79ff5b",
+                "on-secondary": "#053900",
+                "on-tertiary-container": "#89e0ff",
+                "on-secondary-container": "#0f6d00",
+                "on-primary-fixed-variant": "#5700c9",
+                "on-background": "#e5e2e1",
+                "inverse-surface": "#e5e2e1",
+                "surface-container": "#201f1f",
+                "surface-container-lowest": "#0e0e0e",
+                "surface-dim": "#131313",
+                "surface-tint": "#d1bcff",
+                "background": "#131313",
+                "surface-bright": "#3a3939",
+                "on-tertiary": "#003543",
+                "on-error": "#690005",
+                "inverse-on-surface": "#313030",
+                "primary-container": "#7000ff",
+                "on-secondary-fixed": "#022100",
+                "error": "#ffb4ab",
+                "on-surface-variant": "#ccc3da",
+                "on-error-container": "#ffdad6",
+                "tertiary-container": "#00647c",
+                "on-tertiary-fixed-variant": "#004e60",
+                "surface-container-highest": "#353534",
+                "secondary": "#d7ffc5",
+                "primary": "#d1bcff",
+                "tertiary-fixed-dim": "#4cd6ff",
+                "secondary-fixed-dim": "#2ae500",
+                "on-primary-container": "#ddcdff",
+                "outline-variant": "#4a4457",
+                "surface-container-low": "#1c1b1b",
+                "primary-fixed-dim": "#d1bcff",
+                "surface-variant": "#353534",
+                "on-tertiary-fixed": "#001f28",
+                "error-container": "#93000a",
+                "on-secondary-fixed-variant": "#095300",
+                "on-primary-fixed": "#23005b",
+                "tertiary": "#4cd6ff",
+                "tertiary-fixed": "#b7eaff",
+                "surface": "#131313",
+                "on-primary": "#3c0090",
+                "secondary-container": "#2ff801",
+                "primary-fixed": "#e9ddff",
+                "outline": "#958da3",
+                "on-surface": "#e5e2e1",
+                "inverse-primary": "#7212ff"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+              },
+              "spacing": {
+                "unit": "4px",
+                "xl": "40px",
+                "sm": "8px",
+                "lg": "24px",
+                "md": "16px",
+                "margin": "24px",
+                "gutter": "20px",
+                "xs": "4px"
+              },
+              "fontFamily": {
+                "label-sm": ["Inter"],
+                "display": ["Space Grotesk"],
+                "headline-md": ["Space Grotesk"],
+                "label-bold": ["Inter"],
+                "headline-lg": ["Space Grotesk"],
+                "body-lg": ["Inter"],
+                "body-md": ["Inter"]
+              },
+              "fontSize": {
+                "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .live-pulse {
+            box-shadow: 0 0 0 0 rgba(121, 255, 91, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(121, 255, 91, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(121, 255, 91, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(121, 255, 91, 0); }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #353534; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-white overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-64 border-r border-white/10 bg-[#1A1A1A]/90 backdrop-blur-2xl flex flex-col h-full py-8 z-50">
+<div class="px-8 mb-12">
+<span class="text-2xl font-black tracking-tighter bg-gradient-to-r from-[#7000FF] to-blue-500 bg-clip-text text-transparent font-display uppercase">PULSE</span>
+<p class="text-[10px] text-secondary-fixed-dim font-label-sm tracking-[0.2em] mt-1">NETWORK ACTIVE</p>
+</div>
+<div class="flex flex-col flex-1">
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-display uppercase text-xs font-bold tracking-widest">Home Feed</span>
+</a>
+<a class="bg-gradient-to-r from-[#7000FF]/20 to-transparent border-l-4 border-[#7000FF] text-white py-4 px-6 flex items-center gap-4 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-display uppercase text-xs font-bold tracking-widest">Live Rooms</span>
+</a>
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">bolt</span>
+<span class="font-display uppercase text-xs font-bold tracking-widest">Speed Dating</span>
+</a>
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">mail</span>
+<span class="font-display uppercase text-xs font-bold tracking-widest">messages</span>
+</a>
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-display uppercase text-xs font-bold tracking-widest">Profile</span>
+</a>
+<a class="text-gray-500 py-4 px-6 flex items-center gap-4 border-l-4 border-transparent hover:text-white hover:bg-white/5 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">dark_mode</span>
+<span class="font-display uppercase text-xs font-bold tracking-widest">After Dark</span>
+</a>
+</div>
+<div class="px-6 mt-auto">
+<button class="w-full bg-gradient-to-r from-primary-container to-tertiary-container py-4 rounded-xl font-display font-bold tracking-widest text-xs uppercase shadow-lg shadow-primary-container/20 active:scale-95 transition-transform">
+                    GO LIVE
+                </button>
+</div>
+</nav>
+<!-- Main Content (Center) -->
+<main class="ml-64 mr-80 flex-1 flex flex-col overflow-hidden">
+<!-- Top App Bar -->
+<header class="flex justify-between items-center h-16 px-6 w-full bg-[#0D0D0D]/80 backdrop-blur-xl border-b border-white/10 z-40">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-secondary/10 rounded-full border border-secondary/20">
+<div class="w-2 h-2 rounded-full bg-secondary-fixed live-pulse"></div>
+<span class="text-[10px] font-bold text-secondary-fixed tracking-widest uppercase">Cyber_Pulse Live</span>
+</div>
+<h1 class="font-headline-md text-on-background ml-4">The Future of Interaction</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-surface-dim" data-alt="Stylized 3D avatar of a young creator with neon accessories and digital art background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7gBzL04iXAYOgg9HiGvGQ-TB9Mb_Fx8pCUtbIFYQZijd-3-Bf0e7dvWmy0L5dPKZk03spMUMpSKfGmTH5UXeZ4seANFVQ8_zut61nzJnHTQJBY4HKEnVRKbOMfm1X_FW7k6Kt26t6WVVhku6FSRBd6KsOM3J5HO0Bhm7HAB4qEMDSPjiWUXs2MabGJOAe4VZJ2b3ljyusEN3bbykBDu8TooWYfpO5wpooVTaHLqoQDaQxN3CcJXkOsouOriERhNf2IwywQrLGr1oo"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-dim" data-alt="Avatar of a tech professional with stylish glasses in a futuristic purple-lit studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFcjxebq4clvUPW_Sxk2rGU77EDH8oE5SR0pb629TJ43ku6qlYV6ZB5uMeN7lfaea-jGecnXz62ySnqn-2IwD2HOjtNsMcLt7ds1_27jJHCGMekNxzDaarlbK53sijO9EpusDQzEv7r2LvCAC1lj0IzxG8FNz0GwzEnCXeuY3kxcp-T-hDCof2yAgC48h9YefAMyLpi0OREPxPTEmQ9nNjxUMxK5zxXOPdswGg7tGtcrYPNlFr3l4dTZ99k7hmGsADbDN4hRy5U4zO"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-dim" data-alt="Creative artist avatar with vibrant hair and neon makeup in a soft focus digital environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDql6MgKQiGKyizXQBixwloO2HbbwS8anIQ4dcRjeePx4QEV_NyRUwddjvbPFTq_LyD5gt_DzFwzanDP86ejq0YT-8J34LnQEGlhpYuwtwSYzeISZTkqqDAzsbKf8Z68T8gNoYunflKpN9H-resG-eYuZ9mN0o-7NLdJ2YRnxXg7CjXN5SSHxN4lXGNRpwKSDzDuvu_rnby_B7HDUHN9tp_f0N5kGwndG8eVzWI9-ANXiK40AArd5U7IueQABwNbv8kqs19H2LsNJR3"/>
+</div>
+<span class="text-label-sm text-outline-variant">+1,240 watching</span>
+</div>
+</header>
+<!-- Video Canvas Area -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Tiered Speaker Stage -->
+<div class="grid grid-cols-2 gap-gutter h-[400px]">
+<div class="relative rounded-2xl overflow-hidden border border-white/10 bg-surface-container shadow-2xl group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Professional streamer in a high-tech dark studio with vibrant purple and cyan ambient lighting and mechanical keyboard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEhWYF3jKsiTp-TKMM9EWay2-G7peiLTqpNj-aZnH9VwAYLGlkpODOxKqwukE_8BK3ctfZbT1OTinRk8pBwl9CLj8b7A-UefuLTdLwOjRu6VmjMVYWlUv7b-u3UTB3L3lRLwGtTza0yT8cGpPLhSx7AvIu53xvcZV-V3x68deM8pkkmgpPikXSsEPh6W1IzI1kOBfEs1meEV8Img-FA0wAFzd5au6PFIa7uf44Kn6-QdRVS1ymTkdr0pRiMQgqvz9b3VWR-dach3RY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<span class="bg-[#7000FF] px-3 py-1 rounded-lg text-white font-label-bold text-xs">HOST</span>
+<span class="text-white font-bold font-display tracking-wide">Alex_Vortex</span>
+</div>
+<div class="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2 rounded-lg border border-white/10">
+<span class="material-symbols-outlined text-secondary-fixed text-sm" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+</div>
+<div class="relative rounded-2xl overflow-hidden border border-white/10 bg-surface-container shadow-2xl group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Close up of a woman speaking into a high-end condenser microphone with soft blue neon lighting highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGf76BqiLn5UQBPAtU6mPH6Zl9jwPv17nRXqI-hZDqAZ1DF_ecGP2gwz4_vpdwNOJ3RESH0NgWWPHvuasmPCewXW_UUNLC2sGJCJwjLlTH5UzB3pBmk4N7aLB0QqC9FMe8TgA6f9i0n7hgiBa-qE_iQdlL7WLWfaNZNIdSu0RWwISwxJqQcQkLaUsTGqFMvKZHioYI5CEhe73KOQQE4Xd4GQk0G9IyVLB4EPlG-1sOzEXdHXe8bQ7Ln1rfxWvzKdLJ2x9uobXmRCRz"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<span class="bg-tertiary-container px-3 py-1 rounded-lg text-white font-label-bold text-xs">SPEAKER</span>
+<span class="text-white font-bold font-display tracking-wide">Neo_Sarah</span>
+</div>
+<div class="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2 rounded-lg border border-white/10">
+<span class="material-symbols-outlined text-secondary-fixed text-sm" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+</div>
+</div>
+<!-- Audience Grid -->
+<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 pt-4">
+<!-- Repeated items for audience -->
+<div class="flex flex-col items-center gap-2">
+<div class="relative w-16 h-16 rounded-full p-1 bg-gradient-to-tr from-[#7000FF] to-transparent">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-high" data-alt="User profile avatar 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4W4bFttLJP75J69hAts8opczKTdaOEP9TyRs6IjwHaF2mJhroAp9sXUUaR2-FzDadjpNl826yI_1g-V7P_wIYOCIXvvl9giyMxGDA_TA018PX_zZzbO1Pjg5iLN1_0T1vGcagFz4Tz_ihp278TdGzpQeHTkphXeDd6b0ChZFw1S8IgKIuw9t5E9k2jyu4DvTVqwUQaRJEB9oEC69XuG-OSh_0snmUt5jDO8jOC75UNIAS7zCGm12E8z4noh9EUmGjiS-ZriF3xhfY"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-surface-container border border-white/10 rounded-full flex items-center justify-center">
+<div class="w-2 h-2 bg-secondary-fixed rounded-full"></div>
+</div>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Pixel</span>
+</div>
+<!-- Mock Audience Cells -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/10 flex items-center justify-center">
+<img class="w-full h-full rounded-full" data-alt="User profile avatar 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd6K6NK4SCqWUisP3INF2F38XCgsfK3v-8weMdr-t-cNXWkDK-InrofwCC9uUOo7ufHhyB7QkasEA8dURcZLRH9eUjEmJuNaDKE8gaJyY57LOk4rYgt2v0hUj-fkmczDusUKjOEk8nkVK9yV9rieerU1NDgRGL0-aPY6V86jzzr45gtpa55DraZNYbV5ASL3G-qnzeOWsIaeel-u-Sg7GyU-MizCz-445gmu__Ol4Yi6IufkonVNCMPBWIfEJ8rhjM8ka8X2y21RdT"/>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Zen</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/10 flex items-center justify-center p-4">
+<div class="flex items-end gap-0.5 h-full w-full justify-center">
+<div class="w-1 bg-tertiary h-1/2"></div>
+<div class="w-1 bg-tertiary h-full"></div>
+<div class="w-1 bg-tertiary h-3/4"></div>
+</div>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Wave</span>
+</div>
+<!-- Fill with more... -->
+<div class="flex flex-col items-center gap-2 opacity-60">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/5 flex items-center justify-center">
+<img class="w-full h-full rounded-full" data-alt="User profile avatar 3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpmNTZZhN9ffjwnGJzVQoUfj8H_5mBOS2maA4TvfNm9kKDV_jaoFh1hTD3u9Am8E9xHeDM8PDSooUTjjIzTL1SGO72Kk19XreP_SJe5uEO_JNSmcDEnCWMRTvVZ5dAMKs96LbEiL83tWA3vIOYrnRhYW37xNXgdY5XNaR6bngWK0jptTfbOTwElEDnekwpcHmLFDMtHU7i9bn8NVSgIdf2lx4b_md-wszb7dZAXwKr_IInDmeAG_V_QJn9dYnzONUVkStBBT8uHBbt"/>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Aura</span>
+</div>
+<div class="flex flex-col items-center gap-2 opacity-60">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/5 flex items-center justify-center">
+<img class="w-full h-full rounded-full" data-alt="User profile avatar 4" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhPir3N7miyfVvhchYYfol6FsUFOzL2z7kyYxpjDiRFawom_yW8MgS7PK7jHcmSyMCUdg4qBI7l444xDGGmDkudY1e62A1qaZ9WBi3ES_u8G8ER9hddrToyCHSc-ALsLUutEc6rcebRfJd5W4hCgreLidQK_KSDxyFr6ngl3I_7RbEX0iO58nUkLenioQWFFqW_n0R5hBsZUnJk17_AWsUWL1EV4V0Fj7krEuK1XvK9M0mQmgxTn8KRJKYDpdZd8fjtrnVWvh68fp9"/>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Ghost</span>
+</div>
+<div class="flex flex-col items-center gap-2 opacity-60">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/5 flex items-center justify-center">
+<img class="w-full h-full rounded-full" data-alt="User profile avatar 5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeeI-d7em0Um80CasbLAVht0WWFPTtW9cX09aK0Z_XN6OuHztchYLJ-Lvi6HvPTpncnRDJ2zZcIke0fEyElwwaiDGuHhYFZw9Su1uWuPdMQ8xeCOtXpiOaIFWL9z0gChYIV0HLynWZzKsK0UlYrlnjKNAEwgSUA5fuXCxyb-bM0TV3_qhwu2sYapLFqd-cEuPM7K63VkHe76ybCxgBnCFbJVavIf96jWGfCM9sKAj72ZUvwYgCLuidBzcOcysxSTK9PdS245ppW8d7"/>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Void</span>
+</div>
+<div class="flex flex-col items-center gap-2 opacity-60">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-white/5 flex items-center justify-center">
+<img class="w-full h-full rounded-full" data-alt="User profile avatar 6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAept-bFaF6HXWEx1gkssYdBQX-omTNtsQPktx0DvyVnCDi6U_3tSBMl3-yjUpcLIV2XEzyJXbb8CvmbfNDer-gI3FxL7ZCLIcuBvl6-jEWLWW9AU39wRx8AUBIAZynYcXi7x19zYdp-Wl_7V0pBbqKRioj8HU1RAnUd3DrME3WeI1tk52SUo1EpN5yMiqA1tJn642hWGENivdVedj0Mmolnq3FleJHr5kgM5hucELWIDXHe_Yn8UNrKeajaNprmkU1gatx21FYCQSy"/>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Flux</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-16 h-16 rounded-full bg-surface-container-high border border-white/10 flex items-center justify-center">
+<span class="text-[12px] font-bold text-[#7000FF]">+99</span>
+</div>
+<span class="text-[10px] text-outline font-label-bold uppercase">Lobby</span>
+</div>
+</div>
+</div>
+<!-- Interaction Controls -->
+<footer class="h-20 border-t border-white/10 bg-[#0D0D0D]/90 backdrop-blur-xl flex items-center justify-center px-8 gap-6 z-40">
+<div class="flex items-center gap-4">
+<button class="w-12 h-12 rounded-xl bg-surface-container border border-white/10 flex items-center justify-center hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-white">mic</span>
+</button>
+<button class="w-12 h-12 rounded-xl bg-surface-container border border-white/10 flex items-center justify-center hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-white">videocam</span>
+</button>
+<button class="w-12 h-12 rounded-xl bg-surface-container border border-white/10 flex items-center justify-center hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-white">screen_share</span>
+</button>
+</div>
+<div class="h-8 w-px bg-white/10"></div>
+<div class="flex items-center gap-2">
+<button class="px-4 h-12 rounded-xl bg-surface-container border border-white/10 flex items-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="text-xl">🔥</span>
+<span class="text-label-sm font-bold uppercase tracking-widest text-outline">Hype</span>
+</button>
+<button class="px-4 h-12 rounded-xl bg-surface-container border border-white/10 flex items-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="text-xl">⚡</span>
+<span class="text-label-sm font-bold uppercase tracking-widest text-outline">Bolt</span>
+</button>
+<button class="px-4 h-12 rounded-xl bg-surface-container border border-white/10 flex items-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="text-xl">💖</span>
+<span class="text-label-sm font-bold uppercase tracking-widest text-outline">Luv</span>
+</button>
+</div>
+<div class="h-8 w-px bg-white/10"></div>
+<button class="bg-error/10 hover:bg-error/20 border border-error/20 px-6 py-2.5 rounded-xl text-error text-label-bold uppercase tracking-widest transition-colors">
+                    Leave Room
+                </button>
+</footer>
+</main>
+<!-- Right Side Panel (Chat) -->
+<aside class="fixed right-0 top-0 h-screen w-80 bg-[#1A1A1A]/60 backdrop-blur-3xl border-l border-white/10 flex flex-col">
+<div class="p-6 border-b border-white/10 flex justify-between items-center bg-[#1A1A1A]/80">
+<h2 class="font-display font-bold text-sm tracking-widest uppercase text-white">Live Stream Chat</h2>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
+<span class="text-[10px] text-secondary-fixed font-bold">1.2K</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Chat MessageModel -->
+<div class="flex gap-3">
+<img class="w-8 h-8 rounded-lg" data-alt="Chat user avatar 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkc1XvI6sv2rKuSuwUkXRjnjZ37d1eDs6kFcTGv3oTbBr0dvo3JDWa8KGrCX350YEVLr_XqnkBLo44rKstHDfHUmFKIaseeJxqC3wTXAtUw4JIXwoBdIkT4V8j38TKCJfZKaRGIKSntZXsPxOoEwHvqJ5Ej-joF7igdsA6saMutE1GGfecpl-AfmpEu2hdWZNUjSMEWx90CVijH98DiY1DOpvVD8sj9HpCvRtboOZCCeh0bfTw1Uxb-11ou13eljZ3T33NNlNj8ly-"/>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-tertiary">Orbit_404</span>
+<span class="text-[9px] text-outline-variant">14:21</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-1">This interior view is absolutely stunning! The glass effects are next level.</p>
+</div>
+</div>
+<div class="flex gap-3">
+<img class="w-8 h-8 rounded-lg" data-alt="Chat user avatar 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBePpp15cWcwkZAjOxtSnxYhanrxsCG49SgVsUawDhKjfiyipYkDaMEOqvk5lT_hh8JoMetwT9opp1NQMSgKTy3ck9Q3G0YbXMHrbkX-eUag3tj8Ms1fm8xkzx-tqMYEKbRbAU7gFBCRSnfIjWLcA9JhyW4cu6SdnFMJtEEuRfGUsmbVWAFY7ZIF2ExTL1Zahj4NaLA5SXvZadi5KnJ3x0skmiUYGCncmeIexbCc3jZeRP89ORhJ64B7cvajnoOjzJyyGuTN5-PviJO"/>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-secondary-fixed-dim">CryptoKing</span>
+<span class="text-[9px] text-outline-variant">14:22</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-1">Are we dropping the new speed dating feature today? ⚡⚡⚡</p>
+</div>
+</div>
+<div class="bg-primary-container/10 border border-primary-container/20 p-3 rounded-xl flex gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">stars</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-primary">Pulse_Bot</span>
+<span class="bg-primary/20 text-[8px] px-1 rounded text-primary">SYSTEM</span>
+</div>
+<p class="text-xs text-on-primary-container leading-relaxed mt-1">Remember to follow the community guidelines. Keep it electric!</p>
+</div>
+</div>
+<div class="flex gap-3">
+<img class="w-8 h-8 rounded-lg" data-alt="Chat user avatar 3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTfQoLGafat-a-96xYSxWTnF55Ug_Zd-xrkEHc3_8cj4HXkF9vFbyrr4EZMK0hIyegJVlNhZNtCyCEP1haqUcT7jV4HTeXb5NpSWAN7ST2cv_wUDwJeH0UCiigdtpkwvTzStY70kObHQf3mWQxi8CUOBg6DW5m9oc9VA_P5QsyOGwPTeMqmsWgwqfKdbQBRfkR5CyDh81ro3yqbWReiUbcufmXty2uvkk_cde2-wnMZU6dx6pMAzuHEh4hX5rofOSDEJGceaNuKcvR"/>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-white">X_Design_X</span>
+<span class="text-[9px] text-outline-variant">14:24</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-1">Love the new typography choice for the room titles. Space Grotesk rules.</p>
+</div>
+</div>
+<div class="flex gap-3">
+<img class="w-8 h-8 rounded-lg" data-alt="Chat user avatar 4" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTFEV-S3HucEmbFKKjtj0e5DSe5iZJvCv8HdHLC7_wOx7WwICMcu5H4RW83KK2lD2eR0zoA5JxResJHrG8wAbXRg_ZTi2R1eVifyHZtcsWZ4R-1AQ21PIZT72g4ZFp97GylXkNzGE6wgBbFccS_wC91QoeFEPepofErdcYTUoK5G8tn-XC21Wb6qNcH0uR1FBSu2PL3Fpb8ftcFTlLRIZpl-Ty8qR6PeWQayM5ILOur5UwMmDDa0iKUJ2uPutYRsKK6hIBMeytYwgY"/>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-tertiary">Neon_Dreamer</span>
+<span class="text-[9px] text-outline-variant">14:25</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed mt-1">How can I apply for the speaker stage? I have some ideas for the next live room.</p>
+</div>
+</div>
+</div>
+<div class="p-4 bg-[#1A1A1A] border-t border-white/10">
+<div class="relative">
+<input class="w-full bg-surface-container-high border-none rounded-xl py-3 px-4 text-xs focus:ring-2 focus:ring-[#7000FF] transition-all text-on-surface-variant" placeholder="Type a MessageModel..." type="text"/>
+<div class="absolute right-2 top-2 flex items-center gap-1">
+<button class="p-1 text-outline hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">mood</span>
+</button>
+<button class="p-1 text-[#7000FF] hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Floating UI Notification -->
+<div class="fixed top-20 right-84 z-50 animate-bounce pointer-events-none">
+<div class="bg-secondary-fixed text-on-secondary px-4 py-2 rounded-full shadow-2xl flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">bolt</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Speed dating starts in 5m</span>
+</div>
+</div>
+</body></html>

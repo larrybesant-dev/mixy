@@ -1,3 +1,14 @@
+import 'package:flutter/widgets.dart';
+import 'package:go_router/go_router.dart';
+
+String? redirect(BuildContext context, GoRouterState state) {
+  // Add this line to see the loop in your logs
+  print("DEBUG: Routing from ${state.matchedLocation} to ${state.uri}");
+
+  // ... rest of your code
+  return null;
+}
+
 class RedirectEvaluation {
   const RedirectEvaluation({required this.redirectTo, required this.reason});
 
@@ -19,8 +30,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   // we MUST NOT redirect. Redirecting to /auth here would overwrite the deep
   // link URL before the app knows who the user is.
   if (authLoading) {
-    return const RedirectEvaluation(
-      redirectTo: null,
+    return RedirectEvaluation(
+      redirectTo: matchedLocation,
       reason: 'auth_loading_preserve_location',
     );
   }
@@ -47,8 +58,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
             redirectTo: '/home',
             reason: 'signed_in_redirect_to_home',
           )
-        : const RedirectEvaluation(
-            redirectTo: null,
+        : RedirectEvaluation(
+            redirectTo: matchedLocation,
             reason: 'signed_out_allowed_auth_route',
           );
   }
@@ -61,8 +72,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
     );
   }
 
-  return const RedirectEvaluation(
-    redirectTo: null,
+  return RedirectEvaluation(
+    redirectTo: matchedLocation,
     reason: 'allow_navigation',
   );
 }
@@ -82,6 +93,3 @@ String? evaluateAppRedirect({
     hasAcceptedLegal: hasAcceptedLegal,
   ).redirectTo;
 }
-
-
-

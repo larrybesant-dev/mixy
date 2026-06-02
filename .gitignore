@@ -63,3 +63,4 @@ android/key.properties
 .firebase/
 code-scan.txt
 *.bak
+.env

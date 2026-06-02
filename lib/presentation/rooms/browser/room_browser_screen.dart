@@ -13,7 +13,8 @@ class RoomBrowserScreen extends ConsumerStatefulWidget {
 }
 
 class _RoomBrowserScreenState extends ConsumerState<RoomBrowserScreen> {
-  static const List<({String label, String emoji, String? value})> _categories = [
+  static const List<({String label, String emoji, String? value})> _categories =
+      [
     (label: 'All Rooms', emoji: '✨', value: null),
     (label: 'Music', emoji: '🎵', value: 'music'),
     (label: 'Talk', emoji: '💬', value: 'talk'),

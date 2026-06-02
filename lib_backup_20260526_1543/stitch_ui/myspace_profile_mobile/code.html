@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MixVy Profile - MySpace Style</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "secondary-container": "#2ff801",
+                        "surface-container-highest": "#353534",
+                        "surface-container-high": "#2a2a2a",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#095300",
+                        "surface-tint": "#d1bcff",
+                        "on-surface-variant": "#ccc3da",
+                        "secondary-fixed": "#79ff5b",
+                        "surface-dim": "#131313",
+                        "primary": "#d1bcff",
+                        "on-tertiary": "#003543",
+                        "inverse-primary": "#7212ff",
+                        "primary-container": "#7000ff",
+                        "on-secondary-container": "#0f6d00",
+                        "surface-variant": "#353534",
+                        "surface": "#131313",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#2ae500",
+                        "on-tertiary-container": "#89e0ff",
+                        "surface-bright": "#3a3939",
+                        "primary-fixed-dim": "#d1bcff",
+                        "on-tertiary-fixed-variant": "#004e60",
+                        "on-primary-container": "#ddcdff",
+                        "tertiary-fixed": "#b7eaff",
+                        "tertiary-fixed-dim": "#4cd6ff",
+                        "error-container": "#93000a",
+                        "outline": "#958da3",
+                        "secondary": "#d7ffc5",
+                        "on-primary-fixed": "#23005b",
+                        "on-surface": "#e5e2e1",
+                        "on-primary-fixed-variant": "#5700c9",
+                        "surface-container-low": "#1c1b1b",
+                        "background": "#131313",
+                        "surface-container": "#201f1f",
+                        "on-secondary-fixed": "#022100",
+                        "inverse-on-surface": "#313030",
+                        "tertiary-container": "#00647c",
+                        "inverse-surface": "#e5e2e1",
+                        "tertiary": "#4cd6ff",
+                        "outline-variant": "#4a4457",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary-fixed": "#001f28",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-secondary": "#053900",
+                        "primary-fixed": "#e9ddff",
+                        "on-primary": "#3c0090"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "margin": "24px",
+                        "sm": "8px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Space Grotesk"],
+                        "display": ["Space Grotesk"],
+                        "headline-md": ["Space Grotesk"],
+                        "label-sm": ["Inter"],
+                        "label-bold": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-pulse {
+            box-shadow: 0 0 15px rgba(47, 248, 1, 0.4);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #7000ff;
+            border-radius: 10px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0D0D0D] text-on-background font-body-md min-h-screen pb-24">
+<!-- Top Navigation -->
+<header class="bg-[#0D0D0D] dark:bg-[#0D0D0D] text-white/60 font-['Space_Grotesk'] tracking-tight docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-purple-500/10 flex justify-between items-center w-full px-6 h-16 fixed">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">MixVy</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-white hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 duration-200">notifications</button>
+<button class="material-symbols-outlined text-white hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 duration-200">sensors</button>
+<div class="w-8 h-8 rounded-full border border-purple-500/50 overflow-hidden">
+<img alt="Creator profile avatar" class="w-full h-full object-cover" data-alt="Portrait of a trendy young man with neon lighting reflections on his face, digital art style, high contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIjeL5v7Rj3amutE5OYeKDQdgjZ43tpuMoxPgtJtwisdwmBV2hsEWwZE03oupuGMDh6jlGMZz1xD71mjUbZkJygwuQEDU2BR_W_56wHgDKc-U6sLdCdx5tal1jgCpxcMaihM6WuAVRgQYgEgNV5ZHU50dIzwh4dd7y3Ib3-qbCNTM-fQ7x2DJ_gcS3O4ir5cikxzkJeKl0Hfox0pfufBYI9paA7zp_cKQtwNC2hl3WN0di3a9tuGf1YHgUget3ZXrVBgiawOSJsI0Q"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="pt-16 max-w-lg mx-auto">
+<!-- Hero Section / Large Banner -->
+<section class="relative h-64 w-full overflow-hidden">
+<img alt="Profile Banner" class="w-full h-full object-cover" data-alt="Cyberpunk city alley at night with glowing neon purple and blue signs, wet asphalt reflecting lights, cinematic atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSkd5W_W7Zt_45ZixMFPcr6ZxoHxUkd0zfJZR66zRKNZ964-L06DBbaPpW62J6fC5ZNTx0HMXwjGPC5Aob61U_M7auBeJD8gOQ9KOPR4drQvPG5V5Vm1kr9hrdUC-AjVRSHrJ448GR6yD2Ibtr1f-s1-mkMh0tvz_JzD71hB1RYZkvCg4K0lazemJyYFbs4i6ubbwwtEXpBrXxQiWD5pUH9P7ZJyXOWE_8uUCb9kUeLX5w7RHFWmzKfPyHUQKE9xXH0qdizX-xhf0X"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-transparent to-transparent"></div>
+<!-- Avatar Overlay -->
+<div class="absolute -bottom-10 left-6 flex items-end gap-4">
+<div class="relative">
+<div class="w-24 h-24 rounded-xl border-4 border-[#0D0D0D] overflow-hidden shadow-2xl">
+<img alt="Main Avatar" class="w-full h-full object-cover" data-alt="Close-up portrait of a young man with a confident expression, wearing high-tech headphones, neon blue ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBftvVqBjko8XKk6BFxw_my03b_xIQlHLhfHAVhJR1Hb0yd19cq0X5dJX-nD0R5lf3xHhDmESkMu7VrTydXPTWbkuFd5afzoeoPGo6xJDDZEd371nGnFWLizMbztf8O44KPlsehTAPcnn_ujbjYIg9klThsZsQWEBlVlyJoXBwY8x890SMaz0DAtvEiO6zHZXWEuNn4UQ2CgJ-08teJ6KmfcbwDQz5AyohvQT5qAvEsQSgreDd9Ax38LQDhB7G-r74fWyfzkLR8_Nkm"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest neon-pulse">LIVE</div>
+</div>
+<div class="mb-2">
+<h1 class="font-display text-headline-md text-white tracking-tight">Koda_Flow</h1>
+<p class="font-body-md text-primary text-sm">Visual Alchemist &amp; Beatmaker</p>
+</div>
+</div>
+</section>
+<!-- Stats and Actions -->
+<section class="mt-14 px-6 flex justify-between items-center">
+<div class="flex gap-4">
+<div class="text-center">
+<p class="text-white font-bold text-lg">1.2k</p>
+<p class="text-white/40 text-[10px] uppercase font-bold">Friends</p>
+</div>
+<div class="h-8 w-px bg-white/10"></div>
+<div class="text-center">
+<p class="text-white font-bold text-lg">482</p>
+<p class="text-white/40 text-[10px] uppercase font-bold">Mixes</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary-container text-white px-4 py-2 rounded-lg font-label-bold text-sm active:scale-95 transition-transform">Add Friend</button>
+<button class="bg-white/10 text-white p-2 rounded-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+</div>
+</section>
+<!-- Bio Section -->
+<section class="mt-8 px-6">
+<div class="glass-card rounded-xl p-4 border border-white/5">
+<h3 class="font-headline-md text-sm text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">info</span> Bio
+                </h3>
+<p class="text-body-md text-sm text-white/80 leading-relaxed">
+                    Building the future of spatial soundscapes. Obsessed with neon aesthetics and modular synths. 🎧 Let's connect and remix reality.
+                </p>
+</div>
+</section>
+<!-- Friends List (Top 8 Style) -->
+<section class="mt-8 px-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-md text-lg text-white">Top Connections</h3>
+<span class="text-primary text-xs font-bold uppercase tracking-widest">View All</span>
+</div>
+<div class="grid grid-cols-4 gap-3">
+<!-- Friend 1 -->
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 1" class="w-full h-full object-cover" data-alt="Portrait of a woman with pink dyed hair, wearing futuristic eyewear, vibrant purple background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP8l7qtbA_3AHugdtY6ENM-yCPha7hBzB4l2qe5i2lchHn6qz6Q-v0NBVyztd0L9mUPfbzwoIEgOIIWwFVOpkV1lXnxXuQ3fvU2PB4c_QmSn1G8_kicMhE95VwIX4w05dpUtkPISZk_xzsXLrC7QDj5_iWifzZMlVPmhXXd4LioFPT89wQitMXqWfa1UgguiQ0bIziiFccNkZPP577IXKEQI4Oim0HfGwTu3duQl8vY7GwTgN3QOlc3RQV010IzwwPTelv3nvFef-n"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">Luna.Art</span>
+</div>
+<!-- Friend 2 -->
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 2" class="w-full h-full object-cover" data-alt="Young man with cool attitude, wearing a streetwear hoodie and baseball cap, moody city lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBh8UHymjHGSzrW8Zx4JwpfTnR9onTlUBUyxzmeae2VNVf8IdGVrg55o_3wV7o0QX8vibJ8TQiysYOwNporByvOkjReaJoXANQDce1vnBhnBXKXgoqdU9mXYeAHXaMQy_6VWF_OB3e2icueZn4C9kgmU6SCWd3O0_Z_aJefgYZxwZUl5xLSs7NMyw01UkUMgklaCzG9ZxTbYrS7sxi6DM7pNWqeglKhL3y_RleXhD3dMXmjQ5BpmRPgDBkPfXlwpNfwbmQh78ueoB1D"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">Jax_VR</span>
+</div>
+<!-- Friend 3 -->
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 3" class="w-full h-full object-cover" data-alt="Close up of a girl with artistic makeup and neon face paint, high fashion photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhT6zF2P0R1gjTK9_VP-proYZP_ulQKhOx2bPkgQ_UCCffyrcDp4ijOCmsE7Yo9KqNeaGCb31rnCuN2OG8pb_NthBFS9ja6BY9DSw3I49rb1oOnVKQGG5oBEbNGVi2O3SRxYXUvyQ5Iu_7WqlKNlFI8Z33lsWvM9PUlHmb-8kSP2ZQ-8MJhpVtiX0bmCQiSxgOBs4HfAUOKVVyM2ftA2VeonAYz9mZvhHA69xRa3Z-STZgUWF4KadZYx9U_HilJn9wZq7aEXewBi8x"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">Mora_</span>
+</div>
+<!-- Friend 4 -->
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 4" class="w-full h-full object-cover" data-alt="Stylish man with beard, wearing techwear, cinematic rainy background with city lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBASN2-LR7p8FSH-ws2_TvpC47aBf_95LO5ezLEbF-cUHJd3XmAUMsmEmxCiQiz4ARGXWM3tNXHEHHIJDLPXKeBcBVsT2AQA8BdaozCNTqp7deDEYuLvJK4utbcEpQoDjRVkZ-6pXHnDOLsk7qLvRza_Gaq-BRuUXCysyHw9fN5s2IsrDAtnPSAm2_xZo0cKTu36waRFEnvymNfNEmIJV3jlhxg00bxEiwjbt5FJxXhb0I1VxXY2DHCchtBh9M_wm2sqGY-LCqYWBUB"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">Zephyr</span>
+</div>
+<!-- Row 2 -->
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 5" class="w-full h-full object-cover" data-alt="Portrait of a young woman with a sharp look, neon green lighting, cyberpunk aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNHFZwyDuR626A02786K4nKsSJ-Dxz5cIf8XM9_cT1_L21lftmStf3p0armVQUQxJzLoMfNvA4eR2Jfs7hbhBcjf-9sPSh3lMrtcMme0L69OUFYR5uhWZlefXTx2eRnIc2cbZFPT-jNjXNzCWou4Ly0Qlp4ib_tAn18cV6X_nz1b6WOdy8sUGm7tfZNtKheb1VzuKKzpFA7KS5JUivwJWonG_uOvkQgIVbQZVd_Je5Xq6JxrKFAwLhr4LaWrw9Oj_1FPQfPK3grF4g"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">V_Kore</span>
+</div>
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 6" class="w-full h-full object-cover" data-alt="Man in urban setting, wearing reflective sunglasses, sunset orange lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJbzjBCDzR8yiA1oDo5eAfSNbf9A4kk1M6wXYv0LwRomVpfgvcJXeo-aRWOCZ5BZeMGomViK1FxhnFRwghoXIWzBdGuEYzes9kwmItwup_8FEwCJdnqxGo941Bm3RrmmpXGFpGfo19666u3oJx29rJA8ibUCdqjnWNELOQn48HKwtYke-IJxBcgo08for_Plcav7S0V4kVirbGnc8-P9C073TLA3rIM7xkCNDwT5D7oBE24acG5VHIOz5GfUjZkseOqtbRPIMF8A4a"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">R_Orbit</span>
+</div>
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 7" class="w-full h-full object-cover" data-alt="Woman with bright smile, neon signage background in soft bokeh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd67SNwFj7rrjtCJCkHMnUtMQvExQ59MeroWTgarTZ3AOyUBJlQ6KiICkKhgLJyGs0FQi-t64Pw6CgyzWzUuH1mihczTdry5MfAtyYx6xjMQH97ySKo4yhhvmq2IBut8udfFUblx4rID_NGlRzQ-aU-CZIfqo-qFST46T6EUFDMJ54wkWrjHnj12b7Z-lOjzYeazQDbPyuG6raUxuj5fr45zKbDSxL2YBXnAZYeE7Z1PVeT7jHtwmeQqo0xr9CLDPlpSJ-IBOM6AWP"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">Pixel_J</span>
+</div>
+<div class="flex flex-col items-center gap-1 group">
+<div class="w-full aspect-square rounded-lg overflow-hidden border border-white/10 group-hover:border-primary transition-colors">
+<img alt="Friend 8" class="w-full h-full object-cover" data-alt="Man in dark studio, dramatic rim lighting in blue and red" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbfosP1KFEzsh0a46QnfG5RboBNvT5sj6hMgUzi3Fv7QaWqzH4YPtSnRy2Ql4qy7DjKM8spvaDdNbb61s5Fh0T-X7O5244eyNTuxqkRmd1mkMmG43r2Fm9oea-uZQnxnaJykDP2k130suDbeAOEv1z274z4qNlOMDRxS3KNVVNnzg_BUgt8MGANnAVPFLh_X57sO7ziSl_bqcZ-lf38cywNPW3wXMyo15FZKhPX1t35BcXSublXBZry1FqDJ3l_Fbp7ZmU9zlmP78g"/>
+</div>
+<span class="text-[10px] text-white/60 font-medium">N0de</span>
+</div>
+</div>
+</section>
+<!-- Content Grid (Posts) -->
+<section class="mt-8 px-6">
+<div class="flex gap-6 border-b border-white/10 mb-6 pb-2">
+<button class="text-white font-bold text-sm border-b-2 border-primary pb-2">Mixes</button>
+<button class="text-white/40 font-bold text-sm pb-2 hover:text-white transition-colors">Vibes</button>
+<button class="text-white/40 font-bold text-sm pb-2 hover:text-white transition-colors">Tags</button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Post Card 1 -->
+<div class="glass-card rounded-xl overflow-hidden border border-white/5 group">
+<div class="relative aspect-square">
+<img alt="Post 1" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Abstract colorful light trails in motion, long exposure photography, purple and blue color palette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU4Juh0eNXiN0NhNBckZM984oV3PIQ-zNS7yPSDbJwm75F3jstglSq191puiK_tT3NLgkQuE5GUDOxdOkOwtVjl00l8MSkt58A49Y4wdELG_SiPxAfYvt8X8TP3zad0Lw6N3GOFi3e74t7isyi6UC5wkvG30-JbCtFZn6dzv9rPy9VVbzH0zvM9qaVST52O4hTa8V2EcFlvx0mrQIStgybdchwLVtirOEgmnE-xdr5oaubhZDckcEXHzYM1y1dZ1iQixjg9UyMPyxn"/>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute top-2 right-2 flex gap-1">
+<span class="material-symbols-outlined text-white text-[18px]">play_circle</span>
+</div>
+</div>
+<div class="p-3">
+<h4 class="text-white text-xs font-bold truncate">Neon Pulse Vol. 4</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-[12px] text-white/40">favorite</span>
+<span class="text-[10px] text-white/40">2.4k</span>
+</div>
+</div>
+</div>
+<!-- Post Card 2 -->
+<div class="glass-card rounded-xl overflow-hidden border border-white/5 group">
+<div class="relative aspect-square">
+<img alt="Post 2" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Close up of a high-end motherboard with glowing green and blue LED lights, tech aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiDGBpmRbLNaYlzruYXY6R8Jr182oK_KYkO05pnM1XkR9GGdpHYF53S0LftVDb-fvCiJ4JU_9YqhvdwSnzoBcq1fiWqo883ZsUBI7mCMtPhw1kW3HSZqwRnTQ121ho0QMSKfek6YnnlTi0Dq3gRHv_bW3BJZbvxPXE9nlO8vVE5T3-lyHMo86Ri0xxv8W58nfV1cSEAks92BSSuNaqv9eoPg_fwx7Ff3jEP2-xjZDZsTSJcrFTSuB2z32j1Ii2hiLZH1Vyn0bGLhBM"/>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<div class="p-3">
+<h4 class="text-white text-xs font-bold truncate">The Circuit Sessions</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-[12px] text-white/40">favorite</span>
+<span class="text-[10px] text-white/40">890</span>
+</div>
+</div>
+</div>
+<!-- Post Card 3 -->
+<div class="glass-card rounded-xl overflow-hidden border border-white/5 group">
+<div class="relative aspect-square">
+<img alt="Post 3" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="3D abstract rendering of flowing geometric ribbons in purple and blue gradients" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARBHc85rGp4t1lylbQxwyq6BAdls3mdvB159wZdwI7cWkKxP2zvUZUtg19ee-pKpjDTy2Wh1zC2o-u30YTqazYgnLTw8ZBvATPuof3tzOei-MxCkHlCFWdGdzglanW_6mwvaj1i9KsdntXzrC1xVdy773mUlVPRy7GHTZjR6WwxVx_VyQo9FjYPHYiCucuHfR8V7AepmCMT3gXGlf7U3EJO5kogH6jWRpn6WI8L7OE6LCUwztTtNzlJ-Jh0wNQmBXmIp_U0WVDYPei"/>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<div class="p-3">
+<h4 class="text-white text-xs font-bold truncate">Aether Flow</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-[12px] text-white/40">favorite</span>
+<span class="text-[10px] text-white/40">1.2k</span>
+</div>
+</div>
+</div>
+<!-- Post Card 4 -->
+<div class="glass-card rounded-xl overflow-hidden border border-white/5 group">
+<div class="relative aspect-square">
+<img alt="Post 4" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Group of people silhouettes dancing in front of a giant glowing neon screen at a concert" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFtXwljI2EPOqSO_Pn0irR8YSFOVvMm5oy-XjctY7UaGZdpmhi5BDy_FKjui4Xg9x1vHePsHhSEK0oPuG-93V-5THLYkueekHn3lX5V_qt_rEzha9scGsr3OFcp3e1o-hY45YsKFSn8L4W5gpAo_ot9Zz1tc7b_M7gYoEatTrrwQf-WCtDtJ1jfQv3jO2GFnmbVQ8ebiu9EEbkZ8ssdnf7iZQQkXkyJtdxgV1gZti9_VchvrTx4WNKVifruwwNCAyFWZeP4ENgP9Vq"/>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute top-2 right-2 flex gap-1">
+<span class="material-symbols-outlined text-white text-[18px]">movie</span>
+</div>
+</div>
+<div class="p-3">
+<h4 class="text-white text-xs font-bold truncate">Live from Sector 7</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-[12px] text-white/40">favorite</span>
+<span class="text-[10px] text-white/40">3.7k</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 h-16 bg-[#1A1A1A]/80 backdrop-blur-2xl flex justify-around items-center px-6 z-50">
+<div class="flex flex-col items-center gap-1 group active:scale-95 duration-200">
+<span class="material-symbols-outlined text-white/40 hover:text-white/80 transition-all duration-300">home_max</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px] text-white/40">Home</span>
+</div>
+<div class="flex flex-col items-center gap-1 group active:scale-95 duration-200">
+<span class="material-symbols-outlined text-white/40 hover:text-white/80 transition-all duration-300">search</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px] text-white/40">Search</span>
+</div>
+<div class="flex flex-col items-center gap-1 group active:scale-95 duration-200">
+<span class="material-symbols-outlined text-white/40 hover:text-white/80 transition-all duration-300">forum</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px] text-white/40">messages</span>
+</div>
+<!-- Active Tab: Profile -->
+<div class="flex flex-col items-center gap-1 group active:scale-95 duration-200 relative">
+<div class="absolute -top-1 w-6 h-[2px] bg-purple-500 rounded-full"></div>
+<span class="material-symbols-outlined text-white font-bold" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+<span class="font-['Space_Grotesk'] font-bold text-[10px] text-white">Profile</span>
+</div>
+</nav>
+</body></html>

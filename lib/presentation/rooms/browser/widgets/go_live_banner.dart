@@ -112,11 +112,13 @@ class GoLiveBanner extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25)),
                     ),
                     child: Text(
                       'GO LIVE',
