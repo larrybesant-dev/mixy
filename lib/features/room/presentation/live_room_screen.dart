@@ -8,8 +8,151 @@ import 'package:mixvy/features/room/providers/room_live_state_provider.dart';
 import 'package:mixvy/features/room/providers/rtc_service_provider.dart';
 import 'package:mixvy/features/room/controllers/live_room_media_controller.dart';
 import 'package:mixvy/features/room/widgets/chat_panel.dart';
+import 'package:mixvy/core/velvet_noir_constants.dart';
 
 // ignore_for_file: unused_element, unused_import
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RoomHeaderWidget — Persistent header with room metadata and wine red accent
+// ─────────────────────────────────────────────────────────────────────────────
+class RoomHeaderWidget extends StatelessWidget {
+  final String? roomTitle;
+  final String? hostName;
+  final int? participantCount;
+
+  const RoomHeaderWidget({
+    super.key,
+    this.roomTitle,
+    this.hostName,
+    this.participantCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: kVelvetJet,
+        border: Border(
+          bottom: BorderSide(
+            color: kVelvetWine.withOpacity(0.6),
+            width: 2,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: kVelvetGold.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Wine-red accent bar
+          Container(
+            width: 4,
+            height: 32,
+            decoration: BoxDecoration(
+              color: kVelvetWine,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Room metadata
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  roomTitle ?? 'Live Lounge',
+                  style: const TextStyle(
+                    color: kVelvetGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  'Hosted by ${hostName ?? 'MixVy Host'}',
+                  style: TextStyle(
+                    color: kVelvetGold.withOpacity(0.7),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Participant count badge
+          if (participantCount != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: kVelvetWine.withOpacity(0.3),
+                border: Border.all(color: kVelvetWine, width: 1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$participantCount listening',
+                style: const TextStyle(
+                  color: kVelvetGold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VideoFeedWidget — 70% video area with WebRTC stream (placeholder for now)
+// ─────────────────────────────────────────────────────────────────────────────
+class VideoFeedWidget extends StatelessWidget {
+  final String roomId;
+
+  const VideoFeedWidget({super.key, required this.roomId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: kVelvetJet,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.videocam,
+              size: 64,
+              color: kVelvetGold.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Video Feed',
+              style: TextStyle(
+                color: kVelvetGold.withOpacity(0.5),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'WebRTC stream active',
+              style: TextStyle(
+                color: kVelvetWine.withOpacity(0.4),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _ControlIconButton extends StatelessWidget {
   final IconData icon;
@@ -106,88 +249,96 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen> {
 
     return snapshot.when(
       data: (liveState) => Scaffold(
-        body: Row(
+        backgroundColor: kVelvetJet,
+        body: Column(
           children: [
+            // ── Persistent Header with Room Metadata ──
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('rooms')
+                  .doc(widget.roomId)
+                  .snapshots(),
+              builder: (context, roomSnap) {
+                final data = (roomSnap.data?.data() as Map<String, dynamic>?) ?? {};
+                return RoomHeaderWidget(
+                  roomTitle: data['name'] ?? data['title'] ?? 'Live Lounge',
+                  hostName: data['hostUsername'] ?? 'MixVy Host',
+                  participantCount: (data['memberCount'] as int?) ?? 0,
+                );
+              },
+            ),
+            // ── 70/30 Split Layout ──
             Expanded(
-              child: ChatPanel(
-                extraHeader: StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('rooms')
-                      .doc(widget.roomId)
-                      .snapshots(),
-                  builder: (context, roomSnap) {
-                    if (!roomSnap.hasData || !roomSnap.data!.exists)
-                      return const SizedBox.shrink();
-                    final data =
-                        roomSnap.data!.data() as Map<String, dynamic>? ?? {};
-                    return Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF12121A),
+              child: Row(
+                children: [
+                  // 70% Video Feed
+                  Expanded(
+                    flex: 7,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: kVelvetJet,
                         border: Border(
-                            bottom: BorderSide(
-                                color: Color(0xFF1F1F2E), width: 0.8)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.graphic_eq_rounded,
-                              color: Colors.cyanAccent, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(data['title'] ?? 'Live Lounge',
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14)),
-                                Text(
-                                    'Hosted by ' +
-                                        (data['hostName'] ?? 'MixVy Host'),
-                                    style: TextStyle(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.4),
-                                        fontSize: 11)),
-                              ],
-                            ),
+                          right: BorderSide(
+                            color: kVelvetGold.withOpacity(0.3),
+                            width: 2,
                           ),
-                        ],
+                        ),
                       ),
-                    );
-                  },
-                ),
-                messages: liveState.message,
-                isLoadingMessages: false,
-                currentUserId: ref.watch(userProvider)?.id ?? '',
-                currentUsername:
-                    ref.watch(userProvider)?.username ?? 'Anonymous',
-                isSending: false,
-                cooldownMessage: '',
-                isMuted: false,
-                isBanned: false,
-                allowChat: true,
-                hasBlockedRelationship: false,
-                showEmojiTray: false,
-                onToggleEmojiTray: () {},
-                onSendMessage: (t) => _roomController.sendMessage(t),
-                onTyping: () {},
-                messageController: TextEditingController(),
-                scrollController: ScrollController(),
-                senderLabelResolver: (id) => '',
-                senderVipLevelResolver: (id) => 0,
-                senderAvatarResolver: (id) => '',
+                      child: VideoFeedWidget(roomId: widget.roomId),
+                    ),
+                  ),
+                  // 30% Chat Panel
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      color: kVelvetJet.withOpacity(0.98),
+                      child: ChatPanel(
+                        messages: liveState.message,
+                        isLoadingMessages: false,
+                        currentUserId: ref.watch(userProvider)?.id ?? '',
+                        currentUsername:
+                            ref.watch(userProvider)?.username ?? 'Anonymous',
+                        isSending: false,
+                        cooldownMessage: '',
+                        isMuted: false,
+                        isBanned: false,
+                        allowChat: true,
+                        hasBlockedRelationship: false,
+                        showEmojiTray: false,
+                        onToggleEmojiTray: () {},
+                        onSendMessage: (t) => _roomController.sendMessage(t),
+                        onTyping: () {},
+                        messageController: TextEditingController(),
+                        scrollController: ScrollController(),
+                        senderLabelResolver: (id) => '',
+                        senderVipLevelResolver: (id) => 0,
+                        senderAvatarResolver: (id) => '',
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, stack) => Scaffold(body: Center(child: Text('Error: $e'))),
+      loading: () => Scaffold(
+        backgroundColor: kVelvetJet,
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(kVelvetGold),
+          ),
+        ),
+      ),
+      error: (e, stack) => Scaffold(
+        backgroundColor: kVelvetJet,
+        body: Center(
+          child: Text(
+            'Error: $e',
+            style: const TextStyle(color: kVelvetGold),
+          ),
+        ),
+      ),
     );
   }
 }
