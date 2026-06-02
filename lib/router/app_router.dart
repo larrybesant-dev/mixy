@@ -533,6 +533,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingScreen()),
+      GoRoute(
+          path: '/create-room',
+          redirect: (context, state) => '/rooms/create'),
 
       // After Dark routes
       GoRoute(
