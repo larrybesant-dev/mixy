@@ -95,7 +95,7 @@ class DashboardView extends ConsumerWidget {
                         }
                       },
                       onOpenRooms: () => context.push('/rooms'),
-                      onOpenDiscover: () => context.push('/explore'),
+                      onOpenDiscover: () => context.push('/home/explore'),
                       headline: snapshot.headline,
                       subheadline: snapshot.subheadline,
                       liveRoomCount: snapshot.liveRooms.length,
@@ -130,12 +130,7 @@ class DashboardView extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                // Make the checkin card tappable
-                InkWell(
-                  onTap: () => context.push('/checkin'),
-                  borderRadius: BorderRadius.circular(10),
-                  child: const DailyCheckinCard(),
-                ),
+                const DailyCheckinCard(),
                 const SizedBox(height: 12),
                 leaderboardAsync.when(
                   loading: () => const SizedBox.shrink(),
