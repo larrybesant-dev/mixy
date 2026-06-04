@@ -1,8 +1,54 @@
 {
-    "contractVersion":  "web_smoke_report_v1",
-    "status":  "FAIL",
-    "reason":  "probe_failure",
-    "scenarios":  [
-
-                  ]
+  "contractVersion": "web_smoke_report_v1",
+  "generatedAt": "2026-06-04T17:48:27.730Z",
+  "appUrl": "http://127.0.0.1:9090/",
+  "status": "PASS",
+  "reason": "policy_rejection",
+  "durationMs": 21216,
+  "appReadyContractKey": "startupAppReadyContract",
+  "appReadyContractVersion": "mixvy.startup.app_ready.v1",
+  "scenarios": [
+    {
+      "name": "slow_3g_startup",
+      "status": "PASS",
+      "reason": "policy_rejection",
+      "durationMs": 12765,
+      "result": {
+        "mode": "fallback",
+        "bootMessage": "Still loading... network looks slow. MixVy will continue automatically.",
+        "contractReady": false
+      }
+    },
+    {
+      "name": "offline_launch_fallback",
+      "status": "PASS",
+      "reason": "policy_rejection",
+      "durationMs": 145,
+      "result": {
+        "mode": "fallback",
+        "bootMessage": "Unable to load app runtime. Check your connection and hard refresh.",
+        "contractReady": false
+      }
+    },
+    {
+      "name": "firebase_timeout_fallback",
+      "status": "PASS",
+      "reason": "policy_rejection",
+      "durationMs": 3009,
+      "result": {
+        "mode": "app-ready-contract",
+        "contractReady": true
+      }
+    },
+    {
+      "name": "reconnect_reload_recovery",
+      "status": "PASS",
+      "reason": "policy_rejection",
+      "durationMs": 5094,
+      "result": {
+        "mode": "app-ready-contract",
+        "contractReady": true
+      }
+    }
+  ]
 }

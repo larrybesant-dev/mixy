@@ -46,6 +46,8 @@ const violations = {
   follows: [],
   followersSymmetry: [],
   followingSymmetry: [],
+  webrtcSessions: [],
+  webrtcParticipants: [],
 };
 
 let totalViolations = 0;
@@ -312,30 +314,86 @@ async function checkFollows() {
   return scanned;
 }
 
+// ── SECTION 5: WebRTC Sessions ───────────────────────────────────────────────
+async function checkWebRtcSessions() {
+  const col = db.collection("webrtc_sessions");
+  let lastDoc = null;
+  let scanned = 0;
+  let participantsScanned = 0;
+
+  while (scanned < SAMPLE) {
+    const remaining = SAMPLE - scanned;
+    let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(Math.min(remaining, 200));
+    if (lastDoc) q = q.startAfter(lastDoc);
+
+    const snap = await q.get();
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      scanned++;
+      totalScanned++;
+      const d = doc.data() || {};
+      const p = `webrtc_sessions/${doc.id}`;
+
+      // Check if there is an active host or session owner
+      if (d.hostId && typeof d.hostId !== "string") {
+        addViolation("webrtcSessions", p, "invalid_hostId", `got: ${typeof d.hostId}`);
+      }
+
+      // Sample participants subcollection
+      const participantsSnap = await doc.ref.collection("participants").limit(50).get();
+      for (const pDoc of participantsSnap.docs) {
+        participantsScanned++;
+        totalScanned++;
+        const pd = pDoc.data() || {};
+        const pp = pDoc.ref.path;
+
+        if (!isNonEmptyString(pd.userId) && !isNonEmptyString(pDoc.id)) {
+          addViolation("webrtcParticipants", pp, "missing_userId", null);
+        }
+
+        if (pd.joinedAt && !isValidTimestamp(pd.joinedAt)) {
+          addViolation("webrtcParticipants", pp, "invalid_joinedAt", null);
+        }
+      }
+    }
+
+    lastDoc = snap.docs[snap.docs.length - 1];
+    if (snap.docs.length < 200) break;
+  }
+
+  return {scanned, participantsScanned};
+}
+
 // ── MAIN ─────────────────────────────────────────────────────────────────────
 async function run() {
   const startedAt = new Date();
   console.log(`[validate-firestore-truth] started=${startedAt.toISOString()} sample=${SAMPLE}`);
   console.log("─────────────────────────────────────────────────────────────");
 
-  console.log("[1/4] Checking conversations…");
+  console.log("[1/5] Checking conversations…");
   const convScanned = await checkConversations();
   console.log(`      scanned=${convScanned} violations=${violations.conversations.length}`);
 
-  console.log("[2/4] Checking messages…");
+  console.log("[2/5] Checking messages…");
   const msgScanned = await checkMessages();
   console.log(`      scanned=${msgScanned} violations=${violations.messages.length}`);
 
-  console.log("[3/4] Checking rooms + participants…");
+  console.log("[3/5] Checking rooms + participants…");
   const {scanned: roomScanned, participantsScanned} = await checkRooms();
   console.log(`      rooms scanned=${roomScanned} participants scanned=${participantsScanned}`);
   console.log(`      room violations=${violations.rooms.length} participant violations=${violations.roomParticipants.length}`);
 
-  console.log("[4/4] Checking follows + symmetry…");
+  console.log("[4/5] Checking follows + symmetry…");
   const followsScanned = await checkFollows();
   console.log(`      scanned=${followsScanned} flat violations=${violations.follows.length}`);
   console.log(`      follower symmetry violations=${violations.followersSymmetry.length}`);
   console.log(`      following symmetry violations=${violations.followingSymmetry.length}`);
+
+  console.log("[5/5] Checking WebRTC sessions + participants…");
+  const {scanned: webrtcScanned, participantsScanned: webrtcParticipantsScanned} = await checkWebRtcSessions();
+  console.log(`      sessions scanned=${webrtcScanned} participants scanned=${webrtcParticipantsScanned}`);
+  console.log(`      session violations=${violations.webrtcSessions.length} participant violations=${violations.webrtcParticipants.length}`);
 
   const finishedAt = new Date();
   const durationMs = finishedAt - startedAt;
@@ -358,6 +416,8 @@ async function run() {
       follows: {scanned: followsScanned, violations: violations.follows.length},
       followersSymmetry: {violations: violations.followersSymmetry.length},
       followingSymmetry: {violations: violations.followingSymmetry.length},
+      webrtcSessions: {scanned: webrtcScanned, violations: violations.webrtcSessions.length},
+      webrtcParticipants: {scanned: webrtcParticipantsScanned, violations: violations.webrtcParticipants.length},
     },
     violations,
   };

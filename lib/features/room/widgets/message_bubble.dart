@@ -96,8 +96,8 @@ class MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: kVelvetGold.withOpacity(0.12),
-          border: Border.all(color: kVelvetGold.withOpacity(0.35)),
+          color: kVelvetGold.withValues(alpha: 0.12),
+          border: Border.all(color: kVelvetGold.withValues(alpha: 0.35)),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Row(
@@ -131,8 +131,8 @@ class MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: kVelvetWine.withOpacity(0.15),
-          border: Border.all(color: kVelvetGold.withOpacity(0.35)),
+          color: kVelvetWine.withValues(alpha: 0.15),
+          border: Border.all(color: kVelvetGold.withValues(alpha: 0.35)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -184,7 +184,8 @@ class MessageBubble extends StatelessWidget {
 
     // Subtle background highlight tint for own message, none for others.
     final Color? rowTint = isMe
-        ? kVelvetWine.withOpacity(0.06) // Elegant hint of velvet wine red for own messages
+        ? kVelvetWine.withValues(
+            alpha: 0.06) // Elegant hint of velvet wine red for own messages
         : null;
 
     final String firstLetter = resolvedSenderLabel.isNotEmpty

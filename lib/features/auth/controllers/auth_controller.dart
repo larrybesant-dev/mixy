@@ -79,8 +79,13 @@ class AuthState {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(isLoading, hasResolvedSession, error, uid, phase);
+  int get hashCode => Object.hash(
+    isLoading,
+    hasResolvedSession,
+    error,
+    uid,
+    phase,
+  );
 }
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
@@ -91,6 +96,8 @@ class AuthController extends Notifier<AuthState> {
   final GoogleSignInHelper _googleSignInHelper;
   final AppleSignInHelper _appleSignInHelper;
   final SchemaMutationService? _schemaMutationService;
+
+  StreamSubscription<User?>? _authStateSubscription;
 
   void _setAuthState(AuthState nextState, {required String source}) {
     final previous = state;
@@ -214,12 +221,12 @@ class AuthController extends Notifier<AuthState> {
     GoogleSignInHelper? googleSignInHelper,
     AppleSignInHelper? appleSignInHelper,
     SchemaMutationService? schemaMutationService,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore,
-        _unregisterToken = unregisterToken,
-        _googleSignInHelper = googleSignInHelper ?? getGoogleSignInHelper(),
-        _appleSignInHelper = appleSignInHelper ?? getAppleSignInHelper(),
-        _schemaMutationService = schemaMutationService;
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _firestore = firestore,
+       _unregisterToken = unregisterToken,
+       _googleSignInHelper = googleSignInHelper ?? getGoogleSignInHelper(),
+       _appleSignInHelper = appleSignInHelper ?? getAppleSignInHelper(),
+       _schemaMutationService = schemaMutationService;
 
   @override
   AuthState build() {
@@ -277,6 +284,10 @@ class AuthController extends Notifier<AuthState> {
       await _configureWebPersistence();
       await _repairInvalidCachedSession();
       await _completeRedirectSignInIfNeeded();
+    });
+
+    ref.onDispose(() {
+      _authStateSubscription?.cancel();
     });
 
     final currentUser = _auth.currentUser;

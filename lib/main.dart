@@ -31,6 +31,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  startup.markFirebaseReady(success: true);
+  startup.markBootstrapResolved(resolution: BootstrapResolution.ready);
 
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());

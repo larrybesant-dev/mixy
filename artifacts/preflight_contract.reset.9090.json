@@ -1,0 +1,26 @@
+{
+    "contractVersion":  "mixvy.preflight_contract.v1",
+    "generatedAtUtc":  "2026-06-04T17:47:53.2116060Z",
+    "status":  "pass",
+    "reasonCode":  "none",
+    "environment":  {
+                        "class":  "local",
+                        "os":  "windows",
+                        "privilegeClass":  "non-admin",
+                        "isAdmin":  false
+                    },
+    "preflight":  {
+                      "mode":  "Force",
+                      "port":  9090,
+                      "stable":  true,
+                      "initialListeners":  [
+
+                                           ],
+                      "finalListeners":  [
+
+                                         ],
+                      "blocks":  [
+
+                                 ]
+                  }
+}

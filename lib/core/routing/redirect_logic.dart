@@ -27,11 +27,11 @@ RedirectEvaluation evaluateAppRedirectWithReason({
 
   // ── 1. BOOTSTRAP GATE ──────────────────────────────────────────────────────
   // If we are still determining the auth state (e.g. Firebase initializing),
-  // we MUST NOT redirect. Redirecting to /auth here would overwrite the deep
-  // link URL before the app knows who the user is.
+  // we MUST NOT redirect. Returning matchedLocation causes GoRouter to loop
+  // infinitely; returning null allows GoRouter to safely preserve the location.
   if (authLoading) {
-    return RedirectEvaluation(
-      redirectTo: matchedLocation,
+    return const RedirectEvaluation(
+      redirectTo: null,
       reason: 'auth_loading_preserve_location',
     );
   }
@@ -43,12 +43,9 @@ RedirectEvaluation evaluateAppRedirectWithReason({
       matchedLocation == '/forgot-password' ||
       matchedLocation == '/onboarding';
 
-  // Guest access to rooms is allowed — LiveRoomScreen handles its own
-  // internal gates for adult content and messaging.
-  final isRoomRoute = matchedLocation.startsWith('/rooms/room/') ||
-      matchedLocation.startsWith('/room/');
-
-  final isPublicRoute = isAuthRoute || isRoomRoute;
+  // Guests are not allowed to enter rooms directly because WebRTC signaling
+  // requires users to be authenticated (per Firestore security rules).
+  final isPublicRoute = isAuthRoute;
 
   // ── 3. AUTH ROUTE SPECIAL CASE ─────────────────────────────────────────────
   // If user is already signed in, don't let them stay on /auth or /register.

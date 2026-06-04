@@ -5,18 +5,23 @@
                       "resolvedBy":  "deployment_contract"
                   },
     "contractState":  "FINAL",
-    "contractHash":  "0bd02d2913386883ed44cd026a653418bf42a41494a3f843c8d34a80f5d7b9db",
-    "previousContractHash":  "3631a9317d37e858b5363065a9881142a36d8a7d5c15caac04403e8adc6a4ba0",
+    "contractHash":  "7432d16500044a6c09a9addd9da4328039df8bbb70d034fa584753ac2e2fe883",
+    "previousContractHash":  "e7bbaf1d5727c86f6f64bef1d2a8c779afdff649c9e95d9f256b1ca5c13324b2",
     "artifact":  {
-                     "commitSha":  "15a47be9de9c278debd9426002430aa1d6e231a1",
+                     "commitSha":  "2ae5649a4813a2f58dcd3c92afe0f854994e111a",
                      "buildId":  "unknown",
                      "workflowRunId":  "unknown"
                  },
     "startup":  {
-                    "contractVersion":  "unknown",
-                    "ready":  false,
+                    "contractVersion":  "mixvy.startup.app_ready.v1",
+                    "ready":  true,
                     "checkpoints":  [
-
+                                        "bindingReady",
+                                        "bootstrapResolved",
+                                        "firebaseReady",
+                                        "firstFrameRendered",
+                                        "firstInteractiveReady",
+                                        "mainStart"
                                     ]
                 },
     "environment":  {
@@ -44,11 +49,11 @@
                        "portOwnership":  "user"
                    },
     "probeResults":  {
-                         "startupProbe":  "fail",
-                         "smokeProbe":  "fail"
+                         "startupProbe":  "pass",
+                         "smokeProbe":  "pass"
                      },
     "governance":  {
-                       "decision":  "deny",
-                       "reasonCode":  "schema_invalid"
+                       "decision":  "allow",
+                       "reasonCode":  "policy_rejection"
                    }
 }

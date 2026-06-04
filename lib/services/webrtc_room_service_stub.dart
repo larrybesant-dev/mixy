@@ -33,6 +33,8 @@ class WebRtcRoomService extends RtcRoomService {
   VoidCallback? onTokenWillExpire;
   @override
   VoidCallback? onConnectionLost;
+  @override
+  VoidCallback? onNetworkQualityChanged;
   VoidCallback? onSystemAudioStopped;
 
   @override
@@ -51,6 +53,8 @@ class WebRtcRoomService extends RtcRoomService {
   bool get isLocalAudioMuted => _unsupported();
   @override
   bool get isSharingSystemAudio => false;
+  @override
+  bool get isNetworkDegraded => false;
   @override
   Future<void> shareSystemAudio(bool enabled) async {}
 

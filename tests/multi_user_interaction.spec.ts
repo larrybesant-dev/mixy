@@ -36,12 +36,13 @@ async function waitForFlutterWasmStable(page: Page): Promise<void> {
 }
 
 async function createBrowserContextWithHardwareMocking(userLabel: string): Promise<BrowserContext> {
+  const isCi = !!(process.env.CI || process.env.GITHUB_ACTIONS);
   const browser = await chromium.launch({
     args: [
       '--use-fake-ui-for-media-stream',
       '--use-fake-device-for-media-stream',
     ],
-    headless: false,
+    headless: isCi,
   });
 
   const context = await browser.newContext({

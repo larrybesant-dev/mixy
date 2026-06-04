@@ -1,12 +1,161 @@
 {
-    "contractVersion":  "startup_probe_report_v1",
-    "status":  "FAIL",
-    "reason":  "probe_failure",
-    "finalContract":  {
-                          "contractVersion":  "unknown",
-                          "ready":  false,
-                          "checkpoints":  {
-
-                                          }
-                      }
+  "contractVersion": "startup_probe_report_v1",
+  "generatedAtUtc": "2026-06-04T17:48:05.968Z",
+  "appUrl": "http://127.0.0.1:9090/",
+  "status": "PASS",
+  "reason": "policy_rejection",
+  "detail": null,
+  "outputLogPath": "tools/reports/startup_timeline.log",
+  "appReadyContractKey": "startupAppReadyContract",
+  "appReadyContractVersion": "mixvy.startup.app_ready.v1",
+  "durationMs": 2702,
+  "finalContract": {
+    "contractVersion": "mixvy.startup.app_ready.v1",
+    "ready": true,
+    "readyCheckpoint": "firstFrameRendered",
+    "checkpoints": {
+      "bindingReady": "+7ms startup.bindingReady",
+      "bootstrapResolved": "+309ms startup.bootstrapResolved status=ready",
+      "firebaseReady": "+309ms startup.firebaseReady status=ok",
+      "firstFrameRendered": "+920ms startup.firstFrameRendered",
+      "firstInteractiveReady": "+920ms startup.firstInteractiveReady launch_type=cold",
+      "mainStart": "+1ms startup.mainStart"
+    }
+  },
+  "evidence": {
+    "pageErrors": [],
+    "requestFailures": [
+      {
+        "url": "http://127.0.0.1:9090/assets/assets/.env",
+        "method": "GET",
+        "errorText": "net::ERR_ABORTED"
+      }
+    ],
+    "responseSamples": [
+      {
+        "url": "http://127.0.0.1:9090/",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:9090/flutter_bootstrap.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.wasm",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:9090/main.dart.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/flutter-canvaskit/e4b8dca3f1b4ede4c30371002441c88c12187ed6/chromium/canvaskit.js",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:9090/assets/FontManifest.json",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:9090/assets/fonts/MaterialIcons-Regular.otf",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:9090/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf",
+        "status": 200
+      },
+      {
+        "url": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-messaging.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-storage.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-remote-config.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js",
+        "status": 200
+      },
+      {
+        "url": "https://accounts.google.com/gsi/client",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js",
+        "status": 200
+      },
+      {
+        "url": "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:9090/assets/assets/.env",
+        "status": 404
+      },
+      {
+        "url": "http://127.0.0.1:9090/assets/AssetManifest.bin.json",
+        "status": 200
+      }
+    ],
+    "consoleSamples": [
+      "debug: Injecting <script> tag. Using callback.",
+      "debug: TrustedTypes available. Creating policy: gis-dart",
+      "log: startup_metric name=app_start_time launch_type=cold value_ms=0",
+      "log: +1ms startup.mainStart",
+      "log: +7ms startup.bindingReady",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_core",
+      "debug: Initializing Firebase firebase_core",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_firestore",
+      "debug: Initializing Firebase firebase_firestore",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_functions",
+      "debug: Initializing Firebase firebase_functions",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_analytics",
+      "debug: Initializing Firebase firebase_analytics",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_auth",
+      "debug: Initializing Firebase firebase_auth",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_database",
+      "debug: Initializing Firebase firebase_database",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_messaging",
+      "debug: Initializing Firebase firebase_messaging",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_remote_config",
+      "debug: Initializing Firebase firebase_remote_config",
+      "debug: TrustedTypes available. Creating policy: flutterfire-firebase_storage",
+      "debug: Initializing Firebase firebase_storage",
+      "log: +309ms startup.firebaseReady status=ok",
+      "log: +309ms startup.bootstrapResolved status=ready",
+      "error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "warning: Error while trying to load an asset: Flutter Web engine failed to fetch \"assets/assets/.env\". HTTP request succeeded, but the server responded with HTTP status 404.",
+      "warning: [.WebGL-0x2b0c05cabe00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "log: [ROUTER][REDIRECT][session=mpzsgj6l #1] from=/ to=/auth reason=signed_out_redirect_to_auth",
+      "log: [ROUTER][REDIRECT][session=mpzsgj6l #2] from=/auth to=stay reason=signed_out_allowed_auth_route",
+      "log: [ROUTER][REDIRECT][session=mpzsgj6l #3] from=/ to=/auth reason=signed_out_redirect_to_auth",
+      "log: [ROUTER][REDIRECT][session=mpzsgj6l #4] from=/auth to=stay reason=signed_out_allowed_auth_route",
+      "log: startup_metric name=first_frame_rendered_time launch_type=cold value_ms=919",
+      "log: +920ms startup.firstFrameRendered",
+      "log: startup_metric name=first_interactive_ready_time launch_type=cold value_ms=920",
+      "log: +920ms startup.firstInteractiveReady launch_type=cold",
+      "warning: [.WebGL-0x2b0c05cabe00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "warning: [.WebGL-0x2b0c05cabe00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    ]
+  }
 }

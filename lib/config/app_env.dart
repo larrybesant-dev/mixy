@@ -68,8 +68,7 @@ class AppEnv {
   // Common Keys
   static String get agoraAppId => get('AGORA_APP_ID');
   static String get stripePublishableKey => get('STRIPE_PUBLISHABLE_KEY');
-  static String get meteredDomain =>
-      get('METERED_DOMAIN', fallback: 'mixvy.metered.live');
+  static String get meteredDomain => get('METERED_DOMAIN', fallback: '');
   static String get meteredSecretKey => get('METERED_SECRET_KEY');
   static String get giphyApiKey => get('GIPHY_API_KEY');
 

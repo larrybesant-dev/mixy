@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../services/push_messaging_service.dart';
 import 'firebase_providers.dart';
@@ -16,12 +15,14 @@ final pushMessagingAuthCoordinatorProvider = FutureProvider<void>((ref) async {
   await ref.watch(authStateProvider.future);
 
   // After Firebase auth is ready, coordinate future auth state changes with push.
-  ref.listen<AsyncValue<User?>>(authStateProvider, (prev, next) {
+  ref.listen<AsyncValue<Object?>>(authStateProvider, (prev, next) {
     next.whenData((_) {
       // When auth state changes, trigger push token re-registration.
       // The service handles the logic of whether registration is needed.
       // When user logs in, re-register push token with new user context.
-      Future.microtask(() => PushMessagingService.instance.initialize());
+      Future.microtask(
+        () => PushMessagingService.instance.registerCurrentTokenForAuthState(),
+      );
     });
   });
 });

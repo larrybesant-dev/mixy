@@ -30,7 +30,8 @@ class VelvetNoirVisualConfig {
   factory VelvetNoirVisualConfig.fromJson(Map<String, dynamic> json) {
     return VelvetNoirVisualConfig(
       glassBlurSigma: (json['glassBlurSigma'] as num?)?.toDouble() ?? 16.0,
-      glassBackgroundAlpha: (json['glassBackgroundAlpha'] as num?)?.toDouble() ?? 0.65,
+      glassBackgroundAlpha:
+          (json['glassBackgroundAlpha'] as num?)?.toDouble() ?? 0.65,
       goldBorderAlpha: (json['goldBorderAlpha'] as num?)?.toDouble() ?? 0.18,
       wineGlowAlpha: (json['wineGlowAlpha'] as num?)?.toDouble() ?? 0.08,
       enableGlowEffects: json['enableGlowEffects'] as bool? ?? true,
@@ -55,7 +56,8 @@ final remoteConfigProvider = Provider<FirebaseRemoteConfig>((ref) {
 
 /// StateNotifier that initializes and exposes Velvet Noir visual configs.
 final velvetVisualConfigProvider =
-    StateNotifierProvider<VelvetVisualConfigNotifier, VelvetNoirVisualConfig>((ref) {
+    StateNotifierProvider<VelvetVisualConfigNotifier, VelvetNoirVisualConfig>(
+        (ref) {
   final rc = ref.watch(remoteConfigProvider);
   return VelvetVisualConfigNotifier(rc);
 });
@@ -63,7 +65,8 @@ final velvetVisualConfigProvider =
 class VelvetVisualConfigNotifier extends StateNotifier<VelvetNoirVisualConfig> {
   final FirebaseRemoteConfig _rc;
 
-  VelvetVisualConfigNotifier(this._rc) : super(const VelvetNoirVisualConfig.defaults()) {
+  VelvetVisualConfigNotifier(this._rc)
+      : super(const VelvetNoirVisualConfig.defaults()) {
     _initialize();
   }
 
@@ -73,19 +76,22 @@ class VelvetVisualConfigNotifier extends StateNotifier<VelvetNoirVisualConfig> {
     try {
       // Set defaults first so the app is always functional
       await _rc.setDefaults({
-        _configKey: jsonEncode(const VelvetNoirVisualConfig.defaults().toJson()),
+        _configKey:
+            jsonEncode(const VelvetNoirVisualConfig.defaults().toJson()),
       });
 
       // Configure fetch settings
       await _rc.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: kDebugMode ? Duration.zero : const Duration(hours: 4),
+        minimumFetchInterval:
+            kDebugMode ? Duration.zero : const Duration(hours: 4),
       ));
 
       // Fetch and activate the configurations
       final updated = await _rc.fetchAndActivate();
       if (updated) {
-        Logger.info('[RemoteConfig] Fetched and activated new visual configurations.');
+        Logger.info(
+            '[RemoteConfig] Fetched and activated new visual configurations.');
       } else {
         Logger.info('[RemoteConfig] Active visual config is up to date.');
       }
@@ -93,7 +99,8 @@ class VelvetVisualConfigNotifier extends StateNotifier<VelvetNoirVisualConfig> {
       // Parse the active config
       _updateStateFromRemote();
     } catch (e, st) {
-      Logger.error('[RemoteConfig] Error initializing Remote Config: $e', error: e, stackTrace: st);
+      Logger.error('[RemoteConfig] Error initializing Remote Config: $e',
+          error: e, stackTrace: st);
       // Fall back to safe defaults (state is already defaults)
     }
   }
@@ -109,7 +116,8 @@ class VelvetVisualConfigNotifier extends StateNotifier<VelvetNoirVisualConfig> {
         Logger.info('[RemoteConfig] Loaded Velvet Noir config: $rawJson');
       }
     } catch (e, st) {
-      Logger.error('[RemoteConfig] Error parsing visual config JSON: $e', error: e, stackTrace: st);
+      Logger.error('[RemoteConfig] Error parsing visual config JSON: $e',
+          error: e, stackTrace: st);
     }
   }
 

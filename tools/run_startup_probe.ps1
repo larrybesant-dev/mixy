@@ -88,9 +88,9 @@ try {
   $env:WEB_SMOKE_REPORT_PATH = $WebSmokeReportPath
 
   if ($Mode -eq 'startup') {
-    Invoke-NodeScript -ScriptPath 'tools/ci_capture_startup_log.js'
+    Invoke-NodeScript -ScriptPath 'tools/ci_capture_startup_log.cjs'
   } else {
-    Invoke-NodeScript -ScriptPath 'tools/ci_web_failure_smoke.js'
+    Invoke-NodeScript -ScriptPath 'tools/ci_web_failure_smoke.cjs'
   }
 
   Write-Info "Probe mode '$Mode' completed successfully."

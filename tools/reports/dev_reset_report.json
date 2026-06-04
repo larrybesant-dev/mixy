@@ -1,15 +1,12 @@
 ﻿{
     "contractVersion":  "mixvy.dev_reset_report.v1",
-    "generatedAtUtc":  "2026-04-24T22:25:15.4420910Z",
+    "generatedAtUtc":  "2026-06-04T17:47:53.3470608Z",
     "results":  [
-                    {
-                        "port":  8080,
-                        "preflightExitCode":  1,
-                        "released":  false
-                    },
                     {
                         "port":  9090,
                         "preflightExitCode":  0,
+                        "preflightStatus":  "pass",
+                        "reasonCode":  "none",
                         "released":  true
                     }
                 ]

@@ -30,6 +30,9 @@ abstract class RtcRoomService {
   VoidCallback? get onConnectionLost;
   set onConnectionLost(VoidCallback? value);
 
+  VoidCallback? get onNetworkQualityChanged => null;
+  set onNetworkQualityChanged(VoidCallback? value) {}
+
   // ──────────────────────────────────────────────────────────────────────────
   // State getters
   // ──────────────────────────────────────────────────────────────────────────
@@ -44,6 +47,9 @@ abstract class RtcRoomService {
 
   /// True when the broadcaster is sharing PC/system audio via getDisplayMedia.
   bool get isSharingSystemAudio => false;
+
+  /// True when the network is experiencing high packet loss/RTT and is degraded.
+  bool get isNetworkDegraded => false;
 
   bool isRemoteSpeaking(int uid);
 

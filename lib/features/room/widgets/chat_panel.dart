@@ -163,18 +163,24 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
     return Container(
       decoration: BoxDecoration(
-        color: kVelvetJet.withValues(alpha: visualConfig.glassBackgroundAlpha), // Translucent backdrop matching Velvet Noir
+        color: kVelvetJet.withValues(
+            alpha: visualConfig
+                .glassBackgroundAlpha), // Translucent backdrop matching Velvet Noir
         borderRadius: BorderRadius.zero,
         border: Border(
           left: BorderSide(
-            color: kVelvetGold.withValues(alpha: visualConfig.goldBorderAlpha), // Ultra thin premium gold border
+            color: kVelvetGold.withValues(
+                alpha: visualConfig
+                    .goldBorderAlpha), // Ultra thin premium gold border
             width: 1,
           ),
         ),
       ),
       child: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: visualConfig.glassBlurSigma, sigmaY: visualConfig.glassBlurSigma), // Premium glassmorphic blur
+          filter: ImageFilter.blur(
+              sigmaX: visualConfig.glassBlurSigma,
+              sigmaY: visualConfig.glassBlurSigma), // Premium glassmorphic blur
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -182,272 +188,278 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                 end: Alignment.bottomCenter,
                 colors: [
                   kVelvetJet.withValues(alpha: 0.5),
-                  kVelvetWine.withValues(alpha: visualConfig.wineGlowAlpha), // Subtle, elegant undertone of wine red
+                  kVelvetWine.withValues(
+                      alpha: visualConfig
+                          .wineGlowAlpha), // Subtle, elegant undertone of wine red
                   kVelvetJet.withValues(alpha: 0.7),
                 ],
               ),
             ),
             child: Column(
               children: [
-          // Extra header (gift row, blocked warning, etc.)
-          if (widget.extraHeader != null) widget.extraHeader!,
+                // Extra header (gift row, blocked warning, etc.)
+                if (widget.extraHeader != null) widget.extraHeader!,
 
-          // message list
-          Expanded(
-            child: widget.isLoadingMessages
-                ? const Center(child: CircularProgressIndicator())
-                : widget.messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No message yet.',
-                          style: TextStyle(color: npOnVariant),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: widget.scrollController,
-                        padding: const EdgeInsets.all(6),
-                        itemCount: widget.messages.length,
-                        addAutomaticKeepAlives: false,
-                        addRepaintBoundaries: true,
-                        itemBuilder: (context, i) {
-                          final msg = widget.messages[i];
-                          return MessageBubble(
-                            key: ValueKey('msg_${msg.id}'),
-                            message: msg,
-                            isMe: msg.senderId == widget.currentUserId,
-                            senderLabel:
-                                widget.senderLabelResolver(msg.senderId),
-                            senderVipLevel: widget.senderVipLevelResolver(
-                              msg.senderId,
+                // message list
+                Expanded(
+                  child: widget.isLoadingMessages
+                      ? const Center(child: CircularProgressIndicator())
+                      : widget.messages.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No message yet.',
+                                style: TextStyle(color: npOnVariant),
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: widget.scrollController,
+                              padding: const EdgeInsets.all(6),
+                              itemCount: widget.messages.length,
+                              addAutomaticKeepAlives: false,
+                              addRepaintBoundaries: true,
+                              itemBuilder: (context, i) {
+                                final msg = widget.messages[i];
+                                return MessageBubble(
+                                  key: ValueKey('msg_${msg.id}'),
+                                  message: msg,
+                                  isMe: msg.senderId == widget.currentUserId,
+                                  senderLabel:
+                                      widget.senderLabelResolver(msg.senderId),
+                                  senderVipLevel: widget.senderVipLevelResolver(
+                                    msg.senderId,
+                                  ),
+                                  senderAvatarUrl: widget.senderAvatarResolver(
+                                    msg.senderId,
+                                  ),
+                                  onTapSender: widget.onTapSender,
+                                );
+                              },
                             ),
-                            senderAvatarUrl: widget.senderAvatarResolver(
-                              msg.senderId,
-                            ),
-                            onTapSender: widget.onTapSender,
-                          );
-                        },
-                      ),
-          ),
-
-          // Scroll-to-bottom fab overlay
-          if (_userHasScrolledUp)
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 12, bottom: 8),
-                child: FloatingActionButton.small(
-                  backgroundColor: const Color(0xFFD4A853),
-                  onPressed: () {
-                    setState(() => _userHasScrolledUp = false);
-                    _scrollToBottom();
-                  },
-                  child: const Icon(Icons.arrow_downward,
-                      size: 18, color: Colors.white),
                 ),
-              ),
-            ),
 
-          // Cooldown notice
-          if (widget.cooldownMessage.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
-              child: Text(
-                widget.cooldownMessage,
-                style: const TextStyle(
-                  color: Color(0xFFFF6E84),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-
-          // Typing indicator
-          if (widget.typingNames.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  widget.typingNames.length == 1
-                      ? '${widget.typingNames[0]} is typing…'
-                      : '${widget.typingNames.join(', ')} are typing…',
-                  style: TextStyle(
-                    color: npOnVariant,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ),
-
-          // Emoji tray
-          if (widget.showEmojiTray)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: ChatPanel._quickEmojis.map((e) {
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(6),
-                    onTap: () {
-                      widget.messageController.text += e;
-                      widget.messageController.selection =
-                          TextSelection.fromPosition(
-                        TextPosition(
-                          offset: widget.messageController.text.length,
-                        ),
-                      );
-                    },
+                // Scroll-to-bottom fab overlay
+                if (_userHasScrolledUp)
+                  Align(
+                    alignment: Alignment.bottomRight,
                     child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Text(e, style: const TextStyle(fontSize: 20)),
+                      padding: const EdgeInsets.only(right: 12, bottom: 8),
+                      child: FloatingActionButton.small(
+                        backgroundColor: const Color(0xFFD4A853),
+                        onPressed: () {
+                          setState(() => _userHasScrolledUp = false);
+                          _scrollToBottom();
+                        },
+                        child: const Icon(Icons.arrow_downward,
+                            size: 18, color: Colors.white),
+                      ),
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
+                  ),
 
-          // Input row
-          SafeArea(
-            top: false,
-            left: false,
-            right: false,
-            minimum: const EdgeInsets.only(bottom: 4),
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 4 : 0),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 2, 6, 6),
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Emojis',
-                      iconSize: 20,
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        widget.showEmojiTray
-                            ? Icons.emoji_emotions
-                            : Icons.emoji_emotions_outlined,
-                        color: npOnVariant,
-                      ),
-                      onPressed: () {
-                        FocusScope.of(context).unfocus();
-                        widget.onToggleEmojiTray();
-                      },
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: widget.messageController,
-                        onChanged: (_) => widget.onTyping(),
-                        enabled: canSend,
-                        textInputAction: TextInputAction.send,
-                        scrollPadding: EdgeInsets.only(
-                          top: 24,
-                          bottom: keyboardInset + 120,
-                        ),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: hintText,
-                          hintStyle: TextStyle(
-                            color: npOnVariant,
-                            fontSize: 12,
-                          ),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                              color: kVelvetGold.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                              color: kVelvetGold.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: const BorderSide(
-                              color: kVelvetGold,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: kVelvetJet.withValues(alpha: 0.55),
-                        ),
-                        onSubmitted: canSend
-                            ? (text) async {
-                                final trimmed = text.trim();
-                                if (trimmed.isNotEmpty) {
-                                  await widget.onSendMessage(trimmed);
-                                }
-                              }
-                            : null,
+                // Cooldown notice
+                if (widget.cooldownMessage.isNotEmpty)
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+                    child: Text(
+                      widget.cooldownMessage,
+                      style: const TextStyle(
+                        color: Color(0xFFFF6E84),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    SizedBox(
-                      height: 36,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: kVelvetGold,
-                          foregroundColor: kVelvetJet,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          minimumSize: Size.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            side: BorderSide(
-                              color: kVelvetGold.withValues(alpha: 0.5),
-                              width: 1,
-                            ),
-                          ),
+                  ),
+
+                // Typing indicator
+                if (widget.typingNames.isNotEmpty)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        widget.typingNames.length == 1
+                            ? '${widget.typingNames[0]} is typing…'
+                            : '${widget.typingNames.join(', ')} are typing…',
+                        style: TextStyle(
+                          color: npOnVariant,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
                         ),
-                        onPressed: canSend
-                            ? () async {
-                                final text =
-                                    widget.messageController.text.trim();
-                                if (text.isNotEmpty) {
-                                  await widget.onSendMessage(text);
-                                }
-                              }
-                            : null,
-                        child: widget.isSending
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Send',
-                                style: TextStyle(
-                                  color: kVelvetJet,
+                      ),
+                    ),
+                  ),
+
+                // Emoji tray
+                if (widget.showEmojiTray)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: ChatPanel._quickEmojis.map((e) {
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () {
+                            widget.messageController.text += e;
+                            widget.messageController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                offset: widget.messageController.text.length,
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child:
+                                Text(e, style: const TextStyle(fontSize: 20)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                // Input row
+                SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  minimum: const EdgeInsets.only(bottom: 4),
+                  child: AnimatedPadding(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 4 : 0),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 2, 6, 6),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            tooltip: 'Emojis',
+                            iconSize: 20,
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              widget.showEmojiTray
+                                  ? Icons.emoji_emotions
+                                  : Icons.emoji_emotions_outlined,
+                              color: npOnVariant,
+                            ),
+                            onPressed: () {
+                              FocusScope.of(context).unfocus();
+                              widget.onToggleEmojiTray();
+                            },
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: widget.messageController,
+                              onChanged: (_) => widget.onTyping(),
+                              enabled: canSend,
+                              textInputAction: TextInputAction.send,
+                              scrollPadding: EdgeInsets.only(
+                                top: 24,
+                                bottom: keyboardInset + 120,
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: hintText,
+                                hintStyle: TextStyle(
+                                  color: npOnVariant,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide(
+                                    color: kVelvetGold.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide(
+                                    color: kVelvetGold.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: const BorderSide(
+                                    color: kVelvetGold,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: kVelvetJet.withValues(alpha: 0.55),
+                              ),
+                              onSubmitted: canSend
+                                  ? (text) async {
+                                      final trimmed = text.trim();
+                                      if (trimmed.isNotEmpty) {
+                                        await widget.onSendMessage(trimmed);
+                                      }
+                                    }
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          SizedBox(
+                            height: 36,
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: kVelvetGold,
+                                foregroundColor: kVelvetJet,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                minimumSize: Size.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide(
+                                    color: kVelvetGold.withValues(alpha: 0.5),
+                                    width: 1,
+                                  ),
                                 ),
                               ),
+                              onPressed: canSend
+                                  ? () async {
+                                      final text =
+                                          widget.messageController.text.trim();
+                                      if (text.isNotEmpty) {
+                                        await widget.onSendMessage(text);
+                                      }
+                                    }
+                                  : null,
+                              child: widget.isSending
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Send',
+                                      style: TextStyle(
+                                        color: kVelvetJet,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
-    ),
-    ),
-    ),
     );
   }
 }

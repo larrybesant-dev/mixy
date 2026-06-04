@@ -114,7 +114,7 @@ class DashboardView extends ConsumerWidget {
           child: Container(
             margin: const EdgeInsets.only(top: 8, right: 8),
             padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
+            decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -152,7 +152,8 @@ class DashboardView extends ConsumerWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(flex: 3, child: SingleChildScrollView(child: mainContent)),
+              Expanded(
+                  flex: 3, child: SingleChildScrollView(child: mainContent)),
               const SizedBox(width: 16),
               SizedBox(width: 360, child: sideBar),
             ],
@@ -187,7 +188,7 @@ class LoadingView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         width: double.infinity,
-          padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(12),

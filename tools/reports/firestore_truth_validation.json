@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-05-04T02:48:38.795Z",
-  "finishedAt": "2026-05-04T02:48:44.434Z",
-  "durationMs": 5639,
-  "sampleSize": 200,
-  "totalScanned": 178,
+  "startedAt": "2026-06-04T17:47:54.437Z",
+  "finishedAt": "2026-06-04T17:48:00.805Z",
+  "durationMs": 6368,
+  "sampleSize": 500,
+  "totalScanned": 32,
   "totalViolations": 0,
   "passed": true,
   "summary": {
@@ -13,15 +13,15 @@
       "violations": 0
     },
     "messages": {
-      "scanned": 127,
+      "scanned": 5,
       "violations": 0
     },
     "rooms": {
-      "scanned": 10,
+      "scanned": 3,
       "violations": 0
     },
     "roomParticipants": {
-      "scanned": 21,
+      "scanned": 0,
       "violations": 0
     },
     "follows": {
@@ -33,6 +33,14 @@
     },
     "followingSymmetry": {
       "violations": 0
+    },
+    "webrtcSessions": {
+      "scanned": 2,
+      "violations": 0
+    },
+    "webrtcParticipants": {
+      "scanned": 2,
+      "violations": 0
     }
   },
   "violations": {
@@ -42,6 +50,8 @@
     "roomParticipants": [],
     "follows": [],
     "followersSymmetry": [],
-    "followingSymmetry": []
+    "followingSymmetry": [],
+    "webrtcSessions": [],
+    "webrtcParticipants": []
   }
 }

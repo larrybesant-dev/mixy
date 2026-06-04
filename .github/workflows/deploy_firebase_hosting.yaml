@@ -41,6 +41,22 @@ jobs:
       - name: Build web release
         run: flutter build web --release --base-href "/"
 
+      - name: Install Playwright and Http-Server for Validation
+        run: |
+          npm install --no-save playwright@1.53.0
+          npm install --no-save http-server@14.1.1
+          npx playwright install chromium
+
+      - name: Run Startup Probe
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/run_startup_probe.ps1 -Mode startup -SkipPreflight -Port 9090 -BuildPath build/web -AppUrl http://127.0.0.1:9090/
+
+      - name: Run Web Failure Smoke Suite
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/run_startup_probe.ps1 -Mode smoke -SkipPreflight -Port 9090 -BuildPath build/web -AppUrl http://127.0.0.1:9090/
+
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:

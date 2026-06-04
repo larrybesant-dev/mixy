@@ -99,15 +99,15 @@ function Get-ListenerSnapshot {
   param([int[]]$Pids)
 
   $snapshots = @()
-  foreach ($pid in @($Pids | Select-Object -Unique)) {
-    $services = @(Get-CimInstance Win32_Service -Filter "ProcessId = $pid" -ErrorAction SilentlyContinue)
-    $metadata = Get-ProcessMetadata -TargetProcessId $pid
+  foreach ($p in @($Pids | Select-Object -Unique)) {
+    $services = @(Get-CimInstance Win32_Service -Filter "ProcessId = $p" -ErrorAction SilentlyContinue)
+    $metadata = Get-ProcessMetadata -TargetProcessId $p
 
     if ($services.Count -gt 0) {
       foreach ($svc in $services) {
         $ownership = if ([string]$svc.StartName -eq 'LocalSystem' -or [string]$svc.StartName -eq 'NT AUTHORITY\\SYSTEM') { 'system_service' } else { 'service' }
         $snapshots += [ordered]@{
-          pid = $pid
+          pid = $p
           ownership = $ownership
           serviceName = [string]$svc.Name
           serviceStartName = [string]$svc.StartName
@@ -116,9 +116,9 @@ function Get-ListenerSnapshot {
         }
       }
     } else {
-      if ($pid -eq 4) {
+      if ($p -eq 4) {
         $snapshots += [ordered]@{
-          pid = $pid
+          pid = $p
           ownership = 'kernel_listener'
           serviceName = 'HTTP.sys'
           serviceStartName = 'kernel'
@@ -127,7 +127,7 @@ function Get-ListenerSnapshot {
         }
       } else {
         $snapshots += [ordered]@{
-          pid = $pid
+          pid = $p
           ownership = 'process'
           serviceName = $null
           serviceStartName = $null

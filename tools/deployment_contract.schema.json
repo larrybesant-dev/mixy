@@ -1,146 +1,41 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "authority",
-    "contractState",
-    "contractHash",
-    "previousContractHash",
-    "artifact",
-    "startup",
-    "environment",
-    "privilege",
-    "networking",
-    "probeResults",
-    "governance"
-  ],
-  "properties": {
-    "authority": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["runtime", "ci", "resolvedBy"],
-      "properties": {
-        "runtime": { "type": "string", "enum": ["flutter"] },
-        "ci": { "type": "string", "enum": ["github-actions"] },
-        "resolvedBy": { "type": "string", "enum": ["deployment_contract"] }
-      }
-    },
-    "contractState": {
-      "type": "string",
-      "enum": ["INIT", "COLLECTED", "VALIDATED", "GOVERNED", "BOOTSTRAP", "FINAL"]
-    },
-    "contractHash": { "type": "string" },
-    "previousContractHash": {
-      "type": ["string", "null"]
-    },
-    "artifact": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["commitSha", "buildId", "workflowRunId"],
-      "properties": {
-        "commitSha": { "type": "string" },
-        "buildId": { "type": "string" },
-        "workflowRunId": { "type": "string" }
-      }
-    },
-    "startup": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["contractVersion", "ready", "checkpoints"],
-      "properties": {
-        "contractVersion": { "type": "string" },
-        "ready": { "type": "boolean" },
-        "checkpoints": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
-      }
-    },
-    "environment": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["class", "os"],
-      "properties": {
-        "class": {
-          "type": "string",
-          "enum": ["ci", "local", "unknown"]
-        },
-        "os": {
-          "type": "string",
-          "enum": ["windows", "linux", "macos"]
-        },
-        "contract": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["status"],
-          "properties": {
-            "status": { "type": "string", "enum": ["missing", "invalid", "present"] },
-            "hash": { "type": ["string", "null"] },
-            "summaryFlags": { "type": ["object", "null"] }
-          }
-        }
-      }
-    },
-    "privilege": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["class"],
-      "properties": {
-        "class": {
-          "type": "string",
-          "enum": ["admin", "non-admin", "restricted"]
-        }
-      }
-    },
-    "networking": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["port", "portOwnership"],
-      "properties": {
-        "port": { "type": "number" },
-        "portOwnership": {
-          "type": "string",
-          "enum": ["system", "service", "user", "unknown"]
-        }
-      }
-    },
-    "probeResults": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["startupProbe", "smokeProbe"],
-      "properties": {
-        "startupProbe": {
-          "type": "string",
-          "enum": ["pass", "fail"]
-        },
-        "smokeProbe": {
-          "type": "string",
-          "enum": ["pass", "fail"]
-        }
-      }
-    },
-    "governance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["decision", "reasonCode"],
-      "properties": {
-        "decision": {
-          "type": "string",
-          "enum": ["allow", "deny", "allow-with-degradation"]
-        },
-        "reasonCode": {
-          "type": "string",
-          "enum": [
-            "app_contract_failure",
-            "env_privilege_blocked",
-            "service_ownership_blocked",
-            "probe_failure",
-            "schema_invalid",
-            "policy_rejection"
-          ]
-        }
-      }
-    }
-  }
+    "authority":  {
+                      "runtime":  "flutter",
+                      "ci":  "github-actions",
+                      "resolvedBy":  "deployment_contract"
+                  },
+    "contractState":  "FINAL",
+    "contractHash":  "invalid",
+    "previousContractHash":  null,
+    "artifact":  {
+                     "commitSha":  "unknown",
+                     "buildId":  "unknown",
+                     "workflowRunId":  "unknown"
+                 },
+    "startup":  {
+                    "contractVersion":  "unknown",
+                    "ready":  false,
+                    "checkpoints":  [
+
+                                    ]
+                },
+    "environment":  {
+                        "class":  "local",
+                        "os":  "windows"
+                    },
+    "privilege":  {
+                      "class":  "restricted"
+                  },
+    "networking":  {
+                       "port":  8080,
+                       "portOwnership":  "user"
+                   },
+    "probeResults":  {
+                         "startupProbe":  "fail",
+                         "smokeProbe":  "fail"
+                     },
+    "governance":  {
+                       "decision":  "deny",
+                       "reasonCode":  "schema_invalid"
+                   }
 }

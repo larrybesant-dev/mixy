@@ -1,0 +1,46 @@
+{
+    "contractVersion":  "mixvy.preflight_contract.v1",
+    "generatedAtUtc":  "2026-06-04T06:50:30.3709934Z",
+    "status":  "blocked",
+    "reasonCode":  "external_service_blocking_port",
+    "environment":  {
+                        "class":  "local",
+                        "os":  "windows",
+                        "privilegeClass":  "non-admin",
+                        "isAdmin":  false
+                    },
+    "preflight":  {
+                      "mode":  "Force",
+                      "port":  8080,
+                      "stable":  false,
+                      "initialListeners":  [
+                                               {
+                                                   "pid":  6104,
+                                                   "ownership":  "system_service",
+                                                   "serviceName":  "PEMHTTPD-x64",
+                                                   "serviceStartName":  "LocalSystem",
+                                                   "processName":  "httpd",
+                                                   "executablePath":  null
+                                               }
+                                           ],
+                      "finalListeners":  [
+                                             {
+                                                 "pid":  6104,
+                                                 "ownership":  "system_service",
+                                                 "serviceName":  "PEMHTTPD-x64",
+                                                 "serviceStartName":  "LocalSystem",
+                                                 "processName":  "httpd",
+                                                 "executablePath":  null
+                                             }
+                                         ],
+                      "blocks":  [
+                                     {
+                                         "reasonCode":  "external_service_blocking_port",
+                                         "pid":  6104,
+                                         "serviceName":  "PEMHTTPD-x64",
+                                         "serviceStartName":  "LocalSystem",
+                                         "ownership":  "system_service"
+                                     }
+                                 ]
+                  }
+}
