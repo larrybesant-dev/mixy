@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -39,7 +38,8 @@ void main() {
         );
       }
 
-      debugPrint('[STRESS_TEST] Instantiated ${testUsers.length} concurrent clients.');
+      debugPrint(
+          '[STRESS_TEST] Instantiated ${testUsers.length} concurrent clients.');
 
       // 4. Concurrently join the WebRTC signaling room
       debugPrint('[STRESS_TEST] Joining room "$channelName" concurrently...');
@@ -67,10 +67,13 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
 
       // 6. Verify that each participant is correctly registered in firestore
-      final sessionRef = firestore.collection('webrtc_sessions').doc(channelName);
-      final participantsSnap = await sessionRef.collection('participants').get();
-      
-      debugPrint('[STRESS_TEST] Total registered participants in Firestore: ${participantsSnap.docs.length}');
+      final sessionRef =
+          firestore.collection('webrtc_sessions').doc(channelName);
+      final participantsSnap =
+          await sessionRef.collection('participants').get();
+
+      debugPrint(
+          '[STRESS_TEST] Total registered participants in Firestore: ${participantsSnap.docs.length}');
       expect(participantsSnap.docs.length, equals(testUsers.length));
 
       for (final doc in participantsSnap.docs) {
@@ -86,7 +89,8 @@ void main() {
       }
       await Future.wait(disposeFutures);
 
-      debugPrint('[STRESS_TEST][SUCCESS] Concurrent signaling handshake stress test passed perfectly!');
+      debugPrint(
+          '[STRESS_TEST][SUCCESS] Concurrent signaling handshake stress test passed perfectly!');
     });
   });
 }

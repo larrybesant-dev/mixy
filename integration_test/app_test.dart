@@ -66,7 +66,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // 3. Verify: Confirm that the user starts safely on the Dashboard screen (/home)
-        final container = ProviderScope.containerOf(tester.element(find.byType(MixVyApp)));
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(MixVyApp)));
         final router = container.read(routerProvider);
         expect(router.routeInformationProvider.value.uri.path, equals('/home'));
 
@@ -75,9 +76,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // 5. Verify: Check that the safety-net redirect caught the legacy link and redirected to "/rooms/create"
-        expect(router.routeInformationProvider.value.uri.path, equals('/rooms/create'));
+        expect(router.routeInformationProvider.value.uri.path,
+            equals('/rooms/create'));
         expect(find.byType(Scaffold), findsOneWidget);
-        expect(find.text('Page Not Found'), findsNothing); // Confirm no crash to NotFoundScreen
+        expect(find.text('Page Not Found'),
+            findsNothing); // Confirm no crash to NotFoundScreen
 
         // 6. Act: Simulate entering a live audio/video lounge route
         router.go('/rooms/room/integration-test-lounge');
@@ -94,7 +97,8 @@ void main() {
         expect(find.byType(ChatPanel), findsOneWidget);
 
         // The E2E audit confirms that all routes resolve stably with zero exceptions.
-        debugPrint('[QA][SUCCESS] Redirection and layout rendering verified successfully.');
+        debugPrint(
+            '[QA][SUCCESS] Redirection and layout rendering verified successfully.');
       },
     );
   });

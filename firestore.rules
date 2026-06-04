@@ -1303,26 +1303,41 @@ service cloud.firestore {
       // Only authenticated users who can read the corresponding room can see signaling state.
       allow read: if signedIn() && canReadRoomById(sessionId);
 
-      // Only host or participants can initialize the session document.
-      allow write: if signedIn();
+      // Only host or participants can initialize/update the session document.
+      allow create, update: if signedIn() && canReadRoomById(sessionId)
+        && request.resource.data.keys().hasOnly(['active', 'updatedAt'])
+        && (request.resource.data.active == true || request.resource.data.active == false);
+      allow delete: if signedIn() && (roomDoc(sessionId).data.hostId == uid() || isAdmin());
 
       match /participants/{userId} {
         allow read: if signedIn() && canReadRoomById(sessionId);
         // Users can only manage their own signaling heartbeat/presence.
-        allow write: if isSelf(userId);
+        allow create, update: if isSelf(userId) && canReadRoomById(sessionId)
+          && request.resource.data.keys().hasOnly(['uid', 'lastSeen', 'isBroadcasting'])
+          && request.resource.data.uid is int
+          && request.resource.data.isBroadcasting is bool;
+        allow delete: if isSelf(userId) || roomDoc(sessionId).data.hostId == uid() || isAdmin();
       }
 
       match /candidates/{candidateId} {
         allow read: if signedIn() && canReadRoomById(sessionId);
         // Users can only write their own candidates.
-        allow create: if signedIn() && canReadRoomById(sessionId) && request.resource.data.userId == uid();
-        allow delete: if signedIn() && canReadRoomById(sessionId) && (resource.data.userId == uid() || isAdmin());
+        allow create: if signedIn() && canReadRoomById(sessionId) && request.resource.data.userId == uid()
+          && request.resource.data.keys().hasOnly(['candidate', 'sdpMid', 'sdpMLineIndex', 'userId', 'timestamp'])
+          && request.resource.data.candidate is string;
+        allow delete: if signedIn() && canReadRoomById(sessionId) && (resource.data.userId == uid() || roomDoc(sessionId).data.hostId == uid() || isAdmin());
       }
 
       match /signaling/{docId} {
-        allow read: if signedIn() && canReadRoomById(sessionId);
-        // docId is "id1_id2", check if uid is one of them.
-        allow write: if signedIn() && canReadRoomById(sessionId) && docId.matches('.*' + uid() + '.*');
+        // Enforce that only participants involved in this 1-to-1 signaling channel can read it.
+        allow read: if signedIn() && canReadRoomById(sessionId) && docId.matches('.*' + uid() + '.*');
+        // Users can only write signaling messages where they are the sender, strictly schema-validated.
+        allow create, update: if signedIn() && canReadRoomById(sessionId) && docId.matches('.*' + uid() + '.*')
+          && request.resource.data.keys().hasOnly(['senderId', 'type', 'sdp', 'timestamp'])
+          && request.resource.data.senderId == uid()
+          && request.resource.data.type in ['offer', 'answer']
+          && request.resource.data.sdp is string;
+        allow delete: if signedIn() && canReadRoomById(sessionId) && (docId.matches('.*' + uid() + '.*') || roomDoc(sessionId).data.hostId == uid() || isAdmin());
       }
     }
 

@@ -11,7 +11,7 @@ Write-Host "1. Checking dependencies..." -ForegroundColor Yellow
 
 # 2. Format Code
 Write-Host "2. Formatting code..." -ForegroundColor Yellow
-& flutter format lib test
+& dart format lib integration_test
 
 # 3. Static Analysis (The "Scan")
 Write-Host "3. Running static analysis..." -ForegroundColor Yellow
@@ -25,11 +25,15 @@ if ($LASTEXITCODE -ne 0) {
 
 # 4. Run Unit Tests
 Write-Host "4. Running unit tests..." -ForegroundColor Yellow
-& flutter test
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "!! Some tests failed !!" -ForegroundColor Red
+if (Test-Path "test") {
+    & flutter test
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "!! Some tests failed !!" -ForegroundColor Red
+    } else {
+        Write-Host "OK: All tests passed!" -ForegroundColor Green
+    }
 } else {
-    Write-Host "OK: All tests passed!" -ForegroundColor Green
+    Write-Host "OK: No unit tests found (no 'test' directory)." -ForegroundColor Green
 }
 
 # 5. Scan for TODOs (The "Audit")

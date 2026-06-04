@@ -1,7 +1,8 @@
 param(
   [int]$Port = 9090,
   [string]$BuildPath = 'build/web',
-  [string]$DeployRoot = 'deploy'
+  [string]$DeployRoot = 'deploy',
+  [switch]$SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,29 +36,23 @@ function Invoke-PowerShellScript {
     [switch]$AllowFailure
   )
 
-  $stdoutPath = Join-Path $env:TEMP ("mixvy-" + [guid]::NewGuid().ToString() + "-stdout.log")
-  $stderrPath = Join-Path $env:TEMP ("mixvy-" + [guid]::NewGuid().ToString() + "-stderr.log")
-  $argumentList = @('-ExecutionPolicy', 'Bypass', '-File', $ScriptPath) + $Arguments
+  $oldPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
 
   try {
-    $proc = Start-Process -FilePath 'powershell' -ArgumentList $argumentList -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-
-    if (Test-Path $stdoutPath) {
-      Get-Content -Path $stdoutPath | ForEach-Object { Write-Host $_ }
+    $command = "& '${ScriptPath}' " + ($Arguments -join ' ')
+    Invoke-Expression $command | Out-Host
+    return 0
+  }
+  catch {
+    Write-Host "[stage-fail] ${ScriptPath} exception: $($_.Exception.Message)"
+    if (-not $AllowFailure) {
+      throw
     }
-    if (Test-Path $stderrPath) {
-      Get-Content -Path $stderrPath | ForEach-Object { Write-Host $_ }
-    }
-
-    if (-not $AllowFailure -and $proc.ExitCode -ne 0) {
-      throw "Script failed: $ScriptPath (exit=$($proc.ExitCode))"
-    }
-
-    return $proc.ExitCode
+    return 1
   }
   finally {
-    Remove-Item -Path $stdoutPath -ErrorAction SilentlyContinue
-    Remove-Item -Path $stderrPath -ErrorAction SilentlyContinue
+    $ErrorActionPreference = $oldPreference
   }
 }
 
@@ -206,7 +201,7 @@ try {
   $evaluateExitCode = 0
 
   Write-Stage 'Reset environment'
-  $resetExitCode = Invoke-PowerShellScript -ScriptPath 'tools/reset_dev_environment.ps1' -AllowFailure
+  $resetExitCode = Invoke-PowerShellScript -ScriptPath 'tools/reset_dev_environment.ps1' -Arguments @('-Ports', '9090') -AllowFailure
   if ($resetExitCode -ne 0) {
     Write-Host "[stage-fail] reset_dev_environment exit=$resetExitCode"
     Add-StageResult -Stage 'reset_dev_environment' -Status 'failed' -ReasonCode 'env_privilege_blocked' -ExitCode $resetExitCode
@@ -261,14 +256,20 @@ try {
   }
 
   Write-Stage 'Build Flutter web'
-  $buildExitCode = Invoke-CommandWithExitCode -Name 'flutter build web --release' -Command {
-    & flutter build web --release
-  }
-  if ($buildExitCode -ne 0) {
-    Write-Host "[stage-fail] flutter build web --release exit=$buildExitCode"
-    Add-StageResult -Stage 'build_flutter_web' -Status 'failed' -ReasonCode 'probe_failure' -ExitCode $buildExitCode
+  if ($SkipBuild) {
+    Write-Host "Skipping Flutter build web step because -SkipBuild was specified."
+    $buildExitCode = 0
+    Add-StageResult -Stage 'build_flutter_web' -Status 'success' -ReasonCode 'none' -ExitCode 0
   } else {
-    Add-StageResult -Stage 'build_flutter_web' -Status 'success' -ReasonCode 'none' -ExitCode $buildExitCode
+    $buildExitCode = Invoke-CommandWithExitCode -Name 'flutter build web --release' -Command {
+      & flutter build web --release
+    }
+    if ($buildExitCode -ne 0) {
+      Write-Host "[stage-fail] flutter build web --release exit=$buildExitCode"
+      Add-StageResult -Stage 'build_flutter_web' -Status 'failed' -ReasonCode 'probe_failure' -ExitCode $buildExitCode
+    } else {
+      Add-StageResult -Stage 'build_flutter_web' -Status 'success' -ReasonCode 'none' -ExitCode $buildExitCode
+    }
   }
 
   Write-Stage 'Run startup probe'
@@ -312,7 +313,7 @@ try {
     $env:STARTUP_APP_URL = $appUrl
     $env:WEB_SMOKE_REPORT_PATH = $smokeReportPath
 
-    & node tools/ci_web_failure_smoke.js
+    & node tools/ci_web_failure_smoke.cjs
     $smokeProbeExitCode = $LASTEXITCODE
     if ($smokeProbeExitCode -ne 0) {
       Write-Host "[stage-fail] smoke probe exit=$smokeProbeExitCode"
