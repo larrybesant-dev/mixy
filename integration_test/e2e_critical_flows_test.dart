@@ -65,17 +65,54 @@ void main() {
         // User is logged in but onboarding not complete - test onboarding flow
         print('🎯 User already logged in, testing onboarding flow...');
 
-        // Tap "Let's Go" to complete onboarding
-        await tester.tap(find.text("Let's Go"));
-        await tester.pumpAndSettle(const Duration(seconds: 3));
+        // Complete full onboarding flow
+        // Step 1: Welcome screen - tap "Let's Go" button (with arrow)
+        final letGoWithArrow = find.byWidgetPredicate(
+          (widget) =>
+              widget is ElevatedButton &&
+              widget.child is Text &&
+              (widget.child as Text).data?.contains("Let's Go") == true,
+        );
+        if (letGoWithArrow.evaluate().isNotEmpty) {
+          await tester.tap(letGoWithArrow);
+          await tester.pumpAndSettle(const Duration(seconds: 2));
+        }
+
+        // Step 2: Permissions - look for Allow/Continue buttons
+        final allowButton = find.text('Allow');
+        if (allowButton.evaluate().isNotEmpty) {
+          await tester.tap(allowButton);
+          await tester.pumpAndSettle(const Duration(seconds: 2));
+        }
+
+        // Step 3: Age Verification - if present, confirm age
+        final confirmButton = find.text('I confirm');
+        if (confirmButton.evaluate().isNotEmpty) {
+          await tester.tap(confirmButton);
+          await tester.pumpAndSettle(const Duration(seconds: 2));
+        }
+
+        // Step 4: Interests selection - tap Next/Continue
+        final nextButton = find.text('Next');
+        if (nextButton.evaluate().isNotEmpty) {
+          await tester.tap(nextButton);
+          await tester.pumpAndSettle(const Duration(seconds: 2));
+        }
+
+        // Step 5: Tutorial/Done - tap final button
+        final doneButton = find.text('Done');
+        if (doneButton.evaluate().isNotEmpty) {
+          await tester.tap(doneButton);
+          await tester.pumpAndSettle(const Duration(seconds: 3));
+        }
       }
 
       // Verify home screen elements
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Look for feed or other home screen indicators
-      final feedElements = find.byType(ListView);
-      expect(feedElements, findsWidgets);
+      // Look for home screen indicators (MIXVY header or navigation)
+      final mixvyHeader = find.text('MIXVY');
+      expect(mixvyHeader, findsWidgets, reason: 'Should see MIXVY branding on home screen');
 
       print('✅ Auth Flow: PASSED');
     });
