@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:mixmingle/core/theme/colors.dart';
+import 'package:flutter/material.dart';
+import 'package:mixvy/core/theme/colors.dart';
 
 /// Mix & Mingle logo widget matching the flyer design
 /// "MIX" in coral orange + treble clef + "MINGLE" in blue
@@ -73,3 +73,4 @@ class MixMingleLogoCompact extends StatelessWidget {
     );
   }
 }
+

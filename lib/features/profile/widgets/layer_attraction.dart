@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 /// ── LAYER 1: Public Attraction ────────────────────────────────
 /// Competes with: Tinder, Instagram
@@ -318,3 +318,4 @@ class LayerAttraction extends StatelessWidget {
     );
   }
 }
+

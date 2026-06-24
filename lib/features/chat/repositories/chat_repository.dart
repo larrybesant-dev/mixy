@@ -4,8 +4,8 @@
 // UID validation is enforced before every write here — never in the UI.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/chat_message.dart';
-import 'package:mixmingle/shared/models/chat_room.dart';
+import 'package:mixvy/shared/models/chat_message.dart';
+import 'package:mixvy/shared/models/chat_room.dart';
 import 'i_chat_repository.dart';
 
 class ChatRepository implements IChatRepository {
@@ -132,3 +132,4 @@ class ChatRepository implements IChatRepository {
 final chatRepositoryProvider = Provider<IChatRepository>(
   (ref) => ChatRepository(),
 );
+

@@ -1,6 +1,6 @@
 // Remove unused imports
 // import 'dart:js_util' as js_util;
-// import 'package:mixmingle/helpers/helpers.dart';
+// import 'package:mixvy/helpers/helpers.dart';
 /// Mix & Mingle Humanized Copy Constants
 /// Centralized, human-friendly text strings for the entire app
 /// Tone: Playful, safe, inclusive. Short sentences. Contractions. No jargon.
@@ -340,3 +340,4 @@ class CopyConstants {
    * - Show too many options at once
    */
 }
+

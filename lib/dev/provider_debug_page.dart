@@ -9,7 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
 
 class ProviderDebugPage extends ConsumerWidget {
   const ProviderDebugPage({super.key});
@@ -187,3 +187,4 @@ class _ProviderTile<T> extends StatelessWidget {
     );
   }
 }
+

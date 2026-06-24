@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/core/pagination/pagination_controller.dart';
-import 'package:mixmingle/shared/models/event.dart';
-import 'package:mixmingle/shared/widgets/paginated_list_view.dart';
+import 'package:mixvy/core/pagination/pagination_controller.dart';
+import 'package:mixvy/shared/models/event.dart';
+import 'package:mixvy/shared/widgets/paginated_list_view.dart';
 
 /// Example implementation of paginated events page
 class EventsListPaginatedPage extends ConsumerStatefulWidget {
@@ -192,3 +192,4 @@ class _EventCard extends StatelessWidget {
     return days[weekday - 1];
   }
 }
+

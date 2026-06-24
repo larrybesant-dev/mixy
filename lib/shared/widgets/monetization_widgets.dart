@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/subscription.dart';
-import 'package:mixmingle/shared/providers/gamification_payment_providers.dart';
-import 'package:mixmingle/shared/providers/auth_providers.dart';
-import 'package:mixmingle/services/payments/coin_economy_service.dart'
+import 'package:mixvy/shared/models/subscription.dart';
+import 'package:mixvy/shared/providers/gamification_payment_providers.dart';
+import 'package:mixvy/shared/providers/auth_providers.dart';
+import 'package:mixvy/services/payments/coin_economy_service.dart'
     show CoinEconomyService;
 
 /// Coin shop widget
@@ -772,3 +772,4 @@ class _SubscriptionManagerState extends ConsumerState<SubscriptionManager> {
     );
   }
 }
+

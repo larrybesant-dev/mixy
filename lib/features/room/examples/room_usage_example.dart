@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 import '../providers/room_providers.dart';
 
 /// Example: Creating a Room with Tags
@@ -387,3 +387,4 @@ class RoomListTile extends StatelessWidget {
 /// final notifier = ref.read(updateRoomProvider.notifier);
 /// await notifier.updateLiveStatus(roomId, true);
 /// ```
+

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 import '../services/category_service.dart';
 import '../services/room_service.dart';
 
@@ -182,3 +182,4 @@ class DeleteRoomNotifier extends AsyncNotifier<void> {
 final deleteRoomProvider = AsyncNotifierProvider<DeleteRoomNotifier, void>(() {
   return DeleteRoomNotifier();
 });
+

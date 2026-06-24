@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/providers/providers.dart';
 import '../../../shared/models/notification.dart' as app_notification;
-import 'package:mixmingle/core/analytics/analytics_service.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
 
 class NotificationsPage extends ConsumerStatefulWidget {
   const NotificationsPage({super.key});
@@ -144,3 +144,4 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     }
   }
 }
+

@@ -8,10 +8,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/core/services/role_service.dart';
-import 'package:mixmingle/features/control_center/providers/control_center_providers.dart';
-import 'package:mixmingle/features/control_center/services/audit_log_service.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/core/services/role_service.dart';
+import 'package:mixvy/features/control_center/providers/control_center_providers.dart';
+import 'package:mixvy/features/control_center/services/audit_log_service.dart';
 
 class ControlCenterRolesPage extends ConsumerWidget {
   const ControlCenterRolesPage({super.key});
@@ -320,3 +320,4 @@ class _AdminUserTile extends StatelessWidget {
     );
   }
 }
+

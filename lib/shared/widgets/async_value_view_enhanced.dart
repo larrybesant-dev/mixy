@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mixmingle/core/errors/app_error.dart';
-import 'package:mixmingle/core/providers/connectivity_provider.dart';
-import 'package:mixmingle/services/analytics/analytics_tracking.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
+import 'package:mixvy/core/errors/app_error.dart';
+import 'package:mixvy/core/providers/connectivity_provider.dart';
+import 'package:mixvy/services/analytics/analytics_tracking.dart';
+import 'package:mixvy/shared/providers/providers.dart';
 import 'loading_widgets.dart';
 
 /// Enhanced AsyncValue view with skeleton loaders, retry intelligence, and built-in P2F analytics
@@ -324,3 +324,4 @@ class AsyncValueView<T> extends ConsumerWidget {
     );
   }
 }
+

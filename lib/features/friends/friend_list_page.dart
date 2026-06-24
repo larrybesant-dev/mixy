@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/safe_avatar.dart';
-import 'package:mixmingle/shared/models/friend_request.dart';
-import 'package:mixmingle/shared/providers/friend_request_provider.dart';
-import 'package:mixmingle/shared/providers/friends_provider.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/safe_avatar.dart';
+import 'package:mixvy/shared/models/friend_request.dart';
+import 'package:mixvy/shared/providers/friend_request_provider.dart';
+import 'package:mixvy/shared/providers/friends_provider.dart';
+import 'package:mixvy/core/routing/app_routes.dart';
 
 /// Full friend management page.
 ///
@@ -584,3 +584,4 @@ class _UserInfo {
     required this.isOnline,
   });
 }
+

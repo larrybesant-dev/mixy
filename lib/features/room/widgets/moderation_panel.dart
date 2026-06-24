@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/agora_participant.dart';
-import 'package:mixmingle/shared/models/room_role.dart';
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/agora_participant.dart';
+import 'package:mixvy/shared/models/room_role.dart';
+import 'package:mixvy/shared/models/room.dart';
 import '../services/moderation_service.dart';
 
 /// Moderation panel for room hosts and co-hosts
@@ -583,3 +583,4 @@ void showModerationPanel(
     },
   );
 }
+

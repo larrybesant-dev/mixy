@@ -17,7 +17,7 @@ import '../../../core/design_system/design_constants.dart';
 import '../../../shared/providers/discovery_providers.dart';
 import '../../../shared/widgets/presence_indicator.dart';
 import '../../../shared/models/room.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixvy/core/routing/app_routes.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Suggested for You – horizontal user row
@@ -526,3 +526,4 @@ class _SectionLoadingPlaceholder extends StatelessWidget {
     );
   }
 }
+

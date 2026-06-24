@@ -92,24 +92,36 @@ void main() {
 
         // Initialize Crashlytics BEFORE anything else that might error
         debugPrint('ðŸ’¥ Initializing Crashlytics...');
-        await CrashlyticsService.instance.initialize();
+        try {
+          await CrashlyticsService.instance.initialize();
+          debugPrint('âœ… Crashlytics initialized');
+        } catch (e) {
+          debugPrint('âœ… Crashlytics skipped (testing environment): $e');
+        }
 
         // Set up Flutter error handler for Crashlytics
         FlutterError.onError = (FlutterErrorDetails details) {
-          debugPrint('âŒ FLUTTER ERROR: ${details.exception}');
+          debugPrint('âŒ FLUTTER ERROR: ${details.exception}');
           debugPrint('Stack: ${details.stack}');
           AppLogger.error('Flutter Error: ${details.exception}');
-          // Skip Crashlytics on web (not supported)
-          if (!kIsWeb) {
-            FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+          // Skip Crashlytics on web (not supported) and in tests
+          if (!kIsWeb && !kDebugMode) {
+            try {
+              FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+            } catch (_) {
+              // Crashlytics unavailable
+            }
           }
         };
-        debugPrint('âœ… Crashlytics initialized');
 
         // Initialize Performance Monitoring
         debugPrint('ðŸ“Š Initializing Performance Monitoring...');
-        await PerformanceService.instance.initialize();
-        debugPrint('âœ… Performance Monitoring initialized');
+        try {
+          await PerformanceService.instance.initialize();
+          debugPrint('âœ… Performance Monitoring initialized');
+        } catch (e) {
+          debugPrint('âœ… Performance Monitoring skipped: $e');
+        }
 
         // Set up FCM background message handler
         debugPrint('ðŸ“± Setting up FCM...');
@@ -125,8 +137,12 @@ void main() {
           debugPrint(
               'âš ï¸  Notification initialization non-fatal failure: $e');
           AppLogger.warning('Notifications unavailable: $e');
-          CrashlyticsService.instance
-              .recordError(e, reason: 'notification_init_failure');
+          try {
+            CrashlyticsService.instance
+                .recordError(e, reason: 'notification_init_failure');
+          } catch (_) {
+            // Crashlytics unavailable
+          }
         });
 
         // Initialize FCM notifications (don't block app startup if it fails)

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/shared/models/moderation_action.dart';
+import 'package:mixvy/shared/models/moderation_action.dart';
 
 class ModStatsCard extends StatelessWidget {
   final String roomId;
@@ -123,3 +123,4 @@ class ModStatsCard extends StatelessWidget {
     };
   }
 }
+

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/chat_message.dart';
-import 'package:mixmingle/features/room/providers/room_subcollection_providers.dart';
+import 'package:mixvy/shared/models/chat_message.dart';
+import 'package:mixvy/features/room/providers/room_subcollection_providers.dart';
 
 /// Chat overlay widget for voice room
 class VoiceRoomChatOverlay extends ConsumerStatefulWidget {
@@ -359,3 +359,4 @@ void showVoiceRoomChat(
     backgroundColor: Colors.transparent,
   );
 }
+

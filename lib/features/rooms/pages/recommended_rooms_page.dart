@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixvy/core/routing/app_routes.dart';
 import '../../../core/design_system/design_constants.dart';
 import '../../../shared/providers/auth_providers.dart';
 import '../../../shared/providers/providers.dart' hide currentUserProvider;
@@ -76,3 +76,4 @@ class RecommendedRoomsPage extends ConsumerWidget {
     );
   }
 }
+

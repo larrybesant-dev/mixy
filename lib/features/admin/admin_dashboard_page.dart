@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/report.dart' show ReportType;
-import 'package:mixmingle/shared/models/moderation.dart' show UserReport;
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/glow_text.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/models/report.dart' show ReportType;
+import 'package:mixvy/shared/models/moderation.dart' show UserReport;
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/glow_text.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
 import 'ads_admin_page.dart';
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
@@ -365,3 +365,4 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     }
   }
 }
+

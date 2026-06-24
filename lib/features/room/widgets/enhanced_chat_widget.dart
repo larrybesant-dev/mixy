@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/enhanced_chat_service.dart';
+import 'package:mixvy/features/room/services/enhanced_chat_service.dart';
 
 /// Enhanced Chat Widget for voice rooms
 ///
@@ -455,3 +455,4 @@ class _EnhancedChatWidgetState extends ConsumerState<EnhancedChatWidget> {
     }
   }
 }
+

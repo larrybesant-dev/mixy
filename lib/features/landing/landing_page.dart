@@ -2,15 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/components/electric_button.dart';
-import 'package:mixmingle/core/components/glass_card.dart';
-import 'package:mixmingle/core/components/neon_badge.dart';
-import 'package:mixmingle/core/components/section_header.dart';
-import 'package:mixmingle/core/theme/colors_v2.dart';
-import 'package:mixmingle/core/theme/spacing.dart';
-import 'package:mixmingle/core/theme/typography_v2.dart';
-import 'package:mixmingle/shared/widgets/mix_mingle_logo.dart';
-import 'package:mixmingle/core/services/landing_music_service.dart';
+import 'package:mixvy/core/components/electric_button.dart';
+import 'package:mixvy/core/components/glass_card.dart';
+import 'package:mixvy/core/components/neon_badge.dart';
+import 'package:mixvy/core/components/section_header.dart';
+import 'package:mixvy/core/theme/colors_v2.dart';
+import 'package:mixvy/core/theme/spacing.dart';
+import 'package:mixvy/core/theme/typography_v2.dart';
+import 'package:mixvy/shared/widgets/mix_mingle_logo.dart';
+import 'package:mixvy/core/services/landing_music_service.dart';
 
 class LandingPage extends ConsumerStatefulWidget {
   const LandingPage({super.key});
@@ -1291,3 +1291,4 @@ class _LandingPageState extends ConsumerState<LandingPage>
     );
   }
 }
+

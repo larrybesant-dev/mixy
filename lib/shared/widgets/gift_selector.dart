@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
+import 'package:mixvy/shared/providers/providers.dart';
 
 class GiftSelector extends ConsumerStatefulWidget {
   final String receiverId;
@@ -249,3 +249,4 @@ class _GiftSelectorState extends ConsumerState<GiftSelector> {
     );
   }
 }
+

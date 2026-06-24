@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:mixmingle/services/camera/camera_permission_service.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
+import 'package:mixvy/services/camera/camera_permission_service.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
 import '../widgets/camera_permission_request_dialog.dart';
 
 class PermissionAwareVideoView extends ConsumerStatefulWidget {
@@ -314,3 +314,4 @@ class _PermissionAwareVideoViewState
     return AgoraVideoView(controller: controller);
   }
 }
+

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/user_presence_service.dart';
+import 'package:mixvy/features/room/services/user_presence_service.dart';
 
 /// User Presence Indicator Widget
 ///
@@ -401,3 +401,4 @@ class RoomPresencePanelWidget extends ConsumerWidget {
     }
   }
 }
+

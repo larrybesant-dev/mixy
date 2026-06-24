@@ -10,7 +10,7 @@ import '../../../shared/widgets/club_background.dart';
 import '../../../shared/widgets/neon_components.dart';
 import '../../../shared/providers/discovery_providers.dart';
 import '../../../shared/models/room.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixvy/core/routing/app_routes.dart';
 
 /// Full-page screen showing public, active rooms ordered by viewer count.
 class DiscoverRoomsLivePage extends ConsumerWidget {
@@ -313,3 +313,4 @@ class _RoomCard extends StatelessWidget {
     );
   }
 }
+

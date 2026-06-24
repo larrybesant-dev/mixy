@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/membership_tier.dart';
 import '../models/coin_package.dart';
-import 'package:mixmingle/services/payments/revenuecat_service.dart';
+import 'package:mixvy/services/payments/revenuecat_service.dart';
 import '../services/membership_service.dart';
 
 /// Provider for the membership service (singleton)
@@ -319,3 +319,4 @@ extension CoinOperationsRef on WidgetRef {
   /// Get current coin balance
   int get coinBalance => read(membershipServiceProvider).coinBalance;
 }
+

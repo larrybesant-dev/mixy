@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
-import 'package:mixmingle/shared/providers/room_providers.dart'
+import 'package:mixvy/shared/providers/providers.dart';
+import 'package:mixvy/shared/providers/room_providers.dart'
     as room_providers;
 import '../../../shared/club_background.dart';
 import '../../../shared/glow_text.dart';
@@ -233,3 +233,4 @@ class _CreateRoomPageState extends ConsumerState<CreateRoomPage> {
     );
   }
 }
+

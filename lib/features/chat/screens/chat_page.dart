@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart' as file_picker;
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/services/chat/chat_service.dart';
-import 'package:mixmingle/shared/models/chat_message.dart';
-import 'package:mixmingle/shared/widgets/typing_indicator_widget.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/services/notifications/app_notification_service.dart';
-import 'package:mixmingle/core/analytics/analytics_service.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/services/chat/chat_service.dart';
+import 'package:mixvy/shared/models/chat_message.dart';
+import 'package:mixvy/shared/widgets/typing_indicator_widget.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/services/notifications/app_notification_service.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   final String? chatId;
@@ -485,3 +485,4 @@ class _SenderNameWidget extends ConsumerWidget {
     );
   }
 }
+

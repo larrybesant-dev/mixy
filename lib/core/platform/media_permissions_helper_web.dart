@@ -2,7 +2,7 @@
 import 'package:web/web.dart' as web;
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:mixmingle/core/utils/app_logger.dart';
+import 'package:mixvy/core/utils/app_logger.dart';
 
 /// Exception thrown when media permissions are denied
 class MediaPermissionException implements Exception {
@@ -72,3 +72,4 @@ class MediaPermissionsHelper {
     }
   }
 }
+

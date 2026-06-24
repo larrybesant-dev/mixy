@@ -17,7 +17,7 @@
 /// When you add/rename/remove a screen, update AppRoutes and this file.
 library;
 
-export 'package:mixmingle/core/routing/app_routes.dart' show AppRoutes;
+export 'package:mixvy/core/routing/app_routes.dart' show AppRoutes;
 
 // ── Route inventory (all mapped screens) ─────────────────────────────────────
 // Auth / Onboarding
@@ -73,3 +73,4 @@ export 'package:mixmingle/core/routing/app_routes.dart' show AppRoutes;
 // Dev / QA
 //   RouteTestPage        → AppRoutes.routeTest       (/dev/routes)
 //   ProviderDebugPage    → AppRoutes.providerDebug   (/dev/providers)
+

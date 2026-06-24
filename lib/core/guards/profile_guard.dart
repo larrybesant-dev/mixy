@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/profile/screens/create_profile_page.dart';
-import 'package:mixmingle/shared/providers/auth_providers.dart';
+import 'package:mixvy/features/profile/screens/create_profile_page.dart';
+import 'package:mixvy/shared/providers/auth_providers.dart';
 
 /// Guard that ensures user has completed their profile before accessing the child widget
 /// Redirects to profile creation page if profile is incomplete
@@ -88,3 +88,4 @@ class ProfileGuard extends ConsumerWidget {
     );
   }
 }
+

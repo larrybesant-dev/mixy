@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 /// ── LAYER 4: Creator Monetization (18+) ────────────────────────
 /// Competes with: OnlyFans
@@ -417,3 +417,4 @@ class _CreatorManageRow extends StatelessWidget {
     );
   }
 }
+

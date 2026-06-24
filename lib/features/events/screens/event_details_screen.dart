@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/responsive/responsive_utils.dart';
-import 'package:mixmingle/core/animations/app_animations.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
-import 'package:mixmingle/shared/models/event.dart';
+import 'package:mixvy/core/responsive/responsive_utils.dart';
+import 'package:mixvy/core/animations/app_animations.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/shared/widgets/skeleton_loaders.dart';
+import 'package:mixvy/shared/models/event.dart';
 
 class EventDetailsPage extends ConsumerWidget {
   final String eventId;
@@ -467,3 +467,4 @@ class EventDetailsPage extends ConsumerWidget {
     return '$weekday, $month ${date.day}, ${date.year} at $time';
   }
 }
+

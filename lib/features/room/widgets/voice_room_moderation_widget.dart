@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/room_moderation_service.dart';
+import 'package:mixvy/features/room/services/room_moderation_service.dart';
 
 /// Room Moderation Widget
 ///
@@ -550,3 +550,4 @@ class _RoomModerationWidgetState extends ConsumerState<RoomModerationWidget> {
     }
   }
 }
+

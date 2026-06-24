@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 /// ── LAYER 3: Social Proof ───────────────────────────────────────
 /// Competes with: Facebook
@@ -203,3 +203,4 @@ class LayerSocialProof extends StatelessWidget {
     return '${months[dt.month - 1]} ${dt.year}';
   }
 }
+

@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:mixmingle/core/theme/colors.dart';
+import 'package:flutter/material.dart';
+import 'package:mixvy/core/theme/colors.dart';
 
 class GlowText extends StatelessWidget {
   final String text;
@@ -56,3 +56,4 @@ class GlowText extends StatelessWidget {
     );
   }
 }
+

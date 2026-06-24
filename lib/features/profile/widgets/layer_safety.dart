@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 /// ── LAYER 5: Safety / Control ──────────────────────────────────
 /// Only visible to the profile owner.
@@ -301,3 +301,4 @@ class LayerSafety extends StatelessWidget {
     }
   }
 }
+

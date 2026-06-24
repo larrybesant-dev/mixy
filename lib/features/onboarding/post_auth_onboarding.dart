@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,14 +118,12 @@ class _PostAuthOnboardingState extends ConsumerState<PostAuthOnboarding>
           fb_auth.FirebaseAuth.instance.currentUser?.uid ?? '';
       final interests = ref.read(onboardingInterestsProvider);
       final saveFn = ref.read(onboardingSaveProvider);
-      await saveFn(
-        OnboardingPayload(
-          userId: uid,
-          ageVerified: _ageVerified ?? false,
-          interests: interests,
-          birthday: _selectedBirthday,
-        ),
-      );
+
+      // Mark onboarding as complete locally (non-blocking on Firestore)
+      ref.read(localOnboardingCompletionProvider.notifier).complete();
+
+      AppLogger.info('[PostAuthOnboarding] Onboarding marked complete locally');
+
       AnalyticsService.instance.logEvent(
         name: AnalyticsEvents.onboardingCompleted,
         parameters: {
@@ -132,7 +131,23 @@ class _PostAuthOnboardingState extends ConsumerState<PostAuthOnboarding>
           'interests_count': interests.length,
         },
       );
-      // Provider will rebuild from Firestore stream → gates will open
+
+      // Try to save to Firestore in the background (non-blocking)
+      unawaited(
+        saveFn(
+          OnboardingPayload(
+            userId: uid,
+            ageVerified: _ageVerified ?? false,
+            interests: interests,
+            birthday: _selectedBirthday,
+          ),
+        ).onError((e, st) {
+          // Log the error but don't block onboarding
+          AppLogger.info(
+            '[PostAuthOnboarding] Firestore save failed (non-blocking): $e',
+          );
+        }),
+      );
     } catch (e, st) {
       AppLogger.error('[PostAuthOnboarding] finish error', e, st);
       setState(() {
@@ -143,9 +158,6 @@ class _PostAuthOnboardingState extends ConsumerState<PostAuthOnboarding>
   }
 
   void _logStep(int index) {
-    AnalyticsService.instance.logScreenView(
-      screenName: 'screen_onboarding_step_$index',
-    );
     AnalyticsService.instance.logEvent(
       name: AnalyticsEvents.onboardingStepViewed,
       parameters: {'step': index, 'step_name': _stepName(index)},
@@ -308,7 +320,7 @@ class _WelcomeStep extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Welcome to Mix & Mingle.\nLet\'s get you set up in 60 seconds.',
+            'Welcome to MIXVY.\nLet\'s get you set up in 60 seconds.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,

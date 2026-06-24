@@ -14,7 +14,7 @@
 // -----------------------------------------------------------------------
 
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/camera_state.dart';
+import 'package:mixvy/shared/models/camera_state.dart';
 import '../../../../core/design_system/design_constants.dart';
 
 class CameraTile extends StatefulWidget {
@@ -429,3 +429,4 @@ class _TileContent extends StatelessWidget {
     }
   }
 }
+

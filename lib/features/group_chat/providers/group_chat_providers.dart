@@ -1,7 +1,7 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/services/agora/agora_video_service.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
+import 'package:mixvy/services/agora/agora_video_service.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
 import '../models/group_chat_message.dart';
 import '../models/group_chat_participant.dart';
 import '../models/group_chat_room.dart';
@@ -82,7 +82,7 @@ class GroupCallStateNotifier extends Notifier<GroupCallState> {
 
   @override
   GroupCallState build() {
-    // Import required: import 'package:mixmingle/shared/providers/all_providers.dart';
+    // Import required: import 'package:mixvy/shared/providers/all_providers.dart';
     _service = ref.watch(agoraVideoServiceProvider);
     return GroupCallState.fromService(_service);
   }
@@ -133,3 +133,4 @@ class GroupCallStateNotifier extends Notifier<GroupCallState> {
         isMuted: micMuted, isCameraOn: videoMuted != true);
   }
 }
+

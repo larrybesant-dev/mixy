@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/theme/colors.dart';
+import 'package:mixvy/core/theme/colors.dart';
 
 /// Club-style background matching the flyer design
 /// Dark navy with subtle gradient and glow effects
@@ -34,3 +34,4 @@ class ClubBackground extends ConsumerWidget {
     );
   }
 }
+

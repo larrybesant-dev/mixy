@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/room_analytics_service.dart';
+import 'package:mixvy/features/room/services/room_analytics_service.dart';
 
 /// Analytics & Statistics Dashboard Widget
 ///
@@ -486,3 +486,4 @@ class AnalyticsDashboardWidget extends ConsumerWidget {
     }
   }
 }
+

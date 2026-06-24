@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 
 class RoomService {
   // Advanced role management
@@ -1360,3 +1360,4 @@ class RoomService {
     }
   }
 }
+

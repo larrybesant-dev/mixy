@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/services/auth/auth_service.dart';
+import 'package:mixvy/services/auth/auth_service.dart';
 
 /// Testable login page for unit and widget tests
 /// Accepts dependency injection for AuthService
@@ -120,3 +120,4 @@ class _TestableLoginPageState extends State<TestableLoginPage> {
     );
   }
 }
+

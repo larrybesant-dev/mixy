@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/group_chat_message.dart';
 import '../models/group_chat_participant.dart';
 import '../providers/group_chat_providers.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
-import 'package:mixmingle/shared/providers/user_providers.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/shared/widgets/skeleton_loaders.dart';
+import 'package:mixvy/shared/providers/user_providers.dart';
 
 class GroupChatRoomPage extends ConsumerStatefulWidget {
   final String roomId;
@@ -345,3 +345,4 @@ class _GroupChatRoomPageState extends ConsumerState<GroupChatRoomPage> {
         .sendTextMessage(widget.roomId, text);
   }
 }
+

@@ -131,7 +131,7 @@ class _HomePageElectricState extends ConsumerState<HomePageElectric> {
         ),
         const SizedBox(width: AppSpacing.spaceSM),
         const Text(
-          'MIX & MINGLE',
+          'MIXVY',
           style: TextStyle(
             color: DesignColors.white,
             fontSize: 20,

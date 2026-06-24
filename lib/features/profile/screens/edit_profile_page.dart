@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/shared/providers/profile_controller.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
-import 'package:mixmingle/shared/validation.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/shared/providers/profile_controller.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
+import 'package:mixvy/shared/validation.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -1665,3 +1665,4 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 }
+

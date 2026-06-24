@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'dart:async';
-import 'package:mixmingle/app/app_routes.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/glow_text.dart';
+import 'package:mixvy/app/app_routes.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/glow_text.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -120,7 +120,7 @@ class _SplashPageState extends State<SplashPage> {
 
               // App Name
               const GlowText(
-                text: 'MIX & MINGLE',
+                text: 'MIXVY',
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFFFFD700),
@@ -160,3 +160,4 @@ class _SplashPageState extends State<SplashPage> {
     );
   }
 }
+

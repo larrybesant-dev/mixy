@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:mixmingle/shared/models/event.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
-import 'package:mixmingle/shared/providers/events_providers.dart';
-import 'package:mixmingle/shared/providers/auth_providers.dart';
+import 'package:mixvy/shared/models/event.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
+import 'package:mixvy/shared/providers/events_providers.dart';
+import 'package:mixvy/shared/providers/auth_providers.dart';
 
 /// Event card widget showing event info with friends attending
 class EventCard extends ConsumerWidget {
@@ -518,3 +518,4 @@ class FriendsAttendingBanner extends ConsumerWidget {
     );
   }
 }
+

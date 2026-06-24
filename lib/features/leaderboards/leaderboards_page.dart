@@ -1,8 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/providers/providers.dart';
 
 class LeaderboardsPage extends ConsumerStatefulWidget {
   const LeaderboardsPage({super.key});
@@ -347,3 +347,4 @@ class _LeaderboardsPageState extends ConsumerState<LeaderboardsPage>
     return '#$rank';
   }
 }
+

@@ -3,7 +3,8 @@
 // This file exists only for backward-compatibility. The canonical
 // MixMingleApp implementation lives in lib/app/app.dart.
 // No file in the project should import lib/app.dart directly;
-// use the package import 'package:mixmingle/app/app.dart' instead.
+// use the package import 'package:mixvy/app/app.dart' instead.
 //
 // TODO: Delete once all stale tooling references are cleared.
 export 'app/app.dart' show MixMingleApp;
+

@@ -4,7 +4,7 @@
 // UID validation is enforced before every write here — never in the UI.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 import 'i_room_repository.dart';
 
 class RoomRepository implements IRoomRepository {
@@ -128,3 +128,4 @@ class RoomRepository implements IRoomRepository {
 final roomRepositoryProvider = Provider<IRoomRepository>(
   (ref) => RoomRepository(),
 );
+

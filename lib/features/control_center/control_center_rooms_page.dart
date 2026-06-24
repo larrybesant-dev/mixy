@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/features/control_center/providers/control_center_providers.dart';
-import 'package:mixmingle/features/control_center/services/audit_log_service.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/features/control_center/providers/control_center_providers.dart';
+import 'package:mixvy/features/control_center/services/audit_log_service.dart';
 
 class ControlCenterRoomsPage extends ConsumerWidget {
   const ControlCenterRoomsPage({super.key});
@@ -160,3 +160,4 @@ class ControlCenterRoomsPage extends ConsumerWidget {
     );
   }
 }
+

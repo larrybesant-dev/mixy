@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mixmingle/shared/providers/video_media_providers.dart';
+import 'package:mixvy/shared/providers/video_media_providers.dart';
 
 /// Provider exposing the current DjState for a room (for Now Playing banner).
 final djStateProvider = StreamProvider.family<DjState, String>((ref, roomId) {
@@ -509,3 +509,4 @@ class _DjPanelState extends ConsumerState<DjPanel> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('MIXVY Audio: $m')));
   }
 }
+

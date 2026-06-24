@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/camera_state.dart';
-import 'package:mixmingle/shared/models/camera_quality.dart';
-import 'package:mixmingle/services/camera/camera_service.dart';
+import 'package:mixvy/shared/models/camera_state.dart';
+import 'package:mixvy/shared/models/camera_quality.dart';
+import 'package:mixvy/services/camera/camera_service.dart';
 
 class CameraQualitySelector extends StatefulWidget {
   final String roomId;
@@ -189,3 +189,4 @@ class _CameraQualitySelectorState extends State<CameraQualitySelector> {
     );
   }
 }
+

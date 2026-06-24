@@ -1,6 +1,6 @@
 // Removed invalid imports
 // import 'dart:js_util' as js_util;
-// import 'package:mixmingle/helpers/helpers.dart';
+// import 'package:mixvy/helpers/helpers.dart';
 import 'package:flutter/material.dart';
 import 'app_routes.dart';
 import '../core/theme/neon_theme.dart';
@@ -37,7 +37,7 @@ class _MixMingleAppState extends State<MixMingleApp> {
     // a child container that shadows providers in the parent, causing
     // inconsistent provider state between the auth gate and the app.
     return MaterialApp(
-        title: 'Mix & Mingle',
+        title: 'MIXVY',
         navigatorKey: appNavigatorKey,
         debugShowCheckedModeBanner: false,
         theme: NeonTheme.darkTheme,
@@ -76,3 +76,4 @@ class _MixMingleAppState extends State<MixMingleApp> {
       );
   }
 }
+

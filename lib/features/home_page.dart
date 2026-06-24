@@ -73,7 +73,7 @@ class HomeDashboard extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mix & Mingle'),
+        title: const Text('MIXVY'),
         actions: [
           Semantics(
             label: 'Notifications',
@@ -100,7 +100,7 @@ class HomeDashboard extends ConsumerWidget {
             currentUserAsync.when(
               data: (user) => user != null
                   ? _buildWelcomeSection(user)
-                  : const Text('Welcome to Mix & Mingle!'),
+                  : const Text('Welcome to MIXVY!'),
               loading: () => const CircularProgressIndicator(),
               error: (error, stack) => Text('Error loading profile: $error'),
             ),

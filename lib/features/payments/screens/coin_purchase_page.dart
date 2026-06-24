@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/services/payments/payment_service.dart';
-import 'package:mixmingle/shared/providers/auth_providers.dart';
+import 'package:mixvy/services/payments/payment_service.dart';
+import 'package:mixvy/shared/providers/auth_providers.dart';
 
 class CoinPurchasePage extends ConsumerStatefulWidget {
   const CoinPurchasePage({super.key});
@@ -90,3 +90,4 @@ class _CoinPurchasePageState extends ConsumerState<CoinPurchasePage> {
     );
   }
 }
+

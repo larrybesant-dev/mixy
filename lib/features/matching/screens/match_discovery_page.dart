@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
-import 'package:mixmingle/core/responsive/responsive_utils.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
+import 'package:mixvy/core/routing/app_routes.dart';
+import 'package:mixvy/core/responsive/responsive_utils.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
 
 class MatchDiscoveryPage extends ConsumerStatefulWidget {
   const MatchDiscoveryPage({super.key});
@@ -487,3 +487,4 @@ class _ActionButton extends StatelessWidget {
     );
   }
 }
+

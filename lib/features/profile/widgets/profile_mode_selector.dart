@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 /// Profile mode tab bar — rendered below the identity card.
 /// Tapping a mode visually reorders profile sections.
@@ -93,3 +93,4 @@ class ProfileModeSelector extends StatelessWidget {
     }
   }
 }
+

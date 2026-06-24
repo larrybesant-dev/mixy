@@ -1,7 +1,7 @@
 // lib/features/room/repositories/i_room_repository.dart
 //
 // Abstract contract for voice/video room operations.
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 
 abstract class IRoomRepository {
   /// Get a room by its ID, or null if not found.
@@ -43,3 +43,4 @@ abstract class IRoomRepository {
   /// Remove a participant from the room's sub-collection.
   Future<void> leaveRoom({required String roomId, required String uid});
 }
+

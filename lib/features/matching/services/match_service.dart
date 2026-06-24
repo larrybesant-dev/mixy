@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:mixmingle/core/utils/app_logger.dart';
+import 'package:mixvy/core/utils/app_logger.dart';
 import '../models/match_model.dart';
 
 /// Service for managing user matches and likes
@@ -146,3 +146,4 @@ class MatchService {
     });
   }
 }
+

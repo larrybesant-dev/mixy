@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/core/providers/connectivity_provider.dart';
+import 'package:mixvy/core/providers/connectivity_provider.dart';
 
 /// Displays a banner when the app is offline
 /// Automatically shows/hides based on connectivity state
@@ -120,3 +120,4 @@ class OfflineAwareScaffold extends StatelessWidget {
     );
   }
 }
+

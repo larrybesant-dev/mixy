@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/services/camera/camera_permission_service.dart';
+import 'package:mixvy/services/camera/camera_permission_service.dart';
 
 class CameraPermissionRequestDialog extends ConsumerStatefulWidget {
   final String ownerId;
@@ -168,3 +168,4 @@ class _CameraPermissionRequestDialogState
     );
   }
 }
+

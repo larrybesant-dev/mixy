@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/room.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
-import 'package:mixmingle/shared/providers/user_display_name_provider.dart';
+import 'package:mixvy/shared/models/room.dart';
+import 'package:mixvy/shared/providers/providers.dart';
+import 'package:mixvy/shared/providers/user_display_name_provider.dart';
 
 class VoiceRoomParticipantList extends ConsumerWidget {
   final Room room;
@@ -416,3 +416,4 @@ class VoiceRoomParticipantList extends ConsumerWidget {
     }
   }
 }
+

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/responsive/responsive_utils.dart';
-import 'package:mixmingle/core/animations/app_animations.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/app/app_routes.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
-import 'package:mixmingle/shared/widgets/follow_button.dart';
-import 'package:mixmingle/services/events/reporting_service.dart' as reporting;
-import 'package:mixmingle/features/reporting/report_dialog.dart';
-import 'package:mixmingle/core/analytics/analytics_service.dart';
+import 'package:mixvy/core/responsive/responsive_utils.dart';
+import 'package:mixvy/core/animations/app_animations.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/app/app_routes.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/shared/widgets/skeleton_loaders.dart';
+import 'package:mixvy/shared/widgets/follow_button.dart';
+import 'package:mixvy/services/events/reporting_service.dart' as reporting;
+import 'package:mixvy/features/reporting/report_dialog.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
 
 class UserProfilePage extends ConsumerStatefulWidget {
   final String userId;
@@ -518,3 +518,4 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     );
   }
 }
+

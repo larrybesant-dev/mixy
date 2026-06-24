@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/neon_button.dart';
-import 'package:mixmingle/services/infra/firestore_service.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/neon_button.dart';
+import 'package:mixvy/services/infra/firestore_service.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -134,3 +134,4 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 }
+

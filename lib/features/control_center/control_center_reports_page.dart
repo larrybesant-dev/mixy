@@ -5,10 +5,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/features/control_center/providers/control_center_providers.dart';
-import 'package:mixmingle/features/control_center/services/audit_log_service.dart';
-import 'package:mixmingle/services/events/reporting_service.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/features/control_center/providers/control_center_providers.dart';
+import 'package:mixvy/features/control_center/services/audit_log_service.dart';
+import 'package:mixvy/services/events/reporting_service.dart';
 
 class ControlCenterReportsPage extends ConsumerWidget {
   const ControlCenterReportsPage({super.key});
@@ -185,3 +185,4 @@ class ControlCenterReportsPage extends ConsumerWidget {
     );
   }
 }
+

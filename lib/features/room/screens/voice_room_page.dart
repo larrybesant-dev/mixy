@@ -3,23 +3,23 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:mixmingle/shared/models/room.dart';
-import 'package:mixmingle/shared/models/agora_participant.dart';
-import 'package:mixmingle/shared/models/room_role.dart';
-import 'package:mixmingle/shared/models/room_event.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/shared/providers/room_providers.dart'
+import 'package:mixvy/shared/models/room.dart';
+import 'package:mixvy/shared/models/agora_participant.dart';
+import 'package:mixvy/shared/models/room_role.dart';
+import 'package:mixvy/shared/models/room_event.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/providers/room_providers.dart'
     as legacy_room_providers;
-import 'package:mixmingle/services/agora/agora_video_service.dart';
-import 'package:mixmingle/core/utils/app_logger.dart';
-import 'package:mixmingle/features/room/widgets/voice_room_chat_overlay.dart';
-import 'package:mixmingle/features/room/widgets/moderation_panel.dart';
-import 'package:mixmingle/core/platform/web_platform_view_helper.dart';
+import 'package:mixvy/services/agora/agora_video_service.dart';
+import 'package:mixvy/core/utils/app_logger.dart';
+import 'package:mixvy/features/room/widgets/voice_room_chat_overlay.dart';
+import 'package:mixvy/features/room/widgets/moderation_panel.dart';
+import 'package:mixvy/core/platform/web_platform_view_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/shared/models/user.dart';
-import 'package:mixmingle/shared/widgets/enhanced_stage_layout.dart';
-import 'package:mixmingle/features/room/widgets/dynamic_video_grid.dart';
+import 'package:mixvy/shared/models/user.dart';
+import 'package:mixvy/shared/widgets/enhanced_stage_layout.dart';
+import 'package:mixvy/features/room/widgets/dynamic_video_grid.dart';
 
 /// Full RoomPage Widget Tree
 /// A complete, production-ready room screen with:
@@ -2904,3 +2904,4 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
     }
   }
 }
+

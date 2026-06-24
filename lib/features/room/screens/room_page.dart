@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mixmingle/core/responsive/responsive_utils.dart';
-import 'package:mixmingle/core/animations/app_animations.dart';
-import 'package:mixmingle/shared/models/room.dart';
-import 'package:mixmingle/shared/models/message.dart' as room_message;
-import 'package:mixmingle/shared/widgets/glow_text.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/services/agora/agora_video_service.dart';
-import 'package:mixmingle/services/chat/messaging_service.dart';
-import 'package:mixmingle/services/room/room_manager_service.dart';
-import 'package:mixmingle/features/room/widgets/participant_list_sidebar.dart';
-import 'package:mixmingle/features/room/widgets/raised_hands_panel.dart';
-import 'package:mixmingle/features/room/widgets/room_controls.dart';
-import 'package:mixmingle/core/analytics/analytics_service.dart';
+import 'package:mixvy/core/responsive/responsive_utils.dart';
+import 'package:mixvy/core/animations/app_animations.dart';
+import 'package:mixvy/shared/models/room.dart';
+import 'package:mixvy/shared/models/message.dart' as room_message;
+import 'package:mixvy/shared/widgets/glow_text.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/services/agora/agora_video_service.dart';
+import 'package:mixvy/services/chat/messaging_service.dart';
+import 'package:mixvy/services/room/room_manager_service.dart';
+import 'package:mixvy/features/room/widgets/participant_list_sidebar.dart';
+import 'package:mixvy/features/room/widgets/raised_hands_panel.dart';
+import 'package:mixvy/features/room/widgets/room_controls.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
 
 class RoomPage extends ConsumerStatefulWidget {
   final Room room;
@@ -1250,3 +1250,4 @@ class _RoomTypeBadge extends StatelessWidget {
     );
   }
 }
+

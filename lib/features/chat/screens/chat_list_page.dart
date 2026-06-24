@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
-import 'package:mixmingle/shared/widgets/empty_states.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/app/app_routes.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/skeleton_loaders.dart';
+import 'package:mixvy/shared/widgets/empty_states.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/app/app_routes.dart';
 
 class ChatListPage extends ConsumerWidget {
   const ChatListPage({super.key});
@@ -360,3 +360,4 @@ class ChatListPage extends ConsumerWidget {
     }
   }
 }
+

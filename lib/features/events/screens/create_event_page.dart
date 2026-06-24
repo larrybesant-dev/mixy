@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:mixmingle/shared/models/event.dart';
-import 'package:mixmingle/shared/providers/events_controller.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/validation.dart';
+import 'package:mixvy/shared/models/event.dart';
+import 'package:mixvy/shared/providers/events_controller.dart';
+import 'package:mixvy/shared/providers/providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/validation.dart';
 
 class CreateEventPage extends ConsumerStatefulWidget {
   const CreateEventPage({super.key});
@@ -436,3 +436,4 @@ class DateTimePicker extends StatelessWidget {
     );
   }
 }
+

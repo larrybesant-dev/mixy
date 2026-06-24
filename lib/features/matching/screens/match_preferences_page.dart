@@ -1,8 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/neon_button.dart';
+import 'package:mixvy/shared/providers/providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/neon_button.dart';
 
 class MatchPreferencesPage extends ConsumerStatefulWidget {
   const MatchPreferencesPage({super.key});
@@ -326,3 +326,4 @@ class _MatchPreferencesPageState extends ConsumerState<MatchPreferencesPage> {
     );
   }
 }
+

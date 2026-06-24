@@ -19,8 +19,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/shared/models/participant.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/shared/models/participant.dart';
 
 class ParticipantCardWidget extends StatefulWidget {
   /// Participant data (name, uid, speaking state, etc.)
@@ -258,3 +258,4 @@ class _ParticipantCardWidgetState extends State<ParticipantCardWidget>
     return '${diff.inDays}d ago';
   }
 }
+

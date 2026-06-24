@@ -5,8 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mixmingle/core/analytics/analytics_events.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
+import 'package:mixvy/core/analytics/analytics_events.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
 
 class ReportUserPage extends StatefulWidget {
   final String userId;
@@ -282,3 +282,4 @@ class _ReportTypeOption extends StatelessWidget {
     );
   }
 }
+

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/responsive/responsive_utils.dart';
-import 'package:mixmingle/core/accessibility/accessibility_utils.dart';
+import 'package:mixvy/core/responsive/responsive_utils.dart';
+import 'package:mixvy/core/accessibility/accessibility_utils.dart';
 
 class ThemeToggleWidget extends ConsumerWidget {
   const ThemeToggleWidget({super.key});
@@ -182,3 +182,4 @@ class _ThemeOption extends StatelessWidget {
     );
   }
 }
+

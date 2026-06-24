@@ -7,6 +7,7 @@ import '../features/auth/screens/neon_signup_page.dart';
 import '../features/auth/forgot_password_page.dart';
 // TEMP DISABLED: import '../features/onboarding_flow.dart';
 import '../features/onboarding/post_auth_onboarding.dart';
+import '../features/onboarding/onboarding_providers.dart';
 import '../features/landing/landing_page.dart';
 import '../features/profile/screens/create_profile_page.dart';
 import 'app.dart';
@@ -79,7 +80,7 @@ class _UnauthenticatedApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mix & Mingle - Vibes Around the World',
+      title: 'MIXVY - Vibes Around the World',
       debugShowCheckedModeBanner: false,
       theme: NeonTheme.darkTheme,
       home: const LandingPage(),
@@ -179,7 +180,9 @@ class _AuthenticatedAppGateState extends ConsumerState<_AuthenticatedAppGate> {
           // Post-auth onboarding gate: shows once per new account.
           // Legacy users (onboardingComplete == null) are treated as complete
           // so they are not interrupted by onboarding.
-          final onboardingDone = user?.onboardingComplete ?? true;
+          // Also check localOnboardingCompletionProvider to handle offline/Firestore failures.
+          final localOnboardingDone = ref.watch(localOnboardingCompletionProvider);
+          final onboardingDone = (user?.onboardingComplete ?? true) || localOnboardingDone;
           if (!onboardingDone) {
             AppLogger.info(
                 '[AuthGate] onboardingComplete=false → showing PostAuthOnboarding');
@@ -244,7 +247,7 @@ class _ProfileIncompleteApp extends StatelessWidget {
         '🧩 [ProfileIncomplete] Routing to CreateProfilePage for $userId');
 
     return MaterialApp(
-      title: 'Mix & Mingle',
+      title: 'MIXVY',
       debugShowCheckedModeBanner: false,
       theme: NeonTheme.darkTheme,
       home: const CreateProfilePage(),
@@ -268,7 +271,7 @@ class _SplashLoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mix & Mingle',
+      title: 'MIXVY',
       debugShowCheckedModeBanner: false,
       theme: NeonTheme.darkTheme,
       home: Scaffold(
@@ -296,7 +299,7 @@ class _SplashLoadingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               const Text(
-                'Mix & Mingle',
+                'MIXVY',
                 style: TextStyle(
                   color: DesignColors.white,
                   fontSize: 24,

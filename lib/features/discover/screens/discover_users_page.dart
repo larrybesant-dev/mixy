@@ -16,8 +16,8 @@ import '../../../shared/widgets/social_graph_widgets.dart';
 import '../../../shared/widgets/club_background.dart';
 import '../../../shared/widgets/offline_widgets.dart';
 import '../../../core/design_system/design_constants.dart';
-import 'package:mixmingle/core/analytics/analytics_service.dart';
-import 'package:mixmingle/core/analytics/analytics_events.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
+import 'package:mixvy/core/analytics/analytics_events.dart';
 
 class DiscoverUsersPage extends ConsumerStatefulWidget {
   const DiscoverUsersPage({super.key});
@@ -922,3 +922,4 @@ class _UserCard extends StatelessWidget {
     );
   }
 }
+

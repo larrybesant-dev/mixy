@@ -1,6 +1,6 @@
 // Removed invalid library directive and broken imports
 // import 'dart:js_util' as js_util;
-// import 'package:mixmingle/helpers/helpers.dart';
+// import 'package:mixvy/helpers/helpers.dart';
 /// DESIGN SYSTEM CONSTANTS
 ///
 /// Hard-coded enforcement of DESIGN_BIBLE.md
@@ -542,3 +542,4 @@ class DesignConstants {
 }
 
 // (flutter/material.dart imported at top of file)
+

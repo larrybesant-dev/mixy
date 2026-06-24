@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/features/payments/screens/coin_purchase_page.dart';
-import 'package:mixmingle/core/theme/colors.dart';
+import 'package:mixvy/features/payments/screens/coin_purchase_page.dart';
+import 'package:mixvy/core/theme/colors.dart';
 
 /// Reusable widget for displaying coin balance and buy button
 /// Add this to your app bar, profile, or anywhere else
@@ -112,3 +112,4 @@ class BuyCoinsFloatingButton extends StatelessWidget {
 ///   ],
 /// )
 /// ```
+

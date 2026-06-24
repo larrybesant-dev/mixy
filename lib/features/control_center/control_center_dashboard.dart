@@ -6,14 +6,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/features/control_center/providers/control_center_providers.dart';
-import 'package:mixmingle/features/control_center/control_center_users_page.dart';
-import 'package:mixmingle/features/control_center/control_center_rooms_page.dart';
-import 'package:mixmingle/features/control_center/control_center_reports_page.dart';
-import 'package:mixmingle/features/control_center/control_center_analytics_page.dart';
-import 'package:mixmingle/features/control_center/control_center_roles_page.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/features/control_center/providers/control_center_providers.dart';
+import 'package:mixvy/features/control_center/control_center_users_page.dart';
+import 'package:mixvy/features/control_center/control_center_rooms_page.dart';
+import 'package:mixvy/features/control_center/control_center_reports_page.dart';
+import 'package:mixvy/features/control_center/control_center_analytics_page.dart';
+import 'package:mixvy/features/control_center/control_center_roles_page.dart';
 
 class ControlCenterDashboard extends ConsumerStatefulWidget {
   const ControlCenterDashboard({super.key});
@@ -141,3 +141,4 @@ class _ControlCenterDashboardState
     );
   }
 }
+

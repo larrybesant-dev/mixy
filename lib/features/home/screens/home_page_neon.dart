@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/app/app_routes.dart';
-import 'package:mixmingle/shared/providers/profile_completion_providers.dart';
-import 'package:mixmingle/core/theme/neon_widgets.dart';
-import 'package:mixmingle/core/theme/colors.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/app/app_routes.dart';
+import 'package:mixvy/shared/providers/profile_completion_providers.dart';
+import 'package:mixvy/core/theme/neon_widgets.dart';
+import 'package:mixvy/core/theme/colors.dart';
 
 class HomePageNeon extends ConsumerWidget {
   const HomePageNeon({super.key});
@@ -158,7 +158,7 @@ class HomePageNeon extends ConsumerWidget {
 
         // Brand name
         NeonText(
-          'MIX & MINGLE',
+          'MIXVY',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w900,
                 letterSpacing: 3,
@@ -434,3 +434,4 @@ class HomePageNeon extends ConsumerWidget {
     );
   }
 }
+

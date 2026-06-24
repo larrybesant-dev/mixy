@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/chat_providers.dart';
+import 'package:mixvy/shared/providers/chat_providers.dart';
 
 class PinnedMessagesBar extends ConsumerWidget {
   final String roomId;
@@ -84,3 +84,4 @@ class PinnedMessagesBar extends ConsumerWidget {
 class Math {
   static int min(int a, int b) => a < b ? a : b;
 }
+

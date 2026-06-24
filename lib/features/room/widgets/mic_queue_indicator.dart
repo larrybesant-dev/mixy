@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/mic_providers.dart';
+import 'package:mixvy/shared/providers/mic_providers.dart';
 
 class MicQueueIndicator extends ConsumerWidget {
   final String roomId;
@@ -136,3 +136,4 @@ class MicQueueIndicator extends ConsumerWidget {
     );
   }
 }
+

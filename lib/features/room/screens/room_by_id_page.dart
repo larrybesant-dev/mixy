@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 import '../room_access_wrapper.dart';
-import 'package:mixmingle/shared/widgets/loading_widgets.dart';
-import 'package:mixmingle/features/error/error_page.dart';
+import 'package:mixvy/shared/widgets/loading_widgets.dart';
+import 'package:mixvy/features/error/error_page.dart';
 
 /// Loads a room by Firestore document ID and routes through RoomAccessWrapper
 /// (which gates access and renders LiveRoomScreen).
@@ -65,3 +65,4 @@ class _RoomByIdPageState extends ConsumerState<RoomByIdPage> {
     );
   }
 }
+

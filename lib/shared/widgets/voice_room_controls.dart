@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:mixmingle/shared/models/room.dart';
-import 'package:mixmingle/shared/providers/room_providers.dart';
-import 'package:mixmingle/shared/providers/video_media_providers.dart';
+import 'package:mixvy/shared/models/room.dart';
+import 'package:mixvy/shared/providers/room_providers.dart';
+import 'package:mixvy/shared/providers/video_media_providers.dart';
 
 class VoiceRoomControls extends ConsumerWidget {
   final Room room;
@@ -439,7 +439,7 @@ class VoiceRoomControls extends ConsumerWidget {
             onPressed: () {
               // ignore: deprecated_member_use
               Share.share(
-                'Join my room on Mix & Mingle: https://mix-and-mingle.web.app/room/${room.id}',
+                'Join my room on MIXVY: https://mixvy.web.app/room/${room.id}',
               );
               Navigator.of(context).pop();
             },
@@ -763,3 +763,4 @@ class VoiceRoomControls extends ConsumerWidget {
     );
   }
 }
+

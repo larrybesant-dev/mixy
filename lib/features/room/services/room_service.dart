@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/shared/models/room.dart';
+import 'package:mixvy/shared/models/room.dart';
 import 'category_service.dart';
 
 /// Service for managing rooms in Firestore.
@@ -116,11 +116,10 @@ class RoomService {
     });
   }
 
-  /// Fetches live rooms as a stream.
+  /// Fetches live rooms as a stream (all active rooms).
   Stream<List<Room>> fetchLiveRooms() {
     return _firestore
         .collection(_collectionName)
-        .where('isLive', isEqualTo: true)
         .orderBy('viewerCount', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -236,3 +235,4 @@ class RoomService {
     });
   }
 }
+

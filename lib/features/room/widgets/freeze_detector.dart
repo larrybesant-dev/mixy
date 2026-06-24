@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/camera_state.dart';
+import 'package:flutter/material.dart';
+import 'package:mixvy/shared/models/camera_state.dart';
 
 class FreezeDetector extends StatelessWidget {
   final CameraState cameraState;
@@ -37,3 +37,4 @@ class FreezeDetector extends StatelessWidget {
     return 'âœ… Streaming normally';
   }
 }
+

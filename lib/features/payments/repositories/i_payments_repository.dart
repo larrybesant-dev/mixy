@@ -1,7 +1,7 @@
 // lib/features/payments/repositories/i_payments_repository.dart
 //
 // Abstract contract for payment and coin operations.
-import 'package:mixmingle/shared/models/coin_transaction.dart';
+import 'package:mixvy/shared/models/coin_transaction.dart';
 
 abstract class IPaymentsRepository {
   /// Get current coin balance for [uid].
@@ -42,3 +42,4 @@ abstract class IPaymentsRepository {
     String? afterTransactionId,
   });
 }
+

@@ -38,7 +38,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow>
 
   final List<OnboardingPageData> _pages = [
     const OnboardingPageData(
-      title: 'Welcome to Mix & Mingle',
+      title: 'Welcome to MIXVY',
       subtitle: 'Connect with amazing people through video chat',
       icon: Icons.waving_hand,
       color: Color(0xFF8F00FF),

@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/glow_text.dart';
-import 'package:mixmingle/shared/widgets/neon_button.dart';
-import 'package:mixmingle/core/utils.dart';
+import 'package:mixvy/shared/providers/providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/glow_text.dart';
+import 'package:mixvy/shared/widgets/neon_button.dart';
+import 'package:mixvy/core/utils.dart';
 
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -200,3 +200,4 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     );
   }
 }
+

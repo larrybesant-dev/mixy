@@ -1,8 +1,8 @@
 // lib/screens/room_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/agora_provider.dart';
-import 'package:mixmingle/core/diagnostics/agora_diagnostics.dart';
+import 'package:mixvy/shared/providers/agora_provider.dart';
+import 'package:mixvy/core/diagnostics/agora_diagnostics.dart';
 import '../widgets/agora_video_preview.dart';
 
 class RoomScreen extends ConsumerStatefulWidget {
@@ -31,7 +31,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Mix & Mingle Room',
+        title: Text('MIXVY Room',
             style: Theme.of(context).textTheme.titleLarge),
         backgroundColor: Colors.black87,
         elevation: 0,
@@ -129,3 +129,4 @@ class _DiagnosticsOverlay extends StatelessWidget {
     );
   }
 }
+

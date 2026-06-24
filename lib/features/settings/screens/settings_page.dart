@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/app/app_routes.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/app/app_routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/core/analytics/analytics_service.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -341,3 +341,4 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 }
+

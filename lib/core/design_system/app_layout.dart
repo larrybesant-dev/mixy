@@ -9,7 +9,7 @@
 //    spaceXS / spaceSM / spaceMD / spaceLG / spaceXL / spaceXXL
 //
 //  Import this file in any Flutter widget:
-//    import 'package:mixmingle/core/design_system/app_layout.dart';
+//    import 'package:mixvy/core/design_system/app_layout.dart';
 // ══════════════════════════════════════════════════════════════════════════════
 
 library;
@@ -573,3 +573,4 @@ class AppAvatar extends StatelessWidget {
     );
   }
 }
+

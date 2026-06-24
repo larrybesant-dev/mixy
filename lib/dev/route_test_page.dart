@@ -8,7 +8,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixvy/core/routing/app_routes.dart';
 
 class RouteTestPage extends StatelessWidget {
   const RouteTestPage({super.key});
@@ -129,3 +129,4 @@ class RouteTestPage extends StatelessWidget {
         ),
       );
 }
+

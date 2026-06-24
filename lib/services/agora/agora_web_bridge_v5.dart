@@ -2,7 +2,7 @@
 // Interfaces with window.agoraWebBridge from agora_bridge.js
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'package:mixmingle/core/utils/app_logger.dart';
+import 'package:mixvy/core/utils/app_logger.dart';
 import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
@@ -408,3 +408,4 @@ class AgoraWebBridge {
 
 // Backward compatibility alias
 typedef AgoraWebBridgeV3 = AgoraWebBridge;
+

@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mixmingle/shared/providers/profile_controller.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/app/app_routes.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-import 'package:mixmingle/core/intelligence/vibe_intelligence_service.dart';
-import 'package:mixmingle/core/analytics/analytics_service.dart';
+import 'package:mixvy/shared/providers/profile_controller.dart';
+import 'package:mixvy/shared/providers/providers.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/app/app_routes.dart';
+import 'package:mixvy/core/design_system/design_constants.dart';
+import 'package:mixvy/core/intelligence/vibe_intelligence_service.dart';
+import 'package:mixvy/core/analytics/analytics_service.dart';
 
 import '../widgets/profile_mode_selector.dart';
 import '../widgets/profile_music_widget.dart';
@@ -1752,3 +1752,4 @@ class _StatItem {
   final Color color;
   const _StatItem(this.value, this.label, this.icon, this.color);
 }
+

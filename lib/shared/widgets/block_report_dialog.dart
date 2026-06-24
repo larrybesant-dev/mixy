@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/report.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
+import 'package:mixvy/shared/models/report.dart';
+import 'package:mixvy/shared/providers/providers.dart';
 
 /// Dialog for blocking or reporting a user
 class BlockReportDialog extends ConsumerStatefulWidget {
@@ -228,3 +228,4 @@ Future<bool?> showBlockReportDialog(
     ),
   );
 }
+

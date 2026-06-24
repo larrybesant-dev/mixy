@@ -1,7 +1,7 @@
 // lib/features/profile/repositories/i_profile_repository.dart
 //
 // Abstract contract for user-profile operations.
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 abstract class IProfileRepository {
   /// Fetch a single user profile by UID.
@@ -33,3 +33,4 @@ abstract class IProfileRepository {
   /// Search profiles by display name prefix.
   Future<List<UserProfile>> searchByName(String query, {int limit = 20});
 }
+

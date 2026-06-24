@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/app/app_routes.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/shared/widgets/follow_button.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
+import 'package:mixvy/app/app_routes.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/shared/widgets/follow_button.dart';
 
 class UserDiscoveryPage extends ConsumerStatefulWidget {
   const UserDiscoveryPage({super.key});
@@ -289,3 +289,4 @@ class _UserDiscoveryPageState extends ConsumerState<UserDiscoveryPage> {
     );
   }
 }
+

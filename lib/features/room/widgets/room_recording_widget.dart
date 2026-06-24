@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/room_recording_service.dart';
+import 'package:mixvy/features/room/services/room_recording_service.dart';
 
 /// Room Recording Widget
 ///
@@ -380,3 +380,4 @@ class _RoomRecordingWidgetState extends ConsumerState<RoomRecordingWidget>
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
   }
 }
+

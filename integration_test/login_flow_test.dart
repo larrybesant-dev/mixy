@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mixmingle/app/app.dart';
+import 'package:mixvy/app/app.dart';
 
 void main() {
   testWidgets('Login flow widget test', (WidgetTester tester) async {
@@ -43,3 +43,4 @@ void main() {
     // expect(find.byType(HomePage), findsOneWidget);
   });
 }
+

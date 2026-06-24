@@ -5,7 +5,7 @@
 // UID validation is enforced before every write — never in the UI.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/models/coin_transaction.dart';
+import 'package:mixvy/shared/models/coin_transaction.dart';
 import 'i_payments_repository.dart';
 
 class PaymentsRepository implements IPaymentsRepository {
@@ -162,3 +162,4 @@ class PaymentsRepository implements IPaymentsRepository {
 final paymentsRepositoryProvider = Provider<IPaymentsRepository>(
   (ref) => PaymentsRepository(),
 );
+

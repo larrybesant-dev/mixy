@@ -6,7 +6,7 @@ import '../models/match_score.dart';
 import '../models/match_model.dart';
 import '../services/match_service.dart';
 import '../services/matching_service.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
+import 'package:mixvy/shared/providers/providers.dart';
 
 /// Provider for MatchService (new match algorithm)
 final matchServiceProvider = Provider<MatchService>((ref) {
@@ -245,3 +245,4 @@ class MatchesFilter {
     );
   }
 }
+

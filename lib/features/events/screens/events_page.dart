@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:mixmingle/shared/models/event.dart';
-import 'package:mixmingle/shared/providers/events_controller.dart'
+import 'package:mixvy/shared/models/event.dart';
+import 'package:mixvy/shared/providers/events_controller.dart'
     hide eventProvider;
-import 'package:mixmingle/shared/providers/event_dating_providers.dart'
+import 'package:mixvy/shared/providers/event_dating_providers.dart'
     hide eventsServiceProvider, attendingEventsProvider;
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/widgets/async_value_view_enhanced.dart';
+import 'package:mixvy/shared/widgets/skeleton_loaders.dart';
 import 'event_details_page.dart';
 import 'create_event_page.dart';
 
@@ -582,3 +582,4 @@ class _EventFilterDialogState extends ConsumerState<EventFilterDialog> {
     );
   }
 }
+

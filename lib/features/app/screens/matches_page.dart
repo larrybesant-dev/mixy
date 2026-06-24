@@ -1,10 +1,10 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/features/matching/providers/matching_providers.dart';
-import 'package:mixmingle/features/matching/models/match_model.dart';
-import 'package:mixmingle/shared/providers/auth_providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/features/matching/providers/matching_providers.dart';
+import 'package:mixvy/features/matching/models/match_model.dart';
+import 'package:mixvy/shared/providers/auth_providers.dart';
 
 class MatchesPage extends ConsumerStatefulWidget {
   const MatchesPage({super.key});
@@ -389,3 +389,4 @@ class _MatchCard extends StatelessWidget {
     );
   }
 }
+

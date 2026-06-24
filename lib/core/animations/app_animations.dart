@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:mixmingle/core/theme/enhanced_theme.dart';
+import 'package:flutter/material.dart';
+import 'package:mixvy/core/theme/enhanced_theme.dart';
 
 /// Enhanced animation utilities for smooth transitions and micro-interactions
 class AppAnimations {
@@ -296,3 +296,4 @@ class _ShimmerState extends State<_Shimmer>
     );
   }
 }
+

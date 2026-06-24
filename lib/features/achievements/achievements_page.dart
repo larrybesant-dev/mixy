@@ -1,8 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/shared/models/achievement.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart';
+import 'package:mixvy/shared/widgets/club_background.dart';
+import 'package:mixvy/shared/models/achievement.dart';
+import 'package:mixvy/shared/providers/all_providers.dart';
 
 class AchievementsPage extends ConsumerWidget {
   const AchievementsPage({super.key});
@@ -296,3 +296,4 @@ class AchievementsPage extends ConsumerWidget {
     return '${(diff.inDays / 30).floor()} months ago';
   }
 }
+

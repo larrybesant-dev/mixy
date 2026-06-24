@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/services/messaging_service.dart';
-import 'package:mixmingle/services/events/speed_dating_service.dart';
+import 'package:mixvy/services/messaging_service.dart';
+import 'package:mixvy/services/events/speed_dating_service.dart';
 
 // ── Messaging Service Provider ────────────────────────────────────────────────
 
@@ -13,3 +13,4 @@ final messagingServiceProvider = Provider<MessagingService>((ref) {
 final speedDatingServiceProvider = Provider<SpeedDatingService>((ref) {
   return SpeedDatingService();
 });
+

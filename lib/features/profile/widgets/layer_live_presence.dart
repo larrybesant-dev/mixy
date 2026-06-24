@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mixmingle/shared/models/user_profile.dart';
+import 'package:mixvy/shared/models/user_profile.dart';
 
 /// ── LAYER 2: Live Presence ─────────────────────────────────────
 /// Competes with: Paltalk, Clubhouse
@@ -255,3 +255,4 @@ class _PulsingDotState extends State<_PulsingDot>
     );
   }
 }
+

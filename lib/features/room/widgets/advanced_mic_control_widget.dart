@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/advanced_mic_service.dart';
+import 'package:mixvy/features/room/services/advanced_mic_service.dart';
 
 /// Advanced Microphone Control Widget
 ///
@@ -327,3 +327,4 @@ class _AdvancedMicControlWidgetState
     );
   }
 }
+

@@ -50,6 +50,22 @@ final ageVerificationProvider =
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Local onboarding completion flag (session-scoped).
+// Used to bypass the Firestore check when Firestore write fails/is delayed.
+// ─────────────────────────────────────────────────────────────────────────────
+class _LocalOnboardingCompletionNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void complete() => state = true;
+}
+
+final localOnboardingCompletionProvider =
+    NotifierProvider<_LocalOnboardingCompletionNotifier, bool>(() {
+  return _LocalOnboardingCompletionNotifier();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // In-session selected interests (for step 3 quick-pick)
 // ─────────────────────────────────────────────────────────────────────────────
 class OnboardingInterestsNotifier extends Notifier<List<String>> {
