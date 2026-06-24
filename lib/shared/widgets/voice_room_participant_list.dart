@@ -152,11 +152,7 @@ class VoiceRoomParticipantList extends ConsumerWidget {
 
         final isCurrentUser = userId == currentUserId;
         final isHost = userId == room.hostId;
-        final isCurrentUserOwner = currentUserId == room.ownerId;
-        final isCurrentUserAdmin = isCurrentUserOwner ||
-            room.admins.contains(currentUserId) ||
-            room.moderators.contains(currentUserId);
-        final canModerate = isCurrentUserAdmin && !isCurrentUser;
+        final canModerate = room.moderators.contains(currentUserId) && !isHost;
         final theme = Theme.of(context);
 
         return Container(
@@ -363,33 +359,25 @@ class VoiceRoomParticipantList extends ConsumerWidget {
                     roomService,
                   ),
                   itemBuilder: (context) => [
-                    // Add/Remove admin — owner only
-                    if (isCurrentUserOwner && !room.admins.contains(userId))
+                    if (!room.moderators.contains(userId))
                       const PopupMenuItem(
-                        value: 'make_admin',
-                        child: Text('Add Admin'),
+                        value: 'make_mod',
+                        child: Text('Make Moderator'),
                       ),
-<<<<<<< HEAD
-                    if (isCurrentUserOwner && room.admins.contains(userId) && userId != room.ownerId)
-=======
                     if (room.moderators.contains(userId) &&
                         userId != room.hostId)
->>>>>>> origin/develop
                       const PopupMenuItem(
-                        value: 'remove_admin',
-                        child: Text('Remove Admin'),
+                        value: 'remove_mod',
+                        child: Text('Remove Moderator'),
                       ),
-                    // Kick — any admin, not on self
                     const PopupMenuItem(
                       value: 'kick',
                       child: Text('Kick User'),
                     ),
-                    // Ban — any admin, not on owner
-                    if (userId != room.ownerId)
-                      const PopupMenuItem(
-                        value: 'ban',
-                        child: Text('Ban User'),
-                      ),
+                    const PopupMenuItem(
+                      value: 'ban',
+                      child: Text('Ban User'),
+                    ),
                   ],
                 ),
               ],
@@ -407,17 +395,13 @@ class VoiceRoomParticipantList extends ConsumerWidget {
   ) async {
     try {
       switch (action) {
-        case 'make_admin':
-          await roomService.makeAdmin(room.id, targetUserId);
+        case 'make_mod':
+          await roomService.makeModerator(room.id, currentUserId, targetUserId);
+          // Note: SnackBar will be shown by parent widget or through a callback
           break;
-<<<<<<< HEAD
-        case 'remove_admin':
-          await roomService.removeAdmin(room.id, targetUserId);
-=======
         case 'remove_mod':
           await roomService.removeModerator(
               room.id, currentUserId, targetUserId);
->>>>>>> origin/develop
           break;
         case 'kick':
           await roomService.kickUser(room.id, currentUserId, targetUserId);
@@ -427,6 +411,7 @@ class VoiceRoomParticipantList extends ConsumerWidget {
           break;
       }
     } catch (e) {
+      // Error handling without context - could be handled by parent or through callback
       debugPrint('Moderator action error: $e');
     }
   }

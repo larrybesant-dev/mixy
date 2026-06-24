@@ -311,27 +311,6 @@ class ProfileService {
       );
 
       await batch.commit();
-
-      // Write new-follower notification to the followed user's subcollection
-      final notifRef = _firestore
-          .collection('users')
-          .doc(followingId)
-          .collection('notifications')
-          .doc();
-      await notifRef.set({
-        'id': notifRef.id,
-        'userId': followingId,
-        'type': 2, // NotificationType.newFollower
-        'title': 'New Follower',
-        'message': 'Someone started following you',
-        'senderId': followerId,
-        'senderName': null,
-        'roomId': null,
-        'roomName': null,
-        'data': null,
-        'isRead': false,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
     } catch (e) {
       throw Exception('Failed to follow user: $e');
     }

@@ -51,22 +51,6 @@ external JSBoolean _jsRenewToken(JSString newToken);
 @JS('agoraBridgeReady')
 external JSAny? get _jsBridgeReady;
 
-// ── DJ Audio Mixing ──────────────────────────────────────────────────────────
-@JS('agoraWebStartAudioMixing')
-external JSPromise _jsStartAudioMixing(JSString url, JSBoolean loop);
-
-@JS('agoraWebStopAudioMixing')
-external JSPromise _jsStopAudioMixing();
-
-@JS('agoraWebPauseAudioMixing')
-external JSPromise _jsPauseAudioMixing();
-
-@JS('agoraWebResumeAudioMixing')
-external JSPromise _jsResumeAudioMixing();
-
-@JS('agoraWebSetAudioMixingVolume')
-external JSPromise _jsSetAudioMixingVolume(JSNumber volume);
-
 bool _jsToBool(JSAny? value) {
   if (value == null) return false;
   try {
@@ -145,18 +129,9 @@ class AgoraService {
       {String? token, required String channelId, required String uid}) async {
     if (!kIsWeb) return false;
     try {
-<<<<<<< HEAD
-      final normalizedUid = _normalizeUid(uid).toString();
-      final result = await _jsJoinChannel(
-        (token ?? '').toJS,
-        channelId.toJS,
-        normalizedUid.toJS,
-      ).toDart;
-=======
       final result =
           await _jsJoinChannel((token ?? '').toJS, channelId.toJS, uid.toJS)
               .toDart;
->>>>>>> origin/develop
       final success = _jsToBool(result);
       if (success) {
         _inChannel = true;
@@ -167,26 +142,6 @@ class AgoraService {
       debugPrint('[AgoraService] Join failed: $e');
       return false;
     }
-  }
-
-  int _normalizeUid(String rawUid) {
-    final parsed = int.tryParse(rawUid);
-    if (parsed != null && parsed > 0) return parsed;
-
-    // Match backend uid derivation from hashCode(userId) for token compatibility.
-    var hash = 0;
-    for (var i = 0; i < rawUid.length; i++) {
-      final char = rawUid.codeUnitAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash &= 0xFFFFFFFF;
-    }
-
-    if (hash >= 0x80000000) {
-      hash -= 0x100000000;
-    }
-
-    final normalized = hash.abs();
-    return normalized == 0 ? 1 : normalized;
   }
 
   Future<bool> startCamera(String videoElementId, [String? deviceId]) async {
@@ -356,17 +311,6 @@ class AgoraService {
     return true;
   }
 
-<<<<<<< HEAD
-  // ── DJ Audio Mixing ──────────────────────────────────────────────────────
-  /// Start playing a remote audio URL as background music in the channel.
-  Future<bool> startAudioMixing(String url, {bool loop = false}) async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _jsStartAudioMixing(url.toJS, loop.toJS).toDart;
-      return _jsToBool(result);
-    } catch (e) {
-      debugPrint('[AgoraService] startAudioMixing failed: $e');
-=======
   /// Register an HTML element (by ID) to receive the next remote video stream.
   /// Call this after [joinChannel]. The bridge will play the first remote user's
   /// video track into the element as soon as they publish (or immediately if they
@@ -378,54 +322,10 @@ class AgoraService {
       return _jsToBool(result);
     } catch (e) {
       debugPrint('[AgoraService] subscribeRemoteVideoTo failed: $e');
->>>>>>> origin/develop
       return false;
     }
   }
 
-<<<<<<< HEAD
-  Future<bool> stopAudioMixing() async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _jsStopAudioMixing().toDart;
-      return _jsToBool(result);
-    } catch (e) {
-      debugPrint('[AgoraService] stopAudioMixing failed: $e');
-      return false;
-    }
-  }
-
-  Future<bool> pauseAudioMixing() async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _jsPauseAudioMixing().toDart;
-      return _jsToBool(result);
-    } catch (e) {
-      debugPrint('[AgoraService] pauseAudioMixing failed: $e');
-      return false;
-    }
-  }
-
-  Future<bool> resumeAudioMixing() async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _jsResumeAudioMixing().toDart;
-      return _jsToBool(result);
-    } catch (e) {
-      debugPrint('[AgoraService] resumeAudioMixing failed: $e');
-      return false;
-    }
-  }
-
-  /// Set volume for audio mixing. [volume] must be 0–100.
-  Future<bool> setAudioMixingVolume(int volume) async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _jsSetAudioMixingVolume(volume.toDouble().toJS).toDart;
-      return _jsToBool(result);
-    } catch (e) {
-      debugPrint('[AgoraService] setAudioMixingVolume failed: $e');
-=======
   /// Renew the Agora token for the current channel session.
   /// Call this when [onTokenPrivilegeWillExpire] fires or on a ~23h timer.
   /// Returns true if the JS bridge accepted the new token.
@@ -436,17 +336,13 @@ class AgoraService {
       return _jsToBool(result);
     } catch (e) {
       debugPrint('[AgoraService] renewToken failed: $e');
->>>>>>> origin/develop
       return false;
     }
   }
 
   Future<void> cleanup() async {
     try {
-      if (_inChannel) {
-        await stopAudioMixing();
-        await leaveChannel();
-      }
+      if (_inChannel) await leaveChannel();
       _initialized = false;
       _currentChannelId = null;
     } catch (e) {

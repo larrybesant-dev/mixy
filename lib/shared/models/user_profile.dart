@@ -14,8 +14,8 @@ class UserProfile {
   final String? photoUrl;
   final String? coverPhotoUrl;
   final List<String>? galleryPhotos;
-  final List<String>? galleryVideos;    // video URLs or thumbnail URLs for profile media
-  final List<String>? badgeIds;         // stored badges: 'active_today', 'top_creator', 'rising_star', 'verified'
+  final List<String>? galleryVideos;
+  final List<String>? badgeIds;
   final List<String>? interests;
   final String? location;
   final double? latitude;

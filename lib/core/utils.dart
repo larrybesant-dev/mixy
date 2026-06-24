@@ -1,7 +1,7 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
 
-// Utility functions for MIXVY
+// Utility functions for Mix & Mingle
 class AppUtils {
   // Format duration for display
   static String formatDuration(Duration duration) {

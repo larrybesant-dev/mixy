@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-export 'user_providers.dart';
-=======
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -548,4 +545,3 @@ final subscriptionServiceProvider = Provider<SubscriptionService>((ref) {
 final roomServiceProvider = Provider<RoomService>((ref) {
   return RoomService();
 });
->>>>>>> origin/develop

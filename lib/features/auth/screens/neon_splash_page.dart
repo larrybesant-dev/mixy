@@ -228,17 +228,17 @@ class _NeonSplashPageState extends State<NeonSplashPage>
                 child: const Column(
                   children: [
                     NeonText(
-                      'MIXVY',
+                      'MIX & MINGLE',
                       fontSize: 36,
                       fontWeight: FontWeight.w900,
                       textColor: Colors.white,
-                      glowColor: NeonColors.neonBlue,
+                      glowColor: NeonColors.neonOrange,
                       glowRadius: 16,
                       letterSpacing: 2,
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'FEEL THE ENERGY',
+                      'GLOBAL DJ VIBES',
                       style: TextStyle(
                         fontSize: 14,
                         color: NeonColors.textSecondary,

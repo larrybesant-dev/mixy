@@ -3,31 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/core/responsive/responsive_utils.dart';
 import 'package:mixmingle/core/animations/app_animations.dart';
 import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixmingle/app/app_routes.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
 import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
 import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
 import 'package:mixmingle/shared/widgets/follow_button.dart';
-import 'package:mixmingle/shared/widgets/presence_indicator.dart';
 import 'package:mixmingle/services/events/reporting_service.dart' as reporting;
 import 'package:mixmingle/features/reporting/report_dialog.dart';
-<<<<<<< HEAD
-import 'package:mixmingle/features/start_conversation.dart';
-import 'package:mixmingle/shared/providers/friend_request_provider.dart';
-import 'package:mixmingle/services/social/friend_service.dart';
-import 'package:mixmingle/services/social/stories_service.dart';
-import 'package:mixmingle/core/design_system/design_constants.dart';
-
-// ── Stories provider ─────────────────────────────────────────────────────────
-
-/// Streams the active (non-expired) stories for a given user.
-final userStoriesProvider =
-    StreamProvider.autoDispose.family<List<StoryModel>, String>(
-  (ref, userId) => StoriesService.instance.watchUserStories(userId),
-);
-=======
 import 'package:mixmingle/core/analytics/analytics_service.dart';
->>>>>>> origin/develop
 
 class UserProfilePage extends ConsumerStatefulWidget {
   final String userId;
@@ -153,9 +136,17 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                                     Positioned(
                                       bottom: 0,
                                       right: 0,
-                                      child: PresenceIndicator(
-                                        userId: profile.id,
-                                        size: 20,
+                                      child: Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Theme.of(context).cardColor,
+                                            width: 3,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                 ],
@@ -191,17 +182,11 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                             AppAnimations.fadeIn(
                               child: Text(
                                 [
-<<<<<<< HEAD
-                                  if (profile.age != null) '${profile.age} years old',
-                                  if (profile.location != null) profile.location,
-                                ].join(' • '),
-=======
                                   if (profile.age != null)
                                     '${profile.age} years old',
                                   if (profile.location != null)
                                     profile.location,
                                 ].join(' â€¢ '),
->>>>>>> origin/develop
                                 style: TextStyle(
                                   fontSize: Responsive.responsiveFontSize(
                                       context, 16),
@@ -209,20 +194,10 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            PresenceIndicatorWithLabel(userId: profile.id),
                           ],
                         ),
                       ],
                     ),
-                  ),
-                ),
-
-                // ── Stories strip ─────────────────────────────────────────────
-                SliverToBoxAdapter(
-                  child: _StoriesStrip(
-                    userId: profileUserId,
-                    isOwnProfile: isOwnProfile,
                   ),
                 ),
 
@@ -373,55 +348,18 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
   }
 
   Widget _buildStatsCard(BuildContext context, WidgetRef ref, String userId) {
-    final profileAsync = ref.watch(userProfileProvider(userId));
-    return profileAsync.when(
-      data: (profile) {
-        final followersCount = profile?.followersCount ?? 0;
-        final followingCount = profile?.followingCount ?? 0;
-        return Card(
-          child: Padding(
-            padding: Responsive.responsivePadding(context),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pushNamed(
-                    AppRoutes.followers,
-                    arguments: {
-                      'userId': userId,
-                      'displayName': profile?.displayName ?? profile?.username ?? 'User',
-                    },
-                  ),
-                  child: _buildStatItem(context, 'Followers', followersCount.toString()),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pushNamed(
-                    AppRoutes.following,
-                    arguments: {
-                      'userId': userId,
-                      'displayName': profile?.displayName ?? profile?.username ?? 'User',
-                    },
-                  ),
-                  child: _buildStatItem(context, 'Following', followingCount.toString()),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => Card(
-        child: Padding(
-          padding: Responsive.responsivePadding(context),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(context, 'Followers', '—'),
-              _buildStatItem(context, 'Following', '—'),
-            ],
-          ),
+    return Card(
+      child: Padding(
+        padding: Responsive.responsivePadding(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(context, 'Matches', '0'),
+            _buildStatItem(context, 'Events', '0'),
+            _buildStatItem(context, 'Rooms', '0'),
+          ],
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -452,7 +390,6 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
   Widget _buildActionButtons(
       BuildContext context, WidgetRef ref, String userId) {
     final currentUser = ref.watch(currentUserProvider).value;
-    final friendStatus = ref.watch(friendStatusProvider(userId)).value ?? FriendRequestStatus.none;
 
     return Container(
       padding: Responsive.responsivePadding(context),
@@ -483,20 +420,17 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                   ),
                 ),
               ),
-            // Friend request button row
-            Padding(
-              padding: EdgeInsets.only(bottom: Responsive.responsiveSpacing(context, 12)),
-              child: SizedBox(
-                width: double.infinity,
-                child: _buildFriendButton(context, ref, userId, friendStatus),
-              ),
-            ),
             // Action buttons row
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => startConversation(context, ref, userId),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.chat,
+                        arguments: {'userId': userId},
+                      );
+                    },
                     icon: const Icon(Icons.message),
                     label: const Text('Message'),
                   ),
@@ -524,51 +458,6 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         ),
       ),
     );
-  }
-
-  Widget _buildFriendButton(BuildContext context, WidgetRef ref, String userId, FriendRequestStatus status) {
-    switch (status) {
-      case FriendRequestStatus.friends:
-        return OutlinedButton.icon(
-          onPressed: null,
-          icon: const Icon(Icons.people),
-          label: const Text('Friends'),
-        );
-      case FriendRequestStatus.sent:
-        return OutlinedButton.icon(
-          onPressed: () async {
-            await ref.read(friendServiceProvider).cancelFriendRequest(userId);
-          },
-          icon: const Icon(Icons.schedule),
-          label: const Text('Request Sent — Tap to Cancel'),
-        );
-      case FriendRequestStatus.received:
-        return ElevatedButton.icon(
-          onPressed: () async {
-            await ref.read(friendServiceProvider).acceptFriendRequest(userId);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Friend request accepted!')),
-              );
-            }
-          },
-          icon: const Icon(Icons.check),
-          label: const Text('Accept Friend Request'),
-        );
-      case FriendRequestStatus.none:
-        return ElevatedButton.icon(
-          onPressed: () async {
-            await ref.read(friendServiceProvider).sendFriendRequest(userId);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Friend request sent!')),
-              );
-            }
-          },
-          icon: const Icon(Icons.person_add),
-          label: const Text('Add Friend'),
-        );
-    }
   }
 
   void _showOptionsMenu(BuildContext context, WidgetRef ref, String userId) {
@@ -622,128 +511,6 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                   }
                 }
               },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-// ── Stories Strip ─────────────────────────────────────────────────────────────
-
-class _StoriesStrip extends ConsumerWidget {
-  const _StoriesStrip({required this.userId, required this.isOwnProfile});
-  final String userId;
-  final bool isOwnProfile;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final storiesAsync = ref.watch(userStoriesProvider(userId));
-    return storiesAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (stories) {
-        if (stories.isEmpty && !isOwnProfile) return const SizedBox.shrink();
-        return SizedBox(
-          height: 100,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            children: [
-              if (isOwnProfile)
-                _StoryBubble(
-                  label: 'Add Story',
-                  isAdd: true,
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.createStory),
-                ),
-              ...stories.map((s) {
-                final group = StoryGroup(
-                  userId: s.userId,
-                  userName: s.userName,
-                  userAvatar: s.userAvatar,
-                  stories: stories,
-                  hasUnviewed: true,
-                );
-                return _StoryBubble(
-                  imageUrl: s.userAvatar,
-                  label: s.userName ?? 'Story',
-                  hasUnviewed: true,
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.storyViewer,
-                    arguments: group,
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _StoryBubble extends StatelessWidget {
-  const _StoryBubble({
-    this.imageUrl,
-    required this.label,
-    this.isAdd = false,
-    this.hasUnviewed = false,
-    required this.onTap,
-  });
-  final String? imageUrl;
-  final String label;
-  final bool isAdd;
-  final bool hasUnviewed;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ringColor =
-        hasUnviewed ? DesignColors.accent : DesignColors.surfaceLight;
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: isAdd
-                    ? const LinearGradient(
-                        colors: [DesignColors.accent, DesignColors.tertiary],
-                      )
-                    : null,
-                border: isAdd
-                    ? null
-                    : Border.all(color: ringColor, width: 2),
-              ),
-              child: isAdd
-                  ? const Icon(Icons.add, color: Colors.white, size: 28)
-                  : ClipOval(
-                      child: imageUrl != null
-                          ? Image.network(imageUrl!, fit: BoxFit.cover)
-                          : Container(
-                              color: DesignColors.surfaceLight,
-                              child: const Icon(Icons.person,
-                                  color: Colors.white),
-                            ),
-                    ),
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 64,
-              child: Text(
-                label,
-                style: const TextStyle(color: Colors.white, fontSize: 10),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
             ),
           ],
         ),

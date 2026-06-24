@@ -1,9 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-<<<<<<< HEAD
-import '../providers/user_providers.dart';
-import 'auth_gate.dart';
-=======
 import '../core/design_system/design_constants.dart';
 import '../core/web/web_window_service.dart';
 import '../features/auth/screens/neon_login_page.dart';
@@ -17,29 +13,58 @@ import 'app.dart';
 import '../shared/providers/all_providers.dart';
 import '../core/theme/neon_theme.dart';
 import '../core/utils/app_logger.dart';
->>>>>>> origin/develop
 
-class AuthGateRoot extends ConsumerWidget {
-  const AuthGateRoot({super.key});
+/// ROOT AUTH GATE - The Single Source of Truth for App Access
+/// ============================================================================
+///
+/// This widget MUST be the root of the app. It controls ALL access to the app
+/// using unified Riverpod providers, ensuring no race conditions or stale state.
+///
+/// Flow:
+/// 1. App starts
+/// 2. Root Auth Gate watches authStateProvider (Firebase auth stream)
+/// 3. If user is null â†’ Show unauthenticated app (landing/login/signup)
+/// 4. If user exists â†’ Watch currentUserProvider (loaded profile)
+/// 5. If profile incomplete â†’ Show profile creation
+/// 6. If profile complete â†’ Show main app
+///
+/// NO exceptions. NO bypasses. NO race conditions.
+/// ============================================================================
+
+class RootAuthGate extends ConsumerWidget {
+  const RootAuthGate({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authStateProvider);
+    // Watch the Firebase auth state - foundation of everything
+    final authState = ref.watch(authStateProvider);
 
-    return auth.when(
+    return authState.when(
+      // Auth state still resolving - show loading splash
+      loading: () {
+        debugPrint('â³ [RootAuthGate] Firebase auth state still loading...');
+        return const _SplashLoadingScreen();
+      },
+
+      // Auth error - show splash and log
+      error: (error, stack) {
+        debugPrint('âŒ [RootAuthGate] Auth state error: $error');
+        AppLogger.error('Auth gate error: $error');
+        return const _SplashLoadingScreen();
+      },
+
+      // No user authenticated - show login/signup flow
       data: (user) {
         if (user == null) {
-          return const AuthGate();
+          debugPrint('ðŸ”“ [RootAuthGate] No user authenticated');
+          return const _UnauthenticatedApp();
         }
-        return const AuthGate();
+
+        // User is authenticated - check if profile is complete
+        debugPrint('âœ… [RootAuthGate] User authenticated: ${user.email}');
+
+        return _AuthenticatedAppGate(userId: user.uid);
       },
-<<<<<<< HEAD
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const Scaffold(
-        body: Center(child: Text('Auth error')),
-=======
     );
   }
 }
@@ -295,7 +320,6 @@ class _SplashLoadingScreen extends StatelessWidget {
             ],
           ),
         ),
->>>>>>> origin/develop
       ),
     );
   }

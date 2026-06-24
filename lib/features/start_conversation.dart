@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/user_providers.dart';
+import '../providers/service_providers.dart';
 import '../services/messaging_service.dart';
+import '../shared/models/chat_room.dart';
 import 'chat_room_page.dart';
 
 /// Resolves (or creates) a conversation between [currentUser] and
@@ -25,12 +27,19 @@ Future<void> startConversation(
 
   if (!context.mounted) return;
 
+  // Create a ChatRoom object for navigation
+  final chatRoom = ChatRoom(
+    id: convoId ?? '',
+    participants: [currentUser.id, otherUserId],
+    lastMessage: '',
+    lastMessageTime: DateTime.now(),
+    unreadCounts: {},
+    isTyping: false,
+  );
+
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => ChatRoomPage(
-        otherUserId: otherUserId,
-        conversationId: convoId,
-      ),
+      builder: (_) => ChatRoomPage(chatRoom: chatRoom),
     ),
   );
 }

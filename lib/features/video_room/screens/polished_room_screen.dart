@@ -294,7 +294,8 @@ class _PolishedRoomScreenState extends ConsumerState<PolishedRoomScreen>
       return _buildWaitingForParticipants();
     }
 
-    // Video participant grid — full VideoTileWidget integration planned in upcoming release
+    // Use the multi-cam video grid here
+    // TODO: Integrate with VideoTileWidget and GridWindowWidget
     return Container(
       color: Colors.grey[900],
       child: GridView.builder(

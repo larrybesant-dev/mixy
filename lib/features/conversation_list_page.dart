@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/user_providers.dart';
 import '../services/messaging_service.dart';
+import '../shared/models/chat_room.dart';
 import 'chat_room_page.dart';
 
 final messagingServiceProvider = Provider<MessagingService>((ref) {
@@ -22,7 +23,7 @@ class ConversationListPage extends ConsumerWidget {
       );
     }
 
-    return StreamBuilder<List<Map<String, dynamic>>>(
+    return StreamBuilder<List<ChatRoom>>(
       stream: messaging.streamConversations(currentUser.id),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -40,18 +41,12 @@ class ConversationListPage extends ConsumerWidget {
           body: ListView.builder(
             itemCount: conversations.length,
             itemBuilder: (context, index) {
-              final convo = conversations[index];
-              final convoId = convo['id'];
-              final participants = List<String>.from(convo['participants']);
-              final otherUserId =
-                  participants.firstWhere((p) => p != currentUser.id);
-
-              final lastMessage = convo['lastMessage'] ?? '';
-              final unread = convo['unread'][currentUser.id] ?? 0;
+              final chatRoom = conversations[index];
+              final unread = chatRoom.unreadCounts[currentUser.id] ?? 0;
 
               return ListTile(
-                title: const Text('Chat with '),
-                subtitle: Text(lastMessage),
+                title: const Text('Chat'),
+                subtitle: Text(chatRoom.lastMessage),
                 trailing: unread > 0
                     ? CircleAvatar(
                         radius: 12,
@@ -70,8 +65,7 @@ class ConversationListPage extends ConsumerWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatRoomPage(
-                        otherUserId: otherUserId,
-                        conversationId: convoId,
+                        chatRoom: chatRoom,
                       ),
                     ),
                   );

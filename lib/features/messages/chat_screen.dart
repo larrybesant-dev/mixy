@@ -9,8 +9,6 @@ import '../../shared/models/message.dart' show MessageStatus;
 import '../../shared/club_background.dart';
 import '../../shared/glow_text.dart';
 import '../../shared/neon_button.dart';
-import '../../utils/window_manager.dart';
-import '../../utils/window_sync_service.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final User currentUser;
@@ -270,18 +268,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.open_in_new_rounded),
-              tooltip: 'Pop Out Chat',
-              onPressed: () {
-                WindowSyncService.send('chat.popoutRequested', {
-                  'userId': widget.otherUser.id,
-                });
-                WindowManager.openPrivateChat(widget.otherUser.id);
-              },
-            ),
-          ],
         ),
         body: Column(
           children: [

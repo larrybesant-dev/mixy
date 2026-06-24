@@ -283,8 +283,8 @@ class PushNotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       'mix_mingle_channel',
-      'MIXVY Notifications',
-      channelDescription: 'Notifications for MIXVY app',
+      'Mix & Mingle Notifications',
+      channelDescription: 'Notifications for Mix & Mingle app',
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,

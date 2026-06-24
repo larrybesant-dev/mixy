@@ -556,7 +556,6 @@ class AgoraVideoService extends ChangeNotifier {
         DebugLog.info(_safeLog(' Requesting Agora token...'));
         DebugLog.info(_safeLog('   roomId: $roomId'));
         DebugLog.info(_safeLog('   userId: ${user.uid}'));
-        print('DEBUG: roomId: $roomId, userId: \\${user.uid}');
         DebugLog.info(_safeLog('   FirebaseFunctions region: us-central1'));
         DebugLog.info(_safeLog('   Auth state: VERIFIED'));
 
@@ -585,21 +584,11 @@ class AgoraVideoService extends ChangeNotifier {
         DebugLog.info(_safeLog(' Callable returned successfully'));
 
         DebugLog.info(_safeLog(' Token response received'));
-        final payload = result.data as Map<String, dynamic>?;
-        final tokenValue = (payload?['token'] as String?)?.trim() ?? '';
-        final uidValue = payload?['uid'];
-        final tokenUid = uidValue is int
-            ? uidValue
-            : uidValue is String
-                ? int.tryParse(uidValue)
-                : null;
+        final tokenValue = result.data['token'] as String?;
+        final tokenUid = result.data['uid'] as int?;
 
-        if (tokenValue.isEmpty) {
-          throw Exception('Response missing token field');
-        }
-        if (tokenUid == null || tokenUid <= 0) {
-          throw Exception('Response missing or invalid uid field');
-        }
+        if (tokenValue == null) throw Exception('Response missing token field');
+        if (tokenUid == null) throw Exception('Response missing uid field');
 
         token = tokenValue;
         _localUid = tokenUid;
@@ -608,12 +597,6 @@ class AgoraVideoService extends ChangeNotifier {
         DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ Length: ${token.length}'));
         DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ UID: $tokenUid'));
         DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ Channel: $roomId'));
-      } on FirebaseFunctionsException catch (e, st) {
-        final details = e.details == null ? '' : ' (${e.details})';
-        final backendMessage = 'Token generation failed [${e.code}]: ${e.message ?? 'Unknown backend error'}$details';
-        DebugLog.info(_safeLog(' Agora token generation failed: $backendMessage'));
-        DebugLog.info(_safeLog('Stack trace: $st'));
-        throw Exception(backendMessage);
       } catch (e, st) {
         DebugLog.info(_safeLog(' Agora token generation failed: $e'));
         DebugLog.info(_safeLog('Stack trace: $st'));
@@ -937,6 +920,105 @@ class AgoraVideoService extends ChangeNotifier {
   }
 
   // ============================================================================
+  // AUDIO MIXING FOR DJ MODE / MUSIC PLAYBACK
+  // ============================================================================
+
+  /// Start audio mixing with a local/remote track.
+  /// [filePath] can be a local file path or URL.
+  /// [loop] determines whether to repeat the track.
+  /// Returns true if successful, false otherwise.
+  Future<bool> startAudioMixing(String filePath, {bool loop = false}) async {
+    if (_engine == null) {
+      DebugLog.info(_safeLog('❌ Engine not initialized'));
+      return false;
+    }
+
+    try {
+      await _engine!.startAudioMixing(
+        filePath: filePath,
+        loopback: false,
+        cycle: loop ? -1 : 1, // -1 means infinite loop, 1 means play once
+        startPos: 0,
+      );
+      DebugLog.info(_safeLog('🎵 Audio mixing started: $filePath'));
+      return true;
+    } catch (e) {
+      DebugLog.info(_safeLog('❌ Failed to start audio mixing: $e'));
+      _error = 'Audio mixing failed: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Pause the currently playing audio mix.
+  Future<bool> pauseAudioMixing() async {
+    if (_engine == null) return false;
+
+    try {
+      await _engine!.pauseAudioMixing();
+      DebugLog.info(_safeLog('⏸️ Audio mixing paused'));
+      return true;
+    } catch (e) {
+      DebugLog.info(_safeLog('❌ Failed to pause audio mixing: $e'));
+      _error = 'Pause failed: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Resume the paused audio mix.
+  Future<bool> resumeAudioMixing() async {
+    if (_engine == null) return false;
+
+    try {
+      await _engine!.resumeAudioMixing();
+      DebugLog.info(_safeLog('▶️ Audio mixing resumed'));
+      return true;
+    } catch (e) {
+      DebugLog.info(_safeLog('❌ Failed to resume audio mixing: $e'));
+      _error = 'Resume failed: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Stop audio mixing completely.
+  Future<bool> stopAudioMixing() async {
+    if (_engine == null) return false;
+
+    try {
+      await _engine!.stopAudioMixing();
+      DebugLog.info(_safeLog('⏹️ Audio mixing stopped'));
+      return true;
+    } catch (e) {
+      DebugLog.info(_safeLog('❌ Failed to stop audio mixing: $e'));
+      _error = 'Stop failed: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Set the volume of the audio mix (0-100, where 100 is max).
+  /// This controls the volume of the mixed audio locally and for remote users.
+  Future<bool> setAudioMixingVolume(int volume) async {
+    if (_engine == null) return false;
+
+    try {
+      // Clamp volume to 0-100 range
+      final clampedVolume = volume.clamp(0, 100);
+      await _engine!.adjustAudioMixingPublishVolume(clampedVolume);
+      await _engine!.adjustAudioMixingPlayoutVolume(clampedVolume);
+      DebugLog.info(_safeLog('🔊 Audio mixing volume set to: $clampedVolume'));
+      return true;
+    } catch (e) {
+      DebugLog.info(_safeLog('❌ Failed to set audio mixing volume: $e'));
+      _error = 'Volume set failed: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================================================
   // HELPER METHODS FOR PARTICIPANT STATE MANAGEMENT
   // ============================================================================
 
@@ -1200,30 +1282,6 @@ class AgoraVideoService extends ChangeNotifier {
     await _engine!.muteLocalVideoStream(muted);
     _isVideoMuted = muted;
     notifyListeners();
-  }
-
-  // ============================================================================
-  // DJ AUDIO MIXING
-  // ============================================================================
-
-  Future<bool> startAudioMixing(String url, {bool loop = false}) async {
-    return AgoraPlatformService.startAudioMixing(url, loop: loop);
-  }
-
-  Future<bool> stopAudioMixing() async {
-    return AgoraPlatformService.stopAudioMixing();
-  }
-
-  Future<bool> pauseAudioMixing() async {
-    return AgoraPlatformService.pauseAudioMixing();
-  }
-
-  Future<bool> resumeAudioMixing() async {
-    return AgoraPlatformService.resumeAudioMixing();
-  }
-
-  Future<bool> setAudioMixingVolume(int volume) async {
-    return AgoraPlatformService.setAudioMixingVolume(volume);
   }
 
   // ============================================================================

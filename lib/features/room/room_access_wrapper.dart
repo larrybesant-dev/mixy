@@ -1,11 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/room.dart';
-import '../../shared/providers/auth_providers.dart';
 import '../../core/utils/app_logger.dart';
 import 'room_access_gate.dart';
 import '../../core/design_system/design_constants.dart';
-import '../../core/routing/app_routes.dart';
 import 'live/live_room_screen.dart';
 
 /// Wrapper that enforces room access gating
@@ -22,34 +21,9 @@ class RoomAccessWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appUser = ref.watch(currentUserProvider).asData?.value;
-    final effectiveUserId =
-        (appUser?.id.trim().isNotEmpty == true) ? appUser!.id : userId.trim();
-
-    final profileDisplayName = appUser?.displayName?.trim() ?? '';
-    final profileUsername = appUser?.username.trim() ?? '';
-    final displayName = profileDisplayName.isNotEmpty
-      ? profileDisplayName
-      : profileUsername.isNotEmpty
-        ? profileUsername
-        : 'Guest';
-    final avatarUrl =
-        (appUser?.avatarUrl.trim().isNotEmpty == true)
-            ? appUser!.avatarUrl
-            : null;
-
-    // Hosts should always be able to enter their own room immediately.
-    if (room.hostId == effectiveUserId && effectiveUserId.isNotEmpty) {
-      return LiveRoomScreen(
-        roomId: room.id,
-        displayName: displayName,
-        avatarUrl: avatarUrl,
-      );
-    }
-
     final accessCheck = ref.watch(roomAccessCheckProvider((
       roomId: room.id,
-      userId: effectiveUserId,
+      userId: userId,
     )));
 
     return accessCheck.when(
@@ -69,8 +43,6 @@ class RoomAccessWrapper extends ConsumerWidget {
         ),
       ),
       data: (hasAccess) {
-<<<<<<< HEAD
-=======
         // Build display name from FirebaseAuth (already authenticated at this point)
         final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
         final displayName = fbUser?.displayName?.trim().isNotEmpty == true
@@ -78,7 +50,6 @@ class RoomAccessWrapper extends ConsumerWidget {
             : fbUser?.email?.split('@').first ?? userId;
         final avatarUrl = fbUser?.photoURL;
 
->>>>>>> origin/develop
         return LiveRoomScreen(
           roomId: room.id,
           displayName: displayName,
@@ -91,20 +62,9 @@ class RoomAccessWrapper extends ConsumerWidget {
 
         if (error is RoomAccessDeniedException) {
           errorMessage = error.message;
-          // Perform state-based redirect after the frame
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!context.mounted) return;
-            switch (error.state) {
-              case RoomAccessState.unauthenticated:
-                Navigator.of(context)
-                    .pushReplacementNamed(AppRoutes.login);
-              case RoomAccessState.profileIncomplete:
-                Navigator.of(context)
-                    .pushReplacementNamed(AppRoutes.editProfile);
-              default:
-                break;
-            }
-          });
+          // TODO: Handle redirects based on error.state
+          // - RoomAccessState.profileIncomplete -> redirect to profile completion
+          // - RoomAccessState.unauthenticated -> redirect to login
         } else {
           AppLogger.error('Room access error: $error');
         }

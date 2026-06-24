@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import '../../../core/theme/neon_colors.dart';
 import '../../../shared/widgets/neon_components.dart';
 
@@ -28,31 +27,6 @@ class _NeonLoginPageState extends State<NeonLoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  String _mapAuthErrorMessage(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-credential':
-      case 'invalid-login-credentials':
-      case 'wrong-password':
-      case 'user-not-found':
-        return 'Invalid email or password.';
-      case 'invalid-email':
-        return 'Please enter a valid email address.';
-      case 'too-many-requests':
-        return 'Too many attempts. Please wait a moment and try again.';
-      case 'user-disabled':
-        return 'This account has been disabled. Contact support.';
-      case 'network-request-failed':
-        return 'Network error. Check your internet and try again.';
-      case 'operation-not-allowed':
-        return 'Email/password sign-in is not enabled for this project.';
-      case 'invalid-api-key':
-      case 'app-not-authorized':
-        return 'App authentication configuration is invalid. Please contact support.';
-      default:
-        return e.message ?? 'Login failed. Please try again.';
-    }
   }
 
   Future<void> _handleLogin() async {
@@ -92,11 +66,8 @@ class _NeonLoginPageState extends State<NeonLoginPage> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      if (kDebugMode) {
-        debugPrint('[Login] FirebaseAuthException code=${e.code} message=${e.message}');
-      }
       setState(() {
-        _errorMessage = _mapAuthErrorMessage(e);
+        _errorMessage = e.message ?? 'Login failed. Please try again.';
       });
     } finally {
       if (mounted) {
@@ -153,7 +124,7 @@ class _NeonLoginPageState extends State<NeonLoginPage> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Sign in to your MIXVY account',
+                          'Sign in to your Mix & Mingle account',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: NeonColors.textSecondary,
@@ -330,7 +301,7 @@ class _NeonLoginPageState extends State<NeonLoginPage> {
                 ),
               ),
               child: Image.asset(
-                'assets/brand/png/app_icon/mixvy_icon_96x96.png',
+                'assets/images/app_logo.png',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -344,15 +315,10 @@ class _NeonLoginPageState extends State<NeonLoginPage> {
                         ],
                       ),
                     ),
-                    child: const Center(
-                      child: Text(
-                        'M',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 44,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                    child: const Icon(
+                      Icons.music_note,
+                      size: 40,
+                      color: Colors.white,
                     ),
                   );
                 },
@@ -362,16 +328,16 @@ class _NeonLoginPageState extends State<NeonLoginPage> {
         ),
         const SizedBox(height: 16),
         const NeonText(
-          'MIXVY',
+          'MIX & MINGLE',
           fontSize: 26,
           fontWeight: FontWeight.w900,
           textColor: Colors.white,
-          glowColor: NeonColors.neonBlue,
+          glowColor: NeonColors.neonOrange,
           glowRadius: 12,
         ),
         const SizedBox(height: 4),
         const Text(
-          'Feel the Energy',
+          'Global DJ Vibes',
           style: TextStyle(
             fontSize: 12,
             color: NeonColors.textSecondary,

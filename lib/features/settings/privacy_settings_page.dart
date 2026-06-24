@@ -39,9 +39,6 @@ class _PrivacySettingsPageState extends ConsumerState<PrivacySettingsPage> {
             'recentMedia': settings.recentMedia,
             'roomsCreated': settings.roomsCreated,
             'tipsReceived': settings.tipsReceived,
-            'whoCanMessageMe': settings.whoCanMessageMe,
-            'whoCanFriendMe': settings.whoCanFriendMe,
-            'whoCanSeeMyProfile': settings.whoCanSeeMyProfile,
           };
         });
       } else {
@@ -57,9 +54,6 @@ class _PrivacySettingsPageState extends ConsumerState<PrivacySettingsPage> {
             'recentMedia': PrivacyLevel.public,
             'roomsCreated': PrivacyLevel.public,
             'tipsReceived': PrivacyLevel.public,
-            'whoCanMessageMe': PrivacyLevel.public,
-            'whoCanFriendMe': PrivacyLevel.public,
-            'whoCanSeeMyProfile': PrivacyLevel.public,
           };
         });
       }
@@ -91,9 +85,6 @@ class _PrivacySettingsPageState extends ConsumerState<PrivacySettingsPage> {
         recentMedia: _privacySettings['recentMedia']!,
         roomsCreated: _privacySettings['roomsCreated']!,
         tipsReceived: _privacySettings['tipsReceived']!,
-        whoCanMessageMe: _privacySettings['whoCanMessageMe']!,
-        whoCanFriendMe: _privacySettings['whoCanFriendMe']!,
-        whoCanSeeMyProfile: _privacySettings['whoCanSeeMyProfile']!,
       );
 
       await firestoreService.updatePrivacySettings(privacySettings);
@@ -210,27 +201,6 @@ class _PrivacySettingsPageState extends ConsumerState<PrivacySettingsPage> {
                           'Tips Received',
                           'tipsReceived',
                           'Total tips received from viewers',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    _buildPrivacySection(
-                      'Social & Visibility',
-                      [
-                        _buildPrivacySetting(
-                          'Who Can Message Me',
-                          'whoCanMessageMe',
-                          'Control who can send you direct messages',
-                        ),
-                        _buildPrivacySetting(
-                          'Who Can Friend Me',
-                          'whoCanFriendMe',
-                          'Control who can send you friend requests',
-                        ),
-                        _buildPrivacySetting(
-                          'Who Can See My Profile',
-                          'whoCanSeeMyProfile',
-                          'Control who can view your public profile page',
                         ),
                       ],
                     ),

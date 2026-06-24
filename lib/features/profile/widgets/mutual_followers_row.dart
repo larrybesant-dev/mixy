@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/design_constants.dart';
-import '../../../shared/providers/social_graph_providers.dart';
+import '../../../shared/providers/providers.dart';
 
 class MutualFollowersRow extends ConsumerWidget {
   final String currentUserId;

@@ -1,5 +1,5 @@
 /// Vibe Intelligence Service
-/// Powers MIXVY's self-improving discovery systems:
+/// Powers Mix & Mingle's self-improving discovery systems:
 ///   #1 — Vibe Affinity tracking (vibeHistory writes to Firestore)
 ///   #7 — Auto vibe suggestion logic (computed client-side)
 ///  #10 — Behavior tag helpers (mirrored by Cloud Function nightly)
@@ -100,23 +100,23 @@ class VibeIntelligenceService {
       tags.add('Social Butterfly');
     }
 
-    if (p.eventsAttended >= 10) { tags.add('Event Lover'); }
+    if (p.eventsAttended >= 10) tags.add('Event Lover');
 
     // Timing-based
     final lastActive = p.updatedAt;
-    if (lastActive.hour >= 22 || lastActive.hour <= 3) { tags.add('Night Owl'); }
-    if (lastActive.hour >= 6 && lastActive.hour <= 10) { tags.add('Early Bird'); }
+    if (lastActive.hour >= 22 || lastActive.hour <= 3) tags.add('Night Owl');
+    if (lastActive.hour >= 6 && lastActive.hour <= 10) tags.add('Early Bird');
 
     // Vibe-based
     final top = p.topVibe;
     if (top != null && p.topVibeCount >= 5) {
       tags.add('$top Enthusiast');
     }
-    if (p.vibeHistory.length >= 4) { tags.add('Vibe Explorer'); }
+    if (p.vibeHistory.length >= 4) tags.add('Vibe Explorer');
 
     // Social proof
-    if (p.communityRating >= 4.5) { tags.add('Top Rated'); }
-    if (p.followersCount >= 100) { tags.add('Influencer'); }
+    if (p.communityRating >= 4.5) tags.add('Top Rated');
+    if (p.followersCount >= 100) tags.add('Influencer');
 
     // Energy
     if (p.energyScore >= 90) {

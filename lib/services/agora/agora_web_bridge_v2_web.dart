@@ -1,15 +1,10 @@
 ﻿// Agora Web Bridge v2 - window.agoraWeb object adapter (WASM-safe)
 // Calls the JavaScript bridge defined in web/index.html
-<<<<<<< HEAD
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
-=======
 // Replaces dart:js with dart:js_interop for WASM compatibility.
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:js_interop';
->>>>>>> origin/develop
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'dart:js' as js; // Provides js.context for web bridge
 import '../../core/utils/app_logger.dart';
 
 // ── Extension type: window.agoraWeb object ───────────────────────────────
@@ -185,11 +180,7 @@ class AgoraWebBridgeV2 {
     }
   }
 
-<<<<<<< HEAD
-  // Use setAudioMuted instead
-=======
   // Deprecated alias
->>>>>>> origin/develop
   static Future<bool> setMicMuted(bool muted) => setAudioMuted(muted);
 
   static Map<String, bool>? getClientState() {

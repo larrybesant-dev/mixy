@@ -48,7 +48,7 @@ class Room {
       id: doc.id,
       name: data['name'] ?? 'Unnamed Room',
       participantCount: (data['participantCount'] ?? 0) as int,
-      energy: (data['energy'] as num?)?.toDouble() ?? 0.0,
+      energy: ((data['energy'] ?? 0.0) as num).toDouble(),
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -262,89 +262,31 @@ class _RoomDiscoveryScreenState extends State<RoomDiscoveryScreen> {
   }
 
   Future<void> _handleCreateRoom() async {
-    final nameCtrl = TextEditingController();
-    String selectedCategory = 'Music';
-    const categories = ['Music', 'Gaming', 'Talk', 'Events', 'Chill', 'Business'];
-
-    final confirmed = await showDialog<bool>(
+    // TODO: Show create room dialog
+    // For now, just show a placeholder dialog
+    showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text(
-            'Create New Room',
-            style: DesignTypography.heading,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Room name',
-                  border: OutlineInputBorder(),
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(),
-                ),
-                items: categories
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) =>
-                    setDialogState(() => selectedCategory = v ?? selectedCategory),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(
-                'Create',
-                style: DesignTypography.body.copyWith(
-                  color: DesignColors.accent,
-                ),
-              ),
-            ),
-          ],
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Create New Room',
+          style: DesignTypography.heading,
         ),
+        content: const Text(
+          'Room creation feature coming soon.',
+          style: DesignTypography.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK',
+              style: DesignTypography.body.copyWith(
+                color: DesignColors.accent,
+              ),
+            ),
+          ),
+        ],
       ),
     );
-
-    if (confirmed != true || !mounted) return;
-
-    final name = nameCtrl.text.trim();
-    nameCtrl.dispose();
-    if (name.isEmpty) return;
-
-    try {
-      final doc = FirebaseFirestore.instance.collection('rooms').doc();
-      await doc.set({
-        'id': doc.id,
-        'name': name,
-        'title': name,
-        'category': selectedCategory,
-        'participantCount': 1,
-        'energy': 0.5,
-        'isLive': false,
-        'participantIds': [],
-        'viewerCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      widget.onRoomCreated?.call();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create room: $e')),
-      );
-    }
   }
 }

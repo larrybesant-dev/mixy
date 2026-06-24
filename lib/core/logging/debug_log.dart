@@ -14,7 +14,7 @@ class DebugLog {
       developer.log(
         message,
         level: 800,
-        name: tag ?? 'MIXVY',
+        name: tag ?? 'MixMingle',
       );
     }
   }
@@ -26,7 +26,7 @@ class DebugLog {
       developer.log(
         message,
         level: 500,
-        name: '${tag ?? "MIXVY"}.Debug',
+        name: '${tag ?? "MixMingle"}.Debug',
       );
     }
   }
@@ -38,7 +38,7 @@ class DebugLog {
       developer.log(
         message,
         level: 900,
-        name: '${tag ?? "MIXVY"}.Warn',
+        name: '${tag ?? "MixMingle"}.Warn',
       );
     }
   }
@@ -49,7 +49,7 @@ class DebugLog {
     developer.log(
       message,
       level: 1000,
-      name: '${tag ?? "MIXVY"}.Error',
+      name: '${tag ?? "MixMingle"}.Error',
     );
   }
 

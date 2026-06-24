@@ -1,69 +1,45 @@
-<<<<<<< HEAD
-=======
 import 'dart:io';
->>>>>>> origin/develop
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/user_providers.dart';
-import '../services/messaging_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../shared/models/chat_message.dart';
+import '../shared/models/chat_room.dart';
+import '../shared/providers/chat_controller.dart';
+import '../shared/providers/profile_controller.dart';
+import '../services/moderation/moderation_service.dart';
+import '../shared/models/report.dart';
 
 class ChatRoomPage extends ConsumerStatefulWidget {
-  final String otherUserId;
-  final String conversationId;
+  final ChatRoom chatRoom;
 
-  const ChatRoomPage({
-    super.key,
-    required this.otherUserId,
-    required this.conversationId,
-  });
+  const ChatRoomPage({super.key, required this.chatRoom});
 
   @override
   ConsumerState<ChatRoomPage> createState() => _ChatRoomPageState();
 }
 
 class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
-  final TextEditingController _controller = TextEditingController();
-  final ScrollController _scroll = ScrollController();
-  bool _canSend = false;
-
-  // Track the last seen message count so we only markAsRead when new
-  // messages from the other user arrive.
-  int _lastMessageCount = 0;
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+  bool _isTyping = false;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_onTextChanged);
-
-    // Mark as read on open.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _markAsRead();
-    });
+    _messageController.addListener(_onTypingChanged);
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onTextChanged);
-    _controller.dispose();
-    _scroll.dispose();
+    _messageController.removeListener(_onTypingChanged);
+    _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-<<<<<<< HEAD
-  void _onTextChanged() {
-    final canSend = _controller.text.trim().isNotEmpty;
-    if (canSend != _canSend) {
-      setState(() => _canSend = canSend);
-    }
-  }
-
-  void _markAsRead() {
-    final currentUser = ref.read(currentUserProvider).value;
-    if (currentUser != null) {
-      ref
-          .read(messagingServiceProvider)
-          .markAsRead(widget.conversationId, currentUser.id);
-=======
   void _onTypingChanged() {
     final isTypingNow = _messageController.text.trim().isNotEmpty;
     if (_isTyping != isTypingNow) {
@@ -92,69 +68,23 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
           SnackBar(content: Text('Failed to send message: $e')),
         );
       }
->>>>>>> origin/develop
     }
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(
-          _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
     });
   }
 
-  Future<void> _sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    final currentUser = ref.read(currentUserProvider).value;
-    if (currentUser == null) return;
-
-    _controller.clear();
-
-    try {
-      await ref.read(messagingServiceProvider).sendMessage(
-            conversationId: widget.conversationId,
-            senderId: currentUser.id,
-            text: text,
-          );
-      _scrollToBottom();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send message. Please try again.'),
-          ),
-        );
-        // Restore draft so the user doesn't lose their text.
-        _controller.text = text;
-        _controller.selection =
-            TextSelection.collapsed(offset: _controller.text.length);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-    final currentUser = ref.watch(currentUserProvider).value;
-    final messaging = ref.watch(messagingServiceProvider);
-
-    if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat'),
-=======
     final currentUserId = ref.watch(currentUserProfileProvider).value?.id ?? '';
     final otherUserId =
         widget.chatRoom.participants.firstWhere((id) => id != currentUserId);
@@ -217,37 +147,11 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
             ],
           ),
         ],
->>>>>>> origin/develop
       ),
       body: Column(
         children: [
+          // Messages List
           Expanded(
-<<<<<<< HEAD
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: messaging.streamMessages(widget.conversationId),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final messages = snapshot.data!;
-
-                // Auto-scroll and markAsRead when new messages arrive.
-                if (messages.length != _lastMessageCount) {
-                  _lastMessageCount = messages.length;
-                  _scrollToBottom();
-
-                  // Mark as read only if the latest message is from the other user.
-                  if (messages.isNotEmpty &&
-                      messages.last['senderId'] != currentUser.id) {
-                    WidgetsBinding.instance.addPostFrameCallback(
-                        (_) => _markAsRead());
-                  }
-                }
-
-                if (messages.isEmpty) {
-                  return const Center(
-=======
             child: messagesAsync.when(
               data: (messages) => messages.isEmpty
                   ? const Center(
@@ -307,68 +211,36 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     alignment: Alignment.centerLeft,
->>>>>>> origin/develop
                     child: Text(
-                      'No messages yet. Say hello!',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scroll,
-                  padding: const EdgeInsets.all(12),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = msg['senderId'] == currentUser.id;
-
-                    return Align(
-                      alignment: isMe
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        constraints: BoxConstraints(
-                          maxWidth:
-                              MediaQuery.of(context).size.width * 0.75,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isMe
-                              ? Colors.blueAccent
-                              : Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          msg['text'] ?? '',
-                          softWrap: true,
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black87,
-                          ),
-                        ),
+                      'Typing...',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+            loading: () => const SizedBox.shrink(),
+            error: (error, stack) => const SizedBox.shrink(),
           ),
 
-          // Input bar — sits above keyboard thanks to Scaffold resizeToAvoidBottomInset.
+          // Message Input
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            color: Colors.grey.shade200,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              border: Border(
+                top: BorderSide(color: Theme.of(context).dividerColor),
+              ),
+            ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.attach_file),
+                  onPressed: _showAttachmentOptions,
+                ),
                 Expanded(
                   child: TextField(
-<<<<<<< HEAD
-                    controller: _controller,
-                    minLines: 1,
-=======
                     controller: _messageController,
                     decoration: const InputDecoration(
                       hintText: 'Type a message...',
@@ -376,28 +248,18 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
->>>>>>> origin/develop
                     maxLines: null,
-                    textInputAction: TextInputAction.newline,
-                    keyboardType: TextInputType.multiline,
-                    decoration: const InputDecoration(
-                      hintText: 'Message...',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.send),
-<<<<<<< HEAD
-                  onPressed: _canSend ? _sendMessage : null,
-=======
                   onPressed: _messageController.text.trim().isEmpty
                       ? null
                       : _sendMessage,
                   color: Theme.of(context).primaryColor,
->>>>>>> origin/develop
                 ),
               ],
             ),
@@ -406,8 +268,6 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
       ),
     );
   }
-<<<<<<< HEAD
-=======
 
   void _showDeleteDialog(ChatMessage message) {
     showDialog(
@@ -894,5 +754,4 @@ class MessageBubble extends StatelessWidget {
       return '${timestamp.month}/${timestamp.day} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
     }
   }
->>>>>>> origin/develop
 }

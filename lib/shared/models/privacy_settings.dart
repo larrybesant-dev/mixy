@@ -41,9 +41,6 @@ class PrivacySettings {
   final PrivacyLevel recentMedia;
   final PrivacyLevel roomsCreated;
   final PrivacyLevel tipsReceived;
-  final PrivacyLevel whoCanMessageMe;
-  final PrivacyLevel whoCanFriendMe;
-  final PrivacyLevel whoCanSeeMyProfile;
 
   PrivacySettings({
     required this.userId,
@@ -56,9 +53,6 @@ class PrivacySettings {
     this.recentMedia = PrivacyLevel.public,
     this.roomsCreated = PrivacyLevel.public,
     this.tipsReceived = PrivacyLevel.friendsOnly,
-    this.whoCanMessageMe = PrivacyLevel.public,
-    this.whoCanFriendMe = PrivacyLevel.public,
-    this.whoCanSeeMyProfile = PrivacyLevel.public,
   });
 
   factory PrivacySettings.fromMap(String userId, Map<String, dynamic> map) {
@@ -74,9 +68,6 @@ class PrivacySettings {
       roomsCreated: privacyLevelFromString(map['roomsCreated'] ?? 'public'),
       tipsReceived:
           privacyLevelFromString(map['tipsReceived'] ?? 'friendsOnly'),
-      whoCanMessageMe: privacyLevelFromString(map['whoCanMessageMe'] ?? 'public'),
-      whoCanFriendMe: privacyLevelFromString(map['whoCanFriendMe'] ?? 'public'),
-      whoCanSeeMyProfile: privacyLevelFromString(map['whoCanSeeMyProfile'] ?? 'public'),
     );
   }
 
@@ -91,9 +82,6 @@ class PrivacySettings {
       'recentMedia': recentMedia.name,
       'roomsCreated': roomsCreated.name,
       'tipsReceived': tipsReceived.name,
-      'whoCanMessageMe': whoCanMessageMe.name,
-      'whoCanFriendMe': whoCanFriendMe.name,
-      'whoCanSeeMyProfile': whoCanSeeMyProfile.name,
     };
   }
 
@@ -107,9 +95,6 @@ class PrivacySettings {
     PrivacyLevel? recentMedia,
     PrivacyLevel? roomsCreated,
     PrivacyLevel? tipsReceived,
-    PrivacyLevel? whoCanMessageMe,
-    PrivacyLevel? whoCanFriendMe,
-    PrivacyLevel? whoCanSeeMyProfile,
   }) {
     return PrivacySettings(
       userId: userId,
@@ -122,9 +107,6 @@ class PrivacySettings {
       recentMedia: recentMedia ?? this.recentMedia,
       roomsCreated: roomsCreated ?? this.roomsCreated,
       tipsReceived: tipsReceived ?? this.tipsReceived,
-      whoCanMessageMe: whoCanMessageMe ?? this.whoCanMessageMe,
-      whoCanFriendMe: whoCanFriendMe ?? this.whoCanFriendMe,
-      whoCanSeeMyProfile: whoCanSeeMyProfile ?? this.whoCanSeeMyProfile,
     );
   }
 }

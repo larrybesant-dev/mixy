@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import '../../providers/room_members_provider.dart';
 import '../../providers/messages_provider.dart';
+import '../../providers/agora_engine_provider.dart';
 import '../../models/room_member_model.dart';
-import '../../models/message_model.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RoomPage extends ConsumerWidget {
   final String roomId;
@@ -24,10 +25,10 @@ class RoomPage extends ConsumerWidget {
       await agoraEngine.initialize(agoraAppId);
       await agoraEngine.joinChannel(token, roomId, localUid);
       agoraEngine.setEventHandlers(RtcEngineEventHandler(
-        userJoined: (uid, elapsed) {
+        onUserJoined: (RtcConnection conn, int remoteUid, int elapsed) {
           // Handle remote user joined
         },
-        userOffline: (uid, reason) {
+        onUserOffline: (RtcConnection conn, int remoteUid, UserOfflineReasonType reason) {
           // Handle remote user left
         },
       ));
@@ -62,17 +63,23 @@ class RoomPage extends ConsumerWidget {
             height: 200,
             child: Stack(
               children: [
-                // Local video
-                AgoraVideoView(
-                  local: true,
-                  // Add other required properties
+                // Local video placeholder
+                Container(
+                  color: Colors.black,
+                  child: const Center(
+                    child: Text('Your Video', style: TextStyle(color: Colors.white)),
+                  ),
                 ),
-                // Remote videos (stubbed, replace with real remote user UIDs)
+                // Remote videos placeholder
                 Positioned(
                   left: 120,
-                  child: AgoraVideoView(
-                    local: false,
-                    remoteUid: 12345, // Replace with real remote UID
+                  child: Container(
+                    width: 100,
+                    height: 150,
+                    color: Colors.grey[800],
+                    child: const Center(
+                      child: Text('Remote', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
                   ),
                 ),
               ],
@@ -142,6 +149,78 @@ class RoomPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: _MessageInput(roomId: roomId),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Host controls widget for room members
+class _HostControls extends ConsumerWidget {
+  final RoomMember member;
+  final String roomId;
+
+  const _HostControls({
+    required this.member,
+    required this.roomId,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.mic_off, size: 18),
+          onPressed: () {
+            // TODO: Mute member
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.videocam_off, size: 18),
+          onPressed: () {
+            // TODO: Disable member's video
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// Message input widget for rooms
+class _MessageInput extends ConsumerWidget {
+  final String roomId;
+
+  const _MessageInput({required this.roomId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+
+    return Container(
+      color: Colors.grey[900],
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'Type a message...',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              ),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send, color: Colors.blue),
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                // TODO: Send message
+                controller.clear();
+              }
+            },
           ),
         ],
       ),

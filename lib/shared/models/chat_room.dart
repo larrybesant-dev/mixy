@@ -7,7 +7,6 @@ class ChatRoom {
   final DateTime lastMessageTime;
   final Map<String, int> unreadCounts;
   final bool isTyping;
-  final Map<String, DateTime>? lastReadAt;
 
   ChatRoom({
     required this.id,
@@ -16,7 +15,6 @@ class ChatRoom {
     required this.lastMessageTime,
     required this.unreadCounts,
     this.isTyping = false,
-    this.lastReadAt,
   });
 
   factory ChatRoom.fromMap(Map<String, dynamic> map) {
@@ -29,9 +27,6 @@ class ChatRoom {
           : DateTime.now(),
       unreadCounts: Map<String, int>.from(map['unreadCounts'] ?? {}),
       isTyping: map['isTyping'] as bool? ?? false,
-      lastReadAt: (map['lastReadAt'] as Map<String, dynamic>?)?.map(
-        (k, v) => MapEntry(k, (v as Timestamp).toDate()),
-      ),
     );
   }
 
@@ -49,10 +44,6 @@ class ChatRoom {
       'lastMessageTime': Timestamp.fromDate(lastMessageTime),
       'unreadCounts': unreadCounts,
       'isTyping': isTyping,
-      if (lastReadAt != null)
-        'lastReadAt': lastReadAt!.map(
-          (k, v) => MapEntry(k, Timestamp.fromDate(v)),
-        ),
     };
   }
 
@@ -63,7 +54,6 @@ class ChatRoom {
     DateTime? lastMessageTime,
     Map<String, int>? unreadCounts,
     bool? isTyping,
-    Map<String, DateTime>? lastReadAt,
   }) {
     return ChatRoom(
       id: id ?? this.id,
@@ -72,7 +62,6 @@ class ChatRoom {
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       unreadCounts: unreadCounts ?? this.unreadCounts,
       isTyping: isTyping ?? this.isTyping,
-      lastReadAt: lastReadAt ?? this.lastReadAt,
     );
   }
 

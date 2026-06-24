@@ -205,7 +205,7 @@ class AppRoutes {
               return ChatConversationPage(chatId: chatId);
             case following:
               final userId = routeSettings.arguments as String? ?? '';
-              return FollowingListPage(userId: userId, displayName: '');
+              return FollowingListPage(userId: userId);
             case friends:
               return const FriendListPage();
             case reportUser:

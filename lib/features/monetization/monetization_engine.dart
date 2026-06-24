@@ -41,7 +41,7 @@ class PricingTier {
     return PricingTier(
       id: map['id'] as String,
       name: map['name'] as String,
-        basePrice: (map['basePrice'] as num?)?.toDouble() ?? 0.0,
+      basePrice: (map['basePrice'] as num).toDouble(),
       multiplier: (map['multiplier'] as num?)?.toDouble() ?? 1.0,
       features: List<String>.from(map['features'] ?? []),
     );
@@ -84,7 +84,7 @@ class RevenueShareConfig {
   factory RevenueShareConfig.fromMap(Map<String, dynamic> map) {
     return RevenueShareConfig(
       creatorTier: map['creatorTier'] as String,
-        platformPercentage: (map['platformPercentage'] as num?)?.toDouble() ?? 0.0,
+      platformPercentage: (map['platformPercentage'] as num).toDouble(),
       creatorPercentage: (map['creatorPercentage'] as num).toDouble(),
       minPayout: (map['minPayout'] as num?)?.toDouble() ?? 10.0,
     );
@@ -131,14 +131,9 @@ class VIPBoost {
       ),
       multiplier: (map['multiplier'] as num).toDouble(),
       duration: Duration(minutes: map['durationMinutes'] as int? ?? 60),
-<<<<<<< HEAD
-        price: (map['price'] as num?)?.toDouble() ?? 0.0,
-      eligibleTiers: List<String>.from(map['eligibleTiers'] ?? ['vip', 'vip_plus']),
-=======
       price: (map['price'] as num).toDouble(),
       eligibleTiers:
           List<String>.from(map['eligibleTiers'] ?? ['vip', 'vip_plus']),
->>>>>>> origin/develop
     );
   }
 }
@@ -528,7 +523,7 @@ class MonetizationEngine {
     double totalMultiplier = 1.0;
     for (final boost in activeBoosts) {
       if (boost['boostType'] == type.name) {
-          totalMultiplier *= (boost['multiplier'] as num?)?.toDouble() ?? 1.0;
+        totalMultiplier *= (boost['multiplier'] as num).toDouble();
       }
     }
 

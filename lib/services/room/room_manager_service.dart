@@ -31,11 +31,11 @@ class RoomManagerService {
   }
 
   Future<void> lockRoom(String roomId) async {
-    await _firestore.collection('rooms').doc(roomId).update({'isLocked': true, 'isRoomLocked': true});
+    await _firestore.collection('rooms').doc(roomId).update({'locked': true});
   }
 
   Future<void> unlockRoom(String roomId) async {
-    await _firestore.collection('rooms').doc(roomId).update({'isLocked': false, 'isRoomLocked': false});
+    await _firestore.collection('rooms').doc(roomId).update({'locked': false});
   }
 
   Future<void> endRoom(String roomId) async {
@@ -135,13 +135,7 @@ class RoomManagerService {
   Stream<dynamic> getLiveRoomsStream() {
     return _firestore
         .collection('rooms')
-<<<<<<< HEAD
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-=======
         .where('ended', isEqualTo: false)
->>>>>>> origin/develop
         .snapshots();
   }
 }

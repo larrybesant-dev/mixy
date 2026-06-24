@@ -7,7 +7,6 @@ class ReactionButtonsWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final reactions = ref.watch(reactionsProvider);
     return Row(
       children: [
         IconButton(

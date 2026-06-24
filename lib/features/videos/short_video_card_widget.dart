@@ -70,7 +70,7 @@ class ShortVideoCardWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.play_circle_outline,
-              size: 72, color: DesignColors.textGray.withOpacity(0.3)),
+              size: 72, color: DesignColors.textGray.withValues(alpha: 0.3)),
           const SizedBox(height: 12),
           Text(
             video.userName ?? 'User',

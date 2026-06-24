@@ -33,10 +33,6 @@ final currentUserProfileProvider = StreamProvider<UserProfile?>((ref) async* {
 });
 
 /// User profile by ID provider
-<<<<<<< HEAD
-final userProfileProvider = StreamProvider.family<UserProfile?, String>((ref, userId) {
-  return ref.watch(profileServiceProvider).getUserProfileStream(userId);
-=======
 final userProfileProvider =
     StreamProvider.family<UserProfile?, String>((ref, userId) async* {
   final profileService = ref.watch(profileServiceProvider);
@@ -52,7 +48,6 @@ final userProfileProvider =
   } catch (e) {
     yield null;
   }
->>>>>>> origin/develop
 });
 
 /// User presence provider - Phase 2 Hardened
@@ -103,14 +98,10 @@ final searchUsersByInterestsProvider =
 });
 
 /// Profile controller for profile operations
-<<<<<<< HEAD
-final userProfileControllerProvider = NotifierProvider<ProfileController, AsyncValue<UserProfile?>>(ProfileController.new);
-=======
 final userProfileControllerProvider =
     NotifierProvider<ProfileController, AsyncValue<UserProfile?>>(() {
   return ProfileController();
 });
->>>>>>> origin/develop
 
 class ProfileController extends Notifier<AsyncValue<UserProfile?>> {
   late final ProfileService _profileService;

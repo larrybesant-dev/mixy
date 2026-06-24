@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/neon_colors.dart';
 
 /// ============================================================================
-/// BRANDED HEADER COMPONENT - MIXVY Official Branding
+/// BRANDED HEADER COMPONENT - Mix & Mingle Official Branding
 /// Used across the app for consistent top-level branding with logo
 /// ============================================================================
 

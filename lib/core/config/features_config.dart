@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-﻿/// Feature flags for MIXVY MVP
-=======
 /// Feature flags for Mix & Mingle MVP
->>>>>>> origin/develop
 /// Use these to enable/disable features during development and deployment
 class FeatureFlags {
   // Core MVP features (always enabled)

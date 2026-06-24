@@ -10,7 +10,7 @@ import '../../services/infra/error_tracking_service.dart';
 class ProductionInitializer {
   /// Initialize all required services for production
   static Future<void> initialize() async {
-    AppLogger.info('🚀 Initializing MIXVY for production...');
+    AppLogger.info('ðŸš€ Initializing MixMingle for production...');
 
     try {
       // 1. Initialize Firebase

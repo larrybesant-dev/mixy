@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../shared/models/user_profile.dart';
-import 'activity_feed_service.dart';
 
 class SocialGraphService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -53,30 +52,6 @@ class SocialGraphService {
     );
 
     await batch.commit();
-
-    // Fire activity event so the followed user sees it in their feed
-    await ActivityFeedService.instance.onFollow(targetUserId);
-
-    // Write new-follower notification to the followed user's subcollection
-    final notifRef = _firestore
-        .collection('users')
-        .doc(targetUserId)
-        .collection('notifications')
-        .doc();
-    await notifRef.set({
-      'id': notifRef.id,
-      'userId': targetUserId,
-      'type': 2, // NotificationType.newFollower
-      'title': 'New Follower',
-      'message': 'Someone started following you',
-      'senderId': currentUser.uid,
-      'senderName': null,
-      'roomId': null,
-      'roomName': null,
-      'data': null,
-      'isRead': false,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
   }
 
   /// Unfollow a user

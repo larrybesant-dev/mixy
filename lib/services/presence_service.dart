@@ -1,7 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 
 class PresenceService {
-  final _db = FirebaseDatabase.instance.reference();
+  final _db = FirebaseDatabase.instance.ref();
 
   Future<void> setOnline(String userId) async {
     await _db.child('status').child(userId).set({'online': true, 'lastSeen': DateTime.now().toIso8601String()});

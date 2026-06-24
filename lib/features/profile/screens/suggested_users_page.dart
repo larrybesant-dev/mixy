@@ -9,7 +9,6 @@ import '../../../shared/widgets/club_background.dart';
 import '../../../shared/widgets/neon_components.dart';
 import '../../../shared/widgets/presence_indicator.dart';
 import '../../../shared/providers/social_graph_providers.dart';
-import '../../../shared/providers/discovery_providers.dart';
 import '../../../shared/providers/auth_providers.dart';
 
 /// Suggested Users - Discover people to connect with

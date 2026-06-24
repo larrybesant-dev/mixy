@@ -4,22 +4,12 @@ class NeonTheme {
   static const Color primary = Colors.blueAccent;
   static const Color accent = Colors.orangeAccent;
   static const Color background = Colors.black;
-  static const List<String> fontFallbacks = <String>[
-    'Segoe UI',
-    'Arial',
-    'sans-serif',
-    'Segoe UI Emoji',
-    'Noto Color Emoji',
-    'Noto Emoji',
-    'Apple Color Emoji',
-  ];
 
   // Dark theme data
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      fontFamilyFallback: fontFallbacks,
       primaryColor: primary,
       scaffoldBackgroundColor: background,
       colorScheme: const ColorScheme.dark(

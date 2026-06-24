@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-
-/// Comprehensive provider exports for MIXVY
-=======
 /// Comprehensive provider exports for Mix & Mingle
->>>>>>> origin/develop
 ///
 /// This file consolidates all Riverpod providers and controllers
 /// organized by feature domain.
@@ -86,8 +81,7 @@ export 'profile_controller.dart'
         currentUserProfileProvider,
         userProfileProvider,
         nearbyUsersProvider,
-        searchUsersByInterestsProvider,
-        isFollowingProvider;
+        searchUsersByInterestsProvider;
 
 // Matching feature providers removed - causes namespace collision with match_providers.dart
 // Use match_providers.dart as single source of truth for matching providers
@@ -101,26 +95,12 @@ export '../../features/room/providers/room_subcollection_providers.dart';
 export '../../features/group_chat/providers/group_chat_providers.dart';
 
 // ============================================================================
-// DISCOVERY PROVIDERS
-// ============================================================================
-export 'discovery_providers.dart';
-export 'social_graph_providers.dart';
-export 'feed_providers.dart';
-
-// ============================================================================
 // INTELLIGENCE + VIBE THEME PROVIDERS  (#7 #8 #10)
 // ============================================================================
 export 'vibe_theme_provider.dart';
 export '../../core/intelligence/vibe_intelligence_service.dart';
 
 // ============================================================================
-<<<<<<< HEAD
-// MONETIZATION — GIFTS, BOOSTS, ADMIN (Phase 12)
-// ============================================================================
-export 'gift_providers.dart';
-export 'boost_providers.dart';
-export 'admin_providers.dart';
-=======
 // FRIEND SYSTEM PROVIDERS
 // ============================================================================
 export 'friend_providers.dart';
@@ -144,4 +124,3 @@ export '../../features/discover/providers/room_discovery_providers.dart';
 // USER DISCOVERY / ACTIVE FRIENDS PROVIDERS
 // ============================================================================
 export '../../features/discover_users/providers/active_friends_provider.dart';
->>>>>>> origin/develop

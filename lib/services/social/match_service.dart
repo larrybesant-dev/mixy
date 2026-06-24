@@ -615,178 +615,29 @@ class MatchService {
     ];
   }
 
-  /// Send like notification via Firestore
+  /// Send like notification via Cloud Function
   Future<void> _sendLikeNotification(String toUserId, String fromUserId) async {
     try {
-      final notifRef = _firestore
-          .collection('users')
-          .doc(toUserId)
-          .collection('notifications')
-          .doc();
-      await notifRef.set({
-        'id': notifRef.id,
-        'userId': toUserId,
-        'type': 7, // NotificationType.like
-        'title': 'Someone liked you! ❤️',
-        'message': 'Someone liked your profile',
-        'senderId': fromUserId,
-        'senderName': null,
-        'roomId': null,
-        'roomName': null,
-        'data': null,
-        'isRead': false,
-        'timestamp': FieldValue.serverTimestamp(),
+      await _functions.httpsCallable('sendLikeNotification').call({
+        'toUserId': toUserId,
+        'fromUserId': fromUserId,
       });
     } catch (e) {
       debugPrint('Failed to send like notification: $e');
     }
   }
 
-<<<<<<< HEAD
-  /// Send match notifications to both users via Firestore
-  Future<void> _sendMatchNotifications(String user1Id, String user2Id, String matchId) async {
-=======
   /// Send match notifications to both users
   Future<void> _sendMatchNotifications(
       String user1Id, String user2Id, String matchId) async {
->>>>>>> origin/develop
     try {
-      final batch = _firestore.batch();
-
-      final notif1Ref = _firestore
-          .collection('users')
-          .doc(user1Id)
-          .collection('notifications')
-          .doc();
-      batch.set(notif1Ref, {
-        'id': notif1Ref.id,
-        'userId': user1Id,
-        'type': 6, // NotificationType.match (extend enum if needed; using 6 as match)
-        'title': 'New Match! 🎉',
-        'message': "You have a new match!",
-        'senderId': user2Id,
-        'senderName': null,
-        'roomId': null,
-        'roomName': null,
-        'data': {'matchId': matchId},
-        'isRead': false,
-        'timestamp': FieldValue.serverTimestamp(),
+      await _functions.httpsCallable('sendMatchNotifications').call({
+        'user1Id': user1Id,
+        'user2Id': user2Id,
+        'matchId': matchId,
       });
-
-      final notif2Ref = _firestore
-          .collection('users')
-          .doc(user2Id)
-          .collection('notifications')
-          .doc();
-      batch.set(notif2Ref, {
-        'id': notif2Ref.id,
-        'userId': user2Id,
-        'type': 6,
-        'title': 'New Match! 🎉',
-        'message': "You have a new match!",
-        'senderId': user1Id,
-        'senderName': null,
-        'roomId': null,
-        'roomName': null,
-        'data': {'matchId': matchId},
-        'isRead': false,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      await batch.commit();
-      debugPrint('✅ Match notifications written for $user1Id and $user2Id');
     } catch (e) {
-      debugPrint('⚠️ Failed to send match notifications: $e');
+      debugPrint('Failed to send match notifications: $e');
     }
-  }
-
-  // ========== Inbox / Like Streams (Phase 9) ==========
-
-  /// Real-time stream of active matches for [userId], newest first.
-  /// Uses dual-stream merge to work around Firestore single-field OR limitation.
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getMatchInboxStream(String userId) {
-    final stream1 = _firestore
-        .collection('matches')
-        .where('user1', isEqualTo: userId)
-        .where('isActive', isEqualTo: true)
-        .orderBy('matchedAt', descending: true)
-        .snapshots()
-        .map((s) => s.docs);
-
-    final stream2 = _firestore
-        .collection('matches')
-        .where('user2', isEqualTo: userId)
-        .where('isActive', isEqualTo: true)
-        .orderBy('matchedAt', descending: true)
-        .snapshots()
-        .map((s) => s.docs);
-
-    final controller =
-        StreamController<List<QueryDocumentSnapshot<Map<String, dynamic>>>>();
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> list1 = [];
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> list2 = [];
-
-    void emit() {
-      final seen = <String>{};
-      final merged = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-      for (final doc in [...list1, ...list2]) {
-        if (seen.add(doc.id)) merged.add(doc);
-      }
-      merged.sort((a, b) {
-        final ta = (a.data()['matchedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
-        final tb = (b.data()['matchedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
-        return tb.compareTo(ta);
-      });
-      controller.add(merged);
-    }
-
-    final sub1 = stream1.listen(
-      (docs) { list1 = docs; emit(); },
-      onError: controller.addError,
-    );
-    final sub2 = stream2.listen(
-      (docs) { list2 = docs; emit(); },
-      onError: controller.addError,
-    );
-
-    controller.onCancel = () {
-      sub1.cancel();
-      sub2.cancel();
-    };
-
-    return controller.stream;
-  }
-
-  /// Real-time stream of incoming likes (users who have liked [userId]).
-  Stream<QuerySnapshot<Map<String, dynamic>>> getIncomingLikesStream(String userId) {
-    return _firestore
-        .collection('likes')
-        .where('likedUserId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .snapshots();
-  }
-
-  /// Real-time stream of outgoing likes ([userId] has liked these users).
-  Stream<QuerySnapshot<Map<String, dynamic>>> getOutgoingLikesStream(String userId) {
-    return _firestore
-        .collection('likes')
-        .where('likerId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .snapshots();
-  }
-
-  /// Accept an incoming like from [otherUserId] — creates mutual match, cleans up like docs,
-  /// and sends match notifications to both users.
-  Future<void> acceptMatch(String userId, String otherUserId) async {
-    await _createMatch(userId, otherUserId);
-    // Clean up pending like docs in both directions
-    await unlikeUser(otherUserId, userId);
-    await unlikeUser(userId, otherUserId);
-  }
-
-  /// Decline an incoming like from [otherUserId] — removes like docs without creating a match.
-  Future<void> declineMatch(String userId, String otherUserId) async {
-    await unlikeUser(otherUserId, userId);
-    await unlikeUser(userId, otherUserId);
   }
 }

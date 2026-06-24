@@ -41,41 +41,27 @@ final typingStatusProvider = StreamProvider.family<bool, String>(
   },
 );
 
-/// Presence provider - streams online status for a user from the presence collection.
-/// Returns {isOnline: bool, lastSeen: DateTime?} for backward-compat with chat list.
+/// Presence provider - streams online status for a user
 final presenceProvider = StreamProvider.family<Map<String, dynamic>, String>(
   (ref, userId) {
-<<<<<<< HEAD
-    return FirebaseFirestore.instance.collection('presence').doc(userId).snapshots().map((snapshot) {
-=======
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .snapshots()
         .map((snapshot) {
->>>>>>> origin/develop
       if (!snapshot.exists) {
-        return {'isOnline': false, 'lastSeen': null};
+        return {
+          'isOnline': false,
+          'lastSeen': null,
+        };
       }
 
       final data = snapshot.data()!;
-      final state = data['state'] as String? ?? 'offline';
-      final lastActive = (data['lastActive'] as Timestamp?)?.toDate();
-
-      // Stale check: if lastActive > 10 min ago, treat as offline
-      final isStale = lastActive != null &&
-          DateTime.now().difference(lastActive) > const Duration(minutes: 10);
-
       return {
-<<<<<<< HEAD
-        'isOnline': state == 'online' && !isStale,
-        'lastSeen': lastActive,
-=======
         'isOnline': data['isOnline'] ?? false,
         'lastSeen': data['lastSeen'] != null
             ? (data['lastSeen'] as Timestamp).toDate()
             : null,
->>>>>>> origin/develop
       };
     });
   },

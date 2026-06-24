@@ -368,49 +368,7 @@ class EventDetailsPage extends ConsumerWidget {
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () async {
-                // Navigate to event details edit — opens name/description edit dialog
-                final nameCtrl = TextEditingController(text: event.title);
-                final descCtrl = TextEditingController(text: event.description);
-                final saved = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Edit Event'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          controller: nameCtrl,
-                          decoration: const InputDecoration(labelText: 'Event Name'),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: descCtrl,
-                          decoration: const InputDecoration(labelText: 'Description'),
-                          maxLines: 3,
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Save'),
-                      ),
-                    ],
-                  ),
-                );
-                if (saved == true) {
-                  await ref.read(eventsControllerProvider.notifier).updateEvent(
-                    event.id,
-                    event.copyWith(
-                      title: nameCtrl.text.trim(),
-                      description: descCtrl.text.trim(),
-                    ),
-                  );
-                }
+                // TODO: Edit event
               },
               icon: const Icon(Icons.edit),
               label: const Text('Edit'),

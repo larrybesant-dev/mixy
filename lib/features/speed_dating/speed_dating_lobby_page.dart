@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design_system/design_constants.dart';
-import '../../shared/providers/event_dating_providers.dart';
+import '../../shared/providers/service_providers.dart';
+import '../../shared/providers/auth_providers.dart';
 import 'speed_dating_session_page.dart';
 
 // ── Queue status stream ───────────────────────────────────────────────────────
@@ -41,7 +42,11 @@ class _SpeedDatingLobbyPageState extends ConsumerState<SpeedDatingLobbyPage> {
       _error = null;
     });
     try {
-      await ref.read(speedDatingServiceProvider).joinQueue();
+      final currentUser = ref.read(currentUserProvider).value;
+      if (currentUser == null) {
+        throw Exception('Not logged in');
+      }
+      await ref.read(speedDatingServiceProvider).joinQueue(currentUser.id);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -56,7 +61,10 @@ class _SpeedDatingLobbyPageState extends ConsumerState<SpeedDatingLobbyPage> {
   Future<void> _leaveQueue() async {
     setState(() => _isCancelling = true);
     try {
-      await ref.read(speedDatingServiceProvider).leaveQueue();
+      final currentUser = ref.read(currentUserProvider).value;
+      if (currentUser != null) {
+        await ref.read(speedDatingServiceProvider).leaveQueue('queue', currentUser.id);
+      }
     } catch (_) {
       // Ignore — user is leaving queue
     } finally {

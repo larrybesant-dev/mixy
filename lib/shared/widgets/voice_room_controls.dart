@@ -421,7 +421,7 @@ class VoiceRoomControls extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'https://mixvy.com/lounge/${room.id}',
+                'https://mix-and-mingle.web.app/room/${room.id}',
                 style: const TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,
@@ -439,7 +439,7 @@ class VoiceRoomControls extends ConsumerWidget {
             onPressed: () {
               // ignore: deprecated_member_use
               Share.share(
-                'Join my lounge on MIXVY: https://mixvy.com/lounge/${room.id}',
+                'Join my room on Mix & Mingle: https://mix-and-mingle.web.app/room/${room.id}',
               );
               Navigator.of(context).pop();
             },

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-/// Spacing scale for MIXVY design system (Electric Lounge)
-=======
 /// Spacing scale for Mix & Mingle design system (Electric Lounge)
->>>>>>> origin/develop
 class Spacing {
   Spacing._();
 

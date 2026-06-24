@@ -84,12 +84,8 @@ class AppHealthService {
   Future<String> getMaintenanceMessage() async {
     try {
       final doc = await _firestore.collection('system').doc('settings').get();
-<<<<<<< HEAD
-      return doc['maintenance_message'] as String? ?? 'MIXVY is undergoing maintenance. Please try again later.';
-=======
       return doc['maintenance_message'] as String? ??
           'MixMingle is undergoing maintenance. Please try again later.';
->>>>>>> origin/develop
     } catch (e) {
       return 'Unable to connect to service. Please try again later.';
     }

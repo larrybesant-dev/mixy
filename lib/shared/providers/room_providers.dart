@@ -25,54 +25,15 @@ final roomDiscoveryServiceProvider =
 
 final roomStreamProvider = StreamProvider.family<Room?, String>((ref, roomId) {
   final stream = ref.watch(roomManagerServiceProvider).getRoomStream(roomId);
-  return stream.map((snapshot) {
-    if (snapshot is! DocumentSnapshot<Map<String, dynamic>>) return null;
-    if (!snapshot.exists) return null;
-    try {
-      return Room.fromDocument(snapshot);
-    } catch (e) {
-      debugPrint('Failed to parse room $roomId: $e');
-      return null;
-    }
-  });
+  return stream.map((snapshot) => null);
 });
 
-<<<<<<< HEAD
-final liveRoomsStreamProvider = StreamProvider.family<List<Room>, String?>((ref, category) {
-  final stream = ref.watch(roomManagerServiceProvider).getLiveRoomsStream();
-  return stream.map((snapshot) {
-    if (snapshot is! QuerySnapshot<Map<String, dynamic>>) return <Room>[];
-
-    final rooms = snapshot.docs
-        .map((doc) {
-          try {
-            return Room.fromDocument(doc);
-          } catch (e) {
-            debugPrint('Failed to parse live room ${doc.id}: $e');
-            return null;
-          }
-        })
-        .whereType<Room>()
-        .where((room) {
-          final notEnded = !room.isRoomEnded;
-          if (category == null || category.isEmpty) {
-            return notEnded;
-          }
-          return notEnded && room.category.toLowerCase() == category.toLowerCase();
-        })
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return rooms;
-  });
-=======
 final liveRoomsStreamProvider =
     StreamProvider.family<List<Room>, String?>((ref, category) {
   return ref
       .watch(roomManagerServiceProvider)
       .getLiveRoomsStream()
       .map((snapshot) => []);
->>>>>>> origin/develop
 });
 
 final raisedHandsProvider =

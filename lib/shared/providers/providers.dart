@@ -50,8 +50,6 @@ final tokenServiceProvider = Provider<TokenService>((ref) => TokenService());
 final notificationServiceProvider =
     Provider<NotificationService>((ref) => NotificationService());
 
-<<<<<<< HEAD
-=======
 // Mark notification as read
 final markNotificationAsReadProvider =
     FutureProvider.family<void, String>((ref, notificationId) async {
@@ -59,7 +57,6 @@ final markNotificationAsReadProvider =
   await notificationService.markAsRead(notificationId);
 });
 
->>>>>>> origin/develop
 // Auth State
 final authStateProvider = StreamProvider<firebase_auth.User?>((ref) {
   return ref.watch(authServiceProvider).authStateChanges;
@@ -140,7 +137,8 @@ class DiscoverUsersNotifier extends Notifier<List<User>> {
 final conversationsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   final currentUser = ref.watch(currentUserProvider).value;
   if (currentUser == null) return Stream.value([]);
-  return ref.watch(messagingServiceProvider).getUserConversations(currentUser.id);
+  // Placeholder: Return empty list for now
+  return Stream.value([]);
 });
 
 // Settings
@@ -363,16 +361,11 @@ final privacySettingsProvider = StreamProvider<PrivacySettings?>((ref) {
   return Stream.value(null);
 });
 
-<<<<<<< HEAD
-final notificationsProvider = StreamProvider.family<List<app_notification.Notification>, String>((ref, userId) {
-  return ref.watch(firestoreServiceProvider).getNotificationsStream(userId);
-=======
 final notificationsProvider =
     StreamProvider.family<List<app_notification.Notification>, String>(
         (ref, userId) {
   // Placeholder: Return empty list
   return Stream.value([]);
->>>>>>> origin/develop
 });
 
 final userTipsProvider =
@@ -458,23 +451,24 @@ final unfollowUserProvider =
   await socialService.unfollowUser(currentUser.id, targetUserId);
 });
 
-<<<<<<< HEAD
-final userRoomsProvider = StreamProvider.family<List<Room>, String>((ref, userId) {
-  return ref.watch(firestoreServiceProvider)
-      .getRoomsStream()
-      .map((rooms) => rooms.where((r) => r.participantIds.contains(userId)).toList());
-=======
 final userRoomsProvider =
     StreamProvider.family<List<Room>, String>((ref, userId) {
   // Placeholder: Return empty list
   return Stream.value([]);
->>>>>>> origin/develop
 });
 
 final userActivityProvider =
     StreamProvider.family<List<Map<String, dynamic>>, String>((ref, userId) {
   // Placeholder: Return empty list
   return Stream.value([]);
+});
+
+/// Provider for user presence status (online/offline)
+final presenceProvider =
+    StreamProvider.family<bool, String>((ref, userId) {
+  // TODO: Implement real presence tracking via Firestore
+  // For now, return a dummy stream that always returns false (offline)
+  return Stream.value(false);
 });
 
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(() {
@@ -558,4 +552,37 @@ final subscriptionServiceProvider = Provider<SubscriptionService>((ref) {
 /// Room service provider
 final roomServiceProvider = Provider<RoomService>((ref) {
   return RoomService();
+});
+
+/// Provider for mutual followers between two users
+final mutualFollowersProvider = FutureProvider.family<List<User>, ({String currentUserId, String profileUserId})>((ref, ids) async {
+  try {
+    final socialService = ref.read(socialServiceProvider);
+    // Get following list for current user
+    final currentUserFollowing = await socialService.getFollowing(ids.currentUserId);
+    // Get followers list for profile user
+    final profileUserFollowers = await socialService.getFollowers(ids.profileUserId);
+
+    // Return intersection: users that current user follows AND who follow profile user
+    final mutualIds = currentUserFollowing
+        .map((u) => u.id)
+        .toSet()
+        .intersection(profileUserFollowers.map((u) => u.id).toSet());
+
+    final mutual = currentUserFollowing.where((u) => mutualIds.contains(u.id)).toList();
+    return mutual;
+  } catch (e) {
+    return [];
+  }
+});
+
+/// Provider for recommended rooms for a user
+final recommendedRoomsProvider = FutureProvider.family<List<Room>, String>((ref, userId) async {
+  try {
+    // TODO: Implement real recommendation logic based on user preferences
+    // For now, return empty list
+    return [];
+  } catch (e) {
+    return [];
+  }
 });

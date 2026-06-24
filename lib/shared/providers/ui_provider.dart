@@ -11,7 +11,9 @@ class DarkModeNotifier extends Notifier<bool> {
   void toggle() => state = !state;
 }
 
-final darkModeProvider = NotifierProvider<DarkModeNotifier, bool>(DarkModeNotifier.new);
+final darkModeProvider = NotifierProvider<DarkModeNotifier, bool>(
+  () => DarkModeNotifier(),
+);
 
 /// Video quality notifier
 class VideoQualityNotifier extends Notifier<VideoQuality> {

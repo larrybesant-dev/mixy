@@ -15,35 +15,22 @@ class NotificationsState {
   final String? fcmToken;
   final bool isInitialized;
   final bool notificationsEnabled;
-  final String? pendingNavigationRoute;
-  final Map<String, String>? pendingNavigationArgs;
 
   const NotificationsState({
     this.fcmToken,
     this.isInitialized = false,
     this.notificationsEnabled = false,
-    this.pendingNavigationRoute,
-    this.pendingNavigationArgs,
   });
 
   NotificationsState copyWith({
     String? fcmToken,
     bool? isInitialized,
     bool? notificationsEnabled,
-    String? pendingNavigationRoute,
-    Map<String, String>? pendingNavigationArgs,
-    bool clearPendingNavigation = false,
   }) {
     return NotificationsState(
       fcmToken: fcmToken ?? this.fcmToken,
       isInitialized: isInitialized ?? this.isInitialized,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      pendingNavigationRoute: clearPendingNavigation
-          ? null
-          : (pendingNavigationRoute ?? this.pendingNavigationRoute),
-      pendingNavigationArgs: clearPendingNavigation
-          ? null
-          : (pendingNavigationArgs ?? this.pendingNavigationArgs),
     );
   }
 }
@@ -141,37 +128,6 @@ class NotificationsController extends Notifier<NotificationsState> {
     }
   }
 
-<<<<<<< HEAD
-  /// Handle foreground messages
-  void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('ðŸ“¨ Foreground message: ${message.notification?.title}');
-    final data = message.data;
-    if (data.containsKey('type')) {
-      String? route;
-      Map<String, String>? args;
-      switch (data['type']) {
-        case 'message':
-          route = '/chats';
-          if (data['chatId'] != null) args = {'chatId': data['chatId']};
-        case 'room_invite':
-          route = '/rooms';
-          if (data['roomId'] != null) args = {'roomId': data['roomId']};
-        case 'match':
-          route = '/discover';
-        default:
-          break;
-      }
-      if (route != null) {
-        state = state.copyWith(
-          pendingNavigationRoute: route,
-          pendingNavigationArgs: args,
-        );
-      }
-    }
-  }
-
-=======
->>>>>>> origin/develop
   /// Handle background/terminated messages
   void _handleBackgroundMessage(RemoteMessage message) {
     debugPrint('ðŸ“¨ Background message: ${message.notification?.title}');
@@ -179,20 +135,7 @@ class NotificationsController extends Notifier<NotificationsState> {
     // Handle notification tap - deep link to relevant screen
     final data = message.data;
 
-<<<<<<< HEAD
-    if (data.containsKey('type')) {
-      switch (data['type']) {
-        case 'message':
-          final chatId = data['chatId'];
-          state = state.copyWith(
-            pendingNavigationRoute: '/chats',
-            pendingNavigationArgs:
-                chatId != null ? {'chatId': chatId} : null,
-          );
-          break;
-=======
     if (!data.containsKey('type')) return;
->>>>>>> origin/develop
 
     final nav = appNavigatorKey.currentState;
 

@@ -40,7 +40,7 @@ class RoomStatistics {
       lastActivityAt: (data['lastActivityAt'] as Timestamp?)?.toDate(),
       totalMessagesCount: data['totalMessagesCount'] ?? 0,
       totalRecordingsCount: data['totalRecordingsCount'] ?? 0,
-      averageUserRating: (data['averageUserRating'] as num?)?.toDouble() ?? 0.0,
+      averageUserRating: (data['averageUserRating'] ?? 0.0).toDouble(),
       hourlyVisitors: Map<String, int>.from(data['hourlyVisitors'] ?? {}),
     );
   }
@@ -100,7 +100,7 @@ class UserEngagement {
       ),
       messagesCount: data['messagesCount'] ?? 0,
       recordingsCount: data['recordingsCount'] ?? 0,
-      userRating: (data['userRating'] as num?)?.toDouble() ?? 0.0,
+      userRating: (data['userRating'] ?? 0.0).toDouble(),
     );
   }
 

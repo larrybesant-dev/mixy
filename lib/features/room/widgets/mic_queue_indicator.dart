@@ -48,7 +48,7 @@ class MicQueueIndicator extends ConsumerWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Mics: $count/$maxMics',
+                    'ðŸŽ¤ Mics: $count/$maxMics',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color:
@@ -68,7 +68,7 @@ class MicQueueIndicator extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'Pending: $pendingCount',
+                        'â³ $pendingCount',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -83,7 +83,7 @@ class MicQueueIndicator extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'Mic queue full',
+                    'ðŸ”´ Mic queue full',
                     style: TextStyle(
                       fontSize: 10,
                       color: Colors.orange[600],

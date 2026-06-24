@@ -227,10 +227,7 @@ class EventCardHorizontal extends ConsumerWidget {
   }
 
   void _handleRSVP(BuildContext context, WidgetRef ref) {
-    Navigator.pushNamed(
-      context,
-      '/event-details',
-      arguments: {'eventId': event.id},
-    );
+    // TODO: Navigate to event detail or show RSVP modal
+    // Navigator.pushNamed(context, '/events/${event.id}');
   }
 }

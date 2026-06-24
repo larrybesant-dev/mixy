@@ -472,10 +472,7 @@ class _ChatBoxWidgetState extends ConsumerState<ChatBoxWidget>
         child: Padding(
           padding: const EdgeInsets.all(Spacing.xs),
           child: Center(
-<<<<<<< HEAD
-=======
             // ignore: prefer_const_constructors
->>>>>>> origin/develop
             child: Text(
               item,
               style: DesignTypography.body.copyWith(

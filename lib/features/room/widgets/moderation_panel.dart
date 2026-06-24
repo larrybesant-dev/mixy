@@ -3,21 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/shared/models/agora_participant.dart';
 import 'package:mixmingle/shared/models/room_role.dart';
 import 'package:mixmingle/shared/models/room.dart';
-import 'package:mixmingle/shared/providers/friend_request_provider.dart';
-import 'package:mixmingle/services/social/friend_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/moderation_service.dart';
-
-/// Streams the set of user IDs with co-host role for a given room.
-final _coHostIdsProvider = StreamProvider.family<Set<String>, String>((ref, roomId) {
-  return FirebaseFirestore.instance
-      .collection('rooms')
-      .doc(roomId)
-      .collection('participants')
-      .where('role', isEqualTo: 'coHost')
-      .snapshots()
-      .map((snap) => snap.docs.map((d) => d.id).toSet());
-});
 
 /// Moderation panel for room hosts and co-hosts
 /// Allows managing participants: kick, mute, promote, ban
@@ -41,22 +27,16 @@ class ModerationPanel extends ConsumerStatefulWidget {
   ConsumerState<ModerationPanel> createState() => _ModerationPanelState();
 }
 
-<<<<<<< HEAD
-class _ModerationPanelState extends ConsumerState<ModerationPanel> with TickerProviderStateMixin {
-=======
 class _ModerationPanelState extends ConsumerState<ModerationPanel>
     with SingleTickerProviderStateMixin {
->>>>>>> origin/develop
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-  late TabController _tabController;
   String _searchQuery = '';
   bool _showOnlyMuted = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -73,7 +53,6 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _slideController.dispose();
     super.dispose();
   }
@@ -132,30 +111,8 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
           children: [
             _buildHeader(context, canModerate),
             _buildSearchBar(),
-            if (canModerate) ...[
-              _buildFilterOptions(),
-              TabBar(
-                controller: _tabController,
-                labelColor: Colors.pinkAccent,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.pinkAccent,
-                tabs: const [
-                  Tab(text: 'Participants'),
-                  Tab(text: 'Ban List'),
-                ],
-              ),
-            ],
-            Expanded(
-              child: canModerate
-                  ? TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildParticipantList(),
-                        _buildBanListTab(),
-                      ],
-                    )
-                  : _buildParticipantList(),
-            ),
+            if (canModerate) _buildFilterOptions(),
+            Expanded(child: _buildParticipantList()),
           ],
         ),
       ),
@@ -257,72 +214,6 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
     );
   }
 
-  Widget _buildBanListTab() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('rooms')
-          .doc(widget.room.id)
-          .collection('banned')
-          .orderBy('bannedAt', descending: true)
-          .snapshots(),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final docs = snap.data?.docs ?? [];
-        if (docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle_outline, size: 48, color: Colors.grey[700]),
-                const SizedBox(height: 12),
-                Text('No banned users', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-              ],
-            ),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: docs.length,
-          itemBuilder: (ctx, i) {
-            final data = docs[i].data() as Map<String, dynamic>;
-            final userId = data['userId'] as String? ?? docs[i].id;
-            final name = data['displayName'] as String? ?? 'Unknown';
-            return ListTile(
-              dense: true,
-              leading: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.red[900],
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ),
-              title: Text(name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-              subtitle: Text(
-                data['reason'] as String? ?? 'No reason given',
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
-              ),
-              trailing: TextButton(
-                onPressed: () async {
-                  await FirebaseFirestore.instance
-                      .collection('rooms')
-                      .doc(widget.room.id)
-                      .collection('banned')
-                      .doc(userId)
-                      .delete();
-                  _showSnackBar('$name unbanned');
-                },
-                child: const Text('Unban', style: TextStyle(color: Colors.orange)),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildParticipantList() {
     final participants = _filteredParticipants;
 
@@ -354,16 +245,9 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
 
   Widget _buildParticipantItem(AgoraParticipant participant) {
     final isHost = participant.userId == widget.room.hostId;
-    final coHostIds = ref.watch(_coHostIdsProvider(widget.room.id)).asData?.value ?? {};
-    final isCoHost = coHostIds.contains(participant.userId);
     final isCurrentUser = participant.userId == widget.currentUserId;
     final canModerate =
         widget.currentUserRole.canRemoveParticipants && !isCurrentUser;
-
-    // Friend status badge
-    final friendStatusAsync = ref.watch(friendStatusProvider(participant.userId));
-    final friendStatus = friendStatusAsync.asData?.value;
-    final isFriend = friendStatus == FriendRequestStatus.friends;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -378,17 +262,13 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: isHost
-                  ? Colors.amber[700]
-                  : isCoHost
-                      ? Colors.deepPurple
-                      : Colors.grey[800],
+              backgroundColor: isHost ? Colors.amber[700] : Colors.grey[800],
               child: Text(
                 participant.displayName.isNotEmpty
                     ? participant.displayName[0].toUpperCase()
                     : '?',
                 style: TextStyle(
-                  color: (isHost || isCoHost) ? Colors.white : Colors.white70,
+                  color: isHost ? Colors.black : Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -419,19 +299,39 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
             ),
             if (isHost) ...[
               const SizedBox(width: 6),
-              _roleBadge('HOST', Colors.amber[700]!),
-            ],
-            if (isCoHost && !isHost) ...[
-              const SizedBox(width: 6),
-              _roleBadge('CO-HOST', Colors.deepPurple),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber[700],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'HOST',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ],
             if (isCurrentUser) ...[
               const SizedBox(width: 6),
-              _roleBadge('YOU', Colors.pinkAccent),
-            ],
-            if (isFriend && !isCurrentUser) ...[
-              const SizedBox(width: 6),
-              _roleBadge('FRIEND', const Color(0xFF00E5CC)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.pinkAccent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'YOU',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ],
           ],
         ),
@@ -455,20 +355,7 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
     );
   }
 
-  Widget _roleBadge(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
-      child: Text(
-        label,
-        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
   Widget _buildModerationActions(AgoraParticipant participant) {
-    final coHostIds = ref.watch(_coHostIdsProvider(widget.room.id)).asData?.value ?? {};
-    final isCoHost = coHostIds.contains(participant.userId);
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
       color: Colors.grey[850],
@@ -516,8 +403,8 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
                 const Icon(Icons.verified_user, size: 18, color: Colors.amber),
                 const SizedBox(width: 12),
                 Text(
-                  isCoHost ? 'Demote to Listener' : 'Promote to Co-Host',
-                  style: TextStyle(color: isCoHost ? Colors.orange : Colors.amber[300]),
+                  'Promote to Co-Host',
+                  style: TextStyle(color: Colors.amber[300]),
                 ),
               ],
             ),
@@ -576,30 +463,16 @@ class _ModerationPanelState extends ConsumerState<ModerationPanel>
           break;
 
         case 'promote':
-          final coHostIds = ref.read(_coHostIdsProvider(widget.room.id)).asData?.value ?? {};
-          final isCoHostNow = coHostIds.contains(participant.userId);
           final confirmed = await _showConfirmDialog(
-            isCoHostNow
-                ? 'Demote ${participant.displayName}?'
-                : 'Promote ${participant.displayName}?',
-            isCoHostNow
-                ? 'They will lose moderation powers.'
-                : 'This will give them moderation powers.',
+            'Promote ${participant.displayName}?',
+            'This will give them moderation powers.',
           );
           if (confirmed) {
-            if (isCoHostNow) {
-              await moderationService.demoteToListener(
-                roomId: widget.room.id,
-                participantId: participant.userId,
-              );
-              _showSnackBar('${participant.displayName} demoted to Listener');
-            } else {
-              await moderationService.promoteToCoHost(
-                roomId: widget.room.id,
-                participantId: participant.userId,
-              );
-              _showSnackBar('${participant.displayName} promoted to Co-Host');
-            }
+            await moderationService.promoteToCoHost(
+              roomId: widget.room.id,
+              participantId: participant.userId,
+            );
+            _showSnackBar('${participant.displayName} promoted to Co-Host');
           }
           break;
 

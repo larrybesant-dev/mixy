@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/core/routing/app_routes.dart';
 import '../../../core/design_system/design_constants.dart';
 import '../../../shared/providers/auth_providers.dart';
-import '../../../shared/providers/room_discovery_providers.dart';
+import '../../../shared/providers/providers.dart' hide currentUserProvider;
 import '../../../shared/widgets/room_discovery_card.dart';
 
 class RecommendedRoomsPage extends ConsumerWidget {

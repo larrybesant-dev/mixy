@@ -3,7 +3,7 @@ import '../../core/theme/neon_colors.dart';
 
 /// ============================================================================
 /// NEON GLOW COMPONENTS - Electric Lounge Design System
-/// MIXVY Brand-Aligned Components with Glow Effects
+/// Mix & Mingle Brand-Aligned Components with Glow Effects
 /// ============================================================================
 
 /// Neon-styled card with colorful glowing border

@@ -2,7 +2,6 @@
 ///
 /// Stores participant data and state (speaking, present, join time)
 /// Used by: AgoraController, FirestoreService, ParticipantCard
-
 library;
 
 class Participant {

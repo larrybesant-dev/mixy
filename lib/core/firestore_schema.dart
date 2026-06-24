@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-class FirestorePaths {
-  static const users = 'users';
-  static const conversations = 'conversations';
-  static const messages = 'messages';
-
-  static String conversation(String id) => '/';
-  static String conversationMessages(String id) => '//';
-}
-=======
 /// Firestore Collection Schema Documentation
 ///
 /// This document defines the schema expectations for the Mixmingle app.
@@ -131,4 +121,3 @@ class FirestorePaths {
 /// - read: boolean
 
 library;
->>>>>>> origin/develop

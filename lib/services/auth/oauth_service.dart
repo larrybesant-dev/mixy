@@ -109,7 +109,8 @@ class OAuthService {
   // ============================================================================
 
   /// Sign in with Facebook
-  /// Requires: flutter_facebook_auth package + Facebook App ID configuration
+  /// TODO: Implement Facebook Login SDK integration
+  /// Requires: flutter_facebook_auth package
   Future<OAuthResult> signInWithFacebook() async {
     return OAuthResult.failure(
       'not_implemented',

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/shared/models/moderation_action.dart';
 import 'package:mixmingle/services/moderation/auto_moderation_service.dart';
-import 'package:mixmingle/shared/providers/providers.dart';
 
-class ModActionsPanel extends ConsumerStatefulWidget {
+class ModActionsPanel extends StatefulWidget {
   final String roomId;
 
   const ModActionsPanel({
@@ -14,10 +12,10 @@ class ModActionsPanel extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ModActionsPanel> createState() => _ModActionsPanelState();
+  State<ModActionsPanel> createState() => _ModActionsPanelState();
 }
 
-class _ModActionsPanelState extends ConsumerState<ModActionsPanel> {
+class _ModActionsPanelState extends State<ModActionsPanel> {
   final _firestore = FirebaseFirestore.instance;
   final _autoModService = AutoModerationService();
   bool _isLocked = false;
@@ -150,12 +148,28 @@ class _ModActionsPanelState extends ConsumerState<ModActionsPanel> {
 
   Future<void> _toggleLockdown(bool locked) async {
     try {
-      final roomService = ref.read(roomServiceProvider);
-      if (locked) {
-        await roomService.lockRoom(widget.roomId);
-      } else {
-        await roomService.unlockRoom(widget.roomId);
-      }
+      await _firestore.collection('rooms').doc(widget.roomId).update({
+        'isLocked': locked,
+      });
+
+      // Log the action
+      final action = ModerationAction(
+        id: '',
+        roomId: widget.roomId,
+        type: locked ? ModerationType.lockdown : ModerationType.unlock,
+        targetUserId: 'room',
+        targetUserName: 'Room',
+        moderatorId: 'current_user', // TODO: Get from auth
+        moderatorName: 'Moderator',
+        reason: locked ? 'Room locked by moderator' : 'Room unlocked',
+        timestamp: DateTime.now(),
+      );
+
+      await _firestore
+          .collection('rooms')
+          .doc(widget.roomId)
+          .collection('moderation_logs')
+          .add(action.toFirestore());
 
       setState(() {
         _isLocked = locked;

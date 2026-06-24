@@ -10,103 +10,81 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase
-  firebase_core: ^4.5.0
-  firebase_auth: ^6.2.0
-  cloud_firestore: ^6.1.3
-  firebase_storage: ^13.0.6
-  firebase_messaging: ^16.1.2
-  firebase_analytics: ^12.1.2
-  firebase_remote_config: ^6.1.4
-  firebase_crashlytics: ^5.0.7
-  firebase_performance: ^0.11.1+4
-  cloud_functions: ^6.0.6
-  flutter_local_notifications: ^20.1.0
+  firebase_core: 4.11.0
+  firebase_auth: 6.5.4
+  cloud_firestore: 6.6.0
+  firebase_storage: 13.4.3
+  firebase_messaging: 16.4.1
+  firebase_analytics: 12.4.3
+  firebase_remote_config: 6.5.3
+  firebase_crashlytics: 5.2.4
+  firebase_performance: 0.11.4+3
+  cloud_functions: 6.3.3
+  flutter_local_notifications: 20.1.0
 
-  # State Management
-  flutter_riverpod: ^3.0.3
-  riverpod_annotation: ^3.0.3
-  provider: ^6.1.5+1
+  flutter_riverpod: 3.0.3
+  riverpod_annotation: 3.0.3
+  provider: 6.1.5
 
-  # Network
-  http: ^1.3.0
-  crypto: ^3.0.3
+  http: 1.3.0
+  crypto: 3.0.3
 
-  # Video
-  agora_rtc_engine: ^6.5.3
-  permission_handler: ^12.0.1
+  agora_rtc_engine: 6.5.3
+  permission_handler: 12.0.1
 
-  # UI
-  cupertino_icons: ^1.0.8
-  google_fonts: ^8.0.2
-  photo_view: ^0.15.0
-  lottie: ^3.0.0
-  go_router: ^7.1.1
+  cupertino_icons: 1.0.8
+  google_fonts: 8.0.2
+  photo_view: 0.15.0
+  lottie: 3.0.0
+  go_router: 7.1.1
 
-  # Audio (landing music, profile music, micro-sounds)
-  audioplayers: ^6.1.0
+  audioplayers: 6.1.0
 
-  # Payments
-  purchases_flutter: ^9.13.1
+  purchases_flutter: 9.13.1
 
-  # Utilities
-  intl: ^0.20.2
-  timeago: ^3.7.0
-  url_launcher: ^6.2.0
-  uuid: ^4.5.1
-  share_plus: ^12.0.1
-  app_links: ^6.3.2
-  path_provider: ^2.1.0
-  shared_preferences: ^2.2.0
-  image_picker: ^1.0.0
-  image_cropper: ^11.0.0
-  file_picker: ^10.3.10
-  image: ^4.0.17
+  intl: 0.19.0
+  timeago: 3.7.0
+  url_launcher: 6.1.14
+  uuid: 4.5.1
+  share_plus: 12.0.1
+  app_links: 6.3.2
+  path_provider: 2.1.0
+  shared_preferences: 2.2.0
+  image_picker: 1.0.0
+  image_cropper: 11.0.0
+  file_picker: 10.3.10
+  image: 4.3.0
 
-  # Social Auth
-  google_sign_in: ^7.2.0
-  sign_in_with_apple: ^7.0.1
+  google_sign_in: 7.2.0
+  sign_in_with_apple: 7.0.1
 
-  # Environment
-  flutter_dotenv: ^6.0.0
-  # Web platform interop (required by web-only implementation files)
-  web: ^1.1.0
-  firebase_database: any
+  flutter_dotenv: 6.0.0
+  web: 1.1.1
+  firebase_database: 12.4.3
+
+  riverpod: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: 6.0.0
   integration_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.3
-  mockito: ^5.4.4
-  build_runner: ^2.4.8
-  riverpod_generator: ^3.0.3
-  # custom_lint: fully removed
-  # riverpod_lint: fully removed
-  fake_cloud_firestore: ^4.0.1
-  firebase_auth_mocks: ^0.15.1
-  analyzer: ^8.0.0
-  args: ^2.5.0
+  flutter_launcher_icons: 0.14.3
+  flutter_native_splash: 2.4.3
+  mockito: 5.6.4
+  build_runner: 2.15.0
+  riverpod_generator: 3.0.3
+  fake_cloud_firestore: 4.1.1
+  firebase_auth_mocks: 0.15.2
+  analyzer: 8.1.1
+  args: 2.6.0
 
-dependency_overrides:
-  web: ^1.1.0
-  firebase_storage_platform_interface: any
-  cloud_firestore_platform_interface: any
-  cloud_functions_platform_interface: any
-  firebase_auth_platform_interface: any
-  firebase_messaging_platform_interface: any
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/app_logo.png"
   adaptive_icon_background: "#0D0D1A"
   adaptive_icon_foreground: "assets/images/app_logo.png"
-  web:
-    generate: false
-  windows:
-    generate: false
 
 flutter:
   uses-material-design: true
@@ -121,7 +99,6 @@ flutter:
     - assets/brand/png/app_icon/
     - assets/brand/png/full_logo/
     - .env
-
   fonts:
     - family: NotoSans
       fonts:

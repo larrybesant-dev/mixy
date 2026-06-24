@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_providers.dart';
-import 'profile_controller.dart' hide currentUserProfileProvider;
 
 final profileCompletionProvider = Provider<bool>((ref) {
   final currentUserProfile = ref.watch(currentUserProfileProvider).value;
@@ -20,22 +20,27 @@ final needsOnboardingProvider = Provider<bool>((ref) {
   // Remove this override to re-enable the onboarding gate.
   return false;
 });
-<<<<<<< HEAD
 
-/// 0–100 profile richness score based on five pillars:
-/// avatar (20) + bio (20) + photos (15) + interests (15) + location (15) + music (15)
-final profileCompletenessScoreProvider = Provider.family<int, String>((ref, userId) {
-  final p = ref.watch(userProfileProvider(userId)).value;
-  if (p == null) return 0;
-  int score = 0;
-  if ((p.photoUrl ?? '').isNotEmpty) score += 20;
-  if ((p.bio ?? '').isNotEmpty) score += 20;
-  if (p.galleryPhotos?.isNotEmpty ?? false) score += 15;
-  if (p.interests?.isNotEmpty ?? false) score += 15;
-  if ((p.location ?? '').isNotEmpty) score += 15;
-  if ((p.musicTastes?.isNotEmpty ?? false) || (p.musicGenres?.isNotEmpty ?? false)) score += 15;
-  return score;
+/// Calculates profile completeness score (0-100) for a given user
+final profileCompletenessScoreProvider =
+    FutureProvider.family<double, String>((ref, userId) async {
+  try {
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = await firestore.collection('users').doc(userId).get();
+
+    if (!userDoc.exists) return 0.0;
+
+    final data = userDoc.data() ?? {};
+    double score = 0.0;
+
+    // Basic fields (25 points each)
+    if ((data['displayName'] as String?)?.isNotEmpty ?? false) score += 25;
+    if ((data['photoUrl'] as String?)?.isNotEmpty ?? false) score += 25;
+    if ((data['bio'] as String?)?.isNotEmpty ?? false) score += 25;
+    if ((data['age'] as int?) != null && (data['age'] as int) > 0) score += 25;
+
+    return score.clamp(0.0, 100.0);
+  } catch (e) {
+    return 0.0;
+  }
 });
-
-=======
->>>>>>> origin/develop

@@ -3,19 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/responsive/responsive_utils.dart';
 import '../core/theme/enhanced_theme.dart';
 import '../core/animations/app_animations.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import '../app/app_routes.dart';
 import '../shared/widgets/club_background.dart';
 import '../shared/widgets/glow_text.dart';
 
 /// Onboarding page provider using NotifierProvider instead of deprecated StateProvider
-<<<<<<< HEAD
-final onboardingPageProvider = NotifierProvider<OnboardingPageNotifier, int>(OnboardingPageNotifier.new);
-=======
 final onboardingPageProvider =
     NotifierProvider<OnboardingPageNotifier, int>(() {
   return OnboardingPageNotifier();
 });
->>>>>>> origin/develop
 
 class OnboardingPageNotifier extends Notifier<int> {
   @override
@@ -42,7 +38,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow>
 
   final List<OnboardingPageData> _pages = [
     const OnboardingPageData(
-      title: 'Welcome to MIXVY',
+      title: 'Welcome to Mix & Mingle',
       subtitle: 'Connect with amazing people through video chat',
       icon: Icons.waving_hand,
       color: Color(0xFF8F00FF),
@@ -114,7 +110,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow>
   }
 
   void _completeOnboarding() {
-    Navigator.of(context).pushReplacementNamed(AppRoutes.ageGate);
+    Navigator.of(context).pushReplacementNamed(AppRoutes.signup);
   }
 
   @override

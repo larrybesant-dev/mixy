@@ -16,11 +16,48 @@ final activeRoomIdProvider = NotifierProvider<ActiveRoomIdNotifier, String?>(
   () => ActiveRoomIdNotifier(),
 );
 
+/// Mock participants generator
+List<VideoParticipant> _generateMockParticipants(String roomId) {
+  return [
+    VideoParticipant(
+      userId: 'user1',
+      userName: 'Alex Johnson',
+      avatarUrl: 'https://i.pravatar.cc/150?u=alex',
+      isAudioEnabled: true,
+      isVideoEnabled: true,
+      isScreenSharing: false,
+      joinedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      cameraApprovalStatus: 'approved',
+    ),
+    VideoParticipant(
+      userId: 'user2',
+      userName: 'Sarah Chen',
+      avatarUrl: 'https://i.pravatar.cc/150?u=sarah',
+      isAudioEnabled: true,
+      isVideoEnabled: true,
+      isScreenSharing: false,
+      joinedAt: DateTime.now().subtract(const Duration(minutes: 3)),
+      cameraApprovalStatus: 'approved',
+    ),
+    VideoParticipant(
+      userId: 'user3',
+      userName: 'Jordan Taylor',
+      avatarUrl: 'https://i.pravatar.cc/150?u=jordan',
+      isAudioEnabled: false,
+      isVideoEnabled: true,
+      isScreenSharing: false,
+      joinedAt: DateTime.now().subtract(const Duration(minutes: 1)),
+      cameraApprovalStatus: 'approved',
+    ),
+  ];
+}
+
 /// Participants notifier for active room
 class ParticipantsNotifier extends Notifier<List<VideoParticipant>> {
   @override
   List<VideoParticipant> build() {
-    return [];
+    final roomId = ref.watch(activeRoomIdProvider);
+    return roomId != null ? _generateMockParticipants(roomId) : [];
   }
 
   /// Add participant

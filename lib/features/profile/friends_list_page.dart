@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/friends_provider.dart';
+import '../../shared/providers/providers.dart';
 
 class FriendsListPage extends ConsumerWidget {
   final String userId;
@@ -20,9 +21,9 @@ class FriendsListPage extends ConsumerWidget {
                   return ListTile(
                     title: Text(f.friendId),
                     subtitle: presenceAsync.when(
-                      data: (online) => online ? 'Online' : 'Offline',
-                      loading: () => 'Checking...',
-                      error: (e, _) => 'Unknown',
+                      data: (online) => Text(online ? 'Online' : 'Offline'),
+                      loading: () => const Text('Checking...'),
+                      error: (e, _) => const Text('Unknown'),
                     ),
                     trailing: Text('Last seen: ${f.lastSeen}'),
                   );

@@ -17,9 +17,6 @@ class NotificationSettings {
   final bool commentNotifications;
   final bool soundEnabled;
   final bool vibrationEnabled;
-  final bool friendRequestNotifications;
-  final bool roomInviteNotifications;
-  final bool adminActionNotifications;
 
   const NotificationSettings({
     this.pushNotifications = true,
@@ -33,9 +30,6 @@ class NotificationSettings {
     this.commentNotifications = true,
     this.soundEnabled = true,
     this.vibrationEnabled = true,
-    this.friendRequestNotifications = true,
-    this.roomInviteNotifications = true,
-    this.adminActionNotifications = true,
   });
 
   factory NotificationSettings.fromMap(Map<String, dynamic> map) {
@@ -51,9 +45,6 @@ class NotificationSettings {
       commentNotifications: map['commentNotifications'] ?? true,
       soundEnabled: map['soundEnabled'] ?? true,
       vibrationEnabled: map['vibrationEnabled'] ?? true,
-      friendRequestNotifications: map['friendRequestNotifications'] ?? true,
-      roomInviteNotifications: map['roomInviteNotifications'] ?? true,
-      adminActionNotifications: map['adminActionNotifications'] ?? true,
     );
   }
 
@@ -70,9 +61,6 @@ class NotificationSettings {
       'commentNotifications': commentNotifications,
       'soundEnabled': soundEnabled,
       'vibrationEnabled': vibrationEnabled,
-      'friendRequestNotifications': friendRequestNotifications,
-      'roomInviteNotifications': roomInviteNotifications,
-      'adminActionNotifications': adminActionNotifications,
     };
   }
 
@@ -88,9 +76,6 @@ class NotificationSettings {
     bool? commentNotifications,
     bool? soundEnabled,
     bool? vibrationEnabled,
-    bool? friendRequestNotifications,
-    bool? roomInviteNotifications,
-    bool? adminActionNotifications,
   }) {
     return NotificationSettings(
       pushNotifications: pushNotifications ?? this.pushNotifications,
@@ -104,9 +89,6 @@ class NotificationSettings {
       commentNotifications: commentNotifications ?? this.commentNotifications,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
-      friendRequestNotifications: friendRequestNotifications ?? this.friendRequestNotifications,
-      roomInviteNotifications: roomInviteNotifications ?? this.roomInviteNotifications,
-      adminActionNotifications: adminActionNotifications ?? this.adminActionNotifications,
     );
   }
 }
@@ -259,27 +241,6 @@ class _NotificationSettingsPageState
                     value: settings.commentNotifications,
                     onChanged: (value) =>
                         _updateSetting('commentNotifications', value),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Friend Requests'),
-                    subtitle: const Text('When someone sends you a friend request'),
-                    value: settings.friendRequestNotifications,
-                    onChanged: (value) => _updateSetting('friendRequestNotifications', value),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Room Invites'),
-                    subtitle: const Text('When someone invites you to a room'),
-                    value: settings.roomInviteNotifications,
-                    onChanged: (value) => _updateSetting('roomInviteNotifications', value),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Admin Actions'),
-                    subtitle: const Text('When an admin takes action on your account'),
-                    value: settings.adminActionNotifications,
-                    onChanged: (value) => _updateSetting('adminActionNotifications', value),
                   ),
                 ],
               ),

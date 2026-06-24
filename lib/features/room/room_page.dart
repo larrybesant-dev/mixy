@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'package:flutter/services.dart';
-=======
->>>>>>> origin/develop
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import '../../core/analytics/analytics_service.dart';
@@ -14,12 +10,8 @@ import '../../shared/club_background.dart';
 import '../../shared/glow_text.dart';
 import '../../shared/neon_button.dart';
 import '../../shared/gift_selector.dart';
-<<<<<<< HEAD
-import 'widgets/dj_panel.dart';
-=======
 import '../../core/design_system/design_constants.dart';
 import '../../core/design_system/app_layout.dart';
->>>>>>> origin/develop
 
 class RoomPage extends ConsumerStatefulWidget {
   final Room room;
@@ -89,12 +81,8 @@ class _RoomPageState extends ConsumerState<RoomPage> {
         parameters: {'room_id': widget.room.id, 'error': e.toString()},
       );
       if (mounted) {
-<<<<<<< HEAD
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('MIXVY Lounge: Unable to join video. Please check your connection and try again.')));
-=======
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to join video: ${e.toString()}')));
->>>>>>> origin/develop
       }
     }
   }
@@ -132,12 +120,8 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
-<<<<<<< HEAD
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('MIXVY Chat: Message could not be sent. Please try again.')));
-=======
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to send message: ${e.toString()}')));
->>>>>>> origin/develop
       }
     }
   }
@@ -286,65 +270,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
               ), // AspectRatio
             ), // Padding
             // Messages area
-            // Now Playing banner (shown when DJ is active)
-            Consumer(
-              builder: (context, ref, _) {
-                final djAsync = ref.watch(djStateProvider(widget.room.id));
-                final dj = djAsync.asData?.value;
-                if (dj == null || !dj.isPlaying || dj.trackUrl == null) {
-                  return const SizedBox.shrink();
-                }
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.music_note, color: Color(0xFF8B5CF6), size: 16),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Now Playing · ',
-                        style: TextStyle(
-                          color: Color(0xFF8B5CF6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          dj.trackUrl!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      if (dj.isPaused)
-                        const Padding(
-                          padding: EdgeInsets.only(left: 8),
-                          child: Text(
-                            'PAUSED',
-                            style: TextStyle(
-                              color: Color(0xFFFFAB00),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            // Messages area
             Expanded(
               child: Container(
                 margin:
@@ -411,13 +336,9 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                           }
                         } catch (e) {
                           if (mounted) {
-<<<<<<< HEAD
-                            messenger.showSnackBar(SnackBar(content: Text('MIXVY Audio: Microphone toggle failed. Please try again.')));
-=======
                             messenger.showSnackBar(SnackBar(
                                 content:
                                     Text('Failed to toggle microphone: $e')));
->>>>>>> origin/develop
                           }
                         }
                       },
@@ -441,12 +362,8 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                           }
                         } catch (e) {
                           if (mounted) {
-<<<<<<< HEAD
-                            messenger.showSnackBar(SnackBar(content: Text('MIXVY Video: Camera toggle failed. Please try again.')));
-=======
                             messenger.showSnackBar(SnackBar(
                                 content: Text('Failed to toggle camera: $e')));
->>>>>>> origin/develop
                           }
                         }
                       },
@@ -530,34 +447,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
             title: const Text('View Participants'),
             onTap: () {
               Navigator.of(context).pop();
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Participants'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          '${widget.room.participantIds.length} participant(s) in this room'),
-                      const SizedBox(height: 8),
-                      ...widget.room.participantIds.map(
-                        (id) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text('• $id',
-                              style: const TextStyle(fontSize: 13)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
+              // TODO: Show participants list
             },
           ),
           ListTile(
@@ -565,15 +455,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
             title: const Text('Share Room'),
             onTap: () {
               Navigator.of(context).pop();
-              Clipboard.setData(
-                ClipboardData(
-                    text:
-                        'Join me in "${widget.room.title}" on MIXVY! Lounge ID: ${widget.room.id}'),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Room link copied to clipboard!')),
-              );
+              // TODO: Share room link
             },
           ),
           ListTile(

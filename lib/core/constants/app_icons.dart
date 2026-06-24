@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// MIXVY App-Wide Icon Constants
+/// Mix & Mingle App-Wide Icon Constants
 /// Centralized icon definitions for consistency across the app
 
 class AppIcons {

@@ -14,7 +14,7 @@ class EmptyStateWidget extends StatelessWidget {
           const SizedBox(height: 16),
           Text(message, style: const TextStyle(fontSize: 20, color: Colors.white70, fontStyle: FontStyle.italic)),
           const SizedBox(height: 8),
-          Text('Invite someone to start the vibe.', style: const TextStyle(fontSize: 16, color: Color(0xFF6C63FF))),
+          const Text('Invite someone to start the vibe.', style: TextStyle(fontSize: 16, color: Color(0xFF6C63FF))),
         ],
       ),
     );

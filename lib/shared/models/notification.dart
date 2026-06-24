@@ -7,8 +7,6 @@ enum NotificationType {
   tip,
   message,
   system,
-  match,
-  like,
 }
 
 class Notification {
@@ -56,13 +54,7 @@ class Notification {
       roomName: map['roomName'],
       data: map['data'],
       isRead: map['isRead'] ?? false,
-<<<<<<< HEAD
-      timestamp: map['timestamp'] != null
-          ? (map['timestamp'] as Timestamp).toDate()
-          : DateTime.now(),
-=======
       timestamp: _parseTimestamp(map['timestamp']),
->>>>>>> origin/develop
     );
   }
 

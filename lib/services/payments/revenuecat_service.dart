@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-﻿/// RevenueCat Service - Stub for compilation
-/// Integration pending RevenueCat SDK setup and App Store/Play Store configuration
-=======
 /// RevenueCat Service - Stub for compilation
 /// TODO: Implement full RevenueCat integration
->>>>>>> origin/develop
 library;
 
 import '../../features/payments/models/membership_tier.dart';
@@ -49,21 +44,16 @@ class RevenueCatService {
   List<StoreOffering> get offerings => const [];
 
   /// Initialize RevenueCat SDK
-  Future<void> initialize([String? userId]) async {
-    // Web stub: no-op
+  Future<void> init() async {
+    // TODO: Initialize RevenueCat with API key
   }
 
   /// Purchase a membership tier
   Future<PurchaseResult> purchaseMembership(MembershipTier tier) async {
-<<<<<<< HEAD
-    // DEV STUB - purchase flow pending RevenueCat SDK integration
-    return const PurchaseResult(success: false, errorMessage: 'RevenueCat not yet configured');
-=======
     // DEV STUB - monetization disabled
     // TODO: Implement RevenueCat purchase flow when ready
     return const PurchaseResult(
         success: false, errorMessage: 'RevenueCat not yet configured');
->>>>>>> origin/develop
   }
 
   /// Purchase a subscription by product ID
@@ -82,19 +72,14 @@ class RevenueCatService {
 
   /// Restore purchases
   Future<PurchaseResult> restorePurchases() async {
-<<<<<<< HEAD
-    // DEV STUB - restore flow pending RevenueCat SDK integration
-    return const PurchaseResult(success: false, errorMessage: 'RevenueCat not yet configured');
-=======
     // TODO: Implement restore purchases via RevenueCat
     return const PurchaseResult(
         success: false, errorMessage: 'RevenueCat not yet configured');
->>>>>>> origin/develop
   }
 
   /// Get current entitlements
   Future<List<String>> getEntitlements() async {
-    // DEV STUB - entitlements pending RevenueCat SDK integration
+    // TODO: Fetch active entitlements from RevenueCat
     return [];
   }
 }

@@ -1,10 +1,10 @@
-// App-wide constants for MIXVY
+// App-wide constants for Mix & Mingle
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
   // App info
-  static const String appName = 'MIXVY';
+  static const String appName = 'Mix & Mingle';
   static const String appVersion = '1.0.0';
 
   // Agora configuration - loaded from .env file

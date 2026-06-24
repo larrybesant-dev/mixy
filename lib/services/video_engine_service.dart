@@ -4,13 +4,19 @@ class VideoEngineService {
   late RtcEngine _engine;
 
   Future<void> initialize(String appId) async {
-    _engine = await RtcEngine.create(appId);
+    _engine = createAgoraRtcEngine();
+    await _engine.initialize(RtcEngineContext(appId: appId));
     await _engine.enableVideo();
     await _engine.enableAudio();
   }
 
   Future<void> joinChannel(String token, String channelName, int uid) async {
-    await _engine.joinChannel(token, channelName, null, uid);
+    await _engine.joinChannel(
+      token: token,
+      channelId: channelName,
+      uid: uid,
+      options: const ChannelMediaOptions(),
+    );
   }
 
   Future<void> leaveChannel() async {
@@ -26,6 +32,6 @@ class VideoEngineService {
   }
 
   void setEventHandlers(RtcEngineEventHandler handler) {
-    _engine.setEventHandler(handler);
+    _engine.registerEventHandler(handler);
   }
 }

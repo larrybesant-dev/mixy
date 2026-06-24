@@ -146,7 +146,7 @@ class _CreateStoryPageState extends ConsumerState<CreateStoryPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.add_photo_alternate_outlined,
-              size: 72, color: DesignColors.textGray.withOpacity(0.4)),
+              size: 72, color: DesignColors.textGray.withValues(alpha: 0.4)),
           const SizedBox(height: 24),
           const Text(
             'Share a moment',
@@ -196,7 +196,7 @@ class _CreateStoryPageState extends ConsumerState<CreateStoryPage> {
         decoration: BoxDecoration(
           color: DesignColors.surfaceLight,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: DesignColors.accent.withOpacity(0.2)),
+          border: Border.all(color: DesignColors.accent.withValues(alpha: 0.2)),
         ),
         child: Column(children: [
           Icon(icon, color: DesignColors.accent, size: 32),
@@ -263,7 +263,7 @@ class _CreateStoryPageState extends ConsumerState<CreateStoryPage> {
                   decoration: InputDecoration(
                     hintText: 'Add a caption…',
                     hintStyle: TextStyle(
-                        color: DesignColors.textGray.withOpacity(0.6)),
+                        color: DesignColors.textGray.withValues(alpha: 0.6)),
                     filled: true,
                     fillColor: DesignColors.surfaceLight,
                     border: OutlineInputBorder(

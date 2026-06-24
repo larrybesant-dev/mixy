@@ -10,7 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import '../models/membership_tier.dart';
 import '../models/coin_package.dart';
-import '../../../services/payments/revenuecat_service.dart';
+import 'revenuecat_service.dart';
 import '../../../core/analytics/analytics_service.dart' as core_analytics;
 import '../../../core/crashlytics/crashlytics_service.dart';
 
@@ -54,18 +54,24 @@ class MembershipService {
   /// Initialize the membership service
   Future<void> initialize(String userId) async {
     _currentUserId = userId;
+
     try {
-      debugPrint('[Membership] Initializing for user: $userId');
-      // Web-safe RevenueCat stub
-      await RevenueCatService().initialize(_currentUserId!);
-      // Listen to tier changes (stubbed for web)
-      // _tierSubscription = RevenueCatService.instance.tierStream.listen((tier) {
-      //   _syncMembershipToFirestore(tier);
-      // });
+      debugPrint('ðŸŽ« [Membership] Initializing for user: $userId');
+
+      // Initialize RevenueCat
+      await RevenueCatService.instance.initialize(userId);
+
+      // Listen to RevenueCat tier changes
+      _tierSubscription = RevenueCatService.instance.tierStream.listen((tier) {
+        _syncMembershipToFirestore(tier);
+      });
+
+      // Load current data from Firestore
       await _loadUserMembershipData();
-      debugPrint('[Membership] Initialized successfully');
+
+      debugPrint('âœ… [Membership] Initialized successfully');
     } catch (e) {
-      debugPrint('[Membership] Init error: $e');
+      debugPrint('âŒ [Membership] Init error: $e');
     }
   }
 
@@ -129,8 +135,6 @@ class MembershipService {
           tier: tier.firestoreValue,
           previousTier: previousTier.firestoreValue,
         );
-<<<<<<< HEAD
-=======
       }
 
       debugPrint(
@@ -177,7 +181,6 @@ class MembershipService {
           'âœ… [Membership] Coin balance updated: $change -> $newBalance');
       return true;
     } catch (e) {
->>>>>>> origin/develop
       debugPrint('âŒ [Membership] Failed to update coins: $e');
       return false;
     }

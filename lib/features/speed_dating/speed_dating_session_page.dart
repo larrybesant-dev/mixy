@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design_system/design_constants.dart';
-import '../../shared/providers/event_dating_providers.dart';
+import '../../shared/providers/service_providers.dart';
+import '../../shared/providers/auth_providers.dart';
 
 class SpeedDatingSessionPage extends ConsumerStatefulWidget {
   const SpeedDatingSessionPage({super.key, required this.sessionId});
@@ -86,9 +87,26 @@ class _SpeedDatingSessionPageState
       _submitError = null;
     });
     try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || _session == null) {
+        throw Exception('User or session not found');
+      }
+
+      // Determine the other user's ID
+      final user1Id = _session!['user1Id'] as String?;
+      final user2Id = _session!['user2Id'] as String?;
+      final matchedUserId = uid == user1Id ? user2Id : user1Id;
+
+      if (matchedUserId == null || matchedUserId.isEmpty) {
+        throw Exception('Matched user not found');
+      }
+
+      final liked = decision == 'like';
       await ref.read(speedDatingServiceProvider).submitDecision(
-            sessionId: widget.sessionId,
-            decision: decision,
+            widget.sessionId,
+            uid,
+            matchedUserId,
+            liked,
           );
       if (mounted) setState(() => _decisionSubmitted = true);
     } catch (e) {
@@ -103,7 +121,10 @@ class _SpeedDatingSessionPageState
 
   Future<void> _leaveSession() async {
     try {
-      await ref.read(speedDatingServiceProvider).leaveSession(widget.sessionId);
+      final currentUser = ref.read(currentUserProvider).value;
+      if (currentUser != null) {
+        await ref.read(speedDatingServiceProvider).leaveSession(widget.sessionId, currentUser.id);
+      }
     } finally {
       if (mounted) Navigator.of(context).pop();
     }

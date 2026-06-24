@@ -37,7 +37,9 @@ class _ActiveVibeNotifier extends Notifier<String?> {
   void set(String? vibe) => state = vibe;
 }
 
-final activeVibeProvider = NotifierProvider<_ActiveVibeNotifier, String?>(_ActiveVibeNotifier.new);
+final activeVibeProvider = NotifierProvider<_ActiveVibeNotifier, String?>(
+  _ActiveVibeNotifier.new,
+);
 
 /// The resolved accent color for the current vibe context.
 final vibeAccentProvider = Provider<Color>((ref) {

@@ -19,13 +19,8 @@ import 'core/health_check_system.dart';
 import 'core/crashlytics/crashlytics_service.dart';
 import 'core/performance/performance_service.dart';
 import 'services/notifications/notification_service.dart';
-import 'services/agora/agora_stub.dart'
-  if (dart.library.io) 'services/agora/agora_native.dart';
+import 'services/agora/agora_service.dart';
 import 'services/room/room_firestore_service.dart';
-<<<<<<< HEAD
-import 'core/routing/app_routes.dart';
-import 'utils/window_sync_service.dart';
-=======
 import 'app/app_routes.dart';
 import 'features/buddy_list/buddy_list_screen.dart';
 import 'features/buddy_list/buddy_profile_screen.dart';
@@ -33,7 +28,6 @@ import 'core/web/web_window_service.dart';
 import 'features/video_room/screens/video_window_screen.dart';
 import 'features/chat/screens/chat_pop_out_screen.dart';
 
->>>>>>> origin/develop
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -156,9 +150,6 @@ void main() {
 
       debugPrint('ðŸš€ Running app with Riverpod and Provider setup...');
 
-      // Start cross-window sync bridge (no-op on non-web).
-      WindowSyncService.ensureInitialized();
-
       runApp(
         riverpod.ProviderScope(
           child: MultiProvider(
@@ -206,17 +197,9 @@ class _AlwaysLandingApp extends riverpod.ConsumerWidget {
       ),
     );
     return MaterialApp(
-      title: 'MIXVY',
+      title: 'Mix & Mingle - Vibes Around the World',
       debugShowCheckedModeBanner: false,
       theme: themedTheme,
-<<<<<<< HEAD
-      initialRoute: '/',
-      onGenerateRoute: (settings) {
-        if (kDebugMode) {
-          debugPrint('🌐 [AlwaysLanding] Route: ${settings.name}');
-        }
-        switch (settings.name) {
-=======
       // Use RootAuthGate as home so returning authenticated users go directly
       // to the app rather than being shown LandingPage on every startup.
       // RootAuthGate handles unauthenticated users by showing LandingPage itself.
@@ -233,7 +216,6 @@ class _AlwaysLandingApp extends riverpod.ConsumerWidget {
         final routeParams = routeUri?.queryParameters ?? {};    // e.g. {uid: 'abc'}
 
         switch (routePath) {
->>>>>>> origin/develop
           case '/':
           case '/landing':
             return MaterialPageRoute(builder: (_) => const LandingPage());
@@ -246,9 +228,6 @@ class _AlwaysLandingApp extends riverpod.ConsumerWidget {
                 builder: (_) => const ForgotPasswordPage());
           case '/app':
             // After login, go to the auth-protected app
-<<<<<<< HEAD
-            return MaterialPageRoute(builder: (_) => const AuthGateRoot());
-=======
             // On web, also restore any previously-open pop-out windows.
             WidgetsBinding.instance.addPostFrameCallback(
                 (_) => WebWindowService.restoreWindowsOnLogin());
@@ -317,10 +296,9 @@ class _AlwaysLandingApp extends riverpod.ConsumerWidget {
                       agoraUid: videoAgoraUid,
                     ));
 
->>>>>>> origin/develop
           default:
             // Delegate all authenticated-app routes to the full AppRoutes table
-            return AppRoutes.onGenerateRoute(settings);
+            return AppRoutes.generateRoute(settings);
         }
       },
     );

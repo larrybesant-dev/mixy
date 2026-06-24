@@ -9,7 +9,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/post.dart';
-import 'social_graph_providers.dart';
+import '../../services/social/social_feed_service.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICE PROVIDER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Provides a singleton instance of [SocialFeedService].
+final socialFeedServiceProvider = Provider<SocialFeedService>((ref) {
+  return SocialFeedService();
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STREAM PROVIDERS  (real-time, first-page only)

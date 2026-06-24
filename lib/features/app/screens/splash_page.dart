@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:mixmingle/app/app_routes.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
 import 'package:mixmingle/shared/widgets/glow_text.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -53,11 +52,7 @@ class _SplashPageState extends State<SplashPage> {
       if (mounted && !_hasNavigated) {
         debugPrint('⚠ Splash timeout (15s) - forcing navigation to onboarding');
         _hasNavigated = true;
-<<<<<<< HEAD
-        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-=======
         Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
->>>>>>> origin/develop
       }
     });
   }
@@ -72,19 +67,11 @@ class _SplashPageState extends State<SplashPage> {
       _timeoutTimer?.cancel();
 
       if (user != null) {
-<<<<<<< HEAD
-        debugPrint('âœ… User authenticated - navigating to /home');
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-      } else {
-        debugPrint('ℹ️ No user - navigating to /login');
-        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-=======
         debugPrint('✅ User authenticated - navigating to /home');
         Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       } else {
         debugPrint('ℹ No user - navigating to onboarding');
         Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
->>>>>>> origin/develop
       }
     }
   }
@@ -133,11 +120,11 @@ class _SplashPageState extends State<SplashPage> {
 
               // App Name
               const GlowText(
-                text: 'MIXVY',
+                text: 'MIX & MINGLE',
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF00D9FF),
-                glowColor: Color(0xFF7B2BFF),
+                color: Color(0xFFFFD700),
+                glowColor: Color(0xFFFF4C4C),
                 glowRadius: 12,
               ),
               const SizedBox(height: 8),

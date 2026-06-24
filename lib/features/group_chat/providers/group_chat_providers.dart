@@ -72,14 +72,10 @@ class GroupCallState {
 }
 
 // Group call state management
-<<<<<<< HEAD
-final groupCallControllerProvider = NotifierProvider<GroupCallStateNotifier, GroupCallState>(GroupCallStateNotifier.new);
-=======
 final groupCallControllerProvider =
     NotifierProvider.autoDispose<GroupCallStateNotifier, GroupCallState>(
   GroupCallStateNotifier.new,
 );
->>>>>>> origin/develop
 
 class GroupCallStateNotifier extends Notifier<GroupCallState> {
   late final AgoraVideoService _service;

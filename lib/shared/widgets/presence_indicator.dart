@@ -24,17 +24,14 @@ class PresenceIndicator extends ConsumerWidget {
       stream: presenceService.getUserPresence(userId),
       builder: (context, snapshot) {
         final presence = snapshot.data;
-        // Use stale-aware status: if lastActive > 10 min old, treat as offline
-        final effectiveStatus = (presence != null && presence.isStale)
-            ? PresenceStatus.offline
-            : (presence?.status ?? PresenceStatus.offline);
+        final status = presence?.status ?? PresenceStatus.offline;
 
         return Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _getStatusColor(effectiveStatus),
+            color: _getStatusColor(status),
             border: showBorder
                 ? Border.all(
                     color: Colors.white,

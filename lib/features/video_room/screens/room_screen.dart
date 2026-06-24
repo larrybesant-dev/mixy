@@ -29,8 +29,6 @@ import '../../../../core/design_system/design_constants.dart' hide JoinPhase;
 import '../controllers/agora_room_controller.dart';
 import '../controllers/join_flow_controller.dart';
 import '../../../shared/models/participant.dart';
-import '../../../shared/models/room.dart';
-import '../../../shared/providers/room_providers.dart';
 import '../widgets/participant_card_widget.dart';
 
 class RoomScreen extends ConsumerStatefulWidget {
@@ -126,22 +124,12 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
   @override
   Widget build(BuildContext context) {
     final roomState = ref.watch(agoraRoomProvider);
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final currentUserId = currentUser?.uid ?? '';
-
-    final roomAsync = ref.watch(roomStreamProvider(widget.roomId));
-    final room = roomAsync.asData?.value;
-
-    final isOwner = room != null && room.ownerId == currentUserId;
-    final isAdmin = room != null &&
-        (isOwner || room.admins.contains(currentUserId));
-
     return Scaffold(
-      // ✅ Use dark background
+      // âœ… Use dark background
       backgroundColor: DesignColors.surfaceDefault,
 
       appBar: AppBar(
-        // ✅ Use dark app bar
+        // âœ… Use dark app bar
         backgroundColor: DesignColors.surfaceDefault,
         elevation: 0,
         title: Text(
@@ -156,13 +144,6 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
           onPressed: _handleLeaveRoom,
         ),
         actions: [
-          // Admin controls button — only visible to owner/admin
-          if (isAdmin)
-            IconButton(
-              icon: const Icon(Icons.admin_panel_settings, color: DesignColors.accent),
-              tooltip: 'Admin Controls',
-              onPressed: () => _showAdminControlsSheet(context, room),
-            ),
           // Room energy indicator top-right
           Padding(
             padding: const EdgeInsets.all(DesignSpacing.md),
@@ -196,7 +177,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
       ),
 
       body: roomState.isInRoom
-          ? _buildRoomContent(roomState, isAdmin: isAdmin, room: room)
+          ? _buildRoomContent(roomState)
           : _buildJoinFlowOverlay(roomState),
 
       // Bottom control bar
@@ -279,7 +260,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
   }
 
   /// Build main room content with participant cards
-  Widget _buildRoomContent(AgoraRoomState roomState, {required bool isAdmin, Room? room}) {
+  Widget _buildRoomContent(AgoraRoomState roomState) {
     final participants = roomState.participants;
 
     if (participants.isEmpty) {
@@ -307,7 +288,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
           return ParticipantCardWidget(
             participant: participant,
             onTap: () {
-              _showParticipantActionsMenu(context, participant, isAdmin: isAdmin);
+              _showParticipantActionsMenu(context, participant);
             },
             showArrivalAnimation: true,
           );
@@ -316,13 +297,8 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
     );
   }
 
-<<<<<<< HEAD
-  void _showParticipantActionsMenu(BuildContext context, Participant participant,
-      {required bool isAdmin}) {
-=======
   void _showParticipantActionsMenu(
       BuildContext context, Participant participant) {
->>>>>>> origin/develop
     showModalBottomSheet(
       context: context,
       builder: (ctx) => Column(
@@ -334,6 +310,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
             title: Text(participant.isMuted ? 'Unmute for me' : 'Mute for me'),
             onTap: () {
               Navigator.of(ctx).pop();
+              // Mute/unmute handled by Agora remotely
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                     content: Text(participant.isMuted
@@ -360,216 +337,6 @@ class _RoomScreenState extends ConsumerState<RoomScreen>
                 SnackBar(content: Text('Spotlighting ${participant.name}')),
               );
             },
-          ),
-          // Admin-only actions
-          if (isAdmin) ...[
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.remove_circle, color: Colors.orangeAccent),
-              title: Text('Kick ${participant.name}'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _adminAction(() => ref.read(roomServiceProvider).adminKickUser(widget.roomId, participant.uid),
-                    'Kicked ${participant.name}');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block, color: Colors.red),
-              title: Text('Ban ${participant.name}'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _adminAction(() => ref.read(roomServiceProvider).adminBanUser(widget.roomId, participant.uid),
-                    'Banned ${participant.name}');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shield, color: Colors.green),
-              title: Text('Add Admin: ${participant.name}'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _adminAction(() => ref.read(roomServiceProvider).makeAdmin(widget.roomId, participant.uid),
-                    '${participant.name} is now an admin');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shield_outlined, color: Colors.grey),
-              title: Text('Remove Admin: ${participant.name}'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _adminAction(() => ref.read(roomServiceProvider).removeAdmin(widget.roomId, participant.uid),
-                    'Removed admin from ${participant.name}');
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _showAdminControlsSheet(BuildContext context, Room? room) {
-    if (room == null) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text('Admin Controls', style: DesignTypography.heading),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.edit, color: DesignColors.accent),
-              title: const Text('Edit Room Name'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _showEditTextDialog(
-                  context,
-                  title: 'Edit Room Name',
-                  initialValue: room.title,
-                  onSave: (v) => _adminAction(
-                      () => ref.read(roomServiceProvider).updateRoomName(widget.roomId, v),
-                      'Room name updated'),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.short_text, color: DesignColors.accent),
-              title: const Text('Edit Room Header'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _showEditTextDialog(
-                  context,
-                  title: 'Edit Header',
-                  initialValue: '',
-                  onSave: (v) => _adminAction(
-                      () => ref.read(roomServiceProvider).updateRoomHeader(widget.roomId, v),
-                      'Header updated'),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                room.isLocked ? Icons.lock_open : Icons.lock,
-                color: room.isLocked ? Colors.green : Colors.orange,
-              ),
-              title: Text(room.isLocked ? 'Unlock Room' : 'Lock Room'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                if (room.isLocked) {
-                  _adminAction(() => ref.read(roomServiceProvider).unlockRoom(widget.roomId), 'Room unlocked');
-                } else {
-                  _adminAction(() => ref.read(roomServiceProvider).lockRoom(widget.roomId), 'Room locked');
-                }
-              },
-            ),
-            if (room.bannedUsers.isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.block, color: Colors.redAccent),
-                title: Text('Banned Users (${room.bannedUsers.length})'),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _showBannedUsersSheet(context, room);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _adminAction(Future<void> Function() action, String successMessage) async {
-    try {
-      await action();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
-    } catch (e) {
-      if (!mounted) return;
-      _showErrorDialog(e.toString());
-    }
-  }
-
-  void _showBannedUsersSheet(BuildContext context, Room room) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text('Banned Users', style: DesignTypography.heading),
-            ),
-            const Divider(),
-            if (room.bannedUsers.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No banned users.', style: DesignTypography.body),
-              )
-            else
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 320),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: room.bannedUsers.length,
-                  itemBuilder: (_, i) {
-                    final uid = room.bannedUsers[i];
-                    return ListTile(
-                      leading: const Icon(Icons.person_off, color: Colors.redAccent),
-                      title: Text(uid, style: DesignTypography.body),
-                      trailing: TextButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          _adminAction(
-                            () => ref.read(roomServiceProvider).unbanUser(widget.roomId, uid),
-                            'User unbanned',
-                          );
-                        },
-                        child: Text('Unban',
-                            style: DesignTypography.body.copyWith(color: DesignColors.accent)),
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEditTextDialog(BuildContext context,
-      {required String title, required String initialValue, required void Function(String) onSave}) {
-    final controller = TextEditingController(text: initialValue);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DesignColors.surfaceDefault,
-        title: Text(title, style: DesignTypography.heading),
-        content: TextField(
-          controller: controller,
-          style: DesignTypography.body,
-          decoration: const InputDecoration(
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: DesignColors.surfaceLight)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: DesignColors.accent)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: DesignTypography.body.copyWith(color: DesignColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              onSave(controller.text.trim());
-            },
-            child: Text('Save', style: DesignTypography.body.copyWith(color: DesignColors.accent)),
           ),
         ],
       ),

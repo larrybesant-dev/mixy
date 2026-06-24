@@ -7,6 +7,8 @@ import 'feedback_provider.dart';
 class FeedbackWidget extends ConsumerWidget {
   final TextEditingController _controller = TextEditingController();
 
+  FeedbackWidget({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
@@ -21,16 +23,13 @@ class FeedbackWidget extends ConsumerWidget {
           onPressed: () {
             final message = _controller.text;
             if (message.isNotEmpty) {
-              final feedbackList = ref.read(feedbackProvider.notifier);
-              feedbackList.state = [
-                ...feedbackList.state,
-                FeedbackItem(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  userId: 'currentUser', // Replace with actual user ID
-                  message: message,
-                  timestamp: DateTime.now(),
-                ),
-              ];
+              final feedbackItem = FeedbackItem(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                userId: 'currentUser', // Replace with actual user ID
+                message: message,
+                timestamp: DateTime.now(),
+              );
+              ref.read(feedbackProvider.notifier).addFeedback(feedbackItem);
               _controller.clear();
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Feedback submitted')));
             }

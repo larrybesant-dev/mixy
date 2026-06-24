@@ -14,17 +14,12 @@
 // ───────────────────────────────────────────────────────────────────────────
 
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/platform/web_platform_view_helper.dart';
-import '../../../services/agora/agora_platform_service.dart';
 import 'live_room_schema.dart';
 import 'live_room_controller.dart';
-import '../../../utils/window_manager.dart';
-import '../../../utils/window_sync_service.dart';
 
 class LiveTileGrid extends ConsumerStatefulWidget {
   const LiveTileGrid({super.key, required this.args});
@@ -69,29 +64,12 @@ class _LiveTileGridState extends ConsumerState<LiveTileGrid> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-<<<<<<< HEAD
-        final count = gridParts.length;
-        final cols = switch (count) {
-          <= 1 => 1,
-          <= 4 => 2,
-          <= 9 => 3,
-          _ => 4,
-        };
-        final rows    = (gridParts.length / cols).ceil();
-        final tileW = constraints.maxWidth / cols;
-        final maxTileH = rows > 0
-            ? (constraints.maxHeight / rows).clamp(90.0, 260.0)
-            : 200.0;
-        final targetTileH = tileW / (4 / 3);
-        final tileH = targetTileH > maxTileH ? maxTileH : targetTileH;
-=======
         final cols = gridParts.length <= 2 ? gridParts.length : 2;
         final rows = (gridParts.length / cols).ceil();
         final tileW = constraints.maxWidth / cols;
         final tileH = rows > 0
             ? (constraints.maxHeight / rows).clamp(80.0, 240.0)
             : 180.0;
->>>>>>> origin/develop
 
         return GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
@@ -162,12 +140,7 @@ class _TileCard extends StatelessWidget {
   final VoidCallback? onDemote;
 
   bool get _isSpeaking =>
-<<<<<<< HEAD
-      (participant.agoraUid != null && participant.agoraUid == activeSpeakerUid) ||
-      (activeSpeakerUid == null && participant.isMicActive);
-=======
       participant.agoraUid != null && participant.agoraUid == activeSpeakerUid;
->>>>>>> origin/develop
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +212,7 @@ class _TileCard extends StatelessWidget {
             if (participant.isOnCam && !participant.isStreaming)
               Positioned(
                 top: 6,
-                right: 34,
+                right: 6,
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -262,7 +235,7 @@ class _TileCard extends StatelessWidget {
             if (participant.isStreaming)
               Positioned(
                 top: 6,
-                right: 34,
+                right: 6,
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -303,25 +276,6 @@ class _TileCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-            // ── Cam pop-out button (top-right) ───────────────────────────
-            Positioned(
-              top: 2,
-              right: 2,
-              child: IconButton(
-                icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white70),
-                tooltip: 'Pop Out Cam',
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                padding: const EdgeInsets.all(4),
-                onPressed: () {
-                  WindowSyncService.send('room.camPopoutRequested', {
-                    'roomId': channelId,
-                    'userId': participant.userId,
-                  });
-                  WindowManager.openCam(participant.userId);
-                },
-              ),
-            ),
           ],
         ),
       ),
@@ -330,26 +284,6 @@ class _TileCard extends StatelessWidget {
 
   Widget _buildVideoLayer() {
     final uid = participant.agoraUid;
-
-    if (kIsWeb) {
-      debugPrint('[TILE_GRID] _buildVideoLayer: userId=${participant.userId.substring(0, 6)} '
-          'isLocal=$isLocal agoraUid=$uid isOnCam=${participant.isOnCam} '
-          'isStreaming=${participant.isStreaming} gridPos=${participant.gridPosition}');
-      if (isLocal && participant.isOnCam) {
-        return _WebLocalCameraView(userId: participant.userId);
-      }
-      if (!isLocal && uid != null && participant.isOnCam) {
-        debugPrint('[TILE_GRID] → mounting _WebRemoteVideoView for uid=$uid');
-        return _WebRemoteVideoView(agoraUid: uid);
-      }
-      if (!isLocal && uid == null && participant.isOnCam) {
-        debugPrint('[TILE_GRID] ⚠️ remote isOnCam=true but agoraUid==null — showing avatar, waiting for Firestore agoraUid');
-      }
-      return _AvatarPlaceholder(
-        displayName: participant.displayName,
-        avatarUrl: participant.avatarUrl,
-      );
-    }
 
     // No engine (web) or no uid yet — show avatar
     if (engine == null || uid == null || !participant.isOnCam) {
@@ -377,142 +311,6 @@ class _TileCard extends StatelessWidget {
         connection: RtcConnection(channelId: channelId),
       ),
     );
-  }
-}
-
-// ── Remote web video view ──────────────────────────────────────────────────
-
-class _WebRemoteVideoView extends StatefulWidget {
-  const _WebRemoteVideoView({required this.agoraUid});
-
-  final int agoraUid;
-
-  @override
-  State<_WebRemoteVideoView> createState() => _WebRemoteVideoViewState();
-}
-
-class _WebRemoteVideoViewState extends State<_WebRemoteVideoView> {
-  late final String _viewId;
-  late final String _elementId;
-
-  Timer? _attachRetryTimer;
-  int _attachAttempts = 0;
-  static const int _maxAttachAttempts = 120;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewId    = 'mm_remote_video_view_${widget.agoraUid}';
-    _elementId = 'mm_remote_video_el_${widget.agoraUid}';
-    registerVideoViewFactory(_viewId, _elementId);
-    debugPrint('[REMOTE_VIDEO] ▶ _WebRemoteVideoView mounted: agoraUid=${widget.agoraUid} elementId=$_elementId');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _startAttachRetries();
-    });
-  }
-
-  @override
-  void dispose() {
-    _attachRetryTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startAttachRetries() {
-    _attachRetryTimer?.cancel();
-    _attachAttempts = 0;
-    debugPrint('[REMOTE_VIDEO] starting retry loop for agoraUid=${widget.agoraUid} elementId=$_elementId');
-
-    _attachRetryTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) async {
-      if (!mounted) {
-        timer.cancel();
-        debugPrint('[REMOTE_VIDEO] retry loop cancelled (unmounted) for uid=${widget.agoraUid}');
-        return;
-      }
-      _attachAttempts += 1;
-      final attached = await AgoraPlatformService.playRemoteVideo(
-        widget.agoraUid.toString(),
-        _elementId,
-      );
-      if (attached) {
-        timer.cancel();
-        debugPrint('[REMOTE_VIDEO] ✅ playRemoteVideo SUCCESS on attempt=$_attachAttempts for uid=${widget.agoraUid}');
-      } else if (_attachAttempts >= _maxAttachAttempts) {
-        timer.cancel();
-        debugPrint('[REMOTE_VIDEO] ❌ playRemoteVideo TIMED OUT after $_attachAttempts attempts for uid=${widget.agoraUid} — video will not appear without manual retry');
-      } else if (_attachAttempts % 8 == 0) {
-        // Log every ~2 seconds to avoid spam while still showing progress
-        debugPrint('[REMOTE_VIDEO] still waiting... attempt=$_attachAttempts for uid=${widget.agoraUid}');
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return HtmlElementView(viewType: _viewId);
-  }
-}
-
-// ── Local web camera view ──────────────────────────────────────────────────
-
-class _WebLocalCameraView extends StatefulWidget {
-  const _WebLocalCameraView({required this.userId});
-
-  final String userId;
-
-  @override
-  State<_WebLocalCameraView> createState() => _WebLocalCameraViewState();
-}
-
-class _WebLocalCameraViewState extends State<_WebLocalCameraView> {
-  late final String _viewId;
-  late final String _elementId;
-
-  @override
-  void initState() {
-    super.initState();
-    final safeId = widget.userId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-    _viewId = 'mm_local_video_view_$safeId';
-    _elementId = 'mm_local_video_el_$safeId';
-    registerVideoViewFactory(_viewId, _elementId);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _startAttachRetries();
-    });
-  }
-
-  Timer? _attachRetryTimer;
-  int _attachAttempts = 0;
-  static const int _maxAttachAttempts = 120;
-
-  @override
-  void dispose() {
-    _attachRetryTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startAttachRetries() {
-    _attachRetryTimer?.cancel();
-    _attachAttempts = 0;
-
-    _attachRetryTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) async {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      _attachAttempts += 1;
-      final attached = await AgoraPlatformService.playCamera(_elementId);
-      if (attached || _attachAttempts >= _maxAttachAttempts) {
-        timer.cancel();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return HtmlElementView(viewType: _viewId);
   }
 }
 

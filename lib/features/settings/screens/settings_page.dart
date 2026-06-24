@@ -3,15 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixmingle/app/app_routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mixmingle/shared/providers/all_providers.dart';
 import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-<<<<<<< HEAD
-import 'package:mixmingle/shared/providers/providers.dart' show themeProvider;
-=======
 import 'package:mixmingle/core/analytics/analytics_service.dart';
->>>>>>> origin/develop
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -229,54 +225,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   subtitle: const Text('Light'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-<<<<<<< HEAD
-                    final currentTheme = ref.read(themeProvider);
-                    showDialog<void>(
-                      context: context,
-                      builder: (_) => SimpleDialog(
-                        title: const Text('Choose Theme'),
-                        children: [
-                          SimpleDialogOption(
-                            onPressed: () {
-                              ref.read(themeProvider.notifier).setTheme(ThemeMode.system);
-                              Navigator.pop(context);
-                            },
-                            child: Row(children: [
-                              Icon(Icons.brightness_auto, color: currentTheme == ThemeMode.system ? Colors.purple : null),
-                              const SizedBox(width: 12),
-                              const Text('System Default'),
-                            ]),
-                          ),
-                          SimpleDialogOption(
-                            onPressed: () {
-                              ref.read(themeProvider.notifier).setTheme(ThemeMode.light);
-                              Navigator.pop(context);
-                            },
-                            child: Row(children: [
-                              Icon(Icons.light_mode, color: currentTheme == ThemeMode.light ? Colors.purple : null),
-                              const SizedBox(width: 12),
-                              const Text('Light'),
-                            ]),
-                          ),
-                          SimpleDialogOption(
-                            onPressed: () {
-                              ref.read(themeProvider.notifier).setTheme(ThemeMode.dark);
-                              Navigator.pop(context);
-                            },
-                            child: Row(children: [
-                              Icon(Icons.dark_mode, color: currentTheme == ThemeMode.dark ? Colors.purple : null),
-                              const SizedBox(width: 12),
-                              const Text('Dark'),
-                            ]),
-                          ),
-                        ],
-                      ),
-=======
                     // TODO: Implement theme settings
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text('Theme settings coming soon')),
->>>>>>> origin/develop
                     );
                   },
                 ),

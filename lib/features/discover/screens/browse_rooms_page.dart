@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-﻿// Updated for current Flutter best practices
-=======
 // ignore_for_file: deprecated_member_use
->>>>>>> origin/develop
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

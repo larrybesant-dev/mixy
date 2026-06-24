@@ -1,23 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/firestore_schema.dart';
+import 'package:flutter/foundation.dart';
+import '../shared/models/direct_message.dart';
+import '../shared/models/message.dart';
+import '../shared/models/chat_room.dart';
+import '../shared/models/user.dart';
+import 'analytics/analytics_service.dart';
+import 'notification_service.dart';
 
+/// Service for handling direct messaging between users
 class MessagingService {
+  static final MessagingService _instance = MessagingService._internal();
+  factory MessagingService() => _instance;
+
+  MessagingService._internal();
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AnalyticsService _analytics = AnalyticsService();
+  final NotificationService _notificationService = NotificationService();
 
-<<<<<<< HEAD
-  /// Create or return existing conversation ID between two users
-  Future<String> getOrCreateConversationId(String userA, String userB) async {
-    final query = await _firestore
-        .collection(FirestorePaths.conversations)
-        .where('participants', arrayContains: userA)
-        .get();
-
-    for (final doc in query.docs) {
-      final participants = List<String>.from(doc['participants']);
-      if (participants.contains(userB)) {
-        return doc.id;
-=======
   /// Send a direct message to another user
   Future<void> sendMessage({
     required String senderId,
@@ -135,6 +135,28 @@ class MessagingService {
     final lastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
 
     return (messages, lastDocument);
+  }
+
+  /// Get all conversations for a user (returns ChatRoom objects for UI)
+  Stream<List<ChatRoom>> streamConversations(String userId) {
+    return _firestore
+        .collection('conversations')
+        .where('participants', arrayContains: userId)
+        .orderBy('lastMessageTime', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) {
+              final data = doc.data();
+              return ChatRoom(
+                id: doc.id,
+                participants: List<String>.from(data['participants'] ?? []),
+                lastMessage: data['lastMessage'] as String? ?? '',
+                lastMessageTime: (data['lastMessageTime'] as Timestamp).toDate(),
+                unreadCounts: Map<String, int>.from(data['unreadCounts'] ?? {}),
+                isTyping: false,
+              );
+            })
+            .toList());
   }
 
   /// Get all conversations for a user
@@ -451,28 +473,19 @@ class MessagingService {
             'unreadCount': conversationData['unreadCount_$userId'] ?? 0,
           },
         });
->>>>>>> origin/develop
       }
     }
 
-    final newDoc = await _firestore.collection(FirestorePaths.conversations).add({
-      'participants': [userA, userB],
-      'lastMessage': null,
-      'lastTimestamp': FieldValue.serverTimestamp(),
-      'unread': {
-        userA: 0,
-        userB: 0,
-      },
+    // Sort by timestamp (most recent first)
+    results.sort((a, b) {
+      final messageA = a['message'] as DirectMessage;
+      final messageB = b['message'] as DirectMessage;
+      return messageB.timestamp.compareTo(messageA.timestamp);
     });
 
-    return newDoc.id;
+    return results.take(limit).toList();
   }
 
-<<<<<<< HEAD
-  /// Send a message
-  Future<void> sendMessage({
-    required String conversationId,
-=======
   /// Add a reaction to a message
   Future<void> addReaction(
       String messageId, String emoji, String userId) async {
@@ -612,82 +625,63 @@ class MessagingService {
 extension RoomMessaging on MessagingService {
   /// Send a message to a room
   Future<void> sendRoomMessage({
->>>>>>> origin/develop
     required String senderId,
-    required String text,
+    required String senderName,
+    required String senderAvatarUrl,
+    required String roomId,
+    required String content,
+    String type = 'text',
+    String? mediaUrl,
+    String? thumbnailUrl,
+    Map<String, dynamic>? metadata,
   }) async {
-    final messageRef = _firestore
-        .collection(FirestorePaths.conversations)
-        .doc(conversationId)
-        .collection(FirestorePaths.messages)
-        .doc();
+    final message = Message(
+      id: '', // Will be set by Firestore
+      roomId: roomId,
+      senderId: senderId,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      type: type,
+      content: content,
+      mediaUrl: mediaUrl,
+      thumbnailUrl: thumbnailUrl,
+      metadata: metadata,
+      mentionedUserIds: [], // TODO: Parse mentions from content
+      reactions: [],
+      isEdited: false,
+      isTyping: false,
+      status: MessageStatus.sent,
+      timestamp: DateTime.now(),
+    );
 
-<<<<<<< HEAD
-    await messageRef.set({
-      'id': messageRef.id,
-      'senderId': senderId,
-      'text': text,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-=======
     // Add message to Firestore (using subcollection)
     await _firestore
         .collection('rooms')
         .doc(roomId)
         .collection('messages')
         .add(message.toMap());
->>>>>>> origin/develop
 
-    final convoRef =
-        _firestore.collection(FirestorePaths.conversations).doc(conversationId);
-
-    final convoDoc = await convoRef.get();
-    final participants = List<String>.from(convoDoc['participants']);
-
-    final unread = Map<String, dynamic>.from(convoDoc['unread']);
-    for (final p in participants) {
-      if (p == senderId) continue;
-      unread[p] = (unread[p] ?? 0) + 1;
-    }
-
-    await convoRef.update({
-      'lastMessage': text,
-      'lastTimestamp': FieldValue.serverTimestamp(),
-      'unread': unread,
+    // Track analytics
+    _analytics.trackEngagement('room_message_sent', parameters: {
+      'room_id': roomId,
+      'sender_id': senderId,
+      'message_type': type,
     });
   }
 
-  /// Stream messages in a conversation
-  Stream<List<Map<String, dynamic>>> streamMessages(String conversationId) {
+  /// Get messages for a room
+  Stream<List<Message>> getRoomMessages(String roomId) {
     return _firestore
-        .collection(FirestorePaths.conversations)
-        .doc(conversationId)
-        .collection(FirestorePaths.messages)
+        .collection('rooms')
+        .doc(roomId)
+        .collection('messages')
         .orderBy('timestamp', descending: false)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Message.fromMap(doc.data())).toList();
+    });
   }
 
-<<<<<<< HEAD
-  /// Stream conversation list for a user
-  Stream<List<Map<String, dynamic>>> streamConversations(String userId) {
-    return _firestore
-        .collection(FirestorePaths.conversations)
-        .where('participants', arrayContains: userId)
-        .orderBy('lastTimestamp', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) {
-              final data = d.data();
-              data['id'] = d.id;
-              return data;
-            }).toList());
-  }
-
-  /// Mark conversation as read
-  Future<void> markAsRead(String conversationId, String userId) async {
-    final convoRef =
-        _firestore.collection(FirestorePaths.conversations).doc(conversationId);
-=======
   /// Delete a room message
   Future<void> deleteRoomMessage(
       String roomId, String messageId, String senderId) async {
@@ -722,15 +716,16 @@ extension RoomMessaging on MessagingService {
         .collection('messages')
         .doc(messageId);
     final doc = await docRef.get();
->>>>>>> origin/develop
 
-    final doc = await convoRef.get();
-    final unread = Map<String, dynamic>.from(doc['unread']);
-    unread[userId] = 0;
+    if (doc.exists) {
+      final message = Message.fromMap(doc.data()!);
+      if (message.senderId == senderId) {
+        await docRef.update({
+          'content': newContent,
+          'isEdited': true,
+          'editedAt': Timestamp.fromDate(DateTime.now()),
+        });
 
-<<<<<<< HEAD
-    await convoRef.update({'unread': unread});
-=======
         // Track analytics
         _analytics.trackEngagement('room_message_edited', parameters: {
           'message_id': messageId,
@@ -757,9 +752,23 @@ extension RoomMessaging on MessagingService {
       }
       return [];
     });
->>>>>>> origin/develop
+  }
+
+  /// Get or create a conversation ID between two users
+  Future<String?> getOrCreateConversationId(
+    String userId1,
+    String userId2,
+  ) async {
+    try {
+      // Generate conversation ID from the two user IDs
+      final conversationId = DirectMessage.createConversationId(userId1, userId2);
+
+      // Optionally, you could check if it exists and create it if not
+      // For now, just return the generated ID
+      return conversationId;
+    } catch (e) {
+      debugPrint('❌ [MessagingService] Error getting/creating conversation: $e');
+      return null;
+    }
   }
 }
-
-final messagingServiceProvider =
-    Provider<MessagingService>((ref) => MessagingService());

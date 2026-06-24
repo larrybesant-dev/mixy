@@ -184,7 +184,7 @@ class _ShortVideoFeedPageState extends ConsumerState<ShortVideoFeedPage> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: DesignColors.background.withOpacity(0.7),
+                color: DesignColors.background.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.add, color: Colors.white, size: 22),
@@ -201,7 +201,7 @@ class _ShortVideoFeedPageState extends ConsumerState<ShortVideoFeedPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.play_circle_outline,
-              size: 72, color: DesignColors.textGray.withOpacity(0.3)),
+              size: 72, color: DesignColors.textGray.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text('No Reels yet',
               style: TextStyle(
@@ -211,7 +211,7 @@ class _ShortVideoFeedPageState extends ConsumerState<ShortVideoFeedPage> {
           const SizedBox(height: 8),
           Text('Be the first to post a short video',
               style: TextStyle(
-                  color: DesignColors.textGray.withOpacity(0.6),
+                  color: DesignColors.textGray.withValues(alpha: 0.6),
                   fontSize: 13)),
           const SizedBox(height: 24),
           TextButton.icon(

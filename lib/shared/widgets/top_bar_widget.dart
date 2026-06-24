@@ -132,7 +132,7 @@ class _TopBarWidgetState extends ConsumerState<TopBarWidget>
   /// Builds the logo/title section
   Widget _buildLogo(bool darkMode) {
     return Text(
-      '🎉 MIXVY',
+      'ðŸŽ¬ Mix & Mingle',
       style: AppTextStyles.h5.copyWith(
         color: DesignColors.accent,
         fontWeight: FontWeight.bold,

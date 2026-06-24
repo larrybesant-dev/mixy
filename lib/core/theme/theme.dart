@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'colors.dart';
 import 'text_styles.dart';
 
-/// MIXVY App Theme
+/// Mix & Mingle App Theme
 /// Complete nightclub/social theme with vibrant energy
-final ThemeData mixvyTheme = ThemeData.dark().copyWith(
+final ThemeData mixMingleTheme = ThemeData.dark().copyWith(
   // Color scheme
   colorScheme: const ColorScheme.dark(
     primary: ClubColors.primary,

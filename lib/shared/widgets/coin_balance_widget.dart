@@ -98,7 +98,7 @@ class BuyCoinsFloatingButton extends StatelessWidget {
 ///
 /// ```dart
 /// AppBar(
-///   title: Text('MIXVY'),
+///   title: Text('Mix & Mingle'),
 ///   actions: [
 ///     StreamBuilder<int>(
 ///       stream: PaymentService().coinBalanceStream(),

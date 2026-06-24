@@ -169,7 +169,6 @@ class ProfileController {
       rethrow;
     }
   }
-
   Future<String?> uploadGalleryVideo(XFile video, String userId) async {
     try {
       return await _storageService.uploadGalleryVideo(video, userId);
@@ -177,5 +176,4 @@ class ProfileController {
       debugPrint('Failed to upload gallery video: $e');
       rethrow;
     }
-  }
-}
+  }}

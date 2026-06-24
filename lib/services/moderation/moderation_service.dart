@@ -272,4 +272,61 @@ class ModerationService {
       rethrow;
     }
   }
+
+  // ============ ROOM MODERATION (AUDIO/VIDEO) ============
+
+  /// Lock or unlock all microphones in a room
+  Future<void> lockAllMics({required String roomId, required bool locked}) async {
+    try {
+      await _firestore.collection('rooms').doc(roomId).update({
+        'allMicsLocked': locked,
+        'micLockedAt': locked ? FieldValue.serverTimestamp() : null,
+      });
+      debugPrint('All mics ${locked ? 'locked' : 'unlocked'} in room: $roomId');
+    } catch (e) {
+      debugPrint('Error managing mic locks: $e');
+      rethrow;
+    }
+  }
+
+  /// Lock or unlock all cameras in a room
+  Future<void> lockAllCameras({required String roomId, required bool locked}) async {
+    try {
+      await _firestore.collection('rooms').doc(roomId).update({
+        'allCamerasLocked': locked,
+        'cameraLockedAt': locked ? FieldValue.serverTimestamp() : null,
+      });
+      debugPrint('All cameras ${locked ? 'locked' : 'unlocked'} in room: $roomId');
+    } catch (e) {
+      debugPrint('Error managing camera locks: $e');
+      rethrow;
+    }
+  }
+
+  /// Mute all participants in a room
+  Future<void> muteAllParticipants({required String roomId}) async {
+    try {
+      await _firestore.collection('rooms').doc(roomId).update({
+        'allParticipantsMuted': true,
+        'mutedAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('All participants muted in room: $roomId');
+    } catch (e) {
+      debugPrint('Error muting all participants: $e');
+      rethrow;
+    }
+  }
+
+  /// Unmute all participants in a room
+  Future<void> unmuteAllParticipants({required String roomId}) async {
+    try {
+      await _firestore.collection('rooms').doc(roomId).update({
+        'allParticipantsMuted': false,
+      });
+      debugPrint('All participants unmuted in room: $roomId');
+    } catch (e) {
+      debugPrint('Error unmuting all participants: $e');
+      rethrow;
+    }
+  }
 }

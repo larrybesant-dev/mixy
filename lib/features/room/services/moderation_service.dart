@@ -219,52 +219,6 @@ class ModerationService {
     });
   }
 
-  /// Mute all participants in the room
-  Future<void> muteAllParticipants({required String roomId}) async {
-    final snap = await _firestore
-        .collection('rooms')
-        .doc(roomId)
-        .collection('participants')
-        .get();
-    final batch = _firestore.batch();
-    for (final doc in snap.docs) {
-      batch.update(doc.reference, {
-        'hasAudio': false,
-        'forceMuted': true,
-        'mutedAt': FieldValue.serverTimestamp(),
-      });
-    }
-    await batch.commit();
-    await _firestore.collection('rooms').doc(roomId).collection('moderation_log').add({
-      'action': 'muteAll',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-  }
-
-  /// Lock or unlock all microphones in the room (prevents unmuting)
-  Future<void> lockAllMics({required String roomId, required bool locked}) async {
-    await _firestore.collection('rooms').doc(roomId).update({
-      'micLocked': locked,
-      'micLockedAt': locked ? FieldValue.serverTimestamp() : null,
-    });
-    await _firestore.collection('rooms').doc(roomId).collection('moderation_log').add({
-      'action': locked ? 'lockMics' : 'unlockMics',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-  }
-
-  /// Lock or unlock all cameras in the room (prevents turning on camera)
-  Future<void> lockAllCameras({required String roomId, required bool locked}) async {
-    await _firestore.collection('rooms').doc(roomId).update({
-      'cameraLocked': locked,
-      'cameraLockedAt': locked ? FieldValue.serverTimestamp() : null,
-    });
-    await _firestore.collection('rooms').doc(roomId).collection('moderation_log').add({
-      'action': locked ? 'lockCameras' : 'unlockCameras',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-  }
-
   /// Get moderation log for room
   Stream<List<Map<String, dynamic>>> getModerationLog(String roomId) {
     return _firestore
@@ -289,7 +243,7 @@ class ModerationService {
   }
 }
 
-/// Provider for moderation service
+/// Provider for room-level moderation service (participant controls)
 final moderationServiceProvider = Provider<ModerationService>((ref) {
   return ModerationService();
 });

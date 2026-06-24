@@ -7,7 +7,5 @@ Future<void> main() async {
   final users = await firestore.collection('users').get();
   for (final doc in users.docs) {
     await firestore.collection('users').doc(doc.id).update({'profileComplete': true});
-    print('Updated user ${doc.id}');
   }
-  print('All users updated.');
 }

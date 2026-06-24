@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
-<<<<<<< HEAD
-import 'package:mixmingle/shared/providers/chat_providers.dart';
-import 'package:mixmingle/shared/providers/all_providers.dart'; // Ensures userProfileProvider is available
-import 'package:mixmingle/core/routing/app_routes.dart';
-=======
 import 'package:mixmingle/shared/widgets/skeleton_loaders.dart';
 import 'package:mixmingle/shared/widgets/empty_states.dart';
 import 'package:mixmingle/shared/providers/all_providers.dart';
 import 'package:mixmingle/app/app_routes.dart';
->>>>>>> origin/develop
 
 class ChatListPage extends ConsumerWidget {
   const ChatListPage({super.key});
@@ -60,12 +54,8 @@ class ChatListPage extends ConsumerWidget {
                         chatRoom.unreadCounts[currentUser.id] ?? 0;
 
                     // Watch other user profile
-<<<<<<< HEAD
-                    final otherUserAsync = ref.watch(userProfileProvider(otherUserId)); // userProfileProvider is defined in shared/providers/all_providers.dart
-=======
                     final otherUserAsync =
                         ref.watch(userProfileProvider(otherUserId));
->>>>>>> origin/develop
 
                     return otherUserAsync.when(
                       data: (otherUser) {

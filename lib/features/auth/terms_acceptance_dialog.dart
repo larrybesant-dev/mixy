@@ -85,7 +85,7 @@ class _TermsAcceptanceDialogState extends ConsumerState<TermsAcceptanceDialog> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Before using MIXVY, please review and accept our legal documents.',
+                      'Before using MixMingle, please review and accept our legal documents.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 20),

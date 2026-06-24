@@ -7,8 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'agora/agora_platform_service.dart';
-import 'agora/agora_stub.dart'
-  if (dart.library.io) 'agora_native.dart';
+import 'agora/agora_web_bridge_v2.dart';
 import '../shared/providers/agora_participant_provider.dart';
 import '../shared/providers/agora_video_tile_provider.dart';
 import '../shared/providers/user_display_name_provider.dart';
@@ -486,7 +485,6 @@ class AgoraVideoService extends ChangeNotifier {
       throw Exception('Agora App ID not initialized - call initialize() first');
     }
 
-    bool participantDocWritten = false;
     // Prevent double joins
     if (_isInChannel) {
       DebugLog.info(_safeLog('  Already in channel: $_currentChannel'));
@@ -535,20 +533,6 @@ class AgoraVideoService extends ChangeNotifier {
       DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ UID: ${user.uid}'));
       DebugLog.info(_safeLog(
           '   Ã¢â€â€Ã¢â€â‚¬ Provider: ${user.providerData.map((p) => p.providerId).join(", ")}'));
-
-      // === PRE-JOIN BAN CHECK ===
-      try {
-        final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-        if (roomDoc.exists) {
-          final bannedUsers = List<String>.from(roomDoc.data()?['bannedUsers'] ?? []);
-          if (bannedUsers.contains(user.uid)) {
-            throw Exception('You are banned from this room');
-          }
-        }
-      } catch (e) {
-        if (e.toString().contains('banned')) rethrow;
-        // Other read errors are non-fatal; Firestore rules enforce the ban server-side
-      }
 
       // === CHECKPOINT 2: GET AGORA TOKEN ===
       DebugLog.info(_safeLog('Ã°Å¸Å½Â« [2/6] Requesting Agora token...'));
@@ -607,21 +591,11 @@ class AgoraVideoService extends ChangeNotifier {
         DebugLog.info(_safeLog(' Callable returned successfully'));
 
         DebugLog.info(_safeLog(' Token response received'));
-        final payload = result.data as Map<String, dynamic>?;
-        final tokenValue = (payload?['token'] as String?)?.trim() ?? '';
-        final uidValue = payload?['uid'];
-        final tokenUid = uidValue is int
-            ? uidValue
-            : uidValue is String
-                ? int.tryParse(uidValue)
-                : null;
+        final tokenValue = result.data['token'] as String?;
+        final tokenUid = result.data['uid'] as int?;
 
-        if (tokenValue.isEmpty) {
-          throw Exception('Response missing token field');
-        }
-        if (tokenUid == null || tokenUid <= 0) {
-          throw Exception('Response missing or invalid uid field');
-        }
+        if (tokenValue == null) throw Exception('Response missing token field');
+        if (tokenUid == null) throw Exception('Response missing uid field');
 
         token = tokenValue;
         _localUid = tokenUid;
@@ -630,12 +604,6 @@ class AgoraVideoService extends ChangeNotifier {
         DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ Length: ${token.length}'));
         DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ UID: $tokenUid'));
         DebugLog.info(_safeLog('   Ã¢â€â€Ã¢â€â‚¬ Channel: $roomId'));
-      } on FirebaseFunctionsException catch (e, st) {
-        final details = e.details == null ? '' : ' (${e.details})';
-        final backendMessage = 'Token generation failed [${e.code}]: ${e.message ?? 'Unknown backend error'}$details';
-        DebugLog.info(_safeLog(' Agora token generation failed: $backendMessage'));
-        DebugLog.info(_safeLog('Stack trace: $st'));
-        throw Exception(backendMessage);
       } catch (e, st) {
         DebugLog.info(_safeLog(' Agora token generation failed: $e'));
         DebugLog.info(_safeLog('Stack trace: $st'));
@@ -677,16 +645,14 @@ class AgoraVideoService extends ChangeNotifier {
             .doc(user.uid)
             .set({
           'userId': user.uid,
-          'joinedAt': FieldValue.serverTimestamp(),
+          'joinedAt': DateTime.now(),
           'displayName': user.displayName ?? 'User',
           'photoUrl': user.photoURL,
         });
-        participantDocWritten = true;
         DebugLog.info(_safeLog('Ã¢Å“â€¦ [5/6] Participant added to Firestore'));
       } catch (e) {
         DebugLog.info(_safeLog('  Failed to add user to participants: $e'));
-        // Don't fail for other errors - continue anyway
-        if (e.toString().contains('permission-denied') || e.toString().contains('PERMISSION_DENIED')) rethrow;
+        // Don't fail - continue anyway
       }
 
       // === CHECKPOINT 6: JOIN CHANNEL ===
@@ -738,20 +704,6 @@ class AgoraVideoService extends ChangeNotifier {
       DebugLog.info(_safeLog('Stack trace: $stackTrace'));
       _error = e.toString();
       notifyListeners();
-      // Clean up orphaned participant doc if written before channel join failed
-      if (participantDocWritten) {
-        try {
-          final cleanupUser = _auth.currentUser;
-          if (cleanupUser != null) {
-            await _firestore
-                .collection('rooms')
-                .doc(roomId)
-                .collection('participants')
-                .doc(cleanupUser.uid)
-                .delete();
-          }
-        } catch (_) {}
-      }
       rethrow;
     }
   }

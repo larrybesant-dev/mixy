@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mixmingle/core/design_system/design_constants.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
 import 'package:mixmingle/shared/widgets/safe_avatar.dart';
+import 'package:mixmingle/shared/models/friend_request.dart';
 import 'package:mixmingle/shared/providers/friend_request_provider.dart';
 import 'package:mixmingle/shared/providers/friends_provider.dart';
 import 'package:mixmingle/core/routing/app_routes.dart';
@@ -343,7 +344,7 @@ class _FriendTile extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.2),
+              color: Colors.blueAccent.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
@@ -420,103 +421,88 @@ class _FriendTile extends ConsumerWidget {
 }
 
 class _FriendRequestTile extends ConsumerWidget {
-  final Map<String, dynamic> requestData;
+  final FriendRequest requestData;
 
   const _FriendRequestTile({required this.requestData});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fromId = requestData['from'] as String? ?? requestData['id'] as String? ?? '';
+    final fromId = requestData.senderId;
+    final name = requestData.senderName ?? fromId;
+    final avatar = requestData.senderAvatarUrl ?? '';
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(fromId).get(),
-      builder: (ctx, snap) {
-        String name = fromId;
-        String avatar = '';
-        if (snap.hasData && snap.data!.exists) {
-          final d = snap.data!.data() as Map<String, dynamic>;
-          name = (d['displayName'] as String?)?.isNotEmpty == true
-              ? d['displayName'] as String
-              : (d['username'] as String?) ?? fromId;
-          avatar = (d['photoUrl'] as String?) ??
-              (d['avatarUrl'] as String?) ??
-              '';
-        }
-
-        return ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: SafeAvatar(
-            photoUrl: avatar,
-            fallbackInitial: name.isNotEmpty ? name[0].toUpperCase() : '?',
-            radius: 22,
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      leading: SafeAvatar(
+        photoUrl: avatar,
+        fallbackInitial: name.isNotEmpty ? name[0].toUpperCase() : '?',
+        radius: 22,
+      ),
+      title: Text(name,
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w600)),
+      subtitle: const Text('Wants to be your friend',
+          style: TextStyle(color: Colors.white54, fontSize: 12)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () async {
+              await ref.read(friendServiceProvider).rejectFriendRequestFromUser(fromId);
+            },
+            child: const Text('Decline',
+                style: TextStyle(color: Colors.grey)),
           ),
-          title: Text(name,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600)),
-          subtitle: const Text('Wants to be your friend',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextButton(
-                onPressed: () async {
-                  await ref.read(friendServiceProvider).rejectFriendRequest(fromId);
-                },
-                child: const Text('Decline',
-                    style: TextStyle(color: Colors.grey)),
-              ),
-              const SizedBox(width: 4),
-              ElevatedButton(
-                onPressed: () async {
-                  await ref.read(friendServiceProvider).acceptFriendRequest(fromId);
-                  if (ctx.mounted) {
-                    showDialog(
-                      context: ctx,
-                      builder: (dialogCtx) => AlertDialog(
-                        backgroundColor: Colors.grey[900],
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: Text('You are now friends with $name!', style: const TextStyle(color: Colors.white)),
-                        content: const Text('What would you like to do next?', style: TextStyle(color: Colors.white70)),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(dialogCtx).pop();
-                              Navigator.pushNamed(ctx, AppRoutes.chat, arguments: {'userId': fromId});
-                            },
-                            child: const Text('Start Chat', style: TextStyle(color: Colors.pinkAccent)),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(dialogCtx).pop();
-                              Navigator.pushNamed(ctx, AppRoutes.userProfile, arguments: {'userId': fromId});
-                            },
-                            child: const Text('View Profile', style: TextStyle(color: Colors.blueAccent)),
-                          ),
-                        ],
+          const SizedBox(width: 4),
+          ElevatedButton(
+            onPressed: () async {
+              await ref.read(friendServiceProvider).acceptFriendRequestFromUser(fromId);
+              if (context.mounted) {
+                showDialog(
+                  context: context,
+                  builder: (dialogCtx) => AlertDialog(
+                    backgroundColor: Colors.grey[900],
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: Text('You are now friends with $name!', style: const TextStyle(color: Colors.white)),
+                    content: const Text('What would you like to do next?', style: TextStyle(color: Colors.white70)),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(dialogCtx).pop();
+                          Navigator.pushNamed(context, AppRoutes.chat, arguments: {'userId': fromId});
+                        },
+                        child: const Text('Start Chat', style: TextStyle(color: Colors.pinkAccent)),
                       ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pinkAccent,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-                child: const Text('Accept',
-                    style: TextStyle(color: Colors.white, fontSize: 13)),
-              ),
-            ],
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(dialogCtx).pop();
+                          Navigator.pushNamed(context, AppRoutes.userProfile, arguments: {'userId': fromId});
+                        },
+                        child: const Text('View Profile', style: TextStyle(color: Colors.blueAccent)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.pinkAccent,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+            child: const Text('Accept',
+                style: TextStyle(color: Colors.white, fontSize: 13)),
           ),
-          onTap: () => Navigator.pushNamed(
-            context,
-            AppRoutes.userProfile,
-            arguments: {'userId': fromId},
-          ),
-        );
-      },
+        ],
+      ),
+      onTap: () => Navigator.pushNamed(
+        context,
+        AppRoutes.userProfile,
+        arguments: {'userId': fromId},
+      ),
     );
   }
 }

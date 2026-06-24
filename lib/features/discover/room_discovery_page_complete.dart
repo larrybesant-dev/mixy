@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../shared/providers/room_providers.dart';
-import '../../../shared/models/room.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
-import '../../../shared/club_background.dart';
-import '../../../shared/glow_text.dart';
-import '../../../shared/neon_button.dart';
-=======
 // lib/features/discover/room_discovery_page_complete.dart
 //
 // Room Discovery — polished Rooms tab using the full design system.
@@ -26,7 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/analytics/analytics_service.dart';
->>>>>>> origin/develop
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import '../../core/design_system/design_constants.dart';
 import '../../shared/widgets/club_background.dart';

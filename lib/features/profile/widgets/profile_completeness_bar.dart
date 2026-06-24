@@ -17,13 +17,18 @@ class ProfileCompletenessBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final score = ref.watch(profileCompletenessScoreProvider(userId));
-    final pct = (score / 100).clamp(0.0, 1.0);
-    final isComplete = score >= 100;
+    final scoreAsync = ref.watch(profileCompletenessScoreProvider(userId));
 
-    if (isComplete) return const SizedBox.shrink();
+    return scoreAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (score) {
+        final pct = (score / 100).clamp(0.0, 1.0);
+        final isComplete = score >= 100;
 
-    return GestureDetector(
+        if (isComplete) return const SizedBox.shrink();
+
+        return GestureDetector(
       onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -81,6 +86,8 @@ class ProfileCompletenessBar extends ConsumerWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

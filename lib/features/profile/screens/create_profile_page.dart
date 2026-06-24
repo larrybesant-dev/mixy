@@ -11,10 +11,6 @@ import '../../../core/design_system/design_constants.dart';
 import '../../../shared/providers/all_providers.dart';
 import '../../../shared/widgets/club_background.dart';
 import '../../../shared/models/user_profile.dart';
-<<<<<<< HEAD
-import '../../../shared/models/vibe_genres.dart';
-import '../../../core/routing/app_routes.dart';
-=======
 import '../widgets/profile_music_widget.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,7 +43,6 @@ const _kInterests = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
->>>>>>> origin/develop
 
 class CreateProfilePage extends ConsumerStatefulWidget {
   const CreateProfilePage({super.key});
@@ -315,14 +310,7 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
     try {
       await ref.read(profileControllerProvider).updateProfile(userProfile);
       if (mounted) {
-<<<<<<< HEAD
-        // Use pushNamedAndRemoveUntil('/app') so that the RootAuthGate
-        // re-evaluates now that the profile exists; avoids being trapped
-        // inside _ProfileIncompleteApp's locked navigator.
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.app, (_) => false);
-=======
         Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
->>>>>>> origin/develop
       }
     } catch (e) {
       if (mounted) {

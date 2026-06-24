@@ -45,9 +45,6 @@ class LiveRoomPresence {
   bool _joined = false;
   String? _cachedUid;
 
-  // If heartbeat stops for this long, treat participant as disconnected in UI.
-  static const Duration _staleParticipantAfter = Duration(seconds: 30);
-
   // ── Public API ────────────────────────────────────────────────────────────
 
   /// Real-time stream of participants in this room.
@@ -68,14 +65,9 @@ class LiveRoomPresence {
     if (_joined || _disposed) return;
     _joined = true;
 
-    // Check if a doc already exists to avoid double-incrementing the room counter
-    // (e.g. after a network hiccup forces a rejoin without a clean leave).
-    final existingSnap = await _myDoc.get();
-    final alreadyPresent = existingSnap.exists;
-
     final batch = _fs.batch();
 
-    // 1. Write participant document (upsert — always refresh heartbeat)
+    // 1. Write participant document
     batch.set(_myDoc, {
       ParticipantFields.userId: _uid,
       ParticipantFields.displayName: initialDisplayName,
@@ -91,22 +83,11 @@ class LiveRoomPresence {
       ParticipantFields.lastHeartbeat: FieldValue.serverTimestamp(),
     });
 
-<<<<<<< HEAD
-    // 2. Only increment counters for genuinely new joins.
-    if (!alreadyPresent) {
-      batch.update(_fs.collection('rooms').doc(roomId), {
-        RoomFields.participantCount: FieldValue.increment(1),
-        'viewerCount':               FieldValue.increment(1),
-        RoomFields.updatedAt:        FieldValue.serverTimestamp(),
-      });
-    }
-=======
     // 2. Increment participant count in room doc
     batch.update(_fs.collection('rooms').doc(roomId), {
       RoomFields.participantCount: FieldValue.increment(1),
       RoomFields.updatedAt: FieldValue.serverTimestamp(),
     });
->>>>>>> origin/develop
 
     // 3. Update global presence
     batch.set(
@@ -126,9 +107,9 @@ class LiveRoomPresence {
     // 4. Subscribe to participant changes
     _startListener();
 
-    // 5. Heartbeat every 15 s
+    // 5. Heartbeat every 25 s
     _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 15),
+      const Duration(seconds: 25),
       (_) => _heartbeat(),
     );
   }
@@ -141,46 +122,6 @@ class LiveRoomPresence {
     _teardown();
 
     try {
-<<<<<<< HEAD
-      // First clear media flags so stale tiles cannot show ghost cam/mic if delete is delayed.
-      await _myDoc.set({
-        ParticipantFields.isOnCam:           false,
-        ParticipantFields.isMicActive:       false,
-        ParticipantFields.isStreaming:       false,
-        ParticipantFields.isForegrounded:    false,
-        ParticipantFields.camRequestPending: false,
-        ParticipantFields.lastHeartbeat:     FieldValue.serverTimestamp(),
-        'leftAt':                            FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // Transaction prevents decrementing below reality if the doc is already gone.
-      await _fs.runTransaction((tx) async {
-        final mySnap = await tx.get(_myDoc);
-        final roomRef = _fs.collection('rooms').doc(roomId);
-
-        if (mySnap.exists) {
-          tx.delete(_myDoc);
-          tx.update(roomRef, {
-            RoomFields.participantCount: FieldValue.increment(-1),
-            'viewerCount':               FieldValue.increment(-1),
-            RoomFields.updatedAt:        FieldValue.serverTimestamp(),
-          });
-        } else {
-          tx.update(roomRef, {
-            RoomFields.updatedAt: FieldValue.serverTimestamp(),
-          });
-        }
-
-        tx.set(
-          _fs.collection('presence').doc(_uid),
-          {
-            PresenceFields.currentRoomId: null,
-            PresenceFields.lastSeen:      FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      });
-=======
       final batch = _fs.batch();
       batch.delete(_myDoc);
       batch.update(_fs.collection('rooms').doc(roomId), {
@@ -196,7 +137,6 @@ class LiveRoomPresence {
         SetOptions(merge: true),
       );
       await batch.commit();
->>>>>>> origin/develop
     } catch (e) {
       debugPrint('[PRESENCE] leave() error: $e');
     }
@@ -354,12 +294,6 @@ class LiveRoomPresence {
     }
   }
 
-  /// Immediately writes a fresh heartbeat — call after reconnect to prevent
-  /// ghost classification during the reconnect window.
-  void forceHeartbeat() {
-    _heartbeat();
-  }
-
   void _startListener() {
     _participantSub = _fs
         .collection('rooms')
@@ -369,24 +303,10 @@ class LiveRoomPresence {
         .listen(
       (snap) {
         if (_disposed) return;
-        final now = DateTime.now();
-        final all = snap.docs
+        final list = snap.docs
             .map((d) => RoomParticipant.fromFirestore(d))
-            .toList();
-
-        final list = all
-            .where((p) {
-              // Always keep local self visible while connected.
-              if (p.userId == _uid) return true;
-              return now.difference(p.lastHeartbeat) <= _staleParticipantAfter;
-            })
             .toList()
           ..sort((a, b) => a.gridPosition.compareTo(b.gridPosition));
-
-        if (all.length != list.length) {
-          debugPrint('[PRESENCE] Filtered ${all.length - list.length} stale participant(s) from room view');
-        }
-
         _participantsController.add(list);
       },
       onError: (e) => debugPrint('[PRESENCE] participant listener error: $e'),
@@ -394,6 +314,7 @@ class LiveRoomPresence {
   }
 
   void _teardown() {
+    _disposed = true;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
     _participantSub?.cancel();
@@ -401,7 +322,6 @@ class LiveRoomPresence {
   }
 
   void dispose() {
-    _disposed = true;
     _teardown();
     _participantsController.close();
   }

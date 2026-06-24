@@ -12,25 +12,19 @@ class RoomModerationService {
 
   RoomModerationService(this._repository, this._firestore);
 
-  /// Check if a user can moderate (owner, room admin, or superadmin).
-  /// SuperAdmin check reads the user's Firestore role field.
+  /// Check if a user can moderate (owner or admin)
   Future<bool> canModerate({
     required String roomId,
     required String userId,
   }) async {
-    // 1. SuperAdmin override
-    final userDoc = await _firestore.collection('users').doc(userId).get();
-    if (userDoc.data()?['role'] == 'superadmin') return true;
-
-    // 2. Room owner / room admin
     final room = await _firestore.collection('rooms').doc(roomId).get();
     if (!room.exists) return false;
 
     final data = room.data()!;
-    final ownerId = data['ownerId'] as String? ?? data['hostId'] as String? ?? '';
+    final hostId = data['hostId'] as String;
     final admins = (data['admins'] as List<dynamic>?)?.cast<String>() ?? [];
 
-    return userId == ownerId || admins.contains(userId);
+    return userId == hostId || admins.contains(userId);
   }
 
   /// Check if a user is the room owner
@@ -42,9 +36,9 @@ class RoomModerationService {
     if (!room.exists) return false;
 
     final data = room.data()!;
-    final ownerId = data['ownerId'] as String? ?? data['hostId'] as String? ?? '';
+    final hostId = data['hostId'] as String;
 
-    return userId == ownerId;
+    return userId == hostId;
   }
 
   /// Kick a user from the room

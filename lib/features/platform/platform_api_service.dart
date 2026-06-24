@@ -1,7 +1,7 @@
 /// Platform API Service
 ///
 /// Manages external app registration, authentication, and API exposure
-/// for the MIXVY platform ecosystem.
+/// for the Mix & Mingle platform ecosystem.
 library;
 
 import 'dart:async';

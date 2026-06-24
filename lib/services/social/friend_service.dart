@@ -1,218 +1,3 @@
-<<<<<<< HEAD
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-
-/// Status of a friendship between the current user and another user.
-enum FriendRequestStatus { none, sent, received, friends }
-
-/// All friend-request and friendship Firestore operations.
-///
-/// Firestore structure:
-///   users/{uid}/friend_requests/{fromUid}  — incoming requests
-///   users/{uid}/sent_requests/{toUid}      — outgoing requests
-///   users/{uid}/friends/{friendUid}         — confirmed friends (bidirectional)
-///   users/{uid}/blocked/{blockedUid}        — blocked users
-class FriendService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  String get _uid {
-    final u = _auth.currentUser;
-    if (u == null) throw Exception('Not authenticated');
-    return u.uid;
-  }
-
-  // ── Send friend request ───────────────────────────────────────────────────
-
-  Future<void> sendFriendRequest(String toUserId) async {
-    if (toUserId == _uid) return;
-    final batch = _db.batch();
-    batch.set(
-      _db.collection('users').doc(_uid).collection('sent_requests').doc(toUserId),
-      {
-        'to': toUserId,
-        'from': _uid,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
-    batch.set(
-      _db.collection('users').doc(toUserId).collection('friend_requests').doc(_uid),
-      {
-        'from': _uid,
-        'to': toUserId,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-      },
-    );
-    await batch.commit();
-    debugPrint('[FriendService] Sent friend request to $toUserId');
-  }
-
-  // ── Cancel sent request ───────────────────────────────────────────────────
-
-  Future<void> cancelFriendRequest(String toUserId) async {
-    final batch = _db.batch();
-    batch.delete(_db.collection('users').doc(_uid).collection('sent_requests').doc(toUserId));
-    batch.delete(_db.collection('users').doc(toUserId).collection('friend_requests').doc(_uid));
-    await batch.commit();
-  }
-
-  // ── Accept incoming request ───────────────────────────────────────────────
-
-  Future<void> acceptFriendRequest(String fromUserId) async {
-    final batch = _db.batch();
-    final now = FieldValue.serverTimestamp();
-    // Bidirectional friendship
-    batch.set(
-      _db.collection('users').doc(_uid).collection('friends').doc(fromUserId),
-      {'friendId': fromUserId, 'since': now},
-    );
-    batch.set(
-      _db.collection('users').doc(fromUserId).collection('friends').doc(_uid),
-      {'friendId': _uid, 'since': now},
-    );
-    // Remove request documents
-    batch.delete(_db.collection('users').doc(_uid).collection('friend_requests').doc(fromUserId));
-    batch.delete(_db.collection('users').doc(fromUserId).collection('sent_requests').doc(_uid));
-    await batch.commit();
-    debugPrint('[FriendService] Accepted friend request from $fromUserId');
-  }
-
-  // ── Reject incoming request ───────────────────────────────────────────────
-
-  Future<void> rejectFriendRequest(String fromUserId) async {
-    final batch = _db.batch();
-    batch.delete(_db.collection('users').doc(_uid).collection('friend_requests').doc(fromUserId));
-    batch.delete(_db.collection('users').doc(fromUserId).collection('sent_requests').doc(_uid));
-    await batch.commit();
-  }
-
-  // ── Remove friend ─────────────────────────────────────────────────────────
-
-  Future<void> removeFriend(String friendId) async {
-    final batch = _db.batch();
-    batch.delete(_db.collection('users').doc(_uid).collection('friends').doc(friendId));
-    batch.delete(_db.collection('users').doc(friendId).collection('friends').doc(_uid));
-    await batch.commit();
-  }
-
-  // ── Block / Unblock ───────────────────────────────────────────────────────
-
-  Future<void> blockUser(String targetId) async {
-    final batch = _db.batch();
-    batch.set(
-      _db.collection('users').doc(_uid).collection('blocked').doc(targetId),
-      {'blockedAt': FieldValue.serverTimestamp(), 'blockedId': targetId},
-    );
-    // Also remove any existing friendship
-    batch.delete(_db.collection('users').doc(_uid).collection('friends').doc(targetId));
-    batch.delete(_db.collection('users').doc(targetId).collection('friends').doc(_uid));
-    batch.delete(_db.collection('users').doc(_uid).collection('friend_requests').doc(targetId));
-    batch.delete(_db.collection('users').doc(targetId).collection('friend_requests').doc(_uid));
-    await batch.commit();
-  }
-
-  Future<void> unblockUser(String targetId) async {
-    await _db.collection('users').doc(_uid).collection('blocked').doc(targetId).delete();
-  }
-
-  // ── Streams ───────────────────────────────────────────────────────────────
-
-  /// Real-time friendship status with a specific user.
-  Stream<FriendRequestStatus> watchFriendStatus(String otherUserId) {
-    return _db
-        .collection('users')
-        .doc(_uid)
-        .collection('friends')
-        .doc(otherUserId)
-        .snapshots()
-        .asyncMap((doc) async {
-      if (doc.exists) return FriendRequestStatus.friends;
-
-      final sent = await _db
-          .collection('users')
-          .doc(_uid)
-          .collection('sent_requests')
-          .doc(otherUserId)
-          .get();
-      if (sent.exists) return FriendRequestStatus.sent;
-
-      final received = await _db
-          .collection('users')
-          .doc(_uid)
-          .collection('friend_requests')
-          .doc(otherUserId)
-          .get();
-      if (received.exists) return FriendRequestStatus.received;
-
-      return FriendRequestStatus.none;
-    });
-  }
-
-  /// Incoming friend requests ordered newest-first.
-  Stream<List<Map<String, dynamic>>> watchIncomingRequests() {
-    return _db
-        .collection('users')
-        .doc(_uid)
-        .collection('friend_requests')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => <String, dynamic>{...d.data(), 'id': d.id}).toList());
-  }
-
-  /// Confirmed friend IDs for the current user.
-  Stream<List<String>> watchFriendIds() {
-    return _db
-        .collection('users')
-        .doc(_uid)
-        .collection('friends')
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.id).toList());
-  }
-
-  /// Confirmed friend IDs for any [userId] (used when viewing another profile).
-  Stream<List<String>> watchFriendIdsOf(String userId) {
-    return _db
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.id).toList());
-  }
-
-  /// Whether the current user is blocked by [userId].
-  Future<bool> isBlockedBy(String userId) async {
-    final doc = await _db
-        .collection('users')
-        .doc(userId)
-        .collection('blocked')
-        .doc(_uid)
-        .get();
-    return doc.exists;
-  }
-
-  /// Streams whether the current user has blocked [targetId].
-  Stream<bool> watchBlockedStatus(String targetId) {
-    return _db
-        .collection('users')
-        .doc(_uid)
-        .collection('blocked')
-        .doc(targetId)
-        .snapshots()
-        .map((doc) => doc.exists);
-  }
-
-  /// Fetches friend IDs for any user (for mutual-friends calculation).
-  Future<List<String>> getFriendIds(String userId) async {
-    final snap = await _db
-        .collection('users')
-        .doc(userId)
-        .collection('friends')
-        .get();
-    return snap.docs.map((d) => d.id).toList();
-=======
 // lib/services/social/friend_service.dart
 //
 // Full Firestore-backed Friend System
@@ -364,6 +149,66 @@ class FriendService {
     debugPrint('[FriendService] unfriended $targetUid');
   }
 
+  /// Alias for [unfriend] — removes a friend from current user's friend list.
+  /// Used by UI when user clicks "remove friend" button.
+  Future<void> removeFriend(String friendUid) async {
+    return unfriend(friendUid);
+  }
+
+  /// Accept a friend request from [senderId] by finding the pending request.
+  /// Simplification of [acceptFriendRequest] that doesn't require requestId.
+  /// Used by UI when user clicks "Accept" on incoming friend request.
+  Future<void> acceptFriendRequestFromUser(String senderId) async {
+    final reqId = await incomingRequestId(senderId);
+    if (reqId == null) {
+      debugPrint('[FriendService] No pending request from $senderId');
+      return;
+    }
+    // Call the full accept flow with the found requestId
+    final me = _auth.currentUser;
+    final now = FieldValue.serverTimestamp();
+    final batch = _db.batch();
+
+    // Update status on all copies
+    final update = {'status': 'accepted', 'acceptedAt': now};
+    batch.update(_globalReqRef(reqId), update);
+    batch.update(_userReqCol(_uid).doc(reqId), update);
+    batch.update(_userReqCol(senderId).doc(reqId), update);
+
+    // Add bidirectional friend entries
+    batch.set(_friendsCol(_uid).doc(senderId), {
+      'since': now,
+      'displayName': null,
+      'avatarUrl': null,
+    });
+    batch.set(_friendsCol(senderId).doc(_uid), {
+      'since': now,
+      'displayName': me?.displayName,
+      'avatarUrl': me?.photoURL,
+    });
+
+    await batch.commit();
+    debugPrint('[FriendService] accepted request $reqId from $senderId');
+  }
+
+  /// Reject/decline a friend request from [senderId] by finding the pending request.
+  /// Simplification of [declineFriendRequest] that doesn't require requestId.
+  /// Used by UI when user clicks "Decline" on incoming friend request.
+  Future<void> rejectFriendRequestFromUser(String senderId) async {
+    final reqId = await incomingRequestId(senderId);
+    if (reqId == null) {
+      debugPrint('[FriendService] No pending request from $senderId');
+      return;
+    }
+    final update = {'status': 'declined', 'declinedAt': FieldValue.serverTimestamp()};
+    final batch = _db.batch();
+    batch.update(_globalReqRef(reqId), update);
+    batch.update(_userReqCol(_uid).doc(reqId), update);
+    batch.update(_userReqCol(senderId).doc(reqId), update);
+    await batch.commit();
+    debugPrint('[FriendService] rejected request $reqId from $senderId');
+  }
+
   // ── Auto-friend (e.g. speed dating mutual match) ───────────────────────────
 
   /// Silently auto-friends two users without going through request flow.
@@ -481,6 +326,5 @@ class FriendService {
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .map((snap) => snap.docs.length);
->>>>>>> origin/develop
   }
 }

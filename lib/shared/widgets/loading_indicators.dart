@@ -3,7 +3,7 @@ import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/animations/custom_animations.dart';
 
-/// MIXVY Branded Loading Indicators
+/// Mix & Mingle Branded Loading Indicators
 /// Consistent loading states with nightclub aesthetic
 
 /// Primary branded loading indicator

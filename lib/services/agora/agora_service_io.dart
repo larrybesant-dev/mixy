@@ -54,11 +54,10 @@ class AgoraService {
   }) async {
     if (!_initialized) await initialize();
     try {
-      final normalizedUid = _normalizeUid(uid);
       await _engine!.joinChannel(
         token: token ?? '',
         channelId: channelId,
-        uid: normalizedUid,
+        uid: int.tryParse(uid) ?? 0,
         options: const ChannelMediaOptions(),
       );
       return true;
@@ -66,26 +65,6 @@ class AgoraService {
       debugPrint('Agora IO joinChannel error: $e');
       return false;
     }
-  }
-
-  int _normalizeUid(String rawUid) {
-    final parsed = int.tryParse(rawUid);
-    if (parsed != null && parsed > 0) return parsed;
-
-    // Keep client-side UID derivation consistent with backend hashCode(userId).
-    var hash = 0;
-    for (var i = 0; i < rawUid.length; i++) {
-      final char = rawUid.codeUnitAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash &= 0xFFFFFFFF;
-    }
-
-    if (hash >= 0x80000000) {
-      hash -= 0x100000000;
-    }
-
-    final normalized = hash.abs();
-    return normalized == 0 ? 1 : normalized;
   }
 
   Future<void> leaveChannel() async {

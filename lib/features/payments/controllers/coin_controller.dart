@@ -220,7 +220,9 @@ class PurchaseNotifier extends Notifier<PurchaseState> {
 }
 
 /// Provider for purchase operations
-final purchaseProvider = NotifierProvider<PurchaseNotifier, PurchaseState>(PurchaseNotifier.new);
+final purchaseProvider = NotifierProvider<PurchaseNotifier, PurchaseState>(() {
+  return PurchaseNotifier();
+});
 
 /// State for coin store
 @immutable

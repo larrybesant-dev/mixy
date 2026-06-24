@@ -14,7 +14,6 @@ import 'package:mixmingle/services/agora/agora_video_service.dart';
 import 'package:mixmingle/core/utils/app_logger.dart';
 import 'package:mixmingle/features/room/widgets/voice_room_chat_overlay.dart';
 import 'package:mixmingle/features/room/widgets/moderation_panel.dart';
-import 'package:mixmingle/features/room/widgets/dj_panel.dart';
 import 'package:mixmingle/core/platform/web_platform_view_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -382,7 +381,7 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
   //     if (user == null) return;
 
   //     // Only auto-advance if the room is still in turn-based mode and we're a moderator
-  //     // Turn-based speaking pending RoomService.grantTurnFromQueue API
+  //     // TODO: Implement turn-based speaking - method not yet available in RoomService
   //     // await roomService.grantTurnFromQueue(widget.room.id, user.id);
   //     debugPrint('â° Auto-advance feature pending implementation');
   //   } catch (e) {
@@ -411,7 +410,7 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
       if (user == null || _currentSpeakerUserId == null) return;
 
       // End current turn
-      // Turn-based speaking pending RoomService API implementation
+      // TODO: Implement turn-based speaking - methods not yet available in RoomService
       // await roomService.endTurn(widget.room.id, user.id);
 
       // Grant next from queue if available
@@ -600,19 +599,10 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
   }
 
   /// App bar with room name, participant count, and action buttons
-<<<<<<< HEAD
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, int participantCount, firebase_auth.User? currentUser, Room room) {
-    final isHostOrCoHost = currentUser != null &&
-        (currentUser.uid == room.ownerId ||
-            currentUser.uid == room.hostId ||
-            room.admins.contains(currentUser.uid) ||
-=======
   PreferredSizeWidget _buildAppBar(BuildContext context, int participantCount,
       firebase_auth.User? currentUser, Room room) {
     final isHostOrCoHost = currentUser != null &&
         (currentUser.uid == room.hostId ||
->>>>>>> origin/develop
             room.moderators.contains(currentUser.uid));
 
     return AppBar(
@@ -673,11 +663,8 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
             ),
           ),
 
-        // Moderation panel (for owner, host, or admins)
-        if (currentUser != null &&
-            (currentUser.uid == _currentRoom.ownerId ||
-                currentUser.uid == _currentRoom.hostId ||
-                _currentRoom.admins.contains(currentUser.uid)))
+        // Moderation panel (only for host/co-host)
+        if (currentUser != null && currentUser.uid == _currentRoom.hostId)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Center(
@@ -695,25 +682,6 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
                     participants: participants,
                   );
                 },
-              ),
-            ),
-          ),
-        // DJ Panel (for owner, host, or admins)
-        if (currentUser != null &&
-            (currentUser.uid == _currentRoom.ownerId ||
-                currentUser.uid == _currentRoom.hostId ||
-                _currentRoom.admins.contains(currentUser.uid)))
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Center(
-              child: IconButton(
-                icon: const Icon(Icons.music_note, color: Colors.purpleAccent),
-                tooltip: 'DJ Controls',
-                onPressed: () => DjPanel.show(
-                  context,
-                  roomId: widget.room.id,
-                  canControl: true,
-                ),
               ),
             ),
           ),
@@ -860,7 +828,7 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
               _buildVideoArea(
                   videoTiles, agoraService, participants, currentUser),
 
-              // Camera approval UI component — skip for V1
+              // TODO: Add camera approval UI component or skip for V1
               // Placeholder for future camera approval feature
             ],
           ),
@@ -1445,16 +1413,9 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
     );
   }
 
-<<<<<<< HEAD
-  void _showHostSettingsSheet(BuildContext context, firebase_auth.User currentUser, int participantCount, Room room) {
-    final isHostOrCoHost = currentUser.uid == room.ownerId ||
-        currentUser.uid == room.hostId ||
-        room.admins.contains(currentUser.uid) ||
-=======
   void _showHostSettingsSheet(BuildContext context,
       firebase_auth.User currentUser, int participantCount, Room room) {
     final isHostOrCoHost = currentUser.uid == room.hostId ||
->>>>>>> origin/develop
         room.moderators.contains(currentUser.uid);
 
     showModalBottomSheet(
@@ -1992,10 +1953,8 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
                 onSelected: (action) =>
                     _handleModerationAction(action, participant),
                 itemBuilder: (context) => [
-                  // Promote/Demote admin — owner only
-                  if (!participant.isHost &&
-                      currentUser != null &&
-                      currentUser!.uid == _currentRoom.ownerId)
+                  // Promote/Demote moderator
+                  if (!participant.isHost)
                     PopupMenuItem(
                       value: participant.isModerator ? 'demote' : 'promote',
                       child: Row(
@@ -2010,13 +1969,9 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
                                 : Colors.blue,
                           ),
                           const SizedBox(width: 8),
-<<<<<<< HEAD
-                          Text(participant.isModerator ? 'Remove Admin' : 'Add Admin'),
-=======
                           Text(participant.isModerator
                               ? 'Demote moderator'
                               : 'Promote to moderator'),
->>>>>>> origin/develop
                         ],
                       ),
                     ),
@@ -2059,9 +2014,8 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
                       ],
                     ),
                   ),
-                  // Ban — not for host or owner
-                  if (!participant.isHost &&
-                      participant.userId != _currentRoom.ownerId)
+                  // Ban
+                  if (!participant.isHost)
                     PopupMenuItem(
                       value: 'ban',
                       child: Row(
@@ -2084,13 +2038,7 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
   bool _isCurrentUserModerator() {
     final user = currentUser;
     if (user == null) return false;
-<<<<<<< HEAD
-    return user.uid == _currentRoom.ownerId ||
-        user.uid == _currentRoom.hostId ||
-        _currentRoom.admins.contains(user.uid) ||
-=======
     return user.uid == _currentRoom.hostId ||
->>>>>>> origin/develop
         _currentRoom.moderators.contains(user.uid);
   }
 
@@ -2179,19 +2127,6 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
     try {
       switch (action) {
         case 'promote':
-<<<<<<< HEAD
-          await roomService.makeAdmin(widget.room.id, participant.userId);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${participant.displayName} added as admin')),
-            );
-          }
-        case 'demote':
-          await roomService.removeAdmin(widget.room.id, participant.userId);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${participant.displayName} removed as admin')),
-=======
           await roomService.makeModerator(
               widget.room.id, user.uid, participant.userId);
           if (mounted) {
@@ -2209,7 +2144,6 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
               SnackBar(
                   content:
                       Text('${participant.displayName} removed as moderator')),
->>>>>>> origin/develop
             );
           }
         case 'mute':
@@ -2338,16 +2272,6 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
   }
 
   /// Control bar at bottom (mic, camera, flip, chat, leave)
-<<<<<<< HEAD
-  Widget _buildControlBar(AgoraVideoService agoraService, firebase_auth.User? currentUser, dynamic currentUserProfile) {
-    final isHost = currentUser?.uid == _currentRoom.hostId ||
-        currentUser?.uid == _currentRoom.ownerId;
-    final isModerator = currentUser != null &&
-        (isHost ||
-            _currentRoom.admins.contains(currentUser.uid) ||
-            _currentRoom.moderators.contains(currentUser.uid));
-    final isCurrentSpeaker = currentUser != null && _currentSpeakerUserId == currentUser.uid;
-=======
   Widget _buildControlBar(AgoraVideoService agoraService,
       firebase_auth.User? currentUser, dynamic currentUserProfile) {
     final isHost = currentUser?.uid == _currentRoom.hostId;
@@ -2355,7 +2279,6 @@ class _VoiceRoomPageState extends ConsumerState<VoiceRoomPage>
         (isHost || _currentRoom.moderators.contains(currentUser.uid));
     final isCurrentSpeaker =
         currentUser != null && _currentSpeakerUserId == currentUser.uid;
->>>>>>> origin/develop
     final canSpeak = !_turnBased || isCurrentSpeaker || isHost;
     final hasRaisedHand =
         currentUser != null && _raisedHands.contains(currentUser.uid);

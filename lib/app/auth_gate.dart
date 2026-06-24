@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/user_providers.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import '../features/auth/screens/neon_login_page.dart';
+import '../features/profile/screens/create_profile_page.dart';
+import '../shared/providers/all_providers.dart';
 
+// Auth wrapper for protected pages
 class AuthGate extends ConsumerWidget {
-  const AuthGate({super.key});
+  final Widget child;
+  const AuthGate({super.key, required this.child});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authStateProvider);
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasData) {
+          final user = snapshot.data!;
 
-<<<<<<< HEAD
-    return auth.when(
-      data: (user) {
-        if (user == null) {
-          return const Scaffold(
-            body: Center(child: Text('Not signed in')),
-=======
           // Initialize presence service for authenticated user (non-blocking)
           Future.microtask(() async {
             try {
@@ -55,26 +60,13 @@ class AuthGate extends ConsumerWidget {
               // Profile incomplete, redirect to profile creation
               return const CreateProfilePage();
             },
->>>>>>> origin/develop
           );
+          // } else {
+          //   return const EmailVerificationPage();
+          // }
         }
-        // User is authenticated — redirect to the home screen
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRoutes.home,
-            (_) => false,
-          );
-        });
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const NeonLoginPage();
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const Scaffold(
-        body: Center(child: Text('Auth error')),
-      ),
     );
   }
 }

@@ -20,32 +20,34 @@ class AgoraWebBridgeV3 {
 
   static Future<bool> setVideoMuted(bool muted) async => false;
 
-  static Future<bool> playCamera(String videoElementId) async => false;
-
-  static Future<bool> playRemoteVideo(String uid, String elementId) async => false;
-
   static Map<String, dynamic> getState() => {};
 
   static void enableDebugLogging() {}
 
   static void printDebugInfo() {}
 
-<<<<<<< HEAD
-  static void registerRemotePublishedCallback(
-      void Function(String uid, String mediaType) callback) {}
+  static bool renewToken(String newToken) => false;
 
-  static Future<bool> renewToken(String newToken) async => false;
+  // ─── Audio Mixing / Media Control Methods (Stubs for non-web) ───────────────
 
   static void registerTokenWillExpireCallback(
-      void Function(String channelName, String uid) callback) {}
+      void Function(String, String)? callback) {}
 
-  // ── Audio mixing stubs ────────────────────────────────────────────────────
-  static Future<bool> startAudioMixing(String url, bool looping) async => false;
+  static Future<bool> playCamera(String videoElementId) async => false;
+
+  static Future<bool> playRemoteVideo(String uid, String videoElementId) async =>
+      false;
+
+  static void registerRemotePublishedCallback(
+      void Function(String uid, String mediaType)? callback) {}
+
+  static Future<bool> startAudioMixing(String url, bool loop) async => false;
+
   static Future<bool> stopAudioMixing() async => false;
+
   static Future<bool> pauseAudioMixing() async => false;
+
   static Future<bool> resumeAudioMixing() async => false;
+
   static Future<bool> setAudioMixingVolume(int volume) async => false;
-=======
-  static bool renewToken(String newToken) => false;
->>>>>>> origin/develop
 }

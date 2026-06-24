@@ -21,9 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/design_system/design_constants.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
-import '../../services/messaging_service.dart';
-import '../../features/chat_room_page.dart';
+import '../../app/app_routes.dart';
 import 'gift_selector.dart';
 import 'pop_out_avatar.dart';
 
@@ -323,7 +321,7 @@ class _FriendsListPanelState extends State<FriendsListPanel>
           TextButton.icon(
             onPressed: () {
               widget.onClose();
-              Navigator.pushNamed(context, AppRoutes.discovery);
+              Navigator.pushNamed(context, AppRoutes.discoverUsers);
             },
             icon: const Icon(Icons.person_add),
             label: const Text('Find Friends'),
@@ -496,23 +494,13 @@ class _FriendsListPanelState extends State<FriendsListPanel>
               icon: Icons.message,
               label: 'Message',
               color: DesignColors.accent,
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(ctx);
                 widget.onClose();
-                final currentUid =
-                    FirebaseAuth.instance.currentUser?.uid;
-                if (currentUid == null) return;
-                final convoId = await MessagingService()
-                    .getOrCreateConversationId(currentUid, friendId);
-                if (!mounted) return;
-                Navigator.push(
+                Navigator.pushNamed(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => ChatRoomPage(
-                      otherUserId: friendId,
-                      conversationId: convoId,
-                    ),
-                  ),
+                  AppRoutes.chat,
+                  arguments: {'recipientId': friendId},
                 );
               },
             ),
@@ -621,19 +609,12 @@ class _FriendsListPanelState extends State<FriendsListPanel>
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavButton(Icons.home, 'Home', AppRoutes.home),
-<<<<<<< HEAD
-            _buildNavButton(Icons.video_camera_front, 'Rooms', AppRoutes.discoverRooms),
-            // Speed Dating removed - feature disabled
-            // _buildNavButton(Icons.casino, 'Dating', AppRoutes.speedDatingLobby),
-            _buildNavButton(Icons.account_balance_wallet, 'Wallet', AppRoutes.coins),
-=======
             _buildNavButton(
                 Icons.video_camera_front, 'Rooms', AppRoutes.browseRooms),
             // Speed Dating removed - feature disabled
             // _buildNavButton(Icons.casino, 'Dating', AppRoutes.speedDatingLobby),
             _buildNavButton(
                 Icons.account_balance_wallet, 'Wallet', AppRoutes.wallet),
->>>>>>> origin/develop
             _buildNavButton(Icons.person, 'Profile', AppRoutes.profile),
           ],
         ),

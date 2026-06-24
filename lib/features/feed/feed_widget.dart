@@ -4,35 +4,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'feed_provider.dart';
 
 class FeedWidget extends ConsumerWidget {
+  const FeedWidget({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(feedProvider);
     if (feed.isEmpty) {
-      return Center(child: Text('No posts yet'));
+      return const Center(child: Text('No posts yet'));
     }
     return ListView.builder(
       itemCount: feed.length,
       itemBuilder: (context, index) {
         final post = feed[index];
         return Card(
-          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('User: ${post.userId}', style: TextStyle(fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
+                Text('User: ${post.userId}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
                 Text(post.content),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.thumb_up),
-                    SizedBox(width: 4),
+                    const Icon(Icons.thumb_up),
+                    const SizedBox(width: 4),
                     Text('${post.likes}'),
-                    SizedBox(width: 16),
-                    Icon(Icons.comment),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.comment),
+                    const SizedBox(width: 4),
                     Text('${post.comments}'),
                   ],
                 ),

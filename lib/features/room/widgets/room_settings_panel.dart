@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mixmingle/features/room/services/moderation_service.dart';
+import '../../../shared/providers/providers.dart';
 
 // ── Room Settings Panel ────────────────────────────────────────────────────
 // Host-only bottom sheet for editing room metadata and applying bulk controls.

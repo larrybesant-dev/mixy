@@ -28,14 +28,10 @@ final moderationServiceProvider =
 /// ============================================================================
 
 /// Video connection state provider
-<<<<<<< HEAD
-final videoConnectionStateProvider = NotifierProvider<VideoConnectionStateNotifier, VideoConnectionState>(VideoConnectionStateNotifier.new);
-=======
 final videoConnectionStateProvider =
     NotifierProvider<VideoConnectionStateNotifier, VideoConnectionState>(() {
   return VideoConnectionStateNotifier();
 });
->>>>>>> origin/develop
 
 enum VideoConnectionState {
   disconnected,

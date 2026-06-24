@@ -256,12 +256,8 @@ class ProfileMusicEditor extends StatelessWidget {
           // Header
           const Row(
             children: [
-<<<<<<< HEAD
-              Icon(Icons.music_note, color: NeonColors.neonPurple, size: 18),
-=======
               Icon(Icons.music_note,
                   color: NeonColors.neonPurple, size: 18),
->>>>>>> origin/develop
               SizedBox(width: 8),
               Text(
                 'Profile Music',

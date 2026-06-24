@@ -1,7 +1,7 @@
 /// Webhook Handler
 ///
 /// Manages webhook registrations, deliveries, and event
-/// handling for the MIXVY platform.
+/// handling for the Mix & Mingle platform.
 library;
 
 import 'dart:async';

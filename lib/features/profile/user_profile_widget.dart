@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'user_profile_provider.dart';
 
 class UserProfileWidget extends ConsumerWidget {
+  const UserProfileWidget({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileProvider);
     if (profile == null) {
-      return Center(child: Text('No profile loaded'));
+      return const Center(child: Text('No profile loaded'));
     }
     return Column(
       children: [
@@ -16,9 +18,9 @@ class UserProfileWidget extends ConsumerWidget {
           backgroundImage: NetworkImage(profile.avatarUrl),
           radius: 40,
         ),
-        SizedBox(height: 16),
-        Text(profile.displayName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
+        const SizedBox(height: 16),
+        Text(profile.displayName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
         Text(profile.bio),
       ],
     );

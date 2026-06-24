@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design_system/design_constants.dart';
-import '../../../shared/models/user_profile.dart';
-import '../../../shared/providers/social_graph_providers.dart';
+import '../../../shared/models/user.dart';
+import '../../../shared/providers/providers.dart';
 import 'user_profile_page.dart';
 
 class ProfileMutualFollowersPage extends ConsumerWidget {
@@ -95,7 +95,7 @@ class ProfileMutualFollowersPage extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MutualTile extends StatelessWidget {
-  final UserProfile user;
+  final User user;
 
   const _MutualTile({required this.user});
 
@@ -127,9 +127,9 @@ class _MutualTile extends StatelessWidget {
             fontSize: 14,
             fontWeight: FontWeight.w600),
       ),
-      subtitle: (user.bio ?? '').isNotEmpty
+      subtitle: (user.bio ?? '').trim().isNotEmpty
           ? Text(
-              user.bio!,
+              user.bio ?? '',
               style: const TextStyle(
                   color: DesignColors.textGray, fontSize: 12),
               maxLines: 1,

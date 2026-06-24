@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../shared/models/post.dart';
-import 'activity_feed_service.dart';
 
 /// Social Feed Service
 /// Manages posts, likes, comments, and feed pagination
@@ -111,39 +110,6 @@ class SocialFeedService {
     }
   }
 
-  /// Get posts from users the current user follows (subcollection-based following feed).
-  /// Returns an empty stream if [userId] is empty or follows nobody.
-  Stream<List<Post>> getFollowingFeedStream(String userId, {int limit = 50}) {
-    if (userId.isEmpty) return Stream.value([]);
-
-    return _usersCollection
-        .doc(userId)
-        .collection('following')
-        .snapshots()
-        .asyncMap((followingSnap) async {
-      final followingIds = followingSnap.docs.map((d) => d.id).toList();
-      if (followingIds.isEmpty) return <Post>[];
-
-      // Include the user's own posts too
-      final allIds = [userId, ...followingIds];
-
-      final posts = <Post>[];
-      for (var i = 0; i < allIds.length; i += 30) {
-        final chunk = allIds.sublist(i, i + 30 > allIds.length ? allIds.length : i + 30);
-        final snap = await _postsCollection
-            .where('userId', whereIn: chunk)
-            .where('isVisible', isEqualTo: true)
-            .orderBy('createdAt', descending: true)
-            .limit(limit)
-            .get();
-        posts.addAll(snap.docs.map((doc) => Post.fromFirestore(doc)));
-      }
-
-      posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return posts.take(limit).toList();
-    });
-  }
-
   /// Get global/discover feed (all public posts)
   Stream<List<Post>> getGlobalFeedStream({int limit = 50}) {
     return _postsCollection
@@ -218,97 +184,6 @@ class SocialFeedService {
             snapshot.docs.map((doc) => Post.fromFirestore(doc)).toList());
   }
 
-  /// Get trending posts ordered by likeCount descending.
-  Stream<List<Post>> getTrendingFeedStream({int limit = 20}) {
-    return _postsCollection
-        .where('isVisible', isEqualTo: true)
-        .orderBy('likeCount', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((s) => s.docs.map((d) => Post.fromFirestore(d)).toList());
-  }
-
-  /// One page of the global feed using DocumentSnapshot cursor pagination.
-  /// Returns (posts, nextCursor) — nextCursor is null when no more pages.
-  Future<(List<Post>, DocumentSnapshot?)> getGlobalFeedPage({
-    DocumentSnapshot? cursor,
-    int limit = 20,
-  }) async {
-    try {
-      Query<Map<String, dynamic>> query = _postsCollection
-          .where('isVisible', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .limit(limit);
-      if (cursor != null) query = query.startAfterDocument(cursor);
-      final snap = await query.get();
-      final posts = snap.docs.map((d) => Post.fromFirestore(d)).toList();
-      final next =
-          snap.docs.length == limit ? snap.docs.last as DocumentSnapshot? : null;
-      return (posts, next);
-    } catch (e) {
-      debugPrint('❌ [SocialFeed] getGlobalFeedPage error: $e');
-      return (<Post>[], null);
-    }
-  }
-
-  /// One page of the trending feed using DocumentSnapshot cursor pagination.
-  Future<(List<Post>, DocumentSnapshot?)> getTrendingFeedPage({
-    DocumentSnapshot? cursor,
-    int limit = 20,
-  }) async {
-    try {
-      Query<Map<String, dynamic>> query = _postsCollection
-          .where('isVisible', isEqualTo: true)
-          .orderBy('likeCount', descending: true)
-          .limit(limit);
-      if (cursor != null) query = query.startAfterDocument(cursor);
-      final snap = await query.get();
-      final posts = snap.docs.map((d) => Post.fromFirestore(d)).toList();
-      final next =
-          snap.docs.length == limit ? snap.docs.last as DocumentSnapshot? : null;
-      return (posts, next);
-    } catch (e) {
-      debugPrint('❌ [SocialFeed] getTrendingFeedPage error: $e');
-      return (<Post>[], null);
-    }
-  }
-
-  /// One page of the following feed using offset-based pagination.
-  /// Fetches all following posts in memory then paginates (handles whereIn batching).
-  /// Returns (posts, nextOffset) — nextOffset is null when no more pages.
-  Future<(List<Post>, int?)> getFollowingFeedPage({
-    required String userId,
-    int offset = 0,
-    int limit = 20,
-  }) async {
-    if (userId.isEmpty) return (<Post>[], null);
-    try {
-      final followingSnap = await _usersCollection
-          .doc(userId)
-          .collection('following')
-          .get();
-      final allIds = [userId, ...followingSnap.docs.map((d) => d.id)];
-      final allPosts = <Post>[];
-      for (var i = 0; i < allIds.length; i += 30) {
-        final chunk = allIds.sublist(
-            i, i + 30 > allIds.length ? allIds.length : i + 30);
-        final snap = await _postsCollection
-            .where('userId', whereIn: chunk)
-            .where('isVisible', isEqualTo: true)
-            .orderBy('createdAt', descending: true)
-            .get();
-        allPosts.addAll(snap.docs.map((d) => Post.fromFirestore(d)));
-      }
-      allPosts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final page = allPosts.skip(offset).take(limit).toList();
-      final nextOffset = page.length == limit ? offset + limit : null;
-      return (page, nextOffset);
-    } catch (e) {
-      debugPrint('❌ [SocialFeed] getFollowingFeedPage error: $e');
-      return (<Post>[], null);
-    }
-  }
-
   // ============================================================
   // INTERACTIONS
   // ============================================================
@@ -335,16 +210,7 @@ class SocialFeedService {
         'likeCount': likes.length,
       });
 
-      // Fire activity event when a post is newly liked (not on unlike)
-      if (!isLiked) {
-        final postOwnerId = postDoc.data()?['userId'] as String?;
-        if (postOwnerId != null && postOwnerId != userId) {
-          await ActivityFeedService.instance
-              .onLikePost(postOwnerId, postId);
-        }
-      }
-
-      debugPrint('✅ [SocialFeed] Post ${isLiked ? 'unliked' : 'liked'}');
+      debugPrint('âœ… [SocialFeed] Post ${isLiked ? 'unliked' : 'liked'}');
       return !isLiked;
     } catch (e) {
       debugPrint('âŒ [SocialFeed] Error toggling like: $e');
@@ -376,16 +242,7 @@ class SocialFeedService {
         'commentCount': FieldValue.increment(1),
       });
 
-      // Fire activity event to the post owner
-      final postDoc = await _postsCollection.doc(postId).get();
-      final postOwnerId = postDoc.data()?['userId'] as String?;
-      if (postOwnerId != null && postOwnerId != userId) {
-        await ActivityFeedService.instance.onComment(
-          postOwnerId, postId, content,
-        );
-      }
-
-      debugPrint('✅ [SocialFeed] Comment added');
+      debugPrint('âœ… [SocialFeed] Comment added');
       return commentRef.id;
     } catch (e) {
       debugPrint('âŒ [SocialFeed] Error adding comment: $e');
@@ -468,6 +325,123 @@ class SocialFeedService {
     } catch (e) {
       debugPrint('âŒ [SocialFeed] Error deleting post: $e');
       return false;
+    }
+  }
+  // ============================================================
+  // TRENDING & DISCOVERY FEEDS (NEW)
+  // ============================================================
+
+  /// Stream of trending posts (sorted by like count)
+  Stream<List<Post>> getTrendingFeedStream({int limit = 20}) {
+    return _postsCollection
+        .where('isVisible', isEqualTo: true)
+        .orderBy('likeCount', descending: true)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => Post.fromFirestore(doc
+                  as DocumentSnapshot<Map<String, dynamic>>))
+              .toList();
+        })
+        .handleError((e) {
+          debugPrint('❌ [SocialFeed] Error streaming trending feed: $e');
+          return <Post>[];
+        });
+  }
+
+  /// Get paginated global feed (all posts from all users) — returns (posts, nextCursor)
+  Future<(List<Post>, DocumentSnapshot?)> getGlobalFeedPage({
+    DocumentSnapshot? cursor,
+    int limit = 20,
+  }) async {
+    try {
+      Query<Map<String, dynamic>> query = _postsCollection
+          .where('isVisible', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .limit(limit + 1); // Get one extra to check if there's a next page
+
+      if (cursor != null) {
+        query = query.startAfterDocument(cursor);
+      }
+
+      final snapshot = await query.get();
+      final docs = snapshot.docs;
+
+      // Check if there are more pages
+      final hasMore = docs.length > limit;
+      final posts = docs
+          .take(limit)
+          .map((doc) => Post.fromFirestore(
+              doc as DocumentSnapshot<Map<String, dynamic>>))
+          .toList();
+
+      final nextCursor = hasMore ? docs[limit] : null;
+
+      return (posts, nextCursor);
+    } catch (e) {
+      debugPrint('❌ [SocialFeed] Error getting global feed: $e');
+      return (<Post>[], null) as (List<Post>, DocumentSnapshot?);
+    }
+  }
+
+  /// Get paginated feed from users that the current user follows — returns (posts, nextOffset)
+  Future<(List<Post>, int?)> getFollowingFeedPage({
+    required String userId,
+    int offset = 0,
+    int limit = 20,
+  }) async {
+    try {
+      final userDoc = await _usersCollection.doc(userId).get();
+      final followingIds = List<String>.from(userDoc.data()?['following'] ?? []);
+
+      if (followingIds.isEmpty) {
+        return (<Post>[], null) as (List<Post>, int?);
+      }
+
+      // Batch by 30 (Firestore whereIn limit)
+      final batches = <List<String>>[];
+      for (var i = 0; i < followingIds.length; i += 30) {
+        batches.add(
+          followingIds.sublist(
+            i,
+            i + 30 > followingIds.length ? followingIds.length : i + 30,
+          ),
+        );
+      }
+
+      final allPosts = <Post>[];
+      for (final batch in batches) {
+        final Query<Map<String, dynamic>> query = _postsCollection
+            .where('userId', whereIn: batch)
+            .where('isVisible', isEqualTo: true)
+            .orderBy('createdAt', descending: true);
+
+        final snapshot = await query.get();
+        allPosts.addAll(snapshot.docs
+            .map((doc) => Post.fromFirestore(
+                doc as DocumentSnapshot<Map<String, dynamic>>)));
+      }
+
+      // Sort combined results by createdAt
+      allPosts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      // Apply offset and limit
+      final startIndex = offset;
+      final endIndex = (offset + limit + 1).clamp(0, allPosts.length);
+      final hasMore = endIndex < allPosts.length;
+      final posts = allPosts.sublist(
+        startIndex,
+        hasMore ? (offset + limit) : endIndex,
+      );
+
+      final nextOffset = hasMore ? offset + limit : null;
+
+      return (posts, nextOffset);
+    } catch (e) {
+      debugPrint('❌ [SocialFeed] Error getting following feed: $e');
+      return (<Post>[], null) as (List<Post>, int?);
     }
   }
 }

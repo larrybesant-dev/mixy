@@ -10,7 +10,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/providers/social_graph_providers.dart';
-import '../../../shared/providers/discovery_providers.dart';
 import '../../../shared/providers/user_providers.dart';
 import '../../../shared/models/user_profile.dart';
 import '../../../shared/widgets/social_graph_widgets.dart';

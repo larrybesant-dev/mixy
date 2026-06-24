@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/user_providers.dart';
-import '../features/home_page.dart';
-=======
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'auth_gate.dart';
@@ -68,21 +63,24 @@ import '../features/debug/screens/test_video_engine_screen.dart';
 import '../features/video_room/screens/video_chat_page.dart';
 import '../shared/models/room.dart';
 import '../features/debug/health_dashboard.dart';
->>>>>>> origin/develop
 
-class AppRoutes extends ConsumerWidget {
-  const AppRoutes({super.key});
+/// Slide transition directions
+enum SlideDirection {
+  left,
+  right,
+  up,
+  down,
+}
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final currentUser = ref.watch(currentUserProvider).value;
+class AppRoutes {
+  // Public routes (no auth required)
+  static const splash = '/';
+  static const landing = '/landing';
+  static const login = '/login';
+  static const signup = '/signup';
+  static const forgotPassword = '/forgot-password';
+  static const error = '/error';
 
-<<<<<<< HEAD
-    if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-=======
   // Protected routes (auth required)
   static const home = '/home';
   static const createProfile = '/create-profile';
@@ -192,18 +190,91 @@ class AppRoutes extends ConsumerWidget {
         'route': eventDetails,
         'arguments': {'eventId': eventId},
       };
->>>>>>> origin/develop
     }
 
-    return Navigator(
-      pages: const [
-        MaterialPage(child: HomePage()),
-      ],
-      onDidRemovePage: (_) {},
+    // Room deep link: /r/{roomId}
+    if (path.startsWith(deepLinkRoomPrefix)) {
+      final roomId = path.substring(deepLinkRoomPrefix.length);
+      return {
+        'route': room,
+        'arguments': {'roomId': roomId},
+      };
+    }
+
+    // Profile deep link: /u/{userId}
+    if (path.startsWith(deepLinkProfilePrefix)) {
+      final userId = path.substring(deepLinkProfilePrefix.length);
+      return {
+        'route': userProfile,
+        'arguments': {'userId': userId},
+      };
+    }
+
+    // DISABLED FOR V1 - Speed Dating deep link
+    // if (path.startsWith(deepLinkSpeedDatingPrefix)) {
+    //   return {
+    //     'route': speedDatingLobby,
+    //     'arguments': {},
+    //   };
+    // }
+
+    return null;
+  }
+
+  /// Extract query parameters from route settings.
+  /// Supports both `Map<String, dynamic>` and a plain String (treated as roomId).
+  static Map<String, dynamic> extractQueryParams(RouteSettings settings) {
+    if (settings.arguments is Map<String, dynamic>) {
+      return settings.arguments as Map<String, dynamic>;
+    }
+    // Many call-sites pass: Navigator.pushNamed(context, '/room', arguments: room.id)
+    // Treat a bare String as the roomId so /room navigation always works.
+    if (settings.arguments is String) {
+      final id = settings.arguments as String;
+      if (id.isNotEmpty) return {'roomId': id};
+    }
+    return {};
+  }
+
+  /// Create slide transition route
+  static Route<T> _createSlideRoute<T>({
+    required Widget page,
+    RouteSettings? settings,
+    SlideDirection direction = SlideDirection.left,
+  }) {
+    return PageRouteBuilder<T>(
+      settings: settings,
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: transitionDuration,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        Offset begin;
+        switch (direction) {
+          case SlideDirection.left:
+            begin = const Offset(1.0, 0.0);
+            break;
+          case SlideDirection.right:
+            begin = const Offset(-1.0, 0.0);
+            break;
+          case SlideDirection.up:
+            begin = const Offset(0.0, 1.0);
+            break;
+          case SlideDirection.down:
+            begin = const Offset(0.0, -1.0);
+            break;
+        }
+
+        const end = Offset.zero;
+        final tween = Tween(begin: begin, end: end).chain(
+          CurveTween(curve: transitionCurve),
+        );
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
     );
   }
-<<<<<<< HEAD
-=======
 
   /// Create fade transition route
   static Route<T> _createFadeRoute<T>({
@@ -837,5 +908,4 @@ class AppRoutes extends ConsumerWidget {
         );
     }
   }
->>>>>>> origin/develop
 }

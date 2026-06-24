@@ -465,29 +465,6 @@ class EventsService {
     });
   }
 
-  /// Stream events created/hosted by the given user (real-time)
-  Stream<List<Event>> watchUserCreatedEvents(String userId) {
-    try {
-      return _firestore
-          .collection('events')
-          .where('hostId', isEqualTo: userId)
-          .orderBy('startTime', descending: false)
-          .snapshots()
-          .map((snapshot) {
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return Event.fromMap(data);
-        }).toList();
-      }).handleError((error) {
-        debugPrint('Error loading user created events: $error');
-        return Stream.value(<Event>[]);
-      });
-    } catch (e) {
-      return Stream.value([]);
-    }
-  }
-
   /// Create a new event
   Future<String> createEvent(Event event) async {
     final user = _auth.currentUser;

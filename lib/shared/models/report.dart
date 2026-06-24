@@ -1,8 +1,6 @@
+// Removed unused imports
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-<<<<<<< HEAD
-enum ReportType { spam, harassment, inappropriateContent, hateSpeech, violence, scam, suspectedMinor, other }
-=======
 enum ReportType {
   spam,
   harassment,
@@ -12,7 +10,6 @@ enum ReportType {
   scam,
   other
 }
->>>>>>> origin/develop
 
 enum ReportStatus { pending, reviewed, resolved }
 

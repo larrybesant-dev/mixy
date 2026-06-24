@@ -53,17 +53,8 @@ class FirestoreService {
 
   // Rooms
   Stream<List<Room>> getRoomsStream() {
-<<<<<<< HEAD
-    return _firestore
-        .collection('rooms')
-        .where('isActive', isEqualTo: true)
-        .limit(100)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Room.fromDocument(doc)).toList());
-=======
     return _firestore.collection('rooms').snapshots().map((snapshot) =>
         snapshot.docs.map((doc) => Room.fromDocument(doc)).toList());
->>>>>>> origin/develop
   }
 
   Future<void> createRoom(Room room) async {
@@ -292,28 +283,13 @@ class FirestoreService {
     await _firestore.collection('users').doc(userId).update(fields);
   }
 
-  // Notification methods
+  // TEMP STUBS: Notification methods (not yet implemented)
   Future<void> sendFriendOnlineNotification(
     String recipientUserId,
     String friendUserId,
     String friendName,
   ) async {
-    final docRef = _firestore
-        .collection('users')
-        .doc(recipientUserId)
-        .collection('notifications')
-        .doc();
-    await docRef.set({
-      'id': docRef.id,
-      'userId': recipientUserId,
-      'type': 2, // NotificationType.newFollower index as proxy for online alert
-      'title': '$friendName is online',
-      'message': 'Your friend $friendName just came online.',
-      'senderId': friendUserId,
-      'senderName': friendName,
-      'isRead': false,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    // TODO: Implement friend online notification
   }
 
   Future<void> sendFriendOfflineNotification(
@@ -321,7 +297,7 @@ class FirestoreService {
     String friendUserId,
     String friendName,
   ) async {
-    // Offline notifications are silently dropped — avoid notification spam
+    // TODO: Implement friend offline notification
   }
 
   Future<void> sendRoomInvitation(
@@ -331,23 +307,6 @@ class FirestoreService {
     String roomId,
     String roomName,
   ) async {
-    final docRef = _firestore
-        .collection('users')
-        .doc(recipientUserId)
-        .collection('notifications')
-        .doc();
-    await docRef.set({
-      'id': docRef.id,
-      'userId': recipientUserId,
-      'type': 0, // NotificationType.roomInvite
-      'title': '$invitedByName invited you to a room',
-      'message': 'Join "$roomName" now!',
-      'senderId': invitedByUserId,
-      'senderName': invitedByName,
-      'roomId': roomId,
-      'roomName': roomName,
-      'isRead': false,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    // TODO: Implement room invitation notification
   }
 }

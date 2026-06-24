@@ -1,7 +1,7 @@
 /// Welcome Room Service
 ///
 /// Manages the welcome room for new users, providing a friendly
-/// introduction to The Lifestyle Community.
+/// introduction to the Mix & Mingle community.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -154,7 +154,7 @@ class WelcomeRoomService {
         'title': config.roomTitle,
         'description': config.roomDescription,
         'hostId': 'system', // System-hosted room
-        'hostName': 'MIXVY',
+        'hostName': 'Mix & Mingle',
         'creatorId': 'system',
         'isWelcomeRoom': true,
         'isActive': true,
@@ -166,8 +166,6 @@ class WelcomeRoomService {
         'speakers': [],
         'listeners': [],
         'moderators': ['system'],
-        'ownerId': 'system',
-        'admins': ['system'],
         'bannedUsers': [],
         'viewerCount': 0,
         'isLive': true,
@@ -259,18 +257,13 @@ class WelcomeRoomConfig {
 
   const WelcomeRoomConfig({
     this.isEnabled = true,
-<<<<<<< HEAD
-    this.roomTitle = 'Welcome to MIXVY Lounges! 🎉',
-    this.roomDescription = 'A friendly place for new members to meet the community and learn the ropes.',
-=======
     this.roomTitle = 'Welcome to Mix & Mingle! ðŸŽ‰',
     this.roomDescription =
         'A friendly place for new members to meet the community and learn the ropes.',
->>>>>>> origin/develop
     this.maxRoomCapacity = 50,
     this.autoCreateIfNone = true,
     this.welcomeMessages = const [
-      'Welcome to MIXVY Lounges! 👋',
+      'Welcome to Mix & Mingle! ðŸ‘‹',
       'Feel free to say hi and introduce yourself!',
       'Need help? Just ask - our community is super friendly!',
     ],
@@ -279,7 +272,7 @@ class WelcomeRoomConfig {
   factory WelcomeRoomConfig.fromFirestore(Map<String, dynamic> data) {
     return WelcomeRoomConfig(
       isEnabled: data['isEnabled'] ?? true,
-      roomTitle: data['roomTitle'] ?? 'Welcome to MIXVY Lounges! 🎉',
+      roomTitle: data['roomTitle'] ?? 'Welcome to Mix & Mingle! ðŸŽ‰',
       roomDescription: data['roomDescription'] ??
           'A friendly place for new members to meet the community.',
       maxRoomCapacity: data['maxRoomCapacity'] ?? 50,

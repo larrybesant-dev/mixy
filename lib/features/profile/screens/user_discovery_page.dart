@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/shared/providers/all_providers.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixmingle/app/app_routes.dart';
 import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
 import 'package:mixmingle/shared/widgets/follow_button.dart';
 

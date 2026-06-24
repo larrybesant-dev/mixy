@@ -246,11 +246,6 @@ class MonitoringService {
         final fpsList =
             qualityQuery.docs.map((d) => (d.data()['fps'] ?? 0) as int);
 
-<<<<<<< HEAD
-        avgQuality = (qualities.reduce((a, b) => a + b) / qualityQuery.docs.length).toDouble(); // Already safe, leave as is
-        avgBitrate = (bitrates.reduce((a, b) => a + b) / qualityQuery.docs.length).toDouble(); // Already safe, leave as is
-        avgFps = (fpsList.reduce((a, b) => a + b) / qualityQuery.docs.length).toDouble(); // Already safe, leave as is
-=======
         avgQuality =
             (qualities.reduce((a, b) => a + b) / qualityQuery.docs.length)
                 .toDouble();
@@ -259,20 +254,15 @@ class MonitoringService {
                 .toDouble();
         avgFps = (fpsList.reduce((a, b) => a + b) / qualityQuery.docs.length)
             .toDouble();
->>>>>>> origin/develop
       }
 
       // Calculate reliability score
       final reconnectRate =
           totalSessions > 0 ? (reconnects / totalSessions) : 0.0;
       final freezeRate = totalSessions > 0 ? (freezes / totalSessions) : 0.0;
-<<<<<<< HEAD
-      final reliabilityScore = (100 - (reconnectRate * 10 + freezeRate * 15).clamp(0, 100)).toDouble(); // Already safe, leave as is
-=======
       final reliabilityScore =
           (100 - (reconnectRate * 10 + freezeRate * 15).clamp(0, 100))
               .toDouble();
->>>>>>> origin/develop
 
       final metrics = VideoMetrics(
         date: targetDate,

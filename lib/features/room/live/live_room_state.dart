@@ -71,15 +71,9 @@ class LiveRoomState {
     this.isPublishingAudio = false,
     this.isForegrounded = true,
     this.activeSpeakerUid,
-    this.agoraViewerCount   = 0,
     this.error,
     this.statusMessage,
-    // ── DJ audio mixing ─────────────────────────────────────────────────
-    this.djTrackTitle  = '',
-    this.djIsPlaying   = false,
-    this.djIsPaused    = false,
-    this.djVolume      = 80,
-    this.djIsLooping   = false,    this.djUserId,  });
+  });
 
   final String roomId;
   final String localUserId;
@@ -110,22 +104,10 @@ class LiveRoomState {
   /// Engine uids we are actively receiving video from.
   final List<int> subscribedEngineUids;
 
-  // ── Speaker detection —————————————————————————————————————————————
+  // ── Speaker detection ─────────────────────────────────────────────────────
   final int? activeSpeakerUid;
 
-  // ── Agora live viewer count (web only, 0 when not on web or not in channel)
-  final int agoraViewerCount;
-
-  // ── DJ audio mixing ──────────────────────────────────────────────────────
-  final String  djTrackTitle;
-  final bool    djIsPlaying;
-  final bool    djIsPaused;
-  final int     djVolume;     // 0–100
-  final bool    djIsLooping;
-  /// uid of the participant currently acting as DJ (null when nobody is).
-  final String? djUserId;
-
-  // ── Errors / progress messages ————————————————————————————————
+  // ── Errors / progress messages ───────────────────────────────────────────
   final String? error;
   final String? statusMessage;
 
@@ -149,26 +131,6 @@ class LiveRoomState {
   int get onCamCount => participants.where((p) => p.isOnCam).length;
   int get activeMicCount => participants.where((p) => p.isMicActive).length;
 
-  /// True when music is playing (local engine or Firestore-reflected).
-  bool get isMusicActive =>
-      djIsPlaying || djIsPaused || (roomMeta?.isMusicPlaying ?? false);
-
-  /// Display title for the currently active track.
-  String get activeDjTrackTitle =>
-      djTrackTitle.isNotEmpty
-          ? djTrackTitle
-          : (roomMeta?.currentTrackUrl ?? '');
-
-  /// The userId currently acting as DJ (local or Firestore-reflected).
-  String? get activeDjUserId => djUserId ?? roomMeta?.djUserId;
-
-  /// Accurate in-room viewer count from the heartbeat-filtered Firestore
-  /// participant list.  The Agora bridge's `activeAgoraUsers` set only tracks
-  /// RTC channel members who publish tracks (broadcasters), so it under-counts
-  /// in any room that has pure-audience listeners — using it as a substitute
-  /// for the total head-count produces an incorrect display.
-  int get viewerCount => participants.length;
-
   /// Participants in the broadcaster grid (gridPosition ≥ 0).
   List<RoomParticipant> get gridParticipants =>
       participants.where((p) => p.isGridVisible).toList()
@@ -187,17 +149,11 @@ class LiveRoomState {
   String get roomType => roomMeta?.type ?? RoomType.social;
 
   /// Video publishing is allowed only when all three conditions are true:
-    ///   1. App is foregrounded
-    ///   2. User has cam on
-    ///   3. Room is active
+  ///   1. App is foregrounded
+  ///   2. User has cam on
+  ///   3. At least one subscriber exists (someone is watching)
   bool get canPublishVideo =>
-<<<<<<< HEAD
-      isForegrounded &&
-      isCamOn &&
-      isActive;
-=======
       isForegrounded && isCamOn && isActive && subscribedEngineUids.isNotEmpty;
->>>>>>> origin/develop
 
   // ── copyWith ──────────────────────────────────────────────────────────────
 
@@ -212,25 +168,6 @@ class LiveRoomState {
     bool? isPublishingAudio,
     bool? isForegrounded,
     List<RoomParticipant>? participants,
-<<<<<<< HEAD
-    List<int>?            visibleEngineUids,
-    List<int>?            subscribedEngineUids,
-    int?                  activeSpeakerUid,
-    int?                  agoraViewerCount,
-    String?               error,
-    String?               statusMessage,
-    bool clearError         = false,
-    bool clearActiveSpeaker = false,
-    bool clearStatus        = false,
-    // DJ
-    String? djTrackTitle,
-    bool?   djIsPlaying,
-    bool?   djIsPaused,
-    int?    djVolume,
-    bool?   djIsLooping,
-    String? djUserId,
-    bool    clearDj = false,
-=======
     List<int>? visibleEngineUids,
     List<int>? subscribedEngineUids,
     int? activeSpeakerUid,
@@ -239,7 +176,6 @@ class LiveRoomState {
     bool clearError = false,
     bool clearActiveSpeaker = false,
     bool clearStatus = false,
->>>>>>> origin/develop
   }) =>
       LiveRoomState(
         roomId: roomId,
@@ -256,25 +192,12 @@ class LiveRoomState {
         participants: participants ?? this.participants,
         visibleEngineUids: visibleEngineUids ?? this.visibleEngineUids,
         subscribedEngineUids: subscribedEngineUids ?? this.subscribedEngineUids,
-<<<<<<< HEAD
-        activeSpeakerUid:    clearActiveSpeaker   ? null : (activeSpeakerUid ?? this.activeSpeakerUid),
-        agoraViewerCount:    agoraViewerCount     ?? this.agoraViewerCount,
-        error:               clearError           ? null : (error            ?? this.error),
-        statusMessage:       clearStatus          ? null : (statusMessage    ?? this.statusMessage),
-        djTrackTitle:  clearDj ? '' : (djTrackTitle ?? this.djTrackTitle),
-        djIsPlaying:   clearDj ? false : (djIsPlaying  ?? this.djIsPlaying),
-        djIsPaused:    clearDj ? false : (djIsPaused   ?? this.djIsPaused),
-        djVolume:      djVolume     ?? this.djVolume,
-        djIsLooping:   djIsLooping  ?? this.djIsLooping,
-        djUserId:      clearDj ? null : (djUserId ?? this.djUserId),
-=======
         activeSpeakerUid: clearActiveSpeaker
             ? null
             : (activeSpeakerUid ?? this.activeSpeakerUid),
         error: clearError ? null : (error ?? this.error),
         statusMessage:
             clearStatus ? null : (statusMessage ?? this.statusMessage),
->>>>>>> origin/develop
       );
 
   @override

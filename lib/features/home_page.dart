@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/user_providers.dart';
+import 'package:intl/intl.dart';
+import '../shared/models/user_profile.dart';
+import '../shared/models/event.dart';
+import '../shared/models/chat_room.dart';
+import '../shared/providers/profile_controller.dart';
+import '../shared/providers/events_controller.dart';
+import '../shared/providers/chat_controller.dart';
+import 'profile/profile_page.dart';
+import 'events/screens/events_page.dart';
+import 'chat/screens/chat_list_page.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-<<<<<<< HEAD
-=======
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
@@ -59,30 +66,11 @@ class HomeDashboard extends ConsumerWidget {
   const HomeDashboard({super.key, required this.onNavigateToTab});
 
   @override
->>>>>>> origin/develop
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(currentUserProvider);
+    final currentUserAsync = ref.watch(currentUserProfileProvider);
+    final upcomingEventsAsync = ref.watch(upcomingEventsProvider);
+    final chatRoomsAsync = ref.watch(chatRoomsProvider);
 
-<<<<<<< HEAD
-    return userAsync.when(
-      data: (user) {
-        if (user == null) {
-          return const Scaffold(
-            body: Center(child: Text('Loading user...')),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Welcome, '),
-          ),
-          body: const Center(
-            child: Text(
-              'User ID: \n'
-              'Vibe: \n'
-              'Onboarding: ',
-              textAlign: TextAlign.center,
-=======
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mix & Mingle'),
@@ -99,18 +87,10 @@ class HomeDashboard extends ConsumerWidget {
                       content: Text('Notifications not implemented yet')),
                 );
               },
->>>>>>> origin/develop
             ),
           ),
-        );
-      },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        ],
       ),
-<<<<<<< HEAD
-      error: (_, __) => const Scaffold(
-        body: Center(child: Text('Error loading user')),
-=======
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -506,7 +486,6 @@ class ChatRoomCardSmall extends ConsumerWidget {
                   fontSize: 12,
                 ),
               ),
->>>>>>> origin/develop
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/room_member_model.dart';
 import '../../services/room_service.dart';
 
+// ignore: unused_element
 class _HostControls extends StatelessWidget {
   final RoomMember member;
   final String roomId;

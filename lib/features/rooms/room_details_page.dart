@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../providers/room_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import './room_page.dart';
 
 class RoomDetailsPage extends ConsumerWidget {
   final String roomId;
@@ -55,39 +56,42 @@ class RoomDetailsPage extends ConsumerWidget {
                   ),
                 ),
               ),
-          Color _getMoodColor(String mood) {
-            switch (mood) {
-              case 'Chill': return const Color(0xFF16213e);
-              case 'After Hours': return const Color(0xFF1a1a2e);
-              case 'Debate': return const Color(0xFF22223b);
-              case 'Game Night': return const Color(0xFF6C63FF);
-              case 'Storytime': return const Color(0xFFFFD700);
-              default: return Colors.grey[900]!;
-            }
-          }
-          Color _getMoodAccent(String mood) {
-            switch (mood) {
-              case 'Chill': return const Color(0xFF6C63FF);
-              case 'After Hours': return const Color(0xFFFFD700);
-              case 'Debate': return Colors.redAccent;
-              case 'Game Night': return const Color(0xFF6C63FF);
-              case 'Storytime': return const Color(0xFFFFD700);
-              default: return Colors.white;
-            }
-          }
-          IconData _getMoodIcon(String mood) {
-            switch (mood) {
-              case 'Chill': return Icons.spa;
-              case 'After Hours': return Icons.nightlife;
-              case 'Debate': return Icons.record_voice_over;
-              case 'Game Night': return Icons.videogame_asset;
-              case 'Storytime': return Icons.menu_book;
-              default: return Icons.chat;
-            }
-          }
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error loading room: $e')),
       ),
     );
+  }
+
+  Color _getMoodColor(String mood) {
+    switch (mood) {
+      case 'Chill': return const Color(0xFF16213e);
+      case 'After Hours': return const Color(0xFF1a1a2e);
+      case 'Debate': return const Color(0xFF22223b);
+      case 'Game Night': return const Color(0xFF6C63FF);
+      case 'Storytime': return const Color(0xFFFFD700);
+      default: return Colors.grey[900]!;
+    }
+  }
+
+  Color _getMoodAccent(String mood) {
+    switch (mood) {
+      case 'Chill': return const Color(0xFF6C63FF);
+      case 'After Hours': return const Color(0xFFFFD700);
+      case 'Debate': return Colors.redAccent;
+      case 'Game Night': return const Color(0xFF6C63FF);
+      case 'Storytime': return const Color(0xFFFFD700);
+      default: return Colors.white;
+    }
+  }
+
+  IconData _getMoodIcon(String mood) {
+    switch (mood) {
+      case 'Chill': return Icons.spa;
+      case 'After Hours': return Icons.nightlife;
+      case 'Debate': return Icons.record_voice_over;
+      case 'Game Night': return Icons.videogame_asset;
+      case 'Storytime': return Icons.menu_book;
+      default: return Icons.chat;
+    }
   }
 }

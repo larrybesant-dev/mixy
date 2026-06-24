@@ -502,7 +502,7 @@ final hasActiveSubscriptionProvider = FutureProvider<bool>((ref) async {
 final subscriptionPackagesProvider =
     FutureProvider<List<SubscriptionPackage>>((ref) async {
   // Return hardcoded packages for now
-  // Returns hardcoded packages; extend when backend subscription management is added
+  // TODO: Fetch from Firestore or backend
   return [
     SubscriptionPackage(
       id: 'basic_monthly',

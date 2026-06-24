@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -31,7 +30,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             const SizedBox(height: 24),
             _buildSection(
               'Introduction',
-              'MIXVY ("we," "our," or "us") respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, disclose, and safeguard your information when you use our platform and services.',
+              'Mix & Mingle ("we," "our," or "us") respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and services.',
             ),
             _buildSection(
               '1. Information We Collect',
@@ -135,12 +134,8 @@ class PrivacyPolicyPage extends StatelessWidget {
                 text: TextSpan(
                   style: TextStyle(color: Colors.grey.shade600),
                   children: [
-<<<<<<< HEAD
-                    const TextSpan(text: 'By using MIXVY, you agree to our\n'),
-=======
                     const TextSpan(
                         text: 'By using Mix & Mingle, you agree to our\n'),
->>>>>>> origin/develop
                     TextSpan(
                       text: 'Terms of Service',
                       style: TextStyle(
@@ -149,7 +144,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                       ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
-                          Navigator.pushNamed(context, AppRoutes.terms);
+                          Navigator.pushNamed(context, '/terms');
                         },
                     ),
                     const TextSpan(text: ' and '),

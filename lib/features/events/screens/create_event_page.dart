@@ -8,7 +8,6 @@ import 'package:mixmingle/shared/providers/events_controller.dart';
 import 'package:mixmingle/shared/providers/providers.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
 import 'package:mixmingle/shared/validation.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
 
 class CreateEventPage extends ConsumerStatefulWidget {
   const CreateEventPage({super.key});
@@ -112,7 +111,7 @@ class _CreateEventPageState extends ConsumerState<CreateEventPage> {
   }
 
   void _navigateToHome(BuildContext context) {
-    Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   Future<void> _submitForm() async {

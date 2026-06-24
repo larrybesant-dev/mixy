@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/room_model.dart';
 import '../../services/room_service.dart';
 
-class _CreateRoomDialog extends ConsumerStatefulWidget {
+class CreateRoomDialog extends ConsumerStatefulWidget {
+  const CreateRoomDialog({super.key});
+
   @override
-  ConsumerState<_CreateRoomDialog> createState() => _CreateRoomDialogState();
+  ConsumerState<CreateRoomDialog> createState() => _CreateRoomDialogState();
 }
 
-class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
+class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
   final _titleController = TextEditingController();
   String _category = 'Chill';
   String _mood = 'Chill';

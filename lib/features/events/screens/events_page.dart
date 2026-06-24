@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-﻿import 'package:flutter/material.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
-=======
 import 'package:flutter/material.dart';
->>>>>>> origin/develop
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:mixmingle/shared/models/event.dart';
@@ -316,7 +311,7 @@ class EventCard extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.edit),
                       onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.createRoom); // events/create → use room creation flow
+                        Navigator.pushNamed(context, '/events/create');
                       },
                     ),
                 ],

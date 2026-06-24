@@ -2,10 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/infra/app_health_service.dart';
-import '../../services/agora/agora_stub.dart'
-  if (dart.library.io) '../../services/agora/agora_native.dart';
-import '../../services/agora/agora_stub.dart'
-  if (dart.library.io) '../../services/agora/agora_native.dart';
+import '../../services/agora/agora_web_bridge_v5.dart';
+import '../../services/agora/agora_service.dart';
 import '../../core/design_system/design_constants.dart';
 import 'package:web/web.dart' as web;
 import 'dart:ui_web' as ui_web;
@@ -77,7 +75,7 @@ class _HealthDashboardState extends ConsumerState<HealthDashboard> {
     if (_devicesLoaded) return;
 
     try {
-      final List<Map<String, dynamic>> devices = [];
+      final devices = await _agora.getDevices();
       if (mounted) {
         setState(() {
           _devices = devices;
@@ -100,11 +98,12 @@ class _HealthDashboardState extends ConsumerState<HealthDashboard> {
 
   void _checkBridgeStatus() {
     setState(() {
-      _bridgeReady = false;
-      _agoraInitialized = false;
-      _inChannel = false;
-      _cameraActive = false;
-      _micActive = false;
+      _bridgeReady = AgoraWebBridge.isBridgeReady;
+      final state = AgoraWebBridge.getState();
+      _agoraInitialized = state['initialized'] ?? false;
+      _inChannel = state['inChannel'] ?? false;
+      _cameraActive = state['hasVideo'] ?? false;
+      _micActive = state['hasAudio'] ?? false;
     });
   }
 

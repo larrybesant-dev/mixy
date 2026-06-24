@@ -1,12 +1,8 @@
 ﻿// Agora Web Bridge v3 - Production Ready (WASM-safe)
 // Interfaces with agora_web_v5_production.js
-<<<<<<< HEAD
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
-=======
 // Replaces dart:js with dart:js_interop for WASM compatibility.
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:js_interop';
->>>>>>> origin/develop
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../../core/utils/app_logger.dart';
@@ -60,21 +56,8 @@ class AgoraWebBridgeV3 {
   static bool get isAvailable {
     if (!kIsWeb) return false;
     try {
-<<<<<<< HEAD
-      final webObj = js.context['agoraWeb'];
-      final objReady = webObj is js.JsObject &&
-          webObj['init'] != null &&
-          webObj['joinChannel'] != null;
-      final flatReady = js.context['agoraWebInit'] != null &&
-          js.context['agoraWebJoinChannel'] != null;
-      final jsAvailable = objReady || flatReady;
-      return jsAvailable;
-    } catch (e) {
-      debugPrint('[BRIDGE] Error checking isAvailable: $e');
-=======
       return _jsAgoraWebInit != null && _jsAgoraWebJoinChannel != null;
     } catch (_) {
->>>>>>> origin/develop
       return false;
     }
   }
@@ -86,33 +69,11 @@ class AgoraWebBridgeV3 {
       return false;
     }
     try {
-<<<<<<< HEAD
-      debugPrint('[BRIDGE] Initializing with appId: ${appId.substring(0, 8)}...');
-      AppLogger.info('ðŸŒ Initializing Agora Web SDK v5...');
-
-      // Call JS init and convert Promise to Future.
-      final promiseObj = _invokeBridgeMethod(
-        objectMethod: 'init',
-        flatMethod: 'agoraWebInit',
-        args: [appId],
-      );
-      final result = await _promiseToFuture(promiseObj);
-
-      if (_isSuccessResult(result)) {
-        AppLogger.info('âœ… Agora Web SDK v5 initialized');
-        debugPrint('[BRIDGE] Init successful');
-        return true;
-      } else {
-        AppLogger.error('âŒ Init returned false');
-        return false;
-      }
-=======
       debugPrint('[BRIDGE] Initializing...');
       AppLogger.info('Initializing Agora Web SDK v5...');
       final ok = await _callPromise(_jsAgoraWebInit, appId.toJS);
       if (ok) AppLogger.info('Agora Web SDK v5 initialized');
       return ok;
->>>>>>> origin/develop
     } catch (e) {
       AppLogger.error('Agora init failed: $e');
       debugPrint('[BRIDGE] Init error: $e');
@@ -129,27 +90,6 @@ class AgoraWebBridgeV3 {
   }) async {
     if (!kIsWeb) return false;
     try {
-<<<<<<< HEAD
-      debugPrint('[BRIDGE] Joining channel: $channelName, uid: $uid, token length: ${token.length}');
-      AppLogger.info('ðŸ”— Joining Agora channel: $channelName...');
-
-      // Call JS joinChannel(appId, channelName, token, uid)
-      final promiseObj = _invokeBridgeMethod(
-        objectMethod: 'joinChannel',
-        flatMethod: 'agoraWebJoinChannel',
-        args: [appId, channelName, token, uid],
-      );
-      final result = await _promiseToFuture(promiseObj, timeout: const Duration(seconds: 35));
-
-      if (_isSuccessResult(result)) {
-        AppLogger.info('âœ… Successfully joined channel: $channelName');
-        debugPrint('[BRIDGE] joinChannel successful');
-        return true;
-      } else {
-        AppLogger.error('âŒ joinChannel returned false');
-        return false;
-      }
-=======
       debugPrint('[BRIDGE] Joining channel: $channelName, uid: $uid');
       AppLogger.info('Joining Agora channel: $channelName...');
       final ok = await _callPromise(
@@ -161,7 +101,6 @@ class AgoraWebBridgeV3 {
       );
       if (ok) AppLogger.info('Successfully joined channel: $channelName');
       return ok;
->>>>>>> origin/develop
     } catch (e) {
       AppLogger.error('Failed to join channel: $e');
       debugPrint('[BRIDGE] joinChannel error: $e');
@@ -173,28 +112,9 @@ class AgoraWebBridgeV3 {
   static Future<bool> leaveChannel() async {
     if (!kIsWeb) return false;
     try {
-<<<<<<< HEAD
-      debugPrint('[BRIDGE] Leaving channel...');
-      AppLogger.info('ðŸ‘‹ Leaving channel...');
-
-      final promiseObj = _invokeBridgeMethod(
-        objectMethod: 'leaveChannel',
-        flatMethod: 'agoraWebLeaveChannel',
-      );
-      final result = await _promiseToFuture(promiseObj);
-
-      if (_isSuccessResult(result)) {
-        AppLogger.info('âœ… Left channel');
-        return true;
-      } else {
-        AppLogger.warning('âš ï¸ Leave returned false');
-        return false;
-      }
-=======
       final ok = await _callPromise(_jsAgoraWebLeaveChannel);
       if (ok) AppLogger.info('Left channel');
       return ok;
->>>>>>> origin/develop
     } catch (e) {
       AppLogger.error('Failed to leave channel: $e');
       return false;
@@ -205,25 +125,9 @@ class AgoraWebBridgeV3 {
   static Future<bool> setMicMuted(bool muted) async {
     if (!kIsWeb) return false;
     try {
-<<<<<<< HEAD
-      debugPrint('[BRIDGE] Setting mic muted: $muted');
-      final promiseObj = _invokeBridgeMethod(
-        objectMethod: 'setMicMuted',
-        flatMethod: 'agoraWebSetMicMuted',
-        args: [muted],
-      );
-      final result = await _promiseToFuture(promiseObj);
-
-      if (_isSuccessResult(result)) {
-        AppLogger.info('ðŸŽ¤ Microphone ${muted ? 'muted' : 'unmuted'}');
-        return true;
-      }
-      return false;
-=======
       final ok = await _callPromise(_jsAgoraWebSetMicMuted, muted.toJS);
       if (ok) AppLogger.info('Microphone ${muted ? "muted" : "unmuted"}');
       return ok;
->>>>>>> origin/develop
     } catch (e) {
       AppLogger.error('Failed to set mic mute: $e');
       return false;
@@ -234,104 +138,12 @@ class AgoraWebBridgeV3 {
   static Future<bool> setVideoMuted(bool muted) async {
     if (!kIsWeb) return false;
     try {
-<<<<<<< HEAD
-      debugPrint('[BRIDGE] Setting video muted: $muted');
-      final promiseObj = _invokeBridgeMethod(
-        objectMethod: 'setVideoMuted',
-        flatMethod: 'agoraWebSetVideoMuted',
-        args: [muted],
-      );
-      final result = await _promiseToFuture(promiseObj);
-
-      if (_isSuccessResult(result)) {
-        AppLogger.info('ðŸ“¹ Video ${muted ? 'disabled' : 'enabled'}');
-        return true;
-      }
-      return false;
-=======
       final ok = await _callPromise(_jsAgoraWebSetVideoMuted, muted.toJS);
       if (ok) AppLogger.info('Video ${muted ? "disabled" : "enabled"}');
       return ok;
->>>>>>> origin/develop
     } catch (e) {
       AppLogger.error('Failed to set video mute: $e');
       return false;
-    }
-  }
-
-  static Future<bool> playCamera(String videoElementId) async {
-    if (!kIsWeb) return false;
-
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'playCamera',
-          flatMethod: 'agoraWebPlayCamera',
-          args: [videoElementId],
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] playCamera error: $e');
-      return false;
-    }
-  }
-
-  /// Attach a remote user's video track to a DOM element by UID and element ID.
-  static Future<bool> playRemoteVideo(String uid, String elementId) async {
-    if (!kIsWeb) return false;
-
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'playRemoteVideo',
-          flatMethod: 'agoraWebPlayRemoteVideo',
-          args: [uid, elementId],
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] playRemoteVideo error: $e');
-      return false;
-    }
-  }
-
-  /// Push a freshly-fetched Agora token to the JS bridge so it can renew.
-  /// Call this from Dart after `generateAgoraToken` returns a new token.
-  static Future<bool> renewToken(String newToken) async {
-    if (!kIsWeb) return false;
-    try {
-      final promiseObj = _invokeBridgeMethod(
-        objectMethod: 'renewToken',
-        flatMethod: 'agoraWebRenewToken',
-        args: [newToken],
-      );
-      final result = await _promiseToFuture(promiseObj);
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] renewToken error: $e');
-      return false;
-    }
-  }
-
-  /// Register a Dart callback that fires when the JS bridge receives
-  /// token-privilege-will-expire or token-privilege-did-expire.
-  /// The callback receives (channelName, uid) and should fetch a fresh token
-  /// then call [renewToken].
-  static void registerTokenWillExpireCallback(
-      void Function(String channelName, String uid) callback) {
-    if (!kIsWeb) return;
-    try {
-      final agoraWeb = js.context['agoraWeb'];
-      if (agoraWeb is js.JsObject) {
-        agoraWeb['onTokenWillExpire'] =
-            js_util.allowInterop((String channelName, String uid) {
-          callback(channelName, uid);
-        });
-        debugPrint('[BRIDGE] onTokenWillExpire callback registered');
-      }
-    } catch (e) {
-      debugPrint('[BRIDGE] registerTokenWillExpireCallback error: $e');
     }
   }
 
@@ -339,42 +151,10 @@ class AgoraWebBridgeV3 {
   static Map<String, dynamic> getState() {
     if (!kIsWeb) return {};
     try {
-<<<<<<< HEAD
-      final stateObj = _invokeBridgeMethod(
-        objectMethod: 'getState',
-        flatMethod: 'agoraWebGetState',
-      );
-      final dartified = js_util.dartify(stateObj);
-      if (dartified is Map) {
-        return Map<String, dynamic>.from(dartified);
-      }
-
-      // Fallback for bridge variants that return JS objects not directly dartified.
-      if (stateObj is js.JsObject) {
-        return {
-          'initialized': stateObj['initialized'] == true,
-          'sdkLoaded': stateObj['sdkLoaded'] == true,
-          'inChannel': stateObj['inChannel'] == true,
-          'currentChannel': stateObj['currentChannel'],
-          'currentUid': stateObj['currentUid'],
-          'hasAudio': stateObj['hasAudio'] == true,
-          'hasVideo': stateObj['hasVideo'] == true,
-          'audioMuted': stateObj['audioMuted'] == true,
-          'videoMuted': stateObj['videoMuted'] == true,
-          'lastError': stateObj['lastError'],
-        };
-      }
-
-      return {
-        'error': 'agoraWebGetState returned non-map state',
-        'type': stateObj.runtimeType.toString(),
-      };
-=======
       final fn = _jsAgoraWebGetState;
       if (fn == null) return {'error': 'agoraWebGetState not found'};
       (fn as JSFunction).callAsFunction(null);
       return {'available': true};
->>>>>>> origin/develop
     } catch (e) {
       return {'error': e.toString()};
     }
@@ -392,198 +172,12 @@ class AgoraWebBridgeV3 {
   static void printDebugInfo() {
     if (!kIsWeb) return;
     try {
-<<<<<<< HEAD
-      if (js.context['agoraDebug'] != null) {
-        js.context.callMethod('agoraDebug');
-      } else if (js.context['agoraWebDebug'] != null) {
-        js.context.callMethod('agoraWebDebug');
-      }
-=======
       (_jsAgoraWebDebug as JSFunction?)?.callAsFunction(null);
->>>>>>> origin/develop
     } catch (e) {
       debugPrint('[BRIDGE] Error: $e');
     }
   }
 
-<<<<<<< HEAD
-  /// Register a Dart callback that fires when JS user-published fires.
-  /// Sets window.agoraWeb.onRemoteUserPublished so the JS bridge can call it.
-  static void registerRemotePublishedCallback(
-      void Function(String uid, String mediaType) callback) {
-    if (!kIsWeb) return;
-    try {
-      final agoraWeb = js.context['agoraWeb'];
-      if (agoraWeb is js.JsObject) {
-        agoraWeb['onRemoteUserPublished'] =
-            js_util.allowInterop((String uid, String mediaType) {
-          callback(uid, mediaType);
-        });
-        debugPrint('[BRIDGE] onRemoteUserPublished callback registered on window.agoraWeb');
-      } else {
-        debugPrint('[BRIDGE] registerRemotePublishedCallback: window.agoraWeb not available');
-      }
-    } catch (e) {
-      debugPrint('[BRIDGE] registerRemotePublishedCallback error: $e');
-    }
-  }
-
-  // ── Audio mixing ───────────────────────────────────────────────────────────
-
-  /// Start playing an audio file into the channel mix.
-  /// [url] must be an HTTP(S) URL reachable from the browser.
-  /// [looping] — true to loop indefinitely.
-  static Future<bool> startAudioMixing(String url, bool looping) async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'startAudioMixing',
-          flatMethod:   'agoraWebStartAudioMixing',
-          args: [url, looping],
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] startAudioMixing error: $e');
-      return false;
-    }
-  }
-
-  static Future<bool> stopAudioMixing() async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'stopAudioMixing',
-          flatMethod:   'agoraWebStopAudioMixing',
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] stopAudioMixing error: $e');
-      return false;
-    }
-  }
-
-  static Future<bool> pauseAudioMixing() async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'pauseAudioMixing',
-          flatMethod:   'agoraWebPauseAudioMixing',
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] pauseAudioMixing error: $e');
-      return false;
-    }
-  }
-
-  static Future<bool> resumeAudioMixing() async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'resumeAudioMixing',
-          flatMethod:   'agoraWebResumeAudioMixing',
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] resumeAudioMixing error: $e');
-      return false;
-    }
-  }
-
-  static Future<bool> setAudioMixingVolume(int volume) async {
-    if (!kIsWeb) return false;
-    try {
-      final result = await _promiseToFuture(
-        _invokeBridgeMethod(
-          objectMethod: 'setAudioMixingVolume',
-          flatMethod:   'agoraWebSetAudioMixingVolume',
-          args: [volume],
-        ),
-      );
-      return _isSuccessResult(result);
-    } catch (e) {
-      debugPrint('[BRIDGE] setAudioMixingVolume error: $e');
-      return false;
-    }
-  }
-
-  // ========== INTERNAL UTILITIES ==========
-
-  /// Convert JavaScript Promise to Dart Future
-  static Future<dynamic> _promiseToFuture(
-    dynamic jsPromise, {
-    Duration timeout = const Duration(seconds: 30),
-  }) {
-    try {
-      if (jsPromise == null) {
-        return Future.error(Exception('Promise is null'));
-      }
-
-      // Some bridge functions may return an immediate bool instead of a Promise.
-      final immediate = jsPromise is bool || jsPromise is num || jsPromise is String;
-      if (immediate) {
-        return Future.value(jsPromise);
-      }
-
-      try {
-        return js_util.promiseToFuture<dynamic>(jsPromise).timeout(
-          timeout,
-          onTimeout: () => throw TimeoutException(
-            'Agora operation timeout after ${timeout.inSeconds}s',
-          ),
-        );
-      } catch (promiseErr) {
-        // `dart:js` can wrap Promise objects such that promiseToFuture fails on `.then`.
-        // Resolve then-able JsObjects manually before considering immediate fallback.
-        if (jsPromise is js.JsObject) {
-          final thenFn = jsPromise['then'];
-          if (thenFn is js.JsFunction) {
-            final completer = Completer<dynamic>();
-
-            thenFn.apply(
-              [
-                js_util.allowInterop((dynamic value) {
-                  if (!completer.isCompleted) completer.complete(value);
-                }),
-                js_util.allowInterop((dynamic error) {
-                  if (!completer.isCompleted) {
-                    completer.completeError(Exception(error?.toString() ?? 'Promise rejected'));
-                  }
-                }),
-              ],
-              thisArg: jsPromise,
-            );
-
-            return completer.future.timeout(
-              timeout,
-              onTimeout: () => throw TimeoutException(
-                'Agora operation timeout after ${timeout.inSeconds}s',
-              ),
-            );
-          }
-        }
-
-        // If it is not a real Promise (no callable .then), treat it as an immediate value.
-        final msg = promiseErr.toString();
-        if (msg.contains('then') && msg.contains('non-function')) {
-          debugPrint('[BRIDGE] Non-promise result detected, converting immediate value');
-          try {
-            return Future.value(js_util.dartify(jsPromise));
-          } catch (_) {
-            return Future.value(jsPromise?.toString());
-          }
-        }
-        rethrow;
-      }
-=======
   /// Renew the Agora token for the current session (synchronous JS call).
   /// Call this when the privilege expiry callback fires or on a ~23h timer.
   static bool renewToken(String newToken) {
@@ -595,76 +189,67 @@ class AgoraWebBridgeV3 {
       if (result == null) return false;
       final dartValue = (result as JSBoolean).toDart;
       return dartValue;
->>>>>>> origin/develop
     } catch (e) {
       debugPrint('[BRIDGE] renewToken error: $e');
       return false;
     }
   }
 
-  /// Invoke Agora bridge method from `window.agoraWeb` first, with flat API fallback.
-  static dynamic _invokeBridgeMethod({
-    required String objectMethod,
-    required String flatMethod,
-    List<dynamic> args = const [],
-  }) {
-    // Prefer object-based API (window.agoraWeb.method) to keep bridge state scoped.
-    final webObj = js.context['agoraWeb'];
-    if (webObj is js.JsObject) {
-      final objectFn = webObj[objectMethod];
-      if (objectFn is js.JsFunction) {
-        return objectFn.apply(args, thisArg: webObj);
-      }
+  // ─── Audio Mixing / Media Control Methods (Web stubs) ───────────────────────
 
-      if (objectFn != null) {
-        debugPrint(
-          '[BRIDGE] Non-callable object method: agoraWeb.$objectMethod '
-          '(${objectFn.runtimeType})',
-        );
-      }
-    }
-
-    // Backward-compatible fallback for older flat global functions.
-    final flatFn = js.context[flatMethod];
-    if (flatFn is js.JsFunction) {
-      return flatFn.apply(args);
-    }
-
-    if (flatFn != null) {
-      debugPrint(
-        '[BRIDGE] Non-callable flat method: $flatMethod '
-        '(${flatFn.runtimeType})',
-      );
-    }
-
-    throw Exception(
-      'Agora bridge method unavailable or non-callable: '
-      'object=agoraWeb.$objectMethod flat=$flatMethod',
-    );
+  /// Register callback for token expiration
+  static void registerTokenWillExpireCallback(
+      void Function(String, String)? callback) {
+    // Stub: Web implementation would register JS callback
+    debugPrint('[BRIDGE] registerTokenWillExpireCallback (stub)');
   }
 
-  /// Promise resolutions can arrive as wrapped JS values; normalize to bool.
-  static bool _isSuccessResult(dynamic value) {
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      return normalized == 'true' || normalized == '1' || normalized == 'ok' || normalized == 'success';
-    }
+  /// Play local camera video
+  static Future<bool> playCamera(String videoElementId) async {
+    debugPrint('[BRIDGE] playCamera: $videoElementId (stub)');
+    return false;
+  }
 
-    try {
-      final dartified = js_util.dartify(value);
-      if (dartified is bool) return dartified;
-      if (dartified is num) return dartified != 0;
-      if (dartified is String) {
-        final normalized = dartified.trim().toLowerCase();
-        return normalized == 'true' || normalized == '1' || normalized == 'ok' || normalized == 'success';
-      }
-    } catch (_) {
-      // Ignore conversion failures and fall through.
-    }
+  /// Play remote user video
+  static Future<bool> playRemoteVideo(String uid, String videoElementId) async {
+    debugPrint('[BRIDGE] playRemoteVideo: $uid (stub)');
+    return false;
+  }
 
-    return value?.toString() == 'true';
+  /// Register callback for remote user publishing
+  static void registerRemotePublishedCallback(
+      void Function(String uid, String mediaType)? callback) {
+    debugPrint('[BRIDGE] registerRemotePublishedCallback (stub)');
+  }
+
+  /// Start playing audio file as background music
+  static Future<bool> startAudioMixing(String url, bool loop) async {
+    debugPrint('[BRIDGE] startAudioMixing: $url (stub)');
+    return false;
+  }
+
+  /// Stop audio mixing
+  static Future<bool> stopAudioMixing() async {
+    debugPrint('[BRIDGE] stopAudioMixing (stub)');
+    return false;
+  }
+
+  /// Pause audio mixing
+  static Future<bool> pauseAudioMixing() async {
+    debugPrint('[BRIDGE] pauseAudioMixing (stub)');
+    return false;
+  }
+
+  /// Resume audio mixing
+  static Future<bool> resumeAudioMixing() async {
+    debugPrint('[BRIDGE] resumeAudioMixing (stub)');
+    return false;
+  }
+
+  /// Set audio mixing volume (0-100)
+  static Future<bool> setAudioMixingVolume(int volume) async {
+    debugPrint('[BRIDGE] setAudioMixingVolume: $volume (stub)');
+    return false;
   }
 }
 

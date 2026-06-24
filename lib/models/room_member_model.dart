@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum RoomMemberRole { host, cohost, member }
+enum RoomMemberRole { host, coHost, listener }
 
 class RoomMember {
   final String userId;
@@ -18,8 +18,8 @@ class RoomMember {
     return RoomMember(
       userId: data['userId'] ?? '',
       role: RoomMemberRole.values.firstWhere(
-        (e) => e.toString() == 'RoomMemberRole.' + (data['role'] ?? 'member'),
-        orElse: () => RoomMemberRole.member,
+        (e) => e.toString() == 'RoomMemberRole.' + (data['role'] ?? 'listener'),
+        orElse: () => RoomMemberRole.listener,
       ),
       joinedAt: data['joinedAt'] ?? Timestamp.now(),
     );

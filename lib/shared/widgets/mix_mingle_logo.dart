@@ -1,13 +1,13 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:mixmingle/core/theme/neon_colors.dart';
+import 'package:mixmingle/core/theme/colors.dart';
 
-/// MIXVY logo widget — Neon brand identity
-/// Glowing "M" icon + "MIXVY" gradient text
-class MIXVYLogo extends StatelessWidget {
+/// Mix & Mingle logo widget matching the flyer design
+/// "MIX" in coral orange + treble clef + "MINGLE" in blue
+class MixMingleLogo extends StatelessWidget {
   final double fontSize;
   final bool showIcon;
 
-  const MIXVYLogo({
+  const MixMingleLogo({
     super.key,
     this.fontSize = 32,
     this.showIcon = true,
@@ -19,59 +19,36 @@ class MIXVYLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (showIcon) ...[
-          // MIXVY icon — try asset first, fall back to drawn "M" circle
-          Container(
-            width: fontSize * 1.25,
-            height: fontSize * 1.25,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: NeonColors.neonPink.withValues(alpha: 0.6),
-                  blurRadius: 14,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/brand/png/app_icon/mixvy_icon_96x96.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: NeonColors.mixvyPulseGradient,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'M',
-                      style: TextStyle(
-                        fontSize: fontSize * 0.65,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+        // "MIX" in coral orange
+        Text(
+          'MIX',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w800,
+            color: ClubColors.mixOrange,
+            letterSpacing: 2,
           ),
-          SizedBox(width: fontSize * 0.3),
+        ),
+
+        if (showIcon) ...[
+          SizedBox(width: fontSize * 0.2),
+          // Treble clef music note
+          Icon(
+            Icons.music_note,
+            color: ClubColors.mixOrange,
+            size: fontSize * 1.2,
+          ),
+          SizedBox(width: fontSize * 0.2),
         ],
 
-        // "MIXVY" gradient text
-        ShaderMask(
-          shaderCallback: (bounds) => NeonColors.mixvyPulseGradient
-              .createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-          child: Text(
-            'MIXVY',
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 3,
-            ),
+        // "MINGLE" in blue
+        Text(
+          'MINGLE',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w800,
+            color: ClubColors.mingleBlue,
+            letterSpacing: 2,
           ),
         ),
       ],
@@ -80,23 +57,19 @@ class MIXVYLogo extends StatelessWidget {
 }
 
 /// Compact version for small spaces (just text, no icon)
-class MIXVYLogoCompact extends StatelessWidget {
+class MixMingleLogoCompact extends StatelessWidget {
   final double fontSize;
 
-  const MIXVYLogoCompact({
+  const MixMingleLogoCompact({
     super.key,
     this.fontSize = 20,
   });
 
   @override
   Widget build(BuildContext context) {
-    return MIXVYLogo(
+    return MixMingleLogo(
       fontSize: fontSize,
       showIcon: false,
     );
   }
 }
-
-// Legacy aliases for backward compatibility
-typedef MixMingleLogo = MIXVYLogo;
-typedef MixMingleLogoCompact = MIXVYLogoCompact;

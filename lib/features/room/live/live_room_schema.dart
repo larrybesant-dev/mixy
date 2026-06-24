@@ -115,17 +115,8 @@ class RoomFields {
   static const isActive = 'isActive';
   static const videoChannelLive = 'videoChannelLive';
   static const participantCount = 'participantCount';
-<<<<<<< HEAD
-  static const createdAt        = 'createdAt';
-  static const updatedAt        = 'updatedAt';
-  // ── DJ music metadata ───────────────────────────────────────────────────────────
-  static const isMusicPlaying   = 'isMusicPlaying';
-  static const currentTrackUrl  = 'currentTrackUrl';
-  static const djUserId         = 'djUserId';
-=======
   static const createdAt = 'createdAt';
   static const updatedAt = 'updatedAt';
->>>>>>> origin/develop
 }
 
 class ParticipantFields {
@@ -164,72 +155,27 @@ class RoomMeta {
   final String name;
   final String type;
   final String ownerId;
-  final String hostId;
-  final List<String> moderators;
-  final List<String> speakers;
   final int maxBroadcasters;
   final int maxActiveMics;
   final bool isActive;
   final bool videoChannelLive;
   final int participantCount;
-  // ── DJ music ────────────────────────────────────────────────────────────────
-  final bool isMusicPlaying;
-  final String? currentTrackUrl;
-  final String? djUserId;
 
   const RoomMeta({
     required this.id,
     required this.name,
     required this.type,
     required this.ownerId,
-    required this.hostId,
-    required this.moderators,
-    required this.speakers,
     required this.maxBroadcasters,
     required this.maxActiveMics,
     required this.isActive,
     required this.videoChannelLive,
     required this.participantCount,
-    this.isMusicPlaying  = false,
-    this.currentTrackUrl,
-    this.djUserId,
   });
 
   factory RoomMeta.fromFirestore(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
     final t = (d[RoomFields.type] as String?) ?? RoomType.social;
-<<<<<<< HEAD
-    final ownerId = (d[RoomFields.ownerId] as String?)?.trim();
-    final hostId = (d['hostId'] as String?)?.trim();
-    final creatorId = (d['creatorId'] as String?)?.trim();
-    final resolvedOwnerId = ownerId?.isNotEmpty == true
-        ? ownerId!
-        : hostId?.isNotEmpty == true
-            ? hostId!
-            : creatorId?.isNotEmpty == true
-                ? creatorId!
-                : '';
-    final name = (d[RoomFields.name] as String?)?.trim();
-    final title = (d['title'] as String?)?.trim();
-    final moderators = List<String>.from(d['moderators'] ?? d['admins'] ?? const []);
-    final speakers = List<String>.from(d['speakers'] ?? const []);
-    return RoomMeta(
-      id:               doc.id,
-      name:             name?.isNotEmpty == true ? name! : (title ?? ''),
-      type:             t,
-      ownerId:          resolvedOwnerId,
-      hostId:           hostId?.isNotEmpty == true ? hostId! : resolvedOwnerId,
-      moderators:       moderators,
-      speakers:         speakers,
-      maxBroadcasters:  (d[RoomFields.maxBroadcasters]  as int?)    ?? maxBroadcastersForRoomType(t),
-      maxActiveMics:    (d[RoomFields.maxActiveMics]    as int?)    ?? maxMicsForRoomType(t),
-      isActive:         (d[RoomFields.isActive]         as bool?)   ?? true,
-      videoChannelLive: (d[RoomFields.videoChannelLive] as bool?)   ?? false,
-      participantCount: (d[RoomFields.participantCount] as int?)    ?? 0,
-      isMusicPlaying:   (d[RoomFields.isMusicPlaying]   as bool?)   ?? false,
-      currentTrackUrl:   d[RoomFields.currentTrackUrl]  as String?,
-      djUserId:          d[RoomFields.djUserId]          as String?,
-=======
     // Resolve owner from whichever field was written at room creation.
     // Rooms may store the creator as 'ownerId', 'hostId', 'hostUid', or 'createdBy'.
     final ownerId = [
@@ -250,30 +196,10 @@ class RoomMeta {
       isActive: (d[RoomFields.isActive] as bool?) ?? true,
       videoChannelLive: (d[RoomFields.videoChannelLive] as bool?) ?? false,
       participantCount: (d[RoomFields.participantCount] as int?) ?? 0,
->>>>>>> origin/develop
     );
   }
 
   Map<String, dynamic> toFirestore() => {
-<<<<<<< HEAD
-    RoomFields.id:               id,
-    RoomFields.name:             name,
-    RoomFields.type:             type,
-    RoomFields.ownerId:          ownerId,
-    'hostId':                    hostId,
-    'moderators':                moderators,
-    'speakers':                  speakers,
-    RoomFields.maxBroadcasters:  maxBroadcasters,
-    RoomFields.maxActiveMics:    maxActiveMics,
-    RoomFields.isActive:         isActive,
-    RoomFields.videoChannelLive: videoChannelLive,
-    RoomFields.participantCount: participantCount,
-    RoomFields.isMusicPlaying:   isMusicPlaying,
-    RoomFields.currentTrackUrl:  currentTrackUrl,
-    RoomFields.djUserId:         djUserId,
-    RoomFields.updatedAt:        FieldValue.serverTimestamp(),
-  };
-=======
         RoomFields.id: id,
         RoomFields.name: name,
         RoomFields.type: type,
@@ -285,35 +211,13 @@ class RoomMeta {
         RoomFields.participantCount: participantCount,
         RoomFields.updatedAt: FieldValue.serverTimestamp(),
       };
->>>>>>> origin/develop
 
   RoomMeta copyWith({
     bool? videoChannelLive,
     int? participantCount,
     bool? isActive,
-    bool? isMusicPlaying,
-    String? currentTrackUrl,
-    String? djUserId,
-    bool clearMusic = false,
   }) =>
       RoomMeta(
-<<<<<<< HEAD
-        id:               id,
-        name:             name,
-        type:             type,
-        ownerId:          ownerId,
-        hostId:           hostId,
-        moderators:       moderators,
-        speakers:         speakers,
-        maxBroadcasters:  maxBroadcasters,
-        maxActiveMics:    maxActiveMics,
-        isActive:         isActive          ?? this.isActive,
-        videoChannelLive: videoChannelLive  ?? this.videoChannelLive,
-        participantCount: participantCount  ?? this.participantCount,
-        isMusicPlaying:   clearMusic ? false : (isMusicPlaying  ?? this.isMusicPlaying),
-        currentTrackUrl:  clearMusic ? null  : (currentTrackUrl ?? this.currentTrackUrl),
-        djUserId:         clearMusic ? null  : (djUserId         ?? this.djUserId),
-=======
         id: id,
         name: name,
         type: type,
@@ -323,7 +227,6 @@ class RoomMeta {
         isActive: isActive ?? this.isActive,
         videoChannelLive: videoChannelLive ?? this.videoChannelLive,
         participantCount: participantCount ?? this.participantCount,
->>>>>>> origin/develop
       );
 }
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import './providers/providers.dart';
 import '../shared/club_background.dart';
 import '../shared/glow_text.dart';
-import '../core/routing/app_routes.dart';
 
 /// Authentication guard widget that checks if user is logged in
 /// before allowing access to protected routes
@@ -38,7 +37,7 @@ class AuthGuard extends ConsumerWidget {
         } else {
           // User is not authenticated, redirect to login
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+            Navigator.of(context).pushReplacementNamed('/login');
           });
           return const SizedBox
               .shrink(); // Return empty widget while navigating
@@ -51,7 +50,7 @@ class AuthGuard extends ConsumerWidget {
       error: (error, stack) {
         // Error checking authentication, redirect to login
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+          Navigator.of(context).pushReplacementNamed('/login');
         });
         return const SizedBox.shrink();
       },

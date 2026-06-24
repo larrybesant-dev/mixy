@@ -1,7 +1,3 @@
 // Conditional re-export: web implementation on web, stub on native platforms.
-<<<<<<< HEAD
-export 'agora_web_bridge_v3_stub.dart';
-=======
 export 'agora_web_bridge_v3_stub.dart'
     if (dart.library.js_interop) 'agora_web_bridge_v3_web.dart';
->>>>>>> origin/develop

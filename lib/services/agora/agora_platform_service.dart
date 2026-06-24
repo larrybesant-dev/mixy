@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-// Conditional export — each platform resolves to its own implementation.
-// Controllers and services import ONLY this file; they never import the
-// platform-specific files directly.
-export 'agora_platform_service_stub.dart'
-    if (dart.library.js_interop) 'agora_platform_service_web.dart'
-    if (dart.library.io) 'agora_platform_service_io.dart';
-=======
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:agora_rtc_engine/agora_rtc_engine.dart' as native;
 import '../../core/utils/app_logger.dart';
@@ -273,4 +265,3 @@ class AgoraPlatformService {
 
   static native.RtcEngine? get engine => _engine;
 }
->>>>>>> origin/develop

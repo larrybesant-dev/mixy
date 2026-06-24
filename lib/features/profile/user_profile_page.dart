@@ -1,12 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-<<<<<<< HEAD
-import '../../shared/widgets/glow_text.dart';
-import '../../shared/widgets/neon_button.dart';
-import '../../models/user.dart';
-import '../../features/chat/chat_screen.dart';
-// Add any other necessary imports for providers and custom widgets
-=======
 import '../../shared/providers/providers.dart';
 import '../../shared/models/user.dart';
 import '../../shared/club_background.dart';
@@ -14,26 +7,33 @@ import '../../shared/glow_text.dart';
 import '../../shared/neon_button.dart';
 import '../messages/chat_screen.dart';
 import '../profile/widgets/friend_request_button.dart';
->>>>>>> origin/develop
 
 class UserProfilePage extends ConsumerWidget {
   final String userId;
-  const UserProfilePage({required this.userId, Key? key}) : super(key: key);
+
+  const UserProfilePage({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ...existing code...
-    // Insert the main widget tree here, using the code already present
-    // (The rest of the file remains unchanged)
-  }
-}
+    final userAsync = ref.watch(userProvider(userId));
+    final currentUserAsync = ref.watch(currentUserProvider);
 
-/* TODO: implement */
+    return ClubBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const GlowText(
+            text: 'Profile',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFFFD700),
+            glowColor: Color(0xFFFF4C4C),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: userAsync.when(
           data: (user) {
-  /*
-   TODO: implement
-   */
-            data: (user) {
             if (user == null) {
               return const Center(
                 child: GlowText(
@@ -116,25 +116,35 @@ class UserProfilePage extends ConsumerWidget {
   }
 
   Widget _buildProfileHeader(User user, bool isOwnProfile, WidgetRef ref) {
-    // Determine relationship type for label
-    final currentUser = ref.watch(currentUserProvider).value;
-    String? relationshipLabel;
-    IconData? relationshipIcon;
-    if (currentUser != null && currentUser.id != user.id) {
-      // Default to Follower label for non-own profile
-      relationshipLabel = 'Follower';
-      relationshipIcon = Icons.group;
-    }
-
     return Column(
       children: [
         // Avatar
         Container(
           width: 120,
           height: 120,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-    // ...existing code...
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF4C4C), Color(0xFFFFD700)],
+            ),
+            border: Border.all(
+              color: const Color(0xFFFFD700),
+              width: 3,
+            ),
+          ),
+          child: user.avatarUrl.isNotEmpty
+              ? ClipOval(
+                  child: Image.network(
+                    '${user.avatarUrl}?t=${DateTime.now().millisecondsSinceEpoch}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 60,
+                    ),
+                  ),
+                )
+              : const Icon(
                   Icons.person,
                   color: Colors.white,
                   size: 60,
@@ -143,48 +153,19 @@ class UserProfilePage extends ConsumerWidget {
 
         const SizedBox(height: 16),
 
-        // Name and Username with relationship label
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GlowText(
-              text: user.displayName ?? 'Unknown User',
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              glowColor: const Color(0xFFFF4C4C),
-            ),
-            if (relationshipLabel != null) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: relationshipLabel == 'Friend' ? Colors.blueAccent.withOpacity(0.2) : Colors.green.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(relationshipIcon, size: 16, color: relationshipLabel == 'Friend' ? Colors.blueAccent : Colors.green),
-                    const SizedBox(width: 4),
-                    Text(
-                      relationshipLabel,
-                      style: TextStyle(
-                        color: relationshipLabel == 'Friend' ? Colors.blueAccent : Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
+        // Name and Username
+        GlowText(
+          text: user.displayName ?? 'Unknown User',
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          glowColor: const Color(0xFFFF4C4C),
         ),
 
         Text(
           '@${user.username}',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 16,
           ),
         ),
@@ -213,56 +194,25 @@ class UserProfilePage extends ConsumerWidget {
       'followerId': currentUser.value?.id ?? '',
       'followingId': user.id,
     }));
-    final feedbackNotifier = ref.watch(_followFeedbackProvider);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Follow Button with feedback
+        // Follow Button
         Expanded(
           child: isFollowingAsync.when(
-            data: (isFollowing) => AnimatedContainer(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                color: feedbackNotifier.status == null
-                    ? Colors.transparent
-                    : (feedbackNotifier.status == 'Following'
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.red.withOpacity(0.2)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  NeonButton(
-                    onPressed: () async {
-                      if (isFollowing) {
-                        await ref.read(unfollowUserProvider(user.id).future);
-                        feedbackNotifier.show('Unfollowed');
-                      } else {
-                        await ref.read(followUserProvider(user.id).future);
-                        feedbackNotifier.show('Following');
-                      }
-                    },
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Text(
-                      isFollowing ? 'Following' : 'Follow',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ),
-                  if (feedbackNotifier.status != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        feedbackNotifier.status!,
-                        style: TextStyle(
-                          color: feedbackNotifier.status == 'Following' ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                ],
+            data: (isFollowing) => NeonButton(
+              onPressed: () {
+                if (isFollowing) {
+                  ref.read(unfollowUserProvider(user.id).future);
+                } else {
+                  ref.read(followUserProvider(user.id).future);
+                }
+              },
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                isFollowing ? 'Following' : 'Follow',
+                style: const TextStyle(fontSize: 14),
               ),
             ),
             loading: () => const SizedBox(
@@ -289,7 +239,6 @@ class UserProfilePage extends ConsumerWidget {
         // Message Button
         Expanded(
           child: NeonButton(
-            // (Removed misplaced provider code)
             onPressed: () => _startConversation(user, ref),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: const Text(
@@ -487,7 +436,4 @@ class UserProfilePage extends ConsumerWidget {
       ),
     );
   }
-  /*
-   End of user_profile_page.dart
-   */
 }

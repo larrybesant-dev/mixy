@@ -82,12 +82,8 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       // #1 Record vibe join for intelligence layer
       final vibeUid = FirebaseAuth.instance.currentUser?.uid;
       if (vibeUid != null && widget.room.vibeTag != null) {
-<<<<<<< HEAD
-        ref.read(vibeIntelligenceServiceProvider)
-=======
         ref
             .read(vibeIntelligenceServiceProvider)
->>>>>>> origin/develop
             .recordVibeJoin(userId: vibeUid, vibeTag: widget.room.vibeTag!);
       }
 
@@ -234,7 +230,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       } else {
         await _roomManager.unlockRoom(widget.room.id);
       }
-      _showInfo(locked ? 'Room locked' : 'Room unlocked');
+      _showInfo(locked ? 'Room locked ðŸ”’' : 'Room unlocked ðŸ”“');
     } catch (e) {
       _showError('Failed to ${locked ? "lock" : "unlock"} room: $e');
     }
@@ -613,7 +609,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                                     snapshot.data!.isEmpty) {
                                   return const Center(
                                     child: Text(
-                                      'No messages yet. Say hello!',
+                                      'No messages yet. Say hello! ðŸ‘‹',
                                       style: TextStyle(color: Colors.white54),
                                     ),
                                   );

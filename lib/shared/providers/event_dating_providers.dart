@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/events/events_service.dart';
-import '../../services/events/speed_dating_service.dart';
+// TEMP DISABLED: import '../../services/events/speed_dating_service.dart';
 import '../models/event.dart';
+// TEMP DISABLED: import '../models/speed_dating.dart';
 import 'auth_providers.dart';
 
 /// Event filters model
@@ -61,7 +61,8 @@ class EventFiltersNotifier extends Notifier<EventFilters> {
 /// Service providers
 final eventsServiceProvider = Provider<EventsService>((ref) => EventsService());
 
-final speedDatingServiceProvider = Provider<SpeedDatingService>((ref) => SpeedDatingService());
+// TEMP DISABLED: Speed dating service
+// final speedDatingServiceProvider = Provider<SpeedDatingService>((ref) => SpeedDatingService());
 
 /// ============================================================================
 /// EVENT PROVIDERS
@@ -261,26 +262,14 @@ class EventsController extends Notifier<AsyncValue<Event?>> {
     }
   }
 
-  /// Get nearby events using equirectangular approximation
+  /// Get nearby events (not implemented yet)
   Future<List<Event>> getNearbyEvents(
     double latitude,
     double longitude,
     double radiusKm,
   ) async {
-    final snap = await FirebaseFirestore.instance
-        .collection('events')
-        .where('startTime',
-            isGreaterThanOrEqualTo: DateTime.now().toIso8601String())
-        .limit(100)
-        .get();
-    return snap.docs.map((d) => Event.fromMap(d.data())).where((e) {
-      final dLat = (e.latitude - latitude) * math.pi / 180.0;
-      final dLon = (e.longitude - longitude) * math.pi / 180.0;
-      final avgLat = (latitude + e.latitude) / 2.0 * math.pi / 180.0;
-      final x = dLon * math.cos(avgLat) * 6371.0;
-      final y = dLat * 6371.0;
-      return math.sqrt(x * x + y * y) <= radiusKm;
-    }).toList();
+    // TODO: Implement location-based events
+    return [];
   }
 }
 
@@ -329,20 +318,8 @@ class EventSearchController extends Notifier<AsyncValue<List<Event>>> {
   Future<void> _performSearch() async {
     state = const AsyncValue.loading();
     try {
-      // Fetch upcoming public events from Firestore
-      final now = Timestamp.now();
-      final snap = await FirebaseFirestore.instance
-          .collection('events')
-          .where('isPublic', isEqualTo: true)
-          .where('startTime', isGreaterThan: now)
-          .orderBy('startTime', descending: false)
-          .limit(100)
-          .get();
-      var events = snap.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return Event.fromMap(data);
-      }).toList();
+      // For now, just return empty list. TODO: Implement proper event search
+      var events = <Event>[];
 
       // Apply search query
       if (_searchQuery.isNotEmpty) {

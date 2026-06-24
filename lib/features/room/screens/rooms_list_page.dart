@@ -2,8 +2,6 @@
 /// The social playground where every room has an energy.
 library;
 
-import 'package:mixmingle/core/routing/app_routes.dart';
-
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -348,7 +346,7 @@ class _RoomsListPageState extends ConsumerState<RoomsListPage>
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, AppRoutes.room, arguments: room.id),
+        onTap: () => Navigator.pushNamed(context, '/room', arguments: room.id),
         child: Container(
           width: 180,
           decoration: BoxDecoration(
@@ -474,7 +472,7 @@ class _RoomsListPageState extends ConsumerState<RoomsListPage>
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, AppRoutes.room, arguments: room.id),
+        onTap: () => Navigator.pushNamed(context, '/room', arguments: room.id),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -1000,7 +998,7 @@ class _RoomsListPageState extends ConsumerState<RoomsListPage>
                           if (mounted && roomId != null) {
                             navigator.pop();
                             // ignore: use_build_context_synchronously
-                            Navigator.pushNamed(context, AppRoutes.room,
+                            Navigator.pushNamed(context, '/room',
                                 arguments: roomId);
                           }
                         },

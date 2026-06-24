@@ -1,6 +1,9 @@
-/// MIXVY Humanized Copy Constants
+// Remove unused imports
+// import 'dart:js_util' as js_util;
+// import 'package:mixmingle/helpers/helpers.dart';
+/// Mix & Mingle Humanized Copy Constants
 /// Centralized, human-friendly text strings for the entire app
-/// Tone: Energetic, authentic, real-time social chemistry. Short sentences. Contractions. No jargon.
+/// Tone: Playful, safe, inclusive. Short sentences. Contractions. No jargon.
 library;
 
 class CopyConstants {
@@ -284,7 +287,7 @@ class CopyConstants {
   static const String settingsPrivacy = 'Who can see you';
   static const String settingsBlocked = 'People you\'ve blocked';
   static const String settingsHelp = 'Need help?';
-  static const String settingsLogout = 'Leave MIXVY';
+  static const String settingsLogout = 'Leave Mix & Mingle';
   static const String settingsDeleteAccount = 'Delete everything';
 
   // Settings Messages

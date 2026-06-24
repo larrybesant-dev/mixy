@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixmingle/shared/providers/all_providers.dart';
 import 'package:mixmingle/core/stubs/dev_stubs.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixmingle/app/app_routes.dart';
 
 /// Guard that checks if user is eligible to access event-related features
 /// such as speed dating or specific events

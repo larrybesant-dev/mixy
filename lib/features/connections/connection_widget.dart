@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'connection_provider.dart';
 
 class ConnectionWidget extends ConsumerWidget {
+  const ConnectionWidget({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connections = ref.watch(connectionsProvider);
     if (connections.isEmpty) {
-      return Center(child: Text('No connections'));
+      return const Center(child: Text('No connections'));
     }
     return ListView.builder(
       itemCount: connections.length,

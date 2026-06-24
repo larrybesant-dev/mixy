@@ -13,7 +13,6 @@ class Room {
   final String title;
   final String description;
   final String hostId;
-  final String ownerId; // Explicit owner — always equals creator's uid
   final List<String> tags;
   final String category;
   final DateTime createdAt;
@@ -92,7 +91,6 @@ class Room {
     required this.title,
     required this.description,
     required this.hostId,
-    String? ownerId,
     this.admins = const [],
     required this.tags,
     required this.category,
@@ -144,7 +142,6 @@ class Room {
     // Intelligence layer
     this.joinVelocity = 0,
   })  : updatedAt = updatedAt ?? createdAt,
-        ownerId = ownerId ?? hostId,
         isActive = isActive ?? isLive,
         privacy = privacy ?? (isLocked ? 'private' : 'public'),
         status = status ?? (isLive ? 'live' : 'ended'),
@@ -166,30 +163,19 @@ class Room {
             ? DateTime.parse(updatedAtValue)
             : createdAt;
 
-    // Ensure ownerId is always present in admins after deserialization.
-    final resolvedOwnerId =
-        (json['ownerId'] as String? ?? json['creatorId'] as String? ?? json['hostId'] as String? ?? '');
-    final resolvedAdmins =
-        List<String>.from(json['admins'] ?? json['moderators'] ?? []);
-    if (resolvedOwnerId.isNotEmpty &&
-        !resolvedAdmins.contains(resolvedOwnerId)) {
-      resolvedAdmins.add(resolvedOwnerId);
-    }
-
     return Room(
       id: json['id'] ?? '',
       title: json['title'] ?? json['name'] ?? '',
       name: json['name'] ?? json['title'],
       description: json['description'] ?? '',
       hostId: json['hostId'] ?? '',
-      ownerId: resolvedOwnerId,
-      admins: resolvedAdmins,
+      admins: List<String>.from(json['admins'] ?? json['moderators'] ?? []),
       tags: List<String>.from(json['tags'] ?? []),
       category: json['category'] ?? 'Other',
       createdAt: createdAt,
       updatedAt: updatedAt,
       isLive: json['isLive'] ?? json['isActive'] ?? false,
-      viewerCount: json['viewerCount'] ?? json['participantCount'] ?? 0,
+      viewerCount: json['viewerCount'] ?? 0,
       camCount: json['camCount'] ?? 0,
       isLocked: json['isLocked'] ?? (json['privacy'] == 'private') ?? false,
       passwordHash: json['passwordHash'],
@@ -244,7 +230,6 @@ class Room {
       'name': name ?? title,
       'description': description,
       'hostId': hostId,
-      'ownerId': ownerId,
       'admins': admins,
       'tags': tags,
       'category': category,
@@ -303,7 +288,6 @@ class Room {
       'title': title,
       'description': description,
       'hostId': hostId,
-      'ownerId': ownerId,
       'admins': admins,
       'tags': tags,
       'category': category,
@@ -397,7 +381,6 @@ class Room {
     String? name,
     String? description,
     String? hostId,
-    String? ownerId,
     List<String>? admins,
     List<String>? tags,
     String? category,
@@ -445,7 +428,6 @@ class Room {
       name: name ?? this.name,
       description: description ?? this.description,
       hostId: hostId ?? this.hostId,
-      ownerId: ownerId ?? this.ownerId,
       admins: admins ?? this.admins,
       tags: tags ?? this.tags,
       category: category ?? this.category,

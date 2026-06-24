@@ -334,7 +334,7 @@ class _DjPanelState extends ConsumerState<DjPanel> {
                 const Icon(Icons.volume_mute, color: Colors.white38, size: 18),
                 Expanded(
                   child: Slider(
-                    value: (_djState.volume ?? 0).toDouble(),
+                    value: (_djState.volume ?? 0.0).toDouble(),
                     min: 0,
                     max: 100,
                     divisions: 20,

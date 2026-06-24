@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-// Removed unused flutter_riverpod import
 
 /// Generic pagination controller for Firestore queries
 class PaginationController<T> extends ChangeNotifier {

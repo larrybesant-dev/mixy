@@ -79,7 +79,7 @@ class AgoraPlatformService {
             userId: expiredUid,
             isBroadcaster: true,
           );
-          await AgoraWebBridgeV3.renewToken(newToken);
+          AgoraWebBridgeV3.renewToken(newToken);
           AppLogger.info('[AGORA] Token renewed successfully');
         } catch (e) {
           AppLogger.error('[AGORA] Token renewal failed: $e');

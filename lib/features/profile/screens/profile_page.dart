@@ -7,15 +7,10 @@ import 'package:mixmingle/shared/providers/providers.dart';
 import 'package:mixmingle/shared/models/user_profile.dart';
 import 'package:mixmingle/shared/widgets/club_background.dart';
 import 'package:mixmingle/shared/widgets/async_value_view_enhanced.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
+import 'package:mixmingle/app/app_routes.dart';
 import 'package:mixmingle/core/design_system/design_constants.dart';
 import 'package:mixmingle/core/intelligence/vibe_intelligence_service.dart';
-<<<<<<< HEAD
-import 'package:mixmingle/shared/providers/friend_request_provider.dart';
-import 'package:mixmingle/services/social/friend_service.dart';
-=======
 import 'package:mixmingle/core/analytics/analytics_service.dart';
->>>>>>> origin/develop
 
 import '../widgets/profile_mode_selector.dart';
 import '../widgets/profile_music_widget.dart';
@@ -24,9 +19,6 @@ import '../widgets/layer_live_presence.dart';
 import '../widgets/layer_social_proof.dart';
 import '../widgets/layer_creator.dart';
 import '../widgets/layer_safety.dart';
-import '../widgets/media_gallery_widget.dart';
-import '../widgets/profile_completeness_bar.dart';
-import '../widgets/mutual_followers_row.dart';
 
 // ─── Neon palette shortcuts ───────────────────────────────────────────────────
 const _kPink = Color(0xFFFF4D8B); // live / dating
@@ -67,10 +59,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   /// Guards one-time local tag refresh per page lifecycle.
   bool _tagsRefreshed = false;
 
-<<<<<<< HEAD
-  late TabController _profileTabController;
-  int _profileTabIndex = 0;
-=======
   /// Chip entrance animation
   late final AnimationController _chipAnim;
 
@@ -91,33 +79,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     _chipAnim.dispose();
     super.dispose();
   }
->>>>>>> origin/develop
 
   bool get _isOwner =>
       widget.targetUserId == null ||
       widget.targetUserId == FirebaseAuth.instance.currentUser?.uid;
 
   @override
-  void initState() {
-    super.initState();
-    _profileTabController = TabController(length: 4, vsync: this);
-    _profileTabController.addListener(() {
-      if (mounted) setState(() => _profileTabIndex = _profileTabController.index);
-    });
-  }
-
-  @override
-  void dispose() {
-    _profileTabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // When viewing another user's profile, watch their data via family provider.
-    final profileAsync = !_isOwner
-        ? ref.watch(userProfileProvider(widget.targetUserId!))
-        : ref.watch(currentUserProfileProvider);
+    final profileAsync = ref.watch(currentUserProfileProvider);
 
     // Seed computed tags once per page load without waiting for nightly CF.
     ref.listen(currentUserProfileProvider, (_, next) {
@@ -172,152 +141,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 
   // ══════════════════════════════════════════════════════════
-  //  SOCIAL ACTIONS (non-owner)
-  // ══════════════════════════════════════════════════════════
-
-  /// Handles the Follow/Add Friend button in LayerAttraction.
-  Future<void> _handleFriendAction(UserProfile p) async {
-    final svc = ref.read(friendServiceProvider);
-    final statusAsync = ref.read(friendStatusProvider(p.id));
-    final status = statusAsync.asData?.value ?? FriendRequestStatus.none;
-    try {
-      switch (status) {
-        case FriendRequestStatus.none:
-          await svc.sendFriendRequest(p.id);
-          _toast('Friend request sent');
-        case FriendRequestStatus.sent:
-          await svc.cancelFriendRequest(p.id);
-          _toast('Request cancelled');
-        case FriendRequestStatus.received:
-          await svc.acceptFriendRequest(p.id);
-          _toast('${p.displayName ?? 'User'} added as friend!');
-        case FriendRequestStatus.friends:
-          await svc.removeFriend(p.id);
-          _toast('Friend removed');
-      }
-    } catch (e) {
-      _toast('Action failed: $e');
-    }
-  }
-
-  /// Navigates to DM conversation with target user.
-  void _handleMessage(UserProfile p) {
-    // Navigate to chats list; in a full impl this would create/find a DM thread
-    Navigator.pushNamed(context, AppRoutes.chats);
-  }
-
-  /// Builds the Block + Report + (Decline if received) extra row.
-  Widget _buildSocialActionsExtra(UserProfile p) {
-    final status = ref
-        .watch(friendStatusProvider(p.id))
-        .asData
-        ?.value ?? FriendRequestStatus.none;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: [
-          if (status == FriendRequestStatus.received) ...[
-            _socialChip(
-              label: 'Accept Request',
-              icon: Icons.check_circle_outline,
-              color: const Color(0xFF00C853),
-              onTap: () async {
-                await ref.read(friendServiceProvider).acceptFriendRequest(p.id);
-                _toast('Friend added!');
-              },
-            ),
-            _socialChip(
-              label: 'Decline',
-              icon: Icons.cancel_outlined,
-              color: Colors.grey,
-              onTap: () async {
-                await ref.read(friendServiceProvider).rejectFriendRequest(p.id);
-                _toast('Request declined');
-              },
-            ),
-          ],
-          _socialChip(
-            label: 'Block',
-            icon: Icons.block_outlined,
-            color: const Color(0xFFFF6B35),
-            onTap: () => _confirmBlock(p),
-          ),
-          _socialChip(
-            label: 'Report',
-            icon: Icons.flag_outlined,
-            color: const Color(0xFFFF4D8B),
-            onTap: () => Navigator.pushNamed(
-              context,
-              AppRoutes.reportUser,
-              arguments: {'userId': p.id, 'displayName': p.displayName},
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _socialChip({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-        ]),
-      ),
-    );
-  }
-
-  Future<void> _confirmBlock(UserProfile p) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F2E),
-        title: const Text('Block User', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Block ${p.displayName ?? 'this user'}? They will no longer be able to see your profile or contact you.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B35)),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Block'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(friendServiceProvider).blockUser(p.id);
-      if (mounted) Navigator.pop(context);
-      _toast('User blocked');
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════
   //  MAIN SCROLL VIEW
   // ══════════════════════════════════════════════════════════
   Widget _buildContent(UserProfile p) {
     final mode = _selectedMode ?? p.profileMode;
-    final isBlockedByMe = !_isOwner
-        ? (ref.watch(isBlockedByMeProvider(p.id)).asData?.value ?? false)
-        : false;
 
     return CustomScrollView(
       slivers: [
@@ -326,11 +153,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              // ── Blocked banner ────────────────────────────────────
-              if (isBlockedByMe) ...[
-                const SizedBox(height: 8),
-                _buildBlockedBanner(p),
-              ],
               // ── Hero: name + flag + presence ──────────────────────
               _buildHeroNameSection(p),
               const SizedBox(height: 16),
@@ -368,241 +190,28 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               const SizedBox(height: 16),
               _buildActivityStatsSection(p),
               const SizedBox(height: 20),
-              // ── Profile Tabs ──────────────────────────────────────
-              _buildProfileTabBar(mode),
-              const SizedBox(height: 16),
-              // ── Tab Content ───────────────────────────────────────
-              IndexedStack(
-                index: _profileTabIndex,
-                children: [
-                  // Tab 0 — About
-                  Column(children: [
-                    _neonDivider(_modeAccent(mode)),
-                    const SizedBox(height: 16),
-                    ProfileModeSelector(
-                      selected: mode,
-                      isOwner: _isOwner,
-                      onChanged: (m) => setState(() => _selectedMode = m),
-                    ),
-                    const SizedBox(height: 20),
-                    ..._buildOrderedLayers(p, mode),
-                    if (_isOwner) ...[
-                      const SizedBox(height: 24),
-                      ProfileCompletenessBar(userId: p.id),
-                      const SizedBox(height: 8),
-                      _buildEditProfileButton(),
-                      const SizedBox(height: 8),
-                    ],
-                    if (_isOwner) ..._buildOwnerFooter(p),
-                  ]),
-                  // Tab 1 — Friends
-                  _buildFriendsTab(p),
-                  // Tab 2 — Rooms
-                  _buildRoomsTab(p),
-                  // Tab 3 — Photos
-                  _buildPhotosTab(p),
-                ],
+              // ── Neon divider ──────────────────────────────────────
+              _neonDivider(_modeAccent(mode)),
+              const SizedBox(height: 20),
+              // ── Mode Selector ─────────────────────────────────────
+              ProfileModeSelector(
+                selected: mode,
+                isOwner: _isOwner,
+                onChanged: (m) => setState(() => _selectedMode = m),
               ),
+              const SizedBox(height: 20),
+              ..._buildOrderedLayers(p, mode),
+              // ── Edit Profile button (owner) ───────────────────────
+              if (_isOwner) ...[
+                const SizedBox(height: 24),
+                _buildEditProfileButton(),
+                const SizedBox(height: 8),
+              ],
+              if (_isOwner) ..._buildOwnerFooter(p),
             ]),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBlockedBanner(UserProfile p) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF6B35).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFF6B35).withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.block, color: Color(0xFFFF6B35), size: 16),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'You have blocked this user.',
-              style: TextStyle(color: Color(0xFFFF6B35), fontSize: 13),
-            ),
-          ),
-          GestureDetector(
-            onTap: () async {
-              await ref.read(friendServiceProvider).unblockUser(p.id);
-              _toast('${p.displayName ?? 'User'} unblocked');
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B35).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFF6B35).withValues(alpha: 0.5)),
-              ),
-              child: const Text(
-                'Unblock',
-                style: TextStyle(
-                  color: Color(0xFFFF6B35),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileTabBar(ProfileMode mode) {
-    final accent = _modeAccent(mode);
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: TabBar(
-        controller: _profileTabController,
-        labelColor: accent,
-        unselectedLabelColor: Colors.white38,
-        indicatorColor: accent,
-        indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        tabs: const [
-          Tab(text: 'About'),
-          Tab(text: 'Friends'),
-          Tab(text: 'Rooms'),
-          Tab(text: 'Photos'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFriendsTab(UserProfile p) {
-    final friendIds = ref.watch(friendIdsOfUserProvider(p.id));
-    return friendIds.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(child: CircularProgressIndicator(color: Color(0xFF4A90FF))),
-      ),
-      error: (_, __) => const _TabEmptyState(
-        icon: Icons.people_outline,
-        message: 'Unable to load friends',
-      ),
-      data: (ids) {
-        if (ids.isEmpty) {
-          return _TabEmptyState(
-            icon: Icons.people_outline,
-            message: _isOwner ? 'No friends yet. Start connecting!' : 'No public friends.',
-          );
-        }
-        return Column(
-          children: ids
-              .take(30)
-              .map((uid) => _FriendTile(uid: uid))
-              .toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildRoomsTab(UserProfile p) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('rooms')
-          .where('hostId', isEqualTo: p.id)
-          .orderBy('createdAt', descending: true)
-          .limit(20)
-          .snapshots(),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(32),
-            child: Center(child: CircularProgressIndicator(color: Color(0xFF00E5CC))),
-          );
-        }
-        final docs = snap.data?.docs ?? [];
-        if (docs.isEmpty) {
-          return _TabEmptyState(
-            icon: Icons.mic_none_outlined,
-            message: _isOwner ? 'You haven\'t hosted any rooms yet.' : 'No rooms hosted yet.',
-          );
-        }
-        return Column(
-          children: docs
-              .map((doc) => _RoomTile(
-                    roomId: doc.id,
-                    data: doc.data() as Map<String, dynamic>,
-                  ))
-              .toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildPhotosTab(UserProfile p) {
-    final photos = p.galleryPhotos ?? [];
-    if (photos.isEmpty) {
-      return _TabEmptyState(
-        icon: Icons.photo_library_outlined,
-        message: _isOwner ? 'No photos yet. Add some to your gallery!' : 'No photos shared.',
-      );
-    }
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 4,
-        crossAxisSpacing: 4,
-      ),
-      itemCount: photos.length,
-      itemBuilder: (ctx, i) => GestureDetector(
-        onTap: () => _showPhotoViewer(ctx, photos, i),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.network(
-            photos[i],
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFF1A1F2E),
-              child: const Icon(Icons.broken_image, color: Colors.white24),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showPhotoViewer(BuildContext ctx, List<String> photos, int initial) {
-    showDialog(
-      context: ctx,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: EdgeInsets.zero,
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: PageController(initialPage: initial),
-              itemCount: photos.length,
-              itemBuilder: (_, i) => InteractiveViewer(
-                child: Image.network(photos[i], fit: BoxFit.contain),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -614,13 +223,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       LayerAttraction(
         p: p,
         isOwner: _isOwner,
-        onFollow: _isOwner ? null : () => _handleFriendAction(p),
-        onMessage: _isOwner ? null : () => _handleMessage(p),
+        onFollow: _isOwner ? null : () => _toast('Follow'),
+        onMessage: _isOwner ? null : () => _toast('Message'),
       ),
-      if (!_isOwner) ...[
-        const SizedBox(height: 8),
-        _buildSocialActionsExtra(p),
-      ],
       const SizedBox(height: 24),
     ];
 
@@ -630,14 +235,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         ? [
             LayerLivePresence(
               p: p,
-              onJoinRoom: () {
-                if (p.presenceStatus == 'in_room' && p.activeRoomId != null) {
-                  Navigator.pushNamed(context, AppRoutes.room, arguments: p.activeRoomId);
-                } else {
-                  _toast('No active room');
-                }
-              },
-              onViewEvents: () => Navigator.pushNamed(context, AppRoutes.events),
+              onJoinRoom: () => _toast('Join Room'),
+              onViewEvents: () => _toast('View Events'),
             ),
             const SizedBox(height: 24),
           ]
@@ -751,57 +350,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   // ── Supporting Content ─────────────────────────────────────
   List<Widget> _buildSupportingContent(UserProfile p) {
     final widgets = <Widget>[];
-    final hasPhotos = p.galleryPhotos != null && p.galleryPhotos!.isNotEmpty;
-    final hasVideos = p.galleryVideos != null && p.galleryVideos!.isNotEmpty;
-    if (hasPhotos || hasVideos || _isOwner) {
+    if (p.galleryPhotos != null && p.galleryPhotos!.isNotEmpty) {
       widgets.addAll([
-<<<<<<< HEAD
-        Row(
-          children: [
-            Expanded(
-              child: _sectionHeader(
-                  Icons.photo_library_outlined, 'Gallery', DesignColors.accent),
-            ),
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.profileMedia,
-                arguments: {'userId': p.id, 'isOwner': _isOwner},
-              ),
-              child: const Text(
-                'See all',
-                style: TextStyle(
-                    color: DesignColors.accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-=======
         _sectionHeader(
             Icons.photo_library_outlined, 'Gallery', DesignColors.accent),
->>>>>>> origin/develop
         const SizedBox(height: 10),
-        MediaGallery(
-          photos: p.galleryPhotos ?? [],
-          videos: p.galleryVideos ?? [],
-          isOwner: _isOwner,
-          onAddPhoto: _isOwner
-              ? () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.profileMedia,
-                    arguments: {'userId': p.id, 'isOwner': true},
-                  )
-              : null,
-          onAddVideo: _isOwner
-              ? () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.profileMedia,
-                    arguments: {'userId': p.id, 'isOwner': true},
-                  )
-              : null,
-        ),
+        _buildGalleryGrid(p.galleryPhotos!),
         const SizedBox(height: 20),
       ]);
     }
@@ -841,15 +395,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       LayerSafety(
         p: p,
         isOwner: true,
-<<<<<<< HEAD
-        onEditDmRestriction: () => Navigator.pushNamed(context, AppRoutes.privacySettings),
-        onToggleHideDistance: () => Navigator.pushNamed(context, AppRoutes.privacySettings),
-        onToggleHideFollowers: () => Navigator.pushNamed(context, AppRoutes.privacySettings),
-        onToggleRestrictInvites: () => Navigator.pushNamed(context, AppRoutes.privacySettings),
-        onBlockList: () => Navigator.pushNamed(context, AppRoutes.blockedUsers),
-        onSetup2FA: () => Navigator.pushNamed(context, AppRoutes.accountSettings),
-        onContentModeration: () => Navigator.pushNamed(context, AppRoutes.accountSettings),
-=======
         onEditDmRestriction: () =>
             Navigator.pushNamed(context, '/settings/privacy'),
         onToggleHideDistance: () =>
@@ -862,20 +407,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         onSetup2FA: () => Navigator.pushNamed(context, '/settings/security'),
         onContentModeration: () =>
             Navigator.pushNamed(context, '/creator/moderation'),
->>>>>>> origin/develop
       ),
       const SizedBox(height: 24),
       _sectionHeader(Icons.settings_outlined, 'Account', DesignColors.textGray),
       const SizedBox(height: 10),
-<<<<<<< HEAD
-      _navTile(Icons.privacy_tip_outlined, 'Privacy Settings', () => Navigator.pushNamed(context, AppRoutes.privacySettings)),
-      _navTile(Icons.notifications_outlined, 'Notifications', () => Navigator.pushNamed(context, AppRoutes.notificationSettings)),
-      _navTile(Icons.block_outlined, 'Blocked Users', () => Navigator.pushNamed(context, AppRoutes.blockedUsers)),
-      _navTile(Icons.settings_outlined, 'Account Settings', () => Navigator.pushNamed(context, AppRoutes.settings)),
-      if (p.isCreatorEnabled)
-        _navTile(Icons.monetization_on_outlined, 'Creator Settings', () => Navigator.pushNamed(context, AppRoutes.accountSettings)),
-      _navTile(Icons.admin_panel_settings_outlined, 'Admin Dashboard', () => Navigator.pushNamed(context, AppRoutes.adminDashboard)),
-=======
       _navTile(Icons.person_add_outlined, 'Friend Requests',
           () => Navigator.pushNamed(context, '/friend-requests')),
       _navTile(Icons.favorite_outlined, 'Speed Dating Matches',
@@ -889,7 +424,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       if (p.isCreatorEnabled)
         _navTile(Icons.monetization_on_outlined, 'Creator Settings',
             () => Navigator.pushNamed(context, '/creator/settings')),
->>>>>>> origin/develop
       const SizedBox(height: 20),
       _buildLogoutButton(),
       const SizedBox(height: 12),
@@ -924,15 +458,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           : null,
       automaticallyImplyLeading: false,
       actions: [
-<<<<<<< HEAD
-        if (_isOwner)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: _neonIconButton(
-              Icons.settings_outlined,
-              DesignColors.accent,
-              () => Navigator.pushNamed(context, AppRoutes.settings),
-=======
         if (_isOwner) ...
           [
             Padding(
@@ -942,7 +467,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 _kCyan,
                 _shareProfile,
               ),
->>>>>>> origin/develop
             ),
             Padding(
               padding: const EdgeInsets.only(right: 12),
@@ -1207,13 +731,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             ],
           ],
         ),
-        // Mutual followers row (only when viewing someone else's profile)
-        if (!_isOwner && widget.targetUserId != null)
-          MutualFollowersRow(
-            currentUserId:
-                FirebaseAuth.instance.currentUser?.uid ?? '',
-            profileUserId: widget.targetUserId!,
-          ),
       ],
     );
   }
@@ -1550,33 +1067,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       badges.add(const _BadgeItem(Icons.star_outline, 'Top Host', _kAmber));
     }
     if (p.twoFactorEnabled) {
-<<<<<<< HEAD
-      badges.add(const _BadgeItem(Icons.security_outlined, '2FA Active', DesignColors.success));
-    }
-    // Stored badge IDs from Firestore
-    for (final id in p.badgeIds ?? []) {
-      switch (id) {
-        case 'active_today':
-          badges.add(const _BadgeItem(Icons.bolt, 'Active Today', _kCyan));
-          break;
-        case 'top_creator':
-          badges.add(const _BadgeItem(Icons.emoji_events_outlined, 'Top Creator', _kAmber));
-          break;
-        case 'rising_star':
-          badges.add(const _BadgeItem(Icons.star_half_outlined, 'Rising Star', _kPink));
-          break;
-        case 'verified':
-          if (!badges.any((b) => b.label == 'Verified')) {
-            badges.add(const _BadgeItem(Icons.verified_outlined, 'Verified', _kBlue));
-          }
-          break;
-        default:
-          badges.add(_BadgeItem(Icons.military_tech_outlined, id, _kPurple));
-      }
-=======
       badges.add(const _BadgeItem(
           Icons.security_outlined, '2FA Active', DesignColors.success));
->>>>>>> origin/develop
     }
 
     // Always show at least placeholder row so space is reserved
@@ -1745,18 +1237,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final stats = <_StatItem>[];
 
     if (p.roomsHostedCount > 0) {
-<<<<<<< HEAD
-      stats.add(_StatItem('${p.roomsHostedCount}', 'Rooms Hosted', Icons.mic_none_outlined, _kBlue));
-    }
-    if (p.eventsAttended > 0) {
-      stats.add(_StatItem('${p.eventsAttended}', 'Events', Icons.event_outlined, _kCyan));
-    }
-    if (p.communityRating > 0) {
-      stats.add(_StatItem(p.communityRating.toStringAsFixed(1), 'Rating', Icons.star_outline, _kAmber));
-    }
-    if (p.mutualsCount > 0) {
-      stats.add(_StatItem('${p.mutualsCount}', 'Mutuals', Icons.people_outline, _kPurple));
-=======
       stats.add(_StatItem('${p.roomsHostedCount}', 'Rooms Hosted',
           Icons.mic_none_outlined, _kBlue));
     }
@@ -1771,7 +1251,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     if (p.mutualsCount > 0) {
       stats.add(_StatItem(
           '${p.mutualsCount}', 'Mutuals', Icons.people_outline, _kPurple));
->>>>>>> origin/develop
     }
 
     if (stats.isEmpty) return const SizedBox.shrink();
@@ -1899,8 +1378,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   // ══════════════════════════════════════════════════════════
   //  SUPPORTING CONTENT SUB-WIDGETS  (Gallery, Lifestyle, Socials)
   // ══════════════════════════════════════════════════════════
-<<<<<<< HEAD
-=======
   Widget _buildGalleryGrid(List<String> photos) {
     return GridView.builder(
       shrinkWrap: true,
@@ -1945,7 +1422,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       ),
     );
   }
->>>>>>> origin/develop
 
   static const Map<String, String> _lifestyleLabels = {
     'smoking': 'Smoking',
@@ -2275,131 +1751,4 @@ class _StatItem {
   final IconData icon;
   final Color color;
   const _StatItem(this.value, this.label, this.icon, this.color);
-}
-
-// ─── Profile tab helpers ──────────────────────────────────────────────────────
-
-class _TabEmptyState extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  const _TabEmptyState({required this.icon, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 40, color: Colors.white12),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: const TextStyle(color: Colors.white38, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FriendTile extends ConsumerWidget {
-  final String uid;
-  const _FriendTile({required this.uid});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileProvider(uid));
-    return profileAsync.when(
-      loading: () => const ListTile(
-        leading: CircleAvatar(backgroundColor: Color(0xFF1A1F2E), radius: 22),
-        title: SizedBox(height: 12, width: 80, child: ColoredBox(color: Color(0xFF1A1F2E))),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (p) {
-        if (p == null) return const SizedBox.shrink();
-        return ListTile(
-          leading: CircleAvatar(
-            radius: 22,
-            backgroundImage: p.photoUrl != null ? NetworkImage(p.photoUrl!) : null,
-            backgroundColor: const Color(0xFF1A1F2E),
-            child: p.photoUrl == null
-                ? Text(
-                    (p.displayName ?? 'U').substring(0, 1).toUpperCase(),
-                    style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.w700),
-                  )
-                : null,
-          ),
-          title: Text(
-            p.displayName ?? 'Unknown',
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          subtitle: p.bio != null && p.bio!.isNotEmpty
-              ? Text(
-                  p.bio!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
-                )
-              : null,
-          onTap: () => Navigator.pushNamed(
-            context,
-            AppRoutes.userProfile,
-            arguments: uid,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _RoomTile extends StatelessWidget {
-  final String roomId;
-  final Map<String, dynamic> data;
-  const _RoomTile({required this.roomId, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final name = data['name'] as String? ?? 'Unnamed Room';
-    final count = data['participantCount'] as int? ?? 0;
-    final isLive = data['isLive'] as bool? ?? false;
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: const Color(0xFF00E5CC).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF00E5CC).withValues(alpha: 0.3)),
-        ),
-        child: const Icon(Icons.mic_none_outlined, color: Color(0xFF00E5CC), size: 20),
-      ),
-      title: Text(
-        name,
-        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        '$count participants',
-        style: const TextStyle(color: Colors.white38, fontSize: 12),
-      ),
-      trailing: isLive
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF4D8B).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFFF4D8B).withValues(alpha: 0.4)),
-              ),
-              child: const Text(
-                'LIVE',
-                style: TextStyle(color: Color(0xFFFF4D8B), fontSize: 10, fontWeight: FontWeight.w800),
-              ),
-            )
-          : null,
-      onTap: () => Navigator.pushNamed(context, AppRoutes.room, arguments: roomId),
-    );
-  }
 }

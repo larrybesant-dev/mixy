@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-/// MIXVY SDK
-=======
 /// Mix & Mingle SDK
->>>>>>> origin/develop
 ///
-/// Client SDK for integrating MIXVY functionality
+/// Client SDK for integrating Mix & Mingle functionality
 /// into external applications.
 library;
 
@@ -25,7 +21,7 @@ class MMSDKConfig {
   const MMSDKConfig({
     required this.clientId,
     required this.clientSecret,
-    this.baseUrl = 'https://api.mixvy.com',
+    this.baseUrl = 'https://api.mixmingle.com',
     this.timeout = const Duration(seconds: 30),
     this.enableLogging = false,
   });
@@ -301,7 +297,7 @@ class SDKResponse<T> {
       );
 }
 
-/// MIXVY SDK
+/// Mix & Mingle SDK
 class MMSDK {
   final MMSDKConfig config;
   String? _accessToken;
@@ -324,7 +320,7 @@ class MMSDK {
 
   /// Initialize the SDK and authenticate
   Future<bool> initialize() async {
-    _log('Initializing MIXVY SDK...');
+    _log('Initializing Mix & Mingle SDK...');
 
     try {
       final response = await _httpClient

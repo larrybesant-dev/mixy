@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// MIXVY Custom Animations
+/// Mix & Mingle Custom Animations
 /// Smooth, energetic animations for nightclub aesthetic
 
 /// Fade in animation with slide from bottom

@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
-import 'package:mixmingle/core/routing/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,14 +84,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
   void dispose() {
     _pulseController.dispose();
     // Fade out music when landing page leaves the tree.
-    final music = _music;
-    if (music != null) {
-      unawaited(
-        music.fadeOut().catchError((Object error, StackTrace stackTrace) {
-          debugPrint('[LandingPage] Ignored fadeOut error: $error');
-        }),
-      );
-    }
+    _music?.fadeOut();
     super.dispose();
   }
 
@@ -127,9 +117,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
 
   @override
   Widget build(BuildContext context) {
-    if (kDebugMode) {
-      debugPrint('[LandingPage] build');
-    }
+    debugPrint('ðŸ  LANDING PAGE IS BUILDING');
     final textTheme = ElectricTypography.textTheme;
 
     return Scaffold(
@@ -169,8 +157,6 @@ class _LandingPageState extends ConsumerState<LandingPage>
               ),
             ),
           ),
-<<<<<<< HEAD
-=======
           // Debug indicator - top left
           Positioned(
             top: 40,
@@ -224,7 +210,6 @@ class _LandingPageState extends ConsumerState<LandingPage>
               ),
             ),
           ),
->>>>>>> origin/develop
         ],
       ),
       ),
@@ -246,7 +231,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const MIXVYLogo(fontSize: 48),
+          const MixMingleLogo(fontSize: 48),
           const SizedBox(height: Spacing.sm),
           Container(
             padding: const EdgeInsets.symmetric(
@@ -263,7 +248,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
               ],
             ),
             child: Text(
-              'NEW: Live Video Speed Dating',
+              '🔥 NEW: Live Video Speed Dating',
               style: textTheme.labelLarge?.copyWith(
                 color: ElectricColors.onSurfacePrimary,
                 fontWeight: FontWeight.bold,
@@ -297,7 +282,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
                 variant: ElectricButtonVariant.secondary,
                 onPressed: () {
                   debugPrint('ðŸ”˜ Sign Up button pressed');
-                  Navigator.pushNamed(context, AppRoutes.signup);
+                  Navigator.pushNamed(context, '/signup');
                 },
               ),
               ElectricButton(
@@ -306,7 +291,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
                 variant: ElectricButtonVariant.secondary,
                 onPressed: () {
                   debugPrint('ðŸ”˜ Sign In button pressed');
-                  Navigator.pushNamed(context, AppRoutes.login);
+                  Navigator.pushNamed(context, '/login');
                 },
               ),
             ],
@@ -652,7 +637,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
                 child: ElectricButton(
                   label: 'View all live sessions',
                   variant: ElectricButtonVariant.secondary,
-                  onPressed: () => Navigator.pushNamed(context, AppRoutes.home),
+                  onPressed: () => Navigator.pushNamed(context, '/home'),
                 ),
               ),
             ],
@@ -663,12 +648,6 @@ class _LandingPageState extends ConsumerState<LandingPage>
   }
 
   Widget _buildHowItWorks(TextTheme textTheme) {
-<<<<<<< HEAD
-    final steps = <Map<String, dynamic>>[
-      {'step': '1', 'icon': Icons.headset_mic, 'title': 'Join a room', 'desc': 'Browse live rooms and drop in instantly.'},
-      {'step': '2', 'icon': Icons.videocam, 'title': 'Go live', 'desc': 'Start your own stream with zero setup friction.'},
-      {'step': '3', 'icon': Icons.volunteer_activism, 'title': 'Tip & connect', 'desc': 'Support creators and build connections.'},
-=======
     final steps = [
       {
         'step': '1',
@@ -688,7 +667,6 @@ class _LandingPageState extends ConsumerState<LandingPage>
         'title': 'Tip & connect',
         'desc': 'Support creators and build connections.'
       },
->>>>>>> origin/develop
     ];
 
     return Padding(
@@ -718,14 +696,9 @@ class _LandingPageState extends ConsumerState<LandingPage>
                       ),
                       child: Center(
                         child: Text(
-<<<<<<< HEAD
-                          step['step'] as String,
-                          style: textTheme.titleLarge?.copyWith(color: ElectricColors.onSurfacePrimary),
-=======
                           step['step']!,
                           style: textTheme.titleLarge?.copyWith(
                               color: ElectricColors.onSurfacePrimary),
->>>>>>> origin/develop
                         ),
                       ),
                     ),
@@ -736,29 +709,18 @@ class _LandingPageState extends ConsumerState<LandingPage>
                         children: [
                           Row(
                             children: [
-<<<<<<< HEAD
-                              Icon(step['icon'] as IconData, size: 18, color: ElectricColors.neonMagenta),
-                              const SizedBox(width: Spacing.xs),
-                              Text(step['title'] as String, style: textTheme.titleMedium),
-=======
                               Text(step['emoji']!,
                                   style: const TextStyle(fontSize: 20)),
                               const SizedBox(width: Spacing.xs),
                               Text(step['title']!,
                                   style: textTheme.titleMedium),
->>>>>>> origin/develop
                             ],
                           ),
                           const SizedBox(height: Spacing.xs),
                           Text(
-<<<<<<< HEAD
-                            step['desc'] as String,
-                            style: textTheme.bodyMedium?.copyWith(color: ElectricColors.onSurfaceSecondary),
-=======
                             step['desc']!,
                             style: textTheme.bodyMedium?.copyWith(
                                 color: ElectricColors.onSurfaceSecondary),
->>>>>>> origin/develop
                           ),
                         ],
                       ),
@@ -888,7 +850,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
                             ],
                           ),
                           child: Text(
-                            'NEW',
+                            '🔥 NEW',
                             style: textTheme.labelLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -899,7 +861,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
                     ),
                     const SizedBox(height: Spacing.sm),
                     Text(
-                      'Live Video Speed Dating',
+                      '💘 Live Video Speed Dating',
                       style: textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -1264,12 +1226,12 @@ class _LandingPageState extends ConsumerState<LandingPage>
               ElectricButton(
                 label: 'Join the community',
                 icon: const Icon(Icons.bolt, size: 18),
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.signup),
+                onPressed: () => Navigator.pushNamed(context, '/signup'),
               ),
               ElectricButton(
                 label: 'Explore live sessions',
                 variant: ElectricButtonVariant.secondary,
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.home),
+                onPressed: () => Navigator.pushNamed(context, '/home'),
               ),
             ],
           ),
@@ -1285,7 +1247,7 @@ class _LandingPageState extends ConsumerState<LandingPage>
       color: ElectricColors.surfaceMuted,
       child: Column(
         children: [
-          const MIXVYLogo(fontSize: 28),
+          const MixMingleLogo(fontSize: 28),
           const SizedBox(height: Spacing.sm),
           Text(
             'Connect with live users and music lovers worldwide',
@@ -1320,14 +1282,9 @@ class _LandingPageState extends ConsumerState<LandingPage>
           ),
           const SizedBox(height: Spacing.sm),
           Text(
-<<<<<<< HEAD
-            '© 2026 MIXVY. All rights reserved.',
-            style: textTheme.labelSmall?.copyWith(color: ElectricColors.onSurfaceMuted),
-=======
             'Â© 2026 Mix & Mingle. All rights reserved.',
             style: textTheme.labelSmall
                 ?.copyWith(color: ElectricColors.onSurfaceMuted),
->>>>>>> origin/develop
           ),
         ],
       ),
