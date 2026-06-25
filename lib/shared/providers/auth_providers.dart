@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import '../../services/auth/auth_service.dart';
 import '../models/user.dart' as shared_models;
 import '../models/user_profile.dart';
@@ -14,8 +15,18 @@ final firestoreServiceProvider =
 
 /// Auth state stream provider - directly watch Firebase auth state
 /// This bypasses the service layer on web to ensure proper initialization
+/// ✅ ALSO TRACKS USER IN CRASHLYTICS FOR ERROR MONITORING
 final authStateProvider = StreamProvider<firebase_auth.User?>((ref) {
-  return firebase_auth.FirebaseAuth.instance.authStateChanges();
+  return firebase_auth.FirebaseAuth.instance.authStateChanges().map((user) {
+    // ✅ Track current user in Crashlytics for error attribution
+    if (user != null) {
+      FirebaseCrashlytics.instance.setUserIdentifier(user.uid);
+    } else {
+      // Optionally clear user on logout
+      FirebaseCrashlytics.instance.setUserIdentifier('');
+    }
+    return user;
+  });
 });
 
 /// Current user stream provider (combines auth + Firestore user data)

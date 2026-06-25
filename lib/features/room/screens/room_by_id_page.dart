@@ -1,57 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:mixvy/shared/models/room.dart';
 import '../room_access_wrapper.dart';
 import 'package:mixvy/shared/widgets/loading_widgets.dart';
 import 'package:mixvy/features/error/error_page.dart';
+import '../../../providers/room_provider.dart';
 
-/// Loads a room by Firestore document ID and routes through RoomAccessWrapper
-/// (which gates access and renders LiveRoomScreen).
-class RoomByIdPage extends ConsumerStatefulWidget {
+/// 🔴 FIX #1: Loads a room by Firestore document ID with REAL-TIME updates
+/// Now uses StreamProvider instead of FutureBuilder to enable live room data
+/// (member counts, status changes, chat messages, etc.)
+///
+/// Renders through RoomAccessWrapper (which gates access and renders LiveRoomScreen).
+class RoomByIdPage extends ConsumerWidget {
   final String roomId;
   const RoomByIdPage({super.key, required this.roomId});
 
   @override
-  ConsumerState<RoomByIdPage> createState() => _RoomByIdPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 🔴 FIX: Watch the room stream for real-time updates
+    // This replaces FutureBuilder pattern - automatically rebuilds when Firestore data changes
+    final roomStream = ref.watch(roomStreamProvider(roomId));
 
-class _RoomByIdPageState extends ConsumerState<RoomByIdPage> {
-  // Stored as a field so Flutter doesn't re-fetch on every rebuild.
-  late final Future<Room?> _roomFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _roomFuture = _fetchRoom();
-  }
-
-  Future<Room?> _fetchRoom() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('rooms')
-        .doc(widget.roomId)
-        .get();
-    if (!doc.exists) return null;
-    return Room.fromDocument(doc);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Room?>(
-      future: _roomFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: LoadingSpinner()),
-          );
-        }
-        if (snapshot.hasError) {
-          return const Scaffold(
-            body: ErrorPage(errorMessage: 'Failed to load room'),
-          );
-        }
-        final room = snapshot.data;
+    return roomStream.when(
+      // ✅ Data loaded - render the room with access control
+      data: (room) {
         if (room == null) {
           return const Scaffold(
             body: Center(child: Text('Room not found')),
@@ -62,6 +34,30 @@ class _RoomByIdPageState extends ConsumerState<RoomByIdPage> {
           userId: fb_auth.FirebaseAuth.instance.currentUser?.uid ?? '',
         );
       },
+      // ✅ Still loading - show spinner
+      loading: () => const Scaffold(
+        body: Center(child: LoadingSpinner()),
+      ),
+      // ✅ Error occurred - show error page with retry
+      error: (error, stackTrace) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const ErrorPage(errorMessage: 'Failed to load room'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Refresh the room stream to retry loading
+                  // ignore: unused_result
+                  ref.refresh(roomStreamProvider(roomId));
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

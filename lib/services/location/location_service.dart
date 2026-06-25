@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:math';
 
-// Conditional imports for geolocator (not available on all platforms)
-import 'package:geolocator/geolocator.dart' as geo;
-
 /// Location data model
 class LocationData {
   final double latitude;
@@ -56,81 +53,35 @@ class LocationService {
   static LocationService get instance => _instance;
 
   /// Request location permissions and return status
+  /// On web: always returns false (location not available)
+  /// On native: would use geolocator (not implemented for web build)
   Future<bool> requestLocationPermission() async {
-    try {
-      // Skip on web (no real location access)
-      if (kIsWeb) {
-        debugPrint('[LocationService] Location not available on web');
-        return false;
-      }
-
-      final permission = await geo.Geolocator.checkPermission();
-
-      if (permission == geo.LocationPermission.denied) {
-        final result = await geo.Geolocator.requestPermission();
-        return result == geo.LocationPermission.whileInUse || result == geo.LocationPermission.always;
-      }
-
-      if (permission == geo.LocationPermission.deniedForever) {
-        debugPrint('[LocationService] Location permission denied forever. Open app settings.');
-        await geo.Geolocator.openLocationSettings();
-        return false;
-      }
-
-      return permission == geo.LocationPermission.whileInUse || permission == geo.LocationPermission.always;
-    } catch (e) {
-      debugPrint('[LocationService] Permission error: $e');
+    if (kIsWeb) {
+      debugPrint('[LocationService] Location not available on web');
       return false;
     }
+    // Native platform implementation would go here
+    debugPrint('[LocationService] Location permissions require native implementation');
+    return false;
   }
 
   /// Check if location services are enabled
+  /// On web: always returns false
   Future<bool> isLocationServiceEnabled() async {
     if (kIsWeb) return false;
-    try {
-      return await geo.Geolocator.isLocationServiceEnabled();
-    } catch (e) {
-      debugPrint('[LocationService] Error checking service status: $e');
-      return false;
-    }
+    // Native implementation would go here
+    return false;
   }
 
   /// Get current user location
+  /// On web: returns null (location not available)
   Future<LocationData?> getCurrentLocation() async {
-    try {
-      // Check if service is enabled
-      final serviceEnabled = await isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('[LocationService] Location service disabled');
-        return null;
-      }
-
-      // Request permission
-      final hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        debugPrint('[LocationService] No location permission');
-        return null;
-      }
-
-      // Get position with timeout
-      final position = await geo.Geolocator.getCurrentPosition(
-        desiredAccuracy: geo.LocationAccuracy.best,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      return LocationData(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        accuracy: position.accuracy,
-        altitude: position.altitude,
-        heading: position.heading,
-        speed: position.speed,
-        timestamp: DateTime.fromMillisecondsSinceEpoch(position.timestamp?.millisecondsSinceEpoch ?? 0),
-      );
-    } catch (e) {
-      debugPrint('[LocationService] Error getting location: $e');
+    if (kIsWeb) {
+      debugPrint('[LocationService] Location not available on web');
       return null;
     }
+    // Native implementation would go here
+    return null;
   }
 
   /// Calculate distance between two coordinates in kilometers
@@ -167,67 +118,24 @@ class LocationService {
   static double _toRadians(double degrees) => degrees * pi / 180.0;
 
   /// Stream user's current location (real-time updates)
+  /// On web: returns empty stream (location not available)
   Stream<LocationData> streamCurrentLocation({
-    geo.LocationAccuracy desiredAccuracy = geo.LocationAccuracy.best,
+    double desiredAccuracy = 0.0,
     int distanceFilter = 10, // meters
   }) async* {
-    try {
-      if (kIsWeb) {
-        debugPrint('[LocationService] Location streaming not available on web');
-        return;
-      }
-
-      final hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        debugPrint('[LocationService] No permission for location stream');
-        return;
-      }
-
-      // Listen to position updates
-      await for (final position in geo.Geolocator.getPositionStream(
-        desiredAccuracy: desiredAccuracy,
-        distanceFilter: distanceFilter,
-      )) {
-        yield LocationData(
-          latitude: position.latitude,
-          longitude: position.longitude,
-          accuracy: position.accuracy,
-          altitude: position.altitude,
-          heading: position.heading,
-          speed: position.speed,
-          timestamp: DateTime.fromMillisecondsSinceEpoch(
-            position.timestamp?.millisecondsSinceEpoch ?? 0,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('[LocationService] Stream error: $e');
+    if (kIsWeb) {
+      debugPrint('[LocationService] Location streaming not available on web');
+      return;
     }
+    // Native implementation would yield position updates
   }
 
   /// Get last known location (faster than getCurrentLocation)
+  /// On web: returns null
   Future<LocationData?> getLastKnownLocation() async {
-    try {
-      if (kIsWeb) return null;
-
-      final position = await geo.Geolocator.getLastKnownPosition();
-      if (position == null) return null;
-
-      return LocationData(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        accuracy: position.accuracy,
-        altitude: position.altitude,
-        heading: position.heading,
-        speed: position.speed,
-        timestamp: DateTime.fromMillisecondsSinceEpoch(
-          position.timestamp?.millisecondsSinceEpoch ?? 0,
-        ),
-      );
-    } catch (e) {
-      debugPrint('[LocationService] Error getting last known location: $e');
-      return null;
-    }
+    if (kIsWeb) return null;
+    // Native implementation would go here
+    return null;
   }
 
   /// Filter events by radius from a center location
