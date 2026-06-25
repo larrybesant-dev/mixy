@@ -855,7 +855,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     if (_localStream != null) {
       for (var track in _localStream!.getTracks()) {
         track.enabled = false;
-        track.stop();
+        await track.stop();
       }
       await _localStream!.dispose();
       _localStream = null;

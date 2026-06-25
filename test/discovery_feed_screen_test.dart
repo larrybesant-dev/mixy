@@ -1,5 +1,4 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,9 +6,7 @@ import 'package:mixvy/features/ads/ad_manager.dart';
 import 'package:mixvy/features/feed/controllers/feed_controller.dart';
 import 'package:mixvy/features/payments/premium_entitlement.dart';
 import 'package:mixvy/features/profile/profile_controller.dart';
-import 'package:mocktail/mocktail.dart';
-
-class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
+import 'package:mixvy/models/profile_model.dart';
 
 /// Minimal widget that mirrors the promo banner conditional in
 /// [DiscoveryFeedContent], without pulling in [StoriesRow] or any

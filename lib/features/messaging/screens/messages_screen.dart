@@ -18,8 +18,6 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final requestsAsync = ref.watch(requestsStreamProvider(userId));
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inbox'),
