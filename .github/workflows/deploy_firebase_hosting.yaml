@@ -16,10 +16,6 @@ jobs:
           channel: stable
           flutter-version: '3.24.x'
           cache: true
-          cache-key: flutter-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
-          cache-path: |
-            ${{ runner.tool_cache }}/flutter
-            ~/.pub-cache/hosted
 
       - name: Configure Dart
         run: |
