@@ -17,21 +17,14 @@ window.agoraBridgeState = {
   currentToken: null,
   currentVideoDeviceId: null,
   currentMicDeviceId: null,
-<<<<<<< HEAD
   connectionState: 'DISCONNECTED',
   reconnecting: false,
   reconnectAttempts: 0,
   networkQuality: { uplink: 0, downlink: 0 },
   activeAgoraUsers: new Set(),
-  lastError: null
-=======
-  // Remote video subscription: element ID to play the first remote track into.
-  // Set via subscribeRemoteVideoTo() before (or after) a remote user publishes.
+  lastError: null,
   remoteVideoSubscriberElementId: null,
-  // Pending remote tracks: uid -> { videoTrack } for tracks received before
-  // the target element was available.
-  pendingRemoteTracks: {},
->>>>>>> origin/develop
+  pendingRemoteTracks: {}
 };
 
 function findElementByIdDeep(id) {
@@ -160,7 +153,6 @@ window.agoraWebBridge = {
       });
 
       // Set up event handlers
-<<<<<<< HEAD
       state.client.on('user-published', async (user, mediaType) => {
         window.agoraBridgeLog('INFO', 'Remote user published', { uid: user.uid, mediaType });
         state.activeAgoraUsers.add(String(user.uid));
@@ -253,40 +245,6 @@ window.agoraWebBridge = {
             try { window.agoraWeb.onNetworkQuality({ uplink: stats.uplinkNetworkQuality, downlink: stats.downlinkNetworkQuality }); } catch (_) {}
           }
         }
-=======
-      state.client.on("user-published", async (user, mediaType) => {
-        window.agoraBridgeLog("INFO", "Remote user published", { uid: user.uid, mediaType });
-        await state.client.subscribe(user, mediaType);
-        if (mediaType === "video") {
-          // Priority 1: canonical element ID pattern used by rooms (remote-video-<numericUid>)
-          let remoteContainer = document.getElementById("remote-video-" + user.uid);
-
-          // Priority 2: registered subscriber element (used by speed dating & other 1-on-1 flows)
-          if (!remoteContainer && state.remoteVideoSubscriberElementId) {
-            remoteContainer = document.getElementById(state.remoteVideoSubscriberElementId);
-          }
-
-          if (remoteContainer) {
-            user.videoTrack.play(remoteContainer);
-            window.agoraBridgeLog("SUCCESS", "Remote video playing in #" + remoteContainer.id);
-          } else {
-            // Store as pending — will be played when subscribeRemoteVideoTo() is called
-            window.agoraBridgeLog("WARN", "Remote video container not found, storing as pending", {
-              uid: user.uid,
-            });
-            state.pendingRemoteTracks[user.uid] = { videoTrack: user.videoTrack };
-          }
-        }
-        if (mediaType === "audio") user.audioTrack.play();
-      });
-
-      state.client.on("user-unpublished", (user, mediaType) => {
-        window.agoraBridgeLog("INFO", "Remote user unpublished", { uid: user.uid, mediaType });
-      });
-
-      state.client.on("user-left", (user) => {
-        window.agoraBridgeLog("INFO", "Remote user left", { uid: user.uid });
->>>>>>> origin/develop
       });
 
       state.appId = appId;
@@ -294,12 +252,8 @@ window.agoraWebBridge = {
       window.agoraBridgeLog("SUCCESS", "Agora initialized successfully");
       return true;
     } catch (error) {
-<<<<<<< HEAD
       state.lastError = error?.message || String(error);
       window.agoraBridgeLog('ERROR', 'Init failed', error);
-=======
-      window.agoraBridgeLog("ERROR", "Init failed", error);
->>>>>>> origin/develop
       return false;
     }
   },
@@ -320,7 +274,6 @@ window.agoraWebBridge = {
       await state.client.join(state.appId, channel, token || null, numericUid);
       state.currentChannel = channel;
       state.currentUid = numericUid;
-<<<<<<< HEAD
       state.currentToken = token || null;
       state.connectionState = 'CONNECTED';
       state.reconnectAttempts = 0;
@@ -329,12 +282,6 @@ window.agoraWebBridge = {
     } catch (error) {
       state.lastError = error?.message || String(error);
       window.agoraBridgeLog('ERROR', 'Join channel failed', error);
-=======
-      window.agoraBridgeLog("SUCCESS", "Joined channel", { channel, uid: numericUid });
-      return true;
-    } catch (error) {
-      window.agoraBridgeLog("ERROR", "Join channel failed", error);
->>>>>>> origin/develop
       return false;
     }
   },
@@ -499,23 +446,14 @@ window.agoraWebBridge = {
 
       state.currentChannel = null;
       state.currentUid = null;
-<<<<<<< HEAD
       state.activeAgoraUsers.clear();
-      window.agoraBridgeLog('SUCCESS', 'Left channel');
-=======
-      // Clear remote video subscription state
       state.remoteVideoSubscriberElementId = null;
       state.pendingRemoteTracks = {};
-      window.agoraBridgeLog("SUCCESS", "Left channel");
->>>>>>> origin/develop
+      window.agoraBridgeLog('SUCCESS', 'Left channel');
       return true;
     } catch (error) {
-<<<<<<< HEAD
       state.lastError = error?.message || String(error);
       window.agoraBridgeLog('ERROR', 'Leave channel failed', error);
-=======
-      window.agoraBridgeLog("ERROR", "Leave channel failed", error);
->>>>>>> origin/develop
       return false;
     }
   },
@@ -562,7 +500,6 @@ window.agoraWebBridge = {
     return false;
   },
 
-<<<<<<< HEAD
   // Toggle camera: fully release hardware when OFF, recreate track when ON
   setVideoMuted: async function(muted) {
     const state = window.agoraBridgeState;
@@ -600,14 +537,6 @@ window.agoraWebBridge = {
           window.agoraBridgeLog('SUCCESS', 'Local camera replayed in DOM container');
         }
       }
-=======
-  // Mute/unmute video
-  setVideoMuted: async function (muted) {
-    const state = window.agoraBridgeState;
-    if (state.localTracks.video) {
-      await state.localTracks.video.setMuted(muted);
-      window.agoraBridgeLog("SUCCESS", `Video ${muted ? "muted" : "unmuted"}`);
->>>>>>> origin/develop
       return true;
     }
   },
@@ -628,10 +557,7 @@ window.agoraWebBridge = {
       viewerCount: state.activeAgoraUsers.size + 1,
       currentVideoDeviceId: state.currentVideoDeviceId,
       currentMicDeviceId: state.currentMicDeviceId,
-<<<<<<< HEAD
       lastError: state.lastError
-=======
->>>>>>> origin/develop
     };
   },
 
@@ -706,7 +632,6 @@ window.agoraWebSetVideoMuted = async function (muted) {
   return await window.agoraWebBridge.setVideoMuted(muted);
 };
 
-<<<<<<< HEAD
 window.agoraWebPlayCamera = async function(videoElementId) {
   return await window.agoraWebBridge.playCamera(videoElementId);
 };
@@ -716,20 +641,7 @@ window.agoraWebGetState = function() {
 };
 
 window.agoraWebRenewToken = async function(newToken) {
-  const state = window.agoraBridgeState;
-  try {
-    if (!state.client || !state.currentChannel) {
-      window.agoraBridgeLog('WARN', 'agoraWebRenewToken: not in channel');
-      return false;
-    }
-    await state.client.renewToken(newToken);
-    state.currentToken = newToken;
-    window.agoraBridgeLog('SUCCESS', 'Token renewed successfully');
-    return true;
-  } catch (err) {
-    window.agoraBridgeLog('ERROR', 'Failed to renew token', err.message);
-    return false;
-  }
+  return await window.agoraWebBridge.renewToken(newToken);
 };
 
 // ========== RECONNECT HELPER ==========
@@ -782,16 +694,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-=======
-window.agoraWebGetState = function () {
-  return window.agoraWebBridge.getState();
-};
-
-window.agoraWebRenewToken = function (newToken) {
-  return window.agoraWebBridge.renewToken(newToken);
-};
-
->>>>>>> origin/develop
 // ========== READY SIGNAL ==========
 
 window.agoraBridgeReady = true;

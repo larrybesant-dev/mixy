@@ -1,65 +1,26 @@
 {
   "project_info": {
-    "project_number": "980846719834",
-    "project_id": "mix-and-mingle-v2",
-    "storage_bucket": "mix-and-mingle-v2.firebasestorage.app"
+    "project_number": "770164332233",
+    "project_id": "mixvy-v2",
+    "storage_bucket": "mixvy-v2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:980846719834:android:8752ec20ee1dfb78077963",
-        "android_client_info": {
-          "package_name": "com.example.mix_and_mingle"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "980846719834-tsffhkc8cifaod49je994284esupcdqk.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCbS7zVY2o4S1-OOPkqFuUXz5B5hmmsS0U"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "980846719834-tsffhkc8cifaod49je994284esupcdqk.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:980846719834:android:046ccc25cd68756f077963",
+        "mobilesdk_app_id": "1:770164332233:android:e4c4e6e673c54bbbc3df18",
         "android_client_info": {
           "package_name": "com.mixandmingle.mixandmingle"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "980846719834-tsffhkc8cifaod49je994284esupcdqk.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCbS7zVY2o4S1-OOPkqFuUXz5B5hmmsS0U"
+          "current_key": "AIzaSyCejcBAOY6WPsc4qfVkmOvnx6MOofFiJo4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "980846719834-tsffhkc8cifaod49je994284esupcdqk.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

@@ -1,143 +1,44 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <base href="/" />
-    <meta charset="UTF-8" />
-    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta
-      name="description"
-      content="Mix &amp; Mingle — Live video rooms, real-time chat, music vibes, and meaningful connections with people around the world."
-    />
-    <meta name="theme-color" content="#080C14" />
-    <meta property="og:title" content="Mix &amp; Mingle" />
-    <meta
-      property="og:description"
-      content="Live video rooms, real-time chat, music vibes, and meaningful connections — meet your people on Mix &amp; Mingle."
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="icons/Icon-512.png" />
-    <meta property="og:url" content="https://mix-and-mingle-v2.web.app" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Mix &amp; Mingle" />
-    <meta
-      name="twitter:description"
-      content="Live video rooms, real-time chat, music vibes, and real connections."
-    />
-    <meta name="twitter:image" content="icons/Icon-512.png" />
-    <!-- Content-Security-Policy
-       ─────────────────────────────────────────────────────────────────────
-       Mirrors the HTTP header set in firebase.json (hosting.headers).
-       Keep both in sync when changing either.
-       ─────────────────────────────────────────────────────────────────────
-       Directives explained:
-         default-src  – fallback for anything not explicitly listed
-         script-src   – Flutter bootstrap + Agora Web SDK v5 CDN
-         style-src    – Flutter inline styles + Google Fonts
-         font-src     – Google Fonts woff2
-         img-src      – Firebase Storage, user avatars, data URIs, blobs
-         media-src    – WebRTC camera/mic blobs + mediastream: from getUserMedia
-         connect-src  – Firestore, Firebase Auth, Storage, Functions,
-                        Agora signaling (https + wss), Agora media relay (sd-rtn.com)
-         frame-src    – Firebase Auth iframe (project.firebaseapp.com/__/auth/handler),
-                        Google Sign-In and reCAPTCHA iframes, Agora
-         child-src    – Pop-out windows (blob:) + Firebase auth popups
-         worker-src   – Flutter service worker + Agora web workers (blob:)
-         object-src   – Disallow Flash / plugins
-         base-uri     – Prevent base-tag injection
-       ─────────────────────────────────────────────────────────────────────
-  -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="
-    default-src 'self' blob:;
-    script-src  'self' 'unsafe-inline' 'unsafe-eval' blob:
-                https://download.agora.io
-                https://cdn.agora.io
-                https://*.agora.io
-                https://www.gstatic.com
-                https://apis.google.com
-                https://www.googletagmanager.com;
-    style-src   'self' 'unsafe-inline'
-                https://fonts.googleapis.com
-                https://www.gstatic.com;
-    font-src    'self' data:
-                https://fonts.gstatic.com;
-    img-src     'self' data: blob:
-                https://*.googleusercontent.com
-                https://*.googleapis.com
-                https://firebasestorage.googleapis.com
-                https://*.firebasestorage.app
-                https://lh3.googleusercontent.com;
-    media-src   'self' blob: mediastream:
-                https://*.agora.io
-                https://*.sd-rtn.com;
-    connect-src 'self' blob:
-                https://*.googleapis.com
-                https://*.google.com
-                https://identitytoolkit.googleapis.com
-                https://securetoken.googleapis.com
-                https://firestore.googleapis.com
-                https://firebasestorage.googleapis.com
-                https://fcm.googleapis.com
-                https://*.firebaseio.com
-                wss://*.firebaseio.com
-      connect-src 'self' blob:
-            https://*.googleapis.com
-            https://*.google.com
-            https://identitytoolkit.googleapis.com
-            https://securetoken.googleapis.com
-            https://firestore.googleapis.com
-            https://firebasestorage.googleapis.com
-            https://fcm.googleapis.com
-            https://*.firebaseio.com
-            wss://*.firebaseio.com
-            https://*.firebaseapp.com
-            https://*.cloudfunctions.net
-            https://*.agora.io
-            wss://*.agora.io
-            https://*.sd-rtn.com
-            wss://*.sd-rtn.com
-            https://statscollector.agora.io
-            wss://statscollector.agora.io
-            https://www.gstatic.com
-            https://fonts.gstatic.com;
-                https://*.firebaseapp.com
-                https://accounts.google.com;
-    worker-src  'self' blob:;
-    object-src  'none';
-    base-uri    'self';
-  "
-    />
-    <title>Mix &amp; Mingle</title>
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-
-<<<<<<< HEAD
 <head>
-  <base href="/">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="MIXVY — Real-time social energy, live rooms, and genuine connections.">
-  <!-- CSP header to allow external resources and scripts -->
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self' https: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; style-src 'self' 'unsafe-inline' https: fonts.googleapis.com; font-src 'self' https: fonts.gstatic.com; img-src 'self' https: data: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://js.stripe.com/; media-src 'self' https: blob:; object-src 'none'; base-uri 'self';">
+  <meta charset="UTF-8" />
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="MIXVY — Real-time social energy, live rooms, and genuine connections." />
+  <meta name="theme-color" content="#0B0B0B" />
+  <meta property="og:title" content="MIXVY" />
+  <meta property="og:description" content="Real-time social energy, live rooms, and genuine connections — meet your people on MIXVY." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="icons/Icon-512.png" />
+  <meta property="og:url" content="https://mixvy.web.app" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MIXVY" />
+  <meta name="twitter:description" content="Real-time social energy, live rooms, and genuine connections." />
+  <meta name="twitter:image" content="icons/Icon-512.png" />
+
+  <!-- CSP: Allow all external resources for Flutter Web -->
+  <meta http-equiv="Content-Security-Policy" content="default-src *; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; font-src * data:; connect-src *; media-src * blob: mediastream:; frame-src *; child-src *; worker-src * blob:; object-src 'none';" />
+
   <title>MIXVY</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-  <link rel="icon" type="image/png" href="favicon.png">
+  <base href="/" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+  <link rel="icon" type="image/png" href="favicon.png" />
 
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      font-family: 'Noto Sans', 'Noto Sans Symbols 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0B0B0B 0%, #1a1a2e 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #F7EDE2;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
     }
 
     #loading {
@@ -150,435 +51,151 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      background: linear-gradient(135deg, #0B0B0B 0%, #1a1a2e 100%);
       z-index: 9999;
     }
 
     #loading.hidden {
       display: none;
-      opacity: 0;
-      transition: opacity 0.5s ease-out;
-      pointer-events: none;
     }
 
     .loader {
       width: 50px;
       height: 50px;
-      border: 4px solid rgba(74, 144, 226, 0.2);
-      border-top-color: #4A90E2;
+      border: 4px solid rgba(212, 175, 55, 0.2);
+      border-top-color: #D4AF37;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 20px;
     }
 
     .loading-text {
-      color: #fff;
+      color: #D4AF37;
       font-size: 18px;
       font-weight: 500;
+      letter-spacing: 1px;
     }
 
     @keyframes spin {
       to {
         transform: rotate(360deg);
-=======
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
->>>>>>> origin/develop
       }
-
-<<<<<<< HEAD
+    }
+  </style>
+</head>
 <body>
+  <div id="app"></div>
+
+  <!-- Loading indicator -->
   <div id="loading">
     <div class="loader"></div>
     <div class="loading-text">Loading MIXVY...</div>
   </div>
 
-  <!-- Handle performance optimizations -->
-  <script>
-    // Force clear stale service-worker caches so production matches current code.
-    (function () {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          regs.forEach(function (reg) {
-            reg.unregister();
-          });
-        }).catch(function () {});
-      }
+  <!-- Agora Web Bridge -->
+  <script src="agora_bridge.js"></script>
 
-      if ('caches' in window) {
-        caches.keys().then(function (keys) {
-          keys.forEach(function (key) {
-            caches.delete(key);
-          });
-        }).catch(function () {});
+  <!-- Flutter Bootstrap - handles all initialization -->
+  <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Hide loading when Flutter renders first frame -->
+  <script>
+    window.addEventListener('flutter-first-frame', function() {
+      const loader = document.getElementById('loading');
+      if (loader) {
+        loader.classList.add('hidden');
+      }
+      document.body.style.background = 'transparent';
+    });
+  </script>
+
+    // Clear stale service worker and caches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) {
+          reg.unregister();
+        });
+      }).catch(function() {});
+    }
+
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(key) {
+          caches.delete(key);
+        });
+      }).catch(function() {});
+    }
+
+    // Safari WebGL2 compatibility: Force WebGL1 fallback
+    (function() {
+      var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isSafari) {
+        var origGetContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function(type) {
+          if (type === 'webgl2') return null;
+          return origGetContext.apply(this, arguments);
+        };
       }
     })();
 
-    // Fix non-passive event listener warnings by patching addEventListener
-    (function () {
+    // Fix non-passive event listeners
+    (function() {
       const originalAddEventListener = EventTarget.prototype.addEventListener;
-      EventTarget.prototype.addEventListener = function (type, listener, options) {
-        // Make wheel, touchstart, touchmove, touchend passive for better scroll performance
+      EventTarget.prototype.addEventListener = function(type, listener, options) {
         if (['wheel', 'touchstart', 'touchmove', 'touchend'].includes(type)) {
           if (typeof options === 'object' && options.passive === undefined) {
             options = { ...options, passive: true };
           } else if (typeof options !== 'object') {
             options = { passive: true };
-=======
-      #loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        z-index: 9999;
-      }
-
-      #loading.hidden {
-        display: none;
-        opacity: 0;
-        transition: opacity 0.5s ease-out;
-        pointer-events: none;
-      }
-
-      .loader {
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(74, 144, 226, 0.2);
-        border-top-color: #4a90e2;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-      }
-
-      .loading-text {
-        color: #fff;
-        font-size: 18px;
-        font-weight: 500;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
-    <style id="splash-screen-style">
-      html {
-        height: 100%;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100%;
-        background-color: #080c14;
-        background-size: 100% 100%;
-      }
-
-      .center {
-        margin: 0;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        -ms-transform: translate(-50%, -50%);
-        transform: translate(-50%, -50%);
-      }
-
-      .contain {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
-      .stretch {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-
-      .cover {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      .bottom {
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        -ms-transform: translate(-50%, 0);
-        transform: translate(-50%, 0);
-      }
-
-      .bottomLeft {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-      }
-
-      .bottomRight {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #080c14;
-        }
-      }
-    </style>
-    <script id="splash-screen-script">
-      function removeSplashFromWeb() {
-        document.getElementById("splash")?.remove();
-        document.getElementById("splash-branding")?.remove();
-        document.body.style.background = "transparent";
-      }
-    </script>
-  </head>
-
-  <body>
-    <picture id="splash">
-      <source
-        srcset="
-          splash/img/light-1x.png 1x,
-          splash/img/light-2x.png 2x,
-          splash/img/light-3x.png 3x,
-          splash/img/light-4x.png 4x
-        "
-        media="(prefers-color-scheme: light)"
-      />
-      <source
-        srcset="
-          splash/img/dark-1x.png 1x,
-          splash/img/dark-2x.png 2x,
-          splash/img/dark-3x.png 3x,
-          splash/img/dark-4x.png 4x
-        "
-        media="(prefers-color-scheme: dark)"
-      />
-      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="" />
-    </picture>
-    <div id="loading">
-      <div class="loader"></div>
-      <div class="loading-text">Loading Mix &amp; Mingle...</div>
-    </div>
-
-    <!-- ========== AGORA WEB SDK v5 - PRODUCTION ==========
-       This loads the production-ready Agora Web bridge with:
-       - SDK v5.x (latest stable)
-       - Automatic token validation
-       - Permission handling
-       - Comprehensive error handling
-
-       The bridge script (agora_web_v5_production.js) loads the Agora SDK
-       dynamically and provides Flutter with a clean async interface.
-       ========== -->
-
-    <!-- Load Agora Web Bridge — Production Ready
-       agora_bridge.js exposes window.agoraWebBridge.* (dart:js_interop @JS target)
-       AND flat-style aliases window.agoraWebInit / agoraWebJoinChannel / etc.
-       AND sets window.agoraBridgeReady = true (checked by AgoraService.isBridgeReady).
-  -->
-    <script src="agora_bridge.js"></script>
-
-    <!-- Production Bridge Validation - Verify bridge loaded successfully -->
-    <script>
-      (function () {
-        const startTime = Date.now();
-        // Poll at 500 ms instead of 100 ms to avoid browser performance violations.
-        const checkInterval = setInterval(() => {
-          const required = [
-            "agoraWebInit",
-            "agoraWebJoinChannel",
-            "agoraWebLeaveChannel",
-            "agoraWebSetMicMuted",
-            "agoraWebSetVideoMuted",
-            "agoraWebGetState",
-          ];
-
-          const missing = required.filter((fn) => typeof window[fn] !== "function");
-
-          if (missing.length === 0) {
-            console.log(
-              "%c[AGORA] ✅ Production bridge ready with all functions",
-              "color: #4CAF50; font-weight: bold;",
-            );
-            clearInterval(checkInterval);
-          } else if (Date.now() - startTime > 15000) {
-            // 15 second timeout
-            console.warn(
-              "%c[AGORA] ⚠️  Missing functions after 15s: " + missing.join(", "),
-              "color: #FF9800; font-weight: bold;",
-            );
-            clearInterval(checkInterval);
->>>>>>> origin/develop
           }
-        }, 500); // 500 ms — relaxed poll to prevent rAF/timer performance violations
-      })();
-    </script>
-
-    <!-- Handle performance optimizations -->
-    <script>
-      // Fix non-passive event listener warnings by patching addEventListener
-      (function () {
-        const originalAddEventListener = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function (type, listener, options) {
-          // Make wheel, touchstart, touchmove, touchend passive for better scroll performance
-          if (["wheel", "touchstart", "touchmove", "touchend"].includes(type)) {
-            if (typeof options === "object" && options.passive === undefined) {
-              options = { ...options, passive: true };
-            } else if (typeof options !== "object") {
-              options = { passive: true };
-            }
-          }
-          return originalAddEventListener.call(this, type, listener, options);
-        };
-      })();
-
-      // Fix Google Fonts SRI integrity mismatch - remove integrity from external stylesheets
-      const originalFetch = window.fetch;
-      window.fetch = function (...args) {
-        const result = originalFetch.apply(this, args);
-        return result;
+        }
+        return originalAddEventListener.call(this, type, listener, options);
       };
+    })();
+  </script>
 
-      // Monitor and fix link elements with integrity attributes that may fail
-      const observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-          if (mutation.addedNodes.length) {
-            mutation.addedNodes.forEach(function (node) {
-              if (node.nodeType === 1) {
-                // Element node
-                if (node.tagName === "LINK" && node.href && node.href.includes("googleapis")) {
-                  // Remove integrity from Google API stylesheets - they may change
-                  if (node.integrity) {
-                    console.log("[FIX] Removing integrity attribute from Google Fonts link");
-                    node.removeAttribute("integrity");
-                  }
-                  // Add crossorigin for CORS
-                  node.setAttribute("crossorigin", "anonymous");
-                }
-              }
-            });
-          }
-        });
-      });
-
-<<<<<<< HEAD
-  <!-- Safari WebGL2 shim: WebKit's WebGL2 is unstable; returning null forces
-       CanvasKit to fall back to WebGL1, which is far more stable on Safari. -->
+  <!-- Flutter Bootstrap - Set buildConfig and load app -->
   <script>
-    (function () {
-      var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      if (isSafari) {
-        var _origGetContext = HTMLCanvasElement.prototype.getContext;
-        HTMLCanvasElement.prototype.getContext = function (type) {
-          if (type === 'webgl2') return null;
-          return _origGetContext.apply(this, arguments);
-        };
-      }
-    })();
-  </script>
-
-  <script src="flutter_bootstrap.js" defer></script>
-=======
-      observer.observe(document.head, { childList: true, subtree: true });
->>>>>>> origin/develop
-
-      // Pre-emptively fix any existing links
-      document.querySelectorAll('link[href*="googleapis"]').forEach(function (link) {
-        if (link.integrity) {
-          console.log("[FIX] Removing integrity attribute from existing Google Fonts link");
-          link.removeAttribute("integrity");
-        }
-        link.setAttribute("crossorigin", "anonymous");
-      });
-
-      // Suppress browser extension errors by safely wrapping chrome API access
-      if (typeof chrome === "undefined") {
-        window.chrome = {
-          runtime: { onMessage: { addListener: function () {} } },
-          tabs: { onUpdated: { addListener: function () {} } },
-          contextMenus: { onClicked: { addListener: function () {} } },
-          downloads: { onCreated: { addListener: function () {} } },
-        };
-      }
-
-      // Suppress tracking prevention warnings - Edge feature
-      if (typeof navigator !== "undefined" && navigator.doNotTrack === undefined) {
-        Object.defineProperty(navigator, "doNotTrack", {
-          value: "1",
-          writable: false,
-          enumerable: true,
-          configurable: true,
-        });
-      }
-    </script>
-
-    <script src="flutter_bootstrap.js" defer=""></script>
-
-    <script>
-      // Hide loading screen when Flutter has actually rendered its first frame.
-      // Uses a MutationObserver to detect Flutter's root element (flt-glass-pane),
-      // with a 6-second hard fallback.
-      (function () {
-        function hideLoader() {
-          const loadingDiv = document.getElementById("loading");
-          if (loadingDiv) loadingDiv.classList.add("hidden");
-        }
-
-<<<<<<< HEAD
-      // Hard fallback: hide after 6 seconds regardless
-      window.addEventListener('load', function () {
-        setTimeout(function () {
-          observer.disconnect();
-          hideLoader();
-        }, 6000);
-      });
-    })();
-  </script>
-
-  <!-- Pinned to v5.3.1 — must match CONFIG.sdk.url in agora_web_v5_production.js.
-       Using the unversioned AgoraRTC_N.js would short-circuit loadAgoraSDK()
-       and load a mismatched version, causing internal SDK eval errors. -->
-  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-5.3.1.js"></script>
-  <script src="agora_web_bridge.js"></script>
-  <script src="window_manager.js"></script>
-</body>
-=======
-        // Observe body for Flutter's root element
-        const observer = new MutationObserver(function () {
-          if (document.querySelector("flt-glass-pane") || document.querySelector("flutter-view")) {
-            observer.disconnect();
-            // Small delay so Flutter paints at least one frame
-            requestAnimationFrame(function () {
-              requestAnimationFrame(hideLoader);
-            });
+    (function() {
+      function initFlutterApp() {
+        if (typeof _flutter !== 'undefined' && typeof _flutter.loader !== 'undefined') {
+          // Ensure buildConfig is set
+          if (!window._flutter.buildConfig) {
+            window._flutter.buildConfig = {
+              engineRevision: "stable",
+              builds: [
+                {
+                  compileTarget: "dart2js",
+                  renderer: "canvaskit",
+                  mainJsPath: "main.dart.js"
+                }
+              ]
+            };
+            console.log('[MIXVY Bootstrap] Set buildConfig:', window._flutter.buildConfig);
           }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
->>>>>>> origin/develop
 
-        // Hard fallback: hide after 6 seconds regardless
-        window.addEventListener("load", function () {
-          setTimeout(function () {
-            observer.disconnect();
-            hideLoader();
-          }, 6000);
-        });
-      })();
-    </script>
-  </body>
+          console.log('[MIXVY Bootstrap] Initializing Flutter app');
+          _flutter.loader.load({
+            config: {
+              renderer: 'canvaskit'
+            },
+            onEntrypointLoaded: async function(engineInitializer) {
+              console.log('[MIXVY Bootstrap] Engine initializer received');
+              let appRunner = await engineInitializer.initializeEngine();
+              console.log('[MIXVY Bootstrap] Engine initialized');
+              await appRunner.runApp();
+              console.log('[MIXVY Bootstrap] App running');
+            }
+          });
+        } else {
+          console.log('[MIXVY Bootstrap] Flutter not ready, will retry');
+          setTimeout(initFlutterApp, 50);
+        }
+      }
+
+      // Attempt initialization immediately - flutter.js should be loaded by now
+      initFlutterApp();
+    })();
+  </script>
+</body>
 </html>
