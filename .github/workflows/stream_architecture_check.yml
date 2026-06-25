@@ -39,6 +39,7 @@ on:
     branches: [main]
     paths:
       - 'lib/**'
+      - 'tool/firestore_stream_ci_linter.dart'
   workflow_dispatch:
 
 jobs:
