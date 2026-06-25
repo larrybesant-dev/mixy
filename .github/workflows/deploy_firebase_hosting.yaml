@@ -46,7 +46,7 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}'
-          projectId: mixvy
+          projectId: mixvy-v2
           channelId: live
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
