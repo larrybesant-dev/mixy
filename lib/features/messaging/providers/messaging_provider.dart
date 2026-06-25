@@ -145,7 +145,7 @@ final conversationDocProvider = StreamProvider.autoDispose
         create: () => firestore
             .collection('conversations')
             .doc(conversationId)
-            .snapshots()
+            .snapshots()  // FSL-002: Single doc is inherently bounded
             .map((snap) {
               if (!snap.exists) {
                 return null;
@@ -834,7 +834,7 @@ final typingUsersProvider = StreamProvider.autoDispose
             .doc(conversationId)
             .collection('ephemeral')
             .doc('typing')
-            .snapshots()
+            .snapshots()  // FSL-002: Single doc is inherently bounded
             .map((doc) {
               final raw = doc.data()?['users'] as Map<String, dynamic>?;
               if (raw == null) return <String>{};

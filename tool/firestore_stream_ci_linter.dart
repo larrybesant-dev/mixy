@@ -109,6 +109,9 @@ const _canonicalProviderFiles = <String>[
   'lib/features/room/providers/room_meta_state_provider.dart',
   'lib/features/room/providers/room_participants_state_provider.dart',
   'lib/features/room/providers/room_policy_provider.dart',
+  // Repository stream implementations for domain-specific reactions
+  'lib/features/feed/repository/reaction_repository.dart',
+  'lib/features/room/repository/room_repository.dart',
 ];
 
 const _roomReadAuthorityFile = 'lib/services/room_service.dart';
@@ -390,9 +393,14 @@ List<_Violation> _analyzeFileCritical(List<String> lines, String relativePath) {
     if (!line.contains('.snapshots(')) continue;
 
     // ── FSL-002: Unbounded query — no .limit() in preceding 10 lines ─────────
+    // Skip FSL-002 for single-document queries: .doc(...).snapshots() is inherently bounded
     final windowStart = (i - 10).clamp(0, i);
     final window = lines.sublist(windowStart, i + 1).join('\n');
-    if (!window.contains('.limit(')) {
+    final lastDocIndex = window.lastIndexOf('.doc(');
+    final lastCollectionIndex = window.lastIndexOf('.collection(');
+    final isSingleDocQuery = lastDocIndex >= 0 && lastDocIndex > lastCollectionIndex;
+    
+    if (!window.contains('.limit(') && !isSingleDocQuery) {
       violations.add(
         _Violation(
           ruleId: 'FSL-002',
