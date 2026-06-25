@@ -48,6 +48,26 @@ app.*.map.json
 functions/.env
 functions/.env.*
 .env
+
+# AI and Audit Reports - CRITICAL: These are temporary diagnostic files
+*.txt
+analysis_report_*.txt
+analyze_*.txt
+AGORA_*.txt
+ACTION_ITEMS_TODAY.md
+ADVANCED_*.md
+AI_AUTOFIX_*.md
+
+# Build and Cache Folders
+build/
+.dart_tool/
+.pub-cache/
+.packages
+.flutter-plugins
+.flutter-plugin-dependencies
+ephemeral/
+Generated.xcconfig
+flutter_export_environment.sh
 .env.*
 !.env.example
 assets/.env
