@@ -18,7 +18,7 @@ export default defineConfig({
   ],
   outputDir: 'test-results',
   use: {
-    baseURL: "https://mix-and-mingle-v2.web.app",
+    baseURL: "https://mixvy-v2.web.app",
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     trace: 'retain-on-failure',

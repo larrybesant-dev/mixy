@@ -1,0 +1,111 @@
+name: Live E2E Tests
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Firebase Hosting"]
+    types:
+      - completed
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          npx playwright install --with-deps chromium
+
+      - name: Run Smoke Test (live_site_check)
+        run: npx playwright test tests/live_site_check.spec.js --reporter=html
+        env:
+          PLAYWRIGHT_LIVE_URL: https://mixvy-v2.web.app
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 30
+
+      - name: Comment on workflow
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Live E2E tests passed"
+          else
+            echo "❌ Live E2E tests failed"
+          fi
+
+  production-suite:
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          npx playwright install --with-deps chromium
+
+      - name: Run Production Suite Tests
+        run: npx playwright test tests/live_production_suite.spec.ts --reporter=html
+        env:
+          PLAYWRIGHT_LIVE_URL: https://mixvy-v2.web.app
+        continue-on-error: true
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-production-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-test-results
+          path: test-results/
+          retention-days: 30
+
+      - name: Test Results Summary
+        if: always()
+        run: |
+          echo "## 🧪 Live E2E Test Execution Complete"
+          echo ""
+          echo "**Test URL:** https://mixvy-v2.web.app"
+          echo "**Smoke Test:** Live site rendering and asset loading"
+          echo "**Production Suite:** Deep link survival, state hydration, navigation"
+          echo ""
+          echo "Detailed reports available in artifacts."

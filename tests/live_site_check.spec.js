@@ -14,7 +14,7 @@ test('Verify MixVy Live Site Rendering', async ({ page }) => {
     console.log(`BROWSER PAGE ERROR: ${error.message}`);
   });
 
-  const liveUrl = 'https://mix-and-mingle-v2.web.app';
+  const liveUrl = 'https://mixvy-v2.web.app';
   console.log(`Navigating to: ${liveUrl}`);
 
   await page.goto(liveUrl, { timeout: 60000 });
