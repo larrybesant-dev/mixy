@@ -22,6 +22,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     
+    env:
+      FIREBASE_SERVICE_ACCOUNT_MIXVY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIXVY }}'
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -48,4 +51,6 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIXVY }}'
           channelId: live
           projectId: mixvy
+        env:
+          FIREBASE_SERVICE_ACCOUNT_MIXVY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIXVY }}'
 
