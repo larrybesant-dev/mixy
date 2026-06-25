@@ -72,9 +72,45 @@ class ProfileController extends Notifier<ProfileState> {
   Future<void> updateProfile(ProfileState profile) async {
     state = state.copyWith(isLoading: true);
     try {
+      // Build complete userData map from profile state
+      final userData = {
+        'username': profile.username ?? '',
+        'email': profile.email ?? '',
+        'avatarUrl': profile.avatarUrl,
+        'coverPhotoUrl': profile.coverPhotoUrl,
+        'bio': profile.bio,
+        'aboutMe': profile.aboutMe,
+        'age': profile.age,
+        'gender': profile.gender,
+        'location': profile.location,
+        'relationshipStatus': profile.relationshipStatus,
+        'vibePrompt': profile.vibePrompt,
+        'firstDatePrompt': profile.firstDatePrompt,
+        'musicTastePrompt': profile.musicTastePrompt,
+        'interests': profile.interests,
+        'themeId': profile.themeId,
+        'camViewPolicy': profile.camViewPolicy.toString(),
+        'galleryUrls': profile.galleryUrls,
+        'introVideoUrl': profile.introVideoUrl,
+        'membershipLevel': profile.membershipLevel,
+        'coinBalance': profile.coinBalance,
+        'adultConsentAccepted': profile.adultConsentAccepted,
+        'adultKinks': profile.adultKinks,
+        'adultPreferences': profile.adultPreferences,
+        'adultBoundaries': profile.adultBoundaries,
+        'adultLookingFor': profile.adultLookingFor,
+        'profileAccentColor': profile.profileAccentColor,
+        'profileBgGradientStart': profile.profileBgGradientStart,
+        'profileBgGradientEnd': profile.profileBgGradientEnd,
+        'profileMusicUrl': profile.profileMusicUrl,
+        'profileMusicTitle': profile.profileMusicTitle,
+        // Mark profile as complete when username is set
+        'isComplete': (profile.username ?? '').trim().isNotEmpty,
+      };
+      
       await _profileService.saveProfile(
         userId: profile.userId ?? '', 
-        userData: {}, 
+        userData: userData, 
         privacy: profile.privacy.isPrivate, 
         adultProfile: profile.adultModeEnabled
       );

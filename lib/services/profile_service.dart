@@ -17,10 +17,19 @@ class ProfileService {
     required bool privacy, 
     required bool adultProfile
   }) async {
-    await firestore.collection('users').doc(userId).update({
+    // Ensure username is set (required for profile completion)
+    final username = userData['username'] as String? ?? '';
+    if (username.trim().isEmpty) {
+      throw Exception('Username is required to save profile');
+    }
+    
+    final updateData = {
       ...userData,
       'privacy': privacy,
       'adultProfile': adultProfile,
-    });
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+    
+    await firestore.collection('users').doc(userId).set(updateData, SetOptions(merge: true));
   }
 }
