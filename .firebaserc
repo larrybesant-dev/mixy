@@ -1,5 +1,12 @@
 {
   "projects": {
     "default": "mix-and-mingle-v2"
+  },
+  "targets": {
+    "mix-and-mingle-v2": {
+      "hosting": {
+        "default": "mixvy-v2"
+      }
+    }
   }
 }
