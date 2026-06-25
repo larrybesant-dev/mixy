@@ -50,4 +50,5 @@ jobs:
           firebase deploy --only hosting --project mixvy --token='${{ secrets.FIREBASE_TOKEN }}' --non-interactive
         env:
           CI: true
+          FIREBASE_TOKEN: '${{ secrets.FIREBASE_TOKEN }}'
 
