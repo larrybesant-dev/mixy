@@ -151,7 +151,7 @@ void main() {
     });
 
     testWidgets('4. Error State - Verifies "Connection Interrupted" UI and retry handler', (tester) async {
-      bool isRetryCalled = false;
+      final bool isRetryCalled = false;
 
       await tester.pumpWidget(
         ProviderScope(

@@ -1,4 +1,3 @@
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +13,7 @@ class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
 /// requiring Firebase or Firestore.
 class _StubProfileController extends ProfileController {
   final ProfileState _initial;
-  _StubProfileController(this._initial)
-    : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
+  _StubProfileController(this._initial);
 
   @override
   ProfileState build() => _initial;

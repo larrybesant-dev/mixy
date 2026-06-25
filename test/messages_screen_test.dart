@@ -18,15 +18,15 @@ Widget _buildApp({
     routes: [
       GoRoute(
         path: '/messages',
-        builder: (_, _) => MessagesScreen(userId: userId, username: username),
+        builder: (_, __) => MessagesScreen(userId: userId, username: username),
       ),
       GoRoute(
         path: '/messages/new',
-        builder: (_, _) => const Scaffold(body: Text('New message')),
+        builder: (_, __) => const Scaffold(body: Text('New message')),
       ),
       GoRoute(
         path: '/messages/:conversationId',
-        builder: (_, _) => const Scaffold(body: Text('Chat')),
+        builder: (_, __) => const Scaffold(body: Text('Chat')),
       ),
     ],
   );

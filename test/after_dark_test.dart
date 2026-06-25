@@ -20,15 +20,15 @@ Widget _ageGateApp() {
     routes: [
       GoRoute(
         path: '/after-dark/age-gate',
-        builder: (_, _) => const AfterDarkAgeGateScreen(),
+        builder: (_, __) => const AfterDarkAgeGateScreen(),
       ),
       GoRoute(
         path: '/after-dark/pin-setup',
-        builder: (_, _) => const Scaffold(body: Text('Pin Setup')),
+        builder: (_, __) => const Scaffold(body: Text('Pin Setup')),
       ),
       GoRoute(
         path: '/settings',
-        builder: (_, _) => const Scaffold(body: Text('Settings')),
+        builder: (_, __) => const Scaffold(body: Text('Settings')),
       ),
     ],
   );
@@ -41,15 +41,15 @@ Widget _pinSetupApp() {
     routes: [
       GoRoute(
         path: '/after-dark/pin-setup',
-        builder: (_, _) => const AfterDarkPinScreen.setup(),
+        builder: (_, __) => const AfterDarkPinScreen.setup(),
       ),
       GoRoute(
         path: '/after-dark',
-        builder: (_, _) => const Scaffold(body: Text('After Dark Home')),
+        builder: (_, __) => const Scaffold(body: Text('After Dark Home')),
       ),
       GoRoute(
         path: '/settings',
-        builder: (_, _) => const Scaffold(body: Text('Settings')),
+        builder: (_, __) => const Scaffold(body: Text('Settings')),
       ),
     ],
   );
@@ -62,15 +62,15 @@ Widget _pinUnlockApp() {
     routes: [
       GoRoute(
         path: '/after-dark/unlock',
-        builder: (_, _) => const AfterDarkPinScreen.unlock(),
+        builder: (_, __) => const AfterDarkPinScreen.unlock(),
       ),
       GoRoute(
         path: '/after-dark',
-        builder: (_, _) => const Scaffold(body: Text('After Dark Home')),
+        builder: (_, __) => const Scaffold(body: Text('After Dark Home')),
       ),
       GoRoute(
         path: '/settings',
-        builder: (_, _) => const Scaffold(body: Text('Settings')),
+        builder: (_, __) => const Scaffold(body: Text('Settings')),
       ),
     ],
   );
@@ -82,29 +82,29 @@ Widget _shellApp({required bool sessionActive}) {
     initialLocation: '/after-dark',
     routes: [
       ShellRoute(
-        builder: (_, _, child) => AfterDarkShell(child: child),
+        builder: (_, __, child) => AfterDarkShell(child: child),
         routes: [
           GoRoute(
             path: '/after-dark',
-            builder: (_, _) => const Scaffold(body: Text('After Dark Home')),
+            builder: (_, __) => const Scaffold(body: Text('After Dark Home')),
           ),
           GoRoute(
             path: '/after-dark/lounges',
-            builder: (_, _) => const Scaffold(body: Text('Lounges')),
+            builder: (_, __) => const Scaffold(body: Text('Lounges')),
           ),
           GoRoute(
             path: '/after-dark/profile',
-            builder: (_, _) => const Scaffold(body: Text('AD Profile')),
+            builder: (_, __) => const Scaffold(body: Text('AD Profile')),
           ),
         ],
       ),
       GoRoute(
         path: '/after-dark/unlock',
-        builder: (_, _) => const Scaffold(body: Text('Unlock')),
+        builder: (_, __) => const Scaffold(body: Text('Unlock')),
       ),
       GoRoute(
         path: '/',
-        builder: (_, _) => const Scaffold(body: Text('Main App')),
+        builder: (_, __) => const Scaffold(body: Text('Main App')),
       ),
     ],
   );

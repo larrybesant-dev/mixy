@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 // Granular selector providers for room render-surface optimization.
 //
 // These providers derive narrow slices from the existing layered state so that

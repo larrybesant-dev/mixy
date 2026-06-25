@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 class RoomGiftItem {
   final String id;
   final String displayName;

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/profile/profile_controller.dart';
 import 'package:mixvy/features/profile/models/user_model.dart' as profile_model;
 import 'package:mixvy/models/profile_privacy_model.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
@@ -59,9 +60,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          profileControllerProvider.overrideWith(
-            () => ProfileController(firestore: firestore, auth: auth),
-          ),
+          firestoreProvider.overrideWithValue(firestore),
         ],
       );
       addTearDown(container.dispose);
@@ -79,9 +78,7 @@ void main() {
     test('updateProfile saves against the authenticated uid', () async {
       final container = ProviderContainer(
         overrides: [
-          profileControllerProvider.overrideWith(
-            () => ProfileController(firestore: firestore, auth: auth),
-          ),
+          firestoreProvider.overrideWithValue(firestore),
         ],
       );
       addTearDown(container.dispose);
@@ -113,9 +110,7 @@ void main() {
     test('updateProfile persists isPrivate=true to Firestore', () async {
       final container = ProviderContainer(
         overrides: [
-          profileControllerProvider.overrideWith(
-            () => ProfileController(firestore: firestore, auth: auth),
-          ),
+          firestoreProvider.overrideWithValue(firestore),
         ],
       );
       addTearDown(container.dispose);
@@ -144,9 +139,7 @@ void main() {
     test('updateProfile persists isPrivate=false to Firestore', () async {
       final container = ProviderContainer(
         overrides: [
-          profileControllerProvider.overrideWith(
-            () => ProfileController(firestore: firestore, auth: auth),
-          ),
+          firestoreProvider.overrideWithValue(firestore),
         ],
       );
       addTearDown(container.dispose);
@@ -175,9 +168,7 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
-            profileControllerProvider.overrideWith(
-              () => ProfileController(firestore: firestore, auth: auth),
-            ),
+            firestoreProvider.overrideWithValue(firestore),
           ],
         );
         addTearDown(container.dispose);

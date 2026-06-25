@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mixvy/features/room/widgets/camera_wall.dart';
 import 'package:mixvy/services/rtc_room_service.dart';
-import 'package:mixvy/features/room/providers/rtc_service_provider.dart';
 
 class MockRtcRoomService extends Mock implements RtcRoomService {}
 
@@ -23,7 +22,7 @@ void main() {
                 localTile: const Text('Local Video'),
                 remoteTiles: const [],
                 remoteTileBuilder: (_) => const SizedBox.shrink(),
-                onSubscriptionPlanChanged: (_, __) {},
+                onSubscriptionPlanChanged: (_, __, ___) {},
                 roomName: 'Test Room',
               ),
             ),
@@ -57,7 +56,7 @@ void main() {
                     isSpeaking: false,
                   )),
                   remoteTileBuilder: (_) => const SizedBox.shrink(),
-                  onSubscriptionPlanChanged: (_, __) {},
+                  onSubscriptionPlanChanged: (_, __, ___) {},
                   roomName: 'Test Room',
                 ),
               ),
@@ -91,7 +90,7 @@ void main() {
                     isSpeaking: i % 2 == 0,
                   )),
                   remoteTileBuilder: (tile) => Text('Video ${tile.uid}'),
-                  onSubscriptionPlanChanged: (_, __) {},
+                  onSubscriptionPlanChanged: (_, __, ___) {},
                   roomName: 'Test Room',
                 ),
               ),

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:mixvy/models/room_participant_model.dart';
 
 class RoomParticipantsContract {

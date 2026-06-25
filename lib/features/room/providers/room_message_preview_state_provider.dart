@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'message_providers.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';

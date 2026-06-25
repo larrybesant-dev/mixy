@@ -14,18 +14,18 @@ Widget _buildApp() {
   final router = GoRouter(
     initialLocation: '/onboarding',
     routes: [
-      GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(
         path: '/legal/terms',
-        builder: (_, _) => const Scaffold(body: Text('Terms')),
+        builder: (_, __) => const Scaffold(body: Text('Terms')),
       ),
       GoRoute(
         path: '/legal/privacy',
-        builder: (_, _) => const Scaffold(body: Text('Privacy')),
+        builder: (_, __) => const Scaffold(body: Text('Privacy')),
       ),
       GoRoute(
         path: '/',
-        builder: (_, _) => const Scaffold(body: Text('Home')),
+        builder: (_, __) => const Scaffold(body: Text('Home')),
       ),
     ],
   );

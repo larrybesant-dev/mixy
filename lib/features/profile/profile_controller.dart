@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/models/profile_privacy_model.dart';
 import 'package:mixvy/models/room_policy_model.dart';

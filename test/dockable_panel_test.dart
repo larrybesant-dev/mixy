@@ -19,13 +19,17 @@ void main() {
       expect(find.text('Panel Content'), findsOneWidget);
 
       // Double tap title bar
-      await tester.doubleTap(find.text('Test Panel'));
+      await tester.tap(find.text('Test Panel'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('Test Panel'));
       await tester.pumpAndSettle();
 
       expect(find.text('Panel Content'), findsNothing);
 
       // Restore
-      await tester.doubleTap(find.text('Test Panel'));
+      await tester.tap(find.text('Test Panel'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('Test Panel'));
       await tester.pumpAndSettle();
 
       expect(find.text('Panel Content'), findsOneWidget);

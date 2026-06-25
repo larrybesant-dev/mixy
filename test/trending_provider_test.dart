@@ -63,7 +63,7 @@ void main() {
 
     test('returns empty list when no posts exist', () async {
       // Listen to keep the provider alive during the test
-      container.listen(trendingPostsProvider, (_, _) {});
+      container.listen(trendingPostsProvider, (_, __) {});
 
       // Wait for initial stream emission
       await container.read(postsFeedProvider.future);
@@ -87,7 +87,7 @@ void main() {
       });
 
       // 2. Listen to keep the provider alive
-      container.listen(trendingPostsProvider, (_, _) {});
+      container.listen(trendingPostsProvider, (_, __) {});
 
       // 3. Wait for the stream to emit the initial snapshot containing our seeded data
       await container.read(postsFeedProvider.future);
@@ -125,7 +125,7 @@ void main() {
       });
 
       // 2. Attach listener to keep alive
-      container.listen(trendingPostsProvider, (_, _) {});
+      container.listen(trendingPostsProvider, (_, __) {});
 
       // 3. Wait for the stream to process the seeded data
       await container.read(postsFeedProvider.future);

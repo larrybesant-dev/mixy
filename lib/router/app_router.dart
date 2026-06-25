@@ -31,7 +31,6 @@ import 'package:mixvy/features/top_eight/top_eight_management_screen.dart';
 import 'package:mixvy/features/connections/pending_requests_screen.dart';
 import 'package:mixvy/features/groups/screens/create_group_screen.dart';
 import 'package:mixvy/features/room/screens/cam_popout_screen.dart';
-import 'package:mixvy/features/social/screens/live_floor_screen.dart';
 import 'package:mixvy/features/social/screens/explore_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
 import 'package:mixvy/features/room/screens/create_room_screen.dart';

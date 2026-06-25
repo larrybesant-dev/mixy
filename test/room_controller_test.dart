@@ -620,7 +620,7 @@ void main() {
       );
       final ghostSub = container.listen(
         roomControllerProvider('room-ghost'),
-        (_, _) {},
+        (_, __) {},
       );
       addTearDown(() {
         ghostSub.close();
@@ -709,7 +709,7 @@ void main() {
       );
       final rapidSub = container.listen(
         roomControllerProvider('room-rapid'),
-        (_, _) {},
+        (_, __) {},
       );
       addTearDown(() {
         rapidSub.close();
@@ -794,7 +794,7 @@ void main() {
       );
       final raceSub = container.listen(
         roomControllerProvider('room-host-race'),
-        (_, _) {},
+        (_, __) {},
       );
       addTearDown(() {
         raceSub.close();

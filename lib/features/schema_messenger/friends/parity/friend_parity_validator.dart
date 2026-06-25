@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 class FriendParitySnapshot {
   const FriendParitySnapshot({
     required this.legacyIdsOrdered,

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/room/widgets/chat_panel.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
-import 'package:mixvy/models/message_model.dart' as legacy;
 
 void main() {
   group('ChatPanel Performance & Stress Tests', () {

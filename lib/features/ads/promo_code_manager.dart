@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 // Handles promo codes for free ad spots
 class PromoCodeManager {
   static const bool _promoCodesEnabled = false;

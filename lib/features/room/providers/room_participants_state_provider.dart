@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'participant_providers.dart';
 import 'package:mixvy/models/room_participant_model.dart';

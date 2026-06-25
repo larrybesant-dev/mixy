@@ -9,11 +9,11 @@ Widget _buildApp({required String path}) {
     routes: [
       GoRoute(
         path: '/missing',
-        builder: (_, _) => NotFoundScreen(path: path),
+        builder: (_, __) => NotFoundScreen(path: path),
       ),
       GoRoute(
         path: '/',
-        builder: (_, _) => const Scaffold(body: Text('Home')),
+        builder: (_, __) => const Scaffold(body: Text('Home')),
       ),
     ],
   );

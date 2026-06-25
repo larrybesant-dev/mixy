@@ -2,21 +2,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mixvy/services/webrtc_room_service.dart';
+import 'package:mixvy/core/streams/stream_lifecycle_manager.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class MockRTCPeerConnection extends Mock implements RTCPeerConnection {}
 class MockMediaStream extends Mock implements MediaStream {}
+class MockStreamLifecycleManager extends Mock implements StreamLifecycleManager {}
 
 void main() {
-  late WebRTCRoomService service;
+  late WebRtcRoomService service;
   late FakeFirebaseFirestore firestore;
+  late MockStreamLifecycleManager lifecycleManager;
 
   setUp(() {
     firestore = FakeFirebaseFirestore();
-    service = WebRTCRoomService(firestore: firestore);
+    lifecycleManager = MockStreamLifecycleManager();
+    service = WebRtcRoomService(
+      firestore: firestore,
+      localUserId: 'test-user',
+      streamLifecycleManager: lifecycleManager,
+    );
   });
 
-  group('WebRTCRoomService', () {
+  group('WebRtcRoomService', () {
     test('initializes with firestore', () {
       expect(service, isNotNull);
     });

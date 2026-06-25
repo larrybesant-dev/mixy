@@ -33,8 +33,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            userProfileFutureProvider(testUserId).overrideWithValue(const AsyncValue.loading()),
-            userPresenceStreamProvider(testUserId).overrideWithValue(const AsyncValue.loading()),
+            userProfileFutureProvider(testUserId).overrideWith((_) async => throw Exception('Loading')),
+            userPresenceStreamProvider(testUserId).overrideWith((_) => Stream.value(const UserPresence(isOnline: false))),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -81,8 +81,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            userProfileFutureProvider(testUserId).overrideWithValue(AsyncValue.data(mockProfile)),
-            userPresenceStreamProvider(testUserId).overrideWithValue(AsyncValue.data(mockPresence)),
+            userProfileFutureProvider(testUserId).overrideWith((_) async => mockProfile),
+            userPresenceStreamProvider(testUserId).overrideWith((_) => Stream.value(mockPresence)),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -134,12 +134,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            userProfileFutureProvider(testUserId).overrideWithValue(
-              AsyncValue.error(Exception('Firestore security rule check failed'), StackTrace.empty),
-            ),
-            userPresenceStreamProvider(testUserId).overrideWithValue(
-              const AsyncValue.data(UserPresence(isOnline: false)),
-            ),
+            userProfileFutureProvider(testUserId).overrideWith((_) async => throw Exception('Firestore security rule check failed')),
+            userPresenceStreamProvider(testUserId).overrideWith((_) => Stream.value(const UserPresence(isOnline: false))),
           ],
           child: MaterialApp(
             home: Scaffold(

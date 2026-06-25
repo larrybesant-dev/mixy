@@ -78,16 +78,16 @@ void main() {
           routes: [
             GoRoute(
               path: '/home',
-              builder: (_, _) => const Scaffold(body: Text('Home Screen')),
+              builder: (_, __) => const Scaffold(body: Text('Home Screen')),
             ),
             GoRoute(
               path: '/onboarding',
-              builder: (_, _) =>
+              builder: (_, __) =>
                   const Scaffold(body: Text('Onboarding Screen')),
             ),
             GoRoute(
               path: '/auth',
-              builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
+              builder: (_, __) => const Scaffold(body: Text('Auth Screen')),
             ),
           ],
         );
@@ -135,17 +135,17 @@ void main() {
           routes: [
             GoRoute(
               path: '/speed-dating',
-              builder: (_, _) =>
+              builder: (_, __) =>
                   const Scaffold(body: Text('Speed Dating Screen')),
             ),
             GoRoute(
               path: '/onboarding',
-              builder: (_, _) =>
+              builder: (_, __) =>
                   const Scaffold(body: Text('Onboarding Screen')),
             ),
             GoRoute(
               path: '/auth',
-              builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
+              builder: (_, __) => const Scaffold(body: Text('Auth Screen')),
             ),
           ],
         );
@@ -195,16 +195,16 @@ void main() {
           routes: [
             GoRoute(
               path: '/home',
-              builder: (_, _) => const Scaffold(body: Text('Home Screen')),
+              builder: (_, __) => const Scaffold(body: Text('Home Screen')),
             ),
             GoRoute(
               path: '/onboarding',
-              builder: (_, _) =>
+              builder: (_, __) =>
                   const Scaffold(body: Text('Onboarding Screen')),
             ),
             GoRoute(
               path: '/auth',
-              builder: (_, _) => const Scaffold(body: Text('Auth Screen')),
+              builder: (_, __) => const Scaffold(body: Text('Auth Screen')),
             ),
           ],
         );

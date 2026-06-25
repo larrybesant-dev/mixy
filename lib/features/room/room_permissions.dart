@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'controllers/room_state.dart';
 
 class RoomPermissions {

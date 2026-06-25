@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 class SchemaFriendIdentity {
   const SchemaFriendIdentity({
     required this.userId,

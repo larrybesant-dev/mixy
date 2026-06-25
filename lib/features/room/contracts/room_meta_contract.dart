@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 class RoomMetaContract {
   static bool shouldRebuild(
     Map<String, dynamic>? oldDoc,

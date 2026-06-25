@@ -55,6 +55,8 @@ dependencies:
   permission_handler: ^12.0.1
   shimmer: ^2.0.0
 
+  web: any
+  meta: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

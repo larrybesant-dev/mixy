@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/models/social_activity_model.dart';
 import 'package:mixvy/models/user_model.dart';

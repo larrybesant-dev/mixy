@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 /// Frozen semantics for architecture interpretation.
 ///
 /// This file is the only place where interpretation meaning may be revised.

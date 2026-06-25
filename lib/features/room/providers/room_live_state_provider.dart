@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/contracts/room_contract.dart';
 import 'room_meta_state_provider.dart';

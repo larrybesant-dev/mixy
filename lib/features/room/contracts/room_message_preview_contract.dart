@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 
 class RoommessagePreviewContract {

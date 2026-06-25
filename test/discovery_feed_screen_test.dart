@@ -133,8 +133,7 @@ void main() {
 /// [FakeFirebaseFirestore] so no real Firebase.instance is ever accessed.
 class _StubProfileController extends ProfileController {
   final ProfileState _state;
-  _StubProfileController(this._state)
-    : super(auth: _MockFirebaseAuth(), firestore: FakeFirebaseFirestore());
+  _StubProfileController(this._state);
 
   @override
   ProfileState build() => _state;
