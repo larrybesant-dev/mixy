@@ -4,6 +4,7 @@ import '../../shared/models/achievement.dart';
 import '../../shared/models/user_level.dart';
 import '../../shared/models/user_streak.dart';
 import '../../shared/models/activity.dart';
+import 'badge_service.dart';
 
 class GamificationService {
   static final GamificationService _instance = GamificationService._internal();
@@ -465,5 +466,88 @@ class GamificationService {
       debugPrint('Error getting leaderboard: $e');
       return [];
     }
+  }
+
+  // ============ STREAM METHODS (FOR REAL-TIME UPDATES) ============
+
+  /// Stream user level updates in real-time from Firestore
+  Stream<UserLevel> streamUserLevel(String userId) {
+    return _firestore
+        .collection('user_levels')
+        .doc(userId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) {
+        // Return default if doesn't exist
+        return UserLevel(
+          userId: userId,
+          level: 1,
+          xp: 0,
+          xpToNextLevel: 100,
+          lastUpdated: DateTime.now(),
+        );
+      }
+      return UserLevel.fromMap(doc.data() as Map<String, dynamic>);
+    }).handleError((e) {
+      debugPrint('Error streaming user level: $e');
+      return UserLevel(
+        userId: userId,
+        level: 1,
+        xp: 0,
+        xpToNextLevel: 100,
+        lastUpdated: DateTime.now(),
+      );
+    });
+  }
+
+  /// Stream user streak updates in real-time from Firestore
+  Stream<UserStreak> streamUserStreak(String userId) {
+    return _firestore
+        .collection('user_streaks')
+        .doc(userId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) {
+        // Return default if doesn't exist
+        return UserStreak(
+          userId: userId,
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActiveDate: DateTime.now(),
+          totalDaysActive: 0,
+          rewardsEarned: {},
+        );
+      }
+      return UserStreak.fromMap(doc.data() as Map<String, dynamic>);
+    }).handleError((e) {
+      debugPrint('Error streaming user streak: $e');
+      return UserStreak(
+        userId: userId,
+        currentStreak: 0,
+        longestStreak: 0,
+        lastActiveDate: DateTime.now(),
+        totalDaysActive: 0,
+        rewardsEarned: {},
+      );
+    });
+  }
+
+  /// Stream user badges updates in real-time from Firestore
+  Stream<List<UserBadge>> streamUserBadges(String userId) {
+    return _firestore
+        .collection('user_badges')
+        .doc(userId)
+        .snapshots()
+        .map<List<UserBadge>>((doc) {
+      if (!doc.exists) return [];
+      final data = doc.data() as Map<String, dynamic>;
+      final badges = (data['badges'] as List? ?? [])
+          .map((b) => UserBadge.fromMap(b as Map<String, dynamic>))
+          .toList();
+      return badges;
+    }).handleError((e, stackTrace) {
+      debugPrint('Error streaming user badges: $e');
+      return <UserBadge>[];
+    });
   }
 }

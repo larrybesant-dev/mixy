@@ -30,69 +30,42 @@ final analyticsServiceProvider =
 /// ============================================================================
 
 /// User level provider
-final userLevelProvider = StreamProvider<UserLevel?>((ref) async* {
+final userLevelProvider = StreamProvider<UserLevel?>((ref) {
   final currentUser = ref.watch(currentUserProvider).value;
-  if (currentUser == null) {
-    yield null;
-    return;
-  }
+  if (currentUser == null) return Stream.value(null);
 
   final gamificationService = ref.watch(gamificationServiceProvider);
-
-  try {
-    final level = await gamificationService.getUserLevel(currentUser.id);
-    yield level;
-
-    // Poll for updates
-    await for (final _ in Stream.periodic(const Duration(seconds: 30))) {
-      final updated = await gamificationService.getUserLevel(currentUser.id);
-      yield updated;
-    }
-  } catch (e) {
-    yield null;
-  }
+  return gamificationService.streamUserLevel(currentUser.id);
 });
 
 /// User streak provider
-final userStreakProvider = StreamProvider<UserStreak?>((ref) async* {
+final userStreakProvider = StreamProvider<UserStreak?>((ref) {
   final currentUser = ref.watch(currentUserProvider).value;
-  if (currentUser == null) {
-    yield null;
-    return;
-  }
+  if (currentUser == null) return Stream.value(null);
 
   final gamificationService = ref.watch(gamificationServiceProvider);
-
-  try {
-    final streak = await gamificationService.getUserStreak(currentUser.id);
-    yield streak;
-
-    // Poll for updates
-    await for (final _ in Stream.periodic(const Duration(minutes: 1))) {
-      final updated = await gamificationService.getUserStreak(currentUser.id);
-      yield updated;
-    }
-  } catch (e) {
-    yield null;
-  }
+  return gamificationService.streamUserStreak(currentUser.id);
 });
 
 /// User badges provider
-final userBadgesProvider = StreamProvider<List<UserBadge>>((ref) async* {
+final userBadgesProvider = StreamProvider<List<UserBadge>>((ref) {
   final currentUser = ref.watch(currentUserProvider).value;
-  if (currentUser == null) {
-    yield [];
-    return;
-  }
+  if (currentUser == null) return Stream.value([]);
 
+  // Check if badgeService has a stream method, otherwise use Future
+  // For now, we'll use a FutureProvider that polls less frequently
+  return ref.watch(badgeServiceFutureProvider(currentUser.id))
+    .when(
+      data: (badges) => Stream.value(badges),
+      loading: () => Stream.value([]),
+      error: (_, __) => Stream.value([]),
+    );
+});
+
+/// Future-based badge provider (less frequent updates)
+final badgeServiceFutureProvider = FutureProvider.family<List<UserBadge>, String>((ref, userId) async {
   final badgeService = ref.watch(badgeServiceProvider);
-
-  try {
-    final badges = await badgeService.getUserBadges(currentUser.id);
-    yield badges;
-  } catch (e) {
-    yield [];
-  }
+  return badgeService.getUserBadges(userId);
 });
 
 /// Available achievements provider

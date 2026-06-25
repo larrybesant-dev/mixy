@@ -155,19 +155,20 @@ class _AuthenticatedAppGateState extends ConsumerState<_AuthenticatedAppGate> {
       data: (user) {
         // Check if profile is complete - either displayName OR username must exist
         debugPrint(
-            'ðŸ“„ [AuthenticatedGate] User data: ${user != null ? "exists" : "null"}');
+            '[AuthenticatedGate] User data: ${user != null ? "exists" : "null"}');
         if (user != null) {
           debugPrint(
-              'ðŸ”‘ [AuthenticatedGate] User fields: displayName="${user.displayName}", username="${user.username}", email="${user.email}"');
+              '[AuthenticatedGate] User fields: displayName="${user.displayName}", username="${user.username}", email="${user.email}"');
         }
 
         final displayName = user?.displayName ?? '';
         final username = user?.username ?? '';
+        final profileComplete = user?.profileComplete ?? false;
         debugPrint(
-            'ðŸ‘¤ [AuthenticatedGate] displayName="$displayName", username="$username"');
+            '[AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
 
-        if (displayName.isNotEmpty || username.isNotEmpty) {
-          debugPrint('âœ… [AuthenticatedGate] Profile complete. Showing app.');
+        if (profileComplete || displayName.isNotEmpty || username.isNotEmpty) {
+          debugPrint('[AuthenticatedGate] Profile complete. Showing app.');
 
           // Guard: only initialise once per mount, regardless of how many
           // times the stream fires (prevents duplicate presence listeners and

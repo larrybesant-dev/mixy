@@ -1,0 +1,127 @@
+Compiling lib\main.dart for the Web...                          
+Wasm dry run findings:
+Found incompatibilities with WebAssembly.
+
+package:image_picker_for_web/image_picker_for_web.dart 6:1 - dart:html unsupported (0)
+package:image_picker_for_web/src/image_resizer.dart 6:1 - dart:html unsupported (0)
+file:///C:/Users/LARRY/AppData/Local/Pub/Cache/hosted/pub.dev/purchases_flutter-9.13.1/lib/web/purchases_flutter_web.dart 456:9 - invalid_runtime_check_with_js_interop_types lint violation: Runtime check between 'dynamic' and 'JSObject' checks whether a Dart value is a JS interop type, which might not be platform-consistent. (7)
+
+Consider addressing these issues to enable wasm builds. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+
+Use --no-wasm-dry-run to disable these warnings.
+Target dart2js failed: ProcessException: Process exited abnormally with exit code 1:
+lib/app/auth_gate_root.dart:168:17:
+Error: The non-ASCII character '├é┬ñ' (U+00A4) can't be used in identifiers, only in strings and comments.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                ^
+lib/app/auth_gate_root.dart:168:121:
+Error: String starting with ' must end with '.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                                                                          ^^^
+lib/app/auth_gate_root.dart:167:19:
+Error: Can't find ')' to match '('.
+        debugPrint(
+                  ^
+lib/app/auth_gate_root.dart:168:17:
+Error: Expected ',' before this.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                ^
+lib/app/auth_gate_root.dart:168:39:
+Error: Expected ',' before this.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                      ^^^^^^^^^^^
+lib/app/auth_gate_root.dart:168:39:
+Error: Can't assign to the final variable 'displayName'.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                      ^^^^^^^^^^^
+lib/app/auth_gate_root.dart:168:67:
+Error: Can't assign to the final variable 'username'.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                                                  ^^^^^^^^
+lib/app/auth_gate_root.dart:168:89:
+Error: Can't assign to the final variable 'profileComplete'.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                                                                        ^^^^^^^^^^^^^^^
+lib/app/auth_gate_root.dart:168:121:
+Error: Expected ',' before this.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                                                                          ^^^
+lib/app/auth_gate_root.dart:168:121:
+Error: Expected ';' after this.
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                                                                                          ^^^
+lib/app/auth_gate_root.dart:168:17:
+Error: The getter '├é┬ñ' isn't defined for the type '_AuthenticatedAppGateState'.
+ - '_AuthenticatedAppGateState' is from 'package:mixvy/app/auth_gate_root.dart' ('lib/app/auth_gate_root.dart').
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                ^
+lib/app/auth_gate_root.dart:168:20:
+Error: The getter 'AuthenticatedGate' isn't defined for the type '_AuthenticatedAppGateState'.
+ - '_AuthenticatedAppGateState' is from 'package:mixvy/app/auth_gate_root.dart' ('lib/app/auth_gate_root.dart').
+            '├â┬░├à┬╕'├é┬ñ [AuthenticatedGate] displayName="$displayName", username="$username", profileComplete=$profileComplete');
+                   ^^^^^^^^^^^^^^^^^
+lib/app/auth_gate_root.dart:167:19:
+Error: Too many positional arguments: 1 allowed, but 6 found.
+        debugPrint(
+                  ^
+Error: Compilation failed.
+  Command: C:\flutter_sdk\bin\cache\dart-sdk\bin\dart.exe compile js --platform-binaries=C:\flutter_sdk\bin\cache\flutter_web_sdk\kernel --invoker=flutter_tool -Ddart.vm.product=true -DFLUTTER_VERSION=3.41.4 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=ff37bef603 -DFLUTTER_ENGINE_REVISION=e4b8dca3f1 -DFLUTTER_DART_VERSION=3.11.1 -DFLUTTER_WEB_USE_SKIA=true -DFLUTTER_WEB_USE_SKWASM=false --native-null-assertions --no-source-maps -O4 --minify -o C:\Users\LARRY\MIXVY\.dart_tool\flutter_build\6be8420a9be6535295b361e37980c717\app.dill --packages=C:\Users\LARRY\MIXVY\.dart_tool\package_config.json --cfe-only C:\Users\LARRY\MIXVY\.dart_tool\flutter_build\6be8420a9be6535295b361e37980c717\main.dart
+#0      RunResult.throwException (package:flutter_tools/src/base/process.dart:153:5)
+#1      _DefaultProcessUtils.run (package:flutter_tools/src/base/process.dart:379:19)
+<asynchronous suspension>
+#2      Dart2JSTarget.build (package:flutter_tools/src/build_system/targets/web.dart:208:5)
+<asynchronous suspension>
+#3      _BuildInstance._invokeInternal (package:flutter_tools/src/build_system/build_system.dart:937:9)
+<asynchronous suspension>
+#4      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
+<asynchronous suspension>
+#5      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:875:32)
+<asynchronous suspension>
+#6      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
+<asynchronous suspension>
+#7      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:875:32)
+<asynchronous suspension>
+#8      FlutterBuildSystem.build (package:flutter_tools/src/build_system/build_system.dart:684:16)
+<asynchronous suspension>
+#9      WebBuilder.buildWeb (package:flutter_tools/src/web/compile.dart:107:34)
+<asynchronous suspension>
+#10     BuildWebCommand.runCommand (package:flutter_tools/src/commands/build_web.dart:300:5)
+<asynchronous suspension>
+#11     FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1590:27)
+<asynchronous suspension>
+#12     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#13     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#14     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:496:9)
+<asynchronous suspension>
+#15     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#16     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+<asynchronous suspension>
+#17     FlutterCommandRunner.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:307:33)
+<asynchronous suspension>
+#18     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+<asynchronous suspension>
+#19     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#20     main (package:flutter_tools/executable.dart:103:3)
+<asynchronous suspension>
+
+Compiling lib\main.dart for the Web...                             61.3s
+Error: Failed to compile application for the Web.
+Compiling lib\main.dart for the Web...                          
+Wasm dry run findings:
+Found incompatibilities with WebAssembly.
+
+package:image_picker_for_web/image_picker_for_web.dart 6:1 - dart:html unsupported (0)
+package:image_picker_for_web/src/image_resizer.dart 6:1 - dart:html unsupported (0)
+file:///C:/Users/LARRY/AppData/Local/Pub/Cache/hosted/pub.dev/purchases_flutter-9.13.1/lib/web/purchases_flutter_web.dart 456:9 - invalid_runtime_check_with_js_interop_types lint violation: Runtime check between 'dynamic' and 'JSObject' checks whether a Dart value is a JS interop type, which might not be platform-consistent. (7)
+
+Consider addressing these issues to enable wasm builds. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+
+Use --no-wasm-dry-run to disable these warnings.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 43068 bytes (97.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             67.2s
+ΓêÜ Built build\web

@@ -221,6 +221,115 @@ class FriendService {
     debugPrint('[FriendService] auto-friended $userAUid ↔ $userBUid');
   }
 
+  // ── Blocking ───────────────────────────────────────────────────────────────
+
+  /// Block a user from interactions
+  Future<void> blockUser(String blockedUserId) async {
+    if (_uid.isEmpty || blockedUserId.isEmpty || _uid == blockedUserId) {
+      return;
+    }
+
+    // Create a block record at the top level
+    final blockId = '${_uid}_$blockedUserId';
+    await _db.collection('blocks').doc(blockId).set({
+      'blockerUserId': _uid,
+      'blockedUserId': blockedUserId,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // Update blocker's blockedUserIds in user document
+    await _db.collection('users').doc(_uid).update({
+      'blockedUserIds': FieldValue.arrayUnion([blockedUserId]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // Update blocked user's blockedByUserIds in user document
+    await _db.collection('users').doc(blockedUserId).update({
+      'blockedByUserIds': FieldValue.arrayUnion([_uid]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    debugPrint('[FriendService] blocked user $blockedUserId');
+  }
+
+  /// Unblock a previously blocked user
+  Future<void> unblockUser(String unblockedUserId) async {
+    if (_uid.isEmpty || unblockedUserId.isEmpty) {
+      return;
+    }
+
+    // Remove block record
+    final blockId = '${_uid}_$unblockedUserId';
+    await _db.collection('blocks').doc(blockId).delete();
+
+    // Update blocker's blockedUserIds in user document
+    await _db.collection('users').doc(_uid).update({
+      'blockedUserIds': FieldValue.arrayRemove([unblockedUserId]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // Update unblocked user's blockedByUserIds in user document
+    await _db.collection('users').doc(unblockedUserId).update({
+      'blockedByUserIds': FieldValue.arrayRemove([_uid]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    debugPrint('[FriendService] unblocked user $unblockedUserId');
+  }
+
+  /// Check if current user has blocked another user
+  Future<bool> isUserBlocked(String targetUserId) async {
+    if (_uid.isEmpty || targetUserId.isEmpty) {
+      return false;
+    }
+
+    final blockId = '${_uid}_$targetUserId';
+    final snapshot = await _db.collection('blocks').doc(blockId).get();
+    return snapshot.exists;
+  }
+
+  /// Get list of users blocked by current user
+  Future<List<String>> getBlockedUsers() async {
+    if (_uid.isEmpty) return [];
+
+    final snapshot = await _db.collection('users').doc(_uid).get();
+    if (!snapshot.exists) return [];
+
+    final data = snapshot.data() ?? {};
+    return (data['blockedUserIds'] as List?)?.cast<String>() ?? [];
+  }
+
+  /// Get list of users who have blocked current user
+  Future<List<String>> getBlockedByUsers() async {
+    if (_uid.isEmpty) return [];
+
+    final snapshot = await _db.collection('users').doc(_uid).get();
+    if (!snapshot.exists) return [];
+
+    final data = snapshot.data() ?? {};
+    return (data['blockedByUserIds'] as List?)?.cast<String>() ?? [];
+  }
+
+  /// Stream blocked users (real-time) for current user
+  Stream<List<String>> streamBlockedUsers() {
+    if (_uid.isEmpty) return Stream.value([]);
+    return _db.collection('users').doc(_uid).snapshots().map((snapshot) {
+      if (!snapshot.exists) return [];
+      final data = snapshot.data() ?? {};
+      return (data['blockedUserIds'] as List?)?.cast<String>() ?? [];
+    });
+  }
+
+  /// Stream users who have blocked current user (real-time)
+  Stream<List<String>> streamBlockedByUsers() {
+    if (_uid.isEmpty) return Stream.value([]);
+    return _db.collection('users').doc(_uid).snapshots().map((snapshot) {
+      if (!snapshot.exists) return [];
+      final data = snapshot.data() ?? {};
+      return (data['blockedByUserIds'] as List?)?.cast<String>() ?? [];
+    });
+  }
+
   // ── State helpers ──────────────────────────────────────────────────────────
 
   Future<bool> isFriend(String targetUid) async {

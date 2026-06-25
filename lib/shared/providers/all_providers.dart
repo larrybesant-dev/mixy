@@ -106,6 +106,11 @@ export '../../core/intelligence/vibe_intelligence_service.dart';
 export 'friend_providers.dart';
 
 // ============================================================================
+// LOCATION-BASED FEATURES PROVIDERS
+// ============================================================================
+export 'location_providers.dart';
+
+// ============================================================================
 // NOTIFICATION SYSTEM PROVIDERS
 // ============================================================================
 export 'notification_providers.dart';

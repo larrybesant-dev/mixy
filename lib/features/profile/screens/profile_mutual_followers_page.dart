@@ -127,9 +127,9 @@ class _MutualTile extends StatelessWidget {
             fontSize: 14,
             fontWeight: FontWeight.w600),
       ),
-      subtitle: (user.bio ?? '').trim().isNotEmpty
+      subtitle: user.bio.trim().isNotEmpty
           ? Text(
-              user.bio ?? '',
+              user.bio,
               style: const TextStyle(
                   color: DesignColors.textGray, fontSize: 12),
               maxLines: 1,

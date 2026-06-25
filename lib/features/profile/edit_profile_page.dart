@@ -53,7 +53,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   createdAt: DateTime.now() as dynamic,
                 );
                 await ProfileService().updateProfile(profile);
-                Navigator.pop(context);
+                if (mounted) Navigator.pop(context);
               },
               child: const Text('Save'),
             ),

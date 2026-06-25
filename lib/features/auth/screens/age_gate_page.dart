@@ -144,6 +144,7 @@ class _AgeGatePageState extends ConsumerState<AgeGatePage> {
           final updatedAgeVerified = updatedDoc.data()?['ageVerified'] == true;
           final _ = ref.refresh(currentUserProvider);
           await Future.delayed(const Duration(milliseconds: 500));
+          if (!mounted) return;
           if (updatedAgeVerified) {
             Navigator.of(context).pushReplacementNamed(AppRoutes.home);
           } else {
@@ -153,10 +154,10 @@ class _AgeGatePageState extends ConsumerState<AgeGatePage> {
             });
           }
         } else {
-          Navigator.of(context).pushReplacementNamed(AppRoutes.signup);
+          if (mounted) Navigator.of(context).pushReplacementNamed(AppRoutes.signup);
         }
       } else {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.signup);
+        if (mounted) Navigator.of(context).pushReplacementNamed(AppRoutes.signup);
       }
     }
   }

@@ -13,11 +13,18 @@ class UserModel {
   final bool isOnline;
   final DateTime? lastActive;
   final String onboardingState;
+  final List<String> blockedUserIds;
+  final List<String> blockedByUserIds;
 
   // ── 18+ AGE GATE ────────────────────────────────────────────
   final DateTime? birthdate;
   final bool ageVerified;
   final int? ageAtSignup;
+
+  // ── LOCATION-BASED FEATURES ─────────────────────────────────
+  final double? latitude;
+  final double? longitude;
+  final DateTime? locationUpdatedAt;
 
   UserModel({
     required this.id,
@@ -32,9 +39,14 @@ class UserModel {
     required this.isOnline,
     required this.lastActive,
     required this.onboardingState,
+    this.blockedUserIds = const [],
+    this.blockedByUserIds = const [],
     this.birthdate,
     this.ageVerified = false,
     this.ageAtSignup,
+    this.latitude,
+    this.longitude,
+    this.locationUpdatedAt,
   });
 
   factory UserModel.empty(String id) {
@@ -51,7 +63,12 @@ class UserModel {
       isOnline: false,
       lastActive: null,
       onboardingState: 'not_started',
+      blockedUserIds: const [],
+      blockedByUserIds: const [],
       ageVerified: false,
+      latitude: null,
+      longitude: null,
+      locationUpdatedAt: null,
     );
   }
 
@@ -70,9 +87,14 @@ class UserModel {
       isOnline: data['isOnline'] ?? false,
       lastActive: (data['lastActive'] as Timestamp?)?.toDate(),
       onboardingState: data['onboardingState'] ?? 'not_started',
+      blockedUserIds: List<String>.from(data['blockedUserIds'] ?? []),
+      blockedByUserIds: List<String>.from(data['blockedByUserIds'] ?? []),
       birthdate: (data['birthdate'] as Timestamp?)?.toDate(),
       ageVerified: data['ageVerified'] as bool? ?? false,
       ageAtSignup: data['ageAtSignup'] as int?,
+      latitude: (data['latitude'] as num?)?.toDouble(),
+      longitude: (data['longitude'] as num?)?.toDouble(),
+      locationUpdatedAt: (data['locationUpdatedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -89,9 +111,14 @@ class UserModel {
       'isOnline': isOnline,
       'lastActive': lastActive,
       'onboardingState': onboardingState,
+      'blockedUserIds': blockedUserIds,
+      'blockedByUserIds': blockedByUserIds,
       if (birthdate != null) 'birthdate': Timestamp.fromDate(birthdate!),
       'ageVerified': ageVerified,
       if (ageAtSignup != null) 'ageAtSignup': ageAtSignup,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (locationUpdatedAt != null) 'locationUpdatedAt': Timestamp.fromDate(locationUpdatedAt!),
     };
   }
 
@@ -107,6 +134,11 @@ class UserModel {
     bool? isOnline,
     DateTime? lastActive,
     String? onboardingState,
+    List<String>? blockedUserIds,
+    List<String>? blockedByUserIds,
+    double? latitude,
+    double? longitude,
+    DateTime? locationUpdatedAt,
   }) {
     return UserModel(
       id: id,
@@ -121,6 +153,11 @@ class UserModel {
       isOnline: isOnline ?? this.isOnline,
       lastActive: lastActive ?? this.lastActive,
       onboardingState: onboardingState ?? this.onboardingState,
+      blockedUserIds: blockedUserIds ?? this.blockedUserIds,
+      blockedByUserIds: blockedByUserIds ?? this.blockedByUserIds,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      locationUpdatedAt: locationUpdatedAt ?? this.locationUpdatedAt,
     );
   }
 }

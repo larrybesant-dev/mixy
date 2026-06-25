@@ -18,7 +18,7 @@ class RoomMember {
     return RoomMember(
       userId: data['userId'] ?? '',
       role: RoomMemberRole.values.firstWhere(
-        (e) => e.toString() == 'RoomMemberRole.' + (data['role'] ?? 'listener'),
+        (e) => e.toString() == 'RoomMemberRole.${data['role'] ?? 'listener'}',
         orElse: () => RoomMemberRole.listener,
       ),
       joinedAt: data['joinedAt'] ?? Timestamp.now(),

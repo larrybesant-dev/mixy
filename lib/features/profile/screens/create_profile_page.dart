@@ -311,10 +311,11 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
     try {
       await ref.read(profileControllerProvider).updateProfile(userProfile);
       // Mark the user profile as complete in the User model AND set displayName
-      await FirebaseFirestore.instance.collection('users').doc(firebaseUser.uid).update({
+      // Use set with merge to ensure document exists and fields are created
+      await FirebaseFirestore.instance.collection('users').doc(firebaseUser.uid).set({
         'profileComplete': true,
         'displayName': _displayNameController.text.trim(),
-      });
+      }, SetOptions(merge: true));
       if (mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
       }

@@ -122,3 +122,46 @@ final unfriendProvider =
   ref.invalidate(friendRelationshipProvider(targetUid));
   ref.invalidate(myFriendsProvider);
 });
+
+// ── Blocking ───────────────────────────────────────────────────────────────
+
+/// Check if current user has blocked a specific user
+final userBlockedByMeProvider =
+    FutureProvider.family<bool, String>((ref, targetUid) async {
+  final service = ref.watch(friendServiceProvider);
+  return service.isUserBlocked(targetUid);
+});
+
+/// Real-time stream of users blocked by current user
+final myBlockedUsersProvider = StreamProvider<List<String>>((ref) {
+  final service = ref.watch(friendServiceProvider);
+  return service.streamBlockedUsers();
+});
+
+/// Real-time stream of users who have blocked current user
+final usersBlockingMeProvider = StreamProvider<List<String>>((ref) {
+  final service = ref.watch(friendServiceProvider);
+  return service.streamBlockedByUsers();
+});
+
+/// Block a user
+final blockUserProvider =
+    FutureProvider.family<void, String>((ref, targetUid) async {
+  await ref.read(friendServiceProvider).blockUser(targetUid);
+  // Invalidate related states
+  ref.invalidate(userBlockedByMeProvider(targetUid));
+  ref.invalidate(myBlockedUsersProvider);
+  ref.invalidate(myFriendsProvider);
+  ref.invalidate(friendRelationshipProvider(targetUid));
+});
+
+/// Unblock a user
+final unblockUserProvider =
+    FutureProvider.family<void, String>((ref, targetUid) async {
+  await ref.read(friendServiceProvider).unblockUser(targetUid);
+  // Invalidate related states
+  ref.invalidate(userBlockedByMeProvider(targetUid));
+  ref.invalidate(myBlockedUsersProvider);
+  ref.invalidate(friendRelationshipProvider(targetUid));
+});
+

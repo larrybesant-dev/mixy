@@ -1,11 +1,11 @@
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 import '../models/feedback_model.dart';
 import '../providers/feedback_provider.dart';
 
@@ -50,19 +50,26 @@ class _FeedbackModalState extends ConsumerState<FeedbackModal> {
 
   Future<void> _pickScreenshot() async {
     if (kIsWeb) {
-      final input = html.FileUploadInputElement();
+      final input = web.HTMLInputElement();
+      input.type = 'file';
       input.accept = 'image/*';
       input.click();
       input.onChange.listen((event) {
-        final file = input.files?.first;
-        if (file != null) {
-          final reader = html.FileReader();
-          reader.readAsArrayBuffer(file);
-          reader.onLoadEnd.listen((event) {
-            setState(() {
-              _screenshotBytes = reader.result as Uint8List;
+        final files = input.files;
+        if (files != null && files.length > 0) {
+          final file = files.item(0);
+          if (file != null) {
+            final reader = web.FileReader();
+            reader.readAsDataURL(file);
+            reader.onLoadEnd.listen((event) {
+              setState(() {
+                final dataUrl = reader.result as String;
+                // Extract base64 part and decode to bytes
+                final base64String = dataUrl.split(',').last;
+                _screenshotBytes = base64Decode(base64String);
+              });
             });
-          });
+          }
         }
       });
     }
@@ -110,6 +117,7 @@ class _FeedbackModalState extends ConsumerState<FeedbackModal> {
       timestamp: Timestamp.now(),
     );
     await ref.read(feedbackControllerProvider.notifier).submitFeedback(feedback: feedback);
+    if (!mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Thanks! Your feedback was sent.'),),

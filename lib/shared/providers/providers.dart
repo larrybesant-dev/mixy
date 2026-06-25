@@ -17,6 +17,7 @@ import '../../services/moderation/moderation_service.dart';
 import '../../services/chat/typing_service.dart';
 import '../../services/payments/coin_economy_service.dart';
 import '../../services/payments/subscription_service.dart';
+import '../../services/presence_service.dart';
 import '../models/user.dart';
 import '../models/room.dart';
 import '../models/privacy_settings.dart';
@@ -464,11 +465,15 @@ final userActivityProvider =
 });
 
 /// Provider for user presence status (online/offline)
+/// Uses real-time Firebase Realtime Database for live presence tracking
+final presenceServiceProvider = Provider<PresenceService>((ref) {
+  return PresenceService();
+});
+
 final presenceProvider =
     StreamProvider.family<bool, String>((ref, userId) {
-  // TODO: Implement real presence tracking via Firestore
-  // For now, return a dummy stream that always returns false (offline)
-  return Stream.value(false);
+  final presenceService = ref.watch(presenceServiceProvider);
+  return presenceService.streamPresence(userId);
 });
 
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(() {

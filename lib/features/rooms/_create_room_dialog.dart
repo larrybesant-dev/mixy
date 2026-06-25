@@ -114,7 +114,7 @@ class _CreateRoomDialogState extends ConsumerState<CreateRoomDialog> {
               activeUserCount: 1,
             );
             await RoomService().createRoom(room);
-            Navigator.pop(context);
+            if (mounted) Navigator.pop(context);
           },
           child: const Text('Create'),
         ),

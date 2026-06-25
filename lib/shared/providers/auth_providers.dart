@@ -68,6 +68,9 @@ final currentUserProvider = StreamProvider<shared_models.User?>((ref) {
             membershipTier: 'free',
             badges: [],
             isOnline: true,
+            ageVerified: false,
+            profileComplete: false,
+            onboardingComplete: false,
           ),
         );
       }
@@ -106,6 +109,9 @@ final currentUserProvider = StreamProvider<shared_models.User?>((ref) {
             membershipTier: 'free',
             badges: [],
             isOnline: true,
+            ageVerified: false,
+            profileComplete: false,
+            onboardingComplete: false,
           ),
         );
       }

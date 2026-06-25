@@ -24,7 +24,7 @@ class Message {
       senderId: data['senderId'] ?? '',
       text: data['text'] ?? '',
       type: MessageType.values.firstWhere(
-        (e) => e.toString() == 'MessageType.' + (data['type'] ?? 'text'),
+        (e) => e.toString() == 'MessageType.${data['type'] ?? 'text'}',
         orElse: () => MessageType.text,
       ),
       createdAt: data['createdAt'] ?? Timestamp.now(),

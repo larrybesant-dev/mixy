@@ -63,6 +63,9 @@ import '../features/debug/screens/test_video_engine_screen.dart';
 import '../features/video_room/screens/video_chat_page.dart';
 import '../shared/models/room.dart';
 import '../features/debug/health_dashboard.dart';
+import '../features/buddy_list/buddy_list_screen.dart';
+import '../features/buddy_list/buddy_profile_screen.dart';
+import '../features/chat/screens/chat_pop_out_screen.dart';
 
 /// Slide transition directions
 enum SlideDirection {
@@ -111,6 +114,11 @@ class AppRoutes {
   static const chat = '/chat';
   static const groupChatRoom = '/group-chat-room';
   static const messages = '/messages';
+
+  // Buddy List / Messenger (pop-out windows on web)
+  static const buddyList = '/buddy-list';
+  static const buddyProfile = '/buddy-profile';
+  static const buddyChat = '/buddy-chat';
 
   // Video Chat routes (new modern features)
   static const videoChat = '/video-chat';
@@ -898,8 +906,47 @@ class AppRoutes {
           direction: SlideDirection.up,
         );
 
+      // ========== Buddy List / Messenger Pop-out Routes ==========
+      // These are opened as standalone web windows but need proper in-app routing fallback
+      case buddyList:
+        return _createFadeRoute(
+          page: const BuddyListScreen(),
+          settings: settings,
+        );
+
+      case buddyProfile:
+        final uid = queryParams['uid'] as String? ?? '';
+        if (uid.isEmpty) {
+          return _createFadeRoute(
+            page: const ErrorPage(errorMessage: 'User ID is required for buddy profile'),
+            settings: settings,
+          );
+        }
+        return _createFadeRoute(
+          page: BuddyProfileScreen(uid: uid),
+          settings: settings,
+        );
+
+      case buddyChat:
+        final chatId = queryParams['chatId'] as String? ?? '';
+        final peerName = queryParams['name'] as String? ?? 'Chat';
+        if (chatId.isEmpty) {
+          return _createFadeRoute(
+            page: const ErrorPage(errorMessage: 'Chat ID is required'),
+            settings: settings,
+          );
+        }
+        return _createFadeRoute(
+          page: ChatPopOutScreen(
+            chatId: chatId,
+            peerName: Uri.decodeComponent(peerName),
+          ),
+          settings: settings,
+        );
+
       // ========== Default/404 Route ==========
       default:
+        debugPrint('⚠️ [AppRoutes] Unknown route: ${settings.name}');
         return _createFadeRoute(
           page: ErrorPage(
             errorMessage: 'Route not found: ${settings.name}',

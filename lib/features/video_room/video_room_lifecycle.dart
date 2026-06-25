@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/utils/app_logger.dart';
 import '../../services/agora/agora_platform_service.dart';
 
@@ -51,14 +52,43 @@ class VideoRoomLifecycle {
     try {
       debugPrint(
           '[VIDEO_ROOM] Requesting camera and microphone permissions...');
-      AppLogger.info('ðŸ” Requesting camera & microphone permissions...');
+      AppLogger.info('🔐 Requesting camera & microphone permissions...');
 
-      // TODO: Implement mobile permission requests
-      // For now, assume permissions are granted
-      return true;
+      // Request camera permission
+      final cameraStatus = await Permission.camera.request();
+      debugPrint('[VIDEO_ROOM] Camera permission: $cameraStatus');
+
+      // Request microphone permission
+      final micStatus = await Permission.microphone.request();
+      debugPrint('[VIDEO_ROOM] Microphone permission: $micStatus');
+
+      // Check if both permissions are granted
+      final cameraGranted = cameraStatus.isGranted;
+      final micGranted = micStatus.isGranted;
+
+      if (cameraGranted && micGranted) {
+        debugPrint('[VIDEO_ROOM] ✅ All permissions granted');
+        AppLogger.info('✅ Camera & microphone permissions granted');
+        return true;
+      } else if (cameraStatus.isDenied || micStatus.isDenied) {
+        debugPrint('[VIDEO_ROOM] ⚠️ Permissions denied by user');
+        AppLogger.warning('⚠️ Permissions denied. App requires camera & mic access.');
+        return false;
+      } else if (cameraStatus.isPermanentlyDenied ||
+          micStatus.isPermanentlyDenied) {
+        debugPrint(
+            '[VIDEO_ROOM] ⚠️ Permissions permanently denied - open app settings');
+        AppLogger.error(
+            '⚠️ Permissions permanently denied. Open app settings to enable.');
+        // User can open app settings to re-enable
+        openAppSettings();
+        return false;
+      }
+
+      return cameraGranted && micGranted;
     } catch (e) {
       debugPrint('[VIDEO_ROOM] Permission request failed: $e');
-      AppLogger.error('âŒ Permission request failed: $e');
+      AppLogger.error('❌ Permission request failed: $e');
       return false;
     }
   }
