@@ -22,9 +22,6 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     
-    env:
-      FIREBASE_SERVICE_ACCOUNT_MIXVY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}'
-    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -52,5 +49,4 @@ jobs:
         env:
           CI: true
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json
-          FIREBASE_TOKEN: '${{ secrets.FIREBASE_TOKEN }}'
 
