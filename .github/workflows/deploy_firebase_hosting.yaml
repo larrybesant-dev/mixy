@@ -23,7 +23,7 @@ jobs:
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     
     env:
-      FIREBASE_SERVICE_ACCOUNT_MIXVY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIXVY }}'
+      FIREBASE_SERVICE_ACCOUNT_MIXVY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}'
     
     steps:
       - name: Checkout Code
@@ -48,7 +48,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIXVY }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}'
           channelId: live
           projectId: mixvy
         env:
