@@ -144,6 +144,18 @@ class PaymentController extends Notifier<PaymentState> {
       );
     }
   }
+
+  void updateLoading(bool isLoading) {
+    state = state.copyWith(isLoading: isLoading);
+  }
+
+  void updateError(String? error) {
+    state = state.copyWith(error: error);
+  }
+
+  void clearState() {
+    state = const PaymentState();
+  }
 }
 
 final paymentControllerProvider =
