@@ -51,6 +51,4 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}'
           channelId: live
           projectId: mixvy
-        env:
-          FIREBASE_SERVICE_ACCOUNT_MIXVY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIXVY }}'
 
