@@ -109,6 +109,16 @@ const _canonicalProviderFiles = <String>[
   'lib/features/room/providers/room_meta_state_provider.dart',
   'lib/features/room/providers/room_participants_state_provider.dart',
   'lib/features/room/providers/room_policy_provider.dart',
+  // Additional room feature stream providers
+  'lib/features/room/providers/buzz_provider.dart',
+  'lib/features/room/providers/cam_access_provider.dart',
+  'lib/features/room/providers/cam_view_request_provider.dart',
+  'lib/features/room/providers/message_providers.dart',
+  'lib/features/room/providers/mic_access_provider.dart',
+  // Presence provider (RTDB-backed)
+  'lib/presentation/providers/presence_provider.dart',
+  // Posts and comments streams
+  'lib/features/posts/providers/post_comments_providers.dart',
   // Repository stream implementations for domain-specific reactions
   'lib/features/feed/repository/reaction_repository.dart',
   'lib/features/room/repository/room_repository.dart',
@@ -669,6 +679,10 @@ List<_Violation> _scanFileLines(List<String> lines, String relativePath) {
   final isServiceCore = _serviceCorePaths.any(
     (p) => relativePath.startsWith(p),
   );
+  final isCanonicalProvider = _canonicalProviderFiles.any((p) {
+    final normalized = relativePath.replaceAll('\\', '/');
+    return normalized.endsWith(p) || normalized.contains(p);
+  });
 
   for (var i = 0; i < lines.length; i++) {
     final rawLine = lines[i];
@@ -679,6 +693,11 @@ List<_Violation> _scanFileLines(List<String> lines, String relativePath) {
       if (rule.severity != _Severity.critical && isServiceCore) continue;
 
       if (rule.matchesLine(rawLine, relativePath)) {
+        // Canonical provider files are exempt from FCI-001/004 being errors.
+        // They legitimately open streams; they're just not in lib/services/.
+        final treatAsError = isErrorPath && 
+            !(isCanonicalProvider && (rule.id == 'FCI-001' || rule.id == 'FCI-004'));
+        
         violations.add(
           _Violation(
             ruleId: rule.id,
@@ -688,7 +707,7 @@ List<_Violation> _scanFileLines(List<String> lines, String relativePath) {
             lineContent: rawLine,
             issue: rule.description,
             fix: rule.fix,
-            isError: isErrorPath,
+            isError: treatAsError,
           ),
         );
       }
