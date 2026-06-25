@@ -10,16 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: '3.24.x'
+          cache: true
+          cache-key: 'flutter-${{ runner.os }}-${{ hashFiles(''pubspec.lock'') }}'
+          cache-path: |
+            ${{ runner.tool_cache }}/flutter
+            ~/.pub-cache/hosted
 
-      - name: Get dependencies
-        run: flutter pub get --no-precompile
+      - name: Configure Dart
+        run: |
+          dart --version
+          flutter --version
+
+      - name: Pub get with retry
+        run: |
+          for i in {1..3}; do
+            flutter pub get && break || sleep 5
+          done
 
       - name: Build web
         run: flutter build web --release --base-href "/"
