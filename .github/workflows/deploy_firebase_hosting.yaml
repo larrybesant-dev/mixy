@@ -47,8 +47,10 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: |
           npm install -g firebase-tools@latest
-          firebase deploy --only hosting --project mixvy --token='${{ secrets.FIREBASE_TOKEN }}' --non-interactive
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}' > /tmp/firebase-key.json
+          firebase deploy --only hosting --project mixvy --non-interactive
         env:
           CI: true
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json
           FIREBASE_TOKEN: '${{ secrets.FIREBASE_TOKEN }}'
 
