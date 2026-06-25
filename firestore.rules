@@ -1,1200 +1,165 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // -------------------------------
-    // Helper: Auth Required
-    // -------------------------------
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
-    // ...existing code...
-          return isSignedIn() &&
-            (request.auth.token.tier == "premium" ||
-             request.auth.token.tier == "creatorPro");
-        }
 
-        // ============================================================
-        // PACKS (Global Marketplace)
-        // ============================================================
-        match /packs/{packId} {
-
-          // Public read access for marketplace
-          allow get, list: if true;
-
-          // Create official packs (admin only)
-          allow create: if isAdmin();
-
-          // Update official packs (admin only)
-          allow update: if isAdmin();
-
-          // Delete packs (admin only)
-          allow delete: if isAdmin();
-        }
-
-        // ============================================================
-        // USER ROOT DOCUMENT (Tier + Profile)
-        // ============================================================
-        match /users/{userId} {
-
-<<<<<<< HEAD
-          // User can read their own profile
-          allow get: if isOwner(userId);
-=======
-    // Check if the current update only touches fields safe for any participant
-    // (joining/leaving increments participantCount; setVideoChannelLive; heartbeat)
-    function isRoomJoinUpdate() {
-      let affected = request.resource.data.diff(resource.data).affectedKeys();
-      return affected.hasOnly(['participantCount', 'updatedAt', 'videoChannelLive', 'isLive']);
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // Null-safe moderators check
-    function isModerator(roomData) {
-      return roomData.keys().hasAll(['moderators']) &&
-             roomData.moderators is list &&
-             request.auth.uid in roomData.moderators;
+    function isAdmin() {
+      return request.auth.token.admin == true;
     }
 
-    // ========================================
-    // USERS COLLECTION
-    // ========================================
->>>>>>> origin/develop
-
-          // User can update non-tier fields
-          allow update: if isOwner(userId)
-                        && !( "tier" in request.resource.data.keys() );
-
-          // Backend (Stripe webhook) updates tier
-          allow update: if request.auth.token.backend == true;
-
-          // Create user doc on signup
-          allow create: if isOwner(userId);
-        }
-
-        // ============================================================
-        // USER PURCHASES (One-Time Pack Purchases)
-        // ============================================================
-        match /users/{userId}/purchases/{packId} {
-
-          // User can read their own purchases
-          allow get, list: if isOwner(userId);
-
-          // User cannot create purchases directly
-          // Only backend (Stripe webhook) can write purchases
-          allow create: if request.auth.token.backend == true;
-
-          // Purchases are immutable
-          allow update, delete: if false;
-        }
-
-        // ============================================================
-        // USER CREATIONS (User-Made Overlays + Emoji Packs)
-        // ============================================================
-        match /users/{userId}/creations/{creationId} {
-
-          // User can read their own creations
-          allow get, list: if isOwner(userId);
-
-          // User can create new creations
-          allow create: if isOwner(userId);
-
-          // User can update their own creations
-          allow update: if isOwner(userId);
-
-          // User can delete their own creations
-          allow delete: if isOwner(userId);
-        }
-
-        // ============================================================
-        // PUBLISHING CREATIONS AS PACKS
-        // ============================================================
-        // Creator Pro users can publish their creations into global packs
-        match /publish/{creationId} {
-
-          // Only Creator Pro can publish
-          allow create: if isCreatorPro();
-
-          // No one can update or delete publish records
-          allow update, delete: if false;
-        }
-
-        // ============================================================
-        // ROOMS, MEMBERS, MESSAGES
-        // ============================================================
-        match /rooms/{roomId} {
-          allow read: if true;
-          allow create: if isSignedIn();
-          allow update, delete: if resource.data.hostId == request.auth.uid;
-
-          // Room members subcollection
-          match /members/{memberId} {
-            allow read: if true;
-            allow create: if isSignedIn() && request.auth.uid == memberId;
-            allow update, delete: if isSignedIn() && request.auth.uid == memberId;
-          }
-
-          // Room messages subcollection
-          match /messages/{messageId} {
-            allow read: if true;
-            allow create: if isSignedIn() && request.auth.uid == request.resource.data.senderId;
-          }
-        }
-
-        // ============================================================
-        // PROFILES
-        // ============================================================
-        match /profiles/{userId} {
-          allow read: if true;
-          allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
-        }
-
-        // ============================================================
-        // FRIENDS
-        // ============================================================
-        match /users/{userId}/friends/{friendId} {
-          allow read: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == friendId);
-          allow create, delete: if isSignedIn() && request.auth.uid == userId;
-        }
-
-        // ============================================================
-        // WALLETS
-        // ============================================================
-        match /wallets/{userId} {
-          allow read: if isSignedIn() && request.auth.uid == userId;
-          allow create, update: if isSignedIn() && request.auth.uid == userId;
-        }
-
-        // ============================================================
-        // GIFTS
-        // ============================================================
-        match /gifts/{giftId} {
-          allow read: if true;
-          allow create, update, delete: if isAdmin();
-        }
-
-        // ============================================================
-        // BLOCKED SUBCOLLECTION
-        // ============================================================
-        match /blocked/{blockedUserId} {
-          allow read: if isOwner(userId);
-          allow create: if isOwner(userId) && blockedUserId != userId;
-          allow delete: if isOwner(userId);
-        }
-
-        // ============================================================
-        // EVENT RSVPS SUBCOLLECTION
-        // ============================================================
-        match /event_rsvps/{eventId} {
-          allow read: if isOwner(userId);
-          allow write: if isOwner(userId);
-        }
-
-        // ============================================================
-        // FRIEND REQUESTS SUBCOLLECTION (incoming)
-        // ============================================================
-        match /friend_requests/{fromUid} {
-          // Owner can read their own incoming requests
-          allow read: if isOwner(userId);
-          // Sender can create (fromUid == sender) and delete (cancel)
-          allow create: if isSignedIn() && request.auth.uid == fromUid && fromUid != userId;
-          allow delete: if isOwner(userId) || request.auth.uid == fromUid;
-        }
-
-        // ============================================================
-        // SENT REQUESTS SUBCOLLECTION (outgoing tracker)
-        // ============================================================
-        match /sent_requests/{toUid} {
-          allow read, write: if isOwner(userId);
-        }
-
-        // ============================================================
-        // FRIENDS SUBCOLLECTION
-        // ============================================================
-        match /friends/{friendUid} {
-          // Both parties can read
-          allow read: if isOwner(userId) || request.auth.uid == friendUid;
-          // Owner manages their own friend list
-          allow write: if isOwner(userId);
-        }
-      }
-    }
-        allow create: if isOwner(userId);
-        allow delete: if isOwner(userId);
-      }
-
-      // BLOCKED SUBCOLLECTION
-      match /blocked/{blockedUserId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && blockedUserId != userId;
-        allow delete: if isOwner(userId);
-      }
-
-      // EVENT RSVPS SUBCOLLECTION
-      match /event_rsvps/{eventId} {
-        allow read: if isOwner(userId);
-        allow write: if isOwner(userId);
-      }
-
-<<<<<<< HEAD
-      // FRIEND REQUESTS SUBCOLLECTION (incoming)
-      match /friend_requests/{fromUid} {
-        // Owner can read their own incoming requests
-        allow read: if isOwner(userId);
-        // Sender can create (fromUid == sender) and delete (cancel)
-        allow create: if isSignedIn() && request.auth.uid == fromUid && fromUid != userId;
-        allow delete: if isOwner(userId) || request.auth.uid == fromUid;
-      }
-
-      // SENT REQUESTS SUBCOLLECTION (outgoing tracker)
-      match /sent_requests/{toUid} {
-        allow read, write: if isOwner(userId);
-      }
-
-      // FRIENDS SUBCOLLECTION
-      match /friends/{friendUid} {
-        // Both parties can read
-        allow read: if isOwner(userId) || request.auth.uid == friendUid;
-        // Owner manages their own friend list
-        allow write: if isOwner(userId);
-      }
-=======
-      // ════════════════════════════════════════
-      // FRIEND REQUESTS SUBCOLLECTION (inbox/outbox)
-      // ════════════════════════════════════════
-      match /friendRequests/{requestId} {
-        // Owner can read their own inbox/outbox
-        allow read: if isOwner(userId);
-        // Sender can create a request addressed to this user
-        allow create: if isSignedIn() &&
-                         (request.auth.uid == request.resource.data.senderId ||
-                          request.auth.uid == request.resource.data.receiverId);
-        // Sender can cancel; receiver can accept/decline
-        allow update: if isSignedIn() &&
-                         (request.auth.uid == resource.data.senderId ||
-                          request.auth.uid == resource.data.receiverId);
-        allow delete: if isSignedIn() &&
-                         (request.auth.uid == resource.data.senderId ||
-                          request.auth.uid == resource.data.receiverId);
-      }
-
-      // ════════════════════════════════════════
-      // FRIENDS SUBCOLLECTION
-      // ════════════════════════════════════════
-      match /friends/{friendUid} {
-        // Owner can read their own friends list; other authenticated
-        // users can read to check mutual-friend status
-        allow read: if isSignedIn();
-        // Only the system (batch writes from friend accept) may write.
-        // We allow owner writes here — the service enforces bidirectional
-        // consistency in a batch; direct client writes are also acceptable
-        // because the security model uses the accepter's identity.
-        allow write: if isSignedIn() &&
-                        (isOwner(userId) || request.auth.uid == friendUid);
-      }
-
-      // ════════════════════════════════════════
-      // NOTIFICATIONS SUBCOLLECTION
-      // ════════════════════════════════════════
-      match /notifications/{notificationId} {
-        // Only the owner can read their notifications
-        allow read: if isOwner(userId);
-        // Any authenticated user can create a notification for another user
-        // (e.g. sending a friend request creates a notification)
-        allow create: if isSignedIn() &&
-                         request.resource.data.receiverId == userId;
-        // Only the owner can update (mark as read) or delete their own notifications
-        allow update, delete: if isOwner(userId);
-      }
-
-      // ════════════════════════════════════════
-      // MATCH INBOX SUBCOLLECTION
-      // /users/{userId}/matches/{matchId}
-      // ════════════════════════════════════════
-      match /matches/{matchId} {
-        // Only the owner can read their own match inbox
-        allow read: if isOwner(userId);
-
-        // Any signed-in user can create a match entry for another user
-        // (MatchInboxService writes to both users in a batch)
-        allow create: if isSignedIn() &&
-                         request.resource.data.matchedUserId is string &&
-                         request.resource.data.matchedUserId.size() > 0;
-
-        // Only the owner can update (mark as seen) or delete (remove match)
-        // their own match inbox entries
-        allow update: if isOwner(userId) &&
-                         request.resource.data.keys().hasOnly([
-                           'matchedUserId', 'timestamp', 'lastInteraction',
-                           'isNew', 'source', 'metadata'
-                         ]);
-        allow delete: if isOwner(userId);
-      }
+    // ============================================================
+    // USER DOCUMENTS (profiles, tiers)
+    // ============================================================
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && !("tier" in request.resource.data.keys());
+      allow update: if request.auth.token.backend == true; // Backend only for tier updates
     }
 
-    // ========================================
-    // FRIEND REQUESTS (top-level, for cross-user queries)
-    // ========================================
-    match /friendRequests/{requestId} {
-      // Sender or receiver can read
-      allow read: if isSignedIn() &&
-                     (request.auth.uid == resource.data.senderId ||
-                      request.auth.uid == resource.data.receiverId);
-      // Sender creates
-      allow create: if isSignedIn() &&
-                       request.auth.uid == request.resource.data.senderId &&
-                       request.resource.data.senderId != request.resource.data.receiverId;
-      // Either party can update status (accept / decline / cancel)
-      allow update: if isSignedIn() &&
-                       (request.auth.uid == resource.data.senderId ||
-                        request.auth.uid == resource.data.receiverId);
-      // Either party can delete (cancel)
-      allow delete: if isSignedIn() &&
-                       (request.auth.uid == resource.data.senderId ||
-                        request.auth.uid == resource.data.receiverId);
->>>>>>> origin/develop
+    // ============================================================
+    // PUBLIC PROFILES
+    // ============================================================
+    match /profiles/{userId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isOwner(userId);
     }
 
-    // ========================================
-    // EVENTS COLLECTION
-    // ========================================
-
-    match /events/{eventId} {
-      // Anyone authenticated can read events
-      allow read: if isSignedIn();
-
-      // Verified adult users can create events
-      allow create: if isAdultUser() &&
-                       hasValidString('title') &&
-                       hasValidString('description') &&
-                       request.resource.data.title.size() >= 3 &&
-                       request.resource.data.title.size() <= 100 &&
-                       request.resource.data.description.size() <= 2000;
-
-      // Only host can update/delete event
-      allow update, delete: if isOwner(resource.data.hostId);
-
-      // EVENT ATTENDEES SUBCOLLECTION
-      match /attendees/{attendeeId} {
-        allow read: if isSignedIn();
-        allow create: if isOwner(attendeeId);
-        allow update, delete: if isOwner(attendeeId);
-      }
-    }
-
-    // ========================================
-    // ROOMS COLLECTION
-    // ========================================
-
+    // ============================================================
+    // ROOMS & MESSAGING
+    // ============================================================
     match /rooms/{roomId} {
       allow read: if true;
-      allow create: if isAdultUser() &&
-                       hasValidString('title') &&
-                       request.resource.data.title.size() >= 3 &&
-<<<<<<< HEAD
-                       request.resource.data.title.size() <= 100 &&
-                       // ownerId must match caller, OR be 'system' (server-managed welcome rooms)
-                       (!('ownerId' in request.resource.data) ||
-                        request.resource.data.ownerId == request.auth.uid ||
-                        request.resource.data.ownerId == 'system');
-      allow update: if (request.auth.uid == resource.data.ownerId) ||
-                       (request.auth.uid in resource.data.admins &&
-                        !request.resource.data.diff(resource.data).affectedKeys()
-                          .hasAny(['ownerId', 'admins', 'slug'])) ||
-                       // Any signed-in user may update ONLY the presence/counter fields
-                       // (join increments participantCount, leave decrements, setVideoChannelLive, etc.)
-                       (isSignedIn() &&
-                        request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['participantCount', 'viewerCount', 'videoChannelLive', 'updatedAt']));
-      allow delete: if request.auth.uid == resource.data.ownerId;
-=======
-                       request.resource.data.title.size() <= 100;
-
-      // ✅ Only room creator/host/moderators can update or delete room
-      // Exception: any authenticated user may update join-safe fields
-      // (participantCount, videoChannelLive, updatedAt, isLive) so that
-      // audience members can register their presence.
-      allow update: if isSignedIn() && (
-                       isRoomJoinUpdate() ||
-                       request.auth.uid == resource.data.hostId ||
-                       isModerator(resource.data));
-      allow delete: if isSignedIn() &&
-                       (request.auth.uid == resource.data.hostId ||
-                        isModerator(resource.data));
->>>>>>> origin/develop
-
-      // ✅ ROOM PARTICIPANTS SUBCOLLECTION - Critical for room joins
-      match /participants/{participantId} {
-        // All authenticated users can read participant list
-        allow read: if isSignedIn();
-        // Users can create their own participant doc (join), unless they are banned
-        allow create: if isSignedIn() && request.auth.uid == participantId &&
-          !get(/databases/$(database)/documents/rooms/$(roomId)).data.get('bannedUsers', []).hasAny([request.auth.uid]);
-        // Users can update their own doc; owner/admin can update any participant (role changes)
-        allow update: if isSignedIn() && (
-          request.auth.uid == participantId ||
-          request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins
-        );
-        // Users can delete their own participant doc (leave); owner/admin can delete any (kick)
-        allow delete: if isSignedIn() && (
-          request.auth.uid == participantId ||
-          request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins
-        );
-      }
-
-      // ROOM EVENTS SUBCOLLECTION (join/leave logs)
-      match /events/{eventId} {
-        allow read, create: if isSignedIn();
-      }
-
-      // ROOM MESSAGES SUBCOLLECTION - Chat in rooms
-      match /messages/{messageId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() &&
-                         request.resource.data.senderId == request.auth.uid &&
-<<<<<<< HEAD
-                         ((request.resource.data.content is string && request.resource.data.content.size() <= 2000) ||
-                          (request.resource.data.text is string && request.resource.data.text.size() <= 2000));
-=======
-                         // Support both 'content' (new model) and 'text' (legacy)
-                         (('content' in request.resource.data &&
-                           request.resource.data.content.size() <= 5000) ||
-                          ('text' in request.resource.data &&
-                           request.resource.data.text.size() <= 5000));
->>>>>>> origin/develop
-        allow update, delete: if isSignedIn() &&
-                                 resource.data.senderId == request.auth.uid;
-      }
-
-      // BANS SUBCOLLECTION
-      match /bans/{targetId} {
-        allow read: if isSignedIn();
-        allow create: if request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId
-                      || request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins;
-        allow delete: if request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId
-                      || request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins;
-      }
-
-      // BROADCASTER QUEUE SUBCOLLECTION
-      match /broadcasterQueue/{userId} {
-        allow read: if isSignedIn();
-        // Users manage their own queue entry; host can update any entry
-        allow create: if isOwner(userId);
-        allow update: if isOwner(userId) ||
-                         request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                         request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins ||
-                         isAdmin();
-        allow delete: if isOwner(userId) ||
-                         request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                         request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins ||
-                         isAdmin();
-      }
-
-      // CAMERA SUBCOLLECTION (live video slots)
-      match /camera/{userId} {
-        allow read: if isSignedIn();
-        allow create, delete: if isOwner(userId) ||
-                                  request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                                  request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins ||
-                                  isAdmin();
-        allow update: if isOwner(userId) ||
-                         request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                         request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins ||
-                         isAdmin();
-      }
-
-      // DJ STATE SUBCOLLECTION
-      match /djState/{docId} {
-        allow read: if isSignedIn();
-        // Only room owner can write DJ state
-        allow write: if request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId;
-      }
-
-      // REACTIONS SUBCOLLECTION
-      match /reactions/{reactionId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() &&
-                         request.resource.data.userId == request.auth.uid;
-        allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      }
-
-      // MIC QUEUE SUBCOLLECTION
-      match /micQueue/{userId} {
-        allow read: if isSignedIn();
-        // Any signed-in user can request mic for themselves
-        allow create: if isSignedIn() && request.auth.uid == userId;
-        // Owner/admin can grant/revoke mic
-        allow update: if request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                         request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins;
-        // User can delete their own request; owner/admin can remove any
-        allow delete: if request.auth.uid == userId ||
-                         request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                         request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins;
-      }
-
-      // SPEAKERS SUBCOLLECTION
-      match /speakers/{userId} {
-        allow read: if isSignedIn();
-        // Owner/admin can add/remove speakers
-        allow create, update, delete: if request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                                        request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins;
-      }
-
-      // MODERATION LOGS SUBCOLLECTION — admin read/write, append-only for signed-in users
-      match /moderation_logs/{logId} {
-        allow read: if isSignedIn() &&
-                       (isRoomOwner(roomId) || isRoomAdmin(roomId) || isSuperAdmin());
-        allow create: if isSignedIn();
-        allow update, delete: if false;
-      }
-
-      // MUTED USERS SUBCOLLECTION
-      match /muted_users/{userId} {
-        allow read: if isSignedIn();
-        allow write: if isRoomOwner(roomId) || isRoomAdmin(roomId) || isSuperAdmin();
-        allow delete: if isRoomOwner(roomId) || isRoomAdmin(roomId) || isSuperAdmin();
-      }
-
-      // BANNED USERS SUBCOLLECTION (legacy — mirrors bans/)
-      match /banned_users/{userId} {
-        allow read: if isSignedIn();
-        allow create: if isRoomOwner(roomId) || isRoomAdmin(roomId) || isSuperAdmin();
-        allow delete: if isRoomOwner(roomId) || isRoomAdmin(roomId) || isSuperAdmin();
-      }
-
-      // SPEAKER REQUESTS SUBCOLLECTION
-      match /requests/{requestId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() && request.auth.uid == requestId;
-        allow update, delete: if isSignedIn() &&
-                                  (request.auth.uid == requestId ||
-                                   request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerId ||
-                                   request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins);
-      }
-    }
-
-    // ========================================
-    // FLAT ROOM MESSAGES (legacy support)
-    // ========================================
-
-    match /room_messages/{messageId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if isOwner(resource.data.senderId);
-    }
-
-    // ========================================
-    // CHAT ROOMS COLLECTION
-    // ========================================
-
-    match /chatRooms/{roomId} {
-      // Only participants can read chat
-      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
-
-      // Users can create chats if not blocked
-      allow create: if isSignedIn() &&
-                       'participants' in request.resource.data &&
-                       request.auth.uid in request.resource.data.participants;
-
-      // Participants can update chat
-      allow update: if isSignedIn() && request.auth.uid in resource.data.participants;
-
-      // CHAT MESSAGES SUBCOLLECTION
-      match /messages/{messageId} {
-        allow read: if isSignedIn() &&
-                       request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants;
-        allow create: if isSignedIn() &&
-                         request.resource.data.senderId == request.auth.uid &&
-                         request.resource.data.text.size() <= 5000;
-        allow delete: if isOwner(resource.data.senderId);
-      }
-    }
-
-    // ========================================
-    // DIRECT MESSAGES COLLECTION
-    // ========================================
-
-    match /direct_messages/{messageId} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
-      allow create: if isSignedIn() &&
-                       request.auth.uid == resource.data.senderId &&
-                       request.resource.data.text.size() <= 5000;
-      allow update: if isSignedIn() &&
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
-      allow delete: if isOwner(resource.data.senderId);
-    }
-
-    // ========================================
-    // NOTIFICATIONS COLLECTION
-    // ========================================
-
-    match /notifications/{notificationId} {
-      // read + update/delete: resource exists, safe to check resource.data
-      allow read: if isSignedIn() &&
-                     (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isSignedIn() &&
-                       request.auth.uid == request.resource.data.userId;
-      allow update, delete: if isSignedIn() &&
-                               (request.auth.uid == resource.data.userId || isAdmin());
-    }
-
-    // ========================================
-    // NOTIFICATION QUEUE (server-write only)
-    // ========================================
-
-    match /notificationQueue/{docId} {
-      allow read, write: if false; // Cloud Functions only
-    }
-
-    // ========================================
-    // TIPS COLLECTION
-    // ========================================
-
-    match /tips/{tipId} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
-      allow create: if isOwner(resource.data.senderId);
-    }
-
-    // ========================================
-    // SPEED DATING SESSIONS (camelCase — legacy model)
-    // ========================================
-
-    match /speedDatingSessions/{sessionId} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.userId1 || request.auth.uid == resource.data.userId2);
-      allow create: if isOwner(resource.data.userId1);
-      allow update: if isSignedIn() &&
-        (request.auth.uid == resource.data.userId1 || request.auth.uid == resource.data.userId2);
-    }
-
-    // ========================================
-    // SPEED DATING MATCHES (camelCase — legacy model)
-    // ========================================
-
-    match /speedDatingMatches/{matchId} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.userId1 || request.auth.uid == resource.data.userId2);
-      // Require that the creating user is one of the two participants
-      allow create: if isSignedIn() &&
-        (request.resource.data.userId1 == request.auth.uid ||
-         request.resource.data.userId2 == request.auth.uid);
-      allow update: if isSignedIn() &&
-        (request.auth.uid == resource.data.userId1 || request.auth.uid == resource.data.userId2);
-    }
-
-    // ========================================
-    // SPEED DATING QUEUE (snake_case — production)
-    // Cloud Functions write; users manage their own entry.
-    // ========================================
-
-    match /speed_dating_queue/{docId} {
-      // User can read only their own queue entry
-      allow read: if isSignedIn() && request.auth.uid == docId;
-
-      // User can create their own entry (userId field must match caller)
-      allow create: if isSignedIn()
-                    && request.auth.uid == docId
-                    && request.resource.data.userId == request.auth.uid;
-
-      // User can delete (leave queue) their own entry;
-      // write updates come from Cloud Functions only
-      allow delete: if isSignedIn() && request.auth.uid == docId;
-
-      // No client-side updates — Cloud Functions own status transitions
-      allow update: if false;
-    }
-
-    // ========================================
-    // SPEED DATING SESSIONS (snake_case — production)
-    // Fully server-managed. Clients read only if participant.
-    // ========================================
-
-    match /speed_dating_sessions/{sessionId} {
-      // Only session participants may read the session document
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.user1Id ||
-         request.auth.uid == resource.data.user2Id);
-
-      // All mutations are performed by Cloud Functions only
-      allow write: if false;
-    }
-
-    // ========================================
-    // SPEED DATING DECISIONS (snake_case — production)
-    // Audit trail written by Cloud Functions only.
-    // ========================================
-
-    match /speed_dating_decisions/{docId} {
-      // Participants can read their own decision records
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // Cloud Functions only
-      allow write: if false;
-    }
-
-    // ========================================
-    // SPEED DATING RESULTS (snake_case — production)
-    // Mutual match records. Read by both matched users.
-    // ========================================
-
-    match /speed_dating_results/{docId} {
-      // Both matched users can read the result
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.user1Id ||
-         request.auth.uid == resource.data.user2Id);
-
-      // Cloud Functions only
-      allow write: if false;
-    }
-
-    // ========================================
-    // REPORTS COLLECTION
-    // ========================================
-
-    match /reports/{reportId} {
-      // Admins can read all reports; reporters can read their own
-      allow read: if isAdmin() ||
-                     (isSignedIn() && resource.data.reporterId == request.auth.uid);
-      allow create: if isSignedIn() &&
-                       request.resource.data.reporterId == request.auth.uid &&
-                       request.resource.data.reportedUserId != request.auth.uid;
-      // Only admins can update (resolve/dismiss) or delete reports
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    // ========================================
-    // GLOBAL BANS COLLECTION
-    // ========================================
-
-    match /global_bans/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
-    }
-
-    // ========================================
-    // CONFIG COLLECTION (read-only)
-    // ========================================
-
-    match /config/{docId} {
-      allow read: if isSignedIn();
-      allow write: if false;
-    }
-
-    // ========================================
-    // TAGS COLLECTION
-    // ========================================
-
-    match /tags/{tagId} {
-      allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update, delete: if false; // Server-side only
+      allow update, delete: if resource.data.hostId == request.auth.uid;
+
+      match /members/{memberId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.auth.uid == memberId;
+        allow update, delete: if isSignedIn() && request.auth.uid == memberId;
+      }
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.senderId;
+      }
     }
 
-    // ========================================
-    // PRESENCE & HEARTBEAT (Real-time status)
-    // ========================================
+    // ============================================================
+    // USER SUBCOLLECTIONS
+    // ============================================================
+    match /users/{userId}/friends/{friendId} {
+      allow read: if isSignedIn() && (isOwner(userId) || request.auth.uid == friendId);
+      allow create, delete: if isSignedIn() && isOwner(userId);
+    }
 
+    match /users/{userId}/creations/{creationId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isOwner(userId);
+    }
+
+    match /users/{userId}/purchases/{packId} {
+      allow get, list: if isOwner(userId);
+      allow create: if request.auth.token.backend == true;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      allow read: if isOwner(userId);
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/matches/{matchId} {
+      allow read: if isOwner(userId);
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(userId);
+    }
+
+    // ============================================================
+    // PACKS (Global Marketplace)
+    // ============================================================
+    match /packs/{packId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // PUBLISH RECORDS
+    // ============================================================
+    match /publish/{creationId} {
+      allow create: if isSignedIn() && request.auth.token.tier in ["premium", "creatorPro"];
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // EVENTS & ATTENDANCE
+    // ============================================================
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+
+      match /attendees/{attendeeId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isSignedIn() && isOwner(attendeeId);
+      }
+    }
+
+    // ============================================================
+    // BLOCKING
+    // ============================================================
+    match /users/{userId}/blocked/{blockedUserId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && blockedUserId != userId;
+      allow delete: if isOwner(userId);
+    }
+
+    // ============================================================
+    // CHAT & MESSAGES (top-level)
+    // ============================================================
+    match /chats/{chatId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.senderId;
+      }
+    }
+
+    // ============================================================
+    // WALLETS
+    // ============================================================
+    match /wallets/{userId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow create, update: if isSignedIn() && isOwner(userId);
+    }
+
+    // ============================================================
+    // PRESENCE & HEARTBEAT (User online status)
+    // ============================================================
     match /presence/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create, update: if isSignedIn() && isOwner(userId);
     }
 
     match /heartbeat/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create, update: if isSignedIn() && isOwner(userId);
     }
 
-    // ========================================
-    // CHATS COLLECTION (private 1-on-1 / match chats)
-    // ========================================
-
-    match /chats/{chatId} {
-      allow read: if isSignedIn() &&
-                     request.auth.uid in resource.data.participants;
-      allow create: if isSignedIn() &&
-                       'participants' in request.resource.data &&
-                       request.auth.uid in request.resource.data.participants;
-      allow update: if isSignedIn() &&
-                       request.auth.uid in resource.data.participants;
-      allow delete: if false;
-
-      match /messages/{messageId} {
-        allow read: if isSignedIn() &&
-                       request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow create: if isSignedIn() &&
-                         request.resource.data.senderId == request.auth.uid &&
-                         request.resource.data.text.size() <= 5000 &&
-                         request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
-      }
-    }
-
-    // ========================================
-    // CONVERSATIONS (structured messaging)
-    // ========================================
-
-    match /conversations/{conversationId} {
-      // Only participants can read conversation metadata
-      allow read: if isSignedIn() &&
-                     request.auth.uid in resource.data.participants;
-
-      // Participants can update unread counts / lastMessage
-      allow update: if isSignedIn() &&
-                       request.auth.uid in resource.data.participants;
-
-      // Participants can create a new conversation
-      allow create: if isSignedIn() &&
-                       request.resource.data.participants is list &&
-                       request.auth.uid in request.resource.data.participants;
-
-      // Conversations are never deleted client-side
-      allow delete: if false;
-
-      // MESSAGES SUBCOLLECTION
-      match /messages/{messageId} {
-        // Only participants can read messages
-        allow read: if isSignedIn() &&
-                       request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-
-        // Only participants can send messages; senderId must match caller
-        allow create: if isSignedIn() &&
-                         request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
-                         request.resource.data.senderId == request.auth.uid;
-
-        // Messages are immutable once sent
-        allow update, delete: if false;
-      }
-    }
-
-    // ========================================
-    // PUBLIC PROFILES (future split architecture)
-    // ========================================
-
-    match /profiles_public/{userId} {
-      // Anyone authenticated can read
-      allow read: if isSignedIn();
-      // Only the owner can write their own public profile
-      allow create, update: if isOwner(userId);
-      allow delete: if isOwner(userId) || isAdmin();
-    }
-
-    // ========================================
-    // PRIVATE PROFILES (locked to owner + admin)
-    // ========================================
-
-    match /profiles_private/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
-    }
-
-    // ========================================
-    // BADGES COLLECTION
-    // ========================================
-
-    match /badges/{badgeId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin(); // Server/admin only
-    }
-
-    match /user_badges/{docId} {
-      allow read: if isSignedIn() &&
-                     (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() &&
-                       request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAdmin();
-    }
-
-    // ========================================
-    // FRIENDS COLLECTION
-    // ========================================
-
-    match /friends/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId);
-    }
-
-    // ========================================
-    // SHARED FILES
-    // ========================================
-
-    match /shared_files/{fileId} {
-      allow read: if isSignedIn() &&
-                     (resource.data.uploaderId == request.auth.uid ||
-                      resource.data.sharedWithRoomId != null);
-      allow create: if isSignedIn() &&
-                       request.resource.data.uploaderId == request.auth.uid;
-      allow update, delete: if isSignedIn() &&
-                               resource.data.uploaderId == request.auth.uid;
-    }
-
-    // ========================================
-    // CAMERA PERMISSIONS
-    // ========================================
-
-    match /camera_permissions/{permissionId} {
-      allow read: if isSignedIn() &&
-                     (resource.data.userId == request.auth.uid ||
-                      resource.data.requestedBy == request.auth.uid ||
-                      isAdmin());
-      allow create: if isSignedIn() &&
-                       request.resource.data.requestedBy == request.auth.uid;
-      allow update: if isSignedIn() &&
-                       (resource.data.userId == request.auth.uid ||
-                        isRoomHost(resource.data.roomId) ||
-                        isAdmin());
-      allow delete: if isSignedIn() &&
-                       (resource.data.userId == request.auth.uid ||
-                        isRoomHost(resource.data.roomId) ||
-                        isAdmin());
-    }
-
-    // ========================================
-    // COIN ECONOMY — DAILY LOGINS & MESSAGE COUNTS
-    // ========================================
-
-    match /user_daily_logins/{docId} {
-      // Doc ID format: {userId}_{date} — owner can read/write their own
-      allow read, write: if isSignedIn() &&
-                            docId.matches(request.auth.uid + '_.*');
-    }
-
-    match /user_message_counts/{docId} {
-      allow read, write: if isSignedIn() &&
-                            docId.matches(request.auth.uid + '_.*');
-    }
-
-    // ========================================
-    // MODERATION LOGS (server-side only)
-    // ========================================
-
-    match /moderation_logs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false; // Cloud Functions only
-    }
-
-    // ========================================
-    // CRASH REPORTS & PERFORMANCE (write-only, server reads)
-    // ========================================
-
-    match /crash_reports/{docId} {
-      allow create: if isSignedIn();
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /performance_issues/{docId} {
-      allow create: if isSignedIn();
-      allow read, update, delete: if isAdmin();
-    }
-
-    // ========================================
-    // SYSTEM COLLECTION (read-only for app)
-    // ========================================
-
-    match /system/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    match /health_check/{docId} {
-      allow read: if isSignedIn();
-      allow write: if false;
-    }
-
-    // ========================================
-    // FLAT MESSAGES COLLECTION (legacy/moderation)
-    // ========================================
-
-    match /messages/{messageId} {
-      allow read: if isSignedIn() &&
-                     (resource.data.senderId == request.auth.uid ||
-                      resource.data.receiverId == request.auth.uid ||
-                      isAdmin());
-      allow create: if isSignedIn() &&
-                       request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
-    }
-
-    // ========================================
-    // WITHDRAWALS COLLECTION
-    // ========================================
-
-    match /withdrawals/{withdrawalId} {
-      // Users can read only their own withdrawal requests
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      // Users can submit a withdrawal for themselves only
-      allow create: if isSignedIn() &&
-                       request.resource.data.userId == request.auth.uid &&
-                       request.resource.data.amount is number &&
-                       request.resource.data.amount > 0;
-      // Only admin/server can update (process, reject)
-      allow update, delete: if isAdmin();
-    }
-
-    // ========================================
-    // MATCHES COLLECTION
-    // ========================================
-
-    match /matches/{matchId} {
-      allow read: if isSignedIn() &&
-                     (resource.data.userId1 == request.auth.uid ||
-                      resource.data.userId2 == request.auth.uid);
-      // Require that the creating user is one of the two participants
-      allow create: if isSignedIn() &&
-                       (request.resource.data.userId1 == request.auth.uid ||
-                        request.resource.data.userId2 == request.auth.uid);
-      allow update: if isSignedIn() &&
-                       (resource.data.userId1 == request.auth.uid ||
-                        resource.data.userId2 == request.auth.uid);
-      allow delete: if false;
-    }
-
-    // ========================================
-    // ADMIN COLLECTION (server-side only)
-    // ========================================
-
-    match /admin/{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    // ========================================
-<<<<<<< HEAD
-    // ADMIN LOGS (admin-only read/write)
-    // ========================================
-
-    match /admin_logs/{logId} {
-      allow read, write: if isAdmin();
-    }
-
-    // ========================================
-    // ANALYTICS (admin-only read/write)
-    // ========================================
-
-    match /analytics/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    // ========================================
-    // ADMIN ACTIONS (immutable audit log)
-    // ========================================
-
-    match /admin_actions/{actionId} {
-      // Admins and superadmins can read and create; no one can update or delete.
-      allow read: if isAdmin() || isSuperAdmin();
-      allow create: if isAdmin() || isSuperAdmin();
-      allow update, delete: if false;
-    }
-
-    // ========================================
-    // ADMIN ROLES COLLECTION
-    // ========================================
-    match /admin_roles/{roleId} {
-      // Owner and admins can read roles
-      allow read: if isAdmin() || isSuperAdmin() || (isSignedIn() && request.auth.uid == resource.data.userId);
-      // Owner can create roles for any user; admins can create for themselves or assigned rooms
-      allow create: if isSuperAdmin() || (isAdmin() && request.resource.data.userId == request.auth.uid);
-      // Owner can update/delete any role; admins can update/delete their own
-      allow update, delete: if isSuperAdmin() || (isAdmin() && request.auth.uid == resource.data.userId);
-    }
-
-    // ========================================
-    // DIGITAL GOODS: PACKS, PURCHASES, CREATIONS
-    // ========================================
-
-    // Packs catalog (global)
-    match /packs/{packId} {
-      // Anyone signed in can read packs
-      allow read: if isSignedIn();
-      // Only admins, superadmins, or official creators can create/update official packs
-      allow create, update: if isAdmin() || isSuperAdmin() || (isSignedIn() && request.auth.uid == request.resource.data.creatorId && request.resource.data.isOfficial == false);
-      // Only creator or admin can delete unpublished packs
-      allow delete: if isAdmin() || isSuperAdmin() || (isSignedIn() && request.auth.uid == resource.data.creatorId && !resource.data.isPublished);
-    }
-
-    // User purchases (subcollection)
-    match /users/{userId}/purchases/{packId} {
-      // Only owner can read their purchases
-      allow read: if isOwner(userId);
-      // Only backend (admin/server) can create purchase records
-      allow create: if isAdmin() || isSuperAdmin();
-      // No client-side updates/deletes
-      allow update, delete: if false;
-    }
-
-    // User creations (subcollection)
-    match /users/{userId}/creations/{creationId} {
-      // Only owner can read/write their creations
-      allow read, create, update, delete: if isOwner(userId);
-    }
-
-    // User tier field (in users/{userId})
-    match /users/{userId} {
-      // Allow reading tier for self
-      allow read: if isOwner(userId);
-      // Allow updating tier only by backend/admin
-      allow update: if isAdmin() || isSuperAdmin();
-=======
-    // ADS MONETIZATION SYSTEM
-    // ========================================
-
-    // Advertisers — only admins can create/modify billing fields.
-    // Any authenticated user can read active advertisers (for ad serving).
-    match /advertisers/{advertiserId} {
-      allow read: if isSignedIn();
-      allow create: if isAdmin();
-
-      // Admins can update anything.
-      // Non-admins cannot touch billing-sensitive fields.
-      allow update: if isAdmin() ||
-                       (isSignedIn() &&
-                        !request.resource.data.diff(resource.data)
-                          .affectedKeys()
-                          .hasAny(['impressionsRemaining', 'clicksRemaining',
-                                   'billingStatus', 'promoCode']));
-
-      allow delete: if isAdmin();
-    }
-
-    // Ads (creatives) — admins manage; authenticated users can read active ads.
-    match /ads/{adId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-
-      // Allow impression/click counter increments by authenticated users.
-      // Only impressionCount and clickCount may be incremented by non-admins.
-      allow update: if isSignedIn() &&
-                       request.resource.data.diff(resource.data)
-                         .affectedKeys()
-                         .hasOnly(['impressionCount', 'clickCount', 'updatedAt']);
-    }
-
-    // Promo codes — admins manage; authenticated users can read to validate.
-    // Only admins can mark a promo as active/inactive.
-    // A user can redeem (set redeemedAt) if the code is active and not yet redeemed.
-    match /promoCodes/{code} {
-      allow read: if isSignedIn();
-      allow create, delete: if isAdmin();
-
-      // Admin: full update
-      allow update: if isAdmin();
-
-      // Any signed-in user may set redeemedAt once (redemption).
-      allow update: if isSignedIn() &&
-                       resource.data.active == true &&
-                       resource.data.redeemedAt == null &&
-                       request.resource.data.diff(resource.data)
-                         .affectedKeys()
-                         .hasOnly(['redeemedAt']);
->>>>>>> origin/develop
-    }
-
-    // ========================================
-    // DEFAULT: DENY ALL
-    // ========================================
-
+    // ============================================================
+    // CATCH-ALL (Deny all by default)
+    // ============================================================
     match /{document=**} {
       allow read, write: if false;
     }

@@ -108,32 +108,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         lastSeen: currentUser.lastSeen,
         membershipTier: currentUser.membershipTier,
         badges: currentUser.badges,
-      );
-
-      await ref.read(firestoreServiceProvider).updateUser(updatedUser);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile: $e')),
-        );
-      }
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _pickAvatar() async {
-    try {
-      XFile? image;
-
-      if (kIsWeb) {
+       profileComplete: true,
         // On web, show options dialog
         final source = await showDialog<ImageSource>(
           context: context,

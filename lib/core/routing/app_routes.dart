@@ -173,9 +173,21 @@ class AppRoutes {
           if (user.ageVerified != true) {
             return const AgeGatePage();
           }
-          if (user.profileComplete != true) {
+
+          // Routes that don't require profileComplete (profile setup, settings, legal, etc)
+          final profileNotRequiredRoutes = {
+            createRoom,
+            '/create-room',  // Also handle the alternative URL
+            profile, editProfile, settings, accountSettings,
+            privacySettings, notificationSettings, blockedUsers, userProfile,
+            terms, privacy, agoraTest, routeTest, providerDebug, login, signup,
+          };
+
+          // Check profileComplete only for routes that require it
+          if (user.profileComplete != true && !profileNotRequiredRoutes.contains(routeSettings.name)) {
             return const NeonSignupPage();
           }
+
           switch (routeSettings.name) {
             case landing:
               return const LandingPage();
@@ -239,6 +251,7 @@ class AppRoutes {
             case coins:
               return const CoinPurchasePage();
             case createRoom:
+            case '/create-room':
               return const CreateRoomPageComplete();
             case events:
               return const EventsPage();
