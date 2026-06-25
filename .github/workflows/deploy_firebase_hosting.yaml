@@ -15,18 +15,9 @@ jobs:
         with:
           channel: stable
           flutter-version: '3.24.x'
-          cache: true
 
-      - name: Configure Dart
-        run: |
-          dart --version
-          flutter --version
-
-      - name: Pub get with retry
-        run: |
-          for i in {1..3}; do
-            flutter pub get && break || sleep 5
-          done
+      - name: Get dependencies
+        run: flutter pub get
 
       - name: Build web
         run: flutter build web --release --base-href "/"
