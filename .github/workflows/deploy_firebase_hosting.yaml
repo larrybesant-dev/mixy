@@ -25,7 +25,9 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter doctor
+          flutter pub get --verbose
 
       - name: Build web release
         run: flutter build web --release --base-href "/"
