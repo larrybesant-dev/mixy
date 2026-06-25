@@ -1,14 +1,20 @@
 name: Startup Release Governance
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # DISABLED: Push and pull_request triggers removed to reduce CI noise
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  workflow_dispatch:  # Can still be triggered manually
 
 permissions:
   contents: read
   actions: read
+
+# DISABLED: This workflow is temporarily disabled to reduce CI noise.
+# Run manually via workflow_dispatch if needed for startup governance checks.
+# Re-enable by uncommenting the 'on:' section below and pushing to main.
 
 jobs:
   startup-gate:

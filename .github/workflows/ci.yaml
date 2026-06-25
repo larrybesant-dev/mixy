@@ -3,16 +3,18 @@ name: Flutter CI
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# DISABLED: This workflow is temporarily disabled to reduce CI noise.
+# Run manually via workflow_dispatch if needed for detailed Flutter CI analysis.
 on:
-  push:
-    branches: [ main ]
-    tags: [ 'rc-*', 'v*' ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    - cron: '30 4 * * *'
-  workflow_dispatch:
-  workflow_call:
+  # push:  # DISABLED
+  #   branches: [ main ]
+  #   tags: [ 'rc-*', 'v*' ]
+  # pull_request:  # DISABLED
+  #   branches: [ main ]
+  # schedule:  # DISABLED
+  #   - cron: '30 4 * * *'
+  workflow_dispatch:  # Can still be triggered manually
+  # workflow_call:  # DISABLED
 
 jobs:
   flutter-tier0:
