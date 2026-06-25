@@ -12,6 +12,7 @@ final topEightDisplayProvider = StreamProvider.family.autoDispose<List<UserModel
       .doc(targetUserId)
       .collection('top_friends')
       .orderBy('slotIndex')
+      .limit(8) // Enforce explicit limit for production safety
       .snapshots()
       .map((snapshot) {
     return snapshot.docs.map((doc) {

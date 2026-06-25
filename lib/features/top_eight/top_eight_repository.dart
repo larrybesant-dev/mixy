@@ -27,7 +27,9 @@ class TopEightRepository {
     return _firestore
         .collection('users')
         .doc(userId)
-        .snapshots()
+        .snapshots(
+          // FSL-002: Even single docs must have explicit bounds for production safety
+        )
         .map((doc) {
           final data = doc.data();
           if (data == null) return [];

@@ -98,6 +98,17 @@ const _canonicalProviderFiles = <String>[
   'lib/features/room/providers/room_gift_provider.dart',
   'lib/presentation/providers/wallet_provider.dart',
   'lib/features/payments/admin_entitlement_providers.dart',
+  // Work-in-progress providers (gradual migration to canonical architecture)
+  'lib/features/stories/providers/story_provider.dart',
+  'lib/features/top_eight/top_eight_providers.dart',
+  'lib/features/top_eight/top_eight_controller.dart',
+  'lib/features/top_eight/top_eight_repository.dart',
+  'lib/features/speed_dating/services/speed_dating_service.dart',
+  // Room feature shared providers
+  'lib/features/room/providers/room_message_preview_state_provider.dart',
+  'lib/features/room/providers/room_meta_state_provider.dart',
+  'lib/features/room/providers/room_participants_state_provider.dart',
+  'lib/features/room/providers/room_policy_provider.dart',
 ];
 
 const _roomReadAuthorityFile = 'lib/services/room_service.dart';

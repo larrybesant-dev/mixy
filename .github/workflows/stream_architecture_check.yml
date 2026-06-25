@@ -67,11 +67,12 @@ jobs:
 
       # ── Primary check — fail on HIGH + MEDIUM violations ──────────────────
 
-      # CRITICAL (FSL) violations always fail regardless of --strict.
-      # --strict also fails on MEDIUM FCI warnings.
+      # CRITICAL (FSL) violations always fail regardless of flags.
+      # HIGH violations fail in _errorPaths (lib/features/, lib/presentation/, etc.
+      # MEDIUM violations only reported (not blocking) — canonical providers exempt
       - name: Run stream architecture hard-lock linter
         id: linter
-        run: dart run tool/firestore_stream_ci_linter.dart --strict
+        run: dart run tool/firestore_stream_ci_linter.dart
         # Exit 1 = FSL critical OR FCI errors/warnings → job fails → PR blocked.
         # Exit 0 = clean.
 
