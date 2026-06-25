@@ -42,11 +42,12 @@ jobs:
         run: flutter build web --release --no-pub --base-href "/"
 
       - name: Deploy to Firebase Hosting
-        run: |
-          npm install -g firebase-tools@latest
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}' > /tmp/firebase-key.json
-          firebase deploy --only hosting --project mixvy --non-interactive
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}'
+          projectId: mixvy
+          channelId: live
         env:
-          CI: true
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-key.json
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
 
