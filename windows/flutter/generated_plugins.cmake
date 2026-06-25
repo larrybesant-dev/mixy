@@ -14,6 +14,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_storage
   flutter_webrtc
   iris_method_channel
+  permission_handler_windows
   share_plus
   url_launcher_windows
 )

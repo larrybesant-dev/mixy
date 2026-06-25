@@ -1,6 +1,11 @@
 {
   "cmake.sourceDirectory": "C:/MixVy/linux",
-  "chat.tools.terminal.autoApprove": {},
+  "chat.tools.terminal.autoApprove": {
+    "/^flutter build web --release --base-href \"/\" 2>&1 \\| Select-Object -Last 30$/": {
+        "approve": true,
+        "matchCommandLine": true
+    }
+},
   "files.associations": {
     "*.ps1": "powershell",
     "*.psm1": "powershell",
