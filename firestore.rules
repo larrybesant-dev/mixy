@@ -511,9 +511,9 @@ service cloud.firestore {
       allow update: if signedIn()
         && resource.data.participantIds.hasAny([request.auth.uid])
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['lastMessage', 'lastMessageAt', 'updatedAt',
-                      'isArchived', 'unreadCounts', 'lastReadAt',
-                      'status', 'typingStatus']);
+            .hasOnly(['lastMessage', 'lastMessagePreview', 'lastMessageSenderId',
+                      'lastMessageAt', 'updatedAt', 'isArchived', 'unreadCounts',
+                      'lastReadAt', 'status', 'typingStatus']);
       allow delete: if false;
 
       match /messages/{messageId} {
