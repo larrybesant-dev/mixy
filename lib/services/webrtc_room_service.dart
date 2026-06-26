@@ -122,7 +122,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     }
 
     final String domain = AppEnv.meteredDomain;
-    final String url = "https://$domain/api/v1/turn/credentialif (secretKey != null) secretKey=$secretKey";
+    final String url = "https://$domain/api/v1/turn/credential${secretKey.isNotEmpty ? '?secretKey=$secretKey' : ''}";
 
     developer.Timeline.startSync('MixVy:WebRTC:FetchTurnCredentials');
     try {
@@ -620,7 +620,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         for (var track in videoTracks) {
           track.enabled = false;
           await track.stop();
-          _localStream?.removeTrack(track);
+          await _localStream?.removeTrack(track);
         }
       }
 

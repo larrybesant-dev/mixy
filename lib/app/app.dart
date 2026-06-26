@@ -35,8 +35,10 @@ class MixVyApp extends ConsumerWidget {
       );
     }
 
-    // Once ready, switch completely to your GoRouter architecture
-    final router = ref.watch(routerProvider);
+    // Keep router instance stable (cached, not recreated on rebuild).
+    // State changes are driven by refreshListenable in routerProvider,
+    // which watches auth/user changes without recreating the router itself.
+    final router = ref.read(routerProvider);
 
     return MaterialApp.router(
       title: 'MixVy',
