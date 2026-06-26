@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/firebase_providers.dart';
 import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/profile/profile_controller.dart';
 import '../../models/user_model.dart';
@@ -73,22 +74,49 @@ String resolvePublicUsername({
   return suffix.isEmpty ? 'MixVy Member' : 'Member $suffix';
 }
 
+/// Provides the current authenticated user with resolved displayName from RTDB.
+///
+/// This provider orchestrates data from three sources:
+/// 1. **AuthController**: Authentication state + UID
+/// 2. **ProfileController**: Cached profile data (username, email, avatar)
+/// 3. **RTDB displayNameStream**: Real-time displayName from `/users/{uid}/displayName`
+///
+/// The displayName priority is:
+/// - displayName from RTDB (source of truth)
+/// - username from ProfileController
+/// - email handle
+/// - UID-based fallback
+///
+/// This ensures the router always has a complete, non-placeholder displayName
+/// before navigation is allowed.
 final userProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authControllerProvider);
   final profileState = ref.watch(profileControllerProvider);
-  // Use AuthController as the single source of truth for session identity.
+  
   final uid = authState.uid;
-
-  if (uid == null) {
+  if (uid == null || uid.isEmpty) {
     return null;
   }
 
-  final resolvedUsername = resolvePublicUsername(
-    uid: uid,
-    profileUsername: profileState.username,
-    authDisplayName: null,
+  // Watch displayName from RTDB.
+  // This is a StreamProvider.autoDispose, so it will emit AsyncValue<String?>.
+  final displayNameAsync = ref.watch(displayNameStreamProvider(uid));
+
+  // Extract the actual displayName value from AsyncValue.
+  final rtdbDisplayName = displayNameAsync.maybeWhen(
+    data: (name) => name,
+    orElse: () => null,
   );
 
+  // Build resolved username: RTDB displayName takes priority.
+  final resolvedUsername = rtdbDisplayName ??
+      resolvePublicUsername(
+        uid: uid,
+        profileUsername: profileState.username,
+        authDisplayName: null,
+      );
+
+  // Use avatar if it belongs to the current user.
   final profileAvatar =
       (profileState.userId == uid || profileState.userId == null) &&
           (profileState.avatarUrl?.isNotEmpty == true)

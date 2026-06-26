@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme.dart';
 import '../panes/messages_pane_view.dart';
-import '../providers/messaging_provider.dart';
+
 
 class MessagesScreen extends ConsumerWidget {
   const MessagesScreen({

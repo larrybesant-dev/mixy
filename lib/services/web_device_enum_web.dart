@@ -31,7 +31,7 @@ Future<List<MediaDeviceInfo>> enumerateWebDevices() async {
       );
     }).toList();
   } catch (e) {
-    print('LOG: [WebDeviceEnum] Device enumeration skipped or denied: $e');
+    // Device enumeration skipped or denied
     return [];
   } finally {
     if (stream != null) {

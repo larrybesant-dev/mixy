@@ -6,7 +6,6 @@ import 'package:mixvy/features/ads/ad_manager.dart';
 import 'package:mixvy/features/feed/controllers/feed_controller.dart';
 import 'package:mixvy/features/payments/premium_entitlement.dart';
 import 'package:mixvy/features/profile/profile_controller.dart';
-import 'package:mixvy/models/profile_model.dart';
 
 /// Minimal widget that mirrors the promo banner conditional in
 /// [DiscoveryFeedContent], without pulling in [StoriesRow] or any

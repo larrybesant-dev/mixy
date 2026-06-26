@@ -29,8 +29,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   bool _isVideoEnabled = false;
   bool _isAudioEnabled = false;
   bool _isAudioSharingEnabled = false;
-  List<String> _remoteUsers = [];
-  bool _isHost = false;
+  final List<String> _remoteUsers = [];
   final Map<String, String> _userDisplayNames = {};
 
   @override
@@ -251,6 +250,181 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 
+  void _showParticipantsPanel(String roomId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: VelvetNoir.surfaceHigh,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Room Participants',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: VelvetNoir.onSurface,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  color: VelvetNoir.onSurface,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('rooms')
+                    .doc(roomId)
+                    .collection('participants')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: VelvetNoir.primary,
+                      ),
+                    );
+                  }
+
+                  final participants = snapshot.data!.docs;
+                  if (participants.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No participants yet',
+                        style: GoogleFonts.raleway(
+                          color: VelvetNoir.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: participants.length,
+                    itemBuilder: (context, index) {
+                      final participantData =
+                          participants[index].data() as Map<String, dynamic>;
+                      final userId = participantData['userId'] as String? ?? '';
+                      final displayName = participantData['displayName'] as String? ?? 'Anonymous';
+                      final role = participantData['role'] as String? ?? 'audience';
+                      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                      final isYou = userId == currentUserId;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: VelvetNoir.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: VelvetNoir.primary.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: role == 'host'
+                                  ? VelvetNoir.primary
+                                  : VelvetNoir.secondary,
+                              radius: 20,
+                              child: Text(
+                                displayName[0].toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        displayName,
+                                        style: GoogleFonts.raleway(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: VelvetNoir.onSurface,
+                                        ),
+                                      ),
+                                      if (isYou)
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8),
+                                          child: Chip(
+                                            label: Text(
+                                              'You',
+                                              style: GoogleFonts.raleway(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            backgroundColor: VelvetNoir.liveGlow,
+                                            labelPadding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: role == 'host'
+                                          ? VelvetNoir.primary.withValues(alpha: 0.2)
+                                          : VelvetNoir.secondary.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      role.toUpperCase(),
+                                      style: GoogleFonts.raleway(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: role == 'host'
+                                            ? VelvetNoir.primary
+                                            : VelvetNoir.secondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -272,10 +446,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               onPressed: () => _shareRoom('Live Room'),
               tooltip: 'Share room',
             ),
-          if (_hasJoined && _remoteUsers.isNotEmpty)
+          if (_hasJoined)
             IconButton(
               icon: const Icon(Icons.people_outline),
-              onPressed: () => _showPeopleSheet(_remoteUsers),
+              onPressed: () => _showParticipantsPanel(widget.roomId),
               tooltip: 'Participants',
             ),
           const SizedBox(width: 8),
@@ -310,8 +484,6 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             snapshot.data!.data() as Map<String, dynamic>,
             widget.roomId,
           );
-
-          _isHost = room.hostId == currentUser?.uid;
 
           return isDesktop ? _buildDesktopLayout(room, currentUser) : _buildMobileLayout(room, currentUser);
         },
@@ -595,12 +767,37 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            'Hosted by ${room.hostUsername ?? 'Anonymous'} • ${room.memberCount} listeners',
-            style: GoogleFonts.raleway(
-              fontSize: 12,
-              color: VelvetNoir.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Text(
+                'Hosted by ${room.hostUsername ?? 'Anonymous'}',
+                style: GoogleFonts.raleway(
+                  fontSize: 12,
+                  color: VelvetNoir.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _showParticipantsPanel(room.id),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.people, size: 14, color: VelvetNoir.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${room.memberCount} listeners',
+                        style: GoogleFonts.raleway(
+                          fontSize: 12,
+                          color: VelvetNoir.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -29,11 +29,11 @@ Future<void> ensureUserMediaAccess({
     for (final track in stream.getTracks()) {
       track.stop();
     }
-  } on TimeoutException catch (e) {
-    print('LOG: [WebMediaProbe] Timeout: $e');
+  } on TimeoutException {
+    // Timeout during media probe
     rethrow;
   } catch (e) {
-    print('LOG: [WebMediaProbe] Error capturing media devices: $e');
+    // Error capturing media devices
     rethrow;
   }
 }

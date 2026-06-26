@@ -6,6 +6,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../services/rtdb_presence_service.dart';
+import '../../services/rtdb_user_service.dart';
 
 /// Canonical Firebase singleton providers.
 ///
@@ -80,6 +81,27 @@ final rtdbPresenceServiceProvider = Provider<RtdbPresenceService>((ref) {
   final db = ref.watch(firebaseDatabaseProvider);
   return RtdbPresenceService(db);
 });
+
+/// RTDB user service — reads user identity data from Realtime Database.
+final rtdbUserServiceProvider = Provider<RtdbUserService>((ref) {
+  final db = ref.watch(firebaseDatabaseProvider);
+  return RtdbUserService(rtdb: db);
+});
+
+/// Real-time displayName stream from RTDB at /users/{userId}/displayName.
+///
+/// Returns null if the user ID is empty, RTDB is unavailable, or the field
+/// does not exist. Use this provider to get fresh displayName that bypasses
+/// Firestore and reads directly from the source of truth.
+final displayNameStreamProvider = StreamProvider.autoDispose
+    .family<String?, String>((ref, userId) {
+      final normalizedUserId = userId.trim();
+      if (normalizedUserId.isEmpty) {
+        return Stream<String?>.value(null);
+      }
+      final service = ref.watch(rtdbUserServiceProvider);
+      return service.watchDisplayName(normalizedUserId);
+    });
 
 
 

@@ -3,6 +3,7 @@ import 'package:mixvy/models/profile_privacy_model.dart';
 import 'package:mixvy/models/room_policy_model.dart';
 import 'package:mixvy/services/profile_service.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 
 class ProfileState {
   final bool isLoading;
@@ -120,7 +121,44 @@ class ProfileController extends Notifier<ProfileState> {
     }
   }
 
-  Future<void> fetchProfile(String? userId) async {}
-  Future<void> loadCurrentProfile() async {}
+  Future<void> fetchProfile(String? userId) async {
+    if (userId == null || userId.isEmpty) {
+      state = state.copyWith(error: 'User ID is required');
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final userProfile = await _profileService.loadProfile(userId);
+      if (userProfile != null) {
+        state = state.copyWith(
+          userId: userId,
+          username: userProfile.username,
+          email: userProfile.email,
+          avatarUrl: userProfile.avatarUrl,
+          bio: userProfile.bio,
+          isLoading: false,
+        );
+      } else {
+        state = state.copyWith(
+          userId: userId,
+          isLoading: false,
+          error: 'Profile not found',
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to fetch profile: $e',
+      );
+    }
+  }
+
+  Future<void> loadCurrentProfile() async {
+    // Get the current authenticated user ID from authControllerProvider
+    final authState = ref.read(authControllerProvider);
+    await fetchProfile(authState.uid);
+  }
+
   void updateDraft(ProfileState profile) { state = profile; }
 }

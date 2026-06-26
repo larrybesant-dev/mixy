@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/features/profile/profile_controller.dart';
 import 'package:mixvy/features/profile/profile_screen.dart';
-import 'package:mocktail/mocktail.dart';
+
 
 import 'test_helpers.dart';
 

@@ -165,16 +165,19 @@ class UserModel {
   }
 
   static String _resolvedUsername(Map<String, dynamic> json) {
+    // Priority 1: Explicit username field
     final explicit = _stringOrNull(json['username']);
     if (explicit != null) {
       return explicit;
     }
 
+    // Priority 2: displayName from RTDB (now in json from userProvider)
     final displayName = _stringOrNull(json['displayName'] ?? json['name']);
-    if (displayName != null) {
+    if (displayName != null && displayName != 'Member') {
       return displayName;
     }
 
+    // Priority 3: Email handle
     final email = _stringOrNull(json['email']);
     if (email != null && email.contains('@')) {
       final handle = email.split('@').first.trim();
@@ -183,16 +186,22 @@ class UserModel {
       }
     }
 
+    // Priority 4: Generate from UID (fallback for incomplete registrations)
     final id = _stringOrNull(json['id'] ?? json['uid']) ?? '';
+    if (id.isEmpty) {
+      return 'MixVy Member';
+    }
+
     final compact = id.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
     if (compact.isEmpty) {
       return 'MixVy Member';
     }
+
     final suffix = compact.substring(
       0,
       compact.length < 4 ? compact.length : 4,
     );
-    return 'Member $suffix';
+    return suffix.isEmpty ? 'MixVy Member' : 'Member $suffix';
   }
 
   String get uid => id;
