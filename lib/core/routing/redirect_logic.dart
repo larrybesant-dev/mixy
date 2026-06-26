@@ -61,6 +61,16 @@ RedirectEvaluation evaluateAppRedirectWithReason({
     );
   }
 
+  // ── 5. AUTHENTICATED NAVIGATION - Allow all main app routes for authenticated users ──
+  // This ensures that authenticated users can navigate to all main app tabs
+  // including /messages, /rooms, /profile, /speed-dating without being redirected back
+  if (isAuth) {
+    return const RedirectEvaluation(
+      redirectTo: null,
+      reason: 'authenticated_allow_navigation',
+    );
+  }
+
   return const RedirectEvaluation(
     redirectTo: null,
     reason: 'allow_navigation',

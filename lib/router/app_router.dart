@@ -62,7 +62,7 @@ import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
 import 'package:mixvy/features/room/presentation/call_screen.dart';
 import 'package:mixvy/features/room/presentation/live_room_screen.dart';
-import 'package:mixvy/shared/widgets/app_shell.dart';
+import 'package:mixvy/shared/providers/tab_navigation_provider.dart';
 import 'package:mixvy/features/dashboard/dashboard_screen.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
 
@@ -193,201 +193,193 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
     },
     routes: [
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
-        branches: [
-          // Branch 0: Feed
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/home',
-                builder: (context, state) => const DashboardScreen(),
-                routes: [
-                  GoRoute(path: 'notifications', builder: (context, state) => const NotificationsScreen()),
-                  GoRoute(path: 'search', builder: (context, state) => const SearchScreen()),
-                  GoRoute(path: 'explore', builder: (context, state) => const ExploreScreen()),
-                  GoRoute(path: 'trending', builder: (context, state) => const TrendingScreen()),
-                  GoRoute(
-                    path: 'bookmarks',
-                    builder: (context, state) {
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      if (uid.isEmpty) {
-                        return const FeatureDegradedScreen(
-                          title: 'Not logged in',
-                          message: 'Please log in to view bookmarks.',
-                          primaryLabel: 'Go to login',
-                          primaryRoute: '/auth',
-                          icon: Icons.lock_outline,
-                        );
-                      }
-                      return BookmarksScreen(userId: uid);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'create-post',
-                    builder: (context, state) {
-                      final user = refreshNotifier.currentUser;
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      final userId = user?.id ?? uid;
-                      if (userId.isEmpty) return const LoginScreen();
-                      return CreatePostScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'post/:id/comments',
-                    builder: (context, state) {
-                      final postId = state.pathParameters['id'] ?? '';
-                      if (postId.isEmpty) return const FeatureDegradedScreen(title: 'Comments unavailable', message: 'Could not resolve a post id.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.comment_bank_outlined);
-                      return PostCommentsScreen(postId: postId);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'create-story',
-                    builder: (context, state) {
-                      final user = refreshNotifier.currentUser;
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      final userId = user?.id ?? uid;
-                      if (userId.isEmpty) return const LoginScreen();
-                      return CreateStoryScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
-                    },
-                  ),
-                  GoRoute(path: 'stories/:userId', builder: (context, state) => StoryViewerScreen(userId: state.pathParameters['userId'] ?? '')),
-                  GoRoute(path: 'ops', builder: (context, state) => const RealtimeOpsScreen()),
-                ],
-              ),
-            ],
+      // Custom shell route that bypasses StatefulShellRoute limitations on web
+      GoRoute(
+        path: '/home',
+        name: 'home',
+        builder: (context, state) => _CustomShell(initialIndex: 0),
+        routes: [
+          GoRoute(path: 'notifications', name: 'notifications', builder: (context, state) => const NotificationsScreen()),
+          GoRoute(path: 'search', name: 'search', builder: (context, state) => const SearchScreen()),
+          GoRoute(path: 'explore', name: 'explore', builder: (context, state) => const ExploreScreen()),
+          GoRoute(path: 'trending', name: 'trending', builder: (context, state) => const TrendingScreen()),
+          GoRoute(
+            path: 'bookmarks',
+            name: 'bookmarks',
+            builder: (context, state) {
+              final uid = refreshNotifier.authState.uid ?? '';
+              if (uid.isEmpty) {
+                return const FeatureDegradedScreen(
+                  title: 'Not logged in',
+                  message: 'Please log in to view bookmarks.',
+                  primaryLabel: 'Go to login',
+                  primaryRoute: '/auth',
+                  icon: Icons.lock_outline,
+                );
+              }
+              return BookmarksScreen(userId: uid);
+            },
           ),
-          // Branch 1: Messages
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/messages',
-                builder: (context, state) {
-                  final user = ref.read(userProvider);
-                  if (user == null) return AuthInvariant.authRequiredScreen(message: 'Please sign in to access your inbox.');
-                  return MessagesScreen(userId: user.id, username: user.username);
-                },
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    builder: (context, state) {
-                      final user = refreshNotifier.currentUser;
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      return NewMessageScreen(userId: user?.id ?? uid, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'create-group-chat',
-                    builder: (context, state) {
-                      final user = refreshNotifier.currentUser;
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      return CreateGroupChatScreen(userId: user?.id ?? uid, username: user?.username ?? 'User');
-                    },
-                  ),
-                  GoRoute(
-                    path: 'chat/:id',
-                    builder: (context, state) {
-                      final user = refreshNotifier.currentUser;
-                      final conversationId = state.pathParameters['id'] ?? '';
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      return ChatScreen(conversationId: conversationId, userId: user?.id ?? uid, username: user?.username ?? 'Chat', avatarUrl: user?.avatarUrl);
-                    },
-                  ),
-                ],
-              ),
-            ],
+          GoRoute(
+            path: 'create-post',
+            name: 'createPost',
+            builder: (context, state) {
+              final user = refreshNotifier.currentUser;
+              final uid = refreshNotifier.authState.uid ?? '';
+              final userId = user?.id ?? uid;
+              if (userId.isEmpty) return const LoginScreen();
+              return CreatePostScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
+            },
           ),
-          // Branch 2: Live Rooms
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/rooms',
-                builder: (context, state) => const RoomBrowserScreen(),
-                routes: [
-                  GoRoute(path: 'create', builder: (context, state) => const CreateRoomScreen()),
-                  GoRoute(path: 'secure-call', builder: (context, state) => const CallScreen()),
-                  GoRoute(
-                    path: 'room/:id',
-                    builder: (context, state) {
-                      final roomId = state.pathParameters['id'] ?? '';
-                      final previewRoom = state.extra is RoomModel ? state.extra as RoomModel : null;
-                      // Adult room protection
-                      if ((previewRoom?.isAdult ?? false) && (refreshNotifier.authState.uid?.isEmpty ?? true)) {
-                        return const FeatureDegradedScreen(title: 'Sign in required', message: 'This room contains adult content. Please sign in.', primaryLabel: 'Sign in', primaryRoute: '/auth', icon: Icons.lock_outline);
-                      }
-                      return LiveRoomScreen(roomId: roomId, previewRoom: previewRoom?.id == roomId ? previewRoom : null);
-                    },
-                  ),
-                  GoRoute(path: 'cam', builder: (context, state) => CamPopoutScreen(targetUserId: state.uri.queryParameters['userId'] ?? '')),
-                ],
-              ),
-            ],
+          GoRoute(
+            path: 'post/:id/comments',
+            name: 'postComments',
+            builder: (context, state) {
+              final postId = state.pathParameters['id'] ?? '';
+              if (postId.isEmpty) return const FeatureDegradedScreen(title: 'Comments unavailable', message: 'Could not resolve a post id.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.comment_bank_outlined);
+              return PostCommentsScreen(postId: postId);
+            },
           ),
-          // Branch 3: Dating
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: '/speed-dating', builder: (context, state) => const SpeedDatingScreen()),
-            ],
+          GoRoute(
+            path: 'create-story',
+            name: 'createStory',
+            builder: (context, state) {
+              final user = refreshNotifier.currentUser;
+              final uid = refreshNotifier.authState.uid ?? '';
+              final userId = user?.id ?? uid;
+              if (userId.isEmpty) return const LoginScreen();
+              return CreateStoryScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
+            },
           ),
-          // Branch 4: Profile
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/profile',
-                redirect: (context, state) {
-                  final uid = refreshNotifier.authState.uid;
-                  if (uid == null || uid.isEmpty) return '/auth';
-                  if (state.uri.path == '/profile') return '/profile/$uid';
-                  return null;
-                },
-                routes: [
-                  GoRoute(path: ':id', builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id'] ?? '')),
-                  GoRoute(path: 'edit', builder: (context, state) => EditProfileScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0)),
-                  GoRoute(path: 'settings', builder: (context, state) => const SettingsScreen()),
-                  GoRoute(path: 'friends', builder: (context, state) => const FriendListScreen()),
-                  GoRoute(path: 'groups', builder: (context, state) => GroupsScreen(userId: refreshNotifier.authState.uid ?? '')),
-                  GoRoute(
-                    path: 'group/:id',
-                    builder: (context, state) {
-                      final groupId = state.pathParameters['id'] ?? '';
-                      if (groupId.isEmpty) return const FeatureDegradedScreen(title: 'Group unavailable', message: 'Could not resolve a group id.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.error_outline);
-                      return GroupDetailsScreen(groupId: groupId, userId: refreshNotifier.authState.uid ?? '');
-                    },
-                  ),
-                  GoRoute(path: 'create-group', builder: (context, state) => CreateGroupScreen(userId: refreshNotifier.authState.uid ?? '')),
-                  GoRoute(path: 'manage-top-8', builder: (context, state) => const TopEightManagementScreen()),
-                  GoRoute(path: 'pending-requests', builder: (context, state) => const PendingRequestsScreen()),
-                  GoRoute(path: 'verification', builder: (context, state) => const VerificationScreen()),
-                  GoRoute(path: 'account', builder: (context, state) => const AccountCenterScreen()),
-                  GoRoute(path: 'about', builder: (context, state) => const AppInfoScreen()),
-                  GoRoute(path: 'legal/terms', builder: (context, state) => const LegalTermsScreen()),
-                  GoRoute(path: 'legal/privacy', builder: (context, state) => const LegalPrivacyScreen()),
-                  GoRoute(
-                    path: 'payments',
-                    builder: (context, state) {
-                      final uid = refreshNotifier.authState.uid ?? '';
-                      if (uid.isEmpty) return const LoginScreen();
-                      return const PaymentsScreen();
-                    },
-                  ),
-                  GoRoute(path: 'vip', builder: (context, state) => const VipScreen()),
-                  GoRoute(
-                    path: 'admin-entitlements',
-                    builder: (context, state) {
-                      if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to admin tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
-                      return const AdminEntitlementViewerScreen();
-                    },
-                  ),
-                  GoRoute(
-                    path: 'moderation',
-                    builder: (context, state) {
-                      if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to moderation tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
-                      return const ModerationDashboardScreen();
-                    },
-                  ),
-                ],
-              ),
-            ],
+          GoRoute(path: 'stories/:userId', name: 'storyViewer', builder: (context, state) => StoryViewerScreen(userId: state.pathParameters['userId'] ?? '')),
+          GoRoute(path: 'ops', name: 'realtimeOps', builder: (context, state) => const RealtimeOpsScreen()),
+        ],
+      ),
+      GoRoute(
+        path: '/messages',
+        name: 'messages',
+        builder: (context, state) {
+          final user = ref.read(userProvider);
+          if (user == null) return AuthInvariant.authRequiredScreen(message: 'Please sign in to access your inbox.');
+          return _CustomShell(initialIndex: 1);
+        },
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: 'newMessage',
+            builder: (context, state) {
+              final user = refreshNotifier.currentUser;
+              final uid = refreshNotifier.authState.uid ?? '';
+              return NewMessageScreen(userId: user?.id ?? uid, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
+            },
+          ),
+          GoRoute(
+            path: 'create-group-chat',
+            name: 'createGroupChat',
+            builder: (context, state) {
+              final user = refreshNotifier.currentUser;
+              final uid = refreshNotifier.authState.uid ?? '';
+              return CreateGroupChatScreen(userId: user?.id ?? uid, username: user?.username ?? 'User');
+            },
+          ),
+          GoRoute(
+            path: 'chat/:id',
+            name: 'chat',
+            builder: (context, state) {
+              final user = refreshNotifier.currentUser;
+              final conversationId = state.pathParameters['id'] ?? '';
+              final uid = refreshNotifier.authState.uid ?? '';
+              return ChatScreen(conversationId: conversationId, userId: user?.id ?? uid, username: user?.username ?? 'Chat', avatarUrl: user?.avatarUrl);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/rooms',
+        name: 'rooms',
+        builder: (context, state) => _CustomShell(initialIndex: 2),
+        routes: [
+          GoRoute(path: 'create', name: 'createRoom', builder: (context, state) => const CreateRoomScreen()),
+          GoRoute(path: 'secure-call', name: 'secureCall', builder: (context, state) => const CallScreen()),
+          GoRoute(
+            path: 'room/:id',
+            name: 'liveRoom',
+            builder: (context, state) {
+              final roomId = state.pathParameters['id'] ?? '';
+              final previewRoom = state.extra is RoomModel ? state.extra as RoomModel : null;
+              // Adult room protection
+              if ((previewRoom?.isAdult ?? false) && (refreshNotifier.authState.uid?.isEmpty ?? true)) {
+                return const FeatureDegradedScreen(title: 'Sign in required', message: 'This room contains adult content. Please sign in.', primaryLabel: 'Sign in', primaryRoute: '/auth', icon: Icons.lock_outline);
+              }
+              return LiveRoomScreen(roomId: roomId);
+            },
+          ),
+          GoRoute(path: 'cam', name: 'camPopout', builder: (context, state) => CamPopoutScreen(targetUserId: state.uri.queryParameters['userId'] ?? '')),
+        ],
+      ),
+      GoRoute(
+        path: '/speed-dating',
+        name: 'speedDating',
+        builder: (context, state) => _CustomShell(initialIndex: 3),
+      ),
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        redirect: (context, state) {
+          final uid = refreshNotifier.authState.uid;
+          if (uid == null || uid.isEmpty) return '/auth';
+          if (state.uri.path == '/profile') return '/profile/$uid';
+          return null;
+        },
+        builder: (context, state) => _CustomShell(initialIndex: 4),
+        routes: [
+          GoRoute(path: ':id', name: 'userProfile', builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id'] ?? '')),
+          GoRoute(path: 'edit', name: 'editProfile', builder: (context, state) => EditProfileScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0)),
+          GoRoute(path: 'settings', name: 'profileSettings', builder: (context, state) => const SettingsScreen()),
+          GoRoute(path: 'friends', name: 'profileFriends', builder: (context, state) => const FriendListScreen()),
+          GoRoute(path: 'groups', name: 'profileGroups', builder: (context, state) => GroupsScreen(userId: refreshNotifier.authState.uid ?? '')),
+          GoRoute(
+            path: 'group/:id',
+            name: 'groupDetails',
+            builder: (context, state) {
+              final groupId = state.pathParameters['id'] ?? '';
+              if (groupId.isEmpty) return const FeatureDegradedScreen(title: 'Group unavailable', message: 'Could not resolve a group id.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.error_outline);
+              return GroupDetailsScreen(groupId: groupId, userId: refreshNotifier.authState.uid ?? '');
+            },
+          ),
+          GoRoute(path: 'create-group', name: 'createGroup', builder: (context, state) => CreateGroupScreen(userId: refreshNotifier.authState.uid ?? '')),
+          GoRoute(path: 'manage-top-8', name: 'manageTopEight', builder: (context, state) => const TopEightManagementScreen()),
+          GoRoute(path: 'pending-requests', name: 'pendingRequests', builder: (context, state) => const PendingRequestsScreen()),
+          GoRoute(path: 'verification', name: 'verification', builder: (context, state) => const VerificationScreen()),
+          GoRoute(path: 'account', name: 'account', builder: (context, state) => const AccountCenterScreen()),
+          GoRoute(path: 'about', name: 'about', builder: (context, state) => const AppInfoScreen()),
+          GoRoute(path: 'legal/terms', name: 'legalTerms', builder: (context, state) => const LegalTermsScreen()),
+          GoRoute(path: 'legal/privacy', name: 'legalPrivacy', builder: (context, state) => const LegalPrivacyScreen()),
+          GoRoute(
+            path: 'payments',
+            name: 'payments',
+            builder: (context, state) {
+              final uid = refreshNotifier.authState.uid ?? '';
+              if (uid.isEmpty) return const LoginScreen();
+              return const PaymentsScreen();
+            },
+          ),
+          GoRoute(path: 'vip', name: 'vip', builder: (context, state) => const VipScreen()),
+          GoRoute(
+            path: 'admin-entitlements',
+            name: 'adminEntitlements',
+            builder: (context, state) {
+              if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to admin tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
+              return const AdminEntitlementViewerScreen();
+            },
+          ),
+          GoRoute(
+            path: 'moderation',
+            name: 'moderation',
+            builder: (context, state) {
+              if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to moderation tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
+              return const ModerationDashboardScreen();
+            },
           ),
         ],
       ),
@@ -437,10 +429,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', redirect: (context, state) => '/profile/settings'),
       GoRoute(path: '/friends', redirect: (context, state) => '/profile/friends'),
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
-        GoRoute(
-          path: '/rooms',
-          builder: (context, state) => const RoomBrowserScreen(),
-        ),
     ],
   );
 
@@ -452,5 +440,55 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
+
+/// Custom shell implementation using IndexedStack for reliable web navigation
+class _CustomShell extends ConsumerWidget {
+  const _CustomShell({required this.initialIndex});
+
+  final int initialIndex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(selectedTabIndexProvider);
+    final currentUser = ref.watch(userProvider);
+    final uid = currentUser?.id ?? '';
+    final username = currentUser?.username ?? '';
+
+    // Update provider if initialIndex changed (e.g., from deep link or route params)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (selectedIndex != initialIndex) {
+        ref.read(selectedTabIndexProvider.notifier).state = initialIndex;
+      }
+    });
+
+    return Scaffold(
+      body: IndexedStack(
+        index: selectedIndex,
+        children: [
+          const DashboardScreen(),
+          MessagesScreen(userId: uid, username: username),
+          const RoomBrowserScreen(),
+          const SpeedDatingScreen(),
+          UserProfileScreen(userId: uid),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedIndex,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Feed'),
+          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Messages'),
+          NavigationDestination(icon: Icon(Icons.mic_none), selectedIcon: Icon(Icons.mic), label: 'Live Rooms'),
+          NavigationDestination(icon: Icon(Icons.favorite_border), selectedIcon: Icon(Icons.favorite), label: 'Dating'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+        ],
+        onDestinationSelected: (index) {
+          // Update provider to switch IndexedStack content
+          // Don't call go() - it breaks on Flutter web. Deep linking handled by initial route.
+          ref.read(selectedTabIndexProvider.notifier).state = index;
+        },
+      ),
+    );
+  }
+}
 
 

@@ -72,12 +72,21 @@ final rawConversationsStreamProvider = StreamProvider.autoDispose
             .orderBy('lastMessageAt', descending: true)
             .limit(QueryPolicy.conversationsLimit)
             .snapshots()
+            .timeout(
+              const Duration(seconds: 3),
+              onTimeout: (sink) {
+                // Close sink on timeout - prevent permanent hang
+                sink.close();
+              },
+            )
             .handleError((error, stackTrace) {
+              // Log error but let stream continue or complete
               logFirestoreError(
                 context: 'messaging.rawConversationsStreamProvider',
                 error: error,
                 stackTrace: stackTrace,
               );
+              throw error; // Re-throw so provider shows error state
             })
             .map(
               (snapshot) => snapshot.docs
