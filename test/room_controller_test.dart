@@ -8,6 +8,7 @@ import 'package:mixvy/features/room/providers/mic_access_provider.dart';
 import 'package:mixvy/features/room/providers/participant_providers.dart';
 import 'package:mixvy/features/room/providers/room_firestore_provider.dart';
 import 'package:mixvy/features/room/room_controller.dart';
+import 'test_helpers.dart';
 import 'package:mixvy/features/room/services/room_session_service.dart';
 import 'package:mixvy/models/room_participant_model.dart';
 import 'package:mixvy/services/presence_controller.dart';
@@ -105,7 +106,9 @@ class _FlakyRoomSessionService extends RoomSessionService {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    await testSetup();
+  });
 
   group('RoomController', () {
     test(

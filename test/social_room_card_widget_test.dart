@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/social/widgets/social_room_card.dart';
 import 'package:mixvy/models/room_model.dart';
+import 'test_helpers.dart';
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+  });
+
   RoomModel buildRoom({
     String category = 'chill',
     int memberCount = 12,

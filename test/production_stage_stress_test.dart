@@ -9,6 +9,7 @@ import 'package:mixvy/features/room/widgets/stage_and_audience_view.dart';
 import 'package:mixvy/models/room_participant_model.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
+import 'test_helpers.dart';
 
 /// PRODUCTION STAGE STRESS TEST
 /// 
@@ -18,6 +19,10 @@ import 'package:mixvy/presentation/providers/user_provider.dart';
 /// 3. Reactive UI stability with 100+ Firestore document changes.
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+  });
+
   testWidgets('Stress Test: 100 Audience Members + 4 Stage Speakers', (WidgetTester tester) async {
     // Set desktop-like size for stress testing
     await tester.binding.setSurfaceSize(const Size(1920, 1080));

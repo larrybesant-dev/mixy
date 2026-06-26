@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/room/widgets/camera_wall.dart';
+import 'test_helpers.dart';
 
 void main() {
   group('CameraWall Layout Tests', () {
+    setUpAll(() async {
+      await testSetup();
+    });
+
     testWidgets('Renders correctly with 0 speakers', (tester) async {
       await tester.pumpWidget(
         ProviderScope(

@@ -14,7 +14,6 @@ import '../../../presentation/screens/apple_sign_in_helper.dart';
 import '../../../services/push_messaging_service.dart';
 import '../../../services/schema_mutation_service.dart';
 import '../../../observability/system_event_bus.dart';
-import '../../profile/profile_controller.dart';
 
 enum AuthBootstrapPhase {
   booting,
@@ -272,30 +271,9 @@ class AuthController extends Notifier<AuthState> {
       });
     });
 
-    // Auto-load current user profile when auth stabilizes.
-    ref.listen<AuthState>(authControllerProvider, (prev, next) {
-      final wasNotStable = prev?.isRoutingStable != true;
-      final isNowStable = next.isRoutingStable;
-      final hasUid = next.uid != null && next.uid!.isNotEmpty;
-
-      if (wasNotStable && isNowStable && hasUid) {
-        // Auth just transitioned to stable with a valid UID.
-        // Load the profile so userProvider can resolve displayName.
-        unawaited(
-          Future(() {
-            try {
-              ref.read(profileControllerProvider.notifier).loadCurrentProfile();
-            } catch (e) {
-              developer.log(
-                'Error triggering profile load on auth stabilization',
-                name: 'AuthController',
-                error: e,
-              );
-            }
-          }),
-        );
-      }
-    }, fireImmediately: false);
+    // Profile loading is now handled by userProvider which watches auth state
+    // and displayName streams. Removed ref.listen here to avoid circular dependencies
+    // that were causing Riverpod assertion failures in tests.
 
     // Run critical initialization/repairs.
     // Use initializingAuth + isLoading to guard the stable phase emission.

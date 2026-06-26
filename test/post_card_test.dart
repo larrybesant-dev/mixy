@@ -3,9 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/feed/widgets/post_card.dart';
 import 'package:mixvy/features/feed/models/post_model.dart';
+import 'test_helpers.dart';
 
 void main() {
   group('PostCard Widget Tests', () {
+    setUpAll(() async {
+      await testSetup();
+    });
+
     testWidgets('renders post content correctly', (WidgetTester tester) async {
       final post = PostModel(
         id: 'post-1',

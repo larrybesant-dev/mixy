@@ -6,9 +6,14 @@ import 'package:mixvy/features/social/widgets/live_room_list.dart';
 import 'package:mixvy/features/social/widgets/social_room_card.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/widgets/brand_ui_kit.dart';
+import 'test_helpers.dart';
 
 void main() {
   group('LiveRoomList Widget and State Binding Tests', () {
+    setUpAll(() async {
+      await testSetup();
+    });
+
     // Helper to generate dynamic mock room models for tests
     RoomModel createMockRoom({
       required String id,

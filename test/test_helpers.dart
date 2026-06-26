@@ -223,6 +223,14 @@ Future<void> testSetup() async {
         const MethodChannel('plugins.flutter.io/firebase_analytics'),
         (MethodCall methodCall) async => null,
       );
+
+  // Mock Firebase Crashlytics channel so logging doesn't crash tests
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/firebase_crashlytics'),
+        (MethodCall methodCall) async => null,
+      );
+
   // Mock Pigeon-based FirebaseAuth channels (firebase_auth >= 5.x) so that
   // calls to FirebaseAuth.currentUser from within unit tests (e.g. messaging
   // actor validation) don't throw channel-error and fire post-test callbacks.
@@ -237,6 +245,10 @@ Future<void> testSetup() async {
           return null;
         });
   }
+
+  // Initialize Firebase after all mocks are set up.
+  // This ensures that tests can use Firebase services without crashes.
+  await Firebase.initializeApp();
 }
 
 /// Utility to wrap widget tests in ProviderScope

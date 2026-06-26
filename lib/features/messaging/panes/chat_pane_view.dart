@@ -604,6 +604,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
                   if (message.isDeleted) {
                     return Padding(
+                      key: ValueKey('deleted-${message.id}'),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Center(
                         child: Text(
@@ -619,6 +620,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   }
 
                   return Align(
+                    key: ValueKey(message.id),
                     alignment: isOwn
                         ? Alignment.centerRight
                         : Alignment.centerLeft,

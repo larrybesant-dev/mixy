@@ -4,11 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mixvy/features/room/widgets/camera_wall.dart';
 import 'package:mixvy/services/rtc_room_service.dart';
+import 'test_helpers.dart';
 
 class MockRtcRoomService extends Mock implements RtcRoomService {}
 
 void main() {
   group('CameraWall Widget Tests', () {
+    setUpAll(() async {
+      await testSetup();
+    });
     testWidgets('renders local tile when showLocalTile is true', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(

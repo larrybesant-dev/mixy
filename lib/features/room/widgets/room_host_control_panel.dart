@@ -855,6 +855,7 @@ class _PeopleTab extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: sorted.length,
           itemBuilder: (context, i) => _ParticipantTile(
+            key: ValueKey(sorted[i].userId),
             participant: sorted[i],
             roomId: roomId,
             currentUserId: currentUserId,
@@ -867,6 +868,7 @@ class _PeopleTab extends ConsumerWidget {
 
 class _ParticipantTile extends ConsumerWidget {
   const _ParticipantTile({
+    super.key,
     required this.participant,
     required this.roomId,
     required this.currentUserId,

@@ -10,8 +10,13 @@ import 'package:mixvy/features/room/providers/host_provider.dart';
 import 'package:mixvy/models/room_participant_model.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
+import 'test_helpers.dart';
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+  });
+
   testWidgets('LiveRoomScreen basic mount', (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 2200));
     addTearDown(() => tester.binding.setSurfaceSize(null));

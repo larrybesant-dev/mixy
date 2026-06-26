@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'test_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    await testSetup();
+  });
 
   testWidgets('SettingsScreen renders persisted preferences', (tester) async {
     SharedPreferences.setMockInitialValues({

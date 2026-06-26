@@ -3,9 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/room/widgets/chat_panel.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import 'test_helpers.dart';
 
 void main() {
   group('ChatPanel Performance & Stress Tests', () {
+    setUpAll(() async {
+      await testSetup();
+    });
+
     testWidgets('Handles a chat storm (100 messages) without crashing', (tester) async {
       final messages = List.generate(
         100,
