@@ -9,6 +9,7 @@ import '../config/app_env.dart';
 import 'dart:developer' as developer;
 import 'package:mixvy/services/rtc_room_service.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
+import '../observability/webrtc_latency_tracker.dart';
 
 /// WebRtcRoomService
 /// 
@@ -18,6 +19,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   DateTime? _rtcConnectedAt;
   final FirebaseFirestore _firestore;
   final String _localUserId;
+  final WebRtcLatencyTracker _latencyTracker;
 
   WebRtcRoomService({
     required FirebaseFirestore firestore,
@@ -25,8 +27,10 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     required StreamLifecycleManager streamLifecycleManager,
     int maxMeshPeers = 6,
     List<Map<String, dynamic>>? iceServers,
+    WebRtcLatencyTracker? latencyTracker,
   })  : _firestore = firestore,
         _localUserId = localUserId,
+        _latencyTracker = latencyTracker ?? WebRtcLatencyTracker(),
         _productionIceServers = iceServers {
     WidgetsBinding.instance.addObserver(this);
   }
@@ -448,6 +452,10 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     if (_pcs.containsKey(peerId)) return;
 
     developer.Timeline.startSync('MixVy:WebRTC:SetupPC', arguments: {'peerId': peerId, 'isOfferer': isOfferer});
+    
+    // Start latency tracking for this peer
+    _latencyTracker.startSignalingTimer(peerId);
+    
     final pc = await createPeerConnection(_iceConfig);
     _pcs[peerId] = pc;
     _uidToUserId[_stableUid(peerId)] = peerId;
@@ -499,18 +507,32 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       final type = data['type'] as String;
       final sdp = data['sdp'] as String;
 
+      // Record when remote description is received from Firestore
+      _latencyTracker.recordRemoteDescriptionReceived(peerId, type);
+
       if (type == 'offer' && !isOfferer) {
         await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+        
+        // Record when remote description has been applied
+        _latencyTracker.recordRemoteDescriptionApplied(peerId);
+        
         final answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+        
         await signalRef.set({
           'senderId': _localUserId,
           'type': 'answer',
           'sdp': answer.sdp,
           'timestamp': FieldValue.serverTimestamp(),
         });
+        
+        // Record when our answer is sent
+        _latencyTracker.recordOfferAnswerSent(peerId, 'answer');
       } else if (type == 'answer' && isOfferer) {
         await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+        
+        // Record when remote answer has been applied
+        _latencyTracker.recordRemoteDescriptionApplied(peerId);
       }
     }));
 
@@ -539,12 +561,16 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     if (isOfferer) {
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      
       await signalRef.set({
         'senderId': _localUserId,
         'type': 'offer',
         'sdp': offer.sdp,
         'timestamp': FieldValue.serverTimestamp(),
       });
+      
+      // Record when our offer is sent to Firestore
+      _latencyTracker.recordOfferAnswerSent(peerId, 'offer');
     }
     developer.Timeline.finishSync();
   }
@@ -826,6 +852,9 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
     _audioLevelTimer?.cancel();
     _audioLevelTimer = null;
     
+    // Clean up latency tracking
+    _latencyTracker.reset();
+    
     if (_currentChannelId != null) {
       try {
         final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
@@ -881,16 +910,20 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       switch (state) {
         case RTCIceConnectionState.RTCIceConnectionStateConnected:
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
+          // Record when peer connection is established
+          _latencyTracker.recordPeerConnectionEstablished(peerId);
           break;
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
           _log('⚠️ Connection for $peerId disconnected. Waiting for recovery...');
           break;
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
           _log('❌ Connection for $peerId failed.');
+          _latencyTracker.recordPeerConnectionClosed(peerId);
           onConnectionLost?.call();
           break;
         case RTCIceConnectionState.RTCIceConnectionStateClosed:
           _log('Connection for $peerId closed.');
+          _latencyTracker.recordPeerConnectionClosed(peerId);
           break;
         default:
           break;

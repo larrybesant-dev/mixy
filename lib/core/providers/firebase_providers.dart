@@ -22,13 +22,13 @@ final firestoreProvider = Provider<FirebaseFirestore>(
     // Configure Firestore for web resilience
     if (kIsWeb) {
       try {
-        // Enable aggressive caching and increase timeout for web connections
+        // Enable persistence for offline resilience + bounded cache to prevent bloat
         firestore.settings = const Settings(
-          persistenceEnabled: false,  // Disable persistence to avoid corruption issues
-          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+          persistenceEnabled: true,  // ✅ Enable offline caching for network resilience
+          cacheSizeBytes: 50 * 1024 * 1024,  // 50MB standard cache limit for web/PWA
           ignoreUndefinedProperties: true,
         );
-        debugPrint('[Firebase] Firestore configured with web-optimized settings');
+        debugPrint('[Firebase] Firestore configured with persistence enabled (50MB cache)');
       } catch (e) {
         debugPrint('[Firebase] Failed to configure Firestore settings: $e');
       }

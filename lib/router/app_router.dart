@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:mixvy/core/routing/auth_invariant.dart';
 import 'package:mixvy/core/routing/redirect_logic.dart';
 import 'package:mixvy/core/routing/redirect_trace.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
@@ -212,28 +211,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'bookmarks',
             name: 'bookmarks',
-            builder: (context, state) {
-              final uid = refreshNotifier.authState.uid ?? '';
-              if (uid.isEmpty) {
-                return const FeatureDegradedScreen(
-                  title: 'Not logged in',
-                  message: 'Please log in to view bookmarks.',
-                  primaryLabel: 'Go to login',
-                  primaryRoute: '/auth',
-                  icon: Icons.lock_outline,
-                );
-              }
-              return BookmarksScreen(userId: uid);
+            redirect: (context, state) {
+              final uid = refreshNotifier.authState.uid;
+              return (uid == null || uid.isEmpty) ? '/auth' : null;
             },
+            builder: (context, state) => BookmarksScreen(
+              userId: refreshNotifier.authState.uid!,
+            ),
           ),
           GoRoute(
             path: 'create-post',
             name: 'createPost',
+            redirect: (context, state) {
+              final uid = refreshNotifier.authState.uid;
+              return (uid == null || uid.isEmpty) ? '/auth' : null;
+            },
             builder: (context, state) {
               final user = refreshNotifier.currentUser;
-              final uid = refreshNotifier.authState.uid ?? '';
+              final uid = refreshNotifier.authState.uid!;
               final userId = user?.id ?? uid;
-              if (userId.isEmpty) return const LoginScreen();
               return CreatePostScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
             },
           ),
@@ -249,11 +245,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'create-story',
             name: 'createStory',
+            redirect: (context, state) {
+              final uid = refreshNotifier.authState.uid;
+              return (uid == null || uid.isEmpty) ? '/auth' : null;
+            },
             builder: (context, state) {
               final user = refreshNotifier.currentUser;
-              final uid = refreshNotifier.authState.uid ?? '';
+              final uid = refreshNotifier.authState.uid!;
               final userId = user?.id ?? uid;
-              if (userId.isEmpty) return const LoginScreen();
               return CreateStoryScreen(userId: userId, username: user?.username ?? 'User', avatarUrl: user?.avatarUrl);
             },
           ),
@@ -264,11 +263,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/messages',
         name: 'messages',
-        builder: (context, state) {
-          final user = ref.read(userProvider);
-          if (user == null) return AuthInvariant.authRequiredScreen(message: 'Please sign in to access your inbox.');
-          return _CustomShell(initialIndex: 1);
+        redirect: (context, state) {
+          final uid = refreshNotifier.authState.uid;
+          return (uid == null || uid.isEmpty) ? '/auth' : null;
         },
+        builder: (context, state) => _CustomShell(initialIndex: 1),
         routes: [
           GoRoute(
             path: 'new',
@@ -310,13 +309,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'room/:id',
             name: 'liveRoom',
+            redirect: (context, state) {
+              final previewRoom = state.extra is RoomModel ? state.extra as RoomModel : null;
+              final uid = refreshNotifier.authState.uid;
+              // Adult room protection: require auth
+              if ((previewRoom?.isAdult ?? false) && (uid == null || uid.isEmpty)) {
+                return '/auth';
+              }
+              return null;
+            },
             builder: (context, state) {
               final roomId = state.pathParameters['id'] ?? '';
-              final previewRoom = state.extra is RoomModel ? state.extra as RoomModel : null;
-              // Adult room protection
-              if ((previewRoom?.isAdult ?? false) && (refreshNotifier.authState.uid?.isEmpty ?? true)) {
-                return const FeatureDegradedScreen(title: 'Sign in required', message: 'This room contains adult content. Please sign in.', primaryLabel: 'Sign in', primaryRoute: '/auth', icon: Icons.lock_outline);
-              }
               return LiveRoomScreen(roomId: roomId);
             },
           ),
@@ -364,28 +367,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'payments',
             name: 'payments',
-            builder: (context, state) {
-              final uid = refreshNotifier.authState.uid ?? '';
-              if (uid.isEmpty) return const LoginScreen();
-              return const PaymentsScreen();
+            redirect: (context, state) {
+              final uid = refreshNotifier.authState.uid;
+              return (uid == null || uid.isEmpty) ? '/auth' : null;
             },
+            builder: (context, state) => const PaymentsScreen(),
           ),
           GoRoute(path: 'vip', name: 'vip', builder: (context, state) => const VipScreen()),
           GoRoute(
             path: 'admin-entitlements',
             name: 'adminEntitlements',
-            builder: (context, state) {
-              if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to admin tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
-              return const AdminEntitlementViewerScreen();
+            redirect: (context, state) {
+              if (!refreshNotifier.isAdmin) return '/home';
+              return null;
             },
+            builder: (context, state) => const AdminEntitlementViewerScreen(),
           ),
           GoRoute(
             path: 'moderation',
             name: 'moderation',
-            builder: (context, state) {
-              if (!refreshNotifier.isAdmin) return const FeatureDegradedScreen(title: 'Admin only', message: 'You do not have access to moderation tools.', primaryLabel: 'Go home', primaryRoute: '/home', icon: Icons.lock_outline);
-              return const ModerationDashboardScreen();
+            redirect: (context, state) {
+              if (!refreshNotifier.isAdmin) return '/home';
+              return null;
             },
+            builder: (context, state) => const ModerationDashboardScreen(),
           ),
         ],
       ),

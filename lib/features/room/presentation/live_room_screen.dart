@@ -11,6 +11,7 @@ import '../../../core/providers/firebase_providers.dart';
 import 'room_management_modal.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
+import '../widgets/network_health_widget.dart';
 
 class LiveRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
@@ -46,6 +47,18 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     super.dispose();
   }
 
+  /// Fetch the user's display name from Firestore profile.
+  Future<String> _getUserDisplayName(String uid) async {
+    try {
+      final firestore = ref.read(firestoreProvider);
+      final userDoc = await firestore.collection('users').doc(uid).get();
+      final displayName = userDoc.data()?['displayName'] as String?;
+      return displayName ?? 'Anonymous';
+    } catch (e) {
+      return 'Anonymous';
+    }
+  }
+
   Future<void> _joinRoom(String uid, String username) async {
     try {
       final firestore = ref.read(firestoreProvider);
@@ -79,7 +92,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       await notifier.joinAsAudience();
 
       // Update Riverpod session state
-      ref.read(roomSessionProvider(widget.roomId).notifier).setJoined(true);
+      final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+      sessionNotifier.setJoined(true);
+      sessionNotifier.updateDisplayName(uid, username);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -166,15 +181,20 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       final sessionState = ref.watch(roomSessionProvider(widget.roomId));
       final firestore = ref.read(firestoreProvider);
 
-      await firestore
+      final messageRef = firestore
           .collection('rooms')
           .doc(widget.roomId)
           .collection('messages')
-          .add({
-        'userId': currentUser.uid,
-        'username': sessionState.userDisplayNames[currentUser.uid] ?? 'Anonymous',
-        'text': text,
-        'timestamp': FieldValue.serverTimestamp(),
+          .doc();
+      await messageRef.set({
+        'id': messageRef.id,
+        'senderId': currentUser.uid,
+        'senderName': sessionState.userDisplayNames[currentUser.uid] ?? 'Anonymous',
+        'roomId': widget.roomId,
+        'content': text,
+        'createdAt': FieldValue.serverTimestamp(),
+        'sentAt': FieldValue.serverTimestamp(),
+        'clientSentAt': Timestamp.now(),
       });
 
       messageController.clear();
@@ -571,6 +591,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     sessionState.isAudioEnabled ? 'Mic ON' : 'Mic OFF',
                     sessionState.isAudioEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
                   ),
+                  NetworkHealthWidget(
+                    showLabel: false,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  ),
                 ],
               ),
             ),
@@ -756,12 +780,22 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           const SizedBox(height: 4),
           Row(
             children: [
-              Text(
-                'Hosted by ${room.hostUsername ?? 'Anonymous'}',
-                style: GoogleFonts.raleway(
-                  fontSize: 12,
-                  color: VelvetNoir.onSurfaceVariant,
-                ),
+              StreamBuilder<DocumentSnapshot>(
+                stream: ref.read(firestoreProvider).collection('users').doc(room.hostId).snapshots(),
+                builder: (context, snapshot) {
+                  String hostDisplayName = room.hostUsername ?? 'Anonymous';
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final hostData = snapshot.data!.data() as Map<String, dynamic>?;
+                    hostDisplayName = hostData?['displayName'] ?? room.hostUsername ?? 'Anonymous';
+                  }
+                  return Text(
+                    'Hosted by $hostDisplayName',
+                    style: GoogleFonts.raleway(
+                      fontSize: 12,
+                      color: VelvetNoir.onSurfaceVariant,
+                    ),
+                  );
+                },
               ),
               const Spacer(),
               GestureDetector(
@@ -800,7 +834,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 .collection('rooms')
                 .doc(widget.roomId)
                 .collection('messages')
-                .orderBy('timestamp', descending: false)
+                .orderBy('createdAt', descending: false)
                 .limit(100)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -831,8 +865,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 itemBuilder: (context, index) {
                   final msg = messages[index];
                   final data = msg.data() as Map<String, dynamic>;
-                  final username = data['username'] as String? ?? 'Anonymous';
-                  final text = data['text'] as String? ?? '';
+                  final senderName = data['senderName'] as String? ?? 'Anonymous';
+                  final content = data['content'] as String? ?? '';
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -843,7 +877,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                           radius: 12,
                           backgroundColor: VelvetNoir.primary,
                           child: Text(
-                            username[0].toUpperCase(),
+                            senderName[0].toUpperCase(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -857,7 +891,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                username,
+                                senderName,
                                 style: GoogleFonts.raleway(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -865,7 +899,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                                 ),
                               ),
                               Text(
-                                text,
+                                content,
                                 style: GoogleFonts.raleway(
                                   fontSize: 12,
                                   color: VelvetNoir.onSurface,
@@ -934,7 +968,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             if (!sessionState.hasJoined)
               FilledButton.icon(
                 onPressed: currentUser != null
-                    ? () => _joinRoom(currentUser.uid, currentUser.displayName ?? 'Anonymous')
+                    ? () async {
+                        final displayName = await _getUserDisplayName(currentUser.uid);
+                        if (mounted) {
+                          await _joinRoom(currentUser.uid, displayName);
+                        }
+                      }
                     : null,
                 icon: const Icon(Icons.call_outlined),
                 label: const Text('JOIN'),
