@@ -250,6 +250,7 @@ final sendMessageProvider = Provider.autoDispose
               : user.email.split('@').first,
           'roomId': roomId,
           'content': normalizedMessage,
+          'createdAt': FieldValue.serverTimestamp(),
           'sentAt': FieldValue.serverTimestamp(),
           'clientSentAt': Timestamp.now(),
         });
