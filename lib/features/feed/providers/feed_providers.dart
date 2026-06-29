@@ -212,6 +212,7 @@ final feedHealthProvider = Provider.autoDispose<AsyncValue<FeedHealthSnapshot>>(
 ) {
   final roomsAsync = ref.watch(roomsWithVisibilityStreamProvider);
   final policyState = ref.watch(roomVisibilityPolicyStateProvider);
+  
   return roomsAsync.whenData((rooms) {
     final sections = _toSections(rooms);
     final reasonCounts = <RoomVisibilityReasonCode, int>{
@@ -343,27 +344,18 @@ final currentUserActivitiesProvider =
     });
 
 final homeFeedSnapshotProvider =
-    Provider.autoDispose<AsyncValue<HomeFeedSnapshot>>((ref) {
-      final activitiesAsync = ref.watch(currentUserActivitiesProvider);
-      final roomsAsync = ref.watch(roomsStreamProvider);
-      final usersAsync = ref.watch(trendingUsersStreamProvider);
+    FutureProvider.autoDispose<HomeFeedSnapshot>((ref) async {
+      final activities = await ref.watch(currentUserActivitiesProvider.future);
+      final rooms = await ref.watch(roomsSnapshotProvider.future);
+      final users = await ref.watch(trendingUsersStreamProvider.future);
 
-      if (activitiesAsync.isLoading &&
-          roomsAsync.isLoading &&
-          usersAsync.isLoading) {
-        return const AsyncValue.loading();
-      }
-
-      return AsyncValue.data(
-        ref
-            .watch(homeFeedServiceProvider)
-            .buildSnapshot(
-              activities:
-                  activitiesAsync.valueOrNull ?? const <SocialActivity>[],
-              liveRooms: roomsAsync.valueOrNull ?? const <RoomModel>[],
-              suggestedUsers: usersAsync.valueOrNull ?? const <UserModel>[],
-            ),
-      );
+      return ref
+          .watch(homeFeedServiceProvider)
+          .buildSnapshot(
+            activities: activities,
+            liveRooms: rooms,
+            suggestedUsers: users,
+          );
     });
 
 

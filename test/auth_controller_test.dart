@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mixvy/services/schema_mutation_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'test_helpers.dart';
 
 class _MockSchemaMutationService extends Mock
@@ -56,9 +57,9 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          firebaseAuthProvider.overrideWithValue(mockAuth),
           authControllerProvider.overrideWith(
             () => AuthController(
-              auth: mockAuth,
               firestore: mockFirestore,
               unregisterToken: () async {},
               schemaMutationService: mockSchemaMutationService,
@@ -128,9 +129,9 @@ void main() {
 
       final localContainer = ProviderContainer(
         overrides: [
+          firebaseAuthProvider.overrideWithValue(mockAuth),
           authControllerProvider.overrideWith(
             () => AuthController(
-              auth: mockAuth,
               firestore: mockFirestore,
               unregisterToken: () async {},
               schemaMutationService: mockSchemaMutationService,

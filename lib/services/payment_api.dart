@@ -212,7 +212,6 @@ class PaymentIntentResult {
 }
 
 class PaymentApi {
-  static final _firestore = FirebaseFirestore.instance;
   static const _uuid = Uuid();
   static PaymentFunctionsGateway? _functionsGateway;
   static PaymentAuthGateway? _authGateway;
@@ -419,7 +418,7 @@ class PaymentApi {
       return const Stream<List<RefundRequest>>.empty();
     }
 
-    return _firestore
+    return FirebaseFirestore.instance
         .collection('refund_requests')
         .where('requesterId', isEqualTo: userId)
         .snapshots()
@@ -444,7 +443,7 @@ class PaymentApi {
       return const Stream<List<CoinTransaction>>.empty();
     }
 
-    return _firestore
+    return FirebaseFirestore.instance
         .collection('transactions')
         .where('participants', arrayContains: userId)
         .snapshots()

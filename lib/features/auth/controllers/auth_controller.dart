@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,6 +95,11 @@ class AuthController extends Notifier<AuthState> {
   void _setAuthState(AuthState nextState, {required String source}) {
     final previous = state;
     state = nextState;
+    
+    // Log phase changes for debugging bootstrap issues
+    if (kDebugMode) {
+      print('[AuthController] Phase transition: ${previous.phase.name} -> ${nextState.phase.name} (source: $source)');
+    }
 
     if (previous.phase != nextState.phase) {
       SystemEventBus.instance.emit(
@@ -203,23 +208,23 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  final FirebaseAuth _auth;
   final FirebaseFirestore? _firestore;
   final Future<void> Function()? _unregisterToken;
 
   AuthController({
-    FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     Future<void> Function()? unregisterToken,
     GoogleSignInHelper? googleSignInHelper,
     AppleSignInHelper? appleSignInHelper,
     SchemaMutationService? schemaMutationService,
-  }) : _auth = auth ?? FirebaseAuth.instance,
-       _firestore = firestore,
+  }) : _firestore = firestore,
        _unregisterToken = unregisterToken,
        _googleSignInHelper = googleSignInHelper ?? getGoogleSignInHelper(),
        _appleSignInHelper = appleSignInHelper ?? getAppleSignInHelper(),
        _schemaMutationService = schemaMutationService;
+
+  /// Get FirebaseAuth from Riverpod provider (not singleton)
+  FirebaseAuth get _auth => ref.read(firebaseAuthProvider);
 
   @override
   AuthState build() {
@@ -281,6 +286,23 @@ class AuthController extends Notifier<AuthState> {
       await _configureWebPersistence();
       await _repairInvalidCachedSession();
       await _completeRedirectSignInIfNeeded();
+    });
+
+    // Force bootstrap timeout: if still not stable after 5 seconds, force stable state
+    Future<void>.delayed(const Duration(seconds: 5), () {
+      if (!state.isRoutingStable) {
+        _setAuthState(
+          state.copyWith(
+            isLoading: false,
+            hasResolvedSession: true,
+            error: null,
+            phase: state.uid == null
+                ? AuthBootstrapPhase.unauthenticatedStable
+                : AuthBootstrapPhase.authenticatedStable,
+          ),
+          source: 'bootstrap_timeout_force_stable',
+        );
+      }
     });
 
     final currentUser = _auth.currentUser;

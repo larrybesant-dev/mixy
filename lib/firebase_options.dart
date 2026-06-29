@@ -16,17 +16,11 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return linux;
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -66,6 +60,26 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
+    appId: '1:980846719834:web:faa83926491c9adb077963',
+    messagingSenderId: '980846719834',
+    projectId: 'mix-and-mingle-v2',
+    authDomain: 'mix-and-mingle-v2.firebaseapp.com',
+    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    measurementId: 'G-L0G075C2EZ',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
+    appId: '1:980846719834:web:faa83926491c9adb077963',
+    messagingSenderId: '980846719834',
+    projectId: 'mix-and-mingle-v2',
+    authDomain: 'mix-and-mingle-v2.firebaseapp.com',
+    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    measurementId: 'G-L0G075C2EZ',
+  );
+
+  static const FirebaseOptions linux = FirebaseOptions(
     apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
     appId: '1:980846719834:web:faa83926491c9adb077963',
     messagingSenderId: '980846719834',

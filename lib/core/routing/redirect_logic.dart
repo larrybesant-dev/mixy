@@ -32,10 +32,8 @@ RedirectEvaluation evaluateAppRedirectWithReason({
       matchedLocation == '/forgot-password' ||
       matchedLocation == '/onboarding';
 
-  // Guest access to rooms is allowed — LiveRoomScreen handles its own
-  // internal gates for adult content and messaging.
-  final isRoomRoute = matchedLocation.startsWith('/rooms/room/') ||
-      matchedLocation.startsWith('/room/');
+  // NO GUEST ACCESS: All room routes require authentication
+  final isRoomRoute = false;
 
   final isPublicRoute = isAuthRoute || isRoomRoute;
 

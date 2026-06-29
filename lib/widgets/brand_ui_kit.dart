@@ -704,5 +704,202 @@ class MixvyRoomCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BrandPillarNavCard — home screen navigation cards for MIX / CONNECT / INDULGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+class BrandPillarNavCard extends StatelessWidget {
+  final String kicker;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback? onPressed;
+
+  const BrandPillarNavCard({
+    super.key,
+    required this.kicker,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('🎨 BrandPillarNavCard.build() - $kicker');
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                VelvetNoir.surfaceHigh,
+                VelvetNoir.surfaceHigh.withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: 0.15),
+                blurRadius: 16,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accentColor.withValues(alpha: 0.15),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(icon, color: accentColor, size: 22),
+                  ),
+                  const Spacer(),
+                  Text(
+                    kicker.toUpperCase(),
+                    style: GoogleFonts.raleway(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: accentColor,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: VelvetNoir.onSurface,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: GoogleFonts.raleway(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: VelvetNoir.onSurfaceVariant,
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 18,
+                  color: accentColor.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BrandPillarNavSection — displays MIX / CONNECT / INDULGE cards as grid
+// ─────────────────────────────────────────────────────────────────────────────
+
+class BrandPillarNavSection extends StatelessWidget {
+  final VoidCallback? onMixPressed;
+  final VoidCallback? onConnectPressed;
+  final VoidCallback? onIndulgePressed;
+
+  const BrandPillarNavSection({
+    super.key,
+    this.onMixPressed,
+    this.onConnectPressed,
+    this.onIndulgePressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // DEBUG: Verify widget is rendering
+    debugPrint('🎨 BrandPillarNavSection.build() called');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Your MixVy',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: VelvetNoir.onSurface,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            children: [
+              BrandPillarNavCard(
+                kicker: 'MIX',
+                title: 'Find Your Vibe',
+                subtitle: 'Step into rooms with chemistry',
+                icon: Icons.graphic_eq_rounded,
+                accentColor: VelvetNoir.primary,
+                onPressed: onMixPressed,
+              ),
+              BrandPillarNavCard(
+                kicker: 'CONNECT',
+                title: 'Meet Real People',
+                subtitle: 'Match with your energy fast',
+                icon: Icons.favorite_outline_rounded,
+                accentColor: VelvetNoir.secondaryBright,
+                onPressed: onConnectPressed,
+              ),
+              BrandPillarNavCard(
+                kicker: 'INDULGE',
+                title: 'Go Live',
+                subtitle: 'Host your own room',
+                icon: Icons.mic_external_on_rounded,
+                accentColor: VelvetNoir.secondary,
+                onPressed: onIndulgePressed,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 

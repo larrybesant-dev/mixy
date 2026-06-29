@@ -3,6 +3,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../services/rtdb_presence_service.dart';
@@ -14,7 +16,26 @@ import '../../services/rtdb_user_service.dart';
 /// rather than calling [FirebaseFirestore.instance] / [FirebaseAuth.instance]
 /// directly. This allows tests to inject fakes via [ProviderScope.overrides].
 final firestoreProvider = Provider<FirebaseFirestore>(
-  (ref) => FirebaseFirestore.instance,
+  (ref) {
+    final firestore = FirebaseFirestore.instance;
+    
+    // Configure Firestore for web resilience
+    if (kIsWeb) {
+      try {
+        // Enable aggressive caching and increase timeout for web connections
+        firestore.settings = const Settings(
+          persistenceEnabled: false,  // Disable persistence to avoid corruption issues
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+          ignoreUndefinedProperties: true,
+        );
+        debugPrint('[Firebase] Firestore configured with web-optimized settings');
+      } catch (e) {
+        debugPrint('[Firebase] Failed to configure Firestore settings: $e');
+      }
+    }
+    
+    return firestore;
+  },
 );
 
 /// Canonical per-user Firestore document stream.
@@ -75,6 +96,10 @@ final firebaseDatabaseProvider = Provider<FirebaseDatabase?>((ref) {
 
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
   (ref) => FirebaseFunctions.instance,
+);
+
+final firebaseStorageProvider = Provider<FirebaseStorage>(
+  (ref) => FirebaseStorage.instance,
 );
 
 final rtdbPresenceServiceProvider = Provider<RtdbPresenceService>((ref) {

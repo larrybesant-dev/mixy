@@ -14,7 +14,10 @@ import '../core/services/feature_gate_service.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 
 final roomServiceProvider = Provider<RoomService>((ref) {
-  ref.watch(roomVisibilityWindowsBootstrapProvider);
+  // Read (don't watch) any providers to avoid cascading rebuilds
+  // that trigger "Cannot use ref functions after dependency changed" errors
+  ref.read(roomVisibilityWindowsBootstrapProvider);
+  final lifecycleManager = ref.read(streamLifecycleManagerProvider);
   return RoomService(
     isLiveRoomsEnabled: () {
       try {
@@ -24,7 +27,7 @@ final roomServiceProvider = Provider<RoomService>((ref) {
       }
     },
     visibilityWindowsResolver: () => ref.read(roomVisibilityWindowsProvider),
-    lifecycleManager: ref.watch(streamLifecycleManagerProvider),
+    lifecycleManager: lifecycleManager,
   );
 });
 

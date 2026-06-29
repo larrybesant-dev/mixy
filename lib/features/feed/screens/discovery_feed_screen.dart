@@ -502,14 +502,23 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(feedControllerProvider.notifier).loadFeed(),
-    );
+    // Trigger feed load after the first frame to avoid provider rebuild conflicts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Safely read the controller notifier after initial build
+        Future.microtask(() {
+          if (mounted) {
+            ref.read(feedControllerProvider.notifier).loadFeed();
+          }
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final feedState = ref.watch(feedControllerProvider);
+    
     final horizontalPadding = context.pageHorizontalPadding;
 
     if (feedState.isLoading) {
@@ -580,6 +589,15 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
 
           // ── Speed Date card — secondary CTA ───────────────────────────
           const SliverToBoxAdapter(child: _SpeedDateCard()),
+
+          // ── Brand Pillar Nav Cards — MIX / CONNECT / INDULGE ──────────
+          SliverToBoxAdapter(
+            child: BrandPillarNavSection(
+              onMixPressed: () => context.go('/discover'),
+              onConnectPressed: () => context.go('/speed-dating'),
+              onIndulgePressed: () => context.go('/rooms/create'),
+            ),
+          ),
 
           SliverToBoxAdapter(
             child: HomeLivePulseSection(

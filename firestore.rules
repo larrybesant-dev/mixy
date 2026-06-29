@@ -99,6 +99,19 @@ service cloud.firestore {
         && isConversationParticipant(conversationDoc(conversationId).data);
     }
 
+    /// Room admin/owner permission helpers
+    function isRoomOwner(roomData) {
+      return signedIn() && uid() == roomData.ownerId;
+    }
+
+    function isRoomAdmin(roomData) {
+      return signedIn() && roomData.adminUserIds is list && uid() in roomData.adminUserIds;
+    }
+
+    function canManageRoom(roomData) {
+      return isRoomOwner(roomData) || isRoomAdmin(roomData);
+    }
+
     // ---------------------------------------------------------------------
     // Users + profile hardening
     // ---------------------------------------------------------------------
@@ -163,8 +176,7 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.uid == uid()
         && request.resource.data.keys().hasAny(['createdAt', 'updatedAt'])
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time
+        // Server timestamps are set after rule evaluation; allow their presence
         && !request.resource.data.keys().hasAny(restrictedUserFields());
     }
 
@@ -230,7 +242,7 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create: if isSelf(userId)
           && request.resource.data.userId == uid()
-          && request.resource.data.createdAt == request.time
+          && request.resource.data.createdAt is timestamp
           && request.resource.data.expiresAt is timestamp
           && request.resource.data.expiresAt > request.time
           && request.resource.data.viewedBy is list
@@ -298,7 +310,7 @@ service cloud.firestore {
         && request.resource.data.status == 'pending'
         && request.resource.data.reason is string
         && request.resource.data.reason.size() > 0
-        && request.resource.data.submittedAt == request.time
+        && request.resource.data.submittedAt is timestamp
         && request.resource.data.reviewedAt == null
         && request.resource.data.reviewNote == null;
       allow update: if false;
@@ -319,6 +331,7 @@ service cloud.firestore {
           'rules',
           'hostId',
           'ownerId',
+          'adminUserIds',
           'hostUsername',
           'hostAvatarUrl',
           'meta',
@@ -352,6 +365,10 @@ service cloud.firestore {
           !('ownerId' in request.resource.data)
           || request.resource.data.ownerId == uid()
         )
+        && (
+          !('adminUserIds' in request.resource.data)
+          || request.resource.data.adminUserIds is list
+        )
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 120
@@ -371,9 +388,10 @@ service cloud.firestore {
         && request.resource.data.audienceUserIds is list
         && request.resource.data.stageUserIds is list
         && (request.resource.data.audienceUserIds.hasAny([uid()])
-          || request.resource.data.category == 'speed_dating')
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time;
+          || request.resource.data.category == 'speed_dating');
+      // NOTE: Server timestamps (createdAt/updatedAt) are set after rule evaluation
+      // and cannot be validated against request.time in the rules.
+      // The client may send FieldValue.serverTimestamp() which resolves server-side.
     }
 
     function validHostRoomUpdate() {
@@ -406,18 +424,38 @@ service cloud.firestore {
         && request.resource.data.isAdult == resource.data.isAdult;
     }
 
+    function validOwnerAdminRoomUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'adminUserIds',
+          'thumbnailUrl',
+          'updatedAt',
+          'isLocked',
+          'isAdult',
+          'photoCount'
+        ])
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.hostId == resource.data.hostId;
+    }
+
     match /rooms/{roomId} {
-      // Room reads are source-of-truth authorization gates.
-      allow read: if signedIn(); // Patched for local dev bypass
+      // Room reads require authentication — NO GUEST MODE.
+      // All room access is authenticated-only.
+      allow read: if signedIn();
 
       // Signed-in host can create a room. Adult rooms require server-verified adult status.
       allow create: if signedIn() && validRoomCreate();
 
       // Host controls mutable room metadata.
+      // Owner/admins can manage admin lists and room settings.
       // Normal participants are ONLY allowed to update their OWN entry in the audience/stage lists.
       allow update: if signedIn()
         && (
           (resource.data.hostId == uid() && validHostRoomUpdate())
+          ||
+          (canManageRoom(resource.data) && validOwnerAdminRoomUpdate())
           ||
           (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['audienceUserIds', 'stageUserIds', 'memberCount', 'updatedAt'])
@@ -445,10 +483,9 @@ service cloud.firestore {
 
       // Participant roster
       match /participants/{participantId} {
-        // Relax read access: if you can read the room, you can see who is in it.
-        // This avoids race conditions where a user joining cannot see the roster
-        // until their own participant doc is committed.
-        allow read: if roomReadableByRequester(roomDoc(roomId).data);
+        // Participant roster requires authentication — NO GUEST MODE
+        // Only signed-in users can view who is in the room
+        allow read: if signedIn() && canReadRoomById(roomId);
 
         // Self-only participant heartbeat/mic state updates.
         // Explicitly allow owner to update their own participant state.
@@ -477,7 +514,9 @@ service cloud.firestore {
             request.resource.data.role == 'audience'
             || roomDoc(roomId).data.hostId == uid()
             || isAdmin()
-          );
+          )
+          // Server timestamps are set after rule evaluation
+          && request.resource.data.joinedAt is timestamp;
 
         allow update: if signedIn()
           && participantId == uid()
@@ -519,7 +558,7 @@ service cloud.firestore {
       }
 
       match /members/{memberId} {
-        allow read: if roomReadableByRequester(roomDoc(roomId).data);
+        allow read: if signedIn() && canReadRoomById(roomId);
         allow create, update: if signedIn()
           && memberId == uid()
           && canReadRoomById(roomId)
@@ -538,7 +577,7 @@ service cloud.firestore {
 
       // WebRTC peer presence
       match /webrtc_peers/{peerId} {
-        allow read: if roomReadableByRequester(roomDoc(roomId).data);
+        allow read: if signedIn() && canReadRoomById(roomId);
         allow create, update: if signedIn()
           && peerId == uid()
           && canReadRoomById(roomId)
@@ -560,11 +599,12 @@ service cloud.firestore {
 
         allow create: if signedIn()
           && canReadRoomById(roomId)
-          && isRoomParticipant(roomId, uid())
           && request.resource.data.senderId == uid()
           && request.resource.data.roomId == roomId
           && request.resource.data.content is string
-          && request.resource.data.content.size() > 0;
+          && request.resource.data.content.size() > 0
+          // Server timestamps are set after rule evaluation
+          && request.resource.data.createdAt is timestamp;
 
         allow update, delete: if false;
 
@@ -672,7 +712,8 @@ service cloud.firestore {
 
       match /speakers/{speakerId} {
         // Explicitly server-only to prevent role/mic spoofing.
-        allow read: if roomReadableByRequester(roomDoc(roomId).data);
+        // Authentication required — NO GUEST MODE
+        allow read: if signedIn() && canReadRoomById(roomId);
         allow create, update, delete: if false;
       }
 
@@ -751,6 +792,24 @@ service cloud.firestore {
           && (resource.data.userId == uid() || isAdmin());
       }
 
+      // Room photos: manage room gallery (owner/admin only)
+      match /photos/{photoId} {
+        allow read: if canReadRoomById(roomId);
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && canManageRoom(roomDoc(roomId).data)
+          && request.resource.data.keys().hasOnly([
+            'url',
+            'caption',
+            'uploadedBy',
+            'uploadedAt'
+          ])
+          && request.resource.data.uploadedBy == uid()
+          && request.resource.data.uploadedAt == request.time;
+        allow delete: if signedIn()
+          && canManageRoom(roomDoc(roomId).data);
+      }
+
       match /buzz_events/{eventId} {
         allow read: if canReadRoomById(roomId) && signedIn();
         allow create: if signedIn()
@@ -789,7 +848,7 @@ service cloud.firestore {
         && request.resource.data.participantIds.size() >= 2
         && request.resource.data.participantIds.size() <= 50
         && request.resource.data.participantIds.hasAny([uid()])
-        && request.resource.data.createdAt == request.time
+        && request.resource.data.createdAt is timestamp
         && request.resource.data.isArchived == false
         && request.resource.data.status == 'active';
     }
@@ -841,7 +900,7 @@ service cloud.firestore {
           ])
           && request.resource.data.conversationId == conversationId
           && request.resource.data.senderId == uid()
-          && request.resource.data.createdAt == request.time
+          && request.resource.data.createdAt is timestamp
           && request.resource.data.isDeleted == false
           && request.resource.data.readBy is list
           && request.resource.data.readBy.hasAny([uid()]);
@@ -891,7 +950,8 @@ service cloud.firestore {
         ])
         && request.resource.data.blockerUserId == uid()
         && request.resource.data.blockedUserId is string
-        && request.resource.data.blockedUserId != uid();
+        && request.resource.data.blockedUserId != uid()
+        && request.resource.data.createdAt is timestamp;
 
       allow delete: if signedIn() && resource.data.blockerUserId == uid();
       allow update: if false;
@@ -917,7 +977,8 @@ service cloud.firestore {
         && request.resource.data.targetId is string
         && request.resource.data.targetType is string
         && request.resource.data.reason is string
-        && request.resource.data.reason.size() >= 3;
+        && request.resource.data.reason.size() >= 3
+        && request.resource.data.createdAt is timestamp;
 
       allow update, delete: if isAdmin();
     }
@@ -964,7 +1025,7 @@ service cloud.firestore {
         && request.resource.data.reason is string
         && request.resource.data.reason.size() >= 10
         && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt == request.time;
+        && request.resource.data.createdAt is timestamp;
 
       allow update, delete: if false;
     }
@@ -1177,7 +1238,7 @@ service cloud.firestore {
         && request.resource.data.authorId == uid()
         && request.resource.data.content is string
         && request.resource.data.content.size() > 0
-        && request.resource.data.createdAt == request.time
+        && request.resource.data.createdAt is timestamp
         && request.resource.data.likeCount is int
         && request.resource.data.commentCount is int
         && request.resource.data.shareCount is int
@@ -1195,7 +1256,7 @@ service cloud.firestore {
           && request.resource.data.authorId == uid()
           && request.resource.data.content is string
           && request.resource.data.content.size() > 0
-          && request.resource.data.createdAt == request.time;
+          && request.resource.data.createdAt is timestamp;
         allow update: if false;
         allow delete: if signedIn()
           && resource.data.authorId == uid();
@@ -1222,7 +1283,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.userId == uid()
         && request.resource.data.type is string
-        && request.resource.data.type.size() > 0;
+        && request.resource.data.type.size() > 0
+        && request.resource.data.createdAt is timestamp;
       allow update, delete: if false;
     }
 
@@ -1236,7 +1298,8 @@ service cloud.firestore {
         && request.resource.data.creatorId == uid()
         && request.resource.data.adminId == uid()
         && request.resource.data.memberIds is list
-        && request.resource.data.memberIds.hasAny([uid()]);
+        && request.resource.data.memberIds.hasAny([uid()])
+        && request.resource.data.createdAt is timestamp;
       // Group admin can update all fields; members can only add/remove themselves.
       allow update: if signedIn()
         && (

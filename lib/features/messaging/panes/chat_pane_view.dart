@@ -331,17 +331,27 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         content: content,
         clientMessageId: pendingMessage.clientMessageId,
       );
+      // Message successfully written to Firestore.
+      // It will be removed from pending when the stream returns it with matching clientMessageId.
     } catch (error) {
       if (!mounted) return;
+      // Only remove from pending if error occurs — don't remove on stream updates.
       setState(() {
         _pendingMessages.removeWhere(
           (message) =>
               message.clientMessageId == pendingMessage.clientMessageId,
         );
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not send message: $error')));
+      // Wait a frame to ensure state updates before showing snackbar.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not send message: $error'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
       return;
     }
 
@@ -486,10 +496,23 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   .map((message) => message.clientMessageId)
                   .whereType<String>()
                   .toSet();
+              
+              // Keep pending messages that:
+              // 1) Are NOT in the live stream (not yet persisted), OR
+              // 2) Were just created (less than 5 sec old) — enforce minimum lifetime
+              //    to prevent race condition where stream updates before Firestore write completes
+              final now = DateTime.now();
+              const minPendingLifetimeMs = 5000;
+              
               final pendingMessages = _pendingMessages
                   .where(
-                    (message) =>
-                        !liveClientIds.contains(message.clientMessageId),
+                    (message) {
+                      final isInLive = liveClientIds.contains(message.clientMessageId);
+                      final ageMs = now.difference(message.createdAt).inMilliseconds;
+                      final isTooYoung = ageMs < minPendingLifetimeMs;
+                      // Keep if NOT in live, OR if still young
+                      return !isInLive || isTooYoung;
+                    },
                   )
                   .toList(growable: false);
               final allMessages = [

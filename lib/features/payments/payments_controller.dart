@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import '../../core/providers/firebase_providers.dart';
 import '../../services/payment_api.dart';
 
 abstract class PaymentGateway {
@@ -16,8 +16,12 @@ abstract class PaymentGateway {
 }
 
 class PaymentApiGateway implements PaymentGateway {
+  final Ref ref;
+  
+  PaymentApiGateway(this.ref);
+  
   @override
-  User? get currentUser => FirebaseAuth.instance.currentUser;
+  User? get currentUser => ref.read(firebaseAuthProvider).currentUser;
 
   @override
   Future<void> sendPayment(String receiverId, double amount) {
@@ -72,12 +76,15 @@ class PaymentState {
 
 class PaymentController extends Notifier<PaymentState> {
   PaymentController({PaymentGateway? gateway})
-    : _gateway = gateway ?? PaymentApiGateway();
+    : _gateway = gateway;
 
-  final PaymentGateway _gateway;
+  PaymentGateway? _gateway;
 
   @override
-  PaymentState build() => const PaymentState();
+  PaymentState build() {
+    _gateway ??= PaymentApiGateway(ref);
+    return const PaymentState();
+  }
 
   Future<void> sendCoins({
     required String receiverId,
@@ -92,7 +99,10 @@ class PaymentController extends Notifier<PaymentState> {
     );
 
     try {
-      await _gateway.sendPayment(receiverId, amount);
+      if (_gateway == null) {
+        throw Exception('Payment gateway not initialized');
+      }
+      await _gateway!.sendPayment(receiverId, amount);
       state = state.copyWith(
         isLoading: false,
         error: null,
@@ -121,14 +131,19 @@ class PaymentController extends Notifier<PaymentState> {
       isConfirmed: false,
     );
 
-    final user = _gateway.currentUser;
+    if (_gateway == null) {
+      state = state.copyWith(isLoading: false, error: 'Payment gateway not initialized');
+      return;
+    }
+
+    final user = _gateway!.currentUser;
     if (user == null) {
       state = state.copyWith(isLoading: false, error: 'User not logged in');
       return;
     }
 
     try {
-      await _gateway.requestPayment(user.uid, targetId, amount);
+      await _gateway!.requestPayment(user.uid, targetId, amount);
       state = state.copyWith(
         isLoading: false,
         error: null,

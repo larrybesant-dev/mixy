@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -27,7 +28,7 @@ class FeedState {
   final RoomDiscoverySections? discoverySections;
 
   const FeedState({
-    this.isLoading = true,
+    this.isLoading = false,
     this.error,
     this.liveRooms = const [],
     this.upcomingRooms = const [],
@@ -109,6 +110,29 @@ class FeedController extends Notifier<FeedState> {
 
   Future<void> loadFeed() async {
     state = state.copyWith(isLoading: true, error: null);
+    try {
+      // Wrap with timeout to prevent hanging on provider errors
+      try {
+        await _loadFeedData().timeout(
+          const Duration(seconds: 10),
+        );
+      } on TimeoutException {
+        if (state.liveRooms.isEmpty && state.error == null) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Feed load took too long. Please try again.',
+          );
+        }
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<void> _loadFeedData() async {
     try {
       final currentUserId = _auth.currentUser?.uid.trim();
       final isSignedIn = currentUserId != null && currentUserId.isNotEmpty;
@@ -196,8 +220,6 @@ class FeedController extends Notifier<FeedState> {
           fallbackContext: 'the discovery feed',
         ),
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }
@@ -205,7 +227,4 @@ class FeedController extends Notifier<FeedState> {
 final feedControllerProvider = NotifierProvider<FeedController, FeedState>(
   () => FeedController(),
 );
-
-
-
 

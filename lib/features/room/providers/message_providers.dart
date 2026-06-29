@@ -71,7 +71,11 @@ final pendingDirectCallRoomProvider =
 final roomMessageStreamProvider = StreamProvider.autoDispose
     .family<List<MessageModel>, String>((ref, roomId) {
       final firestore = ref.watch(roomFirestoreProvider);
-      final currentUserId = ref.watch(userProvider)?.id;
+      // Only watch the UID instead of the whole userProvider to prevent stream recreation
+      // when user profile data changes. This keeps chat messages persistent.
+      final currentUserId = ref.watch(
+        authControllerProvider.select((auth) => auth.uid),
+      );
       return traceFirestoreStream<List<MessageModel>>(
         key: 'messages/$roomId',
         query: 'rooms/$roomId/messages orderBy sentAt',
@@ -241,6 +245,9 @@ final sendMessageProvider = Provider.autoDispose
         await messageRef.set({
           'id': messageRef.id,
           'senderId': user.id,
+          'senderName': user.username.trim().isNotEmpty 
+              ? user.username 
+              : user.email.split('@').first,
           'roomId': roomId,
           'content': normalizedMessage,
           'sentAt': FieldValue.serverTimestamp(),
@@ -302,6 +309,9 @@ final sendPrivateMessageProvider = Provider.autoDispose
         await messageRef.set({
           'id': messageRef.id,
           'senderId': user.id,
+          'senderName': user.username.trim().isNotEmpty 
+              ? user.username 
+              : user.email.split('@').first,
           'roomId': roomId,
           'content': normalizedMessage,
           'type': 'private',

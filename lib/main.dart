@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mixvy/firebase_options.dart'; 
 import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
@@ -28,9 +29,29 @@ Future<void> main() async {
   startup.markBindingReady();
 
   // Initialize Firebase native platform bindings cleanly BEFORE layout initialization
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('[Firebase] Firebase initialized successfully');
+    
+    // Configure Firestore for web if on web platform
+    if (kIsWeb) {
+      try {
+        FirebaseFirestore.instance.settings = const Settings(
+          persistenceEnabled: false,
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+          ignoreUndefinedProperties: true,
+        );
+        debugPrint('[Firebase] Firestore configured for web platform');
+      } catch (e) {
+        debugPrint('[Firebase] Warning: Could not configure Firestore settings: $e');
+      }
+    }
+  } catch (e) {
+    debugPrint('[Firebase] Firebase initialization failed: $e');
+    Logger.error('Firebase initialization failed', error: e);
+  }
 
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());

@@ -9,6 +9,7 @@ class RoomModel {
   final String? rules;
   final String hostId;
   final String ownerId;
+  final List<String> adminUserIds;
   final bool isLive;
   final String? thumbnailUrl;
   final Timestamp? createdAt;
@@ -45,6 +46,7 @@ class RoomModel {
     required this.name,
     required this.hostId,
     this.ownerId = '',
+    this.adminUserIds = const [],
     this.description,
     this.rules,
     this.isLive = false,
@@ -133,6 +135,7 @@ class RoomModel {
       rules: json['rules'] is String ? json['rules'] as String : null,
       hostId: _asString(json['hostId']),
       ownerId: _asString(json['ownerId']),
+      adminUserIds: _asStringList(json['adminUserIds']),
       isLive: _asBool(json['isLive']),
       thumbnailUrl: sanitizeNetworkImageUrl(
         json['thumbnailUrl'] is String ? json['thumbnailUrl'] as String : null,
@@ -173,6 +176,7 @@ class RoomModel {
       'rules': rules,
       'hostId': hostId,
       'ownerId': ownerId,
+      'adminUserIds': adminUserIds,
       'isLive': isLive,
       'thumbnailUrl': thumbnailUrl,
       'createdAt': createdAt,
@@ -203,6 +207,7 @@ class RoomModel {
     String? rules,
     String? hostId,
     String? ownerId,
+    List<String>? adminUserIds,
     bool? isLive,
     String? thumbnailUrl,
     Timestamp? createdAt,
@@ -231,6 +236,7 @@ class RoomModel {
       rules: rules ?? this.rules,
       hostId: hostId ?? this.hostId,
       ownerId: ownerId ?? this.ownerId,
+      adminUserIds: adminUserIds ?? this.adminUserIds,
       isLive: isLive ?? this.isLive,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       createdAt: createdAt ?? this.createdAt,

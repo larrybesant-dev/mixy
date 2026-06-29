@@ -173,7 +173,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         final location = state.uri.path.isEmpty ? '/' : state.uri.path;
         
         // Handle web bootstrap lag safely without crashing
-        if (!authState.isRoutingStable) {
+        // Allow auth routes (/auth, /register, /forgot-password, /onboarding) even during bootstrap
+        final isAuthBootstrapRoute = location == '/auth' ||
+            location == '/register' ||
+            location == '/forgot-password' ||
+            location == '/onboarding';
+        
+        if (!authState.isRoutingStable && !isAuthBootstrapRoute) {
           return '/auth'; // Redirect un-bootstrapped web states straight to login/auth view safely
         }
 

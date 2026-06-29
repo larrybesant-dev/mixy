@@ -198,11 +198,18 @@
         watchForFlutterSurface();
       };
 
+      // Update message at 12 seconds
       setTimeout(function () {
         if (bootShell && !bootShell.hasAttribute('hidden')) {
           setBootMessage('Still loading... network looks slow. MixVy will continue automatically.');
         }
       }, 12000);
+
+      // PRAGMATIC WORKAROUND: Force hide boot shell after 8 seconds if Flutter hasn't surfaced
+      // This prevents the loading screen from blocking the app indefinitely on web
+      setTimeout(function () {
+        hideBootShell();
+      }, 8000);
 
       document.body.appendChild(script);
     })();

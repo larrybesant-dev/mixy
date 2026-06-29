@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../models/room_model.dart';
 import '../../../core/theme.dart';
+import '../../../core/providers/firebase_providers.dart';
+import 'room_management_modal.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 
@@ -46,7 +48,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
   Future<void> _joinRoom(String uid, String username) async {
     try {
-      final roomRef = FirebaseFirestore.instance.collection('rooms').doc(widget.roomId);
+      final firestore = ref.read(firestoreProvider);
+      final roomRef = firestore.collection('rooms').doc(widget.roomId);
       
       // Create participant doc (required for chat permissions)
       await roomRef.collection('participants').doc(uid).set({
@@ -102,10 +105,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
   Future<void> _leaveRoom() async {
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final auth = ref.read(firebaseAuthProvider);
+      final currentUser = auth.currentUser;
       if (currentUser == null) return;
 
-      final roomRef = FirebaseFirestore.instance.collection('rooms').doc(widget.roomId);
+      final firestore = ref.read(firestoreProvider);
+      final roomRef = firestore.collection('rooms').doc(widget.roomId);
       
       // Delete participant doc
       await roomRef.collection('participants').doc(currentUser.uid).delete();
@@ -154,12 +159,14 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     if (text.isEmpty) return;
 
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final auth = ref.read(firebaseAuthProvider);
+      final currentUser = auth.currentUser;
       if (currentUser == null) return;
 
       final sessionState = ref.watch(roomSessionProvider(widget.roomId));
+      final firestore = ref.read(firestoreProvider);
 
-      await FirebaseFirestore.instance
+      await firestore
           .collection('rooms')
           .doc(widget.roomId)
           .collection('messages')
@@ -191,6 +198,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     Share.share(
       'Join me in "$roomName" on MIXVY!\nhttps://mixvy-v2.web.app/rooms/room/${widget.roomId}',
       subject: '$roomName – MIXVY live room',
+    );
+  }
+
+  void _showManagementModal(BuildContext context, RoomModel room) {
+    showDialog(
+      context: context,
+      builder: (context) => RoomManagementModal(
+        roomId: widget.roomId,
+        room: room,
+      ),
     );
   }
 
@@ -385,6 +402,29 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final room = RoomModel.fromJson(
+                  snapshot.data!.data() as Map<String, dynamic>,
+                  widget.roomId,
+                );
+                final isOwner = currentUser?.uid == room.ownerId;
+                final isAdmin = room.adminUserIds.contains(currentUser?.uid);
+                final canManage = isOwner || isAdmin;
+
+                if (canManage) {
+                  return IconButton(
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () => _showManagementModal(context, room),
+                    tooltip: 'Manage room',
+                  );
+                }
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           if (sessionState.hasJoined)
             IconButton(
               icon: const Icon(Icons.share_outlined),
