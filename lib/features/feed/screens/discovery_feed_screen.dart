@@ -2211,7 +2211,7 @@ class _LiveStateBar extends StatelessWidget {
   final int liveRoomCount;
   final int activeListenerCount;
 
-  // Gather up to 4 unique participant UIDs from the first few rooms.
+  // Gather up to 4 unique participant UIDs and avatar URLs from the first few rooms.
   List<String> _clusterUids() {
     final seen = <String>{};
     final uids = <String>[];
@@ -2229,6 +2229,32 @@ class _LiveStateBar extends StatelessWidget {
       }
     }
     return uids;
+  }
+
+  // Get corresponding avatar URLs for the clustered UIDs
+  List<String> _clusterAvatarUrls() {
+    final uidMap = <String, String>{};
+    for (final room in liveRooms.take(4)) {
+      // Map stage users to their avatars
+      for (var i = 0; i < room.stageUserIds.length; i++) {
+        final uid = room.stageUserIds[i];
+        if (!uidMap.containsKey(uid) && i < room.stageUserAvatarUrls.length) {
+          uidMap[uid] = room.stageUserAvatarUrls[i];
+        }
+      }
+      // Map audience users to their avatars
+      for (var i = 0; i < room.audienceUserIds.length; i++) {
+        final uid = room.audienceUserIds[i];
+        if (!uidMap.containsKey(uid) && i < room.audienceUserAvatarUrls.length) {
+          uidMap[uid] = room.audienceUserAvatarUrls[i];
+        }
+      }
+    }
+    
+    // Return avatars in the same order as clusterUids
+    return _clusterUids()
+        .map((uid) => uidMap[uid] ?? '')
+        .toList(growable: false);
   }
 
   // "3 rooms started in the last hour"
@@ -2300,8 +2326,7 @@ class _LiveStateBar extends StatelessWidget {
             const SizedBox(width: 10),
             RoomAvatarStack(
               uids: clusterUids,
-              // Using denormalized data if available, though clusterUids usually implies multiple users
-              // For now just pass the IDs, and we'll harden the RoomCard to use denormalized host data.
+              avatarUrls: _clusterAvatarUrls(),
             ),
           ],
         ],

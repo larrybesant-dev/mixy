@@ -11,6 +11,7 @@ import '../../../core/providers/firebase_providers.dart';
 import 'room_management_modal.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
+import '../providers/participant_providers.dart';
 import '../widgets/network_health_widget.dart';
 
 class LiveRoomScreen extends ConsumerStatefulWidget {
@@ -64,6 +65,15 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       final firestore = ref.read(firestoreProvider);
       final roomRef = firestore.collection('rooms').doc(widget.roomId);
       
+      // Fetch user's avatar URL
+      String? avatarUrl;
+      try {
+        final userDoc = await firestore.collection('users').doc(uid).get();
+        avatarUrl = userDoc.data()?['avatarUrl'] as String?;
+      } catch (_) {
+        // Continue without avatar if fetch fails
+      }
+      
       // Create participant doc (required for chat permissions)
       await roomRef.collection('participants').doc(uid).set({
         'userId': uid,
@@ -80,9 +90,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Update room with user
+      // Update room with user and avatar
       await roomRef.update({
         'audienceUserIds': FieldValue.arrayUnion([uid]),
+        'audienceUserAvatarUrls': FieldValue.arrayUnion([avatarUrl ?? '']),
         'memberCount': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -127,12 +138,30 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       final firestore = ref.read(firestoreProvider);
       final roomRef = firestore.collection('rooms').doc(widget.roomId);
       
+      // Get current room state to remove matching avatar URL
+      final roomDoc = await roomRef.get();
+      final roomData = roomDoc.data();
+      String? avatarUrlToRemove;
+      
+      if (roomData != null) {
+        final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
+        final avatarUrls = List<String>.from(roomData['audienceUserAvatarUrls'] ?? []);
+        
+        // Find the index of current user and get matching avatar URL
+        final userIndex = audienceIds.indexOf(currentUser.uid);
+        if (userIndex >= 0 && userIndex < avatarUrls.length) {
+          avatarUrlToRemove = avatarUrls[userIndex];
+        }
+      }
+      
       // Delete participant doc
       await roomRef.collection('participants').doc(currentUser.uid).delete();
       
       // Update room
       await roomRef.update({
         'audienceUserIds': FieldValue.arrayRemove([currentUser.uid]),
+        if (avatarUrlToRemove != null)
+          'audienceUserAvatarUrls': FieldValue.arrayRemove([avatarUrlToRemove]),
         'memberCount': FieldValue.increment(-1),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -166,8 +195,15 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
   void _toggleAudioSharing(bool enabled) {
     ref.read(roomSessionProvider(widget.roomId).notifier).setAudioSharingEnabled(enabled);
-    // TODO: Implement audio sharing setup with system audio capture
-    // This would integrate with the WebRTC service to share desktop audio
+    ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleSystemAudioSharing(enabled).catchError((e) {
+      // Revert UI state on error
+      if (mounted) {
+        ref.read(roomSessionProvider(widget.roomId).notifier).setAudioSharingEnabled(!enabled);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share audio: $e')),
+        );
+      }
+    });
   }
 
   Future<void> _sendMessage(String text) async {
@@ -509,7 +545,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         Expanded(
           child: Column(
             children: [
-              _buildRoomHeader(room),
+              _buildRoomHeader(room, ref),
               Expanded(
                 child: _buildChatArea(sessionState),
               ),
@@ -543,7 +579,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           flex: 1,
           child: Column(
             children: [
-              _buildRoomHeader(room),
+              _buildRoomHeader(room, ref),
               Expanded(child: _buildChatArea(sessionState)),
             ],
           ),
@@ -737,7 +773,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 
-  Widget _buildRoomHeader(RoomModel room) {
+  Widget _buildRoomHeader(RoomModel room, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -798,25 +834,30 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 },
               ),
               const Spacer(),
-              GestureDetector(
-                onTap: () => _showParticipantsPanel(room.id),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.people, size: 14, color: VelvetNoir.primary),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${room.memberCount} listeners',
-                        style: GoogleFonts.raleway(
-                          fontSize: 12,
-                          color: VelvetNoir.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+              Consumer(
+                builder: (context, consumerRef, _) {
+                  final participantCount = consumerRef.watch(participantCountProvider(room.id));
+                  return GestureDetector(
+                    onTap: () => _showParticipantsPanel(room.id),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.people, size: 14, color: VelvetNoir.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$participantCount listeners',
+                            style: GoogleFonts.raleway(
+                              fontSize: 12,
+                              color: VelvetNoir.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -826,6 +867,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }
 
   Widget _buildChatArea(RoomSessionState sessionState) {
+    if (!sessionState.hasJoined) {
+      return Center(
+        child: Text(
+          'Join the room to chat',
+          style: GoogleFonts.raleway(
+            fontSize: 14,
+            color: VelvetNoir.onSurfaceVariant,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         Expanded(

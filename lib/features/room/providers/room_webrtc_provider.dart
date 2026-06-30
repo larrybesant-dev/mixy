@@ -159,6 +159,18 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     }
   }
 
+  Future<void> toggleSystemAudioSharing(bool enabled) async {
+    if (state?.service == null) return;
+
+    try {
+      await state!.service!.shareSystemAudio(enabled);
+      // No state change needed - the UI watches isSharingSystemAudio on the service
+    } catch (e) {
+      state = state?.copyWith(error: 'Failed to toggle system audio: $e');
+      rethrow;
+    }
+  }
+
   Future<void> disconnect() async {
     if (state?.service == null) return;
 

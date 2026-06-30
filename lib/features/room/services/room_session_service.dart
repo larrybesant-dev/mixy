@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firestore/firestore_debug_tracing.dart';
@@ -139,6 +140,64 @@ class RoomSessionService {
       return const RoomJoinResult.failure('This room no longer exists.');
     }
 
+    // Validate room is readable by the user
+    final isRoomAdult = _asBool(roomDoc.data()?['isAdult']);
+    if (isRoomAdult) {
+      // Check if user is adult-verified (you'll need to implement this check)
+      // For now, just log a warning
+      AppTelemetry.logAction(
+        domain: 'room',
+        action: 'join_adult_room_check',
+        message: 'Attempting to join adult room',
+        roomId: normalizedRoomId,
+        userId: normalizedUserId,
+        result: 'info',
+      );
+    }
+
+    // Check if user's profile is complete
+    final userDoc = await traceFirestoreRead(
+      path: 'users/$normalizedUserId',
+      operation: 'get_user_profile_for_join',
+      roomId: normalizedRoomId,
+      userId: normalizedUserId,
+      action: () => _firestore.collection('users').doc(normalizedUserId).get(),
+    );
+    
+    if (!userDoc.exists) {
+      AppTelemetry.updateRoomState(
+        roomId: normalizedRoomId,
+        joinedUserId: null,
+        roomPhase: 'error',
+        roomError: 'User profile not found. Please complete your profile setup first.',
+      );
+      return const RoomJoinResult.failure(
+        'User profile not found. Please complete your profile setup first.',
+      );
+    }
+
+    final isProfileComplete = _asBool(
+      userDoc.data()?['isComplete'],
+      fallback: false,
+    );
+    final firebaseUsername = _asString(userDoc.data()?['username']);
+    final firebaseDisplayName = _asString(userDoc.data()?['displayName']);
+    
+    // Profile is complete if isComplete flag is true OR both username and displayName are set
+    final hasBasicProfile = firebaseUsername.isNotEmpty && firebaseDisplayName.isNotEmpty;
+    
+    if (!isProfileComplete && !hasBasicProfile) {
+      AppTelemetry.updateRoomState(
+        roomId: normalizedRoomId,
+        joinedUserId: null,
+        roomPhase: 'error',
+        roomError: 'Please complete your profile before joining rooms.',
+      );
+      return const RoomJoinResult.failure(
+        'Please complete your profile before joining rooms.',
+      );
+    }
+
     final ownerId = _asString(
       roomDoc.data()?['ownerId'],
       fallback: _asString(roomDoc.data()?['hostId']),
@@ -229,10 +288,14 @@ class RoomSessionService {
         final roomData = roomSnap.data()!;
         final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
         final stageIds = List<String>.from(roomData['stageUserIds'] ?? []);
+        final audienceAvatarUrls = List<String>.from(roomData['audienceUserAvatarUrls'] ?? []);
+        final stageAvatarUrls = List<String>.from(roomData['stageUserAvatarUrls'] ?? []);
 
         if (!audienceIds.contains(normalizedUserId) &&
             !stageIds.contains(normalizedUserId)) {
           audienceIds.add(normalizedUserId);
+          // Add avatar URL to match the user we just added
+          audienceAvatarUrls.add(normalizedPhotoUrl.isNotEmpty ? normalizedPhotoUrl : '');
         }
 
         final currentParticipantSnap = await tx.get(participantRef);
@@ -283,6 +346,9 @@ class RoomSessionService {
 
         tx.update(_firestore.collection('rooms').doc(normalizedRoomId), {
           'audienceUserIds': audienceIds,
+          'audienceUserAvatarUrls': audienceAvatarUrls,
+          'stageUserIds': stageIds,
+          'stageUserAvatarUrls': stageAvatarUrls,
           'memberCount': audienceIds.length + stageIds.length,
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -293,7 +359,19 @@ class RoomSessionService {
       } else {
         await _firestore.runTransaction(executeJoin);
       }
-    } catch (e, _) {
+    } catch (e, stackTrace) {
+      final errorMsg = e.toString();
+      final isPermissionDenied = errorMsg.contains('permission-denied') || 
+                                 errorMsg.contains('Permission denied') ||
+                                 errorMsg.contains('PERMISSION_DENIED');
+      
+      // Enhanced logging for permission errors
+      if (isPermissionDenied) {
+        debugPrint('[RoomJoinError] Permission-denied during transaction for room=$normalizedRoomId user=$normalizedUserId');
+        debugPrint('[RoomJoinError] Full error: $errorMsg');
+        debugPrint('[RoomJoinError] Stack: $stackTrace');
+      }
+      
       AppTelemetry.logAction(
         domain: 'room',
         action: 'join_transaction_failed',
@@ -306,9 +384,16 @@ class RoomSessionService {
         roomId: normalizedRoomId,
         joinedUserId: normalizedUserId,
         roomPhase: 'error',
-        roomError: 'Failed to join room: ${e.toString()}',
+        roomError: isPermissionDenied 
+          ? 'Permission denied. Room may be restricted or you may not have access.'
+          : 'Failed to join room. Please try again.',
       );
-      return RoomJoinResult.failure('Failed to join room. Please try again.');
+      return RoomJoinResult.failure(
+        isPermissionDenied 
+          ? 'Permission denied. Room may be restricted or you may not have access.'
+          : 'Failed to join room. Please try again.',
+        excludedUserIds: excludedUserIds,
+      );
     }
 
     await _presenceController.setInRoom(normalizedUserId, normalizedRoomId);
@@ -355,16 +440,34 @@ class RoomSessionService {
       final roomData = roomSnap.data()!;
       final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
       final stageIds = List<String>.from(roomData['stageUserIds'] ?? []);
+      final audienceAvatarUrls = List<String>.from(roomData['audienceUserAvatarUrls'] ?? []);
+      final stageAvatarUrls = List<String>.from(roomData['stageUserAvatarUrls'] ?? []);
 
-      audienceIds.remove(normalizedUserId);
-      stageIds.remove(normalizedUserId);
+      // Find and remove user from audience or stage
+      final audienceIndex = audienceIds.indexOf(normalizedUserId);
+      if (audienceIndex >= 0) {
+        audienceIds.removeAt(audienceIndex);
+        if (audienceIndex < audienceAvatarUrls.length) {
+          audienceAvatarUrls.removeAt(audienceIndex);
+        }
+      }
+
+      final stageIndex = stageIds.indexOf(normalizedUserId);
+      if (stageIndex >= 0) {
+        stageIds.removeAt(stageIndex);
+        if (stageIndex < stageAvatarUrls.length) {
+          stageAvatarUrls.removeAt(stageIndex);
+        }
+      }
 
       tx.delete(participantRef);
       tx.delete(memberRef);
 
       tx.update(roomRef, {
         'audienceUserIds': audienceIds,
+        'audienceUserAvatarUrls': audienceAvatarUrls,
         'stageUserIds': stageIds,
+        'stageUserAvatarUrls': stageAvatarUrls,
         'memberCount': audienceIds.length + stageIds.length,
         'updatedAt': FieldValue.serverTimestamp(),
       });

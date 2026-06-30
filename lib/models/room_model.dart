@@ -18,6 +18,9 @@ class RoomModel {
   // Members
   final List<String> stageUserIds;
   final List<String> audienceUserIds;
+  // Denormalized member avatars (parallel arrays)
+  final List<String> stageUserAvatarUrls;
+  final List<String> audienceUserAvatarUrls;
   // Metadata
   final int memberCount;
   final String? category;
@@ -56,6 +59,8 @@ class RoomModel {
     this.endedAt,
     this.stageUserIds = const [],
     this.audienceUserIds = const [],
+    this.stageUserAvatarUrls = const [],
+    this.audienceUserAvatarUrls = const [],
     this.memberCount = 0,
     this.category,
     this.tags = const [],
@@ -145,6 +150,8 @@ class RoomModel {
       endedAt: _asTimestamp(json['endedAt']),
       stageUserIds: _asStringList(json['stageUserIds']),
       audienceUserIds: _asStringList(json['audienceUserIds']),
+      stageUserAvatarUrls: _asStringList(json['stageUserAvatarUrls']),
+      audienceUserAvatarUrls: _asStringList(json['audienceUserAvatarUrls']),
       memberCount: _asInt(json['memberCount']),
       category: json['category'] is String ? json['category'] as String : null,
       tags: _asStringList(json['tags']),
@@ -184,6 +191,8 @@ class RoomModel {
       'endedAt': endedAt,
       'stageUserIds': stageUserIds,
       'audienceUserIds': audienceUserIds,
+      'stageUserAvatarUrls': stageUserAvatarUrls,
+      'audienceUserAvatarUrls': audienceUserAvatarUrls,
       'memberCount': memberCount,
       'category': category,
       'tags': tags,
@@ -215,6 +224,8 @@ class RoomModel {
     Timestamp? endedAt,
     List<String>? stageUserIds,
     List<String>? audienceUserIds,
+    List<String>? stageUserAvatarUrls,
+    List<String>? audienceUserAvatarUrls,
     int? memberCount,
     String? category,
     List<String>? tags,
@@ -244,6 +255,8 @@ class RoomModel {
       endedAt: endedAt ?? this.endedAt,
       stageUserIds: stageUserIds ?? this.stageUserIds,
       audienceUserIds: audienceUserIds ?? this.audienceUserIds,
+      stageUserAvatarUrls: stageUserAvatarUrls ?? this.stageUserAvatarUrls,
+      audienceUserAvatarUrls: audienceUserAvatarUrls ?? this.audienceUserAvatarUrls,
       memberCount: memberCount ?? this.memberCount,
       category: category ?? this.category,
       tags: tags ?? this.tags,

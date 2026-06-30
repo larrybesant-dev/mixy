@@ -82,33 +82,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    final controller = ref.read(authControllerProvider.notifier);
-    await controller.signInWithGoogle();
-    if (!mounted) return;
-    final authState = ref.read(authControllerProvider);
-    setState(() => _localError = authState.error);
-    if (authState.error == null && authState.uid != null) {
-      await AnalyticsService().logLogin(method: 'google');
-    }
-  }
-
-  Future<void> _signInWithApple() async {
-    final controller = ref.read(authControllerProvider.notifier);
-    await controller.signInWithApple();
-    if (!mounted) return;
-    final authState = ref.read(authControllerProvider);
-    setState(() => _localError = authState.error);
-    if (authState.error == null && authState.uid != null) {
-      await AnalyticsService().logLogin(method: 'apple');
-    }
-  }
-
-  bool _supportsAppleSignIn() {
-    if (kIsWeb) return true;
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-  }
+  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
+  // These methods were for social sign-in which is no longer displayed
 
   // ── build ─────────────────────────────────────────────────────────────────
   @override
@@ -391,25 +366,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   ),
                   const SizedBox(height: 24),
 
-                  // ── Social buttons ───────────────────────────────────
-                  _socialButton(
-                    onPressed: isLoading ? null : _signInWithGoogle,
-                    icon: _googleIcon(),
-                    label: 'Continue with Google',
-                  ),
-                  if (_supportsAppleSignIn()) ...[
-                    const SizedBox(height: 10),
-                    _socialButton(
-                      onPressed: isLoading ? null : _signInWithApple,
-                      icon: const Icon(
-                        Icons.apple,
-                        size: 20,
-                        color: _rOnSurface,
-                      ),
-                      label: 'Continue with Apple',
-                    ),
-                  ],
-
                   const SizedBox(height: 20),
                   _orDivider(),
                   const SizedBox(height: 20),
@@ -587,43 +543,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
-  // ── social button ─────────────────────────────────────────────────────────
-  Widget _socialButton({
-    required VoidCallback? onPressed,
-    required Widget icon,
-    required String label,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: _rSurfaceHigh,
-          side: const BorderSide(color: _rGoldBorder),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: GoogleFonts.raleway(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: _rOnSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── brand text input ──────────────────────────────────────────────────────
   Widget _brandInput({
     required TextEditingController controller,
@@ -789,27 +708,4 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
-  // ── Google icon (coloured G) ──────────────────────────────────────────────
-  Widget _googleIcon() {
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Text(
-            'G',
-            style: GoogleFonts.raleway(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF4285F4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
-
-
-

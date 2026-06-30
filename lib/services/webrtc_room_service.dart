@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter/foundation.dart';
-import '../config/app_env.dart';
 import 'dart:developer' as developer;
 import 'package:mixvy/services/rtc_room_service.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
@@ -79,6 +77,7 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   final Map<String, List<StreamSubscription>> _roomSubscriptions = {};
   
   MediaStream? _localStream;
+  MediaStream? _systemAudioStream;
   RTCVideoRenderer? _localRenderer;
   final Map<int, RTCVideoRenderer> _remoteRenderers = {};
   final Map<int, String> _uidToUserId = {};
@@ -112,56 +111,42 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   /* Unused: int? _localUid; */
   Timer? _signalingHeartbeatTimer;
 
-  /// Production Initializer: Fetches TURN credentials to bypass public firewalls.
+  /// Production Initializer: Fetches TURN credentials via Cloud Function (security: prevents secret key exposure).
+  /// Sprint 2 C-2 Fix: Moved from client-side HTTP to Cloud Function
   Future<void> initializeProductionNetworking() async {
     if (_productionIceServers != null && _productionIceServers!.isNotEmpty) {
       _log('✅ ICE servers already provided.');
       return;
     }
 
-    final String secretKey = AppEnv.meteredSecretKey;
-    if (secretKey.isEmpty) {
-      _log('⚠️ Metered Secret Key is empty. Skipping production networking setup.');
-      return;
-    }
-
-    final String domain = AppEnv.meteredDomain;
-    final String url = "https://$domain/api/v1/turn/credential${secretKey.isNotEmpty ? '?secretKey=$secretKey' : ''}";
-
     developer.Timeline.startSync('MixVy:WebRTC:FetchTurnCredentials');
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "expiryInSeconds": 3600,
-          "label": "mixvy-prod-session"
-        }),
-      ).timeout(const Duration(seconds: 10));
+      // Call Cloud Function to fetch TURN credentials securely (secret key never leaves backend)
+      final callable = FirebaseFunctions.instance.httpsCallable('getTurnCredentials');
+      final result = await callable.call().timeout(const Duration(seconds: 10));
       developer.Timeline.finishSync();
 
-      if (response.statusCode == 200) {
-        final dynamic data = jsonDecode(response.body);
-        if (data is Map<String, dynamic>) {
-          final username = data['username']?.toString();
-          final password = data['password']?.toString();
-          
-          if (username != null && password != null) {
-            _productionIceServers = [
-              {'urls': 'stun:stun.l.google.com:19302'},
-              {
-                'urls': 'turn:open.metered.ca:443',
-                'username': username,
-                'credential': password,
-              }
-            ];
-            _log('✅ Production ICE servers initialized successfully');
-            return;
-          }
+      if (result.data is Map<String, dynamic>) {
+        final data = result.data as Map<String, dynamic>;
+        final username = data['username']?.toString();
+        final password = data['credential']?.toString();
+        final turnUrl = data['urls']?.toString() ?? 'turn:open.metered.ca:443';
+        
+        if (username != null && password != null) {
+          _productionIceServers = [
+            {'urls': 'stun:stun.l.google.com:19302'},
+            {
+              'urls': turnUrl,
+              'username': username,
+              'credential': password,
+            }
+          ];
+          _log('✅ Production ICE servers initialized via Cloud Function (secure)');
+          return;
         }
       }
     } catch (e) {
-      _log('[WebRTC][WARN] Networking error during TURN fetch: $e. Falling back to STUN.');
+      _log('[WebRTC][WARN] Cloud Function error during TURN fetch: $e. Falling back to STUN.');
     } finally {
       if (_productionIceServers == null) {
         _log('[WebRTC] Initialized with STUN fallback topology.');
@@ -250,10 +235,115 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   @override
   bool get isLocalAudioMuted => _localAudioMuted;
   @override
-  bool get isSharingSystemAudio => false;
+  bool get isSharingSystemAudio => _systemAudioStream != null;
 
   @override
-  Future<void> shareSystemAudio(bool enabled) async {}
+  Future<void> shareSystemAudio(bool enabled) async {
+    if (enabled) {
+      try {
+        _log('Starting system audio capture...');
+        
+        // Request display media (includes system audio option in Chrome)
+        _systemAudioStream = await navigator.mediaDevices.getDisplayMedia({
+          'audio': {
+            'echoCancellation': false,
+            'noiseSuppression': false,
+            'autoGainControl': false,
+          },
+          'video': {
+            'cursor': 'always', // Show cursor while capturing
+          } // Optional: capture video too, or set to false for audio-only
+        });
+        
+        _log('✅ System audio stream acquired');
+        
+        // Get the audio track
+        final audioTracks = _systemAudioStream!.getAudioTracks();
+        if (audioTracks.isEmpty) {
+          _log('⚠️ No audio track in display media stream');
+          _systemAudioStream = null;
+          return;
+        }
+        
+        final audioTrack = audioTracks.first;
+        
+        // Add audio track to all peer connections
+        for (var entry in _pcs.entries) {
+          final peerId = entry.key;
+          final pc = entry.value;
+          try {
+            // Check if audio sender already exists
+            final senders = await pc.getSenders();
+            final audioSender = senders.where((s) => s.track?.kind == 'audio').firstOrNull;
+            
+            if (audioSender != null) {
+              // Replace existing audio track
+              await audioSender.replaceTrack(audioTrack);
+              _log('✅ Replaced mic audio with system audio for peer: $peerId');
+            } else {
+              // Add new audio track
+              await pc.addTrack(audioTrack, _systemAudioStream!);
+              _log('✅ Added system audio track to peer: $peerId');
+            }
+          } catch (e) {
+            _log('❌ Failed to add audio track to peer $peerId: $e');
+          }
+        }
+        
+        // Listen for stream end (user stops sharing)
+        audioTrack.onEnded = () {
+          _log('⚠️ User stopped screen/audio share. Cleaning up.');
+          shareSystemAudio(false).ignore();
+        };
+        
+      } catch (e) {
+        _log('❌ Failed to get display media: $e');
+        _systemAudioStream = null;
+        rethrow;
+      }
+    } else {
+      // Stop sharing system audio and restore mic
+      try {
+        if (_systemAudioStream != null) {
+          _log('Stopping system audio capture...');
+          for (var track in _systemAudioStream!.getTracks()) {
+            track.enabled = false;
+            await track.stop();
+          }
+          await _systemAudioStream!.dispose();
+          _systemAudioStream = null;
+        }
+        
+        // Restore original microphone audio for all peers
+        if (_localStream != null) {
+          final micAudioTracks = _localStream!.getAudioTracks();
+          if (micAudioTracks.isNotEmpty) {
+            final micAudioTrack = micAudioTracks.first;
+            
+            for (var entry in _pcs.entries) {
+              final peerId = entry.key;
+              final pc = entry.value;
+              try {
+                final senders = await pc.getSenders();
+                final audioSender = senders.where((s) => s.track?.kind == 'audio').firstOrNull;
+                
+                if (audioSender != null) {
+                  await audioSender.replaceTrack(micAudioTrack);
+                  _log('✅ Restored microphone audio for peer: $peerId');
+                }
+              } catch (e) {
+                _log('Failed to restore mic audio for peer $peerId: $e');
+              }
+            }
+          }
+        }
+        
+        _log('✅ System audio sharing stopped');
+      } catch (e) {
+        _log('Error stopping system audio sharing: $e');
+      }
+    }
+  }
 
   @override
   bool isRemoteSpeaking(int uid) => (_remoteAudioLevels[uid] ?? 0.0) > 0.05;
@@ -441,11 +531,28 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
 
   void _cleanupPeer(String userId) {
     final uid = _stableUid(userId);
+    
+    // 1. Remove peer connection first
     _pcs.remove(userId)?.dispose();
-    _remoteRenderers.remove(uid)?.dispose();
+    
+    // 2. Snapshot the renderer before disposal (prevents deactivated widget exceptions)
+    final renderer = _remoteRenderers.remove(uid);
+    
+    // 3. Clear all references
     _uidToUserId.remove(uid);
     _remoteAudioLevels.remove(uid);
+    
+    // 4. Remove ICE candidate fingerprints for this peer
+    if (_currentChannelId != null) {
+      final scopeKey = '$_currentChannelId:$userId';
+      _sentIceCandidateKeys.remove(scopeKey);
+    }
+    
+    // 5. Trigger UI rebuild callback BEFORE renderer disposal
     onRemoteUserLeft?.call();
+    
+    // 6. Finally, dispose renderer after callback completes
+    renderer?.dispose();
   }
 
   Future<void> _setupPC(String peerId, String roomId, bool isOfferer) async {
@@ -510,10 +617,14 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       // Record when remote description is received from Firestore
       _latencyTracker.recordRemoteDescriptionReceived(peerId, type);
 
-      if (type == 'offer' && !isOfferer) {
-        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+      // Sprint 2 B-2 Fix: Validate role before applying remote description (prevents offer/answer race)
+      if (type == 'offer') {
+        if (isOfferer) {
+          _log('⚠️ RACE DETECTED: Received offer but I am offerer. Ignoring. (peerId=$peerId)');
+          return; // Both peers tried to be offerer - deterministic ordering should prevent this
+        }
         
-        // Record when remote description has been applied
+        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
         _latencyTracker.recordRemoteDescriptionApplied(peerId);
         
         final answer = await pc.createAnswer();
@@ -526,12 +637,14 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
           'timestamp': FieldValue.serverTimestamp(),
         });
         
-        // Record when our answer is sent
         _latencyTracker.recordOfferAnswerSent(peerId, 'answer');
-      } else if (type == 'answer' && isOfferer) {
-        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+      } else if (type == 'answer') {
+        if (!isOfferer) {
+          _log('⚠️ RACE DETECTED: Received answer but I am not offerer. Ignoring. (peerId=$peerId)');
+          return; // Non-offerer received answer - deterministic ordering violation
+        }
         
-        // Record when remote answer has been applied
+        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
         _latencyTracker.recordRemoteDescriptionApplied(peerId);
       }
     }));
@@ -544,21 +657,51 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         .where('userId', isEqualTo: peerId)
         .snapshots()
         .listen((snap) {
+      final now = DateTime.now();
+      final maxCandidateAge = Duration(seconds: 20);
+      int staleCandidatesSkipped = 0;
+      
       for (var change in snap.docChanges) {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
           if (data != null) {
-            pc.addCandidate(RTCIceCandidate(
-              data['candidate']?.toString(),
-              data['sdpMid']?.toString(),
-              data['sdpMLineIndex'] as int?,
-            ));
+            // Check candidate age: skip stale candidates older than 20 seconds
+            final createdAt = (data['timestamp'] as Timestamp?)?.toDate();
+            if (createdAt != null && now.difference(createdAt) > maxCandidateAge) {
+              staleCandidatesSkipped++;
+              _log('⏭️ Skipping stale ICE candidate for $peerId (age: ${now.difference(createdAt).inSeconds}s)');
+              continue;
+            }
+            
+            try {
+              final candidate = RTCIceCandidate(
+                data['candidate']?.toString(),
+                data['sdpMid']?.toString(),
+                data['sdpMLineIndex'] as int?,
+              );
+              
+              pc.addCandidate(candidate);
+              _log('✅ Added ICE candidate for peer: $peerId');
+            } catch (e) {
+              _log('⚠️ Failed to add ICE candidate for $peerId: $e. Connection state: ${pc.connectionState}');
+            }
           }
         }
+      }
+      
+      if (staleCandidatesSkipped > 0) {
+        _log('📊 Skipped $staleCandidatesSkipped stale ICE candidates for $peerId in this batch');
       }
     }));
 
     if (isOfferer) {
+      // Sprint 2 B-2 Fix: Add safeguard to ensure only deterministic offerer sends offer
+      // Verify local user ID is lexicographically smaller than peer ID
+      if (_localUserId.compareTo(peerId) >= 0) {
+        _log('❌ LOGIC ERROR: Non-offerer tried to send offer! localUserId=$_localUserId, peerId=$peerId');
+        return;
+      }
+      
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
@@ -569,7 +712,6 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         'timestamp': FieldValue.serverTimestamp(),
       });
       
-      // Record when our offer is sent to Firestore
       _latencyTracker.recordOfferAnswerSent(peerId, 'offer');
     }
     developer.Timeline.finishSync();
@@ -888,6 +1030,15 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
       }
       await _localStream!.dispose();
       _localStream = null;
+    }
+
+    if (_systemAudioStream != null) {
+      for (var track in _systemAudioStream!.getTracks()) {
+        track.enabled = false;
+        await track.stop();
+      }
+      await _systemAudioStream!.dispose();
+      _systemAudioStream = null;
     }
 
     if (_localRenderer != null) {

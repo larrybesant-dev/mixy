@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:mixvy/firebase_options.dart'; 
 import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
@@ -33,6 +34,18 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('[Firebase] Firebase initialized successfully');
+    
+    // Initialize Firebase App Check (critical security: blocks bot attacks on Firestore)
+    try {
+      await FirebaseAppCheck.instance.activate(
+        providerWeb: ReCaptchaV3Provider('6LfzB7cqAAAAABuHkIWz0rV0bHEaVMODQ5rj5TvU'),  // ← ReCAPTCHA v3 site key for Web
+        providerAndroid: AndroidPlayIntegrityProvider(),  // ← Play Integrity API for Android
+        // providerApple: DeviceCheckProvider() on iOS (available via firebase_app_check_web/ios)
+      );
+      debugPrint('[Firebase] App Check activated successfully');
+    } catch (e) {
+      debugPrint('[Firebase] App Check activation warning: $e (non-critical, continuing)');
+    }
     
     // Firestore settings are now managed by firestoreProvider in firebase_providers.dart
     // (Settings configured automatically when provider is first accessed)

@@ -88,6 +88,13 @@ service cloud.firestore {
       );
     }
 
+    // Firebase App Check validation: Prevents bot attacks and unauthorized API access
+    // Requires valid App Check token from authenticated client or device
+    function hasValidAppCheck() {
+      return request.auth != null 
+        && request.auth.token.firebase_app_check != null;
+    }
+
     function isConversationParticipant(convData) {
       return signedIn()
         && convData.participantIds is list
@@ -188,13 +195,13 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Keep read authenticated; tighten further with profile projection if needed.
-      allow read: if signedIn();
+      // Keep read authenticated AND App Check-validated; tighten further with profile projection if needed.
+      allow read: if signedIn() && hasValidAppCheck();
 
       // Client can manage only non-privileged profile identity fields.
-      allow create: if isSelf(userId) && userCreateValid(userId);
-      allow update: if isSelf(userId) && userUpdateValid();
-      allow delete: if isSelf(userId);
+      allow create: if isSelf(userId) && hasValidAppCheck() && userCreateValid(userId);
+      allow update: if isSelf(userId) && hasValidAppCheck() && userUpdateValid();
+      allow delete: if isSelf(userId) && hasValidAppCheck();
 
       // Server-only security/verification/wallet internals.
       match /wallet/{docId} {
@@ -344,7 +351,9 @@ service cloud.firestore {
           'createdAt',
           'updatedAt',
           'stageUserIds',
+          'stageUserAvatarUrls',
           'audienceUserIds',
+          'audienceUserAvatarUrls',
           'memberCount',
           'category',
           'tags',
@@ -441,24 +450,23 @@ service cloud.firestore {
     }
 
     match /rooms/{roomId} {
-      // Room reads require authentication — NO GUEST MODE.
-      // All room access is authenticated-only.
-      allow read: if signedIn();
+      // Room reads require authentication AND App Check (prevents bot scraping)
+      allow read: if signedIn() && hasValidAppCheck();
 
       // Signed-in host can create a room. Adult rooms require server-verified adult status.
-      allow create: if signedIn() && validRoomCreate();
+      allow create: if signedIn() && hasValidAppCheck() && validRoomCreate();
 
       // Host controls mutable room metadata.
       // Owner/admins can manage admin lists and room settings.
       // Normal participants are ONLY allowed to update their OWN entry in the audience/stage lists.
-      allow update: if signedIn()
+      allow update: if signedIn() && hasValidAppCheck()
         && (
           (resource.data.hostId == uid() && validHostRoomUpdate())
           ||
           (canManageRoom(resource.data) && validOwnerAdminRoomUpdate())
           ||
           (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['audienceUserIds', 'stageUserIds', 'memberCount', 'updatedAt'])
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['audienceUserIds', 'audienceUserAvatarUrls', 'stageUserIds', 'stageUserAvatarUrls', 'memberCount', 'updatedAt'])
             && (
               // If audienceUserIds changed, the diff must be exactly the caller's UID.
               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['audienceUserIds'])
@@ -479,7 +487,7 @@ service cloud.firestore {
         );
 
       // Delete restricted to host/admin.
-      allow delete: if signedIn() && (resource.data.hostId == uid() || isAdmin());
+      allow delete: if signedIn() && hasValidAppCheck() && (resource.data.hostId == uid() || isAdmin());
 
       // Participant roster
       match /participants/{participantId} {
@@ -493,30 +501,16 @@ service cloud.firestore {
 
         allow create: if signedIn()
           && participantId == uid()
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
           && canReadRoomById(roomId)
-          && request.resource.data.keys().hasOnly([
-            'userId',
-            'role',
-            'micOn',
-            'isMuted',
-            'cameraOn',
-            'camOn',
-            'isBanned',
-            'userStatus',
-            'displayName',
-            'photoUrl',
-            'joinedAt',
-            'lastActiveAt',
-            'updatedAt'
-          ])
           && request.resource.data.userId == uid()
-          && (
-            request.resource.data.role == 'audience'
-            || roomDoc(roomId).data.hostId == uid()
-            || isAdmin()
-          )
-          // Server timestamps are set after rule evaluation
-          && request.resource.data.joinedAt is timestamp;
+          && request.resource.data.role in ['audience', 'host', 'cohost', 'stage']
+          && request.resource.data.isMuted is bool
+          && request.resource.data.isBanned is bool
+          && request.resource.data.camOn is bool
+          && request.resource.data.userStatus is string
+          && request.resource.data.joinedAt is timestamp
+          && request.resource.data.lastActiveAt is timestamp;
 
         allow update: if signedIn()
           && participantId == uid()
@@ -561,7 +555,7 @@ service cloud.firestore {
         allow read: if signedIn() && canReadRoomById(roomId);
         allow create, update: if signedIn()
           && memberId == uid()
-          && canReadRoomById(roomId)
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
           && request.resource.data.keys().hasOnly([
             'userId',
             'role',

@@ -93,39 +93,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    final authController = ref.read(authControllerProvider.notifier);
-    await authController.signInWithGoogle();
-    if (!mounted) return;
-    final authState = ref.read(authControllerProvider);
-    if (authState.error != null) {
-      await _showmessage(authState.error ?? '', isError: true);
-      return;
-    }
-    if (authState.uid != null) {
-      await AnalyticsService().logLogin(method: 'google');
-    }
-  }
-
-  Future<void> _signInWithApple() async {
-    final authController = ref.read(authControllerProvider.notifier);
-    await authController.signInWithApple();
-    if (!mounted) return;
-    final authState = ref.read(authControllerProvider);
-    if (authState.error != null) {
-      await _showmessage(authState.error ?? '', isError: true);
-      return;
-    }
-    if (authState.uid != null) {
-      await AnalyticsService().logLogin(method: 'apple');
-    }
-  }
-
-  bool _supportsAppleSignIn() {
-    if (kIsWeb) return true;
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-  }
+  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
+  // These methods were for social sign-in which is no longer displayed
 
   // ── build ─────────────────────────────────────────────────────────────────
   @override
@@ -408,27 +377,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   ),
                   const SizedBox(height: 24),
 
-                  // Google sign-in
-                  _socialButton(
-                    onPressed: authState.isLoading ? null : _signInWithGoogle,
-                    icon: _googleIcon(),
-                    label: 'Continue with Google',
-                  ),
-
-                  // Apple sign-in
-                  if (_supportsAppleSignIn()) ...[
-                    const SizedBox(height: 10),
-                    _socialButton(
-                      onPressed: authState.isLoading ? null : _signInWithApple,
-                      icon: const Icon(
-                        Icons.apple,
-                        size: 20,
-                        color: _onSurface,
-                      ),
-                      label: 'Continue with Apple',
-                    ),
-                  ],
-
                   const SizedBox(height: 20),
                   _orDivider(),
                   const SizedBox(height: 20),
@@ -589,43 +537,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     );
   }
 
-  // ── social button ─────────────────────────────────────────────────────────
-  Widget _socialButton({
-    required VoidCallback? onPressed,
-    required Widget icon,
-    required String label,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: _surfaceHigh,
-          side: const BorderSide(color: _goldBorder),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: GoogleFonts.raleway(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: _onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── brand text input ───────────────────────────────────────────────────────
   Widget _brandInput({
     required TextEditingController controller,
@@ -758,24 +669,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
         ),
         Expanded(child: Container(height: 1, color: _goldBorder)),
       ],
-    );
-  }
-
-  // ── google icon ───────────────────────────────────────────────────────────
-  Widget _googleIcon() {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-      ),
-      padding: const EdgeInsets.all(2),
-      child: const Icon(
-        Icons.g_mobiledata_rounded,
-        size: 16,
-        color: Color(0xFF4285F4),
-      ),
     );
   }
 
