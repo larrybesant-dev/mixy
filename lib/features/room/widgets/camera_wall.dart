@@ -278,20 +278,23 @@ class _CameraWallState extends ConsumerState<CameraWall> {
 
         final mainGridTiles = <Widget>[
           if (widget.showLocalTile)
-            _CameraWallTileFrame(
-              roomId: widget.roomId,
-              label: widget.localLabel,
-              speaking: widget.localSpeaking,
-              hasMic: widget.localHasMic,
-              compact: false,
-              onDetach: widget.onDetachLocal,
-              viewerCount: widget.localViewerCount,
-              child: widget.localTile,
+            Positioned(
+              key: ValueKey<String>('local_tile_${widget.roomId}'),
+              child: _CameraWallTileFrame(
+                roomId: widget.roomId,
+                label: widget.localLabel,
+                speaking: widget.localSpeaking,
+                hasMic: widget.localHasMic,
+                compact: false,
+                onDetach: widget.onDetachLocal,
+                viewerCount: widget.localViewerCount,
+                child: widget.localTile,
+              ),
             ),
           ...mainGridRemoteTiles.map(
             (tile) {
               final frame = _ResizableTile(
-                key: ValueKey('rtile_${tile.uid}'),
+                key: ValueKey<int>(tile.uid),
                 defaultWidth: effectiveTileW,
                 defaultHeight: tileHeight,
                 child: _CameraWallTileFrame(
@@ -313,7 +316,7 @@ class _CameraWallState extends ConsumerState<CameraWall> {
               );
 
               return GestureDetector(
-                key: ValueKey('rtile_gesture_${tile.uid}'),
+                key: ValueKey<String>('gesture_${tile.uid}'),
                 onDoubleTap: () {
                   if (tile.userId != null) {
                     ref.read(roomControllerProvider(widget.roomId).notifier).setSpotlightUser(

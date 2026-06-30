@@ -242,12 +242,21 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
 
     ref.onDispose(() {
       _isDisposed = true;
-      // We no longer cancel all static timers on every instance dispose.
-      // Explicit leaveRoom() or Timer expiry owns the lifecycle.
+      // Sprint 3 A-2 Fix: Explicit timer cleanup to prevent zombie Firestore writes
+      // Cancel heartbeat first to prevent further writes, then grace window
       _roomHeartbeatTimer?.cancel();
       _roomHeartbeatTimer = null;
       _graceWindowTimer?.cancel();
       _graceWindowTimer = null;
+      _lastParticipantSyncAt = null;
+      // Explicitly release room ownership to signal clean session end
+      if (_session.activeSessionId != null) {
+        _releaseOwnership(
+          roomId: arg,
+          userId: _session.currentUserId ?? '',
+          sessionId: _session.activeSessionId,
+        );
+      }
     });
 
     // Watch lifecycle to pause heartbeats when backgrounded.
