@@ -84,6 +84,10 @@ CI launch gate profiles:
 Run full suite:
 - flutter test
 
+Run integration tests:
+- flutter test integration_test/app_tour_test.dart -d windows
+- See [TESTING.md](TESTING.md) for integration test patterns and modal dismissal best practices
+
 ## Key Project Docs
 - MIXVY_PRODUCT_AUDIT_2026-03-29.md
 - MIXVY_AUDIT_SUMMARY.md
