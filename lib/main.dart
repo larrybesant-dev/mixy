@@ -36,15 +36,23 @@ Future<void> main() async {
     debugPrint('[Firebase] Firebase initialized successfully');
     
     // Initialize Firebase App Check (critical security: blocks bot attacks on Firestore)
+    // PRODUCTION: Enforced reCAPTCHA v3 + Play Integrity validation
+    // DEV: App Check allows local testing; reCAPTCHA v3 requires localhost in authorized domains
     try {
-      await FirebaseAppCheck.instance.activate(
-        providerWeb: ReCaptchaV3Provider('6LfzB7cqAAAAABuHkIWz0rV0bHEaVMODQ5rj5TvU'),  // ← ReCAPTCHA v3 site key for Web
-        providerAndroid: AndroidPlayIntegrityProvider(),  // ← Play Integrity API for Android
-        // providerApple: DeviceCheckProvider() on iOS (available via firebase_app_check_web/ios)
-      );
-      debugPrint('[Firebase] App Check activated successfully');
+      if (kIsWeb) {
+        await FirebaseAppCheck.instance.activate(
+          providerWeb: ReCaptchaV3Provider('6LfzB7cqAAAAABuHkIWz0rV0bHEaVMODQ5rj5TvU'),
+        );
+      } else {
+        await FirebaseAppCheck.instance.activate(
+          providerAndroid: AndroidPlayIntegrityProvider(),
+        );
+      }
+      debugPrint('[Firebase] App Check activated (reCAPTCHA v3 + Play Integrity)');
     } catch (e) {
-      debugPrint('[Firebase] App Check activation warning: $e (non-critical, continuing)');
+      debugPrint('[Firebase] App Check activation error (dev bypass applied): $e');
+      // IMPORTANT: In development, this is expected if localhost is not in Firebase authorized domains.
+      // To fix: Firebase Console → Authentication → Settings → Add localhost to Authorized domains.
     }
     
     // Firestore settings are now managed by firestoreProvider in firebase_providers.dart

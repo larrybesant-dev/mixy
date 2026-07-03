@@ -11,12 +11,12 @@
  * 4. All Documents in 'notifications' collection.
  */
 
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
 
 // Initialize with local default credentials (uses GOOGLE_APPLICATION_CREDENTIALS
 // or the active 'firebase login' session).
 admin.initializeApp({
-  projectId: 'mix-and-mingle-v2'
+  projectId: "mix-and-mingle-v2"
 });
 
 const db = admin.firestore();
@@ -55,22 +55,22 @@ async function deleteQueryBatch(query, resolve) {
 }
 
 async function purgeBots() {
-  console.log('--- Purging Bot Users ---');
+  console.log("--- Purging Bot Users ---");
 
   // 1. Get users from Firestore
-  const usersSnap = await db.collection('users').get();
+  const usersSnap = await db.collection("users").get();
   let deletedCount = 0;
 
   for (const doc of usersSnap.docs) {
     const data = doc.data();
-    const email = data.email || '';
-    const username = data.username || '';
+    const email = data.email || "";
+    const username = data.username || "";
 
     // Patterns for bots: @test.com, @example.com, or BotUser_, or QA MixVy
-    if (email.endsWith('@test.com') ||
-        email.endsWith('@example.com') ||
-        username.startsWith('BotUser_') ||
-        username.startsWith('QA MixVy')) {
+    if (email.endsWith("@test.com") ||
+        email.endsWith("@example.com") ||
+        username.startsWith("BotUser_") ||
+        username.startsWith("QA MixVy")) {
       const uid = doc.id;
       console.log(`Deleting bot: ${username} (${uid})`);
 
@@ -83,7 +83,7 @@ async function purgeBots() {
       } catch (e) {
         console.error(`Failed to delete user ${uid}:`, e.message);
         // Sometimes user is in Firestore but not Auth, still delete Firestore doc
-        if (e.code === 'auth/user-not-found') {
+        if (e.code === "auth/user-not-found") {
             await doc.ref.delete();
             deletedCount++;
         }
@@ -94,25 +94,25 @@ async function purgeBots() {
 }
 
 async function runPurge() {
-  console.log('🚀 Starting MixVy Production Purge...');
+  console.log("🚀 Starting MixVy Production Purge...");
 
   try {
     // 1. Delete all rooms
-    console.log('Purging rooms...');
-    await deleteCollection('rooms');
-    console.log('Rooms purged.');
+    console.log("Purging rooms...");
+    await deleteCollection("rooms");
+    console.log("Rooms purged.");
 
     // 2. Delete all notifications
-    console.log('Purging notifications...');
-    await deleteCollection('notifications');
-    console.log('Notifications purged.');
+    console.log("Purging notifications...");
+    await deleteCollection("notifications");
+    console.log("Notifications purged.");
 
     // 3. Purge bots
     await purgeBots();
 
-    console.log('✅ Purge Complete. The live site is now clean!');
+    console.log("✅ Purge Complete. The live site is now clean!");
   } catch (error) {
-    console.error('❌ Purge failed:', error);
+    console.error("❌ Purge failed:", error);
   }
 }
 

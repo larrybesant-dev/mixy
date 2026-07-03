@@ -761,10 +761,34 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
         _localRenderer = RTCVideoRenderer();
         await _localRenderer!.initialize();
       }
+      
+      // Explicitly enable all video tracks before rendering
+      // This prevents the "lens covered" state that occurs when tracks are disabled
+      final videoTracks = _localStream!.getVideoTracks();
+      _log('Enabling ${videoTracks.length} video track(s) for rendering...');
+      for (final track in videoTracks) {
+        track.enabled = true;
+      }
+      
+      // Set the stream on the renderer
       _localRenderer!.srcObject = _localStream;
+      _log('Stream attached to local renderer');
+      
+      // Critical: Wait for browser to properly attach the video stream to the DOM element
+      // Without this delay, the renderer shows "lens covered" state on initial attach
+      // because the browser hasn't finished initializing the video playback pipeline.
+      // This 100ms is essential for Chrome/Firefox/Safari to initialize the video element.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      _log('Video renderer initialization complete - camera should now display');
+      
+      // Force the renderer to refresh by triggering a rebuild notification
+      // This ensures the RTCVideoView immediately reflects the new stream
+      onLocalVideoCaptureChanged?.call();
+      
       _localVideoCapturing = true;
       _isBroadcaster = true;
       _localAudioMuted = !publishMicrophoneTrack;
+      _log('Local video capture enabled and publishing to peers');
 
       final videoTrack = _localStream?.getVideoTracks().firstOrNull;
       if (videoTrack != null) {

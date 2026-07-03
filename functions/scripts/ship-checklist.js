@@ -129,7 +129,7 @@ function findIllegalTopLevelRoomReads() {
 
     const firstIsLiveFilter = firstIndexOfAny(suffix, [
       ".where('isLive'",
-      '.where("isLive"',
+      ".where(\"isLive\"",
     ]);
     return firstIsLiveFilter !== -1 &&
       (firstDoc === -1 || firstIsLiveFilter < firstDoc);
@@ -157,9 +157,9 @@ function findIllegalTopLevelRoomReads() {
         const trimmed = lines[i].trim();
         if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
         if (!trimmed.includes(".collection('rooms')") &&
-            !trimmed.includes('.collection("rooms")') &&
+            !trimmed.includes(".collection(\"rooms\")") &&
             !trimmed.includes(".where('isLive'") &&
-            !trimmed.includes('.where("isLive"')) {
+            !trimmed.includes(".where(\"isLive\"")) {
           continue;
         }
 

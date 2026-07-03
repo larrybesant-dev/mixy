@@ -41,7 +41,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   void initState() {
     super.initState();
     _cashOutService = ref.read(cashOutServiceProvider);
-    _connectStatusFuture = PaymentApi.getStripeConnectStatus();
+    final paymentApi = ref.read(paymentApiProvider);
+    _connectStatusFuture = paymentApi.getStripeConnectStatus();
   }
 
   @override
@@ -237,14 +238,16 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Future<void> _refreshConnectStatus() async {
+    final paymentApi = ref.read(paymentApiProvider);
     setState(() {
-      _connectStatusFuture = PaymentApi.getStripeConnectStatus();
+      _connectStatusFuture = paymentApi.getStripeConnectStatus();
     });
   }
 
   Future<void> _launchPayoutSetup() async {
     try {
-      final url = await PaymentApi.createStripeConnectOnboardingLink();
+      final paymentApi = ref.read(paymentApiProvider);
+      final url = await paymentApi.createStripeConnectOnboardingLink();
       final launched = await launchUrl(
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
@@ -263,7 +266,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
   Future<void> _openStripeDashboard() async {
     try {
-      final url = await PaymentApi.createStripeConnectDashboardLink();
+      final paymentApi = ref.read(paymentApiProvider);
+      final url = await paymentApi.createStripeConnectDashboardLink();
       final launched = await launchUrl(
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
@@ -323,7 +327,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     try {
-      await PaymentApi.requestRefund(
+      final paymentApi = ref.read(paymentApiProvider);
+      await paymentApi.requestRefund(
         transactionId: tx.id,
         reason: reasonController.text,
       );
@@ -373,7 +378,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final transactionsAsync = ref.watch(
       coinTransactionStreamProvider(currentUserId ?? ''),
     );
-    final refundRequestsAsync = PaymentApi.getMyRefundRequests(
+    final paymentApi = ref.watch(paymentApiProvider);
+    final refundRequestsAsync = paymentApi.getMyRefundRequests(
       currentUserId ?? '',
     );
     final recipientsAsync = ref.watch(

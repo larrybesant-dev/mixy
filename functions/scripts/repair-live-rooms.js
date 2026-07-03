@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -6,37 +6,37 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-const APPLY = process.argv.includes('--apply');
+const APPLY = process.argv.includes("--apply");
 const now = Date.now();
 const GRACE_MS = 6 * 60 * 60 * 1000;
 
 function normalizeEndedAt(endedAt) {
   if (!endedAt) return null;
-  if (endedAt === '' || endedAt === 'null') return null;
+  if (endedAt === "" || endedAt === "null") return null;
   if (endedAt instanceof admin.firestore.Timestamp) return endedAt;
   return null;
 }
 
 function getReason(room) {
-  if (!room.isLive) return 'NOT_LIVE';
+  if (!room.isLive) return "NOT_LIVE";
 
   const ownerOk = !!(room.ownerId || room.hostId);
-  if (!ownerOk) return 'MISSING_OWNER';
+  if (!ownerOk) return "MISSING_OWNER";
 
   if (room.endedAt && normalizeEndedAt(room.endedAt) !== null) {
-    return 'ENDED';
+    return "ENDED";
   }
 
   const createdAt = room.createdAt?.toMillis?.() || 0;
   const ageMs = now - createdAt;
 
-  if (ageMs > GRACE_MS) return 'STALE';
+  if (ageMs > GRACE_MS) return "STALE";
 
-  return 'OK';
+  return "OK";
 }
 
 async function run() {
-  const snapshot = await db.collection('rooms').get();
+  const snapshot = await db.collection("rooms").get();
 
   let total = 0;
   let visible = 0;
@@ -49,7 +49,7 @@ async function run() {
     NOT_LIVE: 0,
   };
 
-  console.log('\nSCANNING LIVE ROOMS...\n');
+  console.log("\nSCANNING LIVE ROOMS...\n");
 
   for (const doc of snapshot.docs) {
     const room = doc.data();
@@ -58,7 +58,7 @@ async function run() {
     const reason = getReason(room);
     reasons[reason] += 1;
 
-    const visibleRoom = reason === 'OK';
+    const visibleRoom = reason === "OK";
 
     console.log(
       `${doc.id} -> ${reason} | live=${room.isLive} ownerId=${room.ownerId || null} hostId=${room.hostId || null}`,
@@ -87,29 +87,29 @@ async function run() {
       }
 
       if (Object.keys(updates).length > 0) {
-        await db.collection('rooms').doc(doc.id).update(updates);
+        await db.collection("rooms").doc(doc.id).update(updates);
       }
     }
   }
 
-  console.log('\nSUMMARY');
-  console.log('----------------------------');
-  console.log('Total rooms:', total);
-  console.log('Visible (OK):', visible);
-  console.log('Dropped - MISSING_OWNER:', reasons.MISSING_OWNER);
-  console.log('Dropped - ENDED:', reasons.ENDED);
-  console.log('Dropped - STALE:', reasons.STALE);
-  console.log('Dropped - NOT_LIVE:', reasons.NOT_LIVE);
+  console.log("\nSUMMARY");
+  console.log("----------------------------");
+  console.log("Total rooms:", total);
+  console.log("Visible (OK):", visible);
+  console.log("Dropped - MISSING_OWNER:", reasons.MISSING_OWNER);
+  console.log("Dropped - ENDED:", reasons.ENDED);
+  console.log("Dropped - STALE:", reasons.STALE);
+  console.log("Dropped - NOT_LIVE:", reasons.NOT_LIVE);
 
   if (!APPLY) {
-    console.log('\nDRY RUN ONLY - no changes made');
-    console.log('Run with --apply to fix schema drift');
+    console.log("\nDRY RUN ONLY - no changes made");
+    console.log("Run with --apply to fix schema drift");
   } else {
-    console.log('\nAPPLY MODE COMPLETE - Firestore normalized');
+    console.log("\nAPPLY MODE COMPLETE - Firestore normalized");
   }
 }
 
 run().catch((e) => {
-  console.error('FAILED:', e);
+  console.error("FAILED:", e);
   process.exit(1);
 });
