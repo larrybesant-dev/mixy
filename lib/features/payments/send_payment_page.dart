@@ -47,8 +47,9 @@ class _SendPaymentPageState extends ConsumerState<SendPaymentPage> {
         });
         return;
       }
+      final paymentApi = ref.read(paymentApiProvider);
       // User is assumed to be logged in (null check handled in PaymentApi).
-      final intent = await PaymentApi.createIntent(
+      final intent = await paymentApi.createIntent(
         amount: amount,
         currency: 'usd',
         recipientId: widget.recipientId,
@@ -61,7 +62,7 @@ class _SendPaymentPageState extends ConsumerState<SendPaymentPage> {
       );
       await Stripe.instance.presentPaymentSheet();
       // Notify backend of successful payment (senderId is authenticated user)
-      await PaymentApi.notifySuccess(
+      await paymentApi.notifySuccess(
         recipientId: widget.recipientId,
         amount: amount,
         paymentIntentId: intent.paymentIntentId,

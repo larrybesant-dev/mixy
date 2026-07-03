@@ -25,7 +25,8 @@ class PaymentApiGateway implements PaymentGateway {
 
   @override
   Future<void> sendPayment(String receiverId, double amount) {
-    return PaymentApi.sendPayment(receiverId, amount);
+    final paymentApi = ref.read(paymentApiProvider);
+    return paymentApi.sendPayment(receiverId, amount);
   }
 
   @override
@@ -34,7 +35,8 @@ class PaymentApiGateway implements PaymentGateway {
     String targetId,
     double amount,
   ) {
-    return PaymentApi.requestPayment(requesterId, targetId, amount);
+    final paymentApi = ref.read(paymentApiProvider);
+    return paymentApi.requestPayment(requesterId, targetId, amount);
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Handles business ad payments
 // import '../payments/payment_intent_service.dart'; // Unused, can be removed
 import '../../core/error_handler.dart';
@@ -7,10 +8,16 @@ import '../../services/payment_api.dart';
 
 class AdPayment {
   // Integrates Stripe for ad payments
-  static Future<void> payForAd(String businessId, double amount) async {
+  /// Requires Ref from a ConsumerWidget/ConsumerStatefulWidget to access providers
+  static Future<void> payForAd(
+    String businessId,
+    double amount, {
+    required Ref ref,
+  }) async {
     // Use PaymentApi to create a payment intent for ad payments
     try {
-      final intent = await PaymentApi.createIntent(
+      final paymentApi = ref.read(paymentApiProvider);
+      final intent = await paymentApi.createIntent(
         amount: amount,
         currency: 'usd',
         recipientId: businessId,
@@ -24,7 +31,7 @@ class AdPayment {
       await Stripe.instance.presentPaymentSheet();
       // Notify backend of successful payment so the transaction is recorded
       // and any reward/credit logic is applied server-side.
-      await PaymentApi.notifySuccess(
+      await paymentApi.notifySuccess(
         recipientId: businessId,
         amount: amount,
         paymentIntentId: intent.paymentIntentId,

@@ -5,8 +5,8 @@ import '../../services/payment_api.dart';
 /// Provide a stream of CoinTransaction for a given userId
 final coinTransactionStreamProvider = StreamProvider.autoDispose
     .family<List<CoinTransaction>, String>((ref, userId) {
-      // Removed unused variable: paymentApi
-      return PaymentApi.getTransactions(userId);
+      final paymentApi = ref.watch(paymentApiProvider);
+      return paymentApi.getTransactions(userId);
     });
 
 
