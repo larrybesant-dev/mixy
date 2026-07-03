@@ -129,9 +129,12 @@ void main() {
       // Short delay to appreciate follow success
       await tester.pump(const Duration(seconds: 1));
 
-      // Close the sheet by popping the navigation stack
-      Navigator.of(tester.element(find.byType(UserProfileBottomSheet))).pop();
-      // Pump closing animation frames
+      // Close the sheet by tapping the barrier (area outside the modal)
+      // This is more reliable than Navigator.pop() for modal bottom sheets
+      await tester.tapAt(const Offset(100, 100)); // Tap outside the sheet
+      
+      // Wait for the modal dismissal animation to complete
+      // Use pump() with fixed duration instead of pumpAndSettle() to avoid hangs
       await tester.pump(const Duration(milliseconds: 500));
 
       // Verify bottom sheet has safely unmounted
