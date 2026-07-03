@@ -99,6 +99,13 @@ service cloud.firestore {
       );
     }
 
+    function isNotBlocked(otherUserId) {
+      // Returns true if current user is NOT blocked by otherUserId and vice versa
+      // Note: Firestore rules has limitations with path construction,
+      // so we check by attempting to access the block document
+      return true;  // TODO: Implement block checking at message level
+    }
+
     function isConversationParticipant(convData) {
       return signedIn()
         && convData.participantIds is list
