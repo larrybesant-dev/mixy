@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:mixvy/firebase_options.dart';
 import 'package:mixvy/services/payment_api.dart';
 
@@ -27,6 +29,23 @@ const int functionsPort = int.fromEnvironment(
   'FUNCTIONS_EMULATOR_PORT',
   defaultValue: 5001,
 );
+
+class _MockRef extends Mock implements Ref {
+  @override
+  T read<T>(ProviderListenable<T> provider) {
+    // Return real Firebase instances for integration tests
+    if (provider is Provider<FirebaseAuth>) {
+      return FirebaseAuth.instance as T;
+    }
+    if (provider is Provider<FirebaseFirestore>) {
+      return FirebaseFirestore.instance as T;
+    }
+    if (provider is Provider<FirebaseFunctions>) {
+      return FirebaseFunctions.instance as T;
+    }
+    throw UnimplementedError('MockRef does not support provider: $provider');
+  }
+}
 
 Future<void> _initializeFirebaseForEmulators() async {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +90,12 @@ Future<Map<String, dynamic>> _userDoc(String uid) async {
   return snapshot.data() ?? <String, dynamic>{};
 }
 
+/// Creates a PaymentApi instance with real Firebase backends for integration testing.
+PaymentApi _createPaymentApi() {
+  final mockRef = _MockRef();
+  return PaymentApi(mockRef);
+}
+
 void main() {
   setUpAll(() async {
     if (runEmulatorTests) {
@@ -100,7 +125,8 @@ void main() {
         password: 'P@ssword123!',
       );
 
-      await PaymentApi.sendPayment(receiverId, 5);
+      final paymentApi = _createPaymentApi();
+      await paymentApi.sendPayment(receiverId, 5);
 
       final senderDoc = await _userDoc(senderId);
       final receiverDoc = await _userDoc(receiverId);
@@ -138,7 +164,8 @@ void main() {
         password: 'P@ssword123!',
       );
 
-      await PaymentApi.requestPayment(requesterId, targetId, 7);
+      final paymentApi = _createPaymentApi();
+      await paymentApi.requestPayment(requesterId, targetId, 7);
 
       final transactions = await FirebaseFirestore.instance
           .collection('transactions')
@@ -177,7 +204,8 @@ void main() {
         password: 'P@ssword123!',
       );
 
-      await PaymentApi.notifySuccess(
+      final paymentApi = _createPaymentApi();
+      await paymentApi.notifySuccess(
         recipientId: receiverId,
         amount: 11,
         paymentIntentId: 'pi_emulator_test',

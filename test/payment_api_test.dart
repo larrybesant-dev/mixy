@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/services/payment_api.dart';
 import 'package:mocktail/mocktail.dart';
@@ -38,6 +39,8 @@ class FakePaymentAuthGateway extends Fake implements PaymentAuthGateway {
   User? get currentUser => _currentUser;
 }
 
+class MockRef extends Mock implements Ref {}
+
 void main() {
   late MockUser mockUser;
 
@@ -46,25 +49,25 @@ void main() {
     when(() => mockUser.uid).thenReturn('user-123');
   });
 
-  tearDown(() {
-    PaymentApi.resetForTesting();
-  });
-
   test(
     'createIntent calls createPaymentIntent with expected payload',
     () async {
-      final gateway = FakePaymentFunctionsGateway(
+      final functionsGateway = FakePaymentFunctionsGateway(
         responses: const <String, dynamic>{
           'clientSecret': 'secret_abc',
           'paymentIntentId': 'pi_123',
         },
       );
-      PaymentApi.configureForTesting(
-        functionsGateway: gateway,
-        authGateway: FakePaymentAuthGateway(mockUser),
+      final authGateway = FakePaymentAuthGateway(mockUser);
+      final mockRef = MockRef();
+
+      final paymentApi = PaymentApi(
+        mockRef,
+        functionsGateway: functionsGateway,
+        authGateway: authGateway,
       );
 
-      final result = await PaymentApi.createIntent(
+      final result = await paymentApi.createIntent(
         amount: 12.5,
         currency: 'usd',
         recipientId: 'receiver-1',
@@ -73,26 +76,31 @@ void main() {
       expect(result.clientSecret, 'secret_abc');
       expect(result.paymentIntentId, 'pi_123');
       expect(result.idempotencyKey, startsWith('intent_'));
-      expect(gateway.calls, hasLength(1));
-      expect(gateway.calls.single.name, 'createPaymentIntent');
-      expect(gateway.calls.single.payload['amount'], 12.5);
-      expect(gateway.calls.single.payload['currency'], 'usd');
-      expect(gateway.calls.single.payload['recipientId'], 'receiver-1');
+      expect(functionsGateway.calls, hasLength(1));
+      expect(functionsGateway.calls.single.name, 'createPaymentIntent');
+      expect(functionsGateway.calls.single.payload['amount'], 12.5);
+      expect(functionsGateway.calls.single.payload['currency'], 'usd');
+      expect(functionsGateway.calls.single.payload['recipientId'], 'receiver-1');
       expect(
-        gateway.calls.single.payload['idempotencyKey'] as String,
+        functionsGateway.calls.single.payload['idempotencyKey'] as String,
         startsWith('intent_'),
       );
     },
   );
 
   test('notifySuccess requires authenticated user', () async {
-    PaymentApi.configureForTesting(
-      functionsGateway: FakePaymentFunctionsGateway(),
-      authGateway: FakePaymentAuthGateway(null),
+    final functionsGateway = FakePaymentFunctionsGateway();
+    final authGateway = FakePaymentAuthGateway(null);
+    final mockRef = MockRef();
+
+    final paymentApi = PaymentApi(
+      mockRef,
+      functionsGateway: functionsGateway,
+      authGateway: authGateway,
     );
 
     await expectLater(
-      () => PaymentApi.notifySuccess(
+      () => paymentApi.notifySuccess(
         recipientId: 'receiver-1',
         amount: 5,
         paymentIntentId: 'pi_missing_auth',
@@ -102,55 +110,67 @@ void main() {
   });
 
   test('sendPayment calls sendCoinTransfer callable', () async {
-    final gateway = FakePaymentFunctionsGateway();
-    PaymentApi.configureForTesting(
-      functionsGateway: gateway,
-      authGateway: FakePaymentAuthGateway(mockUser),
+    final functionsGateway = FakePaymentFunctionsGateway();
+    final authGateway = FakePaymentAuthGateway(mockUser);
+    final mockRef = MockRef();
+
+    final paymentApi = PaymentApi(
+      mockRef,
+      functionsGateway: functionsGateway,
+      authGateway: authGateway,
     );
 
-    await PaymentApi.sendPayment('receiver-9', 42);
+    await paymentApi.sendPayment('receiver-9', 42);
 
-    expect(gateway.calls, hasLength(1));
-    expect(gateway.calls.single.name, 'sendCoinTransfer');
-    expect(gateway.calls.single.payload['receiverId'], 'receiver-9');
-    expect(gateway.calls.single.payload['amount'], 42.0);
+    expect(functionsGateway.calls, hasLength(1));
+    expect(functionsGateway.calls.single.name, 'sendCoinTransfer');
+    expect(functionsGateway.calls.single.payload['receiverId'], 'receiver-9');
+    expect(functionsGateway.calls.single.payload['amount'], 42.0);
     expect(
-      gateway.calls.single.payload['idempotencyKey'] as String,
+      functionsGateway.calls.single.payload['idempotencyKey'] as String,
       startsWith('send_'),
     );
   });
 
   test('requestPayment rejects mismatched requesterId', () async {
-    final gateway = FakePaymentFunctionsGateway();
-    PaymentApi.configureForTesting(
-      functionsGateway: gateway,
-      authGateway: FakePaymentAuthGateway(mockUser),
+    final functionsGateway = FakePaymentFunctionsGateway();
+    final authGateway = FakePaymentAuthGateway(mockUser);
+    final mockRef = MockRef();
+
+    final paymentApi = PaymentApi(
+      mockRef,
+      functionsGateway: functionsGateway,
+      authGateway: authGateway,
     );
 
     await expectLater(
-      () => PaymentApi.requestPayment('other-user', 'target-1', 9),
+      () => paymentApi.requestPayment('other-user', 'target-1', 9),
       throwsA(isA<Exception>()),
     );
-    expect(gateway.calls, isEmpty);
+    expect(functionsGateway.calls, isEmpty);
   });
 
   test(
     'requestPayment calls requestCoinTransfer for authenticated requester',
     () async {
-      final gateway = FakePaymentFunctionsGateway();
-      PaymentApi.configureForTesting(
-        functionsGateway: gateway,
-        authGateway: FakePaymentAuthGateway(mockUser),
+      final functionsGateway = FakePaymentFunctionsGateway();
+      final authGateway = FakePaymentAuthGateway(mockUser);
+      final mockRef = MockRef();
+
+      final paymentApi = PaymentApi(
+        mockRef,
+        functionsGateway: functionsGateway,
+        authGateway: authGateway,
       );
 
-      await PaymentApi.requestPayment('user-123', 'target-1', 9);
+      await paymentApi.requestPayment('user-123', 'target-1', 9);
 
-      expect(gateway.calls, hasLength(1));
-      expect(gateway.calls.single.name, 'requestCoinTransfer');
-      expect(gateway.calls.single.payload['targetId'], 'target-1');
-      expect(gateway.calls.single.payload['amount'], 9.0);
+      expect(functionsGateway.calls, hasLength(1));
+      expect(functionsGateway.calls.single.name, 'requestCoinTransfer');
+      expect(functionsGateway.calls.single.payload['targetId'], 'target-1');
+      expect(functionsGateway.calls.single.payload['amount'], 9.0);
       expect(
-        gateway.calls.single.payload['idempotencyKey'] as String,
+        functionsGateway.calls.single.payload['idempotencyKey'] as String,
         startsWith('request_'),
       );
     },
@@ -159,37 +179,45 @@ void main() {
   test(
     'requestRefund validates reason length before calling backend',
     () async {
-      final gateway = FakePaymentFunctionsGateway();
-      PaymentApi.configureForTesting(
-        functionsGateway: gateway,
-        authGateway: FakePaymentAuthGateway(mockUser),
+      final functionsGateway = FakePaymentFunctionsGateway();
+      final authGateway = FakePaymentAuthGateway(mockUser);
+      final mockRef = MockRef();
+
+      final paymentApi = PaymentApi(
+        mockRef,
+        functionsGateway: functionsGateway,
+        authGateway: authGateway,
       );
 
       await expectLater(
-        () => PaymentApi.requestRefund(transactionId: 'tx-1', reason: 'short'),
+        () => paymentApi.requestRefund(transactionId: 'tx-1', reason: 'short'),
         throwsA(isA<Exception>()),
       );
-      expect(gateway.calls, isEmpty);
+      expect(functionsGateway.calls, isEmpty);
     },
   );
 
   test(
     'requestRefund calls requestRefund callable with expected payload',
     () async {
-      final gateway = FakePaymentFunctionsGateway();
-      PaymentApi.configureForTesting(
-        functionsGateway: gateway,
-        authGateway: FakePaymentAuthGateway(mockUser),
+      final functionsGateway = FakePaymentFunctionsGateway();
+      final authGateway = FakePaymentAuthGateway(mockUser);
+      final mockRef = MockRef();
+
+      final paymentApi = PaymentApi(
+        mockRef,
+        functionsGateway: functionsGateway,
+        authGateway: authGateway,
       );
 
-      await PaymentApi.requestRefund(
+      await paymentApi.requestRefund(
         transactionId: 'tx-55',
         reason: 'Duplicate charge due to retry flow.',
       );
 
-      expect(gateway.calls, hasLength(1));
-      expect(gateway.calls.single.name, 'requestRefund');
-      expect(gateway.calls.single.payload, <String, dynamic>{
+      expect(functionsGateway.calls, hasLength(1));
+      expect(functionsGateway.calls.single.name, 'requestRefund');
+      expect(functionsGateway.calls.single.payload, <String, dynamic>{
         'transactionId': 'tx-55',
         'reason': 'Duplicate charge due to retry flow.',
       });
