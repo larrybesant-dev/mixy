@@ -1831,6 +1831,108 @@ exports.classifyNewReport = onDocumentCreated("reports/{reportId}", async (event
   await snapshot.ref.set(payload, {merge: true});
 });
 
+// Validate block enforcement for messages
+// Reject messages from users who are blocked by conversation participants
+exports.validateMessageBlockEnforcement = onDocumentCreated(
+  "conversations/{conversationId}/messages/{messageId}",
+  async (event) => {
+    if (!event.data) {
+      return;
+    }
+
+    const messageData = event.data.data() || {};
+    const senderId = typeof messageData.senderId === "string" ? messageData.senderId.trim() : "";
+    if (!senderId) {
+      return;
+    }
+
+    const conversationId = event.params && event.params.conversationId;
+    if (!conversationId) {
+      return;
+    }
+
+    const firestore = admin.firestore();
+    try {
+      // Get the conversation to find all participants
+      const convRef = firestore.collection("conversations").doc(conversationId);
+      const convSnap = await convRef.get();
+      
+      if (!convSnap.exists) {
+        // Conversation doesn't exist, let the message be (Firestore rules will reject)
+        return;
+      }
+
+      const convData = convSnap.data() || {};
+      const participantIds = Array.isArray(convData.participantIds) ? convData.participantIds : [];
+
+      // Check if sender is blocked by any other participant
+      for (const participantId of participantIds) {
+        if (participantId === senderId) {
+          continue; // Skip self
+        }
+
+        // Check if this participant has blocked the sender
+        // Block document ID format: participantId_senderId (participant blocks sender)
+        const blockRef = firestore.collection("blocks").doc(`${participantId}_${senderId}`);
+        const blockSnap = await blockRef.get();
+
+        if (blockSnap.exists) {
+          // Sender is blocked by a participant, delete the message
+          await event.data.ref.delete();
+          logger.warn(`Message from blocked user deleted. Sender: ${senderId}, Participant: ${participantId}, Conv: ${conversationId}`);
+          return;
+        }
+      }
+    } catch (error) {
+      logger.error("Error validating message block enforcement:", error);
+      // Don't delete the message if there's an error - let Firestore rules handle it
+    }
+  }
+);
+
+// Validate block enforcement for conversations
+// Prevent blocked users from creating conversations with their blockers
+exports.validateConversationBlockEnforcement = onDocumentCreated(
+  "conversations/{conversationId}",
+  async (event) => {
+    if (!event.data) {
+      return;
+    }
+
+    const convData = event.data.data() || {};
+    const creatorId = typeof convData.creatorId === "string" ? convData.creatorId.trim() : "";
+    const participantIds = Array.isArray(convData.participantIds) ? convData.participantIds : [];
+
+    if (!creatorId || participantIds.length === 0) {
+      return;
+    }
+
+    const firestore = admin.firestore();
+    try {
+      // Check if creator is blocked by any other participant
+      for (const participantId of participantIds) {
+        if (participantId === creatorId) {
+          continue; // Skip self
+        }
+
+        // Check if this participant has blocked the creator
+        const blockRef = firestore.collection("blocks").doc(`${participantId}_${creatorId}`);
+        const blockSnap = await blockRef.get();
+
+        if (blockSnap.exists) {
+          // Creator is blocked by a participant, delete the conversation
+          await event.data.ref.delete();
+          logger.warn(`Conversation from blocked user deleted. Creator: ${creatorId}, Participant: ${participantId}`);
+          return;
+        }
+      }
+    } catch (error) {
+      logger.error("Error validating conversation block enforcement:", error);
+      // Don't delete the conversation if there's an error
+    }
+  }
+);
+
 // Create Stripe Checkout Session
 exports.createCheckoutSession = onRequest({secrets: [STRIPE_SECRET]}, async (req, res) =>
   createCheckoutSessionHandler(req, res),
