@@ -1831,6 +1831,79 @@ exports.classifyNewReport = onDocumentCreated("reports/{reportId}", async (event
   await snapshot.ref.set(payload, {merge: true});
 });
 
+// HTTP Endpoint for checking block status (client-side validation before message send)
+// This is a workaround for Firestore event trigger delays/issues
+exports.checkBlockStatus = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "User must be authenticated");
+  }
+
+  const {conversationId} = request.data;
+  if (!conversationId) {
+    throw new HttpsError("invalid-argument", "conversationId is required");
+  }
+
+  const firestore = admin.firestore();
+  try {
+    // Get conversation and check if user is a participant
+    const convRef = firestore.collection("conversations").doc(conversationId);
+    const convSnap = await convRef.get();
+    
+    if (!convSnap.exists) {
+      throw new HttpsError("not-found", "Conversation not found");
+    }
+
+    const convData = convSnap.data() || {};
+    const participantIds = Array.isArray(convData.participantIds) ? convData.participantIds : [];
+    const userId = auth.uid;
+
+    if (!participantIds.includes(userId)) {
+      throw new HttpsError("permission-denied", "User is not a participant in this conversation");
+    }
+
+    // Check if sender (userId) is blocked by ANY participant
+    const otherParticipants = participantIds.filter(id => id !== userId);
+    
+    for (const participantId of otherParticipants) {
+      // Check if this participant has blocked the sender
+      const blockRef = firestore.collection("blocks").doc(`${participantId}_${userId}`);
+      const blockSnap = await blockRef.get();
+
+      if (blockSnap.exists) {
+        logger.info(`Block check: ${userId} is blocked by ${participantId}`);
+        return {
+          canSend: false,
+          blockedBy: participantId,
+          message: "You are blocked by a conversation participant"
+        };
+      }
+
+      // Also check if sender has blocked this participant (prevent communication both ways)
+      const reverseBlockRef = firestore.collection("blocks").doc(`${userId}_${participantId}`);
+      const reverseBlockSnap = await reverseBlockRef.get();
+
+      if (reverseBlockSnap.exists) {
+        logger.info(`Block check: ${userId} has blocked ${participantId}`);
+        return {
+          canSend: false,
+          blockedBy: participantId,
+          message: "You have blocked this conversation participant"
+        };
+      }
+    }
+
+    logger.info(`Block check: ${userId} can send message to conversation ${conversationId}`);
+    return {
+      canSend: true,
+      message: "Message can be sent"
+    };
+  } catch (error) {
+    logger.error("Error checking block status:", error);
+    throw new HttpsError("internal", "Error checking block status");
+  }
+});
+
 // Validate block enforcement for messages
 // Reject messages from users who are blocked by conversation participants
 exports.validateMessageBlockEnforcement = onDocumentCreated(
