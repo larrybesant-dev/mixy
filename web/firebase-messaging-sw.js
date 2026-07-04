@@ -1,4 +1,9 @@
 /* eslint-disable no-undef */
+
+// Enable Firebase App Check debug token for soft-launch
+// Prevents reCAPTCHA token errors during development/testing
+self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+
 importScripts('https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js');
 

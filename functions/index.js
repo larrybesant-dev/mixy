@@ -3033,6 +3033,36 @@ async function inviteToMicHandler(request, deps = {}) {
 
 exports.inviteToMic = onCall(async (request) => inviteToMicHandler(request));
 
+// ── Automatic Verification Document Creation on User Signup ───────────────────
+// Triggers when a new user document is created in /users/{uid}.
+// Automatically creates a /verifications/{uid} document with initial 'pending' status.
+// This ensures all authenticated users have a verification record for rule evaluation.
+exports.onUserCreated = onDocumentCreated("users/{uid}", async (event) => {
+  const uid = event.params.uid;
+  const firestore = admin.firestore();
+
+  try {
+    const verificationRef = firestore.collection("verification").doc(uid);
+    const verificationDoc = await verificationRef.get();
+
+    // Only create if it doesn't already exist
+    if (!verificationDoc.exists) {
+      await verificationRef.set({
+        userId: uid,
+        isAdultVerified: false,
+        verificationStatus: "pending",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      logger.info(`Created verification doc for user ${uid}`);
+    }
+  } catch (error) {
+    logger.error(`Failed to create verification doc for user ${uid}:`, error);
+    // Don't throw - allow user creation to succeed even if verification doc fails
+    // This prevents signup failures due to Cloud Function issues
+  }
+});
+
 exports.__testing = {
   createPaymentIntentHandler,
   recordStripePaymentSuccessHandler,

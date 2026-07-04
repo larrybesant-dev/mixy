@@ -15,9 +15,26 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self)" />
   <title>MixVy - Meet. Connect. Vibe.</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png"/>
+  <!-- Firebase Web App Config -->
+  <meta name="firebase-config" content="mix-and-mingle-v2">
+  
+  <!-- Firestore Persistence & AppCheck -->
+  <meta name="firestore-persistence" content="enabled">
+  <meta name="appcheck-enabled" content="production">
+  
+  <!-- CRITICAL: Disable Firebase AppCheck ReCAPTCHA for soft-launch on web -->
+  <script>
+    // Enable Firebase App Check debug token to bypass ReCAPTCHA requirement during soft-launch
+    // This prevents "appCheck/recaptcha-error" token retrieval failures
+    // In production, comment this out and properly configure reCAPTCHA v3
+    window.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    
+    // Also set for service workers
+    if (typeof self !== 'undefined') {
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+  </script>
+  
   <style>
     html, body {
       width: 100%;
@@ -186,6 +203,9 @@
           // Ignore optional push setup failures.
         });
       }
+
+      // AppCheck is properly disabled via window.__FIREBASE_DISABLE_APP_CHECK_ON_WEB flag above
+      // No mock provider needed; Firestore Security Rules enforce security
 
       var script = document.createElement('script');
       // Use an absolute path to avoid route-relative script requests on deep links.

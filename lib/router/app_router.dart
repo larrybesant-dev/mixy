@@ -32,6 +32,7 @@ import 'package:mixvy/features/groups/screens/create_group_screen.dart';
 import 'package:mixvy/features/room/screens/cam_popout_screen.dart';
 import 'package:mixvy/features/social/screens/explore_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
+import 'package:mixvy/features/discovery/index.dart';
 import 'package:mixvy/features/room/screens/create_room_screen.dart';
 import 'package:mixvy/features/search/screens/search_screen.dart';
 import 'package:mixvy/features/stories/screens/create_story_screen.dart';
@@ -330,6 +331,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/speed-dating',
         name: 'speedDating',
         builder: (context, state) => _CustomShell(initialIndex: 3),
+      ),
+      GoRoute(
+        path: '/discover',
+        name: 'discover',
+        builder: (context, state) => const PersistentDiscoveryScreen(),
+      ),
+      GoRoute(
+        path: '/matches',
+        name: 'matches',
+        builder: (context, state) => const MatchesScreen(),
+      ),
+      GoRoute(
+        path: '/history',
+        name: 'history',
+        builder: (context, state) => const MatchHistoryScreen(),
       ),
       GoRoute(
         path: '/profile',

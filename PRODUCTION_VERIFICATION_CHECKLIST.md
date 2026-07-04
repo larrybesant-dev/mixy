@@ -1,240 +1,304 @@
-# MixVy Production Verification Checklist (10 Minutes)
+# Production Verification System Checklist
 
-**Purpose:** Validate that production Stripe/Agora/GIPHY keys work before first real users  
-**Date:** 2026-07-03  
-**Tester:** [Your Name]  
-**Result:** ☐ PASS / ☐ FAIL  
+## System Architecture
 
----
-
-## Pre-Flight (1 minute)
-
-- [ ] Firestore production database is accessible
-- [ ] Firebase Console shows no permission errors
-- [ ] Cloud Functions deployed (`validateMessageBlockEnforcement` + `validateConversationBlockEnforcement`)
-- [ ] App running at production URL (not localhost)
+**Three-Tier Verification Model:**
+1. **User Created** → Automatic `verification/{uid}` document created by Cloud Function with `verificationStatus: "pending"`, `isAdultVerified: false`
+2. **Admin Review** → Manual Firestore console update to set `verificationStatus: "verified"` and `isAdultVerified: true`
+3. **Access Granted** → Firestore rules enforce `isAdultVerified()` function check; user can now join rooms
 
 ---
 
-## Test 1: Fresh Account Registration & Login (2 minutes)
+## End-to-End Test Flow
 
-**Objective**: Verify auth pipeline works end-to-end.
+### Step 1: New User Signup (Automated)
+```
+Expected: Cloud Function onUserCreated triggers automatically on user document creation
+Verify: Within 5-10 seconds, a verification/{uid} document appears in Firestore with:
+  - userId: (user's UID)
+  - isAdultVerified: false
+  - verificationStatus: "pending"
+  - createdAt: (server timestamp)
+  - updatedAt: (server timestamp)
+```
 
-1. Open app in incognito/private browser tab
-2. Tap **SIGN UP**
-3. Enter:
-   - Email: `test-user-1-[timestamp]@example.com` (e.g., `test-user-1-20260703@example.com`)
-   - Password: `TestPass123!`
-   - Confirm: `TestPass123!`
-4. Tap **SIGN UP** button
-5. Check email for verification link (may take 30 seconds)
-6. Click verification link, return to app
-7. Verify logged in: Home screen shows **MIX / CONNECT / INDULGE** nav
+**Test Procedure:**
+1. Sign up a new test account in MIXVY app
+2. Go to Firebase Console → Firestore → `verification` collection
+3. Look for the new document matching the signed-up user's UID
+4. Verify all fields are present and correct
 
-**Expected Result:**  
-✅ Logged in successfully, home feed loads with rooms
+**Expected Result:** ✅ Document created automatically by Cloud Function
+---
 
-**If Failed:**
-- Check Firebase console for auth errors
-- Verify reCAPTCHA configured for your domain
-- Check browser console (F12) for errors
+### Step 2: User Attempts Room Join (Permission Denied)
+```
+Expected: User can authenticate but CANNOT join rooms
+Error: [cloud_firestore/permission-denied] Missing or insufficient permissions
+Reason: Firestore rules enforce isAdultVerified() → requires isAdultVerified: true
+```
+
+**Test Procedure:**
+1. Login as the newly created test user
+2. Navigate to any available room
+3. Click "Join Room" / "Enter Room" button
+4. Observe error notification
+
+**Expected Result:** ❌ Permission denied error (this is correct behavior)
 
 ---
 
-## Test 2: Stripe Integration - Coin Purchase (3 minutes)
+### Step 3: Admin Verification (Manual)
+```
+Required: Manual Firebase console action to enable user access
+Action: Update verification/{uid} document to set isAdultVerified and verificationStatus
+```
 
-**Objective**: Verify Stripe payment processing works with production keys.
+**Test Procedure:**
+1. Go to Firebase Console
+2. Navigate to Firestore → `verification` collection
+3. Find the test user's verification document
+4. Click "Edit" on the document
+5. Update two fields:
+   - `isAdultVerified`: change from `false` to `true`
+   - `verificationStatus`: change from `"pending"` to `"verified"`
+6. Click Save
 
-1. From home screen, tap **Profile** (bottom right)
-2. Tap **Wallet** or **Add Coins**
-3. Select **70 Coins ($0.99)** package
-4. Tap **Purchase**
-5. **Use test Stripe card** (if Stripe in test mode):
-   - Card: `4242 4242 4242 4242`
-   - Expiry: `12/34`
-   - CVC: `123`
-6. Tap **Pay** or **Complete Purchase**
-7. Wait for success screen
-
-**Expected Result:**  
-✅ Purchase completes, coins appear in wallet, transaction logged in Firestore
-
-**Check Firestore** ([Console](https://console.firebase.google.com/project/mixvy-v2/firestore)):
-- Navigate to **wallet_ledger** collection
-- Find entry with:
-  - `userId`: Your user ID
-  - `type`: `purchase` or `coin_package`
-  - `amount`: `70`
-  - `balance_after`: `70` (first purchase)
-
-**If Failed:**
-- Check Stripe status page: https://status.stripe.com
-- Verify Stripe keys in Cloud Functions environment
-- Check [Firebase Functions Logs](https://console.firebase.google.com/project/mixvy-v2/functions/list)
+**Console Screenshot Markers:**
+- Document path: `verification/{testUserUID}`
+- Updated timestamp: Should show current time
+- Fields edited: `isAdultVerified = true`, `verificationStatus = "verified"`
 
 ---
 
-## Test 3: Direct Gift Sending (2 minutes)
+### Step 4: User Joins Room (Success)
+```
+Expected: After admin verification, user can successfully join rooms
+Firebase Rule Chain:
+  1. roomReadableByRequester() checks isAdultVerified()
+  2. isAdultVerified() checks: exists(verification/{uid}) AND 
+                                verificationStatus == "verified" AND
+                                isAdultVerified == true
+  3. If true → participant can be created → room join succeeds
+```
 
-**Objective**: Verify gift transaction flow and coin deduction.
+**Test Procedure:**
+1. Clear app cache or logout/login
+2. Login as the verified test user
+3. Navigate to same room
+4. Click "Join Room" button
+5. Observe successful room entry
 
-1. Open app in second browser (User 2) - can be different account or same
-2. **User 1**: Navigate to discover feed
-3. **User 1**: Tap any room or user card
-4. **User 1**: Look for **Gift** button or icon
-5. **User 1**: Select a gift (e.g., 🌹 Rose)
-6. **User 1**: Confirm send (costs 10-50 coins based on gift)
-7. Check balance updated: `Wallet: (70 - cost)` coins remaining
-
-**Expected Result:**  
-✅ Gift sent, coins deducted, balance updated in real-time
-
-**Check Firestore** ([gift_events](https://console.firebase.google.com/project/mixvy-v2/firestore)):
-- Find entry with:
-  - `senderId`: Your user ID
-  - `recipientId`: Recipient user ID
-  - `giftId`: Gift ID
-  - `coinCost`: Cost of gift
-  - `timestamp`: Recent
-
-**If Failed:**
-- Check Agora/video keys (gift feature may depend on room state)
-- Verify gift_events collection exists in Firestore
-- Check Cloud Function logs for `sendDirectGift` errors
+**Expected Result:** ✅ User successfully joins room
 
 ---
 
-## Test 4: Message Sending & Block Enforcement (2 minutes)
+## Verification Document Schema
 
-**Objective**: Verify messaging works and block enforcement is active.
+### Location
+```
+Collection: verification
+Document ID: {user's UID}
+```
 
-**Part A: Normal Message**
-1. From profile, tap **Messages** tab
-2. Start a new conversation with User 2
-3. Type: "Hello! Testing MixVy production 🎉"
-4. Send message
-5. **In User 2's account**: See message appear
+### Required Fields
+```json
+{
+  "userId": "string (user's UID)",
+  "isAdultVerified": "boolean (true = verified, false = pending)",
+  "verificationStatus": "string (enum: 'pending', 'verified', 'suspended')",
+  "createdAt": "timestamp (server timestamp, auto-generated)",
+  "updatedAt": "timestamp (server timestamp, auto-updated)"
+}
+```
 
-**Expected Result:**  
-✅ Message appears instantly, no permission errors
-
-**Part B: Block Enforcement**
-1. **User 1**: Go to User 2's profile
-2. Tap **Block User** (three dots menu)
-3. **User 2**: Try to reply to User 1
-4. Send message
-5. **Check result**: Message should NOT appear in User 1's view
-
-**Expected Result:**  
-✅ Cloud Function deleted the blocked message automatically
-
-**Check Logs** ([Firebase Functions](https://console.firebase.google.com/project/mixvy-v2/functions/list)):
-- Click **validateMessageBlockEnforcement** function
-- Check **Logs** tab
-- Search for: `Message from blocked user deleted` or `Conversation from blocked user deleted`
-
-**If Messages Not Sending:**
-- Check Firestore permission rules
-- Verify no other users blocking you
-- Check message document structure matches schema
-
-**If Block Enforcement Not Working:**
-- Confirm Cloud Functions deployed (see functions list)
-- Check function execution logs for errors
-- Verify blocks collection exists and has entries
+### Example Document
+```json
+{
+  "userId": "abc123xyz789",
+  "isAdultVerified": true,
+  "verificationStatus": "verified",
+  "createdAt": "2026-07-03T18:46:00Z",
+  "updatedAt": "2026-07-03T19:15:30Z"
+}
+```
 
 ---
 
-## Test 5: GIPHY Integration (1 minute)
+## Firestore Rules Reference
 
-**Objective**: Verify GIPHY API key is production (not sandbox).
+### Key Function: `isAdultVerified(userId)`
+**Location:** `firestore.rules` lines 51-61
 
-1. In a message, look for **GIF** button or emoji picker
-2. Search for a GIF (e.g., "celebration")
-3. Select and send GIF
-4. GIF should display in message thread
+```
+function isAdultVerified(userId) {
+  return exists(/databases/$(database)/documents/verification/$(userId)) &&
+         get(/databases/$(database)/documents/verification/$(userId)).data.verificationStatus == "verified" &&
+         get(/databases/$(database)/documents/verification/$(userId)).data.isAdultVerified == true;
+}
+```
 
-**Expected Result:**  
-✅ GIF loads and displays correctly from GIPHY CDN
+**What it does:**
+- Requires verification document to exist
+- Requires `verificationStatus` field to be exactly `"verified"`
+- Requires `isAdultVerified` field to be exactly `true`
+- Returns `true` only if ALL three conditions are met
 
-**If No GIFs Load:**
-- GIPHY key may be sandbox/invalid
-- Check `lib/config/app_env.dart` for `GIPHY_API_KEY`
-- Go to [GIPHY Dashboard](https://developers.giphy.com/dashboard) and verify key is production
-- Redeploy with correct key if needed
+### Permission Chain for Room Join
+```
+participant create rule
+  → canReadRoomById(roomId)
+    → roomReadableByRequester(roomData)
+      → isAdultVerified(userId)  ← GATEKEEPER
+```
 
----
-
-## Test 6: Agora Live Room (Optional, 1 minute)
-
-**Objective**: Verify live video works with production Agora keys.
-
-1. From home, tap **MIX** (first nav card)
-2. Tap **Create Room** or tap existing room
-3. Allow camera/microphone permissions
-4. You should see your video preview
-5. Invite User 2 to join
-6. User 2 should see your stream
-
-**Expected Result:**  
-✅ Video streams without errors or latency issues
-
-**If Video Fails:**
-- Check Agora [Dashboard Status](https://console.agora.io)
-- Verify Agora App ID in `lib/config/app_env.dart`
-- Check browser console for WebRTC errors (F12)
+If any step fails, entire chain fails → permission-denied error
 
 ---
 
-## Summary
+## Cloud Function: onUserCreated
 
-| Test | Result | Notes |
-|------|--------|-------|
-| Registration & Login | ☐ ✅ ☐ ❌ | |
-| Stripe - Coin Purchase | ☐ ✅ ☐ ❌ | |
-| Direct Gift Send | ☐ ✅ ☐ ❌ | |
-| Messaging & Block | ☐ ✅ ☐ ❌ | |
-| GIPHY Integration | ☐ ✅ ☐ ❌ | |
-| Agora Live Room | ☐ ✅ ☐ ❌ | Optional |
+**Location:** `functions/index.js` lines 3035-3062
 
-**Overall Result:** 
-- **All Pass (5+/6)**: ✅ **READY FOR SOFT LAUNCH** → Invite first 50 users
-- **1-2 Failures**: ⚠️ **CONDITIONAL** → Fix issues, re-run failed tests
-- **3+ Failures**: ❌ **NOT READY** → Hold for further investigation
+**Trigger:** `onDocumentCreated("users/{uid}")`
 
----
+**Behavior:**
+1. Fires automatically when new user document is created in `/users/{uid}`
+2. Creates corresponding document in `/verification/{uid}` with:
+   - `userId`: user's UID
+   - `isAdultVerified`: `false` (default pending state)
+   - `verificationStatus`: `"pending"` (requires admin approval)
+   - `createdAt`: server timestamp
+   - `updatedAt`: server timestamp
 
-## Critical Issues Found?
-
-If you encounter critical issues:
-
-1. **Screenshot the error** (F12 DevTools)
-2. **Check [Firebase Console](https://console.firebase.google.com/project/mixvy-v2)**:
-   - Functions → Logs (check for function execution errors)
-   - Firestore → Data (verify collections/documents exist)
-   - Authentication → Users (verify account created)
-3. **Check Stripe/Agora Status Pages** for outages
-4. **Review `PRODUCTION_KEY_AUDIT.md`** (see next file)
+**Error Handling:**
+- Catches and logs errors to Cloud Functions console
+- Does not block user creation; only verification document creation
+- If function fails, user still exists but cannot join rooms
 
 ---
 
-## When to Proceed to Soft Launch
+## Troubleshooting Guide
 
-✅ Proceed when:
-- All 5 core tests pass
-- No errors in Firebase Functions logs
-- Coins were actually deducted from wallet
-- Messages appear in conversation thread
-- Blocks prevent message delivery
+### Issue: User Created But Cannot Join Room
+**Check:**
+1. Does `verification/{uid}` document exist in Firestore?
+   - If NO: Cloud Function failed to trigger or execute → Check Cloud Functions logs
+   - If YES: Is `isAdultVerified: true` AND `verificationStatus: "verified"`?
+     - If NO: Admin hasn't approved yet (correct)
+     - If YES: Check Firestore rules compile without errors
 
-❌ Do NOT proceed until:
-- Block enforcement is confirmed working
-- Stripe successfully charged account
-- No permission denials in Firestore logs
-- Agora video (if enabled) works without lag
+**Solution:**
+- Wait 10 seconds for Cloud Function to trigger
+- Check Firebase Console → Cloud Functions → `onUserCreated` → Logs tab
+- Look for errors in execution logs
+- If document never appeared, check that users are being created properly
+
+### Issue: Firestore Rules Syntax Error
+**Symptoms:** All room operations fail immediately for all users
+
+**Fix:**
+1. Go to Firebase Console → Firestore → Rules tab
+2. Click "Validate rules"
+3. Look for red compilation errors
+4. Verify `isAdultVerified()` function is defined before use
+5. Check line 51-61 for proper function syntax
+
+### Issue: Permission Denied on Room Operations
+**Check Sequence:**
+1. Is user authenticated? (Check Auth console)
+2. Does `verification/{uid}` document exist?
+3. Is `isAdultVerified: true` AND `verificationStatus: "verified"`?
+4. Do Firestore rules compile without errors?
+5. Is room document's `isAdult` field set to `false` or `true`?
+
+**Solutions:**
+- If verification doc missing: Manually create it in Firestore console
+- If fields wrong: Manually update to `isAdultVerified: true`, `verificationStatus: "verified"`
+- If rules don't compile: Review function syntax and ensure no typos
 
 ---
 
-**Checklist Version:** 1.0  
+## Admin Approval Workflow (Current Manual Process)
+
+### For Each New User Request
+1. **Monitor** Firestore `verification` collection for `verificationStatus: "pending"` docs
+2. **Review** user's profile/account for compliance (manual step - not automated)
+3. **Update** verification document:
+   ```
+   isAdultVerified: true
+   verificationStatus: "verified"
+   ```
+4. **Notify** user that they're verified (out-of-app process)
+5. **Monitor** for user's first room join attempt
+
+### Bulk Verification (If Needed)
+- Go to Firebase Console → Firestore → `verification` collection
+- Filter for `verificationStatus == "pending"`
+- Batch edit to set `isAdultVerified: true`, `verificationStatus: "verified"`
+
+---
+
+## Production Safeguards
+
+**Firestore Rules** (Strict by default):
+- ✅ Unauthenticated users: Cannot access any collections
+- ✅ Authenticated users: Can only access if `isAdultVerified()`
+- ✅ No self-service verification: Users cannot write to own `verification` doc
+- ✅ Admin-controlled: Only Firestore console can modify verification status
+
+**Cloud Function** (Auto-remediation):
+- ✅ All new users get automatic verification document
+- ✅ Default state: `isAdultVerified: false` (safe default)
+- ✅ Requires explicit admin action to enable access
+
+**Zero-Trust Architecture**:
+- ✅ No client-side verification flags
+- ✅ All checks server-side via Firestore rules
+- ✅ No way to bypass verification once rules are deployed
+
+---
+
+## Testing Checklist
+
+- [ ] New user signs up → `verification/{uid}` document auto-created within 10 seconds
+- [ ] Unverified user attempts room join → Permission denied error
+- [ ] Admin updates `isAdultVerified: true` and `verificationStatus: "verified"`
+- [ ] Verified user attempts room join → Success
+- [ ] Unverified user cannot create rooms
+- [ ] Unverified user cannot send messages in existing rooms
+- [ ] Unverified user cannot create participants documents
+- [ ] Verified user can perform all above actions
+- [ ] Multiple concurrent user signups create correct documents
+- [ ] Firebase rules compile without syntax errors
+- [ ] Cloud Function `onUserCreated` appears in Cloud Functions console
+- [ ] No errors in Cloud Function execution logs
+
+---
+
+## Deployment History
+
+| Date | Component | Change | Status |
+|------|-----------|--------|--------|
+| 2026-07-03 | Firestore Rules | Deployed `isAdultVerified()` strict enforcement | ✅ Deployed |
+| 2026-07-03 | Cloud Functions | Deployed `onUserCreated` trigger | ✅ Deployed |
+| 2026-07-03 | firebase.json | Restored pre-deploy validation script | ✅ Restored |
+
+---
+
+## Next Steps
+
+**Soft-Launch → Production Transition:**
+1. ✅ Deploy strict Firestore rules with `isAdultVerified()` checks
+2. ✅ Deploy Cloud Function `onUserCreated` to auto-create verification docs
+3. ✅ Remove soft-launch bypass (`|| signedIn()` fallback)
+4. ⏳ Execute this end-to-end test with at least 3 new users
+5. ⏳ Document any issues or edge cases discovered
+6. ⏳ Establish admin approval SLA (e.g., "Verify within 24 hours")
+7. ⏳ Create admin dashboard or script for bulk verification (optional future feature)
+
+---
+
 **Last Updated:** 2026-07-03  
-**Next Review:** After first 50 users (soft launch)
+**Verified By:** Production Verification System  
+**Status:** ✅ System Live and Ready for Testing

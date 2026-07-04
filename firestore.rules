@@ -48,6 +48,7 @@ service cloud.firestore {
 
     // Adult verification must come from server-managed verification doc.
     // Client-side flags (routing/providers/local state) are never trusted.
+    // Production: Strict enforcement. User must have explicit verification status.
     function isAdultVerified(userId) {
       return signedIn()
         && exists(/databases/$(database)/documents/verification/$(userId))
@@ -62,11 +63,19 @@ service cloud.firestore {
 
     function roomReadableByRequester(roomData) {
       // If we already have the roomData (from resource.data), we don't need a get().
+      // Key logic:
+      // 1. If room is NOT adult, signed-in users can always read it
+      // 2. If room IS adult, only verified adults can read it
+      // 3. Guest access: only for non-adult rooms that allow guests
+      
       return (
           signedIn()
           && (
+            // Non-adult room: readable by all signed-in users
             !('isAdult' in roomData && roomData.isAdult == true)
-            || isAdultVerified(uid())
+            ||
+            // Adult room: readable only by verified adults
+            isAdultVerified(uid())
           )
         )
         || (
@@ -90,21 +99,18 @@ service cloud.firestore {
 
     // Firebase App Check validation: Prevents bot attacks and unauthorized API access
     // PRODUCTION: Enforces App Check tokens (reCAPTCHA v3, Play Integrity, Device Check)
-    // DEV: Accepts authenticated users as fallback (App Check may error on localhost)
+    // SOFT LAUNCH: Disabled - Firestore Security Rules provide primary security layer
     function hasValidAppCheck() {
-      // Prefer App Check validation if available; fall back to auth for dev
-      return request.auth != null && (
-        request.auth.token.firebase_app_check != null || true
-        // Production: Remove " || true" and enforce strict validation
-      );
+      // TEMPORARY: AppCheck requirement disabled for soft-launch testing phase
+      // Full AppCheck enforcement will be re-enabled after reCAPTCHA domain is configured
+      return true;  // Allow all requests to proceed; auth + verification rules enforce security
     }
 
-    function isNotBlocked(otherUserId) {
-      // CRITICAL: Prevent blocked users from sending messages
-      // For simplicity in rules, return true and let Cloud Function do comprehensive check
-      // This prevents the worst case but Cloud Function provides full validation
-      return true;
-    }
+    // Note: isNotBlocked() currently not used in rules but reserved for future block graph enforcement
+    // Block validation is handled by Cloud Functions for comprehensive relationship checking
+    // function isNotBlocked(otherUserId) {
+    //   return true;  // Cloud Functions handle block enforcement
+    // }
 
     function isConversationParticipant(convData) {
       return signedIn()

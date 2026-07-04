@@ -1,23 +1,23 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-07-03T17:56:15.287Z",
-  "finishedAt": "2026-07-03T17:56:16.958Z",
-  "durationMs": 1671,
+  "startedAt": "2026-07-03T19:00:01.794Z",
+  "finishedAt": "2026-07-03T19:00:03.449Z",
+  "durationMs": 1655,
   "sampleSize": 500,
-  "totalScanned": 0,
-  "totalViolations": 0,
-  "passed": true,
+  "totalScanned": 4,
+  "totalViolations": 3,
+  "passed": false,
   "summary": {
     "conversations": {
-      "scanned": 0,
-      "violations": 0
+      "scanned": 3,
+      "violations": 3
     },
     "messages": {
       "scanned": 0,
       "violations": 0
     },
     "rooms": {
-      "scanned": 0,
+      "scanned": 1,
       "violations": 0
     },
     "roomParticipants": {
@@ -36,7 +36,23 @@
     }
   },
   "violations": {
-    "conversations": [],
+    "conversations": [
+      {
+        "path": "conversations/VMBGDzBwWYbwKkSD8YxU",
+        "rule": "missing_status",
+        "details": "got: undefined"
+      },
+      {
+        "path": "conversations/gcOyCtWiIPJT6czBwfud",
+        "rule": "missing_status",
+        "details": "got: undefined"
+      },
+      {
+        "path": "conversations/svmFYJq5KmLYuadT4Gu0",
+        "rule": "missing_status",
+        "details": "got: undefined"
+      }
+    ],
     "messages": [],
     "rooms": [],
     "roomParticipants": [],

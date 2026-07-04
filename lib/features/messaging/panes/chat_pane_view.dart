@@ -19,6 +19,7 @@ import '../../../core/telemetry/app_telemetry.dart';
 import '../../../models/user_model.dart';
 import '../../../observability/system_event_bus.dart';
 import '../providers/messaging_provider.dart';
+import '../widgets/chat_media_widgets.dart';
 
 class ChatPaneView extends ConsumerStatefulWidget {
   const ChatPaneView({
@@ -955,6 +956,20 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendMessage(),
                   ),
+                ),
+                const SizedBox(width: 4),
+                ChatMediaInputButton(
+                  conversationId: widget.conversationId,
+                  userId: widget.userId,
+                  onMediaSelected: (mediaUrl) {
+                    // In a full implementation, this could:
+                    // 1. Add media to the current message
+                    // 2. Send as a separate media message
+                    // For now, showing the success state via provider
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      SnackBar(content: Text('Media ready to send: $mediaUrl')),
+                    );
+                  },
                 ),
                 const SizedBox(width: 4),
                 GestureDetector(
