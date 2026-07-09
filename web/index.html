@@ -18,22 +18,12 @@
   <!-- Firebase Web App Config -->
   <meta name="firebase-config" content="mix-and-mingle-v2">
   
-  <!-- Firestore Persistence & AppCheck -->
+  <!-- Firestore Persistence: Enabled for better offline support -->
   <meta name="firestore-persistence" content="enabled">
-  <meta name="appcheck-enabled" content="production">
   
-  <!-- CRITICAL: Disable Firebase AppCheck ReCAPTCHA for soft-launch on web -->
-  <script>
-    // Enable Firebase App Check debug token to bypass ReCAPTCHA requirement during soft-launch
-    // This prevents "appCheck/recaptcha-error" token retrieval failures
-    // In production, comment this out and properly configure reCAPTCHA v3
-    window.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    
-    // Also set for service workers
-    if (typeof self !== 'undefined') {
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    }
-  </script>
+  <!-- AppCheck: Disabled during soft-launch phase -->
+  <!-- Firestore Security Rules + Auth provide primary security layer -->
+  <meta name="appcheck-disabled" content="true">
   
   <style>
     html, body {
@@ -91,6 +81,11 @@
   </div>
 
   <script>
+    // Disable Firebase App Check on web before SDK loads
+    // Soft-launch phase: Firestore Security Rules + Auth enforce security
+    // Production: Will re-enable with proper reCAPTCHA domain configuration
+    window.__FIREBASE_DISABLE_APP_CHECK_ON_WEB = true;
+    
     (function () {
       var bootShell = document.getElementById('boot-shell');
       var bootMsg = document.getElementById('boot-msg');
