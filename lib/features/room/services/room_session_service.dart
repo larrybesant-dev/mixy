@@ -143,16 +143,38 @@ class RoomSessionService {
     // Validate room is readable by the user
     final isRoomAdult = _asBool(roomDoc.data()?['isAdult']);
     if (isRoomAdult) {
-      // Check if user is adult-verified (you'll need to implement this check)
-      // For now, just log a warning
-      AppTelemetry.logAction(
-        domain: 'room',
-        action: 'join_adult_room_check',
-        message: 'Attempting to join adult room',
+      // Adult room: check if user is verified
+      final verificationDoc = await traceFirestoreRead(
+        path: 'verification/$normalizedUserId',
+        operation: 'get_verification_for_adult_room_join',
         roomId: normalizedRoomId,
         userId: normalizedUserId,
-        result: 'info',
+        action: () => _firestore.collection('verification').doc(normalizedUserId).get(),
       );
+      
+      final isAdultVerified = verificationDoc.exists &&
+          _asBool(verificationDoc.data()?['isAdultVerified'], fallback: false) &&
+          verificationDoc.data()?['verificationStatus'] == 'verified';
+      
+      if (!isAdultVerified) {
+        AppTelemetry.logAction(
+          domain: 'room',
+          action: 'join_adult_room_verification_failed',
+          message: 'User not verified as adult',
+          roomId: normalizedRoomId,
+          userId: normalizedUserId,
+          result: 'blocked',
+        );
+        AppTelemetry.updateRoomState(
+          roomId: normalizedRoomId,
+          joinedUserId: null,
+          roomPhase: 'error',
+          roomError: 'This room is for verified adults only. Please complete adult verification.',
+        );
+        return const RoomJoinResult.failure(
+          'This room is for verified adults only. Please complete adult verification.',
+        );
+      }
     }
 
     // Check if user's profile is complete

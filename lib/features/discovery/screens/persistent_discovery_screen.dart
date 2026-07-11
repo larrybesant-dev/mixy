@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import '../providers/discovery_provider.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../core/theme.dart';
@@ -154,7 +155,7 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
           userId: userId,
           preferences: prefs,
           onApply: () {
-            ref.refresh(discoveryPreferencesProvider(userId));
+            unawaited(ref.refresh(discoveryPreferencesProvider(userId)));
           },
         ),
       );

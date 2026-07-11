@@ -9,15 +9,12 @@ class PersistentDiscoveryService {
   PersistentDiscoveryService({
     required FirebaseFirestore firestore,
     ModerationService? moderationService,
-    FirebaseFunctions? functions,
   })  : _firestore = firestore,
         _moderationService =
-            moderationService ?? ModerationService(firestore: firestore),
-        _functions = functions ?? FirebaseFunctions.instance;
+            moderationService ?? ModerationService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
-  final FirebaseFunctions _functions;
 
   /// Get all available candidates for discovery, excluding:
   /// - Current user

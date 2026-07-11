@@ -62,7 +62,6 @@ import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
 import 'package:mixvy/features/room/presentation/call_screen.dart';
 import 'package:mixvy/features/room/presentation/live_room_screen.dart';
-import 'package:mixvy/shared/providers/tab_navigation_provider.dart';
 import 'package:mixvy/features/dashboard/dashboard_screen.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
 
@@ -476,21 +475,17 @@ class _CustomShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedIndex = ref.watch(selectedTabIndexProvider);
     final currentUser = ref.watch(userProvider);
     final uid = currentUser?.id ?? '';
     final username = currentUser?.username ?? '';
 
-    // Update provider if initialIndex changed (e.g., from deep link or route params)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (selectedIndex != initialIndex) {
-        ref.read(selectedTabIndexProvider.notifier).state = initialIndex;
-      }
-    });
+    // Simply use the initialIndex provided by the route
+    // This is the most reliable way to determine which tab to display
+    final displayIndex = initialIndex;
 
     return Scaffold(
       body: IndexedStack(
-        index: selectedIndex,
+        index: displayIndex,
         children: [
           const DashboardScreen(),
           MessagesScreen(userId: uid, username: username),
@@ -500,7 +495,7 @@ class _CustomShell extends ConsumerWidget {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
+        selectedIndex: displayIndex,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Feed'),
           NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Messages'),
@@ -509,9 +504,11 @@ class _CustomShell extends ConsumerWidget {
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
         ],
         onDestinationSelected: (index) {
-          // Update provider to switch IndexedStack content
-          // Don't call go() - it breaks on Flutter web. Deep linking handled by initial route.
-          ref.read(selectedTabIndexProvider.notifier).state = index;
+          // Navigate to the corresponding route
+          final routes = ['/home', '/messages', '/rooms', '/speed-dating', '/profile'];
+          if (index >= 0 && index < routes.length) {
+            context.go(routes[index]);
+          }
         },
       ),
     );

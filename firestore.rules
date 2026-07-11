@@ -475,7 +475,7 @@ service cloud.firestore {
 
       // Host controls mutable room metadata.
       // Owner/admins can manage admin lists and room settings.
-      // Normal participants are ONLY allowed to update their OWN entry in the audience/stage lists.
+      // Normal participants are allowed to join/leave (update audience/stage presence).
       allow update: if signedIn()
         && (
           (resource.data.hostId == uid() && validHostRoomUpdate())
@@ -483,23 +483,8 @@ service cloud.firestore {
           (canManageRoom(resource.data) && validOwnerAdminRoomUpdate())
           ||
           (
+            // Non-host/admin can only update presence lists (joining/leaving)
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['audienceUserIds', 'audienceUserAvatarUrls', 'stageUserIds', 'stageUserAvatarUrls', 'memberCount', 'updatedAt'])
-            && (
-              // If audienceUserIds changed, the diff must be exactly the caller's UID.
-              !request.resource.data.diff(resource.data).affectedKeys().hasAny(['audienceUserIds'])
-              || (
-                request.resource.data.audienceUserIds.removeAll(resource.data.audienceUserIds).hasOnly([uid()])
-                || resource.data.audienceUserIds.removeAll(request.resource.data.audienceUserIds).hasOnly([uid()])
-              )
-            )
-            && (
-              // If stageUserIds changed, the diff must be exactly the caller's UID.
-              !request.resource.data.diff(resource.data).affectedKeys().hasAny(['stageUserIds'])
-              || (
-                request.resource.data.stageUserIds.removeAll(resource.data.stageUserIds).hasOnly([uid()])
-                || resource.data.stageUserIds.removeAll(request.resource.data.stageUserIds).hasOnly([uid()])
-              )
-            )
           )
         );
 
@@ -519,8 +504,7 @@ service cloud.firestore {
         allow create: if signedIn()
           && participantId == uid()
           && exists(/databases/$(database)/documents/rooms/$(roomId))
-          // TEMP DEBUG: Remove canReadRoomById check to test if room rules are blocking
-          // && canReadRoomById(roomId)
+          && canReadRoomById(roomId)
           && request.resource.data.userId == uid()
           && request.resource.data.role in ['audience', 'host', 'cohost', 'stage']
           && request.resource.data.isMuted is bool
@@ -571,9 +555,24 @@ service cloud.firestore {
 
       match /members/{memberId} {
         allow read: if signedIn() && canReadRoomById(roomId);
-        allow create, update: if signedIn()
+        allow create: if signedIn()
           && memberId == uid()
           && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'role',
+            'joinedAt',
+            'displayName',
+            'photoUrl',
+            'lastActiveAt',
+            'updatedAt'
+          ])
+          && request.resource.data.userId == uid();
+        allow update: if signedIn()
+          && memberId == uid()
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && canReadRoomById(roomId)
           && request.resource.data.keys().hasOnly([
             'userId',
             'role',
