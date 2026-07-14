@@ -99,6 +99,10 @@ smoke-test-screenshot.png
 # Playwright and E2E testing
 playwright_tests/node_modules/
 playwright_tests/test-results/
+playwright-report/
+playwright/.cache/
+.playwright/
+playwright_tests/test-results/
 playwright_tests/.playwright/
 playwright_tests/dist/
 
