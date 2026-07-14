@@ -78,8 +78,8 @@ class _WhoLikedYouTab extends ConsumerWidget {
       data: (likeCount) {
         return RefreshIndicator(
           onRefresh: () async {
-            await ref.refresh(likeCountProvider(userId));
-            await ref.refresh(profileViewsProvider(userId));
+            ref.invalidate(likeCountProvider(userId));
+            ref.invalidate(profileViewsProvider(userId));
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

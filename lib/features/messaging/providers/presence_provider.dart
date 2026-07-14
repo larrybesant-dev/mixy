@@ -1,49 +1,33 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../services/presence_repository.dart';
 import '../services/presence_service.dart';
 import '../models/user_presence.dart';
 
-// Presence service provider
-final presenceServiceProvider = Provider<PresenceService>((ref) {
+// Private: Presence service provider (not exported from index.dart per architecture)
+final _presenceServiceProvider = Provider<PresenceService>((ref) {
   final firestore = ref.watch(firestoreProvider);
   return PresenceService(firestore: firestore);
 });
 
-// Start presence tracking for current user
-final presenceTrackingProvider =
-    StateNotifierProvider<PresenceTrackingController, bool>((ref) {
-  final service = ref.watch(presenceServiceProvider);
-  return PresenceTrackingController(service);
-});
-
-class PresenceTrackingController extends StateNotifier<bool> {
-  PresenceTrackingController(this._service) : super(false);
-
-  final PresenceService _service;
-
-  Future<void> startTracking(String userId) async {
-    await _service.startPresenceTracking(userId);
-    state = true;
-  }
-
-  Future<void> stopTracking(String userId) async {
-    await _service.stopPresenceTracking(userId);
-    state = false;
-  }
-}
-
-// Get user's presence
+// Get user's presence using central repository
 final userPresenceProvider =
     StreamProvider.family<UserPresence?, String>((ref, userId) {
-  final service = ref.watch(presenceServiceProvider);
-  return service.getUserPresenceStream(userId);
+  final repository = ref.watch(presenceRepositoryProvider);
+  // Map PresenceModel stream to UserPresence model
+  return repository.watchUserPresence(userId).map((model) => UserPresence(
+    userId: model.userId ?? userId,
+    isOnline: model.isOnline ?? false,
+    lastActiveAt: model.lastSeen ?? DateTime.now(),
+    currentActivity: null,
+  ));
 });
 
 // Get typing users in a conversation
 final typingUsersProvider =
     StreamProvider.family<List<String>, String>((ref, conversationId) {
-  final service = ref.watch(presenceServiceProvider);
+  final service = ref.watch(_presenceServiceProvider);
   return service.getTypingUsersStream(conversationId);
 });
 
@@ -52,7 +36,7 @@ final typingIndicatorProvider =
     StateNotifierProvider.family<TypingIndicatorController, bool, (String, String)>(
   (ref, params) {
     final (conversationId, userId) = params;
-    final service = ref.watch(presenceServiceProvider);
+    final service = ref.watch(_presenceServiceProvider);
     return TypingIndicatorController(
       service,
       conversationId: conversationId,

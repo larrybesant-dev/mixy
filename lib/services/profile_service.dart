@@ -1,9 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mixvy/models/user_model.dart';
+import 'package:mixvy/models/profile_privacy_model.dart';
+import 'package:mixvy/models/adult_profile_model.dart';
+import 'schema_mutation_service.dart';
 
 class ProfileService {
   final FirebaseFirestore firestore;
-  ProfileService({required this.firestore});
+  final SchemaMutationService? schemaMutationService;
+  
+  ProfileService({
+    required this.firestore,
+    this.schemaMutationService,
+  });
 
   Future<UserModel?> loadProfile(String userId) async {
     final doc = await firestore.collection('users').doc(userId).get();
@@ -23,13 +31,23 @@ class ProfileService {
       throw Exception('Username is required to save profile');
     }
     
-    final updateData = {
-      ...userData,
-      'privacy': privacy,
-      'adultProfile': adultProfile,
-      'updatedAt': DateTime.now().toIso8601String(),
-    };
-    
-    await firestore.collection('users').doc(userId).set(updateData, SetOptions(merge: true));
+    // Route through SchemaMutationService if available
+    if (schemaMutationService != null) {
+      await schemaMutationService!.updateProfilePublic(
+        userId: userId,
+        userData: userData,
+        privacy: ProfilePrivacyModel.fromJson(privacy as Map<String, dynamic>),
+        adultProfile: AdultProfileModel.fromJson(adultProfile as Map<String, dynamic>),
+      );
+    } else {
+      // Fallback for backward compatibility
+      final updateData = {
+        ...userData,
+        'privacy': privacy,
+        'adultProfile': adultProfile,
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+      await firestore.collection('users').doc(userId).set(updateData, SetOptions(merge: true));
+    }
   }
 }

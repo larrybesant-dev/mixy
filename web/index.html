@@ -81,10 +81,8 @@
   </div>
 
   <script>
-    // Disable Firebase App Check on web before SDK loads
-    // Soft-launch phase: Firestore Security Rules + Auth enforce security
-    // Production: Will re-enable with proper reCAPTCHA domain configuration
-    window.__FIREBASE_DISABLE_APP_CHECK_ON_WEB = true;
+    // AppCheck uses reCAPTCHA v3 for web platform
+    // Firebase validates all Firestore requests with AppCheck token
     
     (function () {
       var bootShell = document.getElementById('boot-shell');

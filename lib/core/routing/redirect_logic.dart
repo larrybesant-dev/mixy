@@ -29,8 +29,7 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   // Routes that are allowed regardless of auth state.
   final isAuthRoute = matchedLocation == '/auth' ||
       matchedLocation == '/register' ||
-      matchedLocation == '/forgot-password' ||
-      matchedLocation == '/onboarding';
+      matchedLocation == '/forgot-password';
 
   // NO GUEST ACCESS: All room routes require authentication
   final isRoomRoute = false;

@@ -1,6 +1,4 @@
 /* eslint-disable no-undef */
-// Disable Firebase App Check on web - soft-launch phase uses Firestore Rules for security
-self.__FIREBASE_DISABLE_APP_CHECK_ON_WEB = true;
 
 importScripts('https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js');

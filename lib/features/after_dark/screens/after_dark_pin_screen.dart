@@ -120,86 +120,88 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
           ),
         ),
         body: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 24),
-              // Header
-              const Icon(
-                Icons.local_fire_department_rounded,
-                color: EmberDark.primary,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _title,
-                style: const TextStyle(
-                  color: EmberDark.onSurface,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                // Header
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: EmberDark.primary,
+                  size: 48,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  _subtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: EmberDark.onSurfaceVariant,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // PIN dots
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (i) {
-                  final filled = i < _digits.length;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: filled ? EmberDark.primary : Colors.transparent,
-                      border: Border.all(
-                        color: filled
-                            ? EmberDark.primary
-                            : EmberDark.outlineVariant,
-                        width: 2,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-
-              if (_error != null) ...[
                 const SizedBox(height: 16),
                 Text(
-                  _error!,
+                  _title,
                   style: const TextStyle(
-                    color: EmberDark.primary,
-                    fontSize: 13,
+                    color: EmberDark.onSurface,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ],
-
-              const Spacer(),
-
-              // Keypad
-              if (_loading)
-                const CircularProgressIndicator(color: EmberDark.primary)
-              else
+                const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: _Keypad(onDigit: _onDigit, onDelete: _onDelete),
+                  child: Text(
+                    _subtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: EmberDark.onSurfaceVariant,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                // PIN dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (i) {
+                    final filled = i < _digits.length;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: filled ? EmberDark.primary : Colors.transparent,
+                        border: Border.all(
+                          color: filled
+                              ? EmberDark.primary
+                              : EmberDark.outlineVariant,
+                          width: 2,
+                        ),
+                      ),
+                    );
+                  }),
                 ),
 
-              const SizedBox(height: 40),
-            ],
+                if (_error != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: EmberDark.primary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 40),
+
+                // Keypad
+                if (_loading)
+                  const CircularProgressIndicator(color: EmberDark.primary)
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: _Keypad(onDigit: _onDigit, onDelete: _onDelete),
+                  ),
+
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -225,18 +227,19 @@ class _Keypad extends StatelessWidget {
     return Column(
       children: keys.map((row) {
         return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: row.map((k) {
-            if (k.isEmpty) return const SizedBox(width: 80, height: 72);
-            return _KeyButton(
-              label: k,
-              onTap: () {
-                if (k == '⌫') {
-                  onDelete();
-                } else {
-                  onDigit(k);
-                }
-              },
+            if (k.isEmpty) return Expanded(child: const SizedBox(height: 72));
+            return Expanded(
+              child: _KeyButton(
+                label: k,
+                onTap: () {
+                  if (k == '⌫') {
+                    onDelete();
+                  } else {
+                    onDigit(k);
+                  }
+                },
+              ),
             );
           }).toList(),
         );
@@ -257,7 +260,6 @@ class _KeyButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 80,
         height: 72,
         alignment: Alignment.center,
         child: isDelete

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,11 +10,24 @@ class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
 
 class _MockUser extends Mock implements User {}
 
+class _MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
+
+class _FakeHttpsCallable extends Fake implements HttpsCallable {
+  @override
+  Future<HttpsCallableResult<T>> call<T>([dynamic parameters]) async {
+    return _FakeHttpsCallableResult<T>() as HttpsCallableResult<T>;
+  }
+}
+
+class _FakeHttpsCallableResult<T> extends Fake implements HttpsCallableResult<T> {}
+
 CashOutService _buildService({
   required FakeFirebaseFirestore firestore,
   String? uid,
 }) {
   final auth = _MockFirebaseAuth();
+  final functions = _MockFirebaseFunctions();
+  
   if (uid != null) {
     final user = _MockUser();
     when(() => user.uid).thenReturn(uid);
@@ -21,7 +35,10 @@ CashOutService _buildService({
   } else {
     when(() => auth.currentUser).thenReturn(null);
   }
-  return CashOutService(firestore: firestore, auth: auth);
+  
+  when(() => functions.httpsCallable(any())).thenReturn(_FakeHttpsCallable());
+  
+  return CashOutService(firestore: firestore, auth: auth, functions: functions);
 }
 
 void main() {

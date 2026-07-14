@@ -530,13 +530,37 @@ class MixvyAppBarLogo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(fontSize * 0.22),
-          child: Image.asset(
-            'images/branding/mixvy_logo.png',
-            height: fontSize * 1.55,
-            width: fontSize * 1.55,
-            fit: BoxFit.cover,
+        Container(
+          height: fontSize * 1.55,
+          width: fontSize * 1.55,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(fontSize * 0.22),
+            color: VelvetNoir.primary,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(fontSize * 0.22),
+            child: Image.asset(
+              'images/branding/mixvy_logo.png',
+              height: fontSize * 1.55,
+              width: fontSize * 1.55,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to colored container with 'M' if asset not found
+                return Container(
+                  color: VelvetNoir.primary,
+                  child: Center(
+                    child: Text(
+                      'M',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: fontSize * 0.9,
+                        fontWeight: FontWeight.w700,
+                        color: VelvetNoir.surface,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
         SizedBox(width: fontSize * 0.35),

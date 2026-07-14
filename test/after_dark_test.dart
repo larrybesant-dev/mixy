@@ -239,6 +239,9 @@ void main() {
     });
 
     testWidgets('entering 4 digits advances to confirm step', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(_pinSetupApp());
       await tester.pumpAndSettle();
 
@@ -299,6 +302,9 @@ void main() {
     testWidgets('entering a digit keeps title as Enter PIN before 4 digits', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(_pinUnlockApp());
       await tester.pumpAndSettle();
 

@@ -53,7 +53,7 @@ Future<void> main() async {
     
     // Initialize Firebase App Check (critical security: blocks bot attacks on Firestore)
     // PRODUCTION: Enforced reCAPTCHA v3 + Play Integrity validation
-    // SOFT LAUNCH: Web platform bypasses AppCheck; Firestore Rules enforce security
+    // SOFT LAUNCH: Web platform uses reCAPTCHA v3; Firestore Rules enforce security
     if (!kIsWeb) {
       try {
         await FirebaseAppCheck.instance.activate(
@@ -64,20 +64,16 @@ Future<void> main() async {
         debugPrint('[Firebase] App Check activation error on Android: $e');
       }
     } else {
-      // Web soft-launch: AppCheck disabled to unblock testing
-      // Firestore Security Rules provide access control
-      // Production: When ready, uncomment below and provide reCAPTCHA site key
-      //
-      // try {
-      //   await FirebaseAppCheck.instance.activate(
-      //     webRecaptchaSiteKey: 'YOUR_RECAPTCHA_V3_SITE_KEY_HERE',
-      //   );
-      //   debugPrint('[Firebase] App Check activated on web (reCAPTCHA v3)');
-      // } catch (e) {
-      //   debugPrint('[Firebase] App Check activation warning: $e');
-      // }
-      
-      debugPrint('[Firebase] App Check disabled on web (soft-launch phase; Firestore Rules + Auth enforce security)');
+      try {
+        // Web: Use reCAPTCHA v3 (key registered in Firebase Console App Check)
+        // Correct key: 6LcxpForAAAAAIxMxD7uQ1Nnb8MgPqZtN9urp68f (domains: mixvy-v2.web.app, www.djmixandmingle.com)
+        await FirebaseAppCheck.instance.activate(
+          providerWeb: ReCaptchaV3Provider('6LcxpForAAAAAIxMxD7uQ1Nnb8MgPqZtN9urp68f'),
+        );
+        debugPrint('[Firebase] App Check activated on web (reCAPTCHA v3)');
+      } catch (e) {
+        debugPrint('[Firebase] App Check activation error on web: $e');
+      }
     }
     
     // Firestore settings are now managed by firestoreProvider in firebase_providers.dart

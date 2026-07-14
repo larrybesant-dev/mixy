@@ -8,6 +8,7 @@ import 'package:firebase_core_platform_interface/test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mixvy/features/room/providers/room_firestore_provider.dart';
 import 'dart:async';
 
 class MockFirebaseApp extends Mock implements FirebaseApp {}
@@ -83,6 +84,12 @@ Future<void> testSetup() async {
   // Removed unused local variable 'currentUser'
   // Removed unsupported StreamController and authStateController logic for test mocks
   TestWidgetsFlutterBinding.ensureInitialized();
+  
+  // Load test assets from pubspec.yaml
+  final binding = TestWidgetsFlutterBinding.instance;
+  binding.window.physicalSizeTestValue = const Size(800, 600);
+  addTearDown(binding.window.clearPhysicalSizeTestValue);
+  
   // Register Pigeon-based Firebase Core mock (firebase_core >= 4.x) with
   // plugin constants required by FirebaseCrashlytics.
   TestFirebaseCoreHostApi.setUp(_MixvyFirebaseMock());
@@ -249,6 +256,21 @@ Future<void> testSetup() async {
   // Initialize Firebase after all mocks are set up.
   // This ensures that tests can use Firebase services without crashes.
   await Firebase.initializeApp();
+}
+
+/// Creates a ProviderContainer with all necessary overrides for testing Firestore access.
+/// Useful for tests that need to mock Firestore without triggering provider cascades.
+ProviderContainer createTestProviderContainer({
+  FirebaseFirestore? firestoreOverride,
+}) {
+  final overrides = <Override>[];
+
+  // Add Firestore override if provided
+  if (firestoreOverride != null) {
+    overrides.add(roomFirestoreProvider.overrideWithValue(firestoreOverride));
+  }
+
+  return ProviderContainer(overrides: overrides);
 }
 
 /// Utility to wrap widget tests in ProviderScope

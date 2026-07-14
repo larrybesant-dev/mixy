@@ -209,7 +209,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       const Spacer(),
                       MixvyGoldOutlineButton(
                         label: 'Skip',
-                        width: 92,
+                        width: 70,
                         height: 42,
                         onPressed: _skipOnboarding,
                       ),
@@ -245,6 +245,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -392,14 +393,10 @@ class _ScenePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 40),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height - 250,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
             _KickerChip(label: scene.kicker, color: scene.accent),
             const SizedBox(height: 20),
             Text(
@@ -511,8 +508,7 @@ class _ScenePage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -533,14 +529,10 @@ class _InterestsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 40),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height - 250,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
             const _KickerChip(label: 'Your Vibe', color: VelvetNoir.primary),
             const SizedBox(height: 20),
             Text(
@@ -642,8 +634,7 @@ class _InterestsPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
