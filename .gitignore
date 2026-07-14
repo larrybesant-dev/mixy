@@ -83,3 +83,40 @@ android/key.properties
 .firebase/
 code-scan.txt
 *.bak
+
+# Test-related artifacts - CRITICAL: Exclude all test directories and generated files
+test-results/
+.playwright-artifacts*/
+e2e-artifacts/
+runtime-artifacts/
+runtime-validation-*/
+payment-Payment-Flow-*/
+live_production_suite-*/
+live_site_final_check.png
+smoke-MixVy-Navigation-*/
+smoke-test-screenshot.png
+
+# Playwright and E2E testing
+playwright_tests/node_modules/
+playwright_tests/test-results/
+playwright_tests/.playwright/
+playwright_tests/dist/
+
+# Node.js dependencies and build artifacts
+node_modules/
+dist/
+build/
+*.tgz
+package-lock.json.bak
+
+# QA and Testing Documentation (auto-generated)
+QA_EXECUTION_GUIDE.md
+QA_PROTOCOL_PHASE2.md
+QA_QUICK_REFERENCE.md
+EXECUTION_GUIDE.md
+
+# OS-specific files
+Thumbs.db
+.DS_Store
+*.swp
+*~
