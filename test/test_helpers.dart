@@ -83,11 +83,12 @@ final Map<String, Object?> _sharedPrefsStore = <String, Object?>{};
 Future<void> testSetup() async {
   // Removed unused local variable 'currentUser'
   // Removed unsupported StreamController and authStateController logic for test mocks
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
   
   // Load test assets from pubspec.yaml
-  final binding = TestWidgetsFlutterBinding.instance;
+  // ignore: deprecated_member_use
   binding.window.physicalSizeTestValue = const Size(800, 600);
+  // ignore: deprecated_member_use
   addTearDown(binding.window.clearPhysicalSizeTestValue);
   
   // Register Pigeon-based Firebase Core mock (firebase_core >= 4.x) with

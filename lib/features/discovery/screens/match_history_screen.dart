@@ -242,16 +242,17 @@ class _SwipeHistoryTab extends ConsumerWidget {
 }
 
 class _SwipeCard extends ConsumerWidget {
-  final dynamic swipe;
+  final Object swipe;
 
   const _SwipeCard({required this.swipe});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLike = swipe.isLike;
-    final isMutual = swipe.isMutual;
-    final createdAt = swipe.createdAt;
-    final candidateId = swipe.candidateId;
+    final swipeMap = swipe as Map<String, dynamic>;
+    final isLike = swipeMap['isLike'] as bool? ?? false;
+    final isMutual = swipeMap['isMutual'] as bool? ?? false;
+    final createdAt = swipeMap['createdAt'];
+    final candidateId = swipeMap['candidateId'] as String? ?? '';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

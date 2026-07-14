@@ -83,10 +83,10 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: VelvetNoir.surface.withOpacity(0.5),
+                color: VelvetNoir.surface.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: VelvetNoir.primary.withOpacity(0.3),
+                  color: VelvetNoir.primary.withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
