@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math' show sin, pi;
 
 import '../../../core/theme.dart';
 import '../../../presentation/providers/user_provider.dart';
@@ -708,6 +709,7 @@ class _CameraWallTileFrame extends StatefulWidget {
 class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleTickerProviderStateMixin {
   bool _hovered = false;
   late final AnimationController _pulseCtrl;
+  late final AnimationController _shimmerCtrl;
 
   @override
   void initState() {
@@ -719,6 +721,15 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleT
     // ONLY repeat the controller if the widget is actively speaking, preventing continuous idle frame builds on inactive widgets
     if (widget.speaking) {
       _pulseCtrl.repeat(reverse: true);
+    }
+    
+    // Gold shimmer animation for host frame (3s cycle)
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+    if (widget.hasMic) {
+      _shimmerCtrl.repeat();
     }
   }
 
@@ -733,11 +744,20 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleT
         _pulseCtrl.value = 0.0;
       }
     }
+    if (widget.hasMic != oldWidget.hasMic) {
+      if (widget.hasMic) {
+        _shimmerCtrl.repeat();
+      } else {
+        _shimmerCtrl.stop();
+        _shimmerCtrl.value = 0.0;
+      }
+    }
   }
 
   @override
   void dispose() {
     _pulseCtrl.dispose();
+    _shimmerCtrl.dispose();
     super.dispose();
   }
 
@@ -748,19 +768,23 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleT
     final npGold = VelvetNoir.gold; // Gold — host/mic holder
     final npCyan = VelvetNoir.primary; // Cyan — speaking glow
     const npOnVariant = Color(0xFFAD9585); // muted cream
+    const npGoldBright = Color(0xFFFFD700); // Bright gold for shimmer
 
     final radius = widget.compact ? 8.0 : 10.0;
     
     return AnimatedBuilder(
-      animation: _pulseCtrl,
+      animation: Listenable.merge([_pulseCtrl, _shimmerCtrl]),
       builder: (context, child) {
         final pulseValue = widget.speaking ? _pulseCtrl.value : 0.0;
+        // Shimmer: oscillate between gold and bright gold
+        final shimmerValue = widget.hasMic ? _shimmerCtrl.value : 0.0;
+        final shimmerColor = Color.lerp(npGold, npGoldBright, (sin(shimmerValue * 2 * pi) + 1) / 2);
         
-        // Pin (spotlight) gets primary cyan; Host (hasMic) gets gold frame; speaking gets neon cyan glow; else subtle
+        // Pin (spotlight) gets primary cyan; Host (hasMic) gets shimmering gold frame; speaking gets neon cyan glow; else subtle
         final Color borderColor = widget.isPinned
             ? VelvetNoir.primary
             : widget.hasMic
-            ? npGold
+            ? shimmerColor ?? npGold
             : widget.speaking
             ? npCyan
             : const Color(0x20D4AF37);
@@ -777,18 +801,33 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleT
               ]
             : widget.hasMic
             ? [
+                // Primary gold shimmer glow
                 BoxShadow(
-                  color: npGold.withValues(alpha: 0.25 + (pulseValue * 0.15)),
-                  blurRadius: 12 + (pulseValue * 6),
-                  spreadRadius: 1 + (pulseValue * 1),
+                  color: (shimmerColor ?? npGold).withValues(alpha: 0.3 + (shimmerValue * 0.1)),
+                  blurRadius: 14 + (shimmerValue * 4),
+                  spreadRadius: 2 + (shimmerValue * 1),
                 ),
+                // Secondary layer: subtle wine-red accent when speaking
+                if (widget.speaking)
+                  BoxShadow(
+                    color: const Color(0xFF9B2535).withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    spreadRadius: 0,
+                  ),
               ]
             : widget.speaking
             ? [
+                // Primary cyan speaking glow
                 BoxShadow(
                   color: npCyan.withValues(alpha: 0.3 + (pulseValue * 0.3)),
                   blurRadius: 10 + (pulseValue * 10),
                   spreadRadius: 1 + (pulseValue * 2),
+                ),
+                // Secondary layer: wine-red outer glow for luxury effect
+                BoxShadow(
+                  color: const Color(0xFF9B2535).withValues(alpha: 0.15 + (pulseValue * 0.15)),
+                  blurRadius: 6 + (pulseValue * 4),
+                  spreadRadius: 2,
                 ),
               ]
             : const <BoxShadow>[];

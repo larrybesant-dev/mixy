@@ -106,11 +106,42 @@ class _RoomUserTileState extends State<RoomUserTile>
     return null;
   }
 
-  Color? get _glowColor {
-    if (!_isSpeaking) return null;
-    if (_isHost || _isCohost) return _kGold.withValues(alpha: 0.35);
-    if (_isSpeaker) return _kWineRedBright.withValues(alpha: 0.45);
-    return null;
+  List<BoxShadow> get _shadowLayers {
+    if (!_isSpeaking || !_hasRing) return [];
+    // Multi-layer shadow for luxury depth effect
+    final pulseValue = _pulseCtrl.value;
+    if (_isHost || _isCohost) {
+      return [
+        // Primary gold glow
+        BoxShadow(
+          color: _kGold.withValues(alpha: 0.35 + (pulseValue * 0.15)),
+          blurRadius: 12 + (pulseValue * 4),
+          spreadRadius: 2 + (pulseValue * 1),
+        ),
+        // Secondary wine-red outer layer for luxury feel
+        BoxShadow(
+          color: const Color(0xFF9B2535).withValues(alpha: 0.12 + (pulseValue * 0.08)),
+          blurRadius: 8,
+          spreadRadius: 3,
+        ),
+      ];
+    } else if (_isSpeaker) {
+      return [
+        // Primary wine-red glow
+        BoxShadow(
+          color: _kWineRedBright.withValues(alpha: 0.45 + (pulseValue * 0.15)),
+          blurRadius: 14 + (pulseValue * 6),
+          spreadRadius: 2 + (pulseValue * 2),
+        ),
+        // Secondary outer glow for intensity
+        BoxShadow(
+          color: _kWineRed.withValues(alpha: 0.20 + (pulseValue * 0.10)),
+          blurRadius: 6,
+          spreadRadius: 3,
+        ),
+      ];
+    }
+    return [];
   }
 
   String get _roleLabel {
@@ -282,7 +313,6 @@ class _RoomUserTileState extends State<RoomUserTile>
   Widget _buildAvatar() {
     final r = _avatarRadius;
     final ringColor = _ringColor;
-    final glowColor = _glowColor;
 
     final avatar = CircleAvatar(
       radius: r,
@@ -333,9 +363,7 @@ class _RoomUserTileState extends State<RoomUserTile>
               color: ringColor,
               width: _isSpeaking ? 2.5 : 1.8,
             ),
-            boxShadow: glowColor != null
-                ? [BoxShadow(color: glowColor, blurRadius: 10, spreadRadius: 2)]
-                : null,
+            boxShadow: _shadowLayers.isNotEmpty ? _shadowLayers : null,
           )
         : const BoxDecoration();
 
