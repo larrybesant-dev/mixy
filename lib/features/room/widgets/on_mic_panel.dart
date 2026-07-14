@@ -1,3 +1,5 @@
+import 'dart:math' show sin, pi;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,7 +16,7 @@ import 'room_user_tile.dart';
 /// with the host appearing first and larger, followed by co-hosts and stage
 /// speakers. Each tile shows the role badge, mic state, and (for stage users)
 /// a live countdown badge when a mic-time limit is active.
-class OnMicPanel extends ConsumerWidget {
+class OnMicPanel extends ConsumerStatefulWidget {
   const OnMicPanel({
     super.key,
     required this.roomId,
@@ -29,14 +31,38 @@ class OnMicPanel extends ConsumerWidget {
   final Map<String, String> displayNameById;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OnMicPanel> createState() => _OnMicPanelState();
+}
+
+class _OnMicPanelState extends ConsumerState<OnMicPanel>
+    with TickerProviderStateMixin {
+  late AnimationController _headerSweepCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _headerSweepCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _headerSweepCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     // Derive the ordered speaker list from the single-authority controller,
     // then hydrate with participant models. This eliminates the duplicate
     // onMicParticipantsProvider computation path.
     final speakerIds = ref.watch(
-      liveRoomControllerProvider(roomId).select((s) => s.speakerIds),
+      liveRoomControllerProvider(widget.roomId).select((s) => s.speakerIds),
     );
-    final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+    final participantsAsync = ref.watch(participantsStreamProvider(widget.roomId));
 
     final participants = participantsAsync.valueOrNull ?? const [];
     final participantByUser = {
@@ -62,49 +88,85 @@ class OnMicPanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ───────────────────────────────────────────────────
-          Container(
-            height: 30,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF16122A), Color(0xFF0B0A12)],
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                const _PulsingMicIcon(),
-                const SizedBox(width: 6),
-                const Text(
-                  'ON STAGE',
-                  style: TextStyle(
-                    color: Color(0xFFD4A853),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.4,
+          AnimatedBuilder(
+            animation: _headerSweepCtrl,
+            builder: (context, _) {
+              final sweepValue = _headerSweepCtrl.value;
+              final glowIntensity = (sin(sweepValue * 2 * pi) + 1) / 2;
+              return Container(
+                height: 30,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF16122A), Color(0xFF0B0A12)],
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD4AF37).withValues(
+                        alpha: 0.15 + (glowIntensity * 0.25),
+                      ),
+                      blurRadius: 12 + (glowIntensity * 8),
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                if (sorted.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0x509B2535),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${sorted.length}',
-                      style: const TextStyle(
-                        color: Color(0xFFFF6E84),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    const _PulsingMicIcon(),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ON STAGE',
+                      style: TextStyle(
+                        color: Color.lerp(
+                          const Color(0xFFD4A853),
+                          const Color(0xFFD4AF37),
+                          glowIntensity * 0.3,
+                        ),
                         fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
                       ),
                     ),
-                  ),
-              ],
-            ),
+                    const SizedBox(width: 6),
+                    if (sorted.isNotEmpty)
+                      Builder(
+                        builder: (context) {
+                          final pulseValue = (sin(_headerSweepCtrl.value * 4 * pi) + 1) / 2;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF9B2535).withValues(
+                                alpha: 0.35 + (pulseValue * 0.25),
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF9B2535).withValues(
+                                    alpha: 0.20 + (pulseValue * 0.15),
+                                  ),
+                                  blurRadius: 6 + (pulseValue * 4),
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              '${sorted.length}',
+                              style: const TextStyle(
+                                color: Color(0xFFFF6E84),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
           if (sorted.isEmpty)
             const Padding(
@@ -139,9 +201,9 @@ class OnMicPanel extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final p = sorted[index];
                   final name =
-                      displayNameById[p.userId] ??
+                      widget.displayNameById[p.userId] ??
                       resolvePublicUsername(uid: p.userId);
-                  final isMe = p.userId == currentUserId;
+                  final isMe = p.userId == widget.currentUserId;
                   return RoomUserTile(
                     displayName: name,
                     role: p.role,

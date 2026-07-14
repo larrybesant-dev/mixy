@@ -174,8 +174,8 @@ class _AmbientGlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final opacity = 0.06 + pulse * 0.08;
-    final radius = 0.35 + pulse * 0.12;
+    final opacity = 0.10 + pulse * 0.12;
+    final radius = 0.40 + pulse * 0.18;
     return CustomPaint(
       painter: _GlowPainter(opacity: opacity, radius: radius),
     );
@@ -193,17 +193,31 @@ class _GlowPainter extends CustomPainter {
     final cy = size.height / 2;
     final r = math.max(size.width, size.height) * radius;
 
-    final paint = Paint()
+    // PRIMARY LAYER: Enhanced cyan glow (boosted intensity)
+    final paint1 = Paint()
       ..shader = RadialGradient(
         colors: [
-          VelvetNoir.primary.withValues(alpha: opacity),
-          VelvetNoir.gold.withValues(alpha: opacity * 0.3),
+          VelvetNoir.primary.withValues(alpha: opacity * 1.2),
+          VelvetNoir.gold.withValues(alpha: opacity * 0.4),
           Colors.transparent,
         ],
         stops: const [0.0, 0.5, 1.0],
       ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r));
 
-    canvas.drawCircle(Offset(cx, cy), r, paint);
+    canvas.drawCircle(Offset(cx, cy), r, paint1);
+
+    // SECONDARY LAYER: Wine-red accent glow (creates passionate depth)
+    final paint2 = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF9B2535).withValues(alpha: opacity * 0.4),
+          const Color(0xFF9B2535).withValues(alpha: opacity * 0.15),
+          Colors.transparent,
+        ],
+        stops: const [0.2, 0.6, 1.0],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r * 0.8));
+
+    canvas.drawCircle(Offset(cx, cy), r * 0.8, paint2);
   }
 
   @override
@@ -408,10 +422,19 @@ class _SpeakerCard extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: [
+              // PRIMARY GLOW: Host/Cohost/Stage colored
               BoxShadow(
                 color: _glowColor.withValues(alpha: glowOpacity),
                 blurRadius: glowRadius,
                 spreadRadius: 2,
+              ),
+              // SECONDARY GLOW: Wine-red passion accent
+              BoxShadow(
+                color: const Color(0xFF9B2535).withValues(
+                  alpha: (0.15 + pulse * 0.25) * (isHost ? 0.4 : isCohost ? 0.3 : 0.5),
+                ),
+                blurRadius: glowRadius * 0.7,
+                spreadRadius: 0,
               ),
             ],
           ),
