@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/rtc_room_service.dart';
+import '../../../services/connection_recovery_handler.dart';
 import '../controllers/webrtc_controller.dart';
 import '../../auth/controllers/auth_controller.dart';
 
@@ -11,6 +12,8 @@ class RoomWebRTCState {
   final List<int> remoteUserUids;
   final bool isLocalVideoCapturing;
   final bool isLocalAudioMuted;
+  final RtcConnectionState connectionState;
+  final int reconnectAttemptCount;
   final RtcRoomService? service;
   final String? error;
 
@@ -21,6 +24,8 @@ class RoomWebRTCState {
     this.remoteUserUids = const [],
     this.isLocalVideoCapturing = false,
     this.isLocalAudioMuted = true,
+    this.connectionState = RtcConnectionState.idle,
+    this.reconnectAttemptCount = 0,
     this.service,
     this.error,
   });
@@ -32,6 +37,8 @@ class RoomWebRTCState {
     List<int>? remoteUserUids,
     bool? isLocalVideoCapturing,
     bool? isLocalAudioMuted,
+    RtcConnectionState? connectionState,
+    int? reconnectAttemptCount,
     RtcRoomService? service,
     String? error,
   }) {
@@ -42,6 +49,8 @@ class RoomWebRTCState {
       remoteUserUids: remoteUserUids ?? this.remoteUserUids,
       isLocalVideoCapturing: isLocalVideoCapturing ?? this.isLocalVideoCapturing,
       isLocalAudioMuted: isLocalAudioMuted ?? this.isLocalAudioMuted,
+      connectionState: connectionState ?? this.connectionState,
+      reconnectAttemptCount: reconnectAttemptCount ?? this.reconnectAttemptCount,
       service: service ?? this.service,
       error: error ?? this.error,
     );
@@ -114,6 +123,16 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
 
     service.onConnectionLost = () {
       state = state?.copyWith(isConnected: false);
+    };
+
+    /// Wire connection recovery state changes so UI can observe recovery progress
+    service.onConnectionStateChanged = (newState) {
+      state = state?.copyWith(
+        connectionState: newState,
+        reconnectAttemptCount: service.reconnectAttemptCount,
+        // Auto-transition isConnected based on final state
+        isConnected: newState == RtcConnectionState.connected,
+      );
     };
   }
 

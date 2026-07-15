@@ -8,11 +8,15 @@ import 'package:share_plus/share_plus.dart';
 import '../../../models/room_model.dart';
 import '../../../core/theme.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../services/connection_recovery_handler.dart';
+import '../../../services/connection_health_check.dart';
 import 'room_management_modal.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 import '../providers/participant_providers.dart';
 import '../widgets/network_health_widget.dart';
+import '../widgets/recovery_badge.dart';
+import '../widgets/connection_failed_overlay.dart';
 
 class LiveRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
@@ -592,6 +596,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     return Consumer(
       builder: (context, ref, _) {
         final webrtcState = ref.watch(activeRoomWebRTCProvider(widget.roomId));
+        final healthState = ref.watch(connectionHealthProvider);
         
         if (webrtcState?.service == null) {
           return Center(
@@ -612,28 +617,87 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               color: VelvetNoir.surfaceHigh,
               child: webrtcState!.service!.getLocalView(),
             ),
-            // Audio/Video Status Overlays
+            
+            // Audio/Video Status Overlays + Recovery Badge
             Positioned(
               top: 16,
               right: 16,
-              child: Row(
+              child: Column(
                 spacing: 8,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildStatusBadge(
-                    sessionState.isVideoEnabled ? 'Video ON' : 'Video OFF',
-                    sessionState.isVideoEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
+                  Row(
+                    spacing: 8,
+                    children: [
+                      _buildStatusBadge(
+                        sessionState.isVideoEnabled ? 'Video ON' : 'Video OFF',
+                        sessionState.isVideoEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
+                      ),
+                      _buildStatusBadge(
+                        sessionState.isAudioEnabled ? 'Mic ON' : 'Mic OFF',
+                        sessionState.isAudioEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
+                      ),
+                      NetworkHealthWidget(
+                        showLabel: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                      ),
+                    ],
                   ),
-                  _buildStatusBadge(
-                    sessionState.isAudioEnabled ? 'Mic ON' : 'Mic OFF',
-                    sessionState.isAudioEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
-                  ),
-                  NetworkHealthWidget(
-                    showLabel: false,
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                  ),
+                  
+                  // Health Badge: Shows when connection is degrading or worse
+                  if (healthState.isAtRisk)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: switch (healthState.health) {
+                          ConnectionHealth.healthy => Colors.green.withValues(alpha: 0.8),
+                          ConnectionHealth.degrading => Colors.orange.withValues(alpha: 0.8),
+                          ConnectionHealth.degraded => Colors.red.withValues(alpha: 0.8),
+                          ConnectionHealth.unavailable => Colors.grey.withValues(alpha: 0.8),
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: VelvetNoir.liveGlow.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 6,
+                        children: [
+                          Icon(
+                            switch (healthState.health) {
+                              ConnectionHealth.healthy => Icons.cloud_done,
+                              ConnectionHealth.degrading => Icons.cloud_queue,
+                              ConnectionHealth.degraded => Icons.cloud_off,
+                              ConnectionHealth.unavailable => Icons.cloud_off_rounded,
+                            },
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          Text(
+                            healthState.displayStatus,
+                            style: GoogleFonts.raleway(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  
+                  // Recovery Badge: Shows during degraded/reconnecting states
+                  if (webrtcState.connectionState == RtcConnectionState.degraded ||
+                      webrtcState.connectionState == RtcConnectionState.reconnecting)
+                    RecoveryBadge(
+                      attemptNumber: webrtcState.reconnectAttemptCount,
+                      maxAttempts: 3,
+                    ),
                 ],
               ),
             ),
+
             // Remote Users Grid (if any)
             if (sessionState.remoteUsers.isNotEmpty)
               Positioned(
@@ -669,6 +733,30 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     },
                   ),
                 ),
+              ),
+
+            // Connection Failed Overlay: Shows after max retries exhausted
+            if (webrtcState.connectionState == RtcConnectionState.failed)
+              ConnectionFailedOverlay(
+                roomId: widget.roomId,
+                onRetry: () {
+                  // Attempt to recover by calling reconnect on the service
+                  // ignore: use_build_context_synchronously
+                  ref.read(activeRoomWebRTCProvider(widget.roomId).notifier)
+                      .disconnect()
+                      .then((_) {
+                    // Service will auto-reinitialize on next join
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Retrying connection...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  });
+                },
+                onLeave: () => Navigator.of(context).pop(),
               ),
           ],
         );

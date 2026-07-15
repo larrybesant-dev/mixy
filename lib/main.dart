@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mixvy/firebase_options.dart'; 
 import 'observability/provider_observer.dart';
@@ -14,6 +15,7 @@ import 'app/app.dart';
 import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
+import 'services/diagnostic_logger.dart';
 
 // ignore: unused_element
 const String _appVersion = String.fromEnvironment(
@@ -79,6 +81,35 @@ Future<void> main() async {
     // Firestore settings are now managed by firestoreProvider in firebase_providers.dart
     // (Settings configured automatically when provider is first accessed)
     debugPrint('[Firebase] Firestore initialization delegated to firestoreProvider');
+    
+    // Setup production logging: Route [MIXVY_DEBUG] logs to Firebase Crashlytics
+    if (!kDebugMode) {
+      DiagnosticLogger.setProductionHandler((log) {
+        // Route all diagnostic logs to Crashlytics
+        FirebaseCrashlytics.instance.recordError(
+          log.message,
+          StackTrace.current,
+          reason: '${log.category} [${log.severity}]',
+          printDetails: true,
+          fatal: log.severity == 'CRIT', // Mark CRITICAL logs as fatal
+        );
+        
+        // Also add to custom keys for dashboard filtering
+        FirebaseCrashlytics.instance.setCustomKey('diagnostic_severity', log.severity);
+        FirebaseCrashlytics.instance.setCustomKey('diagnostic_category', log.category);
+        
+        // Log structured metadata if present
+        if (log.metadata != null && log.metadata!.isNotEmpty) {
+          FirebaseCrashlytics.instance.setCustomKey(
+            'diagnostic_metadata',
+            log.metadata.toString(),
+          );
+        }
+      });
+      debugPrint('[Logging] Production handler configured for Firebase Crashlytics');
+    } else {
+      debugPrint('[Logging] Development mode: DiagnosticLogger will output to console');
+    }
   } catch (e) {
     debugPrint('[Firebase] Firebase initialization failed: $e');
     Logger.error('Firebase initialization failed', error: e);

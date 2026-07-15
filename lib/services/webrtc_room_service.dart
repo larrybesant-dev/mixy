@@ -6,6 +6,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 import 'package:mixvy/services/rtc_room_service.dart';
+import 'package:mixvy/services/connection_recovery_handler.dart';
+import 'package:mixvy/services/diagnostic_logger.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 import '../observability/webrtc_latency_tracker.dart';
 
@@ -13,7 +15,7 @@ import '../observability/webrtc_latency_tracker.dart';
 /// 
 /// The production-hardened engine for MixVy's real-time communication.
 /// Manages peer connections, Firestore signaling, and professional NAT traversal.
-class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
+class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBindingObserver {
   DateTime? _rtcConnectedAt;
   final FirebaseFirestore _firestore;
   final String _localUserId;
@@ -219,6 +221,8 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   VoidCallback? onTokenWillExpire;
   @override
   VoidCallback? onConnectionLost;
+  @override
+  ValueChanged<RtcConnectionState>? onConnectionStateChanged;
 
   @override
   List<int> get remoteUids => _remoteRenderers.keys.toList();
@@ -236,6 +240,12 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
   bool get isLocalAudioMuted => _localAudioMuted;
   @override
   bool get isSharingSystemAudio => _systemAudioStream != null;
+
+  @override
+  RtcConnectionState get connectionState => RtcConnectionState.idle;
+
+  @override
+  int get reconnectAttemptCount => 0;
 
   @override
   Future<void> shareSystemAudio(bool enabled) async {
@@ -981,6 +991,20 @@ class WebRtcRoomService extends RtcRoomService with WidgetsBindingObserver {
 
   @override
   Future<void> renewToken(String newToken) async {}
+
+  @override
+  Future<void> reconnect() async {
+    // WebRTC doesn't have automatic reconnection yet; return gracefully.
+    _log('reconnect() called (no-op for WebRTC)');
+    logInfo('Reconnect requested for WebRTC service (no-op, manual recovery required)');
+  }
+
+  @override
+  Future<void> abortReconnection() async {
+    // No-op for WebRTC.
+    _log('abortReconnection() called (no-op for WebRTC)');
+    logInfo('Abort reconnection requested for WebRTC service');
+  }
 
   @override
   Future<void> setMicVolume(double volume) async {}

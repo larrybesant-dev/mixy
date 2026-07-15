@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../features/room/controllers/room_state.dart';
+import 'connection_recovery_handler.dart';
 
 /// Abstract interface shared by [AgoraService] (native/web Agora SDK) and
 /// [WebRtcRoomService] (browser-native WebRTC with Firestore signaling).
@@ -30,6 +31,11 @@ abstract class RtcRoomService {
   VoidCallback? get onConnectionLost;
   set onConnectionLost(VoidCallback? value);
 
+  /// Called when the connection state changes (e.g., connected → degraded → reconnecting → connected).
+  /// Allows UI to display recovery feedback such as "Reconnecting..." messages.
+  ValueChanged<RtcConnectionState>? get onConnectionStateChanged;
+  set onConnectionStateChanged(ValueChanged<RtcConnectionState>? value);
+
   // ──────────────────────────────────────────────────────────────────────────
   // State getters
   // ──────────────────────────────────────────────────────────────────────────
@@ -41,6 +47,18 @@ abstract class RtcRoomService {
   bool get isJoinedChannel;
   bool get isLocalVideoCapturing;
   bool get isLocalAudioMuted;
+
+  /// Current connection state (idle, connecting, connected, degraded, reconnecting, failed).
+  /// Updated by the service's internal recovery handler.
+  RtcConnectionState get connectionState => RtcConnectionState.idle;
+
+  /// Number of reconnection attempts made (resets on successful recovery).
+  int get reconnectAttemptCount => 0;
+
+  /// True when actively attempting recovery (degraded or reconnecting).
+  bool get isRecovering =>
+      connectionState == RtcConnectionState.degraded ||
+      connectionState == RtcConnectionState.reconnecting;
 
   /// True when the broadcaster is sharing PC/system audio via getDisplayMedia.
   bool get isSharingSystemAudio => false;
@@ -96,6 +114,15 @@ abstract class RtcRoomService {
   });
 
   Future<void> renewToken(String newToken);
+
+  /// Attempt to reconnect after connection loss.
+  /// Subclasses implement with exponential backoff, max retries, etc.
+  /// Throws on fatal failure (token expired, user banned, etc.).
+  Future<void> reconnect();
+
+  /// Abort any in-flight reconnection attempt.
+  /// Called when user leaves room or app goes to background.
+  Future<void> abortReconnection();
 
   /// Share PC/system audio (Chrome: pick a tab/screen + "Share system audio").
   /// Default no-op for Agora; only implemented on web via [WebRtcRoomService].

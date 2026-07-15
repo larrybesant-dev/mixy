@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'rtc_room_service.dart';
+import 'connection_recovery_handler.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 
 /// Non-web stub for [WebRtcRoomService].
@@ -33,6 +34,8 @@ class WebRtcRoomService extends RtcRoomService {
   VoidCallback? onTokenWillExpire;
   @override
   VoidCallback? onConnectionLost;
+  @override
+  ValueChanged<RtcConnectionState>? onConnectionStateChanged;
   VoidCallback? onSystemAudioStopped;
 
   @override
@@ -51,6 +54,10 @@ class WebRtcRoomService extends RtcRoomService {
   bool get isLocalAudioMuted => _unsupported();
   @override
   bool get isSharingSystemAudio => false;
+  @override
+  RtcConnectionState get connectionState => _unsupported();
+  @override
+  int get reconnectAttemptCount => _unsupported();
   @override
   Future<void> shareSystemAudio(bool enabled) async {}
 
@@ -107,6 +114,12 @@ class WebRtcRoomService extends RtcRoomService {
 
   @override
   Future<void> renewToken(String newToken) => _unsupported();
+
+  @override
+  Future<void> reconnect() => _unsupported();
+
+  @override
+  Future<void> abortReconnection() => _unsupported();
 
   @override
   Future<void> setMicVolume(double volume) async {}

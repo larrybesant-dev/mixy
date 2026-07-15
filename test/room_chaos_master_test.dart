@@ -10,6 +10,7 @@ import 'package:mixvy/features/room/services/room_session_service.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/services/presence_controller.dart';
 import 'package:mixvy/services/rtc_room_service.dart';
+import 'package:mixvy/services/connection_recovery_handler.dart';
 
 class _ChaosPresenceController extends PresenceController {
   final Map<String, PresenceControllerState> writesByUser =
@@ -67,6 +68,9 @@ class _FakeRtcRoomService extends RtcRoomService {
   VoidCallback? onConnectionLost;
 
   @override
+  ValueChanged<RtcConnectionState>? onConnectionStateChanged;
+
+  @override
   List<int> get remoteUids => const <int>[];
 
   @override
@@ -86,6 +90,12 @@ class _FakeRtcRoomService extends RtcRoomService {
 
   @override
   bool get isLocalAudioMuted => localAudioMuted;
+
+  @override
+  RtcConnectionState get connectionState => RtcConnectionState.idle;
+
+  @override
+  int get reconnectAttemptCount => 0;
 
   @override
   bool isRemoteSpeaking(int uid) => false;
@@ -148,6 +158,12 @@ class _FakeRtcRoomService extends RtcRoomService {
 
   @override
   Future<void> renewToken(String newToken) async {}
+
+  @override
+  Future<void> reconnect() async {}
+
+  @override
+  Future<void> abortReconnection() async {}
 
   @override
   Future<void> dispose() async {}

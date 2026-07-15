@@ -9,6 +9,8 @@ import 'web_media_probe_stub.dart'
     if (dart.library.html) 'web_media_probe_web.dart'
     as web_media_probe;
 import 'rtc_room_service.dart';
+import 'connection_recovery_handler.dart';
+import 'diagnostic_logger.dart';
 
 class AgoraServiceException implements Exception {
   const AgoraServiceException({
@@ -25,7 +27,7 @@ class AgoraServiceException implements Exception {
   String toString() => 'AgoraServiceException($code): $message';
 }
 
-class AgoraService extends RtcRoomService {
+class AgoraService extends RtcRoomService with DiagnosticLogger {
   static RtcEngine? _sharedEngine;
   static bool _sharedInitialized = false;
   // Serializes concurrent initialize() calls (e.g. pre-warm racing with cam-tap).
@@ -54,6 +56,10 @@ class AgoraService extends RtcRoomService {
   bool _isRejoinInProgress = false;
   Completer<void>? _localVideoCaptureCompleter;
 
+  // Connection recovery state
+  late ConnectionRecoveryHandler _recoveryHandler;
+  bool _userInitiatedDisconnect = false;
+
   // Callbacks for UI updates
   @override
   VoidCallback? onRemoteUserJoined;
@@ -73,6 +79,10 @@ class AgoraService extends RtcRoomService {
   /// reconnect flow.
   @override
   VoidCallback? onConnectionLost;
+
+  /// Called when the connection state changes (idle, connecting, connected, degraded, reconnecting, failed).
+  @override
+  ValueChanged<RtcConnectionState>? onConnectionStateChanged;
 
   @override
   List<int> get remoteUids => List.unmodifiable(_remoteUids);
@@ -96,6 +106,12 @@ class AgoraService extends RtcRoomService {
   bool get isLocalVideoCapturing => _localVideoCapturing;
   @override
   bool get isLocalAudioMuted => _localAudioMuted;
+
+  @override
+  RtcConnectionState get connectionState => _recoveryHandler.state;
+
+  @override
+  int get reconnectAttemptCount => _recoveryHandler.attemptCount;
 
   // System-audio sharing is web-only (WebRtcRoomService); Agora is no-op.
   @override
@@ -645,7 +661,18 @@ class AgoraService extends RtcRoomService {
           if (state == ConnectionStateType.connectionStateDisconnected &&
               reason !=
                   ConnectionChangedReasonType.connectionChangedLeaveChannel &&
-              !_isRejoinInProgress) {
+              !_isRejoinInProgress &&
+              !_userInitiatedDisconnect) {
+            // Trigger automatic reconnection recovery (fire-and-forget).
+            // Note: This linter warning is expected; we intentionally don't await recovery.
+            developer.log('Connection lost, starting recovery...', name: 'AgoraService');
+            logWarning('Connection lost, starting recovery', metadata: {
+              'reason': reason.toString(),
+              'maxRetries': 3,
+              'baseDelayMs': 2000,
+            });
+            // ignore: unawaited_futures
+            unawaited(_recoveryHandler.beginRecovery(onReconnect: () => reconnect()));
             if (onConnectionLost != null) onConnectionLost!();
           }
         },
@@ -761,6 +788,23 @@ class AgoraService extends RtcRoomService {
         stackTrace: stackTrace,
       );
     }
+
+    // Initialize recovery handler (max 3 attempts, 2s base delay)
+    _recoveryHandler = ConnectionRecoveryHandler(
+      maxRetries: 3,
+      baseDelayMs: 2000,
+      onStateChange: (state) {
+        developer.log('Connection state: $state', name: 'AgoraService');
+        onConnectionStateChanged?.call(state);
+      },
+      onRetryAttempt: (attemptNumber, delayMs) {
+        developer.log(
+          'Scheduling reconnection attempt $attemptNumber (delay: ${delayMs}ms)',
+          name: 'AgoraService',
+        );
+      },
+    );
+
     _initialized = true;
   }
 
@@ -1040,6 +1084,57 @@ class AgoraService extends RtcRoomService {
     _broadcasterMode = false;
     _localVideoCapturing = false;
     _previewRunning = false;
+    _userInitiatedDisconnect = true;
+  }
+
+  /// Attempt to reconnect using stored join credentials.
+  /// Called by recovery handler on connection loss.
+  @override
+  Future<void> reconnect() async {
+    if (!_initialized || _lastToken == null || _lastChannelName == null || _lastUid == null) {
+      throw StateError(
+        'Cannot reconnect: not initialized or missing stored credentials',
+      );
+    }
+
+    developer.log(
+      'Reconnecting to $_lastChannelName with uid $_lastUid',
+      name: 'AgoraService',
+    );
+    logInfo('Reconnection attempt started', metadata: {
+      'channelName': _lastChannelName,
+      'uid': _lastUid,
+      'attemptNumber': _recoveryHandler.attemptCount,
+    });
+
+    _userInitiatedDisconnect = false;
+    _recoveryHandler.reset(); // Reset for fresh recovery attempt
+
+    try {
+      await joinRoom(
+        _lastToken!,
+        _lastChannelName!,
+        _lastUid!,
+        publishCameraTrackOnJoin: _broadcasterMode,
+        publishMicrophoneTrackOnJoin: _broadcasterMode,
+      );
+      developer.log('Reconnection successful', name: 'AgoraService');
+      logInfo('Reconnection successful, connection restored');
+    } catch (e) {
+      developer.log('Reconnection failed: $e', name: 'AgoraService', error: e);
+      logError('Reconnection failed', error: e, metadata: {
+        'channelName': _lastChannelName,
+        'attemptNumber': _recoveryHandler.attemptCount,
+      });
+      rethrow;
+    }
+  }
+
+  /// Abort in-flight reconnection attempts.
+  @override
+  Future<void> abortReconnection() async {
+    logInfo('Aborting reconnection attempts');
+    _recoveryHandler.abort();
   }
 
   /// Mute/unmute local audio
