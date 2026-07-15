@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../models/room_model.dart';
 import '../../../core/theme.dart';
+import '../../../services/diagnostic_logger.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../services/connection_recovery_handler.dart';
 import '../../../services/connection_health_check.dart';
@@ -31,7 +33,7 @@ class LiveRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, DiagnosticLogger {
   late TextEditingController messageController;
   late ScrollController scrollController;
 
@@ -757,6 +759,91 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   });
                 },
                 onLeave: () => Navigator.of(context).pop(),
+              ),
+            
+            // TEMPORARY TEST BUTTONS - DELETE BEFORE COMMIT
+            if (kDebugMode)
+              Positioned(
+                bottom: 120,
+                right: 16,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Test WARNING trigger
+                    FloatingActionButton.extended(
+                      heroTag: 'warning-test',
+                      label: const Text('⚠️ Test WARNING'),
+                      backgroundColor: Colors.orange,
+                      tooltip: 'Trigger a test WARNING alert',
+                      onPressed: () {
+                        logWarning(
+                          'Test Warning Triggered - Verifying alert pipeline',
+                          metadata: {
+                            'test_type': 'warning',
+                            'timestamp': DateTime.now().toIso8601String(),
+                            'room_id': widget.roomId,
+                          },
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✓ WARNING logged to Crashlytics (check in 2 min)'),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // Test ERROR trigger
+                    FloatingActionButton.extended(
+                      heroTag: 'error-test',
+                      label: const Text('🔴 Test ERROR'),
+                      backgroundColor: Colors.red,
+                      tooltip: 'Trigger a test ERROR alert',
+                      onPressed: () {
+                        logError(
+                          'Test Error Triggered - Verifying alert pipeline',
+                          error: Exception('Controlled test failure'),
+                          metadata: {
+                            'test_type': 'error',
+                            'timestamp': DateTime.now().toIso8601String(),
+                            'room_id': widget.roomId,
+                          },
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✓ ERROR logged to Crashlytics (check in 2 min)'),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // Test CRITICAL trigger
+                    FloatingActionButton.extended(
+                      heroTag: 'critical-test',
+                      label: const Text('🚨 Test CRITICAL'),
+                      backgroundColor: Colors.redAccent,
+                      tooltip: 'Trigger a test CRITICAL alert',
+                      onPressed: () {
+                        logCritical(
+                          'Test Critical Triggered - Verifying EMERGENCY alert pipeline',
+                          error: Exception('Controlled critical test failure'),
+                          metadata: {
+                            'test_type': 'critical',
+                            'timestamp': DateTime.now().toIso8601String(),
+                            'room_id': widget.roomId,
+                          },
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✓ CRITICAL logged to Crashlytics (check in 2 min)'),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
           ],
         );
