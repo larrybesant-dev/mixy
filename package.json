@@ -5,6 +5,8 @@
   "scripts": {
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
     "report:e2e": "playwright show-report",
     "firestore:contract": "node tools/firestore_contract_compiler.mjs"
   },
