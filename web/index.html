@@ -80,10 +80,22 @@
     </div>
   </div>
 
+  <!-- CRITICAL: Disable App Check before Firebase SDK loads -->
   <script>
-    // AppCheck uses reCAPTCHA v3 for web platform
-    // Firebase validates all Firestore requests with AppCheck token
+    // Aggressive disable for soft-launch (enforcement already off in Firebase Console)
+    // Prevent SDK from attempting reCAPTCHA token exchange
+    window.__FIREBASE_DISABLE_APP_CHECK_ON_WEB = true;
+    window.__FIREBASE_APPCHECK_DEBUG_TOKEN = '';
     
+    // Force unregister service workers that might cache old Firebase config
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) { reg.unregister(); });
+      }).catch(function() {});
+    }
+  </script>
+
+  <script>
     (function () {
       var bootShell = document.getElementById('boot-shell');
       var bootMsg = document.getElementById('boot-msg');
