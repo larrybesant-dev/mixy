@@ -519,8 +519,7 @@ service cloud.firestore {
         allow create: if signedIn()
           && participantId == uid()
           && exists(/databases/$(database)/documents/rooms/$(roomId))
-          // TEMP DEBUG: Remove canReadRoomById check to test if room rules are blocking
-          // && canReadRoomById(roomId)
+          && canReadRoomById(roomId)
           && request.resource.data.userId == uid()
           && request.resource.data.role in ['audience', 'host', 'cohost', 'stage']
           && request.resource.data.isMuted is bool
