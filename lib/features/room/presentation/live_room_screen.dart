@@ -16,6 +16,7 @@ import 'room_management_modal.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 import '../providers/participant_providers.dart';
+import '../providers/connection_recovery_provider.dart';
 import '../widgets/network_health_widget.dart';
 import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
@@ -448,6 +449,61 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 
+  /// Handles audio-only fallback when recovery takes longer than 5+ seconds.
+  /// If recovery has been active for more than 1 attempt (>5s due to exponential backoff),
+  /// automatically disables video to reduce bandwidth and improve stability.
+  void _handleRecoveryTimeout({
+    required ConnectionRecoveryState recoveryState,
+    required RoomSessionNotifier sessionNotifier,
+    required BuildContext context,
+    required bool isVideoEnabled,
+  }) {
+    // Threshold: after 2+ attempts, we've waited 2s + 4s = 6s
+    const audioOnlyThreshold = 2;
+    
+    if (recoveryState.isRecovering &&
+        recoveryState.attemptNumber >= audioOnlyThreshold &&
+        isVideoEnabled) {
+      // Degrade to audio-only
+      sessionNotifier.setVideoEnabled(false);
+      
+      if (context.mounted) {
+        // Notify user of degradation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Connection is unstable. Camera disabled for stability. You can re-enable it when connection improves.',
+            ),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.orange.shade700,
+            action: SnackBarAction(
+              label: 'Re-enable Camera',
+              textColor: Colors.white,
+              onPressed: () {
+                sessionNotifier.setVideoEnabled(true);
+              },
+            ),
+          ),
+        );
+      }
+    }
+    
+    // When recovery succeeds after audio-only degradation, notify user
+    if (recoveryState.isConnected &&
+        !recoveryState.isRecovering &&
+        !isVideoEnabled) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Connection recovered! Camera is available again.'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -599,6 +655,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       builder: (context, ref, _) {
         final webrtcState = ref.watch(activeRoomWebRTCProvider(widget.roomId));
         final healthState = ref.watch(connectionHealthProvider);
+        final recoveryState = ref.watch(connectionRecoveryProvider);
+        final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+        
+        // Trigger audio-only fallback if recovery takes >5 seconds
+        _handleRecoveryTimeout(
+          recoveryState: recoveryState,
+          sessionNotifier: sessionNotifier,
+          context: context,
+          isVideoEnabled: sessionState.isVideoEnabled,
+        );
         
         if (webrtcState?.service == null) {
           return Center(
@@ -619,6 +685,90 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               color: VelvetNoir.surfaceHigh,
               child: webrtcState!.service!.getLocalView(),
             ),
+            
+            // Reconnecting Banner (prominent top notification)
+            if (recoveryState.isRecovering)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Colors.orange.withValues(alpha: 0.9),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Reconnecting... (Attempt ${recoveryState.attemptNumber}/${recoveryState.maxAttempts})',
+                              style: GoogleFonts.raleway(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (recoveryState.nextRetryDelayMs > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Next attempt in ${(recoveryState.nextRetryDelayMs / 1000).toStringAsFixed(1)}s',
+                                  style: GoogleFonts.raleway(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            
+            // Connection Failed Banner
+            if (recoveryState.isFailed)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Colors.red.withValues(alpha: 0.9),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Connection failed. Please check your network or try leaving and rejoining.',
+                          style: GoogleFonts.raleway(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             
             // Audio/Video Status Overlays + Recovery Badge
             Positioned(
