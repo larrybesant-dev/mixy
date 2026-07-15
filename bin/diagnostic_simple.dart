@@ -3,7 +3,6 @@
 /// Run: dart bin/diagnostic_simple.dart
 
 import 'dart:io';
-import 'dart:async';
 
 void main() async {
   print('🔍 MixVy Production System Diagnostics');
