@@ -2,64 +2,171 @@ import { Page, expect } from '@playwright/test';
 
 /**
  * Authenticates a user in the test environment by logging into the Flutter web app
+ * Supports multiple fallback methods including Firebase auth and local storage injection
  */
 export async function authenticateTestUser(page: Page): Promise<void> {
-  const testEmail = process.env.TEST_EMAIL || 'test@mixvy.local';
-  const testPassword = process.env.TEST_PASSWORD || 'TestPassword123!';
+  const testEmail = process.env.TEST_EMAIL || 'test@example.com';
+  const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
 
   try {
-    // Navigate to auth page
-    await page.goto('/auth', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
+    // First, check if already authenticated via localStorage
+    const isAlreadyAuth = await page.evaluate(() => {
+      const firebaseAuth = localStorage.getItem('firebase:authUser:mixvy-v2');
+      return !!firebaseAuth;
+    }).catch(() => false);
 
-    // Wait for the app to load
-    const pageContent = await page.content();
-    if (!pageContent.includes('html')) {
-      console.warn('Auth page may not have loaded properly');
+    if (isAlreadyAuth) {
+      console.log('✓ User already authenticated via localStorage');
       return;
     }
 
-    // Look for email input field - could be in different forms depending on auth state
-    const emailInputs = await page.locator('input[type="email"], input[placeholder*="mail"], input[placeholder*="Email"]').count();
-    
-    if (emailInputs > 0) {
-      // App might be on login form
-      const firstEmailInput = page.locator('input[type="email"], input[placeholder*="mail"], input[placeholder*="Email"]').first();
-      
-      // Try to interact with email field
-      try {
-        await firstEmailInput.fill(testEmail);
-        await page.waitForTimeout(500);
-      } catch (e) {
-        console.log('Could not fill email field - app may require different auth method');
-      }
+    // Navigate to auth page
+    await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
 
-      // Try to find and fill password field
-      const passwordInputs = await page.locator('input[type="password"], input[placeholder*="password"]').count();
-      if (passwordInputs > 0) {
-        const firstPasswordInput = page.locator('input[type="password"], input[placeholder*="password"]').first();
-        try {
-          await firstPasswordInput.fill(testPassword);
-          await page.waitForTimeout(500);
-        } catch (e) {
-          console.log('Could not fill password field');
-        }
-      }
-
-      // Try to find and click login button
-      const loginButtons = await page.locator('button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")').count();
-      if (loginButtons > 0) {
-        await page.locator('button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")').first().click();
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(2000);
-      }
-    } else {
-      console.log('Email input not found on auth page - may already be authenticated or using different auth method');
+    // Method 1: Try standard email/password form
+    const authSuccess = await tryEmailPasswordAuth(page, testEmail, testPassword);
+    if (authSuccess) {
+      console.log('✓ Authenticated via email/password form');
+      return;
     }
 
+    // Method 2: Try Firebase Auth REST API (fallback)
+    const firebaseSuccess = await tryFirebaseRestAuth(page, testEmail, testPassword);
+    if (firebaseSuccess) {
+      console.log('✓ Authenticated via Firebase REST API');
+      return;
+    }
+
+    // Method 3: Try guest access fallback
+    const guestSuccess = await tryGuestAccess(page);
+    if (guestSuccess) {
+      console.log('✓ Accessed as guest');
+      return;
+    }
+
+    console.warn('⚠ Could not authenticate - tests may require authentication');
+
   } catch (error) {
-    console.log(`Authentication attempt completed with status. Error details: ${error instanceof Error ? error.message : String(error)}`);
-    // Continue anyway - some tests may not require authentication
+    console.log(`⚠ Authentication error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Attempts email/password authentication via the UI
+ */
+async function tryEmailPasswordAuth(page: Page, email: string, password: string): Promise<boolean> {
+  try {
+    // Look for email input field
+    const emailInputs = await page.locator('input[type="email"], input[placeholder*="mail"], input[placeholder*="Email"]').count();
+    
+    if (emailInputs === 0) {
+      return false;
+    }
+
+    const emailInput = page.locator('input[type="email"], input[placeholder*="mail"], input[placeholder*="Email"]').first();
+    await emailInput.fill(email);
+    await page.waitForTimeout(500);
+
+    // Find and fill password field
+    const passwordInput = page.locator('input[type="password"], input[placeholder*="password"]').first();
+    await passwordInput.fill(password);
+    await page.waitForTimeout(500);
+
+    // Find and click login button
+    const loginButton = page.locator('button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")').first();
+    await loginButton.click();
+    
+    // Wait for navigation
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Verify auth success
+    const isAuth = await page.evaluate(() => {
+      return !!localStorage.getItem('firebase:authUser:mixvy-v2');
+    });
+
+    return isAuth;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Attempts authentication via Firebase Auth REST API (server-side fallback)
+ */
+async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
+  try {
+    // Get Firebase config from window object or use hardcoded values
+    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCqXHwQaMV1VvWxYnrAGqhGlx9S2K0MZZE';
+    const firebaseProjectId = 'mixvy-v2';
+
+    const response = await page.request.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseKey}`,
+      {
+        data: {
+          email,
+          password,
+          returnSecureToken: true,
+        },
+      }
+    );
+
+    if (!response.ok()) {
+      return false;
+    }
+
+    const result = await response.json() as any;
+    
+    if (!result.idToken) {
+      return false;
+    }
+
+    // Store auth tokens in localStorage
+    await page.evaluate(
+      ({ tokens, uid }) => {
+        localStorage.setItem('firebase:authUser:mixvy-v2', JSON.stringify({
+          uid,
+          email: tokens.email,
+          emailVerified: false,
+          displayName: null,
+          isAnonymous: false,
+          metadata: {
+            creationTime: new Date().toISOString(),
+            lastSignInTime: new Date().toISOString(),
+          },
+          providerData: [],
+          _token: tokens.idToken,
+          _tokenExpirationTime: Date.now() + (3600 * 1000),
+        }));
+      },
+      { tokens: result, uid: result.localId }
+    );
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Attempts to access as guest
+ */
+async function tryGuestAccess(page: Page): Promise<boolean> {
+  try {
+    // Look for guest/anonymous login button
+    const guestButton = page.locator('button:has-text("Guest"), button:has-text("GUEST"), button:has-text("Enter as Guest"), text=ENTER AS GUEST').first();
+    
+    if (await guestButton.isVisible().catch(() => false)) {
+      await guestButton.click();
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000);
+      return true;
+    }
+
+    return false;
+  } catch (e) {
+    return false;
   }
 }
 
