@@ -92,7 +92,7 @@ class _RoomGiftPickerSheetContentState
         gift: gift,
       );
 
-      // Decrement allowance
+      // Decrement allowance (refresh is non-blocking; fires in background)
       ref.refresh(useGiftAllowanceFunction);
 
       if (mounted) Navigator.of(context).pop();

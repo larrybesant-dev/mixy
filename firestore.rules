@@ -97,15 +97,6 @@ service cloud.firestore {
       );
     }
 
-    // Firebase App Check validation: Prevents bot attacks and unauthorized API access
-    // PRODUCTION: Enforces App Check tokens (reCAPTCHA v3, Play Integrity, Device Check)
-    // SOFT LAUNCH: Disabled - Firestore Security Rules provide primary security layer
-    function hasValidAppCheck() {
-      // TEMPORARY: AppCheck requirement disabled for soft-launch testing phase
-      // Full AppCheck enforcement will be re-enabled after reCAPTCHA domain is configured
-      return true;  // Allow all requests to proceed; auth + verification rules enforce security
-    }
-
     // Note: isNotBlocked() currently not used in rules but reserved for future block graph enforcement
     // Block validation is handled by Cloud Functions for comprehensive relationship checking
     // function isNotBlocked(otherUserId) {
@@ -212,13 +203,13 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Keep read authenticated AND App Check-validated; tighten further with profile projection if needed.
-      allow read: if signedIn() && hasValidAppCheck();
+      // Soft-launch: Auth + field validation sufficient. App Check re-enabled post-launch.
+      allow read: if signedIn();
 
       // Client can manage only non-privileged profile identity fields.
-      allow create: if isSelf(userId) && hasValidAppCheck() && userCreateValid(userId);
-      allow update: if isSelf(userId) && hasValidAppCheck() && userUpdateValid();
-      allow delete: if isSelf(userId) && hasValidAppCheck();
+      allow create: if isSelf(userId) && userCreateValid(userId);
+      allow update: if isSelf(userId) && userUpdateValid();
+      allow delete: if isSelf(userId);
 
       // Server-only security/verification/wallet internals.
       match /wallet/{docId} {
