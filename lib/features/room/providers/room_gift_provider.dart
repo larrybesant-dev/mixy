@@ -60,11 +60,12 @@ final topGiftersProvider = Provider.autoDispose
 
 class RoomGiftController {
   /// Sends a gift in [roomId] to [receiverId].
-  /// [senderName] is included for fast display without an extra Firestore read.
+  /// [senderName] and [receiverName] are included for fast display without extra Firestore reads.
   Future<void> sendGift({
     required String roomId,
     required String receiverId,
     required String senderName,
+    required String receiverName,
     required RoomGiftItem gift,
   }) async {
     if (roomId.isEmpty || receiverId.isEmpty) {
@@ -74,9 +75,11 @@ class RoomGiftController {
     await callable.call<Map<String, dynamic>>({
       'roomId': roomId,
       'receiverId': receiverId,
+      'receiverName': receiverName,
       'giftId': gift.id,
       'coinCost': gift.coinCost,
       'senderName': senderName,
+      'emoji': gift.emoji,
     });
   }
 }

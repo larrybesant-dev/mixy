@@ -1267,6 +1267,10 @@ async function sendRoomGiftHandler(request, deps = {}) {
     typeof (request.data && request.data.senderName) === "string"
       ? request.data.senderName.trim().slice(0, 64)
       : "";
+  const receiverName =
+    typeof (request.data && request.data.receiverName) === "string"
+      ? request.data.receiverName.trim().slice(0, 64)
+      : "";
   const firestore = deps.firestore || db;
 
   if (receiverId === senderId) {
@@ -1287,18 +1291,24 @@ async function sendRoomGiftHandler(request, deps = {}) {
     const senderParticipantRef = roomRef
       .collection("participants")
       .doc(senderId);
+    const allowanceRef = firestore
+      .collection("users")
+      .doc(senderId)
+      .collection("gift_tracking")
+      .doc("allowance");
     const giftEventRef = firestore
       .collection("rooms")
       .doc(roomId)
       .collection("gift_events")
       .doc();
 
-    const [senderSnap, receiverSnap, roomSnap, senderParticipantSnap] =
+    const [senderSnap, receiverSnap, roomSnap, senderParticipantSnap, allowanceSnap] =
       await Promise.all([
         txn.get(senderRef),
         txn.get(receiverRef),
         txn.get(roomRef),
         txn.get(senderParticipantRef),
+        txn.get(allowanceRef),
       ]);
 
     if (!roomSnap.exists || roomSnap.data().isLive === false) {
@@ -1315,18 +1325,38 @@ async function sendRoomGiftHandler(request, deps = {}) {
       );
     }
 
+    // Check free gift allowance
+    const DAILY_FREE_LIMIT = 5;
+    const allowanceData = allowanceSnap.exists ? allowanceSnap.data() : {};
+    const lastReset = allowanceData.lastReset?.toDate?.() || new Date(0);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastResetDate = new Date(lastReset.getFullYear(), lastReset.getMonth(), lastReset.getDate());
+    
+    let remainingFreeGifts = DAILY_FREE_LIMIT;
+    if (lastResetDate.getTime() === today.getTime()) {
+      remainingFreeGifts = Math.max(0, allowanceData.remainingToday || DAILY_FREE_LIMIT);
+    }
+
     const senderBalance = getCoinBalance(senderSnap.data());
     const isAdminSender = senderSnap.data()?.admin === true;
-    if (!isAdminSender && senderBalance < coinCost) {
+    
+    // Check if user can send gift (has allowance or has coins)
+    const hasFreeGifts = remainingFreeGifts > 0;
+    const hasCoins = senderBalance >= coinCost;
+    const canSendGift = isAdminSender || hasFreeGifts || hasCoins;
+    
+    if (!canSendGift) {
       throw new HttpsError(
         "failed-precondition",
-        "Insufficient coin balance.",
+        hasFreeGifts ? "Insufficient coin balance." : "No free gifts remaining. Buy coins to send gifts.",
       );
     }
 
     const receiverBalance = getCoinBalance(receiverSnap.data());
 
-    if (!isAdminSender) {
+    if (!isAdminSender && !hasFreeGifts && hasCoins) {
+      // Use coins instead of free gift
       const nextSenderBalance = senderBalance - coinCost;
       txn.update(senderRef, {balance: nextSenderBalance, coinBalance: nextSenderBalance});
       syncWalletCoinBalance(txn, firestore, senderId, nextSenderBalance);
@@ -1338,7 +1368,14 @@ async function sendRoomGiftHandler(request, deps = {}) {
         status: "completed",
         metadata: {roomId, giftId, receiverId},
       });
+    } else if (hasFreeGifts) {
+      // Decrement free gift allowance
+      txn.set(allowanceRef, {
+        remainingToday: remainingFreeGifts - 1,
+        lastReset: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
     }
+
     const nextReceiverBalance = receiverBalance + receiverAmount;
     txn.update(receiverRef, {balance: nextReceiverBalance, coinBalance: nextReceiverBalance});
     syncWalletCoinBalance(txn, firestore, receiverId, nextReceiverBalance);
@@ -1365,12 +1402,14 @@ async function sendRoomGiftHandler(request, deps = {}) {
       senderId,
       senderName,
       receiverId,
+      receiverName,
       roomId,
       giftId,
       coinCost,
       receiverAmount,
       platformFeeAmount,
       sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      emoji: request.data?.emoji || "🎁",
     });
 
     return giftEventRef.id;

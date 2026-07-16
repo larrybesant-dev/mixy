@@ -3,6 +3,7 @@ import '../../../services/rtc_room_service.dart';
 import '../../../services/connection_recovery_handler.dart';
 import '../controllers/webrtc_controller.dart';
 import '../../auth/controllers/auth_controller.dart';
+import 'connection_recovery_provider.dart';
 
 /// Represents the state of WebRTC for a single room
 class RoomWebRTCState {
@@ -121,8 +122,46 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
       state = state?.copyWith(remoteUserUids: service.remoteUids);
     };
 
+    /// When connection is lost, trigger automatic recovery via the recovery handler
     service.onConnectionLost = () {
       state = state?.copyWith(isConnected: false);
+      
+      // Trigger recovery handler with reconnection logic
+      final recoveryNotifier = ref.read(connectionRecoveryProvider.notifier);
+      
+      // Define what "reconnect" means: attempt to re-establish the connection
+      // by calling joinRoom again on the service
+      Future<void> reconnectAction() async {
+        if (state?.service == null) {
+          throw Exception('Service not available for reconnection');
+        }
+        
+        final svc = state!.service!;
+        // Re-join the channel to re-establish signaling and peer connections
+        // Note: joinRoom is idempotent - calling it again will restart the connection
+        final currentUserId = state!.userId;
+        final channelId = roomId;
+        
+        // Calculate a stable UID from userId (same logic as WebRtcRoomService)
+        int uid = 0;
+        for (final c in currentUserId.codeUnits) {
+          uid = (uid * 31 + c) & 0x7FFFFFFF;
+        }
+        if (uid == 0) uid = 1;
+        
+        await svc.joinRoom(
+          '',
+          channelId,
+          uid,
+          publishCameraTrackOnJoin: service.isLocalVideoCapturing,
+          publishMicrophoneTrackOnJoin: !service.isLocalAudioMuted,
+        );
+      }
+      
+      recoveryNotifier.beginRecovery(
+        onReconnect: reconnectAction,
+        errorMessage: 'Connection lost. Attempting recovery...',
+      ).ignore(); // Fire and forget; recovery runs in background
     };
 
     /// Wire connection recovery state changes so UI can observe recovery progress

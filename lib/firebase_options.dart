@@ -29,29 +29,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
-    appId: '1:980846719834:web:4f26d018877528c3077963',
-    messagingSenderId: '980846719834',
-    projectId: 'mix-and-mingle-v2',
-    authDomain: 'mix-and-mingle-v2.firebaseapp.com',
-    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    apiKey: 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I',
+    appId: '1:770164332233:web:ae8bae1c4c68b525c3df18',
+    messagingSenderId: '770164332233',
+    projectId: 'mixvy-v2',
+    authDomain: 'mixvy-v2.firebaseapp.com',
+    storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-DRXWK1PPEK',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCbS7zVY2o4S1-OOPkqFuUXz5B5hmmsS0U',
-    appId: '1:980846719834:android:c369e5b790a2945b077963',
-    messagingSenderId: '980846719834',
-    projectId: 'mix-and-mingle-v2',
-    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    apiKey: 'AIzaSyCejcBAOY6WPsc4qfVkmOvnx6MOofFiJo4',
+    appId: '1:770164332233:android:8fae7410889374d9c3df18',
+    messagingSenderId: '770164332233',
+    projectId: 'mixvy-v2',
+    storageBucket: 'mixvy-v2.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD15xj5jE4UtiLoidJ4QmpJr47ZxdY6AQk',
-    appId: '1:980846719834:ios:ec445d70ccc6c131077963',
-    messagingSenderId: '980846719834',
-    projectId: 'mix-and-mingle-v2',
-    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    apiKey: 'AIzaSyC2FRIhjf7Z7-OROQXjHMq08lhI9lY0Rtg',
+    appId: '1:770164332233:ios:056a1477bcfa5f44c3df18',
+    messagingSenderId: '770164332233',
+    projectId: 'mixvy-v2',
+    storageBucket: 'mixvy-v2.firebasestorage.app',
     androidClientId:
         '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
     iosClientId:
@@ -60,32 +60,32 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
-    appId: '1:980846719834:web:faa83926491c9adb077963',
-    messagingSenderId: '980846719834',
-    projectId: 'mix-and-mingle-v2',
-    authDomain: 'mix-and-mingle-v2.firebaseapp.com',
-    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    apiKey: 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I',
+    appId: '1:770164332233:web:153750240deaa27dc3df18',
+    messagingSenderId: '770164332233',
+    projectId: 'mixvy-v2',
+    authDomain: 'mixvy-v2.firebaseapp.com',
+    storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-L0G075C2EZ',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
-    appId: '1:980846719834:web:faa83926491c9adb077963',
-    messagingSenderId: '980846719834',
-    projectId: 'mix-and-mingle-v2',
-    authDomain: 'mix-and-mingle-v2.firebaseapp.com',
-    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    apiKey: 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I',
+    appId: '1:770164332233:web:ae8bae1c4c68b525c3df18',
+    messagingSenderId: '770164332233',
+    projectId: 'mixvy-v2',
+    authDomain: 'mixvy-v2.firebaseapp.com',
+    storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-L0G075C2EZ',
   );
 
   static const FirebaseOptions linux = FirebaseOptions(
-    apiKey: 'AIzaSyBBmz9ybuDRCA2dAVjFZVj7R7wrDL0wTYU',
-    appId: '1:980846719834:web:faa83926491c9adb077963',
-    messagingSenderId: '980846719834',
-    projectId: 'mix-and-mingle-v2',
-    authDomain: 'mix-and-mingle-v2.firebaseapp.com',
-    storageBucket: 'mix-and-mingle-v2.firebasestorage.app',
+    apiKey: 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I',
+    appId: '1:770164332233:web:ae8bae1c4c68b525c3df18',
+    messagingSenderId: '770164332233',
+    projectId: 'mixvy-v2',
+    authDomain: 'mixvy-v2.firebaseapp.com',
+    storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-L0G075C2EZ',
   );
 }

@@ -6,11 +6,11 @@ env:
 # DISABLED: This workflow is temporarily disabled to reduce CI noise.
 # Run manually via workflow_dispatch if needed for detailed Flutter CI analysis.
 on:
-  # push:  # DISABLED
-  #   branches: [ main ]
-  #   tags: [ 'rc-*', 'v*' ]
-  # pull_request:  # DISABLED
-  #   branches: [ main ]
+  push:
+    branches: [ main ]
+    tags: [ 'rc-*', 'v*' ]
+  pull_request:
+    branches: [ main ]
   # schedule:  # DISABLED
   #   - cron: '30 4 * * *'
   workflow_dispatch:  # Can still be triggered manually

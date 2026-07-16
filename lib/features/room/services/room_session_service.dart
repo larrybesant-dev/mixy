@@ -331,7 +331,7 @@ class RoomSessionService {
           tx.set(participantRef, {
             'userId': normalizedUserId,
             'camOn': false,
-            'lastActiveAt': now,
+            'lastActiveAt': FieldValue.serverTimestamp(),
             'userStatus': 'online',
             if (normalizedDisplayName.isNotEmpty)
               'displayName': normalizedDisplayName,
@@ -349,8 +349,8 @@ class RoomSessionService {
             if (normalizedDisplayName.isNotEmpty)
               'displayName': normalizedDisplayName,
             if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
-            'joinedAt': now,
-            'lastActiveAt': now,
+            'joinedAt': FieldValue.serverTimestamp(),
+            'lastActiveAt': FieldValue.serverTimestamp(),
           });
         }
 
@@ -358,9 +358,9 @@ class RoomSessionService {
           'userId': normalizedUserId,
           'role': isHostUser ? 'owner' : 'member',
           'joinedAt': currentParticipantSnap.exists
-              ? (currentParticipantSnap.data()!['joinedAt'] ?? now)
-              : now,
-          'lastActiveAt': now,
+              ? (currentParticipantSnap.data()!['joinedAt'] ?? FieldValue.serverTimestamp())
+              : FieldValue.serverTimestamp(),
+          'lastActiveAt': FieldValue.serverTimestamp(),
           if (normalizedDisplayName.isNotEmpty)
             'displayName': normalizedDisplayName,
           if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
