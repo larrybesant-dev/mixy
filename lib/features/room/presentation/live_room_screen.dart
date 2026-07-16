@@ -13,6 +13,7 @@ import '../../../core/providers/firebase_providers.dart';
 import '../../../services/connection_recovery_handler.dart';
 import '../../../services/connection_health_check.dart';
 import 'room_management_modal.dart';
+import '../room_controller.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 import '../providers/participant_providers.dart';
@@ -72,74 +73,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
-  Future<void> _joinRoom(String uid, String username) async {
-    try {
-      final firestore = ref.read(firestoreProvider);
-      final roomRef = firestore.collection('rooms').doc(widget.roomId);
-      
-      // Fetch user's avatar URL
-      String? avatarUrl;
-      try {
-        final userDoc = await firestore.collection('users').doc(uid).get();
-        avatarUrl = userDoc.data()?['avatarUrl'] as String?;
-      } catch (_) {
-        // Continue without avatar if fetch fails
-      }
-      
-      // Create participant doc (required for chat permissions)
-      await roomRef.collection('participants').doc(uid).set({
-        'userId': uid,
-        'role': 'audience',
-        'micOn': true,
-        'cameraOn': true,
-        'camOn': true,
-        'isMuted': false,
-        'isBanned': false,
-        'userStatus': 'joined',
-        'displayName': username,
-        'joinedAt': FieldValue.serverTimestamp(),
-        'lastActiveAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
 
-      // Update room with user and avatar
-      await roomRef.update({
-        'audienceUserIds': FieldValue.arrayUnion([uid]),
-        'audienceUserAvatarUrls': FieldValue.arrayUnion([avatarUrl ?? '']),
-        'memberCount': FieldValue.increment(1),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Initialize WebRTC
-      final notifier = ref.read(activeRoomWebRTCProvider(widget.roomId).notifier);
-      await notifier.joinAsAudience();
-
-      // Update Riverpod session state
-      final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
-      sessionNotifier.setJoined(true);
-      sessionNotifier.updateDisplayName(uid, username);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Successfully joined room'),
-            backgroundColor: VelvetNoir.primary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error joining room: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error joining room: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   Future<void> _leaveRoom() async {
     try {
@@ -1403,7 +1337,23 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     ? () async {
                         final displayName = await _getUserDisplayName(currentUser.uid);
                         if (mounted) {
-                          await _joinRoom(currentUser.uid, displayName);
+                          try {
+                            final controller = ref.read(roomControllerProvider(widget.roomId).notifier);
+                            await controller.joinRoom(
+                              currentUser.uid,
+                              displayName: displayName,
+                              avatarUrl: currentUser.photoURL,
+                            );
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error joining room: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         }
                       }
                     : null,
