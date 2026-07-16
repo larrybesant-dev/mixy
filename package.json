@@ -7,11 +7,14 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ci": "playwright test --reporter=html,junit",
+    "test:e2e:critical": "playwright test e2e/06-critical-user-flows.spec.ts",
+    "test:e2e:auth": "playwright test e2e/01-auth-and-navigation.spec.ts",
     "report:e2e": "playwright show-report",
     "firestore:contract": "node tools/firestore_contract_compiler.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.53.0",
+    "@playwright/test": "^1.61.1",
     "firebase-tools": "^15.22.3"
   },
   "dependencies": {
