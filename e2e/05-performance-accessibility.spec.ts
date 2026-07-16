@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { authenticateTestUser } from './utils/auth';
 
 test.describe('MixVy Performance & Accessibility', () => {
   test.describe('Performance Metrics', () => {
     test('should load auth page within 3 seconds', async ({ page }) => {
+      // Authenticate first
+      await authenticateTestUser(page);
+
       const startTime = Date.now();
 
       await page.goto('/auth', { waitUntil: 'networkidle' });

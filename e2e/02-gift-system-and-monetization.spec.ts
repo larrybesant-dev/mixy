@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { authenticateTestUser } from './utils/auth';
 
 test.describe('MixVy Gift System & Monetization Flow', () => {
   test.beforeEach(async ({ page }) => {
+    // Authenticate first to access Firestore data
+    await authenticateTestUser(page);
+
     // Navigate to home page
     await page.goto('/');
     await page.waitForLoadState('networkidle');

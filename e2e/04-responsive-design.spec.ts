@@ -1,8 +1,12 @@
 import { test, expect, devices } from '@playwright/test';
+import { authenticateTestUser } from './utils/auth';
 
 test.describe('MixVy Responsive Design & Mobile UX', () => {
   test.describe('Desktop View', () => {
     test.beforeEach(async ({ page }) => {
+      // Authenticate first
+      await authenticateTestUser(page);
+
       await page.goto('/');
       await page.waitForLoadState('networkidle');
     });

@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { authenticateTestUser } from './utils/auth';
 
 test.describe('MixVy - Critical User Flows', () => {
   test.describe('Gift System Complete Flow', () => {
     test.beforeEach(async ({ page }) => {
+      // Authenticate first
+      await authenticateTestUser(page);
+
       await page.goto('/');
       await page.waitForTimeout(2000);
     });
