@@ -304,6 +304,12 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Gift tracking: allowance is readable by self or Cloud Function, writable by Cloud Function only
+      match /gift_tracking/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow write: if false; // Cloud Function only
+      }
+
       match /{document=**} {
         allow read, write: if false;
       }
@@ -578,6 +584,12 @@ service cloud.firestore {
             'updatedAt'
           ]);
         allow delete: if signedIn() && (peerId == uid() || isAdmin());
+      }
+
+      // Gift events: readable by any room participant, writable only by Cloud Function
+      match /gift_events/{eventId} {
+        allow read: if signedIn() && exists(/databases/$(database)/documents/rooms/$(roomId));
+        allow write: if false; // Cloud Function only
       }
 
       match /messages/{messageId} {
@@ -1186,7 +1198,9 @@ service cloud.firestore {
       allow read: if signedIn()
         && resource.data.participantIds is list
         && resource.data.participantIds.hasAny([uid()]);
-      allow create, update, delete: if false;
+      allow create, update: if false;
+      // Allow admin/server operations (Cloud Run cleanup service) to delete expired sessions
+      allow delete: if isAdmin();
     }
 
     // Speed-dating decision actions (own decisions only)

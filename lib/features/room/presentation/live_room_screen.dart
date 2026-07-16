@@ -17,9 +17,13 @@ import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 import '../providers/participant_providers.dart';
 import '../providers/connection_recovery_provider.dart';
+import '../providers/room_gift_provider.dart';
 import '../widgets/network_health_widget.dart';
 import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
+import '../../../widgets/floating_gift_animation.dart';
+import '../../../widgets/gift_ticker_widget.dart';
+import '../../../widgets/room_gift_picker_sheet.dart';
 
 class LiveRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
@@ -37,6 +41,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     with WidgetsBindingObserver, DiagnosticLogger {
   late TextEditingController messageController;
   late ScrollController scrollController;
+  String? _lastSeenGiftId;
 
   @override
   void initState() {
@@ -504,6 +509,42 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
+  /// Listen to new gift events and show toast + floating animation.
+  void _checkForNewGift(List<RoomGiftEvent> gifts) {
+    if (gifts.isEmpty) {
+      _lastSeenGiftId = null;
+      return;
+    }
+
+    final latestGift = gifts.first;
+    
+    // Only trigger animation for new gifts (first time seeing this ID)
+    if (_lastSeenGiftId == null || _lastSeenGiftId != latestGift.id) {
+      _lastSeenGiftId = latestGift.id;
+      
+      // Show floating emoji animation
+      FloatingGiftAnimation.show(
+        context,
+        emoji: latestGift.emoji,
+        duration: const Duration(milliseconds: 3000),
+      );
+
+      // Show toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${latestGift.senderName} sent ${latestGift.emoji} to ${latestGift.receiverName ?? 'a guest'}!',
+              style: const TextStyle(color: VelvetNoir.onSurface),
+            ),
+            duration: const Duration(seconds: 3),
+            backgroundColor: VelvetNoir.secondary.withValues(alpha: 0.8),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -656,7 +697,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         final webrtcState = ref.watch(activeRoomWebRTCProvider(widget.roomId));
         final healthState = ref.watch(connectionHealthProvider);
         final recoveryState = ref.watch(connectionRecoveryProvider);
+        final giftsAsync = ref.watch(roomGiftStreamProvider(widget.roomId));
         final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+        
+        // Trigger animations for new gifts
+        giftsAsync.whenData((gifts) {
+          _checkForNewGift(gifts);
+        });
         
         // Trigger audio-only fallback if recovery takes >5 seconds
         _handleRecoveryTimeout(
@@ -995,6 +1042,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   ],
                 ),
               ),
+            
+            // Gift Ticker: Shows recent gifts at bottom
+            GiftTickerWidget(
+              roomId: widget.roomId,
+              bottomPadding: 80,
+            ),
           ],
         );
       },
@@ -1385,6 +1438,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 label: Text(sessionState.isAudioSharingEnabled ? 'Share Audio' : 'No Audio Share'),
                 style: FilledButton.styleFrom(
                   backgroundColor: sessionState.isAudioSharingEnabled ? VelvetNoir.secondary : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: () => RoomGiftPickerSheet.show(context, ref, roomId: room.id),
+                icon: const Icon(Icons.card_giftcard),
+                label: const Text('Gift'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VelvetNoir.primary,
+                  foregroundColor: VelvetNoir.surface,
                 ),
               ),
               const Spacer(),

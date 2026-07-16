@@ -15,15 +15,15 @@ param(
     [string]$Email = "larrybesant@gmail.com"
 )
 
-Write-Host "🚀 Creating MixVy Crashlytics Alerts" -ForegroundColor Cyan
-Write-Host "=" * 70
+Write-Host "Running MixVy Crashlytics Alerts Setup" -ForegroundColor Cyan
+Write-Host "========================================================================"
 
 # Set project
-Write-Host "`n📍 Setting project..." -ForegroundColor Green
+Write-Host "`n[INFO] Setting project to $ProjectId..." -ForegroundColor Green
 gcloud config set project $ProjectId
 
 # Get or create notification channel
-Write-Host "`n📧 Setting up email notification channel..." -ForegroundColor Green
+Write-Host "`n[INFO] Setting up email notification channel..." -ForegroundColor Green
 
 # Create email channel using monitoring API
 $channelOutput = gcloud alpha monitoring channels create `
@@ -52,7 +52,7 @@ if ($LASTEXITCODE -eq 0 -and $channelOutput) {
 }
 
 # Create Alert 1: CRITICAL
-Write-Host "`n🔔 Creating Alert 1: CRITICAL" -ForegroundColor Yellow
+Write-Host "`n[CRITICAL] Creating Alert 1: Max Retries Exceeded" -ForegroundColor Yellow
 
 $alert1Name = "MixVy Production - CRITICAL Network Recovery Failure"
 $alert1 = @{
@@ -78,7 +78,7 @@ $alert1Json = $alert1 | Out-String
 
 Write-Host "Creating: $alert1Name" -ForegroundColor Cyan
 
-gcloud monitoring policies create --policy-from-file=- @"
+gcloud alpha monitoring policies create --policy-from-file=- @"
 {
   "displayName": "MixVy Production - CRITICAL Network Recovery Failure",
   "conditions": [{
@@ -104,19 +104,19 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # Create Alert 2: ERROR
-Write-Host "`n🔴 Creating Alert 2: ERROR (5+ in 5min)" -ForegroundColor Yellow
+Write-Host "`n[ERROR] Creating Alert 2: ERROR - Reconnection Failures" -ForegroundColor Yellow
 
-$alert2Name = "MixVy Production - ERROR Reconnection Failures (5+ in 5min)"
+$alert2Name = "MixVy Production - ERROR Reconnection Failures"
 
 Write-Host "Creating: $alert2Name" -ForegroundColor Cyan
 
-gcloud monitoring policies create --policy-from-file=- @"
+gcloud alpha monitoring policies create --policy-from-file=- @"
 {
-  "displayName": "MixVy Production - ERROR Reconnection Failures (5+ in 5min)",
+  "displayName": "MixVy Production - ERROR Reconnection Failures",
   "conditions": [{
-    "displayName": "Issue count > 5 in 5 minutes",
+    "displayName": "Issue count greater than 5 in 5 minutes",
     "conditionThreshold": {
-      "filter": "resource.type=\"global\" AND severity=\"ERROR\" AND protoPayload.methodName=~\"com.crashlytics.*\" AND labels.diagnostic_severity=\"ERROR\"",
+      "filter": "resource.type=\"global\" AND severity=\"ERROR\" AND protoPayload.methodName=~\"com.crashlytics.*\"",
       "comparison": "COMPARISON_GT",
       "thresholdValue": 5,
       "duration": "300s"
@@ -136,19 +136,19 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # Create Alert 3: WARNING
-Write-Host "`n🟡 Creating Alert 3: WARNING (3+ in 5min)" -ForegroundColor Yellow
+Write-Host "`n[WARNING] Creating Alert 3: Connection Health" -ForegroundColor Yellow
 
-$alert3Name = "MixVy Production - WARNING Connection Health Degrading (3+ in 5min)"
+$alert3Name = "MixVy Production - WARNING Connection Health Degrading"
 
 Write-Host "Creating: $alert3Name" -ForegroundColor Cyan
 
-gcloud monitoring policies create --policy-from-file=- @"
+gcloud alpha monitoring policies create --policy-from-file=- @"
 {
-  "displayName": "MixVy Production - WARNING Connection Health Degrading (3+ in 5min)",
+  "displayName": "MixVy Production - WARNING Connection Health Degrading",
   "conditions": [{
-    "displayName": "Issue count > 3 in 5 minutes",
+    "displayName": "Issue count greater than 3 in 5 minutes",
     "conditionThreshold": {
-      "filter": "resource.type=\"global\" AND severity=\"WARNING\" AND protoPayload.methodName=~\"com.crashlytics.*\" AND labels.diagnostic_severity=\"WARN\"",
+      "filter": "resource.type=\"global\" AND severity=\"WARNING\" AND protoPayload.methodName=~\"com.crashlytics.*\"",
       "comparison": "COMPARISON_GT",
       "thresholdValue": 3,
       "duration": "300s"
@@ -168,18 +168,18 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # Summary
-Write-Host "`n" + "=" * 70
-Write-Host "📊 Alert Creation Summary" -ForegroundColor Cyan
-Write-Host "=" * 70
+Write-Host "`n========================================================================"
+Write-Host "Alert Creation Summary" -ForegroundColor Cyan
+Write-Host "========================================================================"
 
-Write-Host "`n✅ All alerts have been processed!"
-Write-Host "`n📍 Verify alerts here:"
+Write-Host "`n[SUCCESS] All alerts have been processed!"
+Write-Host "`n[INFO] Verify alerts here:"
 Write-Host "   https://console.firebase.google.com/project/mixvy-v2/monitoring/alertpolicies"
 
-Write-Host "`n📧 Check email for verification links (if new channel was created)"
+Write-Host "`n[INFO] Check email for verification links (if new channel was created)"
 
-Write-Host "`n💡 Next steps:"
+Write-Host "`n[INFO] Next steps:"
 Write-Host "   1. Check Firebase Console for all 3 alerts"
 Write-Host "   2. Verify email notifications are enabled"
 Write-Host "   3. Test alert delivery (optional)"
-Write-Host "`n✨ Setup complete!" -ForegroundColor Green
+Write-Host "`n[SUCCESS] Setup complete!" -ForegroundColor Green
