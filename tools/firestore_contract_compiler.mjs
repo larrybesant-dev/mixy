@@ -99,7 +99,8 @@ function run() {
   const writes = files.flatMap((f) => extractWrites(f));
 
   ensureArtifactsDir();
-  fs.writeFileSync(surfaceOutput, JSON.stringify({generatedAt: new Date().toISOString(), writes}, null, 2));
+  // Keep artifact deterministic so CI drift checks only capture contract changes.
+  fs.writeFileSync(surfaceOutput, JSON.stringify({writes}, null, 2));
 
   const manifest = loadManifest();
   const specFile = path.join(repoRoot, manifest.specFile);

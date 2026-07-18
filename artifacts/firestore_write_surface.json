@@ -1,5 +1,4 @@
 {
-  "generatedAt": "2026-07-18T21:51:01.271Z",
   "writes": [
     {
       "file": "lib/services/agora_service.dart",
@@ -1031,16 +1030,14 @@
     },
     {
       "file": "lib/features/discovery/services/match_history_service.dart",
-      "line": 104,
+      "line": 101,
       "operation": "add",
-      "collections": [
-        "discovery"
-      ],
-      "inferredPath": "discovery/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/discovery/services/persistent_discovery_service.dart",
-      "line": 59,
+      "line": 62,
       "operation": "set",
       "collections": [
         "users",
@@ -1050,7 +1047,7 @@
     },
     {
       "file": "lib/features/discovery/services/persistent_discovery_service.dart",
-      "line": 82,
+      "line": 85,
       "operation": "set",
       "collections": [
         "users",
@@ -1628,18 +1625,17 @@
     },
     {
       "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 112,
+      "line": 115,
       "operation": "update",
       "collections": [
-        "users",
         "conversations",
         "messages"
       ],
-      "inferredPath": "users/{id}/conversations/{id}/messages/{id}"
+      "inferredPath": "conversations/{id}/messages/{id}"
     },
     {
       "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 131,
+      "line": 134,
       "operation": "update",
       "collections": [
         "conversations",
@@ -1651,7 +1647,7 @@
     },
     {
       "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 173,
+      "line": 176,
       "operation": "update",
       "collections": [
         "conversations",
@@ -1662,7 +1658,7 @@
     },
     {
       "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 180,
+      "line": 183,
       "operation": "update",
       "collections": [
         "messages",
@@ -2185,14 +2181,14 @@
     },
     {
       "file": "lib/features/room/providers/free_gift_allowance_provider.dart",
-      "line": 69,
+      "line": 70,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/providers/free_gift_allowance_provider.dart",
-      "line": 83,
+      "line": 84,
       "operation": "add",
       "collections": [
         "users",
@@ -2202,7 +2198,7 @@
     },
     {
       "file": "lib/features/room/providers/free_gift_allowance_provider.dart",
-      "line": 87,
+      "line": 88,
       "operation": "add",
       "collections": [
         "users",
@@ -2212,7 +2208,7 @@
     },
     {
       "file": "lib/features/room/providers/free_gift_allowance_provider.dart",
-      "line": 105,
+      "line": 107,
       "operation": "update",
       "collections": [
         "users",
@@ -2222,7 +2218,7 @@
     },
     {
       "file": "lib/features/room/providers/free_gift_allowance_provider.dart",
-      "line": 116,
+      "line": 118,
       "operation": "set",
       "collections": [
         "users",
