@@ -85,9 +85,9 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
   @override
   Widget build(BuildContext context) {
     final conversationsAsync = ref.watch(
-      conversationsStreamProvider(widget.userId),
+      conversationsFeedProvider(widget.userId),
     );
-    final requestsAsync = ref.watch(requestsStreamProvider(widget.userId));
+    final requestsAsync = ref.watch(messageRequestsFeedProvider(widget.userId));
     final requestCount = requestsAsync.valueOrNull?.length ?? 0;
 
     return Column(
@@ -338,7 +338,7 @@ class MessageRequestsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final requestsAsync = ref.watch(requestsStreamProvider(userId));
+    final requestsAsync = ref.watch(messageRequestsFeedProvider(userId));
     return SafeArea(
       top: false,
       child: SizedBox(

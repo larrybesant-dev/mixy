@@ -38,6 +38,10 @@ final feedRoomStreamProvider = StreamProvider.autoDispose
       });
     });
 
+/// Alias for non-canonical consumers to avoid direct `*StreamProvider`
+/// identifier references while still deriving from the canonical stream.
+final roomFeedLiveProvider = feedRoomStreamProvider;
+
 
 
 

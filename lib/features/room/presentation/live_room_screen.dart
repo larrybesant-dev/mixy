@@ -253,7 +253,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               child: Consumer(
                 builder: (context, consumerRef, _) {
                   final participantsAsync = consumerRef.watch(
-                    participantsStreamProvider(roomId),
+                    roomParticipantsLiveProvider(roomId),
                   );
                   return participantsAsync.when(
                     loading: () => Center(
@@ -492,7 +492,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     final currentUser = FirebaseAuth.instance.currentUser;
     final isDesktop = MediaQuery.of(context).size.width > 1200;
     final sessionState = ref.watch(roomSessionProvider(widget.roomId));
-    final roomDocAsync = ref.watch(roomDocStreamProvider(widget.roomId));
+    final roomDocAsync = ref.watch(roomDocLiveProvider(widget.roomId));
 
     RoomModel? parsedRoom;
     final roomDoc = roomDocAsync.valueOrNull;
@@ -628,7 +628,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         final webrtcState = ref.watch(activeRoomWebRTCProvider(widget.roomId));
         final healthState = ref.watch(connectionHealthProvider);
         final recoveryState = ref.watch(connectionRecoveryProvider);
-        final giftsAsync = ref.watch(roomGiftStreamProvider(widget.roomId));
+        final giftsAsync = ref.watch(roomGiftFeedProvider(widget.roomId));
         final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
         
         // Trigger animations for new gifts

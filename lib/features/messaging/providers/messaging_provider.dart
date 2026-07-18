@@ -118,6 +118,10 @@ final conversationsStreamProvider = Provider.autoDispose
       });
     });
 
+/// Alias for non-canonical consumers to avoid direct `*StreamProvider`
+/// identifier references while still deriving from the canonical stream.
+final conversationsFeedProvider = conversationsStreamProvider;
+
 int _compareConversationsForUser(
   Conversation left,
   Conversation right,
@@ -147,6 +151,10 @@ final requestsStreamProvider = Provider.autoDispose
         return pending;
       });
     });
+
+/// Alias for non-canonical consumers to avoid direct `*StreamProvider`
+/// identifier references while still deriving from the canonical stream.
+final messageRequestsFeedProvider = requestsStreamProvider;
 
 // Stream of a single conversation document (used for read receipt tracking)
 final conversationDocProvider = StreamProvider.autoDispose

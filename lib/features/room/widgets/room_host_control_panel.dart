@@ -262,7 +262,7 @@ class _RoomSettingsTab extends ConsumerWidget {
       liveRoomControllerProvider(roomId).notifier,
     );
     final roomPolicyAsync = ref.watch(roomPolicyProvider(roomId));
-    final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
+    final roomAsync = ref.watch(roomFeedLiveProvider(roomId));
     final isLocked = roomAsync.valueOrNull?.isLocked ?? false;
     final currentName = roomAsync.valueOrNull?.name ?? '';
     final currentDescription = roomAsync.valueOrNull?.description ?? '';
@@ -827,7 +827,7 @@ class _PeopleTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+    final participantsAsync = ref.watch(roomParticipantsLiveProvider(roomId));
 
     return participantsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator.adaptive()),
@@ -1051,7 +1051,7 @@ class _ModeratorsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+    final participantsAsync = ref.watch(roomParticipantsLiveProvider(roomId));
     final roomController = ref.read(
       liveRoomControllerProvider(roomId).notifier,
     );
@@ -1371,7 +1371,7 @@ class _ThemeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
+    final roomAsync = ref.watch(roomFeedLiveProvider(roomId));
     final roomController = ref.read(
       liveRoomControllerProvider(roomId).notifier,
     );
