@@ -512,6 +512,7 @@ service cloud.firestore {
         // RELAXED: Remove strict field validation to debug join issues
         allow create: if signedIn()
           && participantId == uid()
+          && request.resource.data.userId == uid()
           && exists(/databases/$(database)/documents/rooms/$(roomId));
 
 
@@ -591,7 +592,7 @@ service cloud.firestore {
         allow read: if signedIn(); // Patched for local dev bypass
 
         allow create: if signedIn()
-          && canReadRoomById(roomId)
+          && isRoomParticipant(roomId, uid())
           && request.resource.data.senderId == uid()
           && request.resource.data.roomId == roomId
           && request.resource.data.content is string

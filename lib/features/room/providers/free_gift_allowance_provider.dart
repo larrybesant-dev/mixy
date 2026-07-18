@@ -61,6 +61,7 @@ class FreeGiftAllowance {
 /// Watches the current user's free gift allowance for today.
 final freeGiftAllowanceProvider = StreamProvider<FreeGiftAllowance>((ref) {
   final authState = ref.watch(authStateProvider);
+  final firestore = ref.watch(firestoreProvider);
   return authState.when(
     data: (user) {
       if (user == null) {
@@ -70,7 +71,7 @@ final freeGiftAllowanceProvider = StreamProvider<FreeGiftAllowance>((ref) {
         ));
       }
 
-      return FirebaseFirestore.instance
+        return firestore
           .collection('users')
           .doc(user.uid)
           .collection('gift_tracking')
@@ -93,11 +94,12 @@ final freeGiftAllowanceProvider = StreamProvider<FreeGiftAllowance>((ref) {
 /// The Cloud Function will also validate and update server-side.
 final useGiftAllowanceFunction = FutureProvider.autoDispose<void>((ref) async {
   final authState = ref.watch(authStateProvider);
+  final firestore = ref.watch(firestoreProvider);
   final user = authState.whenData((u) => u).value;
 
   if (user == null) return;
 
-  await FirebaseFirestore.instance
+  await firestore
       .collection('users')
       .doc(user.uid)
       .collection('gift_tracking')
@@ -108,7 +110,7 @@ final useGiftAllowanceFunction = FutureProvider.autoDispose<void>((ref) async {
       })
       .catchError((_) {
         // Document doesn't exist, create it
-        return FirebaseFirestore.instance
+        return firestore
             .collection('users')
             .doc(user.uid)
             .collection('gift_tracking')

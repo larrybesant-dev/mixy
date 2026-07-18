@@ -151,7 +151,7 @@ describe("firestore rules", () => {
     await assertSucceeds(setDoc(doc(collection(commenterDb, "posts", "post-1", "comments")), {
       authorId: "user-2",
       authorName: "Commenter",
-      text: "First!",
+      content: "First!",
       createdAt: Timestamp.now(),
     }));
 
@@ -257,8 +257,7 @@ describe("firestore rules", () => {
       senderId: "user-1",
       roomId: "room-chat-1",
       content: "hello room",
-      sentAt: serverTimestamp(),
-      clientSentAt: Timestamp.now(),
+      createdAt: serverTimestamp(),
     }));
 
     await assertFails(setDoc(doc(outsiderDb, "rooms", "room-chat-1", "messages", "message-unauthorized"), {
@@ -266,8 +265,7 @@ describe("firestore rules", () => {
       senderId: "user-2",
       roomId: "room-chat-1",
       content: "not in participants",
-      sentAt: serverTimestamp(),
-      clientSentAt: Timestamp.now(),
+      createdAt: serverTimestamp(),
     }));
 
     await assertFails(setDoc(doc(senderDb, "rooms", "room-chat-1", "messages", "message-2"), {
@@ -275,8 +273,7 @@ describe("firestore rules", () => {
       senderId: "user-1",
       roomId: "other-room",
       content: "wrong room",
-      sentAt: serverTimestamp(),
-      clientSentAt: Timestamp.now(),
+      createdAt: serverTimestamp(),
     }));
   });
 
@@ -358,20 +355,32 @@ describe("firestore rules", () => {
 
     await assertSucceeds(setDoc(doc(authorDb, "posts", "post-cap-1"), {
       authorId: "user-1",
-      text: "hello",
+      content: "hello",
       createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
     }));
 
     await assertFails(setDoc(doc(authorDb, "posts", "post-cap-spoof"), {
       authorId: "user-2",
-      text: "spoof",
+      content: "spoof",
       createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
     }));
 
     await assertFails(setDoc(doc(guestDb, "posts", "post-cap-guest"), {
       authorId: "guest",
-      text: "guest",
+      content: "guest",
       createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
     }));
   });
 
@@ -383,18 +392,27 @@ describe("firestore rules", () => {
       userId: "user-1",
       text: "story",
       createdAt: serverTimestamp(),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      viewedBy: ["user-1"],
+      isDeleted: false,
     }));
 
     await assertFails(setDoc(doc(selfDb, "users", "user-1", "stories", "story-spoof"), {
       userId: "user-2",
       text: "spoofed",
       createdAt: serverTimestamp(),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      viewedBy: ["user-1"],
+      isDeleted: false,
     }));
 
     await assertFails(setDoc(doc(otherDb, "users", "user-1", "stories", "story-cross-user"), {
       userId: "user-1",
       text: "cross write",
       createdAt: serverTimestamp(),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+      viewedBy: ["user-1"],
+      isDeleted: false,
     }));
   });
 
@@ -982,13 +1000,13 @@ describe("firestore rules", () => {
 
     await assertSucceeds(setDoc(doc(selfDb, "activity_feed", "af-1"), {
       userId: "user-1", type: "joined_room", targetId: "room-1",
-      timestamp: serverTimestamp(), metadata: {},
+      createdAt: serverTimestamp(), metadata: {},
     }));
 
     // Cannot create activity with someone else's userId
     await assertFails(setDoc(doc(otherDb, "activity_feed", "af-bad"), {
       userId: "user-1", type: "joined_room", targetId: "room-1",
-      timestamp: serverTimestamp(), metadata: {},
+      createdAt: serverTimestamp(), metadata: {},
     }));
   });
 
@@ -1098,7 +1116,7 @@ describe("firestore rules", () => {
 
     // Participant (existing userA) can update
     await assertSucceeds(updateDoc(doc(participantDb, "friendships", "fs-stranger-1"), {
-      userA: "user-A", userB: "user-B", status: "active",
+      userA: "user-A", userB: "user-B", status: "accepted",
     }));
   });
 

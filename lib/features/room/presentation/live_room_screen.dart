@@ -1179,11 +1179,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       );
     }
 
+    final firestore = ref.watch(firestoreProvider);
+
     return Column(
       children: [
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
+            stream: firestore
                 .collection('rooms')
                 .doc(widget.roomId)
                 .collection('messages')
