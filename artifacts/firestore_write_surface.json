@@ -1459,14 +1459,14 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 481,
+      "line": 489,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 496,
+      "line": 504,
       "operation": "set",
       "collections": [
         "conversations",
@@ -1476,14 +1476,14 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 513,
+      "line": 521,
       "operation": "update",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 595,
+      "line": 603,
       "operation": "set",
       "collections": [
         "conversations"
@@ -1492,7 +1492,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 633,
+      "line": 641,
       "operation": "add",
       "collections": [
         "conversations"
@@ -1501,7 +1501,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 657,
+      "line": 665,
       "operation": "update",
       "collections": [
         "conversations",
@@ -1511,7 +1511,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 674,
+      "line": 682,
       "operation": "set",
       "collections": [
         "conversations"
@@ -1520,7 +1520,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 695,
+      "line": 703,
       "operation": "update",
       "collections": [
         "conversations"
@@ -1529,7 +1529,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 731,
+      "line": 739,
       "operation": "update",
       "collections": [
         "conversations"
@@ -1538,7 +1538,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 771,
+      "line": 779,
       "operation": "delete",
       "collections": [
         "conversations",
@@ -1549,7 +1549,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 773,
+      "line": 781,
       "operation": "set",
       "collections": [
         "conversations",
@@ -1560,7 +1560,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 796,
+      "line": 804,
       "operation": "set",
       "collections": [
         "conversations",
@@ -1570,7 +1570,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 800,
+      "line": 808,
       "operation": "set",
       "collections": [
         "conversations",
@@ -1580,7 +1580,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 801,
+      "line": 809,
       "operation": "delete",
       "collections": [
         "conversations",
