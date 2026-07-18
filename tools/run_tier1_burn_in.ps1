@@ -21,13 +21,13 @@ if ($PressureRepeatsPerCycle -lt 0) {
 $tier1Cases = @(
   @{ Id = 'NR-1'; Name = 'Push to Correct Route'; Command = 'flutter test --no-pub test/notification_service_test.dart' },
   @{ Id = 'NR-2'; Name = 'Deep Link Correctness'; Command = 'flutter test --no-pub test/app_router_redirect_test.dart' },
-  @{ Id = 'NR-3'; Name = 'No Double Navigation'; Command = 'flutter test --no-pub test/MessageModels_screen_test.dart' },
+  @{ Id = 'NR-3'; Name = 'No Double Navigation'; Command = 'flutter test --no-pub test/messages_screen_test.dart' },
   @{ Id = 'NR-4'; Name = 'Auth-Aware Routing'; Command = 'flutter test --no-pub test/login_signup_navigation_test.dart' }
 )
 
 $pressureCases = @(
   @{ Id = 'NR-2'; Name = 'Deep Link Correctness'; Command = 'flutter test --no-pub test/app_router_redirect_test.dart' },
-  @{ Id = 'NR-3'; Name = 'No Double Navigation'; Command = 'flutter test --no-pub test/MessageModels_screen_test.dart' },
+  @{ Id = 'NR-3'; Name = 'No Double Navigation'; Command = 'flutter test --no-pub test/messages_screen_test.dart' },
   @{ Id = 'NR-4'; Name = 'Auth-Aware Routing'; Command = 'flutter test --no-pub test/login_signup_navigation_test.dart' }
 )
 

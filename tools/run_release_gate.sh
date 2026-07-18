@@ -32,7 +32,7 @@ case "$tier" in
     echo "Running Tier 0 hard blockers (MC + PS)"
 
     run_case "MC-1 Ordering Determinism" \
-      flutter test --no-pub test/MessageModels_screen_test.dart
+      flutter test --no-pub test/messages_screen_test.dart
 
     run_case "MC-2 Duplicate Suppression" \
       flutter test --no-pub test/chat_pane_view_test.dart
@@ -66,7 +66,7 @@ case "$tier" in
       flutter test --no-pub test/app_router_redirect_test.dart
 
     run_case "NR-3 No Double Navigation" \
-      flutter test --no-pub test/MessageModels_screen_test.dart
+      flutter test --no-pub test/messages_screen_test.dart
 
     run_case "NR-4 Auth-Aware Routing" \
       flutter test --no-pub test/login_signup_navigation_test.dart
