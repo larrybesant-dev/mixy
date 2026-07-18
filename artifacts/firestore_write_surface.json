@@ -957,8 +957,18 @@
     },
     {
       "file": "lib/features/discovery/services/discovery_preferences_service.dart",
-      "line": 34,
+      "line": 36,
       "operation": "set",
+      "collections": [
+        "users",
+        "settings"
+      ],
+      "inferredPath": "users/{id}/settings/{id}"
+    },
+    {
+      "file": "lib/features/discovery/services/discovery_preferences_service.dart",
+      "line": 46,
+      "operation": "update",
       "collections": [
         "users",
         "settings",
@@ -969,20 +979,7 @@
     },
     {
       "file": "lib/features/discovery/services/discovery_preferences_service.dart",
-      "line": 44,
-      "operation": "update",
-      "collections": [
-        "settings",
-        "users",
-        "settings",
-        "users",
-        "settings"
-      ],
-      "inferredPath": "settings/{id}/users/{id}/settings/{id}/users/{id}/settings/{id}"
-    },
-    {
-      "file": "lib/features/discovery/services/discovery_preferences_service.dart",
-      "line": 56,
+      "line": 58,
       "operation": "set",
       "collections": [
         "users",
@@ -996,7 +993,7 @@
     },
     {
       "file": "lib/features/discovery/services/discovery_preferences_service.dart",
-      "line": 73,
+      "line": 75,
       "operation": "update",
       "collections": [
         "users",
@@ -1008,7 +1005,7 @@
     },
     {
       "file": "lib/features/discovery/services/discovery_preferences_service.dart",
-      "line": 83,
+      "line": 85,
       "operation": "set",
       "collections": [
         "settings",
@@ -1021,7 +1018,7 @@
     },
     {
       "file": "lib/features/discovery/services/match_history_service.dart",
-      "line": 21,
+      "line": 27,
       "operation": "add",
       "collections": [
         "users",
@@ -1031,14 +1028,14 @@
     },
     {
       "file": "lib/features/discovery/services/match_history_service.dart",
-      "line": 101,
+      "line": 97,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/discovery/services/persistent_discovery_service.dart",
-      "line": 62,
+      "line": 67,
       "operation": "set",
       "collections": [
         "users",
@@ -1048,7 +1045,7 @@
     },
     {
       "file": "lib/features/discovery/services/persistent_discovery_service.dart",
-      "line": 85,
+      "line": 90,
       "operation": "set",
       "collections": [
         "users",
@@ -1117,7 +1114,7 @@
     },
     {
       "file": "lib/features/feed/providers/typing_providers.dart",
-      "line": 24,
+      "line": 27,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -1462,14 +1459,14 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 477,
+      "line": 481,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 492,
+      "line": 496,
       "operation": "set",
       "collections": [
         "conversations",
@@ -1479,14 +1476,14 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 509,
+      "line": 513,
       "operation": "update",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 591,
+      "line": 595,
       "operation": "set",
       "collections": [
         "conversations"
@@ -1495,7 +1492,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 629,
+      "line": 633,
       "operation": "add",
       "collections": [
         "conversations"
@@ -1504,7 +1501,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 653,
+      "line": 657,
       "operation": "update",
       "collections": [
         "conversations",
@@ -1514,7 +1511,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 670,
+      "line": 674,
       "operation": "set",
       "collections": [
         "conversations"
@@ -1523,7 +1520,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 691,
+      "line": 695,
       "operation": "update",
       "collections": [
         "conversations"
@@ -1532,7 +1529,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 727,
+      "line": 731,
       "operation": "update",
       "collections": [
         "conversations"
@@ -1541,7 +1538,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 767,
+      "line": 771,
       "operation": "delete",
       "collections": [
         "conversations",
@@ -1552,7 +1549,7 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 769,
+      "line": 773,
       "operation": "set",
       "collections": [
         "conversations",
@@ -1560,16 +1557,6 @@
         "reactions"
       ],
       "inferredPath": "conversations/{id}/messages/{id}/reactions/{id}"
-    },
-    {
-      "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 792,
-      "operation": "set",
-      "collections": [
-        "conversations",
-        "ephemeral"
-      ],
-      "inferredPath": "conversations/{id}/ephemeral/{id}"
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
@@ -1583,7 +1570,17 @@
     },
     {
       "file": "lib/features/messaging/providers/messaging_provider.dart",
-      "line": 797,
+      "line": 800,
+      "operation": "set",
+      "collections": [
+        "conversations",
+        "ephemeral"
+      ],
+      "inferredPath": "conversations/{id}/ephemeral/{id}"
+    },
+    {
+      "file": "lib/features/messaging/providers/messaging_provider.dart",
+      "line": 801,
       "operation": "delete",
       "collections": [
         "conversations",
@@ -2481,14 +2478,14 @@
     },
     {
       "file": "lib/features/room/providers/message_providers.dart",
-      "line": 150,
+      "line": 153,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/providers/message_providers.dart",
-      "line": 245,
+      "line": 248,
       "operation": "set",
       "collections": [
         "rooms",
@@ -2499,7 +2496,7 @@
     },
     {
       "file": "lib/features/room/providers/message_providers.dart",
-      "line": 310,
+      "line": 313,
       "operation": "set",
       "collections": [
         "rooms",
@@ -2609,14 +2606,14 @@
     },
     {
       "file": "lib/features/room/providers/participant_providers.dart",
-      "line": 325,
+      "line": 331,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/providers/participant_providers.dart",
-      "line": 334,
+      "line": 340,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -2624,13 +2621,6 @@
     {
       "file": "lib/features/room/providers/presence_provider.dart",
       "line": 103,
-      "operation": "add",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/features/room/providers/room_activity_state_provider.dart",
-      "line": 56,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -3262,27 +3252,7 @@
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 77,
-      "operation": "set",
-      "collections": [
-        "speed_dating_matches",
-        "speed_dating_actions"
-      ],
-      "inferredPath": "speed_dating_matches/{id}/speed_dating_actions/{id}"
-    },
-    {
-      "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 114,
-      "operation": "set",
-      "collections": [
-        "speed_dating_matches",
-        "speed_dating_actions"
-      ],
-      "inferredPath": "speed_dating_matches/{id}/speed_dating_actions/{id}"
-    },
-    {
-      "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 122,
+      "line": 75,
       "operation": "set",
       "collections": [
         "speed_dating_actions"
@@ -3291,7 +3261,26 @@
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 162,
+      "line": 112,
+      "operation": "set",
+      "collections": [
+        "speed_dating_matches",
+        "speed_dating_actions"
+      ],
+      "inferredPath": "speed_dating_matches/{id}/speed_dating_actions/{id}"
+    },
+    {
+      "file": "lib/features/speed_dating/services/speed_dating_service.dart",
+      "line": 120,
+      "operation": "set",
+      "collections": [
+        "speed_dating_actions"
+      ],
+      "inferredPath": "speed_dating_actions/{id}"
+    },
+    {
+      "file": "lib/features/speed_dating/services/speed_dating_service.dart",
+      "line": 160,
       "operation": "add",
       "collections": [
         "speed_dating_matches",
@@ -3301,7 +3290,7 @@
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 164,
+      "line": 162,
       "operation": "set",
       "collections": [
         "speed_dating_matches",
@@ -3311,7 +3300,7 @@
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 183,
+      "line": 181,
       "operation": "set",
       "collections": [
         "rooms"
@@ -3327,14 +3316,14 @@
     },
     {
       "file": "lib/features/stories/providers/story_provider.dart",
-      "line": 204,
+      "line": 194,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/stories/providers/story_provider.dart",
-      "line": 206,
+      "line": 196,
       "operation": "add",
       "collections": [
         "users",
@@ -3344,7 +3333,7 @@
     },
     {
       "file": "lib/features/stories/providers/story_provider.dart",
-      "line": 230,
+      "line": 220,
       "operation": "update",
       "collections": [
         "users",
@@ -3356,7 +3345,7 @@
     },
     {
       "file": "lib/features/stories/providers/story_provider.dart",
-      "line": 244,
+      "line": 234,
       "operation": "update",
       "collections": [
         "users",
