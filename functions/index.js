@@ -2533,62 +2533,225 @@ exports.leaveSpeedDatingQueue = onCall(async (request) => {
 });
 
 /**
+ * Helper function: Exponential backoff retry wrapper for Firestore operations.
+ * Handles transient network errors, disconnections, and timeouts.
+ *
+ * @param {Function} operation - Async function that performs the Firestore operation
+ * @param {number} maxAttempts - Maximum number of retry attempts (default: 3)
+ * @param {number} initialDelayMs - Initial backoff delay in milliseconds (default: 100)
+ * @returns {Promise} Result of the operation
+ */
+async function retryWithBackoff(
+  operation,
+  maxAttempts = 3,
+  initialDelayMs = 100,
+) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[Attempt ${attempt}/${maxAttempts}] Starting operation...`);
+      return await Promise.race([
+        operation(),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Operation timeout after 25s")),
+            25000,
+          ),
+        ),
+      ]);
+    } catch (error) {
+      lastError = error;
+      const isTransientError =
+        error.code === "UNAVAILABLE" ||
+        error.code === "DEADLINE_EXCEEDED" ||
+        error.code === "INTERNAL" ||
+        error.message?.includes("ECONNREFUSED") ||
+        error.message?.includes("timeout");
+
+      if (attempt < maxAttempts && isTransientError) {
+        const delayMs = initialDelayMs * Math.pow(2, attempt - 1);
+        console.warn(
+          `[Attempt ${attempt}/${maxAttempts}] Transient error: ${error.message}. ` +
+          `Retrying in ${delayMs}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else if (attempt === maxAttempts) {
+        console.error(
+          `[Attempt ${attempt}/${maxAttempts}] Final attempt failed: ${error.message}`,
+        );
+        throw error;
+      } else {
+        console.error(
+          `[Attempt ${attempt}/${maxAttempts}] Non-transient error: ${error.message}`,
+        );
+        throw error;
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * cleanupExpiredSpeedDatingSessions – scheduled function that runs every
  * 5 minutes, marks expired sessions inactive, and removes matched queue
  * entries older than 10 minutes.
+ *
+ * HARDENED: Includes exponential backoff retry logic for transient network errors
+ * and separate error handling for each cleanup phase so partial failures don't
+ * cascade into full job failure.
  */
 exports.cleanupExpiredSpeedDatingSessions = onSchedule(
   "every 5 minutes",
   async () => {
-    const now = admin.firestore.Timestamp.now();
+    const startTime = Date.now();
+    let sessionsCleaned = 0;
+    let roomsCleaned = 0;
+    let queueEntriesRemoved = 0;
+    const errors = [];
 
-    // 1. Deactivate expired sessions
-    const expiredSessions = await db
-      .collection("speed_dating_sessions")
-      .where("active", "==", true)
-      .where("expiresAt", "<=", now)
-      .limit(200)
-      .get();
+    try {
+      const now = admin.firestore.Timestamp.now();
 
-    const sessionBatch = db.batch();
-    expiredSessions.docs.forEach((doc) => {
-      sessionBatch.update(doc.ref, {active: false});
-    });
-    if (!expiredSessions.empty) await sessionBatch.commit();
+      // 1. Deactivate expired sessions
+      try {
+        console.log("[1/3] Starting speed_dating_sessions cleanup...");
+        const result = await retryWithBackoff(
+          async () => {
+            const sessions = await db
+              .collection("speed_dating_sessions")
+              .where("active", "==", true)
+              .where("expiresAt", "<=", now)
+              .limit(200)
+              .get();
 
-    // 2. Deactivate expired rooms (speed dating sessions)
-    const expiredRooms = await db
-      .collection("rooms")
-      .where("category", "==", "speed_dating")
-      .where("isLive", "==", true)
-      .where("expiresAt", "<=", now)
-      .limit(200)
-      .get();
+            if (sessions.empty) {
+              console.log("No expired sessions to clean.");
+              return 0;
+            }
 
-    const roomBatch = db.batch();
-    expiredRooms.docs.forEach((doc) => {
-      roomBatch.update(doc.ref, {
-        isLive: false,
-        endedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    });
-    if (!expiredRooms.empty) await roomBatch.commit();
+            const batch = db.batch();
+            sessions.docs.forEach((doc) => {
+              batch.update(doc.ref, {active: false});
+            });
+            await batch.commit();
+            return sessions.size;
+          },
+          3,
+          100,
+        );
+        sessionsCleaned = result;
+        console.log(`[1/3] Cleaned ${sessionsCleaned} expired sessions.`);
+      } catch (error) {
+        errors.push(
+          `sessions cleanup failed: ${error.message}`,
+        );
+        console.error(
+          `[1/3] ERROR: ${errors[errors.length - 1]}`,
+        );
+      }
 
-    // 3. Remove stale queue entries (matched or joined > 10 min ago)
-    const staleCutoff = admin.firestore.Timestamp.fromMillis(
-      Date.now() - 10 * 60 * 1000,
-    );
-    const staleQueue = await db
-      .collection("speed_dating_queue")
-      .where("joinedAt", "<=", staleCutoff)
-      .limit(200)
-      .get();
+      // 2. Deactivate expired rooms (speed dating category)
+      try {
+        console.log("[2/3] Starting speed_dating rooms cleanup...");
+        const result = await retryWithBackoff(
+          async () => {
+            const rooms = await db
+              .collection("rooms")
+              .where("category", "==", "speed_dating")
+              .where("isLive", "==", true)
+              .where("expiresAt", "<=", now)
+              .limit(200)
+              .get();
 
-    const queueBatch = db.batch();
-    staleQueue.docs.forEach((doc) => {
-      queueBatch.delete(doc.ref);
-    });
-    if (!staleQueue.empty) await queueBatch.commit();
+            if (rooms.empty) {
+              console.log("No expired rooms to clean.");
+              return 0;
+            }
+
+            const batch = db.batch();
+            rooms.docs.forEach((doc) => {
+              batch.update(doc.ref, {
+                isLive: false,
+                endedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+            });
+            await batch.commit();
+            return rooms.size;
+          },
+          3,
+          100,
+        );
+        roomsCleaned = result;
+        console.log(`[2/3] Cleaned ${roomsCleaned} expired rooms.`);
+      } catch (error) {
+        errors.push(
+          `rooms cleanup failed: ${error.message}`,
+        );
+        console.error(
+          `[2/3] ERROR: ${errors[errors.length - 1]}`,
+        );
+      }
+
+      // 3. Remove stale queue entries (matched or joined > 10 min ago)
+      try {
+        console.log("[3/3] Starting stale queue cleanup...");
+        const result = await retryWithBackoff(
+          async () => {
+            const staleCutoff = admin.firestore.Timestamp.fromMillis(
+              Date.now() - 10 * 60 * 1000,
+            );
+            const queue = await db
+              .collection("speed_dating_queue")
+              .where("joinedAt", "<=", staleCutoff)
+              .limit(200)
+              .get();
+
+            if (queue.empty) {
+              console.log("No stale queue entries to remove.");
+              return 0;
+            }
+
+            const batch = db.batch();
+            queue.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            await batch.commit();
+            return queue.size;
+          },
+          3,
+          100,
+        );
+        queueEntriesRemoved = result;
+        console.log(
+          `[3/3] Removed ${queueEntriesRemoved} stale queue entries.`,
+        );
+      } catch (error) {
+        errors.push(
+          `queue cleanup failed: ${error.message}`,
+        );
+        console.error(
+          `[3/3] ERROR: ${errors[errors.length - 1]}`,
+        );
+      }
+
+      const elapsedMs = Date.now() - startTime;
+      const summary = `Cleanup complete: ${sessionsCleaned} sessions, ` +
+        `${roomsCleaned} rooms, ${queueEntriesRemoved} queue entries (${elapsedMs}ms)`;
+
+      if (errors.length > 0) {
+        console.warn(
+          `${summary}. PARTIAL FAILURE: ${errors.join("; ")}`,
+        );
+      } else {
+        console.log(summary);
+      }
+    } catch (error) {
+      console.error(
+        `Cleanup job failed unexpectedly: ${error.message}`,
+        error,
+      );
+      throw error;
+    }
   },
 );
 
@@ -2657,6 +2820,462 @@ exports.cleanupExpiredMessages = onSchedule("every 6 hours", async () => {
     `cleanupExpiredMessages: deleted ${deletedCount} messages across ${touchedConversationIds.size} conversations`,
   );
 });
+
+// ── Discovery Feed API (bypasses browser extension blocking) ─────────────────
+/**
+ * GET /api/feed – Server-side discovery feed endpoint that bypasses browser
+ * extension blocking. Makes Firestore requests server-to-server instead of
+ * client-to-server, so extensions cannot intercept the calls.
+ *
+ * Query parameters:
+ *   - userId: optional, for personalized recommendations
+ *
+ * Returns: { liveRooms, upcomingRooms, trendingUsers, cachedAt }
+ */
+exports.feed = onRequest(
+  { cors: true, region: "us-east1" },
+  async (request, response) => {
+    try {
+      // Extract userId from query params (optional)
+      const userId = request.query.userId || null;
+
+      // Fetch live rooms (top 20 by activity)
+      // Note: We fetch without ordering first, then sort in memory to avoid requiring
+      // a composite index (isLive + participantCount). This is safe because active
+      // rooms are typically < 500 docs, well within Firestore document limits.
+      const liveRoomsSnap = await db
+        .collection("rooms")
+        .where("isLive", "==", true)
+        .limit(200)  // Fetch more, then sort in memory for top 20
+        .get();
+
+      const liveRooms = liveRoomsSnap.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          // Ensure serializable timestamps
+          createdAt:
+            doc.data().createdAt instanceof admin.firestore.Timestamp
+              ? doc.data().createdAt.toMillis()
+              : doc.data().createdAt,
+          updatedAt:
+            doc.data().updatedAt instanceof admin.firestore.Timestamp
+              ? doc.data().updatedAt.toMillis()
+              : doc.data().updatedAt,
+        }))
+        .sort((a, b) => (b.participantCount || 0) - (a.participantCount || 0))
+        .slice(0, 20);  // Take top 20 after sorting
+
+      // Fetch upcoming rooms (next 48 hours)
+      // Simplified to avoid composite index: fetch without date filtering, then filter in memory
+      const nowTimestamp = admin.firestore.Timestamp.now();
+      const in48Hours = admin.firestore.Timestamp.fromMillis(
+        Date.now() + 48 * 60 * 60 * 1000
+      );
+
+      const upcomingRoomsSnap = await db
+        .collection("rooms")
+        .where("isLive", "==", false)
+        .limit(100)  // Fetch extra, filter/sort in memory
+        .get();
+
+      const upcomingRooms = upcomingRoomsSnap.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt:
+            doc.data().createdAt instanceof admin.firestore.Timestamp
+              ? doc.data().createdAt.toMillis()
+              : doc.data().createdAt,
+          scheduledAt:
+            doc.data().scheduledAt instanceof admin.firestore.Timestamp
+              ? doc.data().scheduledAt.toMillis()
+              : doc.data().scheduledAt,
+        }))
+        .filter((room) => {
+          const scheduled = room.scheduledAt || 0;
+          const nowMs = nowTimestamp.toMillis ? nowTimestamp.toMillis() : Date.now();
+          const in48Ms = in48Hours.toMillis ? in48Hours.toMillis() : Date.now() + 48 * 60 * 60 * 1000;
+          return scheduled >= nowMs && scheduled <= in48Ms;
+        })
+        .sort((a, b) => (a.scheduledAt || 0) - (b.scheduledAt || 0))
+        .slice(0, 8);
+
+      // Fetch trending users (top 10 by coin balance)
+      // Simplified to avoid composite index: fetch without ordering, sort in memory
+      const trendingUsersSnap = await db
+        .collection("users")
+        .where("isPrivate", "==", false)
+        .limit(50)  // Fetch extra, sort in memory for top 10
+        .get();
+
+      const trendingUsers = trendingUsersSnap.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          // Convert timestamps
+          createdAt:
+            doc.data().createdAt instanceof admin.firestore.Timestamp
+              ? doc.data().createdAt.toMillis()
+              : doc.data().createdAt,
+        }))
+        .sort((a, b) => (b.coinBalance || 0) - (a.coinBalance || 0))
+        .slice(0, 10);  // Take top 10 after sorting
+
+      const responseData = {
+        liveRooms,
+        upcomingRooms,
+        trendingUsers,
+        cachedAt: new Date().toISOString(),
+        success: true,
+      };
+
+      // Set cache headers (5 minute cache for browser, 1 minute for CDN)
+      response.set("Cache-Control", "public, max-age=60, s-maxage=300");
+      response.set("Content-Type", "application/json");
+      response.set("X-Feed-Timestamp", new Date().toISOString());
+
+      return response.status(200).json(responseData);
+    } catch (error) {
+      logger.error(`Feed API error: ${error.message}`);
+      return response.status(500).json({
+        success: false,
+        error: "Failed to load discovery feed",
+        message: error.message,
+      });
+    }
+  }
+);
+
+// ── PROFILE ENDPOINTS ──────────────────────────────────────────────────────────
+// Provides server-side profile operations to bypass browser extension blocking.
+// Endpoints:
+//   GET /profile/{userId} - Fetch any user's profile
+//   POST /profile/{userId} - Update profile (requires auth)
+//   GET /profile/me - Get current user's profile (requires auth)
+
+// Helper: Convert Firestore timestamps to milliseconds
+function convertTimestamps(doc) {
+  const data = { ...doc.data() };
+  Object.keys(data).forEach((key) => {
+    if (data[key] instanceof admin.firestore.Timestamp) {
+      data[key] = data[key].toMillis();
+    }
+  });
+  return data;
+}
+
+exports.getProfile = onRequest(
+  { cors: true, region: "us-east1" },
+  async (request, response) => {
+    try {
+      const userId = request.query.userId || request.params?.userId;
+
+      if (!userId || userId.trim() === "") {
+        return response.status(400).json({
+          success: false,
+          error: "userId parameter required",
+        });
+      }
+
+      // Fetch user document
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        return response.status(404).json({
+          success: false,
+          error: "User not found",
+        });
+      }
+
+      const userData = convertTimestamps(userDoc);
+
+      // Fetch privacy settings
+      let privacyData = {
+        isPrivate: false,
+        showAge: true,
+        showGender: true,
+        showLocation: true,
+        showRelationshipStatus: true,
+      };
+      const privacyDoc = await db
+        .collection("users")
+        .doc(userId)
+        .collection("privacy")
+        .doc("settings")
+        .get();
+      if (privacyDoc.exists) {
+        privacyData = convertTimestamps(privacyDoc);
+      }
+
+      // Fetch profile_public if it exists
+      let profilePublicData = {};
+      const profilePublicDoc = await db
+        .collection("profile_public")
+        .doc(userId)
+        .get();
+      if (profilePublicDoc.exists) {
+        profilePublicData = convertTimestamps(profilePublicDoc);
+      }
+
+      // Fetch adult profile if user has enabled adult mode
+      let adultProfileData = {
+        enabled: false,
+        adultConsentAccepted: false,
+      };
+      const adultDoc = await db
+        .collection("users")
+        .doc(userId)
+        .collection("adult_profile")
+        .doc("details")
+        .get();
+      if (adultDoc.exists) {
+        adultProfileData = convertTimestamps(adultDoc);
+      }
+
+      // Combine all profile data
+      const profileData = {
+        ...userData,
+        ...profilePublicData,
+        privacy: privacyData,
+        adultProfile: adultProfileData,
+        success: true,
+        loadedAt: new Date().toISOString(),
+      };
+
+      response.set("Cache-Control", "public, max-age=30, s-maxage=60");
+      response.set("Content-Type", "application/json");
+      return response.status(200).json(profileData);
+    } catch (error) {
+      logger.error(`Get profile error: ${error.message}`);
+      return response.status(500).json({
+        success: false,
+        error: "Failed to load profile",
+        message: error.message,
+      });
+    }
+  }
+);
+
+exports.saveProfile = onRequest(
+  { cors: true, region: "us-east1" },
+  async (request, response) => {
+    // Require authentication
+    const authHeader = request.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return response.status(401).json({
+        success: false,
+        error: "Unauthorized - missing auth token",
+      });
+    }
+
+    try {
+      const token = authHeader.substring(7);
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const userId = decodedToken.uid;
+
+      const { userData, privacy, adultProfile } = request.body;
+
+      if (!userData || typeof userData !== "object") {
+        return response.status(400).json({
+          success: false,
+          error: "userData object required in request body",
+        });
+      }
+
+      const batch = db.batch();
+
+      // Update users/{userId} with identity fields
+      const userRef = db.collection("users").doc(userId);
+      const identityFields = {
+        username: userData.username || "",
+        displayName: userData.username || "",
+        email: userData.email || "",
+        photoUrl: userData.avatarUrl || null,
+        bio: userData.bio || null,
+        age: userData.age || 0,
+        gender: userData.gender || null,
+        location: userData.location || null,
+        relationshipStatus: userData.relationshipStatus || null,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      batch.update(userRef, identityFields);
+
+      // Update profile_public/{userId} with public profile data
+      const profilePublicRef = db.collection("profile_public").doc(userId);
+      const profilePublicFields = {
+        avatarUrl: userData.avatarUrl || null,
+        coverPhotoUrl: userData.coverPhotoUrl || null,
+        bio: userData.bio || null,
+        aboutMe: userData.aboutMe || null,
+        interests: userData.interests || [],
+        vibePrompt: userData.vibePrompt || null,
+        firstDatePrompt: userData.firstDatePrompt || null,
+        musicTastePrompt: userData.musicTastePrompt || null,
+        profileAccentColor: userData.profileAccentColor || null,
+        profileBgGradientStart: userData.profileBgGradientStart || null,
+        profileBgGradientEnd: userData.profileBgGradientEnd || null,
+        profileMusicUrl: userData.profileMusicUrl || null,
+        profileMusicTitle: userData.profileMusicTitle || null,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      batch.set(profilePublicRef, profilePublicFields, { merge: true });
+
+      // Update privacy settings
+      if (privacy && typeof privacy === "object") {
+        const privacyRef = userRef.collection("privacy").doc("settings");
+        batch.set(privacyRef, {
+          isPrivate: privacy.isPrivate || false,
+          showAge: privacy.showAge !== false,
+          showGender: privacy.showGender !== false,
+          showLocation: privacy.showLocation !== false,
+          showRelationshipStatus: privacy.showRelationshipStatus !== false,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+
+      // Update adult profile if provided
+      if (adultProfile && typeof adultProfile === "object") {
+        const adultRef = userRef.collection("adult_profile").doc("details");
+        batch.set(adultRef, {
+          userId: userId,
+          enabled: adultProfile.enabled || false,
+          adultConsentAccepted: adultProfile.adultConsentAccepted || false,
+          visibility: adultProfile.visibility || "privateOnly",
+          kinks: adultProfile.kinks || [],
+          preferences: adultProfile.preferences || [],
+          boundaries: adultProfile.boundaries || [],
+          lookingFor: adultProfile.lookingFor || [],
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+
+      // Commit batch
+      await batch.commit();
+
+      response.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      response.set("Content-Type", "application/json");
+      return response.status(200).json({
+        success: true,
+        message: "Profile saved successfully",
+        userId: userId,
+      });
+    } catch (error) {
+      logger.error(`Save profile error: ${error.message}`);
+      if (error.code === "auth/argument-error") {
+        return response.status(401).json({
+          success: false,
+          error: "Invalid authentication token",
+        });
+      }
+      return response.status(500).json({
+        success: false,
+        error: "Failed to save profile",
+        message: error.message,
+      });
+    }
+  }
+);
+
+exports.getCurrentUserProfile = onRequest(
+  { cors: true, region: "us-east1" },
+  async (request, response) => {
+    // Require authentication
+    const authHeader = request.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return response.status(401).json({
+        success: false,
+        error: "Unauthorized - missing auth token",
+      });
+    }
+
+    try {
+      const token = authHeader.substring(7);
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const userId = decodedToken.uid;
+
+      // Fetch user document
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        return response.status(404).json({
+          success: false,
+          error: "User profile not found",
+        });
+      }
+
+      const userData = convertTimestamps(userDoc);
+
+      // Fetch privacy settings
+      let privacyData = {
+        isPrivate: false,
+        showAge: true,
+        showGender: true,
+        showLocation: true,
+        showRelationshipStatus: true,
+      };
+      const privacyDoc = await db
+        .collection("users")
+        .doc(userId)
+        .collection("privacy")
+        .doc("settings")
+        .get();
+      if (privacyDoc.exists) {
+        privacyData = convertTimestamps(privacyDoc);
+      }
+
+      // Fetch profile_public
+      let profilePublicData = {};
+      const profilePublicDoc = await db
+        .collection("profile_public")
+        .doc(userId)
+        .get();
+      if (profilePublicDoc.exists) {
+        profilePublicData = convertTimestamps(profilePublicDoc);
+      }
+
+      // Fetch adult profile
+      let adultProfileData = {
+        enabled: false,
+        adultConsentAccepted: false,
+      };
+      const adultDoc = await db
+        .collection("users")
+        .doc(userId)
+        .collection("adult_profile")
+        .doc("details")
+        .get();
+      if (adultDoc.exists) {
+        adultProfileData = convertTimestamps(adultDoc);
+      }
+
+      // Combine all data
+      const profileData = {
+        ...userData,
+        ...profilePublicData,
+        privacy: privacyData,
+        adultProfile: adultProfileData,
+        success: true,
+        loadedAt: new Date().toISOString(),
+      };
+
+      response.set("Cache-Control", "public, max-age=30, s-maxage=60");
+      response.set("Content-Type", "application/json");
+      return response.status(200).json(profileData);
+    } catch (error) {
+      logger.error(`Get current user profile error: ${error.message}`);
+      if (error.code === "auth/argument-error") {
+        return response.status(401).json({
+          success: false,
+          error: "Invalid authentication token",
+        });
+      }
+      return response.status(500).json({
+        success: false,
+        error: "Failed to load user profile",
+        message: error.message,
+      });
+    }
+  }
+);
 
 // ── RTDB presence -> Firestore aggregate sync ───────────────────────────────
 // Keeps Firestore `presence/{userId}` truthful using RTDB onDisconnect-driven
@@ -2750,7 +3369,7 @@ if (ENABLE_RTDB_PRESENCE_SYNC) {
       );
     });
 } else {
-  logger.warn(
+  logger.info(
     "RTDB presence sync is disabled (ENABLE_RTDB_PRESENCE_SYNC != true).",
   );
 }

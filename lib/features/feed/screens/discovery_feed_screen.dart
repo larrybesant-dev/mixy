@@ -938,10 +938,178 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   }
 
   Widget _buildErrorState(String error) {
-    return AppErrorView(
-      error: error,
-      fallbackContext: 'Unable to load the discovery feed.',
-      onRetry: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+    final feedState = ref.watch(feedControllerProvider);
+    
+    // If we have cached data, show it with a "stale" indicator
+    if (feedState.isFromCache && feedState.liveRooms.isNotEmpty) {
+      return _buildCachedFeedWithIndicator(error);
+    }
+    
+    // No cache - show error
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(context.pagePadding.top),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 52,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              SizedBox(height: context.sectionSpacing),
+              Text(
+                error,
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: context.sectionSpacing),
+              FilledButton(
+                onPressed: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+                child: const Text('Try again'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCachedFeedWithIndicator(String error) {
+    final feedState = ref.watch(feedControllerProvider);
+    final cachedAtDisplay = feedState.cachedAt != null
+        ? _formatCacheTime(feedState.cachedAt!)
+        : 'recently';
+
+    // Show the cached feed data with a stale-data banner at the top
+    return Column(
+      children: [
+        // Stale data indicator banner
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.1),
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.amber.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, size: 20, color: Colors.amber.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Showing cached data',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                    Text(
+                      'Last updated $cachedAtDisplay',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton.tonal(
+                onPressed: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+                child: const Text('Refresh', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+        // The actual feed content (from cache)
+        Expanded(
+          child: _buildSuccessfulFeedContent(feedState),
+        ),
+      ],
+    );
+  }
+
+  String _formatCacheTime(DateTime cachedAt) {
+    final now = DateTime.now();
+    final diff = now.difference(cachedAt);
+
+    if (diff.inSeconds < 60) {
+      return 'just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else {
+      return '${diff.inDays}d ago';
+    }
+  }
+
+  Widget _buildSuccessfulFeedContent(FeedState feedState) {
+    final horizontalPadding = context.pageHorizontalPadding;
+    final filteredRooms = _selectedCategory == null
+        ? feedState.liveRooms
+        : feedState.liveRooms
+              .where((r) => r.category?.toLowerCase() == _selectedCategory)
+              .toList();
+
+    if (filteredRooms.isEmpty) {
+      return const AppEmptyView(
+        title: 'No rooms available',
+        message: 'When rooms go live, they will appear here.',
+        icon: Icons.sensors_off_rounded,
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+            child: Text(
+              'Available Rooms',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          // Show grid of cached rooms
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: filteredRooms.length,
+              itemBuilder: (ctx, i) {
+                final room = filteredRooms[i];
+                return _RoomGridCard(
+                  key: ValueKey(room.id),
+                  room: room,
+                  reason: feedState.roomReasons[room.id] ?? 'Active now',
+                  tier: feedState.roomTiers[room.id],
+                  joining: _joiningRoomId == room.id,
+                  onTap: () => _joinRoom(room),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
     );
   }
 

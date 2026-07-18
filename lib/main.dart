@@ -37,24 +37,15 @@ Future<void> main() async {
     );
     debugPrint('[Firebase] Firebase initialized successfully');
     
-    // Enable Firestore offline persistence on web to stabilize auth token handling
-    if (kIsWeb) {
-      try {
-        await FirebaseFirestore.instance.enableNetwork();
-        FirebaseFirestore.instance.settings = const Settings(
-          persistenceEnabled: false,  // Disable local caching on web to avoid stale data
-          sslEnabled: true,
-          host: 'firestore.googleapis.com',
-        );
-        debugPrint('[Firebase] Firestore web settings configured');
-      } catch (e) {
-        debugPrint('[Firebase] Firestore settings error (non-fatal): $e');
-      }
-    }
+    // ⚠️ CRITICAL: Firestore settings are managed EXCLUSIVELY by firestoreProvider
+    // in firebase_providers.dart. Configuring settings here causes WebSocket listener
+    // conflicts (net::ERR_ABORTED) because settings are applied twice with different values.
+    // See WEBSOCKET_LISTENER_FIX.md for detailed analysis.
+    //
+    // Removed: if (kIsWeb) { FirebaseFirestore.instance.settings = ... }
+    // This block was causing Firestore real-time listeners to abort during WebSocket handshake.
     
-    // Firestore settings are now managed by firestoreProvider in firebase_providers.dart
-    // (Settings configured automatically when provider is first accessed)
-    debugPrint('[Firebase] Firestore initialization delegated to firestoreProvider');
+    debugPrint('[Firebase] Firestore settings delegated to firestoreProvider (single source of truth)');
     
     // Setup production logging: Route [MIXVY_DEBUG] logs to Firebase Crashlytics
     if (!kDebugMode) {

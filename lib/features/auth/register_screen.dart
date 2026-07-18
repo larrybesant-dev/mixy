@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'package:mixvy/features/auth/widgets/profile_completion_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mixvy/core/layout/app_layout.dart';
 import 'package:mixvy/services/analytics_service.dart';
@@ -78,6 +79,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     setState(() => _localError = authState.error);
     if (authState.error == null && authState.uid != null) {
       await AnalyticsService().logLogin(method: 'email_password');
+      
+      // Show lightweight profile completion dialog
+      if (mounted) {
+        showProfileCompletionDialog(
+          context,
+          authState.uid!,
+          initialUsername: username,
+        );
+      }
     }
   }
 

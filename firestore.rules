@@ -18,6 +18,10 @@ service cloud.firestore {
       return signedIn() && uid() == userId;
     }
 
+    function isParticipant(data) {
+      return signedIn() && data.users is list && data.users.hasAny([uid()]);
+    }
+
     function verificationDoc(userId) {
       return get(/databases/$(database)/documents/verification/$(userId));
     }
@@ -1137,13 +1141,21 @@ service cloud.firestore {
 
       allow create: if signedIn()
         && request.resource.data.users is list
-        && request.resource.data.users.hasAny([uid()]);
+        && request.resource.data.users.hasAny([uid()])
+        && request.resource.data.status in ['pending', 'accepted', 'declined']
+        && request.resource.data.requestedBy is string
+        && (
+          !('createdAt' in request.resource.data)
+          || request.resource.data.createdAt is timestamp
+        );
 
       // Update must be anchored to the EXISTING document's user list,
       // not the incoming payload, to prevent takeover of stranger friendships.
+      // Status must remain valid.
       allow update: if signedIn()
         && resource.data.users is list
-        && resource.data.users.hasAny([uid()]);
+        && resource.data.users.hasAny([uid()])
+        && request.resource.data.status in ['pending', 'accepted', 'declined'];
 
       allow delete: if signedIn()
         && resource.data.users is list
@@ -1151,7 +1163,13 @@ service cloud.firestore {
     }
 
     match /friendships/{id} {
-      allow read: if signedIn();
+      // HARDENED: Only users involved in the friendship can read it (privacy-critical for dating app)
+      allow read: if signedIn()
+        && (
+          (resource.data.users is list && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
 
       allow create: if signedIn()
         && (
@@ -1159,17 +1177,25 @@ service cloud.firestore {
             && request.resource.data.users.hasAny([uid()]))
           || request.resource.data.userA == uid()
           || request.resource.data.userB == uid()
+        )
+        && request.resource.data.status in ['pending', 'accepted', 'declined']
+        && request.resource.data.requestedBy is string
+        && (
+          !('createdAt' in request.resource.data)
+          || request.resource.data.createdAt is timestamp
         );
 
-      // Update must verify actor is in the EXISTING document, not the payload,
+      // HARDENED: Update must verify actor is in the EXISTING document, not the payload,
       // to prevent a bad actor from overwriting stranger-to-stranger friendships.
+      // Status must remain valid.
       allow update: if signedIn()
         && (
           (resource.data.users is list
             && resource.data.users.hasAny([uid()]))
           || resource.data.userA == uid()
           || resource.data.userB == uid()
-        );
+        )
+        && request.resource.data.status in ['pending', 'accepted', 'declined'];
 
       allow delete: if signedIn()
         && (

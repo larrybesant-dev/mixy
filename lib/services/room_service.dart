@@ -646,11 +646,14 @@ class RoomService {
     final cutoff = Timestamp.fromDate(
       DateTime.now().add(const Duration(hours: 48)),
     );
+    // Force fresh HTTP request from server, not WebSocket cache
     final snapshot = await _upcomingRoomsQuery(
       limit: limit,
       now: now,
       cutoff: cutoff,
-    ).get();
+    ).get(
+      const GetOptions(source: Source.server),
+    );
 
     final rooms =
         snapshot.docs
@@ -677,7 +680,11 @@ class RoomService {
       return const <RoomModel>[];
     }
 
-    final snapshot = await _liveRoomsQuery(limit: limit).get();
+    // Force fresh HTTP request from server, not WebSocket cache
+    // This helps when browser extensions block WebSocket connections
+    final snapshot = await _liveRoomsQuery(limit: limit).get(
+      const GetOptions(source: Source.server),
+    );
 
     return _filterActiveLiveRooms(
       snapshot.docs,

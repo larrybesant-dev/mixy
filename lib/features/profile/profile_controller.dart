@@ -71,7 +71,19 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<void> updateProfile(ProfileState profile) async {
-    state = state.copyWith(isLoading: true);
+    // Get userId from auth if not in profile
+    final authState = ref.read(authControllerProvider);
+    final userId = profile.userId ?? authState.uid;
+    
+    if (userId == null || userId.isEmpty) {
+      state = state.copyWith(
+        isLoading: false, 
+        error: 'User ID is required. Please sign in again.'
+      );
+      return;
+    }
+    
+    state = state.copyWith(isLoading: true, error: null);
     try {
       // Build complete userData map from profile state
       final userData = {
@@ -110,14 +122,14 @@ class ProfileController extends Notifier<ProfileState> {
       };
       
       await _profileService.saveProfile(
-        userId: profile.userId ?? '', 
+        userId: userId, 
         userData: userData, 
         privacy: profile.privacy.isPrivate, 
         adultProfile: profile.adultModeEnabled
       );
-      state = profile.copyWith(isLoading: false);
+      state = profile.copyWith(userId: userId, isLoading: false, error: null);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: 'Profile save failed: $e');
     }
   }
 

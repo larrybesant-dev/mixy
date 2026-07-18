@@ -1,8 +1,8 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-07-15T23:44:44.445Z",
-  "finishedAt": "2026-07-15T23:44:45.680Z",
-  "durationMs": 1235,
+  "startedAt": "2026-07-18T13:26:05.440Z",
+  "finishedAt": "2026-07-18T13:26:07.104Z",
+  "durationMs": 1664,
   "sampleSize": 500,
   "totalScanned": 4,
   "totalViolations": 0,

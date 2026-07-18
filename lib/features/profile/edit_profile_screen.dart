@@ -153,28 +153,53 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   Future<void> _saveProfile() async {
     final current = ref.read(profileControllerProvider);
-    await ref
-        .read(profileControllerProvider.notifier)
-        .updateProfile(
-          current.copyWith(
-            username: _nameController.text.trim(),
-            email: _emailController.text.trim(),
-            avatarUrl: _avatarUrl ?? '',
-            coverPhotoUrl: _coverPhotoUrl ?? '',
-            bio: _bioController.text.trim(),
-            aboutMe: _aboutMeController.text.trim(),
-            profileMusicUrl: _musicUrlController.text.trim(),
-            profileMusicTitle: _musicTitleController.text.trim(),
-            profileAccentColor: _profileAccentColor,
-            interests: List<String>.from(_interests),
+    try {
+      await ref
+          .read(profileControllerProvider.notifier)
+          .updateProfile(
+            current.copyWith(
+              username: _nameController.text.trim(),
+              email: _emailController.text.trim(),
+              avatarUrl: _avatarUrl ?? '',
+              coverPhotoUrl: _coverPhotoUrl ?? '',
+              bio: _bioController.text.trim(),
+              aboutMe: _aboutMeController.text.trim(),
+              profileMusicUrl: _musicUrlController.text.trim(),
+              profileMusicTitle: _musicTitleController.text.trim(),
+              profileAccentColor: _profileAccentColor,
+              interests: List<String>.from(_interests),
+            ),
+          );
+      if (!mounted) return;
+      
+      final updatedState = ref.read(profileControllerProvider);
+      if (updatedState.error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Profile saved!'),
+            backgroundColor: Color(0xFF2D5016),
+            duration: Duration(seconds: 2),
           ),
         );
-    if (!mounted) return;
-    if (ref.read(profileControllerProvider).error == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile saved!')));
-      context.pop();
+        if (mounted) context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${updatedState.error}'),
+            backgroundColor: const Color(0xFF8B0000),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save profile: $e'),
+          backgroundColor: const Color(0xFF8B0000),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
