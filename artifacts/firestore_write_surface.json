@@ -183,6 +183,41 @@
       "inferredPath": "notifications/{id}"
     },
     {
+      "file": "lib/services/groups_gateway.dart",
+      "line": 57,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/groups_gateway.dart",
+      "line": 72,
+      "operation": "update",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/groups_gateway.dart",
+      "line": 82,
+      "operation": "update",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/groups_gateway.dart",
+      "line": 96,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/groups_gateway.dart",
+      "line": 110,
+      "operation": "delete",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
       "file": "lib/services/messaging_presence_gateway.dart",
       "line": 34,
       "operation": "update",
@@ -1474,62 +1509,6 @@
         "followers"
       ],
       "inferredPath": "users/{id}/following/{id}/users/{id}/followers/{id}"
-    },
-    {
-      "file": "lib/features/groups/providers/groups_provider.dart",
-      "line": 85,
-      "operation": "add",
-      "collections": [
-        "groups",
-        "posts",
-        "groups"
-      ],
-      "inferredPath": "groups/{id}/posts/{id}/groups/{id}"
-    },
-    {
-      "file": "lib/features/groups/providers/groups_provider.dart",
-      "line": 100,
-      "operation": "update",
-      "collections": [
-        "groups",
-        "groups"
-      ],
-      "inferredPath": "groups/{id}/groups/{id}"
-    },
-    {
-      "file": "lib/features/groups/providers/groups_provider.dart",
-      "line": 110,
-      "operation": "update",
-      "collections": [
-        "groups",
-        "groups",
-        "groups"
-      ],
-      "inferredPath": "groups/{id}/groups/{id}/groups/{id}"
-    },
-    {
-      "file": "lib/features/groups/providers/groups_provider.dart",
-      "line": 124,
-      "operation": "add",
-      "collections": [
-        "groups",
-        "groups",
-        "groups",
-        "posts"
-      ],
-      "inferredPath": "groups/{id}/groups/{id}/groups/{id}/posts/{id}"
-    },
-    {
-      "file": "lib/features/groups/providers/groups_provider.dart",
-      "line": 138,
-      "operation": "delete",
-      "collections": [
-        "groups",
-        "groups",
-        "posts",
-        "groups"
-      ],
-      "inferredPath": "groups/{id}/groups/{id}/posts/{id}/groups/{id}"
     },
     {
       "file": "lib/features/messaging/panes/chat_pane_view.dart",
