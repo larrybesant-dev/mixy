@@ -27,23 +27,19 @@ bool _asBool(dynamic value, {required bool fallback}) {
 // Check if user is verified
 final userVerificationProvider = StreamProvider.autoDispose
     .family<bool, String>((ref, userId) {
-      final firestore = ref.watch(firestoreProvider);
-      final verificationRef = firestore.collection('verification').doc(userId);
-      final usersRef = firestore.collection('users').doc(userId);
+      final userDataAsync = ref.watch(userDataStreamProvider(userId));
 
-      // Single-document read — .limit(1) not applicable for document snapshots.
-      return verificationRef.snapshots().asyncMap((snapshot) async {
-        if (snapshot.exists && snapshot.data() != null) {
-          return _asBool(snapshot.data()?['isVerified'], fallback: false);
+      return ref.watch(verificationDocStreamProvider(userId).stream).map((snapshot) {
+        final verificationData = snapshot?.data();
+        if (snapshot?.exists == true && verificationData != null) {
+          return _asBool(verificationData['isVerified'], fallback: false);
         }
 
         if (!SchemaMigrationFlags.enableVerificationLegacyRead) {
           return false;
         }
 
-        final userSnapshot = await usersRef.get();
-        if (!userSnapshot.exists) return false;
-        return _asBool(userSnapshot.data()?['isVerified'], fallback: false);
+        return _asBool(userDataAsync.valueOrNull?['isVerified'], fallback: false);
       });
     });
 
@@ -52,17 +48,7 @@ final userVerificationProvider = StreamProvider.autoDispose
 // pagination for larger admin queries. Do NOT watch this from a user-facing
 // widget — it scans the entire verification collection.
 final verifiedUsersProvider = StreamProvider.autoDispose<List<String>>((ref) {
-  final firestore = ref.watch(firestoreProvider);
-
-  return firestore
-      .collection('verification')
-      .where('isVerified', isEqualTo: true)
-      .limit(200)
-      .snapshots()
-      .map(
-        (snapshot) =>
-            snapshot.docs.map((doc) => doc.id).toList(growable: false),
-      );
+  return ref.watch(verifiedUserIdsStreamProvider.stream);
 });
 
 // Verification controller (admin only)
@@ -103,13 +89,8 @@ final verificationRequestProvider =
       }
 
       return ref
-          .watch(firestoreProvider)
-          .collection('verification_requests')
-          .doc(
-            uid,
-          ) // Single-document read — .limit(1) not applicable for document snapshots.
-          .snapshots()
-          .map((doc) => doc.exists ? doc.data() : null);
+          .watch(verificationRequestDocStreamProvider(uid).stream)
+          .map((doc) => doc?.exists == true ? doc?.data() : null);
     });
 
 

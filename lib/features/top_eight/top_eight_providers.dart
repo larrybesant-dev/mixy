@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/providers/firebase_providers.dart';
 import '../../models/user_model.dart';
 
 // Family provider that allows different profile pages to load their specific Top 8 grid dynamically
 final topEightDisplayProvider = StreamProvider.family.autoDispose<List<UserModel>, String>((ref, targetUserId) {
   if (targetUserId.isEmpty) return Stream.value([]);
 
-  return FirebaseFirestore.instance
+  final firestore = ref.watch(firestoreProvider);
+
+  return firestore
       .collection('users')
       .doc(targetUserId)
       .collection('top_friends')

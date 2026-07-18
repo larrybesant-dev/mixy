@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/firebase_providers.dart';
 import '../../models/referral_model.dart';
 import '../../services/referral_service.dart';
 import 'wallet_provider.dart';
 
 final referralServiceProvider = Provider<ReferralService>((ref) {
-  final firestore = ref.watch(walletFirestoreProvider);
+  final firestore = ref.watch(firestoreProvider);
   return ReferralService(firestore: firestore);
 });
 
