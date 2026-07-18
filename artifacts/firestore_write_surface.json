@@ -1011,12 +1011,13 @@
       "line": 83,
       "operation": "set",
       "collections": [
+        "settings",
         "users",
         "settings",
         "users",
         "settings"
       ],
-      "inferredPath": "users/{id}/settings/{id}/users/{id}/settings/{id}"
+      "inferredPath": "settings/{id}/users/{id}/settings/{id}/users/{id}/settings/{id}"
     },
     {
       "file": "lib/features/discovery/services/match_history_service.dart",
@@ -1661,11 +1662,12 @@
       "line": 183,
       "operation": "update",
       "collections": [
+        "conversations",
         "messages",
         "conversations",
         "conversations"
       ],
-      "inferredPath": "messages/{id}/conversations/{id}/conversations/{id}"
+      "inferredPath": "conversations/{id}/messages/{id}/conversations/{id}/conversations/{id}"
     },
     {
       "file": "lib/features/onboarding/onboarding_screen.dart",

@@ -36,7 +36,8 @@ function lineOfIndex(text, index) {
 }
 
 function extractWrites(filePath) {
-  const text = fs.readFileSync(filePath, 'utf8');
+  // Normalize EOLs so regex/context inference stays stable across OS checkouts.
+  const text = fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const writeRegex = /\.(set|update|add|delete)\s*\(/g;
   const collectionRegex = /\.collection\('([^']+)'\)/g;
   const writes = [];
@@ -105,7 +106,9 @@ function run() {
   const manifest = loadManifest();
   const specFile = path.join(repoRoot, manifest.specFile);
   const specText = fs.readFileSync(specFile, 'utf8');
-  const allCodeText = files.map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  const allCodeText = files
+    .map((f) => fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n'))
+    .join('\n');
 
   const failures = [];
 
