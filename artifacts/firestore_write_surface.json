@@ -183,6 +183,47 @@
       "inferredPath": "notifications/{id}"
     },
     {
+      "file": "lib/services/messaging_presence_gateway.dart",
+      "line": 34,
+      "operation": "update",
+      "collections": [
+        "users",
+        "conversations",
+        "messages"
+      ],
+      "inferredPath": "users/{id}/conversations/{id}/messages/{id}"
+    },
+    {
+      "file": "lib/services/messaging_presence_gateway.dart",
+      "line": 41,
+      "operation": "set",
+      "collections": [
+        "users",
+        "conversations",
+        "messages"
+      ],
+      "inferredPath": "users/{id}/conversations/{id}/messages/{id}"
+    },
+    {
+      "file": "lib/services/messaging_presence_gateway.dart",
+      "line": 53,
+      "operation": "update",
+      "collections": [
+        "conversations",
+        "messages"
+      ],
+      "inferredPath": "conversations/{id}/messages/{id}"
+    },
+    {
+      "file": "lib/services/messaging_presence_gateway.dart",
+      "line": 70,
+      "operation": "update",
+      "collections": [
+        "messages"
+      ],
+      "inferredPath": "messages/{id}"
+    },
+    {
       "file": "lib/services/moderation_service.dart",
       "line": 59,
       "operation": "set",
@@ -1641,70 +1682,6 @@
       "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 37,
-      "operation": "update",
-      "collections": [
-        "users"
-      ],
-      "inferredPath": "users/{id}"
-    },
-    {
-      "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 43,
-      "operation": "set",
-      "collections": [
-        "users",
-        "users"
-      ],
-      "inferredPath": "users/{id}/users/{id}"
-    },
-    {
-      "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 115,
-      "operation": "update",
-      "collections": [
-        "conversations",
-        "messages"
-      ],
-      "inferredPath": "conversations/{id}/messages/{id}"
-    },
-    {
-      "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 134,
-      "operation": "update",
-      "collections": [
-        "conversations",
-        "messages",
-        "conversations",
-        "messages"
-      ],
-      "inferredPath": "conversations/{id}/messages/{id}/conversations/{id}/messages/{id}"
-    },
-    {
-      "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 176,
-      "operation": "update",
-      "collections": [
-        "conversations",
-        "messages",
-        "conversations"
-      ],
-      "inferredPath": "conversations/{id}/messages/{id}/conversations/{id}"
-    },
-    {
-      "file": "lib/features/messaging/services/presence_service.dart",
-      "line": 183,
-      "operation": "update",
-      "collections": [
-        "conversations",
-        "messages",
-        "conversations",
-        "conversations"
-      ],
-      "inferredPath": "conversations/{id}/messages/{id}/conversations/{id}/conversations/{id}"
     },
     {
       "file": "lib/features/onboarding/onboarding_screen.dart",

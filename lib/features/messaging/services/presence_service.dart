@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '../../../services/messaging_presence_gateway.dart';
 import '../models/user_presence.dart';
 
 class PresenceService {
-  PresenceService({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+  PresenceService({
+    required FirebaseFirestore firestore,
+    MessagingPresenceGateway? gateway,
+  }) : _gateway = gateway ?? MessagingPresenceGateway(firestore);
 
-  final FirebaseFirestore _firestore;
+  final MessagingPresenceGateway _gateway;
   Timer? _presenceTimer;
 
   /// Start tracking user presence - updates every 30 seconds
@@ -34,19 +37,19 @@ class PresenceService {
     String? activity,
   }) async {
     try {
-      await _firestore.collection('users').doc(userId).update({
+      await _gateway.updateUserPresence(userId, {
         'presence.lastActiveAt': FieldValue.serverTimestamp(),
         'presence.isOnline': isOnline,
         if (activity != null) 'presence.currentActivity': activity,
       }).onError((error, stackTrace) {
         // If document doesn't exist, create it
-        return _firestore.collection('users').doc(userId).set({
+        return _gateway.setUserPresenceMerge(userId, {
           'presence': {
             'lastActiveAt': FieldValue.serverTimestamp(),
             'isOnline': isOnline,
             'currentActivity': activity,
           },
-        }, SetOptions(merge: true));
+        });
       });
     } catch (e) {
       // Silently fail - presence is not critical
@@ -56,7 +59,7 @@ class PresenceService {
   /// Get a user's presence
   Future<UserPresence?> getUserPresence(String userId) async {
     try {
-      final doc = await _firestore.collection('users').doc(userId).get();
+      final doc = await _gateway.getUser(userId);
       if (!doc.exists) return null;
 
       final presenceData = doc['presence'] as Map<String, dynamic>?;
@@ -81,7 +84,7 @@ class PresenceService {
         .startWith(0)
         .asyncMap((_) async {
           try {
-            final doc = await _firestore.collection('users').doc(userId).get();
+            final doc = await _gateway.getUser(userId);
             if (!doc.exists) return null;
 
             final presenceData = doc['presence'] as Map<String, dynamic>?;
@@ -107,14 +110,9 @@ class PresenceService {
     String messageId,
   ) async {
     try {
-      await _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .collection('messages')
-          .doc(messageId)
-          .update({
-            'deliveredAt': FieldValue.serverTimestamp(),
-          });
+      await _gateway.updateMessage(conversationId, messageId, {
+        'deliveredAt': FieldValue.serverTimestamp(),
+      });
     } catch (_) {
       // Fail silently
     }
@@ -126,15 +124,10 @@ class PresenceService {
     String messageId,
   ) async {
     try {
-      await _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .collection('messages')
-          .doc(messageId)
-          .update({
-            'readAt': FieldValue.serverTimestamp(),
-            'deliveredAt': FieldValue.serverTimestamp(),
-          });
+      await _gateway.updateMessage(conversationId, messageId, {
+        'readAt': FieldValue.serverTimestamp(),
+        'deliveredAt': FieldValue.serverTimestamp(),
+      });
     } catch (_) {
       // Fail silently
     }
@@ -146,12 +139,8 @@ class PresenceService {
     String userId,
   ) async {
     try {
-      await _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .collection('messages')
-          .where('senderId', isNotEqualTo: userId)
-          .get()
+      await _gateway
+          .getMessagesFromOthers(conversationId, userId)
           .then((snapshot) async {
             for (final doc in snapshot.docs) {
               await markMessageRead(conversationId, doc.id);
@@ -170,19 +159,13 @@ class PresenceService {
   ) async {
     try {
       if (isTyping) {
-        await _firestore
-            .collection('conversations')
-            .doc(conversationId)
-            .update({
-              'typingUsers': FieldValue.arrayUnion([userId]),
-            });
+        await _gateway.updateConversation(conversationId, {
+          'typingUsers': FieldValue.arrayUnion([userId]),
+        });
       } else {
-        await _firestore
-            .collection('conversations')
-            .doc(conversationId)
-            .update({
-              'typingUsers': FieldValue.arrayRemove([userId]),
-            });
+        await _gateway.updateConversation(conversationId, {
+          'typingUsers': FieldValue.arrayRemove([userId]),
+        });
       }
     } catch (_) {
       // Fail silently
@@ -195,10 +178,7 @@ class PresenceService {
         .startWith(0)
         .asyncMap((_) async {
           try {
-            final doc = await _firestore
-                .collection('conversations')
-                .doc(conversationId)
-                .get();
+            final doc = await _gateway.getConversation(conversationId);
             if (!doc.exists) return const <String>[];
             final typingUsers = doc.data()?['typingUsers'] as List?;
             return typingUsers?.cast<String>() ?? const <String>[];
