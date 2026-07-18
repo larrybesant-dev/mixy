@@ -138,6 +138,9 @@ final roomMessageStreamProvider = StreamProvider.autoDispose
       );
     });
 
+/// Alias for non-canonical consumers to derive room message stream state.
+final roomMessagesLiveProvider = roomMessageStreamProvider;
+
 final roomTypingUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
       return Stream.multi((controller) {

@@ -67,6 +67,9 @@ final roomDocStreamProvider = StreamProvider.autoDispose
       );
     });
 
+/// Alias for non-canonical consumers to derive room doc stream state.
+final roomDocLiveProvider = roomDocStreamProvider;
+
 final roomMemberUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
       // Guard: do not attempt to stream members until the room metadata is ready.
@@ -281,6 +284,9 @@ final participantsStreamProvider = StreamProvider.autoDispose
             .map(_mapParticipants),
       );
     });
+
+/// Alias for non-canonical consumers to derive participants stream state.
+final roomParticipantsLiveProvider = participantsStreamProvider;
 
 /// Derived participant count from [participantsStreamProvider].
 /// No separate Firestore query — counts the already-active stream.

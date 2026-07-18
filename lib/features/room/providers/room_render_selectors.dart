@@ -87,17 +87,17 @@ class RoomCoachMetrics {
 final roomCoachMetricsProvider = Provider.autoDispose
     .family<RoomCoachMetrics, String>((ref, roomId) {
       final roomDoc =
-          ref.watch(roomDocStreamProvider(roomId)).valueOrNull ?? {};
+      ref.watch(roomDocLiveProvider(roomId)).valueOrNull ?? {};
       final participants =
-          ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
+      ref.watch(roomParticipantsLiveProvider(roomId)).valueOrNull ??
           const <RoomParticipantModel>[];
       final messages =
-          ref.watch(roomMessageStreamProvider(roomId)).valueOrNull ??
+      ref.watch(roomMessagesLiveProvider(roomId)).valueOrNull ??
           const <dynamic>[];
       // Watch typingStreamProvider directly — bypasses the participant-hydration
       // gate in roomActivityStateProvider so typing is visible immediately.
       final typingMap =
-          ref.watch(typingStreamProvider(roomId)).valueOrNull ?? const {};
+      ref.watch(roomTypingLiveProvider(roomId)).valueOrNull ?? const {};
 
       final typingCount = typingMap.values.where((v) => v == true).length;
 

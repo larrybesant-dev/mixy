@@ -11,6 +11,9 @@ final typingStreamProvider = StreamProvider.autoDispose
       return ref.read(typingRepositoryProvider).typingStream(roomId);
     });
 
+/// Alias for non-canonical consumers to derive typing stream state.
+final roomTypingLiveProvider = typingStreamProvider;
+
 /// Derived provider: typing user IDs (those with isTyping = true)
 final typingUserIdsProvider = StreamProvider.autoDispose
     .family<List<String>, String>((ref, roomId) {
