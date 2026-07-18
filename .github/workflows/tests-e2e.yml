@@ -1,5 +1,10 @@
 name: Live E2E Tests
 
+# Least-privilege default: this workflow only checks out code, runs Playwright,
+# and uploads artifacts - no repo/PR/issue writes are performed anywhere in it.
+permissions:
+  contents: read
+
 on:
   workflow_run:
     workflows: ["Deploy to Firebase Hosting"]

@@ -3,6 +3,11 @@ name: Flutter CI
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Least-privilege default: this workflow only checks out code, builds, and
+# runs tests/lint - it never writes to the repo, PRs, issues, or checks.
+permissions:
+  contents: read
+
 # DISABLED: This workflow is temporarily disabled to reduce CI noise.
 # Run manually via workflow_dispatch if needed for detailed Flutter CI analysis.
 on:

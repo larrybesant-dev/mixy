@@ -1,5 +1,11 @@
 name: MixVy E2E Tests - Production Validation
 
+# Least-privilege default: most jobs only checkout/build/test and upload
+# artifacts. Jobs that need to comment on PRs/issues or publish check results
+# declare their own narrower `permissions:` override below.
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main, develop ]
@@ -73,6 +79,12 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs: e2e-tests
+    # Overrides the workflow-level `contents: read` default: this job publishes
+    # a check run from the JUnit report and comments on the triggering PR.
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
 
     steps:
       - name: Download all artifacts
@@ -117,6 +129,11 @@ jobs:
     runs-on: ubuntu-latest
     if: failure() && (github.event_name == 'push' || github.event_name == 'schedule')
     needs: publish-results
+    # Overrides the workflow-level `contents: read` default: this job files a
+    # failure comment on issue #1.
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - name: Send failure notification

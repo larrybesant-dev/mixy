@@ -1,5 +1,10 @@
 name: Deploy to Firebase Hosting
 
+# Least-privilege default: deployment authenticates to Firebase via its own
+# service-account secret, not the GITHUB_TOKEN - only repo read access is needed.
+permissions:
+  contents: read
+
 on:
   # Trigger AFTER stream architecture validation passes
   workflow_run:

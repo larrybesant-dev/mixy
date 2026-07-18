@@ -27,6 +27,11 @@ name: Stream Architecture Enforcement
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Least-privilege default: this workflow only checks out code and runs the
+# local Dart linter, writing results to the job summary - no repo/PR/issue writes.
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches: [main]
