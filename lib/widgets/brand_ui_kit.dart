@@ -497,9 +497,12 @@ class MixvyLogoFull extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          'images/branding/mixvy_logo.png',
+          'assets/images/branding/mixvy_logo.png',
           width: logoWidth,
           fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return MixvyMonogram(size: size);
+          },
         ),
         const SizedBox(height: 8),
         Text(
@@ -540,7 +543,7 @@ class MixvyAppBarLogo extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(fontSize * 0.22),
             child: Image.asset(
-              'images/branding/mixvy_logo.png',
+              'assets/images/branding/mixvy_logo.png',
               height: fontSize * 1.55,
               width: fontSize * 1.55,
               fit: BoxFit.cover,

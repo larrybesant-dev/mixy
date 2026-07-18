@@ -74,5 +74,10 @@ void main() {
     }
 
     expect(find.text('Register Screen'), findsOneWidget);
+
+    // Auth controller schedules a short delayed callback; flush it to avoid
+    // pending timer failures in CI widget tests.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 6));
   });
 }
