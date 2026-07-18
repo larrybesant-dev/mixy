@@ -31,6 +31,13 @@ final roomServiceProvider = Provider<RoomService>((ref) {
   );
 });
 
+/// "Live Now" status for a given host, e.g. for profile page badges.
+/// Routed through [RoomService] per the FSL-007 stream architecture rule.
+final hostLiveStatusProvider =
+    StreamProvider.autoDispose.family<RoomModel?, String>((ref, hostId) {
+      return ref.watch(roomServiceProvider).watchHostLiveStatus(hostId);
+    });
+
 class RoomService {
   static const Duration _liveRoomRemovalGraceWindow = Duration(seconds: 2);
   static const Duration _liveRoomsDebounceWindow = Duration(milliseconds: 220);
@@ -906,6 +913,29 @@ class RoomService {
     }
 
     return RoomModel.fromJson(data, doc.id);
+  }
+
+  /// Streams whether [hostId] is currently hosting a live room, emitting the
+  /// live [RoomModel] while they are, and `null` once they stop. Backs
+  /// "Live Now" status indicators (e.g. on profile pages).
+  Stream<RoomModel?> watchHostLiveStatus(String hostId) {
+    final normalizedHostId = hostId.trim();
+    if (normalizedHostId.isEmpty) {
+      return Stream<RoomModel?>.value(null);
+    }
+
+    return _roomsCollection
+        .where('hostId', isEqualTo: normalizedHostId)
+        .where('isLive', isEqualTo: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) {
+            return null;
+          }
+          final doc = snapshot.docs.first;
+          return RoomModel.fromJson(doc.data(), doc.id);
+        });
   }
 
   Future<String> createRoom({

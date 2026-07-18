@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme.dart';
+import '../../../services/room_service.dart';
+import '../../../widgets/brand_ui_kit.dart';
 import '../../../widgets/safe_network_avatar.dart';
 
 enum ProfilePresenceState { online, recentlyActive, inRoom, offline }
@@ -76,7 +80,7 @@ class ProfileCard extends StatelessWidget {
   }
 }
 
-class ProfileHeader extends StatelessWidget {
+class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({
     super.key,
     required this.userId,
@@ -95,47 +99,78 @@ class ProfileHeader extends StatelessWidget {
   final ProfilePresenceState presenceState;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ringColor = _presenceColor(presenceState);
     final glowColor = _presenceGlowColor(presenceState);
     final handle = usernameHandle?.trim() ?? '';
+    final liveRoom = ref.watch(hostLiveStatusProvider(userId)).valueOrNull;
+    final isLiveNow = liveRoom != null;
 
     return Center(
       child: Column(
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            width: 84,
-            height: 84,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: ringColor, width: 2.2),
-              boxShadow: glowColor == null
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: glowColor,
-                        blurRadius: 14,
-                        spreadRadius: 0,
+          GestureDetector(
+            onTap: isLiveNow
+                ? () => context.go('/rooms/room/${liveRoom.id}')
+                : null,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  width: 84,
+                  height: 84,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isLiveNow ? VelvetNoir.liveGlow : ringColor,
+                      width: 2.2,
+                    ),
+                    boxShadow: isLiveNow
+                        ? [
+                            BoxShadow(
+                              color: VelvetNoir.liveGlow.withValues(
+                                alpha: 0.45,
+                              ),
+                              blurRadius: 16,
+                              spreadRadius: 0,
+                            ),
+                          ]
+                        : (glowColor == null
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: glowColor,
+                                    blurRadius: 14,
+                                    spreadRadius: 0,
+                                  ),
+                                ]),
+                  ),
+                  child: Hero(
+                    tag: 'avatar-$userId',
+                    child: SafeNetworkAvatar(
+                      radius: 36,
+                      avatarUrl: avatarUrl,
+                      backgroundColor: VelvetNoir.surfaceHigh,
+                      fallbackText: displayName.trim().isNotEmpty
+                          ? displayName.trim().characters.first.toUpperCase()
+                          : '?',
+                      fallbackTextStyle: GoogleFonts.raleway(
+                        color: VelvetNoir.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 26,
                       ),
-                    ],
-            ),
-            child: Hero(
-              tag: 'avatar-$userId',
-              child: SafeNetworkAvatar(
-                radius: 36,
-                avatarUrl: avatarUrl,
-                backgroundColor: VelvetNoir.surfaceHigh,
-                fallbackText: displayName.trim().isNotEmpty
-                    ? displayName.trim().characters.first.toUpperCase()
-                    : '?',
-                fallbackTextStyle: GoogleFonts.raleway(
-                  color: VelvetNoir.primary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 26,
+                    ),
+                  ),
                 ),
-              ),
+                if (isLiveNow)
+                  const Positioned(
+                    bottom: -6,
+                    child: MixvyLiveBadge(),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 10),
