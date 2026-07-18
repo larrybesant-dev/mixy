@@ -92,8 +92,8 @@ class _RoomGiftPickerSheetContentState
         gift: gift,
       );
 
-      // Decrement allowance (refresh is non-blocking; fires in background)
-      ref.refresh(useGiftAllowanceFunction);
+      // Decrement allowance (invalidate forces a fresh read; fires in background)
+      ref.invalidate(useGiftAllowanceFunction);
 
       if (mounted) Navigator.of(context).pop();
     } on FirebaseFunctionsException catch (e) {

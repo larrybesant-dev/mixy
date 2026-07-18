@@ -57,7 +57,11 @@ final adaptiveLiveRoomsStreamProvider =
     if (kDebugMode) {
       debugPrint('[AdaptiveProvider] Using POLLING mode for live rooms');
     }
-    return ref.watch(liveRoomsPollingProvider).whenData((data) => data ?? []);
+    return ref.watch(liveRoomsPollingProvider).when(
+      data: (data) => Stream.value(data ?? const <RoomModel>[]),
+      loading: () => Stream.value(const <RoomModel>[]),
+      error: (error, stack) => Stream.error(error, stack),
+    );
   }
 
   // Use real-time listener (default mode)

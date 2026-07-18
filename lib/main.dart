@@ -7,7 +7,6 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mixvy/firebase_options.dart'; 
 import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
