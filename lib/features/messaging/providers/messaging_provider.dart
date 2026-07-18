@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/firestore/firestore_error_utils.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
@@ -63,36 +64,41 @@ final rawConversationsStreamProvider = StreamProvider.autoDispose
       final firestore = ref.watch(firestoreProvider);
       final lifecycle = ref.watch(streamLifecycleManagerProvider);
       final resolvedUserId = _effectiveMessagingUserId(userId);
-      return lifecycle.bind(
-        key: 'conversations:$resolvedUserId',
-        routePrefixes: const <String>['/messages', '/new-message', '/chat'],
-        create: () => firestore
-            .collection('conversations')
-            .where('participantIds', arrayContains: resolvedUserId)
-            .orderBy('lastMessageAt', descending: true)
-            .limit(QueryPolicy.conversationsLimit)
-            .snapshots()
-            .timeout(
+      final baseStream = firestore
+          .collection('conversations')
+          .where('participantIds', arrayContains: resolvedUserId)
+          .orderBy('lastMessageAt', descending: true)
+          .limit(QueryPolicy.conversationsLimit)
+          .snapshots()
+          .handleError((error, stackTrace) {
+            // Log error but let stream continue or complete
+            logFirestoreError(
+              context: 'messaging.rawConversationsStreamProvider',
+              error: error,
+              stackTrace: stackTrace,
+            );
+            throw error; // Re-throw so provider shows error state
+          })
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => Conversation.fromJson(doc.data(), doc.id))
+                .toList(growable: false),
+          );
+
+      final stream = kDebugMode
+          ? baseStream
+          : baseStream.timeout(
               const Duration(seconds: 3),
               onTimeout: (sink) {
                 // Close sink on timeout - prevent permanent hang
                 sink.close();
               },
-            )
-            .handleError((error, stackTrace) {
-              // Log error but let stream continue or complete
-              logFirestoreError(
-                context: 'messaging.rawConversationsStreamProvider',
-                error: error,
-                stackTrace: stackTrace,
-              );
-              throw error; // Re-throw so provider shows error state
-            })
-            .map(
-              (snapshot) => snapshot.docs
-                  .map((doc) => Conversation.fromJson(doc.data(), doc.id))
-                  .toList(growable: false),
-            ),
+            );
+
+      return lifecycle.bind(
+        key: 'conversations:$resolvedUserId',
+        routePrefixes: const <String>['/messages', '/new-message', '/chat'],
+        create: () => stream,
       );
     });
 

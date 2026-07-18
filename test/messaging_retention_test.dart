@@ -65,8 +65,10 @@ void main() {
     );
 
     test('MessageModel.fromJson parses expiresAt', () {
-      final createdAt = Timestamp.fromDate(DateTime(2026, 4, 8, 12));
-      final expiresAt = Timestamp.fromDate(DateTime(2026, 7, 7, 12));
+      final now = DateTime.now();
+      final createdAt = Timestamp.fromDate(now.subtract(const Duration(days: 1)));
+      final expectedExpiry = now.add(const Duration(days: 30));
+      final expiresAt = Timestamp.fromDate(expectedExpiry);
 
       final parsedMessage = MessageModel.fromJson({
         'conversationId': 'conv-1',
@@ -79,7 +81,7 @@ void main() {
         'readBy': ['user-1'],
       }, 'message-1');
 
-      expect(parsedMessage.expiresAt, DateTime(2026, 7, 7, 12));
+      expect(parsedMessage.expiresAt, expectedExpiry);
       expect(parsedMessage.isExpired, isFalse);
     });
   });

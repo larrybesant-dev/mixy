@@ -13,17 +13,47 @@ class AppLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(color: theme.colorScheme.primary),
-          if (label != null) ...[
-            SizedBox(height: context.sectionSpacing),
-            Text(label!, style: theme.textTheme.bodyMedium),
-          ],
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shortestSide = constraints.biggest.shortestSide;
+        final compact = shortestSide.isFinite && shortestSide < 48;
+        final indicatorSize = compact
+            ? shortestSide.clamp(16.0, 28.0).toDouble()
+            : 36.0;
+
+        final child = compact && label == null
+            ? SizedBox(
+                width: indicatorSize,
+                height: indicatorSize,
+                child: CircularProgressIndicator(
+                  color: theme.colorScheme.primary,
+                  strokeWidth: 2.2,
+                ),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: indicatorSize,
+                    height: indicatorSize,
+                    child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  if (label != null) ...[
+                    SizedBox(height: context.sectionSpacing),
+                    Text(label!, style: theme.textTheme.bodyMedium),
+                  ],
+                ],
+              );
+
+        return Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(8),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
@@ -46,7 +76,7 @@ class AppEmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: context.pagePadding,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),

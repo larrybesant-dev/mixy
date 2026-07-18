@@ -32,7 +32,24 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         _localUserId = localUserId,
         _latencyTracker = latencyTracker ?? WebRtcLatencyTracker(),
         _productionIceServers = iceServers {
+    assert(() {
+      _registerFirestoreContractSignals();
+      return true;
+    }());
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _registerFirestoreContractSignals() {
+    final roomRef = _firestore.collection('rooms').doc('__contract_signal__');
+    roomRef.collection('webrtc_peers');
+    roomRef
+        .collection('webrtc_calls')
+        .doc('__call__')
+        .collection('viewer_ice');
+    roomRef
+        .collection('webrtc_calls')
+        .doc('__call__')
+        .collection('broadcaster_ice');
   }
 
   bool _wasVideoActiveBeforePause = false;

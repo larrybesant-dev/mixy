@@ -116,9 +116,20 @@ final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
   (ref) => FirebaseFunctions.instance,
 );
 
-final firebaseStorageProvider = Provider<FirebaseStorage>(
-  (ref) => FirebaseStorage.instance,
-);
+final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
+  try {
+    return FirebaseStorage.instance;
+  } catch (_) {
+    final app = Firebase.app();
+    final configuredBucket = app.options.storageBucket?.trim() ?? '';
+    final fallbackBucket = configuredBucket.isNotEmpty
+        ? (configuredBucket.startsWith('gs://')
+              ? configuredBucket
+              : 'gs://$configuredBucket')
+        : 'gs://mixvy.appspot.com';
+    return FirebaseStorage.instanceFor(app: app, bucket: fallbackBucket);
+  }
+});
 
 final rtdbPresenceServiceProvider = Provider<RtdbPresenceService>((ref) {
   final db = ref.watch(firebaseDatabaseProvider);

@@ -578,6 +578,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
               _markHydrationComplete('data');
 
               return ListView.builder(
+                key: const ValueKey('chat_message_list'),
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 itemCount: allMessages.length + (paginatedState.hasMore ? 1 : 0),

@@ -87,6 +87,9 @@ void main() {
     testWidgets(
       'shows pinned conversations before newer unpinned conversations',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1280, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         final firestore = FakeFirebaseFirestore();
         final now = DateTime.now();
 
@@ -153,7 +156,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('message Requests'), findsOneWidget);
+      expect(find.text('Message Requests'), findsOneWidget);
       expect(find.text('No pending message requests.'), findsOneWidget);
     });
   });

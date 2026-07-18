@@ -13,7 +13,7 @@ final _presenceServiceProvider = Provider<PresenceService>((ref) {
 
 // Get user's presence using central repository
 final userPresenceProvider =
-    StreamProvider.family<UserPresence?, String>((ref, userId) {
+  StreamProvider.autoDispose.family<UserPresence?, String>((ref, userId) {
   final repository = ref.watch(presenceRepositoryProvider);
   // Map PresenceModel stream to UserPresence model
   return repository.watchUserPresence(userId).map((model) => UserPresence(
@@ -26,7 +26,7 @@ final userPresenceProvider =
 
 // Get typing users in a conversation
 final typingUsersProvider =
-    StreamProvider.family<List<String>, String>((ref, conversationId) {
+    StreamProvider.autoDispose.family<List<String>, String>((ref, conversationId) {
   final service = ref.watch(_presenceServiceProvider);
   return service.getTypingUsersStream(conversationId);
 });

@@ -8,6 +8,7 @@ class StreamLifecycleManager extends ChangeNotifier {
   StreamLifecycleManager();
 
   String _currentRoutePath = '/';
+  bool _routeInitialized = false;
   final Map<String, int> _activeListenerCounts = <String, int>{};
   final Map<String, Stream<dynamic>> _sharedStreams =
       <String, Stream<dynamic>>{};
@@ -17,6 +18,7 @@ class StreamLifecycleManager extends ChangeNotifier {
 
   void updateRoute(String routePath) {
     if (_disposed) return;
+    _routeInitialized = true;
     final normalized = _normalizeRoute(routePath);
     if (_currentRoutePath == normalized) {
       return;
@@ -26,6 +28,11 @@ class StreamLifecycleManager extends ChangeNotifier {
   }
 
   bool isRouteActive(List<String> routePrefixes) {
+    // Before the first route observer callback, do not gate streams.
+    if (!_routeInitialized) {
+      return true;
+    }
+
     if (routePrefixes.isEmpty) {
       return true;
     }

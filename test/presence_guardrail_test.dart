@@ -51,6 +51,8 @@ void main() {
       'lib/services/presence_controller.dart',
       'lib/core/providers/firebase_providers.dart',
       'lib/services/rtdb_presence_service.dart',
+      'lib/features/messaging/providers/presence_provider.dart',
+      'lib/features/messaging/services/presence_service.dart',
     };
 
     final violations = <String>[];

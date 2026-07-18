@@ -11,35 +11,35 @@ final matchHistoryServiceProvider = Provider<MatchHistoryService>((ref) {
 
 // Stream of profile views (who viewed your profile)
 final profileViewsProvider =
-    StreamProvider.family<List<ProfileView>, String>((ref, userId) {
+    StreamProvider.autoDispose.family<List<ProfileView>, String>((ref, userId) {
   final service = ref.watch(matchHistoryServiceProvider);
   return service.getProfileViewsStream(userId);
 });
 
 // Stream of swipe history (all your likes/passes)
 final swipeHistoryProvider =
-    StreamProvider.family<List<SwipeHistory>, String>((ref, userId) {
+    StreamProvider.autoDispose.family<List<SwipeHistory>, String>((ref, userId) {
   final service = ref.watch(matchHistoryServiceProvider);
   return service.getSwipeHistoryStream(userId);
 });
 
 // Stream of mutual matches
 final mutualMatchesProvider =
-    StreamProvider.family<List<String>, String>((ref, userId) {
+    StreamProvider.autoDispose.family<List<String>, String>((ref, userId) {
   final service = ref.watch(matchHistoryServiceProvider);
   return service.getMutualMatchesStream(userId);
 });
 
 // Get who liked you (future-based, for one-time queries)
 final whoLikedYouProvider =
-    FutureProvider.family<List<String>, String>((ref, userId) async {
+    FutureProvider.autoDispose.family<List<String>, String>((ref, userId) async {
   final service = ref.watch(matchHistoryServiceProvider);
   return service.getWhoLikedYou(userId);
 });
 
 // Get count of likes
 final likeCountProvider =
-    FutureProvider.family<int, String>((ref, userId) async {
+    FutureProvider.autoDispose.family<int, String>((ref, userId) async {
   final service = ref.watch(matchHistoryServiceProvider);
   return service.getLikeCount(userId);
 });

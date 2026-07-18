@@ -320,13 +320,19 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final scrollable = find.byType(Scrollable).first;
+      final messageList = find.byKey(const ValueKey('chat_message_list'));
+      expect(messageList, findsOneWidget);
+
+      final scrollable = find.descendant(
+        of: messageList,
+        matching: find.byType(Scrollable),
+      );
       final initialPosition = tester
           .state<ScrollableState>(scrollable)
           .position;
       final initialOffset = initialPosition.pixels;
 
-      await tester.drag(find.byType(ListView).first, const Offset(0, 300));
+      await tester.drag(messageList, const Offset(0, 300), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       final scrolledPosition = tester
@@ -343,7 +349,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final restoredScrollable = find.byType(Scrollable).first;
+      final restoredMessageList = find.byKey(const ValueKey('chat_message_list'));
+      expect(restoredMessageList, findsOneWidget);
+      final restoredScrollable = find.descendant(
+        of: restoredMessageList,
+        matching: find.byType(Scrollable),
+      );
       final restoredPosition = tester
           .state<ScrollableState>(restoredScrollable)
           .position;

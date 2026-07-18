@@ -17,7 +17,7 @@ final discoverySwipedSetProvider = StateProvider<Set<String>>((ref) {
 
 // Stream of user's discovery preferences
 final discoveryPreferencesProvider =
-    StreamProvider.family<DiscoveryPreferences, String>((ref, userId) {
+    StreamProvider.autoDispose.family<DiscoveryPreferences, String>((ref, userId) {
   final service = ref.watch(discoveryPreferencesServiceProvider);
   return service.preferencesStream(userId);
 });
