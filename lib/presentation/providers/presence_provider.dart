@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/services/presence_repository.dart';
 import '../../models/presence_model.dart';
 
 // final presenceListProvider = StateProvider<List<PresenceModel>>(() => []);
@@ -14,13 +14,9 @@ final debugFirestorePresenceWatch = Provider.autoDispose
         return Stream.value(null);
       }
       return ref
-          .watch(firestoreProvider)
-          .collection('presence')
-          .doc(
-            uid,
-          ) // Single-document read — .limit(1) not applicable for document snapshots.
-          .snapshots()
-          .map((doc) => doc.data());
+          .watch(presenceRepositoryProvider)
+          .watchUserPresence(uid)
+          .map((presence) => presence.toJson());
     });
 
 final debugRtdbSessionsWatch = Provider.autoDispose

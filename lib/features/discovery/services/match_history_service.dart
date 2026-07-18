@@ -1,11 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/discovery_stream_service.dart';
 import '../models/match_history_models.dart';
 
 class MatchHistoryService {
-  MatchHistoryService({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+  MatchHistoryService({
+    required FirebaseFirestore firestore,
+    DiscoveryStreamService? streamService,
+  }) : _firestore = firestore,
+       _streamService =
+           streamService ?? DiscoveryStreamService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
+  final DiscoveryStreamService _streamService;
 
   /// Record a profile view
   Future<void> recordProfileView({
@@ -31,13 +37,8 @@ class MatchHistoryService {
 
   /// Get profile views for current user (who viewed your profile)
   Stream<List<ProfileView>> getProfileViewsStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('profileViews')
-        .orderBy('createdAt', descending: true)
-        .limit(100)
-        .snapshots()
+    return _streamService
+        .watchProfileViews(userId)
         .map((snapshot) {
           return snapshot.docs
               .map((doc) => ProfileView.fromFirestore(doc))
@@ -47,13 +48,8 @@ class MatchHistoryService {
 
   /// Get swipe history (all likes and passes)
   Stream<List<SwipeHistory>> getSwipeHistoryStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('discovery')
-        .orderBy('createdAt', descending: true)
-        .limit(100)
-        .snapshots()
+    return _streamService
+        .watchSwipeHistory(userId)
         .map((snapshot) {
           return snapshot.docs.map((doc) {
             final isLike = doc['isLike'] as bool? ?? false;

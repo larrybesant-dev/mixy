@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/telemetry/app_telemetry.dart';
+import '../../../services/discovery_stream_service.dart';
 import '../../../services/moderation_service.dart';
 import '../models/speed_dating_models.dart';
 
@@ -11,14 +12,18 @@ class SpeedDatingService {
     required FirebaseFirestore firestore,
     ModerationService? moderationService,
     FirebaseFunctions? functions,
+    DiscoveryStreamService? streamService,
   }) : _firestore = firestore,
        _moderationService =
            moderationService ?? ModerationService(firestore: firestore),
-       _functions = functions ?? FirebaseFunctions.instance;
+       _functions = functions ?? FirebaseFunctions.instance,
+       _streamService =
+           streamService ?? DiscoveryStreamService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
   final FirebaseFunctions _functions;
+  final DiscoveryStreamService _streamService;
   static const Uuid _uuid = Uuid();
 
   Stream<List<SpeedDateCandidate>> candidatesStream({
@@ -27,12 +32,8 @@ class SpeedDatingService {
     // Query only users who have a non-empty username — avoids a full-collection
     // scan and filters out incomplete accounts server-side. Limit to 40 so the
     // Dart-side block filter still leaves a useful candidate set.
-    return _firestore
-        .collection('users')
-        .where('username', isGreaterThan: '')
-        .orderBy('username')
-        .limit(40)
-        .snapshots()
+    return _streamService
+        .watchSpeedDatingCandidates(limit: 40)
         .asyncMap((snapshot) async {
           final blockedIds = await _moderationService.getExcludedUserIds(
             currentUserId,
@@ -47,11 +48,8 @@ class SpeedDatingService {
   }
 
   Stream<List<SpeedDatingMatch>> matchesStream(String currentUserId) {
-    return _firestore
-        .collection('speed_dating_matches')
-        .where('participantIds', arrayContains: currentUserId)
-        .limit(50)
-        .snapshots()
+    return _streamService
+        .watchSpeedDatingMatches(currentUserId, limit: 50)
         .map(
           (snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList(),
         );
@@ -216,12 +214,8 @@ class SpeedDatingService {
   /// Watches the live queue entry for the current user so the UI can react
   /// when the server matches them to a partner.
   Stream<SpeedDatingQueueResult?> watchQueueEntry(String userId) {
-    return _firestore
-        .collection('speed_dating_queue')
-        .doc(
-          userId,
-        ) // Single-document read — .limit(1) not applicable for document snapshots.
-        .snapshots()
+    return _streamService
+        .watchQueueEntry(userId)
         .map((doc) {
           if (!doc.exists) return null;
           final data = doc.data();
@@ -236,12 +230,8 @@ class SpeedDatingService {
 
   /// Watches a specific speed dating session doc (active + expiresAt).
   Stream<Map<String, dynamic>?> watchSession(String sessionId) {
-    return _firestore
-        .collection('speed_dating_sessions')
-        .doc(
-          sessionId,
-        ) // Single-document read — .limit(1) not applicable for document snapshots.
-        .snapshots()
+    return _streamService
+        .watchSession(sessionId)
         .map((doc) => doc.exists ? doc.data() : null);
   }
 }

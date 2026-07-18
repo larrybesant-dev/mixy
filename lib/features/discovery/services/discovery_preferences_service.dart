@@ -1,20 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/discovery_stream_service.dart';
 import '../models/discovery_preferences.dart';
 
 class DiscoveryPreferencesService {
-  DiscoveryPreferencesService({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+  DiscoveryPreferencesService({
+    required FirebaseFirestore firestore,
+    DiscoveryStreamService? streamService,
+  }) : _firestore = firestore,
+       _streamService =
+           streamService ?? DiscoveryStreamService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
+  final DiscoveryStreamService _streamService;
 
   /// Get user's discovery preferences
   Stream<DiscoveryPreferences> preferencesStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('settings')
-        .doc('discoveryPreferences')
-        .snapshots()
+    return _streamService
+        .watchDiscoveryPreferencesDoc(userId)
         .map((doc) {
           if (!doc.exists) {
             // Return defaults if not set

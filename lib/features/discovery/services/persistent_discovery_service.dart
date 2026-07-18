@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/discovery_stream_service.dart';
 import '../../../services/moderation_service.dart';
 import '../models/speed_dating_models.dart';
 
@@ -8,12 +9,16 @@ class PersistentDiscoveryService {
   PersistentDiscoveryService({
     required FirebaseFirestore firestore,
     ModerationService? moderationService,
+    DiscoveryStreamService? streamService,
   })  : _firestore = firestore,
         _moderationService =
-            moderationService ?? ModerationService(firestore: firestore);
+            moderationService ?? ModerationService(firestore: firestore),
+        _streamService =
+            streamService ?? DiscoveryStreamService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
+  final DiscoveryStreamService _streamService;
 
   /// Get all available candidates for discovery, excluding:
   /// - Current user
@@ -99,11 +104,8 @@ class PersistentDiscoveryService {
 
   /// Get all mutual matches from persistent discovery
   Stream<List<SpeedDatingMatch>> matchesStream(String currentUserId) {
-    return _firestore
-        .collection('matches')
-        .where('participantIds', arrayContains: currentUserId)
-        .limit(200)
-        .snapshots()
+    return _streamService
+        .watchPersistentMatches(currentUserId, limit: 200)
         .map(
           (snapshot) => snapshot.docs
               .map(SpeedDatingMatch.fromDoc)
