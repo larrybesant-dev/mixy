@@ -1,8 +1,5 @@
 /* eslint-disable no-undef */
 
-// Disable AppCheck on web platform
-self.__FIREBASE_DISABLE_APP_CHECK_ON_WEB = true;
-
 importScripts('https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js');
 

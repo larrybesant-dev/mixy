@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mixvy/firebase_options.dart'; 
@@ -78,6 +79,46 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('[Firebase] Firebase initialization failed: $e');
     Logger.error('Firebase initialization failed', error: e);
+  }
+
+  // App Check — Phase 1: instrumentation only, NOT enforced anywhere.
+  // - No Firestore/Storage rule or Firebase Console enforcement change ships
+  //   with this. Requests work identically whether or not a valid token is
+  //   attached; this only lets the App Check console start reporting a
+  //   verified-vs-unverified traffic ratio for future rollout decisions.
+  // - Debug builds use the debug provider, which works without any console
+  //   attestation registration. Release builds use Play Integrity (Android)
+  //   and App Attest with DeviceCheck fallback (Apple). Web only activates
+  //   if a reCAPTCHA site key is supplied via --dart-define=RECAPTCHA_SITE_KEY
+  //   (left unset by default) so this can never fail on a stale/unregistered
+  //   key in production.
+  // - Wrapped in its own try/catch, separate from Firebase init, so a
+  //   misconfigured or unregistered provider can NEVER block app startup or
+  //   auth/Firestore access (fail-open). This avoids repeating the July 2026
+  //   incident where App Check activation blocked real users from rooms.
+  try {
+    const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
+    if (kIsWeb && recaptchaSiteKey.isEmpty) {
+      debugPrint(
+        '[Firebase] App Check skipped on web: no RECAPTCHA_SITE_KEY provided',
+      );
+    } else {
+      await FirebaseAppCheck.instance.activate(
+        providerWeb: recaptchaSiteKey.isEmpty
+            ? null
+            : ReCaptchaV3Provider(recaptchaSiteKey),
+        providerAndroid: kDebugMode
+            ? const AndroidDebugProvider()
+            : const AndroidPlayIntegrityProvider(),
+        providerApple: kDebugMode
+            ? const AppleDebugProvider()
+            : const AppleAppAttestWithDeviceCheckFallbackProvider(),
+      );
+      debugPrint('[Firebase] App Check activated (monitor-only, not enforced)');
+    }
+  } catch (e) {
+    // Never let App Check activation failures block startup or requests.
+    debugPrint('[Firebase] App Check activation failed (non-fatal): $e');
   }
 
   if (kIsWeb) {

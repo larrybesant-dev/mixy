@@ -21,9 +21,8 @@
   <!-- Firestore Persistence: Enabled for better offline support -->
   <meta name="firestore-persistence" content="enabled">
   
-  <!-- AppCheck: Disabled during soft-launch phase -->
-  <!-- Firestore Security Rules + Auth provide primary security layer -->
-  <meta name="appcheck-disabled" content="true">
+  <!-- AppCheck: activated in monitor-only mode from lib/main.dart (Phase 1). -->
+  <!-- Firestore Security Rules + Auth remain the enforced security layer. -->
   
   <style>
     html, body {
@@ -80,13 +79,7 @@
     </div>
   </div>
 
-  <!-- CRITICAL: Disable App Check before Firebase SDK loads -->
   <script>
-    // Aggressive disable for soft-launch (enforcement already off in Firebase Console)
-    // Prevent SDK from attempting reCAPTCHA token exchange
-    window.__FIREBASE_DISABLE_APP_CHECK_ON_WEB = true;
-    window.__FIREBASE_APPCHECK_DEBUG_TOKEN = '';
-    
     // Force unregister service workers that might cache old Firebase config
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -208,9 +201,6 @@
           // Ignore optional push setup failures.
         });
       }
-
-      // AppCheck is properly disabled via window.__FIREBASE_DISABLE_APP_CHECK_ON_WEB flag above
-      // No mock provider needed; Firestore Security Rules enforce security
 
       var script = document.createElement('script');
       // Use an absolute path to avoid route-relative script requests on deep links.
