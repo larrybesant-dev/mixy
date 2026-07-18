@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Flutter (for Dart SDK)
         continue-on-error: true
@@ -50,7 +50,7 @@ jobs:
 
       - name: Setup Node (for web runtime probes)
         continue-on-error: true
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -369,3 +369,4 @@ jobs:
           name: startup-certification-bundle-${{ github.run_id }}
           path: tools/reports/startup_cert_bundle
           if-no-files-found: error
+

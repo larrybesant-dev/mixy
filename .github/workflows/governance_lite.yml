@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -41,7 +41,7 @@ jobs:
           channel: stable
 
       - name: Setup Node (for web runtime probes)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -76,3 +76,4 @@ jobs:
             tools/reports/web_failure_smoke_report.json
           if-no-files-found: ignore
           retention-days: 7
+

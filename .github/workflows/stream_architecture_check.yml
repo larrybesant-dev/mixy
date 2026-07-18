@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Dart / Flutter
         uses: subosito/flutter-action@v2
@@ -139,7 +139,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -161,3 +161,4 @@ jobs:
 
       - name: Run friend provider tests
         run: flutter test test/friend_provider_test.dart --reporter=expanded
+
