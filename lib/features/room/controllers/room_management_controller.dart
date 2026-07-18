@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/models/room_model.dart';
+import 'package:mixvy/services/room_management_gateway.dart';
 
 /// Permission check for room management operations
 class RoomPermissions {
@@ -66,12 +67,12 @@ class RoomManagementState {
 
 /// Controller for room management operations (admin/owner actions)
 class RoomManagementController extends Notifier<RoomManagementState> {
-  late final FirebaseFirestore _firestore;
+  late final RoomManagementGateway _roomGateway;
   late final FirebaseAuth _auth;
 
   @override
   RoomManagementState build() {
-    _firestore = ref.read(firestoreProvider);
+    _roomGateway = ref.read(roomManagementGatewayProvider);
     _auth = ref.read(firebaseAuthProvider);
     return const RoomManagementState();
   }
@@ -92,13 +93,11 @@ class RoomManagementController extends Notifier<RoomManagementState> {
 
     try {
       // Get current room to check permissions
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-      if (!roomDoc.exists) {
+      final room = await _roomGateway.getRoomModel(roomId);
+      if (room == null) {
         state = state.copyWith(error: 'Room not found');
         return;
       }
-
-      final room = RoomModel.fromJson(roomDoc.data()!, roomId);
       final permissions = RoomPermissions(
         currentUserId: currentUser.uid,
         room: room,
@@ -115,7 +114,7 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       }
 
       // Add admin
-      await _firestore.collection('rooms').doc(roomId).update({
+      await _roomGateway.updateRoom(roomId, {
         'adminUserIds': FieldValue.arrayUnion([adminUserId]),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -145,13 +144,11 @@ class RoomManagementController extends Notifier<RoomManagementState> {
 
     try {
       // Get current room to check permissions
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-      if (!roomDoc.exists) {
+      final room = await _roomGateway.getRoomModel(roomId);
+      if (room == null) {
         state = state.copyWith(error: 'Room not found');
         return;
       }
-
-      final room = RoomModel.fromJson(roomDoc.data()!, roomId);
       final permissions = RoomPermissions(
         currentUserId: currentUser.uid,
         room: room,
@@ -168,7 +165,7 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       }
 
       // Remove admin
-      await _firestore.collection('rooms').doc(roomId).update({
+      await _roomGateway.updateRoom(roomId, {
         'adminUserIds': FieldValue.arrayRemove([adminUserId]),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -199,13 +196,11 @@ class RoomManagementController extends Notifier<RoomManagementState> {
 
     try {
       // Get current room to check permissions
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-      if (!roomDoc.exists) {
+      final room = await _roomGateway.getRoomModel(roomId);
+      if (room == null) {
         state = state.copyWith(error: 'Room not found');
         return;
       }
-
-      final room = RoomModel.fromJson(roomDoc.data()!, roomId);
       final permissions = RoomPermissions(
         currentUserId: currentUser.uid,
         room: room,
@@ -217,19 +212,15 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       }
 
       // Add photo to room's photos subcollection
-      await _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('photos')
-          .add({
-        'url': photoUrl,
-        'caption': caption,
-        'uploadedBy': currentUser.uid,
-        'uploadedAt': FieldValue.serverTimestamp(),
-      });
+      await _roomGateway.addRoomPhoto(
+        roomId: roomId,
+        photoUrl: photoUrl,
+        caption: caption,
+        uploadedBy: currentUser.uid,
+      );
 
       // Update room's photo count
-      await _firestore.collection('rooms').doc(roomId).update({
+      await _roomGateway.updateRoom(roomId, {
         'photoCount': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -259,13 +250,11 @@ class RoomManagementController extends Notifier<RoomManagementState> {
 
     try {
       // Get current room to check permissions
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-      if (!roomDoc.exists) {
+      final room = await _roomGateway.getRoomModel(roomId);
+      if (room == null) {
         state = state.copyWith(error: 'Room not found');
         return;
       }
-
-      final room = RoomModel.fromJson(roomDoc.data()!, roomId);
       final permissions = RoomPermissions(
         currentUserId: currentUser.uid,
         room: room,
@@ -277,15 +266,10 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       }
 
       // Remove photo from subcollection
-      await _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('photos')
-          .doc(photoId)
-          .delete();
+      await _roomGateway.removeRoomPhoto(roomId: roomId, photoId: photoId);
 
       // Decrement photo count
-      await _firestore.collection('rooms').doc(roomId).update({
+      await _roomGateway.updateRoom(roomId, {
         'photoCount': FieldValue.increment(-1),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -319,13 +303,11 @@ class RoomManagementController extends Notifier<RoomManagementState> {
 
     try {
       // Get current room to check permissions
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-      if (!roomDoc.exists) {
+      final room = await _roomGateway.getRoomModel(roomId);
+      if (room == null) {
         state = state.copyWith(error: 'Room not found');
         return;
       }
-
-      final room = RoomModel.fromJson(roomDoc.data()!, roomId);
       final permissions = RoomPermissions(
         currentUserId: currentUser.uid,
         room: room,
@@ -347,7 +329,7 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       if (isLocked != null) updates['isLocked'] = isLocked;
       if (isAdult != null) updates['isAdult'] = isAdult;
 
-      await _firestore.collection('rooms').doc(roomId).update(updates);
+      await _roomGateway.updateRoom(roomId, updates);
 
       state = state.copyWith(
         isLoading: false,
@@ -374,13 +356,11 @@ class RoomManagementController extends Notifier<RoomManagementState> {
 
     try {
       // Get current room to check permissions
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
-      if (!roomDoc.exists) {
+      final room = await _roomGateway.getRoomModel(roomId);
+      if (room == null) {
         state = state.copyWith(error: 'Room not found');
         return;
       }
-
-      final room = RoomModel.fromJson(roomDoc.data()!, roomId);
       final permissions = RoomPermissions(
         currentUserId: currentUser.uid,
         room: room,
@@ -392,7 +372,7 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       }
 
       // Remove from stage and audience
-      await _firestore.collection('rooms').doc(roomId).update({
+      await _roomGateway.updateRoom(roomId, {
         'stageUserIds': FieldValue.arrayRemove([userId]),
         'audienceUserIds': FieldValue.arrayRemove([userId]),
         'memberCount': FieldValue.increment(-1),
@@ -400,12 +380,7 @@ class RoomManagementController extends Notifier<RoomManagementState> {
       });
 
       // Delete participant doc
-      await _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('participants')
-          .doc(userId)
-          .delete();
+      await _roomGateway.removeParticipant(roomId: roomId, userId: userId);
 
       state = state.copyWith(
         isLoading: false,
@@ -426,7 +401,7 @@ final roomManagementProvider =
 /// Provider to check permissions for a specific room
 final roomPermissionsProvider = FutureProvider.family<RoomPermissions, String>(
   (ref, roomId) async {
-    final firestore = ref.watch(firestoreProvider);
+    final roomGateway = ref.watch(roomManagementGatewayProvider);
     final auth = ref.watch(firebaseAuthProvider);
     
     final currentUser = auth.currentUser;
@@ -434,12 +409,10 @@ final roomPermissionsProvider = FutureProvider.family<RoomPermissions, String>(
       throw Exception('User not authenticated');
     }
 
-    final roomDoc = await firestore.collection('rooms').doc(roomId).get();
-    if (!roomDoc.exists) {
+    final room = await roomGateway.getRoomModel(roomId);
+    if (room == null) {
       throw Exception('Room not found');
     }
-
-    final room = RoomModel.fromJson(roomDoc.data()!, roomId);
     return RoomPermissions(
       currentUserId: currentUser.uid,
       room: room,
