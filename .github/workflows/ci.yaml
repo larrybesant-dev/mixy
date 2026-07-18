@@ -8,16 +8,15 @@ env:
 permissions:
   contents: read
 
-# DISABLED: This workflow is temporarily disabled to reduce CI noise.
-# Run manually via workflow_dispatch if needed for detailed Flutter CI analysis.
+# Runs automatically on push/PR to main and nightly, plus manual dispatch.
 on:
-  # push:  # DISABLED
-  #   branches: [ main ]
-  #   tags: [ 'rc-*', 'v*' ]
-  # pull_request:  # DISABLED
-  #   branches: [ main ]
-  # schedule:  # DISABLED
-  #   - cron: '30 4 * * *'
+  push:
+    branches: [ main ]
+    tags: [ 'rc-*', 'v*' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '30 4 * * *'
   workflow_dispatch:  # Can still be triggered manually
   # workflow_call:  # DISABLED
 
