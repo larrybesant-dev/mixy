@@ -17,5 +17,11 @@
   "powershell.powerShellDefaultVersion": "PowerShell (x64)",
   "workbench.editorAssociations": {
     "*.ps1": "default"
-  }
+},
+"flutterTools.displayGetxContextMenu": false,
+"flutterTools.displayMobxContextMenu": false,
+"flutterTools.displayRiverpodContextMenu": true,
+"flutterTools.displayModularContextMenu": false,
+"flutterTools.displaySignalsContextMenu": false,
+"dart.flutterSdkPath": "C:\\Users\\LARRY\\flutter"
 }
