@@ -250,132 +250,140 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('rooms')
-                    .doc(roomId)
-                    .collection('participants')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(
+              child: Consumer(
+                builder: (context, consumerRef, _) {
+                  final participantsAsync = consumerRef.watch(
+                    participantsStreamProvider(roomId),
+                  );
+                  return participantsAsync.when(
+                    loading: () => Center(
                       child: CircularProgressIndicator(
                         color: VelvetNoir.primary,
                       ),
-                    );
-                  }
-
-                  final participants = snapshot.data!.docs;
-                  if (participants.isEmpty) {
-                    return Center(
+                    ),
+                    error: (_, __) => Center(
                       child: Text(
-                        'No participants yet',
+                        'Failed to load participants',
                         style: GoogleFonts.raleway(
                           color: VelvetNoir.onSurfaceVariant,
                         ),
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: participants.length,
-                    itemBuilder: (context, index) {
-                      final participantData =
-                          participants[index].data() as Map<String, dynamic>;
-                      final userId = participantData['userId'] as String? ?? '';
-                      final displayName = participantData['displayName'] as String? ?? 'Anonymous';
-                      final role = participantData['role'] as String? ?? 'audience';
-                      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                      final isYou = userId == currentUserId;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: VelvetNoir.surface,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: VelvetNoir.primary.withValues(alpha: 0.2),
+                    ),
+                    data: (participants) {
+                      if (participants.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'No participants yet',
+                            style: GoogleFonts.raleway(
+                              color: VelvetNoir.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: role == 'host'
-                                  ? VelvetNoir.primary
-                                  : VelvetNoir.secondary,
-                              radius: 20,
-                              child: Text(
-                                displayName[0].toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        itemCount: participants.length,
+                        itemBuilder: (context, index) {
+                          final participant = participants[index];
+                          final userId = participant.userId;
+                          final displayName =
+                              participant.displayName?.trim().isNotEmpty == true
+                              ? participant.displayName!.trim()
+                              : 'Anonymous';
+                          final role = participant.role;
+                          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                          final isYou = userId == currentUserId;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: VelvetNoir.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: VelvetNoir.primary.withValues(alpha: 0.2),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: role == 'host'
+                                      ? VelvetNoir.primary
+                                      : VelvetNoir.secondary,
+                                  radius: 20,
+                                  child: Text(
+                                    displayName[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        displayName,
-                                        style: GoogleFonts.raleway(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: VelvetNoir.onSurface,
-                                        ),
-                                      ),
-                                      if (isYou)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: Chip(
-                                            label: Text(
-                                              'You',
-                                              style: GoogleFonts.raleway(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
+                                      Row(
+                                        children: [
+                                          Text(
+                                            displayName,
+                                            style: GoogleFonts.raleway(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: VelvetNoir.onSurface,
+                                            ),
+                                          ),
+                                          if (isYou)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 8),
+                                              child: Chip(
+                                                label: Text(
+                                                  'You',
+                                                  style: GoogleFonts.raleway(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                backgroundColor: VelvetNoir.liveGlow,
+                                                labelPadding: const EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                ),
+                                                padding: EdgeInsets.zero,
                                               ),
                                             ),
-                                            backgroundColor: VelvetNoir.liveGlow,
-                                            labelPadding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                            ),
-                                            padding: EdgeInsets.zero,
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: role == 'host'
+                                              ? VelvetNoir.primary.withValues(alpha: 0.2)
+                                              : VelvetNoir.secondary.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          role.toUpperCase(),
+                                          style: GoogleFonts.raleway(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: role == 'host'
+                                                ? VelvetNoir.primary
+                                                : VelvetNoir.secondary,
                                           ),
                                         ),
+                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: role == 'host'
-                                          ? VelvetNoir.primary.withValues(alpha: 0.2)
-                                          : VelvetNoir.secondary.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      role.toUpperCase(),
-                                      style: GoogleFonts.raleway(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: role == 'host'
-                                            ? VelvetNoir.primary
-                                            : VelvetNoir.secondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   );
@@ -484,6 +492,21 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     final currentUser = FirebaseAuth.instance.currentUser;
     final isDesktop = MediaQuery.of(context).size.width > 1200;
     final sessionState = ref.watch(roomSessionProvider(widget.roomId));
+    final roomDocAsync = ref.watch(roomDocStreamProvider(widget.roomId));
+
+    RoomModel? parsedRoom;
+    final roomDoc = roomDocAsync.valueOrNull;
+    if (roomDoc != null) {
+      try {
+        parsedRoom = RoomModel.fromJson(roomDoc, widget.roomId);
+      } catch (_) {
+        parsedRoom = null;
+      }
+    }
+
+    final canManageRoom = parsedRoom != null &&
+        ((currentUser?.uid == parsedRoom.ownerId) ||
+            parsedRoom.adminUserIds.contains(currentUser?.uid));
 
     return Scaffold(
       backgroundColor: VelvetNoir.surface,
@@ -495,29 +518,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data!.exists) {
-                final room = RoomModel.fromJson(
-                  snapshot.data!.data() as Map<String, dynamic>,
-                  widget.roomId,
-                );
-                final isOwner = currentUser?.uid == room.ownerId;
-                final isAdmin = room.adminUserIds.contains(currentUser?.uid);
-                final canManage = isOwner || isAdmin;
-
-                if (canManage) {
-                  return IconButton(
-                    icon: const Icon(Icons.settings_outlined),
-                    onPressed: () => _showManagementModal(context, room),
-                    tooltip: 'Manage room',
-                  );
-                }
-              }
-              return const SizedBox.shrink();
-            },
-          ),
+          if (canManageRoom)
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => _showManagementModal(context, parsedRoom!),
+              tooltip: 'Manage room',
+            ),
           if (sessionState.hasJoined)
             IconButton(
               icon: const Icon(Icons.share_outlined),
@@ -533,23 +539,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           const SizedBox(width: 8),
         ],
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: GoogleFonts.raleway(color: VelvetNoir.onSurface),
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+      body: roomDocAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Text(
+            'Error: $error',
+            style: GoogleFonts.raleway(color: VelvetNoir.onSurface),
+          ),
+        ),
+        data: (roomMap) {
+          if (roomMap == null) {
             return Center(
               child: Text(
                 'Room not found',
@@ -558,12 +557,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             );
           }
 
-          final room = RoomModel.fromJson(
-            snapshot.data!.data() as Map<String, dynamic>,
-            widget.roomId,
-          );
-
-          return isDesktop ? _buildDesktopLayout(room, currentUser, sessionState) : _buildMobileLayout(room, currentUser, sessionState);
+          final room = RoomModel.fromJson(roomMap, widget.roomId);
+          return isDesktop
+              ? _buildDesktopLayout(room, currentUser, sessionState)
+              : _buildMobileLayout(room, currentUser, sessionState);
         },
       ),
     );
@@ -1128,22 +1125,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           const SizedBox(height: 4),
           Row(
             children: [
-              StreamBuilder<DocumentSnapshot>(
-                stream: ref.read(firestoreProvider).collection('users').doc(room.hostId).snapshots(),
-                builder: (context, snapshot) {
-                  String hostDisplayName = room.hostUsername ?? 'Anonymous';
-                  if (snapshot.hasData && snapshot.data != null) {
-                    final hostData = snapshot.data!.data() as Map<String, dynamic>?;
-                    hostDisplayName = hostData?['displayName'] ?? room.hostUsername ?? 'Anonymous';
-                  }
-                  return Text(
-                    'Hosted by $hostDisplayName',
-                    style: GoogleFonts.raleway(
-                      fontSize: 12,
-                      color: VelvetNoir.onSurfaceVariant,
-                    ),
-                  );
-                },
+              Text(
+                'Hosted by ${room.hostUsername ?? 'Anonymous'}',
+                style: GoogleFonts.raleway(
+                  fontSize: 12,
+                  color: VelvetNoir.onSurfaceVariant,
+                ),
               ),
               const Spacer(),
               Consumer(

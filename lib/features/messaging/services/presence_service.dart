@@ -77,25 +77,28 @@ class PresenceService {
 
   /// Stream user's presence
   Stream<UserPresence?> getUserPresenceStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .map((doc) {
-      if (!doc.exists) return null;
+    return Stream.periodic(const Duration(seconds: 10))
+        .startWith(0)
+        .asyncMap((_) async {
+          try {
+            final doc = await _firestore.collection('users').doc(userId).get();
+            if (!doc.exists) return null;
 
-      final presenceData = doc['presence'] as Map<String, dynamic>?;
-      if (presenceData == null) return null;
+            final presenceData = doc['presence'] as Map<String, dynamic>?;
+            if (presenceData == null) return null;
 
-      return UserPresence(
-        userId: userId,
-        lastActiveAt:
-            (presenceData['lastActiveAt'] as Timestamp?)?.toDate() ??
-                DateTime.now(),
-        isOnline: presenceData['isOnline'] as bool? ?? false,
-        currentActivity: presenceData['currentActivity'] as String?,
-      );
-    });
+            return UserPresence(
+              userId: userId,
+              lastActiveAt:
+                  (presenceData['lastActiveAt'] as Timestamp?)?.toDate() ??
+                      DateTime.now(),
+              isOnline: presenceData['isOnline'] as bool? ?? false,
+              currentActivity: presenceData['currentActivity'] as String?,
+            );
+          } catch (_) {
+            return null;
+          }
+        });
   }
 
   /// Mark a message as delivered
@@ -188,18 +191,31 @@ class PresenceService {
 
   /// Stream typing users in a conversation
   Stream<List<String>> getTypingUsersStream(String conversationId) {
-    return _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .snapshots()
-        .map((doc) {
-      if (!doc.exists) return [];
-      final typingUsers = doc['typingUsers'] as List?;
-      return typingUsers?.cast<String>() ?? [];
-    });
+    return Stream.periodic(const Duration(seconds: 3))
+        .startWith(0)
+        .asyncMap((_) async {
+          try {
+            final doc = await _firestore
+                .collection('conversations')
+                .doc(conversationId)
+                .get();
+            if (!doc.exists) return const <String>[];
+            final typingUsers = doc.data()?['typingUsers'] as List?;
+            return typingUsers?.cast<String>() ?? const <String>[];
+          } catch (_) {
+            return const <String>[];
+          }
+        });
   }
 
   void dispose() {
     _presenceTimer?.cancel();
+  }
+}
+
+extension _StreamStartWith<T> on Stream<T> {
+  Stream<T> startWith(T value) async* {
+    yield value;
+    yield* this;
   }
 }

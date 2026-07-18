@@ -23,13 +23,15 @@ class PersistentDiscoveryService {
     required String currentUserId,
     required Set<String> alreadySwiped,
   }) {
-    return _firestore
-        .collection('users')
-        .where('username', isGreaterThan: '')
-        .orderBy('username')
-      .limit(200)
-        .snapshots()
-        .asyncMap((snapshot) async {
+    return Stream.periodic(const Duration(seconds: 10))
+        .startWith(0)
+        .asyncMap((_) async {
+          final snapshot = await _firestore
+              .collection('users')
+              .where('username', isGreaterThan: '')
+              .orderBy('username')
+              .limit(200)
+              .get();
           final blockedIds = await _moderationService.getExcludedUserIds(
             currentUserId,
           );
@@ -39,7 +41,7 @@ class PersistentDiscoveryService {
               .where((doc) => !alreadySwiped.contains(doc.id))
               .map(SpeedDateCandidate.fromDoc)
               .where((candidate) => candidate.username.trim().isNotEmpty)
-              .toList();
+              .toList(growable: false);
         });
   }
 
@@ -111,23 +113,32 @@ class PersistentDiscoveryService {
 
   /// Get user's swipe history (likes only)
   Stream<Set<String>> userSwipesStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('discovery')
-        .limit(500)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .where((doc) => doc.get('isLike') == true)
-              .map((doc) => doc.id)
-              .toSet(),
-        );
+    return Stream.periodic(const Duration(seconds: 10))
+      .startWith(0)
+      .asyncMap((_) async {
+        final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('discovery')
+          .limit(500)
+          .get();
+        return snapshot.docs
+          .where((doc) => doc.get('isLike') == true)
+          .map((doc) => doc.id)
+          .toSet();
+      });
   }
 
   /// Generate consistent match ID from two user IDs
   String _generateMatchId(String userId1, String userId2) {
     final ids = [userId1, userId2]..sort();
     return '${ids[0]}_${ids[1]}';
+  }
+}
+
+extension _StreamStartWith<T> on Stream<T> {
+  Stream<T> startWith(T value) async* {
+    yield value;
+    yield* this;
   }
 }
