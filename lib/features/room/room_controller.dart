@@ -249,8 +249,18 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       _graceWindowTimer?.cancel();
       _graceWindowTimer = null;
       _lastParticipantSyncAt = null;
-      // Explicitly release room ownership to signal clean session end
-      if (_session.activeSessionId != null) {
+      // Explicitly release room ownership to signal clean session end.
+      //
+      // Guard: skip release while a join is actively in-flight (phase ==
+      // joining). Riverpod may invalidate/recreate this Notifier mid-join
+      // when the join's own Firestore writes trigger a watched stream
+      // update ("dependency churn... common on Web and during joins", see
+      // _RoomSessionState doc comment). If we release ownership here, the
+      // in-flight joinRoom()'s post-transaction _isSessionOwner check will
+      // always fail, permanently stranding _session.phase at `joining`
+      // even though the join actually succeeded.
+      if (_session.phase != LiveRoomPhase.joining &&
+          _session.activeSessionId != null) {
         _releaseOwnership(
           roomId: arg,
           userId: _session.currentUserId ?? '',

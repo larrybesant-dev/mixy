@@ -91,8 +91,12 @@ class AuthController extends Notifier<AuthState> {
   final GoogleSignInHelper _googleSignInHelper;
   final AppleSignInHelper _appleSignInHelper;
   final SchemaMutationService? _schemaMutationService;
+  bool _disposed = false;
 
   void _setAuthState(AuthState nextState, {required String source}) {
+    if (_disposed) {
+      return;
+    }
     final previous = state;
     state = nextState;
     
@@ -233,6 +237,11 @@ class AuthController extends Notifier<AuthState> {
       meta: <String, dynamic>{'source': 'auth_controller_build'},
     );
 
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+    });
+
     // Subscribe to the canonical authStateProvider (single source of truth).
     // ref.listen automatically cancels on StateNotifier disposal.
     ref.listen<AsyncValue<User?>>(authStateProvider, (prev, next) {
@@ -282,14 +291,28 @@ class AuthController extends Notifier<AuthState> {
 
     // Run critical initialization/repairs.
     // Use initializingAuth + isLoading to guard the stable phase emission.
+    // NOTE: wrapped in try/catch so any failure here (e.g. Firebase not
+    // initialized, transient platform error) becomes a logged no-op instead
+    // of an unhandled async error escaping this fire-and-forget Future.
     Future(() async {
-      await _configureWebPersistence();
-      await _repairInvalidCachedSession();
-      await _completeRedirectSignInIfNeeded();
+      try {
+        if (_disposed) return;
+        await _configureWebPersistence();
+        if (_disposed) return;
+        await _repairInvalidCachedSession();
+        if (_disposed) return;
+        await _completeRedirectSignInIfNeeded();
+      } catch (e, st) {
+        if (kDebugMode) {
+          print('[AuthController] Background init failed (non-fatal): $e');
+          print(st);
+        }
+      }
     });
 
     // Force bootstrap timeout: if still not stable after 5 seconds, force stable state
     Future<void>.delayed(const Duration(seconds: 5), () {
+      if (_disposed) return;
       if (!state.isRoutingStable) {
         _setAuthState(
           state.copyWith(
@@ -377,6 +400,9 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> _repairInvalidCachedSession() async {
+    if (_disposed) {
+      return;
+    }
     final user = _auth.currentUser;
     if (user == null) {
       return;
@@ -440,9 +466,15 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> _completeRedirectSignInIfNeeded() async {
+    if (_disposed) {
+      return;
+    }
     try {
       await _googleSignInHelper.completePendingRedirectSignIn();
       await _appleSignInHelper.completePendingRedirectSignIn();
+      if (_disposed) {
+        return;
+      }
       final currentUser = _auth.currentUser;
       final uid = currentUser?.uid;
       if (uid != null && currentUser != null) {

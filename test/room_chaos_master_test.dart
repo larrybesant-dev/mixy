@@ -220,6 +220,11 @@ void main() {
         'ownerId': 'host-1',
         'isLocked': false,
       });
+      await firestore.collection('users').doc('user-1').set({
+        'isComplete': true,
+        'username': 'user1',
+        'displayName': 'Device One',
+      });
 
       final presenceController = _ChaosPresenceController();
       final sessionService = RoomSessionService(
@@ -330,6 +335,11 @@ void main() {
           'hostId': 'host-1',
           'ownerId': 'host-1',
           'isLocked': false,
+        });
+        await firestore.collection('users').doc('user-9').set({
+          'isComplete': true,
+          'username': 'user9',
+          'displayName': 'User Nine',
         });
 
         final joinResult = await sessionService.joinRoom(
@@ -457,6 +467,13 @@ void main() {
           'isLocked': false,
           'micQueueSequence': 0,
         });
+        for (final seedUserId in ['host-1', 'host-2', 'user-9']) {
+          await firestore.collection('users').doc(seedUserId).set({
+            'isComplete': true,
+            'username': seedUserId,
+            'displayName': seedUserId,
+          });
+        }
 
         final oldHostContainer = ProviderContainer(
           overrides: [
@@ -522,7 +539,9 @@ void main() {
           'hostId': 'host-2',
           'ownerId': 'host-2',
         }, SetOptions(merge: true));
-        await Future<void>.delayed(Duration.zero);
+        for (var i = 0; i < 5; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
 
         await expectLater(
           oldHostController.setMicTimer(30),

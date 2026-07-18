@@ -52,6 +52,11 @@ void main() {
       'ownerId': 'host-1',
       'isLocked': false,
     });
+    await firestore.collection('users').doc(userId).set({
+      'isComplete': true,
+      'username': 'user1',
+      'displayName': 'User One',
+    });
 
     final result = await roomSessionService.joinRoom(
       roomId: roomId,
@@ -94,6 +99,13 @@ void main() {
       });
 
       final users = List<String>.generate(20, (index) => 'user-$index');
+      for (final seedUserId in users) {
+        await firestore.collection('users').doc(seedUserId).set({
+          'isComplete': true,
+          'username': seedUserId,
+          'displayName': seedUserId,
+        });
+      }
       final random = Random(42);
       final activeUsers = <String>{};
       final broadcastingUsers = <String>{};
