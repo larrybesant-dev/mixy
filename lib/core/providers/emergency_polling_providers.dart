@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../models/room_model.dart';
+import '../../services/room_service.dart';
+
 /// Emergency polling provider for real-time Firestore listeners
 /// 
 /// This provider replaces WebSocket/long-polling with simple HTTP polling
@@ -39,21 +42,19 @@ final userDocPollingProvider = StreamProvider.autoDispose.family<
 });
 
 /// Poll all live rooms every 5 seconds (HTTP REST API, not WebSocket)
-final liveRoomsPollingProvider = StreamProvider.autoDispose<List<QueryDocumentSnapshot<Map<String, dynamic>>>?>((ref) {
+///
+/// Discovery/visibility reads are owned by [RoomService] (FSL-007); this
+/// provider only decides the polling cadence.
+final liveRoomsPollingProvider = StreamProvider.autoDispose<List<RoomModel>?>((
+  ref,
+) {
+  final roomService = ref.watch(roomServiceProvider);
   return Stream.periodic(
     const Duration(seconds: 5),
     (_) => null,
   ).asyncExpand((_) async* {
     try {
-      final firestore = FirebaseFirestore.instance;
-      final snapshot = await firestore
-          .collection('rooms')
-          .where('isLive', isEqualTo: true)
-          .where('isActive', isEqualTo: true)
-          .limit(50)
-          .get(const GetOptions(source: Source.server)); // Force fresh from server
-      
-      yield snapshot.docs;
+      yield await roomService.fetchLiveRoomsOnce(limit: 50);
     } catch (e) {
       debugPrint('[Polling] Error fetching live rooms: $e');
       yield []; // Return empty list on error

@@ -602,6 +602,22 @@ class RoomService {
     );
   }
 
+  /// One-shot fetch of currently live rooms, for polling/fallback modes
+  /// that cannot rely on a persistent `.snapshots()` listener.
+  Future<List<RoomModel>> fetchLiveRoomsOnce({
+    int limit = 50,
+    bool includeAdultRooms = false,
+  }) async {
+    final snapshot = await _liveRoomsQuery(
+      limit: limit,
+    ).get(const GetOptions(source: Source.server));
+    final rooms = snapshot.docs
+        .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
+        .where((room) => includeAdultRooms || !room.isAdult)
+        .toList();
+    return rooms;
+  }
+
   /// Rooms scheduled to start in the next 48 hours, ordered soonest first.
   Stream<List<RoomModel>> watchUpcomingRooms({
     int limit = 10,

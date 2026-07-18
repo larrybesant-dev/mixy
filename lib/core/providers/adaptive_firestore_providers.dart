@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'emergency_polling_providers.dart';
 import 'firebase_providers.dart';
+import '../../models/room_model.dart';
 import '../../services/firestore_connection_fallback.dart';
+import '../../services/room_service.dart';
 
 /// Adaptive user doc stream that automatically switches between real-time and polling.
 /// 
@@ -44,12 +46,12 @@ final adaptiveUserDocStreamProvider = StreamProvider.autoDispose
 });
 
 /// Adaptive live rooms stream that automatically switches between real-time and polling.
-/// 
+///
+/// Discovery/visibility reads are owned by [RoomService] (FSL-007); this
+/// provider only decides whether to watch it in real time or poll it.
 /// Use this instead of `liveRoomsStreamProvider` when available.
 final adaptiveLiveRoomsStreamProvider =
-    StreamProvider.autoDispose<List<QueryDocumentSnapshot<Map<String, dynamic>>>>((ref) {
-  final firestore = ref.watch(firestoreProvider);
-  
+    StreamProvider.autoDispose<List<RoomModel>>((ref) {
   // Check if we should use polling mode
   if (FirestoreConnectionFallback.isPollingModeEnabled) {
     if (kDebugMode) {
@@ -57,18 +59,13 @@ final adaptiveLiveRoomsStreamProvider =
     }
     return ref.watch(liveRoomsPollingProvider).whenData((data) => data ?? []);
   }
-  
+
   // Use real-time listener (default mode)
   if (kDebugMode) {
     debugPrint('[AdaptiveProvider] Using REAL-TIME mode for live rooms');
   }
-  
-  return firestore
-      .collection('rooms')
-      .where('isLive', isEqualTo: true)
-      .where('isActive', isEqualTo: true)
-      .snapshots()
-      .map((snapshot) => snapshot.docs);
+
+  return ref.watch(roomServiceProvider).watchLiveRooms();
 });
 
 /// Adaptive room detail stream that automatically switches between real-time and polling.
