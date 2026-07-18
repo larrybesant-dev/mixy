@@ -8,6 +8,7 @@ import '../../../core/firestore/firestore_debug_tracing.dart';
 import '../../../core/telemetry/app_telemetry.dart';
 import '../../../services/moderation_service.dart';
 import '../../../services/presence_controller.dart';
+import '../../../services/room_session_gateway.dart';
 import '../providers/room_firestore_provider.dart';
 
 class RoomJoinResult {
@@ -45,6 +46,7 @@ class RoomJoinResult {
 final roomSessionServiceProvider = Provider<RoomSessionService>((ref) {
   return RoomSessionService(
     firestore: ref.watch(roomFirestoreProvider),
+    roomSessionGateway: ref.read(roomSessionGatewayProvider),
     presenceController: ref.read(presenceControllerProvider.notifier),
   );
 });
@@ -52,13 +54,16 @@ final roomSessionServiceProvider = Provider<RoomSessionService>((ref) {
 class RoomSessionService {
   RoomSessionService({
     required FirebaseFirestore firestore,
+    required RoomSessionGateway roomSessionGateway,
     required PresenceController presenceController,
   }) : _firestore = firestore,
+       _roomSessionGateway = roomSessionGateway,
        _presenceController = presenceController;
 
   static const Duration participantSyncInterval = Duration(seconds: 30);
 
   final FirebaseFirestore _firestore;
+  final RoomSessionGateway _roomSessionGateway;
   final PresenceController _presenceController;
 
   String _asString(dynamic value, {String fallback = ''}) {
@@ -128,7 +133,7 @@ class RoomSessionService {
       operation: 'get_room_for_join',
       roomId: normalizedRoomId,
       userId: normalizedUserId,
-      action: () => _firestore.collection('rooms').doc(normalizedRoomId).get(),
+      action: () => _roomSessionGateway.getRoom(normalizedRoomId),
     );
     if (!roomDoc.exists) {
       AppTelemetry.updateRoomState(
@@ -149,7 +154,7 @@ class RoomSessionService {
         operation: 'get_verification_for_adult_room_join',
         roomId: normalizedRoomId,
         userId: normalizedUserId,
-        action: () => _firestore.collection('verification').doc(normalizedUserId).get(),
+        action: () => _roomSessionGateway.getVerification(normalizedUserId),
       );
       
       final isAdultVerified = verificationDoc.exists &&
@@ -183,7 +188,7 @@ class RoomSessionService {
       operation: 'get_user_profile_for_join',
       roomId: normalizedRoomId,
       userId: normalizedUserId,
-      action: () => _firestore.collection('users').doc(normalizedUserId).get(),
+      action: () => _roomSessionGateway.getUser(normalizedUserId),
     );
     
     if (!userDoc.exists) {
@@ -241,16 +246,12 @@ class RoomSessionService {
     }
 
     if (excludedUserIds.isNotEmpty) {
-      final participantsRef = _firestore
-          .collection('rooms')
-          .doc(normalizedRoomId)
-          .collection('participants');
       final participantsSnapshot = await traceFirestoreRead(
         path: 'rooms/$normalizedRoomId/participants',
         operation: 'get_room_participants_for_join',
         roomId: normalizedRoomId,
         userId: normalizedUserId,
-        action: participantsRef.get,
+        action: () => _roomSessionGateway.getParticipants(normalizedRoomId),
       );
       final hasBlockedParticipant = participantsSnapshot.docs.any((doc) {
         final participantData = doc.data();
@@ -278,16 +279,14 @@ class RoomSessionService {
       );
     }
 
-    final participantRef = _firestore
-        .collection('rooms')
-        .doc(normalizedRoomId)
-        .collection('participants')
-        .doc(normalizedUserId);
-    final memberRef = _firestore
-        .collection('rooms')
-        .doc(normalizedRoomId)
-        .collection('members')
-        .doc(normalizedUserId);
+    final participantRef = _roomSessionGateway.participantRef(
+      normalizedRoomId,
+      normalizedUserId,
+    );
+    final memberRef = _roomSessionGateway.memberRef(
+      normalizedRoomId,
+      normalizedUserId,
+    );
     await traceFirestoreRead(
       path: 'rooms/$normalizedRoomId/participants/$normalizedUserId',
       operation: 'get_current_participant',
@@ -300,9 +299,7 @@ class RoomSessionService {
 
     try {
       Future<void> executeJoin(Transaction tx) async {
-        final roomSnap = await tx.get(
-          _firestore.collection('rooms').doc(normalizedRoomId),
-        );
+        final roomSnap = await tx.get(_roomSessionGateway.roomRef(normalizedRoomId));
         if (!roomSnap.exists) {
           throw StateError('Room no longer exists');
         }
@@ -366,7 +363,7 @@ class RoomSessionService {
           if (normalizedPhotoUrl.isNotEmpty) 'photoUrl': normalizedPhotoUrl,
         }, SetOptions(merge: true));
 
-        tx.update(_firestore.collection('rooms').doc(normalizedRoomId), {
+        tx.update(_roomSessionGateway.roomRef(normalizedRoomId), {
           'audienceUserIds': audienceIds,
           'audienceUserAvatarUrls': audienceAvatarUrls,
           'stageUserIds': stageIds,
@@ -379,7 +376,7 @@ class RoomSessionService {
       if (transaction != null) {
         await executeJoin(transaction);
       } else {
-        await _firestore.runTransaction(executeJoin);
+        await _roomSessionGateway.runTransaction(executeJoin);
       }
     } catch (e, stackTrace) {
       final errorMsg = e.toString();
@@ -451,9 +448,15 @@ class RoomSessionService {
       return;
     }
 
-    final roomRef = _firestore.collection('rooms').doc(normalizedRoomId);
-    final participantRef = roomRef.collection('participants').doc(normalizedUserId);
-    final memberRef = roomRef.collection('members').doc(normalizedUserId);
+    final roomRef = _roomSessionGateway.roomRef(normalizedRoomId);
+    final participantRef = _roomSessionGateway.participantRef(
+      normalizedRoomId,
+      normalizedUserId,
+    );
+    final memberRef = _roomSessionGateway.memberRef(
+      normalizedRoomId,
+      normalizedUserId,
+    );
 
     Future<void> executeLeave(Transaction tx) async {
       final roomSnap = await tx.get(roomRef);
@@ -499,7 +502,7 @@ class RoomSessionService {
       if (transaction != null) {
         await executeLeave(transaction);
       } else {
-        await _firestore.runTransaction(executeLeave);
+        await _roomSessionGateway.runTransaction(executeLeave);
       }
     } finally {
       await _presenceController.clearInRoom(normalizedUserId);
@@ -534,11 +537,8 @@ class RoomSessionService {
       operation: 'room_heartbeat',
       roomId: roomId,
       userId: userId,
-      action: () => _firestore
-          .collection('rooms')
-          .doc(roomId)
-          .collection('participants')
-          .doc(userId)
+        action: () => _roomSessionGateway
+          .participantRef(roomId, userId)
           .update({'lastActiveAt': now}),
     );
 
@@ -565,11 +565,7 @@ class RoomSessionService {
     required String userId,
     required bool isTyping,
   }) async {
-    final typingRef = _firestore
-        .collection('rooms')
-        .doc(roomId)
-        .collection('typing')
-        .doc(userId);
+    final typingRef = _roomSessionGateway.typingRef(roomId, userId);
 
     if (isTyping) {
       await typingRef.set({
@@ -591,7 +587,7 @@ class RoomSessionService {
       roomId: roomId,
       userId: userId,
       metadata: <String, Object?>{'spotlightUserId': userId},
-      action: () => _firestore.collection('rooms').doc(roomId).update({
+      action: () => _roomSessionGateway.roomRef(roomId).update({
         'spotlightUserId': userId == null || userId.trim().isEmpty
             ? FieldValue.delete()
             : userId.trim(),
