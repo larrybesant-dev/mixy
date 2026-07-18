@@ -406,6 +406,46 @@
       "inferredPath": "(unknown)"
     },
     {
+      "file": "lib/services/room_management_gateway.dart",
+      "line": 33,
+      "operation": "update",
+      "collections": [
+        "rooms"
+      ],
+      "inferredPath": "rooms/{id}"
+    },
+    {
+      "file": "lib/services/room_management_gateway.dart",
+      "line": 42,
+      "operation": "add",
+      "collections": [
+        "rooms",
+        "photos"
+      ],
+      "inferredPath": "rooms/{id}/photos/{id}"
+    },
+    {
+      "file": "lib/services/room_management_gateway.dart",
+      "line": 54,
+      "operation": "delete",
+      "collections": [
+        "photos",
+        "photos"
+      ],
+      "inferredPath": "photos/{id}/photos/{id}"
+    },
+    {
+      "file": "lib/services/room_management_gateway.dart",
+      "line": 61,
+      "operation": "delete",
+      "collections": [
+        "photos",
+        "photos",
+        "participants"
+      ],
+      "inferredPath": "photos/{id}/photos/{id}/participants/{id}"
+    },
+    {
       "file": "lib/services/room_service.dart",
       "line": 124,
       "operation": "set",
@@ -1919,101 +1959,6 @@
       "inferredPath": "(unknown)"
     },
     {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 118,
-      "operation": "update",
-      "collections": [
-        "rooms",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 171,
-      "operation": "update",
-      "collections": [
-        "rooms",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 224,
-      "operation": "add",
-      "collections": [
-        "rooms",
-        "rooms",
-        "photos"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}/photos/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 232,
-      "operation": "update",
-      "collections": [
-        "rooms",
-        "photos",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/photos/{id}/rooms/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 285,
-      "operation": "delete",
-      "collections": [
-        "rooms",
-        "rooms",
-        "photos"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}/photos/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 288,
-      "operation": "update",
-      "collections": [
-        "rooms",
-        "rooms",
-        "photos",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}/photos/{id}/rooms/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 350,
-      "operation": "update",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 395,
-      "operation": "update",
-      "collections": [
-        "rooms",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}"
-    },
-    {
-      "file": "lib/features/room/controllers/room_management_controller.dart",
-      "line": 408,
-      "operation": "delete",
-      "collections": [
-        "rooms",
-        "rooms",
-        "participants"
-      ],
-      "inferredPath": "rooms/{id}/rooms/{id}/participants/{id}"
-    },
-    {
       "file": "lib/features/room/media/room_media_controller.dart",
       "line": 61,
       "operation": "add",
@@ -2897,67 +2842,63 @@
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 318,
+      "line": 315,
       "operation": "add",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 320,
+      "line": 317,
       "operation": "add",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 331,
+      "line": 328,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 342,
+      "line": 339,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 357,
+      "line": 354,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 369,
+      "line": 366,
       "operation": "update",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 485,
-      "operation": "delete",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/features/room/services/room_session_service.dart",
-      "line": 486,
-      "operation": "delete",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/features/room/services/room_session_service.dart",
       "line": 488,
+      "operation": "delete",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/room/services/room_session_service.dart",
+      "line": 489,
+      "operation": "delete",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/room/services/room_session_service.dart",
+      "line": 491,
       "operation": "update",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -2966,56 +2907,36 @@
       "file": "lib/features/room/services/room_session_service.dart",
       "line": 542,
       "operation": "update",
-      "collections": [
-        "rooms",
-        "participants"
-      ],
-      "inferredPath": "rooms/{id}/participants/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 575,
+      "line": 571,
       "operation": "set",
-      "collections": [
-        "rooms",
-        "participants",
-        "rooms",
-        "typing"
-      ],
-      "inferredPath": "rooms/{id}/participants/{id}/rooms/{id}/typing/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 580,
+      "line": 576,
       "operation": "delete",
-      "collections": [
-        "participants",
-        "rooms",
-        "typing"
-      ],
-      "inferredPath": "participants/{id}/rooms/{id}/typing/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 594,
+      "line": 590,
       "operation": "update",
-      "collections": [
-        "rooms",
-        "typing",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/typing/{id}/rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
-      "line": 596,
+      "line": 592,
       "operation": "delete",
-      "collections": [
-        "rooms",
-        "typing",
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}/typing/{id}/rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/widgets/emoji_reaction_overlay.dart",
@@ -3252,60 +3173,45 @@
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 75,
+      "line": 77,
       "operation": "set",
-      "collections": [
-        "speed_dating_actions"
-      ],
-      "inferredPath": "speed_dating_actions/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 112,
+      "line": 114,
       "operation": "set",
-      "collections": [
-        "speed_dating_matches",
-        "speed_dating_actions"
-      ],
-      "inferredPath": "speed_dating_matches/{id}/speed_dating_actions/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 120,
+      "line": 122,
       "operation": "set",
-      "collections": [
-        "speed_dating_actions"
-      ],
-      "inferredPath": "speed_dating_actions/{id}"
-    },
-    {
-      "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 160,
-      "operation": "add",
-      "collections": [
-        "speed_dating_matches",
-        "rooms"
-      ],
-      "inferredPath": "speed_dating_matches/{id}/rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
       "line": 162,
-      "operation": "set",
-      "collections": [
-        "speed_dating_matches",
-        "rooms"
-      ],
-      "inferredPath": "speed_dating_matches/{id}/rooms/{id}"
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 181,
+      "line": 164,
       "operation": "set",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/speed_dating/services/speed_dating_service.dart",
+      "line": 183,
+      "operation": "set",
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/stories/providers/story_provider.dart",
