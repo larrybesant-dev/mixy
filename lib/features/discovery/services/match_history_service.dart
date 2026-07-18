@@ -75,16 +75,13 @@ class MatchHistoryService {
 
   /// Get mutual matches (people who liked you back)
   Stream<List<String>> getMutualMatchesStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('discovery')
-        .where('isMutual', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) => doc.id).toList();
-        });
+    // Derive from the canonical swipe stream to avoid duplicate discovery listeners.
+    return getSwipeHistoryStream(userId).map((entries) {
+      return entries
+          .where((entry) => entry.isMutual)
+          .map((entry) => entry.candidateId)
+          .toList(growable: false);
+    });
   }
 
   /// Get people who liked you but you haven't responded to

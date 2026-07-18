@@ -27,6 +27,7 @@ class PersistentDiscoveryService {
         .collection('users')
         .where('username', isGreaterThan: '')
         .orderBy('username')
+      .limit(200)
         .snapshots()
         .asyncMap((snapshot) async {
           final blockedIds = await _moderationService.getExcludedUserIds(
@@ -99,6 +100,7 @@ class PersistentDiscoveryService {
     return _firestore
         .collection('matches')
         .where('participantIds', arrayContains: currentUserId)
+        .limit(200)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
@@ -113,6 +115,7 @@ class PersistentDiscoveryService {
         .collection('users')
         .doc(userId)
         .collection('discovery')
+        .limit(500)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
