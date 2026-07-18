@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/telemetry/app_telemetry.dart';
 import '../../../services/discovery_stream_service.dart';
 import '../../../services/moderation_service.dart';
+import '../../../services/speed_dating_gateway.dart';
 import '../models/speed_dating_models.dart';
 
 class SpeedDatingService {
@@ -13,17 +14,18 @@ class SpeedDatingService {
     ModerationService? moderationService,
     FirebaseFunctions? functions,
     DiscoveryStreamService? streamService,
-  }) : _firestore = firestore,
-       _moderationService =
+    SpeedDatingGateway? gateway,
+  }) : _moderationService =
            moderationService ?? ModerationService(firestore: firestore),
        _functions = functions ?? FirebaseFunctions.instance,
        _streamService =
-           streamService ?? DiscoveryStreamService(firestore: firestore);
+         streamService ?? DiscoveryStreamService(firestore: firestore),
+       _gateway = gateway ?? SpeedDatingGateway(firestore);
 
-  final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
   final FirebaseFunctions _functions;
   final DiscoveryStreamService _streamService;
+  final SpeedDatingGateway _gateway;
   static const Uuid _uuid = Uuid();
 
   Stream<List<SpeedDateCandidate>> candidatesStream({
@@ -72,7 +74,7 @@ class SpeedDatingService {
     final reciprocalActionId = '${toUserId}_$fromUserId';
 
     // 1. Record the decision
-    await _firestore.collection('speed_dating_actions').doc(actionId).set({
+    await _gateway.speedDatingActionRef(actionId).set({
       'fromUserId': fromUserId,
       'toUserId': toUserId,
       'decision': liked ? 'like' : 'pass',
@@ -88,11 +90,11 @@ class SpeedDatingService {
     // 2. Atomically check for reciprocal like and create match
     final sorted = [fromUserId, toUserId]..sort();
     final matchId = '${sorted.first}_${sorted.last}';
-    final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
+    final matchRef = _gateway.speedDatingMatchRef(matchId);
 
-    return await _firestore.runTransaction((txn) async {
+    return await _gateway.runTransaction((txn) async {
       final reciprocalDoc = await txn.get(
-        _firestore.collection('speed_dating_actions').doc(reciprocalActionId),
+        _gateway.speedDatingActionRef(reciprocalActionId),
       );
       final reciprocalData = reciprocalDoc.data();
       final reciprocalLiked =
@@ -117,7 +119,7 @@ class SpeedDatingService {
       });
 
       // Add notification for the other user
-      txn.set(_firestore.collection('notifications').doc(), {
+      txn.set(_gateway.notificationRef(), {
         'userId': toUserId,
         'actorId': fromUserId,
         'type': 'speed_dating_match',
@@ -145,9 +147,9 @@ class SpeedDatingService {
     required String matchId,
     int durationSeconds = 300,
   }) async {
-    final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
+    final matchRef = _gateway.speedDatingMatchRef(matchId);
 
-    return await _firestore.runTransaction((txn) async {
+    return await _gateway.runTransaction((txn) async {
       final matchSnap = await txn.get(matchRef);
       final data = matchSnap.data();
 
@@ -156,7 +158,7 @@ class SpeedDatingService {
         return data['latestRoomId'] as String;
       }
 
-      final roomRef = _firestore.collection('rooms').doc();
+      final roomRef = _gateway.newRoomRef();
       final expiresAt = DateTime.now().add(Duration(seconds: durationSeconds));
 
       txn.set(roomRef, {
