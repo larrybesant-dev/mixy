@@ -1,6 +1,33 @@
 import { Page, expect } from '@playwright/test';
 
 /**
+ * Flutter Web (CanvasKit) renders the UI to a <canvas> and does not expose real
+ * interactive DOM elements until its semantics/accessibility tree is activated.
+ * Until then, the only real element in the DOM is a <flt-semantics-placeholder>
+ * used to detect assistive technology. Playwright's actionability checks refuse
+ * to click it directly (it reports as "outside the viewport"), so we dispatch a
+ * synthetic click at its bounding box instead. This must run before any
+ * input/button locators are used against the app.
+ */
+async function enableFlutterSemantics(page: Page): Promise<void> {
+  try {
+    await page.evaluate(() => {
+      const el = document.querySelector('flt-semantics-placeholder') as HTMLElement | null;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      el.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        clientX: rect.left + 1,
+        clientY: rect.top + 1,
+      }));
+    });
+    await page.waitForTimeout(500);
+  } catch {
+    // Semantics may already be enabled, or the placeholder may not be present yet - ignore.
+  }
+}
+
+/**
  * Authenticates a user in the test environment by logging into the Flutter web app
  * Supports multiple fallback methods including Firebase auth and local storage injection
  */
@@ -9,16 +36,6 @@ export async function authenticateTestUser(page: Page): Promise<void> {
   const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
 
   try {
-    // First, check if already authenticated via localStorage
-    const isAlreadyAuth = await page.evaluate(() => {
-      const firebaseAuth = localStorage.getItem('firebase:authUser:mixvy-v2');
-      return !!firebaseAuth;
-    }).catch(() => false);
-
-    if (isAlreadyAuth) {
-      console.log('✓ User already authenticated via localStorage');
-      return;
-    }
 
     // Navigate to auth page
     await page.goto('/auth', { waitUntil: 'domcontentloaded' });
@@ -57,36 +74,46 @@ export async function authenticateTestUser(page: Page): Promise<void> {
  */
 async function tryEmailPasswordAuth(page: Page, email: string, password: string): Promise<boolean> {
   try {
-    // Look for email input field
-    const emailInputs = await page.locator('input[type="email"], input[placeholder*="mail"], input[placeholder*="Email"]').count();
-    
-    if (emailInputs === 0) {
+    // Flutter Web doesn't expose real <input>/<button> DOM nodes until semantics
+    // are activated - do this first or every locator below finds nothing.
+    await enableFlutterSemantics(page);
+
+    // Real DOM attributes (verified against the live app): type="text" with an
+    // empty placeholder, identified via aria-label instead (e.g. "Email address").
+    const emailInput = page.locator(
+      'input[aria-label*="mail" i], input[type="email"], input[placeholder*="mail" i]'
+    ).first();
+
+    if ((await emailInput.count()) === 0) {
       return false;
     }
 
-    const emailInput = page.locator('input[type="email"], input[placeholder*="mail"], input[placeholder*="Email"]').first();
     await emailInput.fill(email);
     await page.waitForTimeout(500);
 
     // Find and fill password field
-    const passwordInput = page.locator('input[type="password"], input[placeholder*="password"]').first();
+    const passwordInput = page.locator(
+      'input[aria-label*="password" i], input[type="password"], input[placeholder*="password" i]'
+    ).first();
     await passwordInput.fill(password);
     await page.waitForTimeout(500);
 
     // Find and click login button
-    const loginButton = page.locator('button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")').first();
+    const loginButton = page.locator(
+      'button:has-text("SIGN IN"), button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")'
+    ).first();
     await loginButton.click();
-    
-    // Wait for navigation
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
 
-    // Verify auth success
-    const isAuth = await page.evaluate(() => {
-      return !!localStorage.getItem('firebase:authUser:mixvy-v2');
-    });
-
-    return isAuth;
+    // Verify auth success: the modern Firebase JS SDK (firebase_auth v6+) persists
+    // sessions in IndexedDB, not the legacy `firebase:authUser:*` localStorage key,
+    // so the real signal is GoRouter navigating away from the /auth route once the
+    // app confirms the session.
+    try {
+      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 8000 });
+      return true;
+    } catch {
+      return false;
+    }
   } catch (e) {
     return false;
   }
@@ -198,11 +225,11 @@ export async function safeNavigate(page: Page, path: string, maxRetries: number 
  */
 export async function isUserAuthenticated(page: Page): Promise<boolean> {
   try {
-    const hasAuthToken = await page.evaluate(() => {
-      const token = localStorage.getItem('firebase:authUser:mixvy-v2');
-      return !!token;
-    });
-    return hasAuthToken;
+    // The modern Firebase JS SDK (firebase_auth v6+) persists sessions in
+    // IndexedDB, not the legacy `firebase:authUser:*` localStorage key. The
+    // reliable signal available to Playwright is whether the app is currently
+    // sitting on the /auth route (unauthenticated) or not.
+    return !new URL(page.url()).pathname.includes('/auth');
   } catch (error) {
     console.log('Could not check authentication status');
     return false;
