@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/follow/providers/follow_provider.dart';
-import '../../../core/constants/query_policy.dart';
+import '../../../services/story_stream_service.dart';
 
 DateTime _parseDateTime(dynamic value) {
   if (value is Timestamp) {
@@ -133,25 +133,22 @@ class Story {
 // firestoreProvider is the canonical instance from core/providers/firebase_providers.dart
 final followingIdsProvider = rawFollowGraphStreamProvider;
 
+final storyStreamServiceProvider = Provider<StoryStreamService>((ref) {
+  return StoryStreamService(firestore: ref.watch(firestoreProvider));
+});
+
 // Stream of stories from following users
 final followingStoriesProvider = StreamProvider.autoDispose
     .family<List<Story>, ({String userId, List<String> followingIds})>((
       ref,
       params,
     ) {
-      final firestore = ref.watch(firestoreProvider);
-      return firestore
-          .collectionGroup('stories')
-          .where(
-            'userId',
-            whereIn: params.followingIds.isNotEmpty
-                ? params.followingIds
-                : [params.userId],
+      final streamService = ref.watch(storyStreamServiceProvider);
+      return streamService
+          .watchFollowingStories(
+            userId: params.userId,
+            followingIds: params.followingIds,
           )
-          .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
-          .orderBy('expiresAt', descending: true)
-          .limit(QueryPolicy.trendingPostsLimit)
-          .snapshots()
           .map((snapshot) {
             return snapshot.docs
                 .map((doc) => Story.fromJson(doc.data(), doc.id))
@@ -163,16 +160,9 @@ final followingStoriesProvider = StreamProvider.autoDispose
 // Stream of user's own stories
 final myStoriesProvider = StreamProvider.autoDispose
     .family<List<Story>, String>((ref, userId) {
-      final firestore = ref.watch(firestoreProvider);
-      return firestore
-          .collection('users')
-          .doc(userId)
-          .collection('stories')
-          .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
-          .orderBy('expiresAt')
-          .orderBy('createdAt', descending: true)
-          .limit(50)
-          .snapshots()
+      final streamService = ref.watch(storyStreamServiceProvider);
+      return streamService
+          .watchUserStories(userId)
           .map((snapshot) {
             return snapshot.docs
                 .map((doc) => Story.fromJson(doc.data(), doc.id))

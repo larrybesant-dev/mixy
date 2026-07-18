@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/firebase_providers.dart';
 import '../../models/user_model.dart';
 import '../../services/schema_mutation_service.dart';
+import '../../services/top_eight_stream_service.dart';
 
 final schemaMutationServiceProvider = Provider((ref) {
   return SchemaMutationService(firestore: ref.watch(firestoreProvider));
@@ -12,21 +13,25 @@ final topEightRepositoryProvider = Provider((ref) {
   return TopEightRepository(
     ref.watch(firestoreProvider),
     ref.watch(schemaMutationServiceProvider),
+    TopEightStreamService(firestore: ref.watch(firestoreProvider)),
   );
 });
 
 class TopEightRepository {
   final FirebaseFirestore _firestore;
   final SchemaMutationService _schemaMutationService;
+  final TopEightStreamService _streamService;
 
-  TopEightRepository(this._firestore, this._schemaMutationService);
+  TopEightRepository(
+    this._firestore,
+    this._schemaMutationService,
+    this._streamService,
+  );
 
   /// Fetches the list of UIDs for a user's Top 8.
   Stream<List<String>> watchTopEightIds(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()  // FSL-002: Single doc is inherently bounded
+    return _streamService
+        .watchTopEightDoc(userId)
         .map((doc) {
           final data = doc.data();
           if (data == null) return [];
