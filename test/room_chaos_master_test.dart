@@ -11,6 +11,7 @@ import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/services/presence_controller.dart';
 import 'package:mixvy/services/rtc_room_service.dart';
 import 'package:mixvy/services/connection_recovery_handler.dart';
+import 'package:mixvy/services/room_session_gateway.dart';
 
 class _ChaosPresenceController extends PresenceController {
   final Map<String, PresenceControllerState> writesByUser =
@@ -215,6 +216,7 @@ void main() {
 
     test('same user joining from two controllers remains deduped', () async {
       final firestore = FakeFirebaseFirestore();
+      final roomSessionGateway = RoomSessionGateway(firestore);
       await firestore.collection('rooms').doc('room-a').set({
         'hostId': 'host-1',
         'ownerId': 'host-1',
@@ -229,6 +231,7 @@ void main() {
       final presenceController = _ChaosPresenceController();
       final sessionService = RoomSessionService(
         firestore: firestore,
+        roomSessionGateway: roomSessionGateway,
         presenceController: presenceController,
       );
 
@@ -325,9 +328,11 @@ void main() {
       'presence cleanup stays consistent through leave and rejoin',
       () async {
         final firestore = FakeFirebaseFirestore();
+        final roomSessionGateway = RoomSessionGateway(firestore);
         final presenceController = _ChaosPresenceController();
         final sessionService = RoomSessionService(
           firestore: firestore,
+          roomSessionGateway: roomSessionGateway,
           presenceController: presenceController,
         );
 
@@ -453,9 +458,11 @@ void main() {
       'combined chaos run converges without stuck authority or duplicates',
       () async {
         final firestore = FakeFirebaseFirestore();
+        final roomSessionGateway = RoomSessionGateway(firestore);
         final presenceController = _ChaosPresenceController();
         final sessionService = RoomSessionService(
           firestore: firestore,
+          roomSessionGateway: roomSessionGateway,
           presenceController: presenceController,
         );
         final micAccess = MicAccessController(firestore);

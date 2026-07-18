@@ -7,6 +7,7 @@ import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/features/room/providers/room_slot_provider.dart';
 import 'package:mixvy/features/room/services/room_session_service.dart';
 import 'package:mixvy/services/presence_controller.dart';
+import 'package:mixvy/services/room_session_gateway.dart';
 
 class _FakePresenceController extends PresenceController {
   final Map<String, PresenceControllerState> writesByUser =
@@ -39,9 +40,11 @@ class _FakePresenceController extends PresenceController {
 void main() {
   test('joinRoom writes a fresh shared participant record', () async {
     final firestore = FakeFirebaseFirestore();
+    final roomSessionGateway = RoomSessionGateway(firestore);
     final presenceController = _FakePresenceController();
     final roomSessionService = RoomSessionService(
       firestore: firestore,
+      roomSessionGateway: roomSessionGateway,
       presenceController: presenceController,
     );
 
@@ -83,9 +86,11 @@ void main() {
       AppTelemetry.reset();
 
       final firestore = FakeFirebaseFirestore();
+      final roomSessionGateway = RoomSessionGateway(firestore);
       final presenceController = _FakePresenceController();
       final roomSessionService = RoomSessionService(
         firestore: firestore,
+        roomSessionGateway: roomSessionGateway,
         presenceController: presenceController,
       );
       final slotService = RoomSlotService(firestore);

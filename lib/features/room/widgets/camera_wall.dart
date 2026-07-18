@@ -279,8 +279,10 @@ class _CameraWallState extends ConsumerState<CameraWall> {
 
         final mainGridTiles = <Widget>[
           if (widget.showLocalTile)
-            Positioned(
+            _ResizableTile(
               key: ValueKey<String>('local_tile_${widget.roomId}'),
+              defaultWidth: effectiveTileW,
+              defaultHeight: tileHeight,
               child: _CameraWallTileFrame(
                 roomId: widget.roomId,
                 label: widget.localLabel,
@@ -706,7 +708,7 @@ class _CameraWallTileFrame extends StatefulWidget {
   State<_CameraWallTileFrame> createState() => _CameraWallTileFrameState();
 }
 
-class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with SingleTickerProviderStateMixin {
+class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with TickerProviderStateMixin {
   bool _hovered = false;
   late final AnimationController _pulseCtrl;
   late final AnimationController _shimmerCtrl;

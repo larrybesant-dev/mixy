@@ -2,7 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/room/widgets/camera_wall.dart';
+import 'package:mixvy/models/user_model.dart';
+import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'test_helpers.dart';
+
+ProviderScope _testScope({required Widget child}) {
+  return ProviderScope(
+    overrides: [
+      userProvider.overrideWith(
+        (ref) => UserModel(
+          id: 'test-user',
+          email: 'test@example.com',
+          username: 'Test User',
+          avatarUrl: null,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      ),
+    ],
+    child: child,
+  );
+}
 
 void main() {
   group('CameraWall Layout Tests', () {
@@ -12,7 +31,7 @@ void main() {
 
     testWidgets('Renders correctly with 0 speakers', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        _testScope(
           child: MaterialApp(
             home: Scaffold(
               body: CameraWall(
@@ -46,7 +65,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
+        _testScope(
           child: MaterialApp(
             home: Scaffold(
               body: CameraWall(
@@ -71,7 +90,7 @@ void main() {
 
     testWidgets('Handles extreme aspect ratios and small constraints', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        _testScope(
           child: MaterialApp(
             home: Scaffold(
               body: Center(
@@ -101,7 +120,7 @@ void main() {
 
     testWidgets('Handles zero width/height constraints', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        _testScope(
           child: MaterialApp(
             home: Scaffold(
               body: Center(
