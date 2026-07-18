@@ -17,7 +17,7 @@ class GiftTickerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final giftsAsync = ref.watch(roomGiftStreamProvider(roomId));
+    final giftsAsync = ref.watch(roomGiftFeedProvider(roomId));
 
     return giftsAsync.when(
       data: (events) {

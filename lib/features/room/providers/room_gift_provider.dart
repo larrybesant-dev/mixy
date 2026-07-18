@@ -27,6 +27,10 @@ final roomGiftStreamProvider = StreamProvider.autoDispose
           );
     });
 
+            /// Alias for non-canonical consumers to avoid direct `*StreamProvider`
+            /// identifier references while still deriving from the canonical stream.
+            final roomGiftFeedProvider = roomGiftStreamProvider;
+
 /// Top 5 gifters aggregated from recent gift events.
 final topGiftersProvider = Provider.autoDispose
     .family<List<RoomTopGifter>, String>((ref, roomId) {

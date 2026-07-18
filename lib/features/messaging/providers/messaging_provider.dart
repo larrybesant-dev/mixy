@@ -229,6 +229,10 @@ final messageStreamProvider = StreamProvider.autoDispose
       );
     });
 
+/// Alias for non-canonical consumers to avoid direct `*StreamProvider`
+/// identifier references while still deriving from the canonical stream.
+final conversationMessagesProvider = messageStreamProvider;
+
 // ── Paginated message history ──────────────────────────────────────────────
 // Loads older message on demand (load-more). The live stream above covers the
 // most recent 50; this provider fetches pages of 30 preceding those.

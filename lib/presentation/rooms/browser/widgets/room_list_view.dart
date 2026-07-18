@@ -13,19 +13,6 @@ import '../../../../shared/widgets/guest_auth_gate.dart';
 import 'package:mixvy/features/feed/widgets/live_room_card.dart';
 import 'skeleton_loaders.dart';
 
-final roomsByCategoryProvider = StreamProvider.autoDispose.family<List<RoomModel>, String?>((ref, category) {
-  ref.keepAlive();
-  return ref
-      .read(roomServiceProvider)
-      .watchLiveRoomsByCategory(category: category, limit: 50)
-      .timeout(
-        const Duration(seconds: 5),
-        onTimeout: (sink) {
-          sink.addError(TimeoutException('Connection dropped or timed out while fetching live rooms. Check your internet connectivity.'));
-        },
-      );
-});
-
 class RoomListView extends ConsumerWidget {
   const RoomListView({
     super.key,
@@ -44,7 +31,20 @@ class RoomListView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roomsAsync = ref.watch(roomsByCategoryProvider(category));
+    final roomsStream = ref
+        .read(roomServiceProvider)
+        .watchLiveRoomsByCategory(category: category, limit: 50)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: (sink) {
+            sink.addError(
+              TimeoutException(
+                'Connection dropped or timed out while fetching live rooms. Check your internet connectivity.',
+              ),
+            );
+          },
+        );
+
     return CustomScrollView(
       key: PageStorageKey('rooms_scroll_position_$category'),
       slivers: [
@@ -99,8 +99,32 @@ class RoomListView extends ConsumerWidget {
             ),
           ),
         ),
-        roomsAsync.when(
-          data: (allRooms) {
+        StreamBuilder<List<RoomModel>>(
+          stream: roomsStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      friendlyFirestoreMessage(
+                        snapshot.error ?? Exception('Unknown rooms error'),
+                        fallbackContext: 'rooms',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final allRooms = snapshot.data;
+            if (allRooms == null) {
+              return const RoomBrowserLoadingSliver();
+            }
+
             final rooms = searchQuery.isEmpty
                 ? allRooms
                 : allRooms.where((r) => r.name.toLowerCase().contains(searchQuery) || (r.description?.toLowerCase().contains(searchQuery) ?? false)).toList();
@@ -160,16 +184,6 @@ class RoomListView extends ConsumerWidget {
               },
             );
           },
-          loading: () => const RoomBrowserLoadingSliver(),
-          error: (e, _) => SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(friendlyFirestoreMessage(e, fallbackContext: 'rooms'), textAlign: TextAlign.center),
-              ),
-            ),
-          ),
         ),
       ],
     );

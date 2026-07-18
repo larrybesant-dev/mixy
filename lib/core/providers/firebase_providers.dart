@@ -7,7 +7,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/referral_model.dart';
 import '../../models/wallet_model.dart';
+import '../../services/referral_service.dart';
 import '../../services/firestore_connection_fallback.dart';
 import '../../services/rtdb_presence_service.dart';
 import '../../services/rtdb_user_service.dart';
@@ -176,6 +178,49 @@ final verificationRequestDocStreamProvider = StreamProvider.autoDispose
           .snapshots();
     });
 
+/// Canonical referral service provider used by presentation wrappers.
+final coreReferralServiceProvider = Provider<ReferralService>((ref) {
+  return ReferralService(firestore: ref.watch(firestoreProvider));
+});
+
+/// Canonical per-user referral code stream.
+final referralCodeForUserProvider = StreamProvider.autoDispose
+    .family<String?, String>((ref, userId) {
+      final normalizedUserId = userId.trim();
+      if (normalizedUserId.isEmpty) {
+        return Stream<String?>.value(null);
+      }
+      return ref
+          .watch(coreReferralServiceProvider)
+          .referralCodeStream(normalizedUserId);
+    });
+
+/// Canonical per-user referral earnings stream.
+final referralEarningsForUserProvider = StreamProvider.autoDispose
+    .family<double, String>((ref, userId) {
+      final normalizedUserId = userId.trim();
+      if (normalizedUserId.isEmpty) {
+        return Stream<double>.value(0);
+      }
+      return ref
+          .watch(coreReferralServiceProvider)
+          .referralEarningsTotalStream(normalizedUserId);
+    });
+
+/// Canonical per-user referral attribution stream.
+final referralAttributionsForUserProvider = StreamProvider.autoDispose
+    .family<List<ReferralAttributionModel>, String>((ref, userId) {
+      final normalizedUserId = userId.trim();
+      if (normalizedUserId.isEmpty) {
+        return Stream<List<ReferralAttributionModel>>.value(
+          const <ReferralAttributionModel>[],
+        );
+      }
+      return ref
+          .watch(coreReferralServiceProvider)
+          .referralsForUserStream(normalizedUserId);
+    });
+
 final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
 );
@@ -251,6 +296,10 @@ final displayNameStreamProvider = StreamProvider.autoDispose
       final service = ref.watch(rtdbUserServiceProvider);
       return service.watchDisplayName(normalizedUserId);
     });
+
+/// Alias used by non-canonical consumers to avoid direct `*StreamProvider`
+/// identifier references while still deriving from the canonical stream.
+final displayNameLiveProvider = displayNameStreamProvider;
 
 
 

@@ -98,9 +98,8 @@ final userProvider = Provider<UserModel?>((ref) {
     return null;
   }
 
-  // Watch displayName from RTDB.
-  // This is a StreamProvider.autoDispose, so it will emit AsyncValue<String?>.
-  final displayNameAsync = ref.watch(displayNameStreamProvider(uid));
+  // Watch displayName from RTDB as an AsyncValue from the canonical source.
+  final displayNameAsync = ref.watch(displayNameLiveProvider(uid));
 
   // Extract the actual displayName value from AsyncValue.
   final rtdbDisplayName = displayNameAsync.maybeWhen(

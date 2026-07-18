@@ -10,34 +10,32 @@ final referralServiceProvider = Provider<ReferralService>((ref) {
   return ReferralService(firestore: firestore);
 });
 
-final referralCodeProvider = StreamProvider<String?>((ref) {
+final referralCodeProvider = Provider<AsyncValue<String?>>((ref) {
   final userId = ref.watch(walletUserIdProvider);
   if (userId == null || userId.isEmpty) {
-    return Stream<String?>.value(null);
+    return const AsyncValue.data(null);
   }
 
-  return ref.watch(referralServiceProvider).referralCodeStream(userId);
+  return ref.watch(referralCodeForUserProvider(userId));
 });
 
-final referralEarningsProvider = StreamProvider<double>((ref) {
+final referralEarningsProvider = Provider<AsyncValue<double>>((ref) {
   final userId = ref.watch(walletUserIdProvider);
   if (userId == null || userId.isEmpty) {
-    return Stream<double>.value(0);
+    return const AsyncValue.data(0);
   }
 
-  return ref.watch(referralServiceProvider).referralEarningsTotalStream(userId);
+  return ref.watch(referralEarningsForUserProvider(userId));
 });
 
 final referralAttributionsProvider =
-    StreamProvider<List<ReferralAttributionModel>>((ref) {
+    Provider<AsyncValue<List<ReferralAttributionModel>>>((ref) {
       final userId = ref.watch(walletUserIdProvider);
       if (userId == null || userId.isEmpty) {
-        return Stream<List<ReferralAttributionModel>>.value(
-          <ReferralAttributionModel>[],
-        );
+        return const AsyncValue.data(<ReferralAttributionModel>[]);
       }
 
-      return ref.watch(referralServiceProvider).referralsForUserStream(userId);
+      return ref.watch(referralAttributionsForUserProvider(userId));
     });
 
 
