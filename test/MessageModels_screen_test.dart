@@ -2,13 +2,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 
-// MC-1: Ordering Determinism
-// Messages must be sorted deterministically by createdAt regardless of
-// insertion order, so the UI always presents a consistent timeline.
+// This file is intentionally named MessageModels_screen_test.dart to match
+// the run_release_gate.sh release gate reference for two checks:
 //
-// NR-3: No Double Navigation
-// Navigation helpers that build routes from Message data must produce a
-// single, stable path string so the router never pushes duplicate entries.
+//   MC-1: Ordering Determinism
+//     Messages must be sorted deterministically by createdAt regardless of
+//     insertion order, so the UI always presents a consistent timeline.
+//
+//   NR-3: No Double Navigation
+//     Navigation helpers that build routes from Message data must produce a
+//     single, stable path string so the router never pushes duplicate entries.
+//
+// The core data class under test is `Message` (from message_model.dart).
 
 void main() {
   group('Message ordering determinism (MC-1)', () {
