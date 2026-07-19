@@ -15,6 +15,7 @@ import '../../../models/social_activity_model.dart';
 import '../../../models/user_model.dart';
 import '../../../services/presence_repository.dart';
 import '../../../services/social_activity_service.dart';
+import '../../../services/user_gateway.dart';
 import '../services/home_feed_service.dart';
 import 'package:mixvy/models/models.dart';
 
@@ -299,12 +300,8 @@ final liveRoomsCountProvider = FutureProvider.autoDispose<int>((ref) async {
 final newMembersStreamProvider = FutureProvider.autoDispose<List<UserModel>>((
   ref,
 ) async {
-  final firestore = ref.watch(firestoreProvider);
-  final snapshot = await firestore
-      .collection('users')
-      .orderBy('createdAt', descending: true)
-      .limit(12)
-      .get();
+  final userGateway = ref.watch(userGatewayProvider);
+  final snapshot = await userGateway.getNewMembers(limit: 12);
   return snapshot.docs
       .map((d) {
         final data = d.data();
@@ -316,12 +313,8 @@ final newMembersStreamProvider = FutureProvider.autoDispose<List<UserModel>>((
 
 final trendingUsersStreamProvider = FutureProvider.autoDispose<List<UserModel>>(
   (ref) async {
-    final snapshot = await ref
-        .watch(firestoreProvider)
-        .collection('users')
-        .orderBy('balance', descending: true)
-        .limit(10)
-        .get();
+    final userGateway = ref.watch(userGatewayProvider);
+    final snapshot = await userGateway.getTrendingUsers(limit: 10);
     return snapshot.docs
         .map((d) => UserModel.fromJson({'id': d.id, ...d.data()}))
         .toList(growable: false);

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/providers/firebase_providers.dart';
 import '../../presentation/providers/user_provider.dart';
 import '../../services/presence_repository.dart';
+import '../../services/user_gateway.dart';
 import '../../models/user_presence.dart';
 import '../../models/user_profile.dart';
 
@@ -19,18 +19,16 @@ class UserProfileBasePayload {
 
 final userProfileBaseProvider = FutureProvider.autoDispose
     .family<UserProfileBasePayload, String>((ref, profileUserId) async {
-      final firestore = ref.watch(firestoreProvider);
+      final userGateway = ref.watch(userGatewayProvider);
       final viewerId = ref.watch(userProvider)?.id;
 
-      final userRef = firestore.collection('users').doc(profileUserId);
-      final userSnapshot = await userRef.get();
+      final userSnapshot = await userGateway.getUser(profileUserId);
 
       Map<String, dynamic> privacyData = const <String, dynamic>{};
       if (viewerId == profileUserId) {
-        final privacySnapshot = await userRef
-            .collection('privacy')
-            .doc('settings')
-            .get();
+        final privacySnapshot = await userGateway.getUserPrivacySettings(
+          profileUserId,
+        );
         privacyData = privacySnapshot.data() ?? const <String, dynamic>{};
       }
 
@@ -56,8 +54,8 @@ final userPresenceStreamProvider = StreamProvider.autoDispose
 /// A Riverpod future provider that fetches a user's profile metadata.
 final userProfileFutureProvider = FutureProvider.autoDispose
     .family<UserProfile, String>((ref, userId) async {
-      final firestore = ref.watch(firestoreProvider);
-      final doc = await firestore.collection('users').doc(userId).get();
+      final userGateway = ref.watch(userGatewayProvider);
+      final doc = await userGateway.getUser(userId);
       if (!doc.exists || doc.data() == null) {
         throw Exception('User profile not found');
       }

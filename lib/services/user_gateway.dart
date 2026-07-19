@@ -20,8 +20,18 @@ class UserGateway {
     return usersCollection().doc(userId);
   }
 
+  DocumentReference<Map<String, dynamic>> userPrivacyRef(String userId) {
+    return userRef(userId).collection('privacy').doc('settings');
+  }
+
   Future<DocumentSnapshot<Map<String, dynamic>>> getUser(String userId) {
     return userRef(userId).get();
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserPrivacySettings(
+    String userId,
+  ) {
+    return userPrivacyRef(userId).get();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getPublicUsers({
@@ -31,5 +41,23 @@ class UserGateway {
         .where('isPrivate', isEqualTo: false)
         .limit(limit)
         .get(const GetOptions(source: Source.server));
+  }
+  
+  Future<QuerySnapshot<Map<String, dynamic>>> getNewMembers({
+    int limit = 12,
+  }) {
+    return usersCollection()
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+  }
+  
+  Future<QuerySnapshot<Map<String, dynamic>>> getTrendingUsers({
+    int limit = 10,
+  }) {
+    return usersCollection()
+        .orderBy('balance', descending: true)
+        .limit(limit)
+        .get();
   }
 }
