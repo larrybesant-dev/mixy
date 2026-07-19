@@ -31,12 +31,9 @@ class PersistentDiscoveryService {
     return Stream.periodic(const Duration(seconds: 10))
         .startWith(0)
         .asyncMap((_) async {
-          final snapshot = await _firestore
-              .collection('users')
-              .where('username', isGreaterThan: '')
-              .orderBy('username')
-              .limit(200)
-              .get();
+          final snapshot = await _streamService.fetchPersistentCandidates(
+            limit: 200,
+          );
           final blockedIds = await _moderationService.getExcludedUserIds(
             currentUserId,
           );
@@ -58,11 +55,7 @@ class PersistentDiscoveryService {
     required bool isLike,
   }) async {
     final batch = _firestore.batch();
-    final swipeDoc = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('discovery')
-        .doc(candidateId);
+    final swipeDoc = _streamService.discoverySwipeRef(userId, candidateId);
 
     batch.set(
       swipeDoc,
@@ -75,17 +68,15 @@ class PersistentDiscoveryService {
 
     // If this is a like, check if other user also liked back (mutual match)
     if (isLike) {
-      final otherUserSwipe = await _firestore
-          .collection('users')
-          .doc(candidateId)
-          .collection('discovery')
-          .doc(userId)
-          .get();
+      final otherUserSwipe = await _streamService.getDiscoverySwipe(
+        candidateId,
+        userId,
+      );
 
       if (otherUserSwipe.exists && otherUserSwipe.get('isLike') == true) {
         // Mutual match! Create match record
         final matchId = _generateMatchId(userId, candidateId);
-        final matchDoc = _firestore.collection('matches').doc(matchId);
+        final matchDoc = _streamService.persistentMatchRef(matchId);
 
         batch.set(
           matchDoc,
@@ -118,12 +109,10 @@ class PersistentDiscoveryService {
     return Stream.periodic(const Duration(seconds: 10))
       .startWith(0)
       .asyncMap((_) async {
-        final snapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('discovery')
-          .limit(500)
-          .get();
+        final snapshot = await _streamService.fetchUserDiscoverySwipes(
+          userId,
+          limit: 500,
+        );
         return snapshot.docs
           .where((doc) => doc.get('isLike') == true)
           .map((doc) => doc.id)

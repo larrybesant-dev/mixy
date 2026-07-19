@@ -10,6 +10,51 @@ class DiscoveryStreamService {
 
   final FirebaseFirestore _firestore;
 
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchPersistentCandidates({
+    int limit = 200,
+  }) {
+    return _firestore
+        .collection('users')
+        .where('username', isGreaterThan: '')
+        .orderBy('username')
+        .limit(limit)
+        .get();
+  }
+
+  DocumentReference<Map<String, dynamic>> discoverySwipeRef(
+    String ownerUserId,
+    String candidateId,
+  ) {
+    return _firestore
+        .collection('users')
+        .doc(ownerUserId)
+        .collection('discovery')
+        .doc(candidateId);
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getDiscoverySwipe(
+    String ownerUserId,
+    String candidateId,
+  ) {
+    return discoverySwipeRef(ownerUserId, candidateId).get();
+  }
+
+  DocumentReference<Map<String, dynamic>> persistentMatchRef(String matchId) {
+    return _firestore.collection('matches').doc(matchId);
+  }
+
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchUserDiscoverySwipes(
+    String userId, {
+    int limit = 500,
+  }) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('discovery')
+        .limit(limit)
+        .get();
+  }
+
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchDiscoveryPreferencesDoc(
     String userId,
   ) {
