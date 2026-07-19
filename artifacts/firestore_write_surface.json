@@ -2715,16 +2715,6 @@
       "inferredPath": "(unknown)"
     },
     {
-      "file": "lib/features/room/screens/cam_popout_screen.dart",
-      "line": 73,
-      "operation": "update",
-      "collections": [
-        "users",
-        "rooms"
-      ],
-      "inferredPath": "users/{id}/rooms/{id}"
-    },
-    {
       "file": "lib/features/room/screens/create_room_screen.dart",
       "line": 657,
       "operation": "add",
@@ -2761,40 +2751,31 @@
     },
     {
       "file": "lib/features/room/services/room_join_verification.dart",
-      "line": 20,
+      "line": 23,
       "operation": "add",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_join_verification.dart",
-      "line": 29,
+      "line": 32,
       "operation": "add",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_join_verification.dart",
-      "line": 37,
+      "line": 40,
       "operation": "add",
-      "collections": [
-        "rooms"
-      ],
-      "inferredPath": "rooms/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_join_verification.dart",
       "line": 52,
       "operation": "add",
-      "collections": [
-        "rooms",
-        "participants"
-      ],
-      "inferredPath": "rooms/{id}/participants/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/services/room_session_service.dart",
