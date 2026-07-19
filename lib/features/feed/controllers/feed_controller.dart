@@ -11,6 +11,7 @@ import '../../../models/user_model.dart';
 import '../../../services/moderation_service.dart';
 import '../../../services/room_service.dart';
 import '../../../services/room_discovery_service.dart';
+import '../../../services/user_gateway.dart';
 import '../../../core/firestore/firestore_error_utils.dart';
 import '../../../core/providers/firebase_providers.dart';
 
@@ -94,6 +95,7 @@ class FeedController extends Notifier<FeedState> {
   late final FirebaseAuth _auth;
   late final ModerationService _moderationService;
   late final RoomService _roomService;
+  late final UserGateway _userGateway;
 
   @override
   FeedState build() {
@@ -101,6 +103,7 @@ class FeedController extends Notifier<FeedState> {
     _auth = FirebaseAuth.instance;
     _moderationService = ModerationService(firestore: _firestore, auth: _auth);
     _roomService = ref.read(roomServiceProvider);
+    _userGateway = ref.read(userGatewayProvider);
     return const FeedState();
   }
 
@@ -109,7 +112,7 @@ class FeedController extends Notifier<FeedState> {
       return const _FeedViewerProfile();
     }
 
-    final userDoc = await _firestore.collection('users').doc(userId).get();
+    final userDoc = await _userGateway.getUser(userId);
     final data = userDoc.data();
     if (data == null) {
       return const _FeedViewerProfile();
@@ -391,11 +394,7 @@ class FeedController extends Notifier<FeedState> {
       };
       var trendingUsers = const <UserModel>[];
       try {
-        final usersSnap = await _firestore
-            .collection('users')
-            .where('isPrivate', isEqualTo: false)
-            .limit(40)
-            .get(const GetOptions(source: Source.server));
+        final usersSnap = await _userGateway.getPublicUsers(limit: 40);
         final visibleUsers =
             usersSnap.docs
                 .map((doc) => UserModel.fromJson({'id': doc.id, ...doc.data()}))
