@@ -30,6 +30,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   startup.markBindingReady();
 
+  if (kIsWeb) {
+    setUrlStrategy(PathUrlStrategy());
+  }
+
   // Initialize Firebase native platform bindings cleanly BEFORE layout initialization
   try {
     await Firebase.initializeApp(
@@ -118,10 +122,6 @@ Future<void> main() async {
   } catch (e) {
     // Never let App Check activation failures block startup or requests.
     debugPrint('[Firebase] App Check activation failed (non-fatal): $e');
-  }
-
-  if (kIsWeb) {
-    setUrlStrategy(PathUrlStrategy());
   }
 
   FlutterError.onError = (details) {

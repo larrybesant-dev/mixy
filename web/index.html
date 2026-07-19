@@ -105,6 +105,17 @@
         }
       }
 
+      // Preserve deep links through early Flutter web bootstrap churn by
+      // carrying the original path on a root query param once.
+      if (window.location.pathname !== '/' &&
+          window.location.search.indexOf('__dl=') === -1) {
+        var deepLink = window.location.pathname +
+          window.location.search +
+          window.location.hash;
+        var rewritten = '/?__dl=' + encodeURIComponent(deepLink);
+        window.history.replaceState(window.history.state, '', rewritten);
+      }
+
       function setBootMessage(message) {
         if (bootMsg) bootMsg.textContent = message;
       }

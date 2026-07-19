@@ -1,5 +1,4 @@
 import 'package:mixvy/presentation/rooms/browser/room_browser_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -158,7 +157,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     refreshListenable: refreshNotifier,
-    initialLocation: kIsWeb ? (Uri.base.path.isEmpty ? '/' : Uri.base.path) : '/',
     errorBuilder: (context, state) => FeatureDegradedScreen(
       title: 'Page Not Found',
       message: state.error?.toString().isNotEmpty == true ? 'We could not open this route. ${state.error}' : 'The route you requested is unavailable or no longer exists.',
@@ -170,6 +168,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       try {
         final authState = refreshNotifier.authState;
         final location = state.uri.path.isEmpty ? '/' : state.uri.path;
+        final deepLink = state.uri.queryParameters['__dl'];
+
+        if (location == '/' &&
+            deepLink != null &&
+            deepLink.startsWith('/') &&
+            !deepLink.startsWith('/?')) {
+          RedirectTrace.record(
+            from: location,
+            to: deepLink,
+            reason: 'root_restore_deep_link',
+          );
+          return deepLink;
+        }
         
         // Handle web bootstrap lag safely without crashing
         // Allow auth routes (/auth, /register, /forgot-password, /onboarding) even during bootstrap
@@ -441,7 +452,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       /// Root level routes
-      GoRoute(path: '/', redirect: (context, state) => '/home'),
+      GoRoute(path: '/', name: 'root', builder: (context, state) => _CustomShell(initialIndex: 0)),
       GoRoute(path: '/auth', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
