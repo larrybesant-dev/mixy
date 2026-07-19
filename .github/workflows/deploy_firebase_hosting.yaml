@@ -56,7 +56,7 @@ jobs:
           
           # Deploy to Firebase Hosting using the repo's configured hosting target
           # (.firebaserc -> target "default" maps to site "mixvy-v2").
-          firebase deploy --only hosting --project mix-and-mingle-v2
+          firebase deploy --only hosting:default --project mix-and-mingle-v2
           
           rm -f $GOOGLE_APPLICATION_CREDENTIALS
         env:
