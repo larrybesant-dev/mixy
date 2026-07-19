@@ -45,85 +45,78 @@
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 105,
+      "line": 106,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 186,
+      "line": 187,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 350,
+      "line": 351,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 448,
+      "line": 449,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 460,
+      "line": 461,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 468,
+      "line": 469,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 529,
+      "line": 530,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 662,
+      "line": 663,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 672,
+      "line": 673,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 680,
+      "line": 681,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 742,
+      "line": 743,
       "operation": "add",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/services/friend_service.dart",
-      "line": 1078,
-      "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
     },
@@ -131,22 +124,29 @@
       "file": "lib/services/friend_service.dart",
       "line": 1079,
       "operation": "delete",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/friend_service.dart",
+      "line": 1080,
+      "operation": "delete",
       "collections": [
         "friend_links"
       ],
       "inferredPath": "friend_links/{id}"
-    },
-    {
-      "file": "lib/services/friend_service.dart",
-      "line": 1241,
-      "operation": "delete",
-      "collections": [],
-      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
       "line": 1242,
       "operation": "delete",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/friend_service.dart",
+      "line": 1243,
+      "operation": "delete",
       "collections": [
         "friend_links"
       ],
@@ -154,28 +154,28 @@
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1367,
+      "line": 1368,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1430,
+      "line": 1431,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1466,
+      "line": 1467,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1608,
+      "line": 1609,
       "operation": "add",
       "collections": [
         "notifications"
@@ -358,49 +358,45 @@
     },
     {
       "file": "lib/services/presence_repository.dart",
-      "line": 64,
-      "operation": "add",
-      "collections": [
-        "presence"
-      ],
-      "inferredPath": "presence/{id}"
-    },
-    {
-      "file": "lib/services/presence_repository.dart",
-      "line": 152,
+      "line": 61,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/presence_repository.dart",
-      "line": 162,
+      "line": 149,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/presence_repository.dart",
-      "line": 202,
+      "line": 159,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/presence_repository.dart",
-      "line": 245,
+      "line": 199,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/presence_repository.dart",
-      "line": 305,
+      "line": 242,
       "operation": "add",
-      "collections": [
-        "presence"
-      ],
-      "inferredPath": "presence/{id}"
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/presence_repository.dart",
+      "line": 299,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/profile_service.dart",
@@ -1188,28 +1184,28 @@
     },
     {
       "file": "lib/features/feed/providers/feed_providers.dart",
-      "line": 175,
+      "line": 176,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/providers/feed_providers.dart",
-      "line": 178,
+      "line": 179,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/providers/feed_providers.dart",
-      "line": 181,
+      "line": 182,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/providers/feed_providers.dart",
-      "line": 184,
+      "line": 185,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -1818,28 +1814,28 @@
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 523,
+      "line": 542,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 527,
+      "line": 546,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 531,
+      "line": 550,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 536,
+      "line": 555,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"

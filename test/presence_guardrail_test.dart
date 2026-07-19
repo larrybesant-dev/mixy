@@ -8,6 +8,7 @@ void main() {
     final libDir = Directory('${root.path}${Platform.pathSeparator}lib');
     final allowed = <String>{
       'lib/services/presence_controller.dart',
+      'lib/services/presence_gateway.dart',
       'lib/services/presence_repository.dart',
       'lib/services/presence_service.dart',
       'lib/shared/widgets/app_debug_overlay.dart',
@@ -38,7 +39,7 @@ void main() {
       violations,
       isEmpty,
       reason:
-          'Only PresenceController/PresenceRepository/PresenceService may access the presence collection directly. Violations: ${violations.join(', ')}',
+          'Only PresenceGateway/PresenceController/PresenceRepository/PresenceService may access the presence collection directly. Violations: ${violations.join(', ')}',
     );
   });
 
