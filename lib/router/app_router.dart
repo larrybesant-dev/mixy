@@ -351,13 +351,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'profile',
         redirect: (context, state) {
           final uid = refreshNotifier.authState.uid;
-          if (uid == null || uid.isEmpty) return '/auth';
-          if (state.uri.path == '/profile') return '/profile/$uid';
+          if (uid == null || uid.isEmpty) {
+            RedirectTrace.record(
+              from: state.uri.path,
+              to: '/auth',
+              reason: 'profile_guard_missing_uid',
+            );
+            return '/auth';
+          }
+          if (state.uri.path == '/profile') {
+            final target = '/profile/$uid';
+            RedirectTrace.record(
+              from: state.uri.path,
+              to: target,
+              reason: 'profile_root_redirect_to_uid',
+            );
+            return target;
+          }
           return null;
         },
         builder: (context, state) => _CustomShell(initialIndex: 4),
         routes: [
-          GoRoute(path: ':id', name: 'userProfile', builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id'] ?? '')),
           GoRoute(path: 'edit', name: 'editProfile', builder: (context, state) => EditProfileScreen(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0)),
           GoRoute(path: 'settings', name: 'profileSettings', builder: (context, state) => const SettingsScreen()),
           GoRoute(path: 'friends', name: 'profileFriends', builder: (context, state) => const FriendListScreen()),
@@ -407,6 +421,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
             builder: (context, state) => const ModerationDashboardScreen(),
           ),
+          GoRoute(path: ':id', name: 'userProfile', builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id'] ?? '')),
         ],
       ),
 
@@ -476,7 +491,8 @@ class _CustomShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(userProvider);
-    final uid = currentUser?.id ?? '';
+    final authState = ref.watch(authControllerProvider);
+    final uid = currentUser?.id ?? authState.uid ?? '';
     final username = currentUser?.username ?? '';
 
     // Simply use the initialIndex provided by the route
