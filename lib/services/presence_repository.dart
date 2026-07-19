@@ -5,9 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/firestore/firestore_debug_tracing.dart';
-import '../core/providers/firebase_providers.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 import '../models/presence_model.dart';
+import 'presence_gateway.dart';
 
 abstract class PresenceRepository {
   Stream<PresenceModel> watchUserPresence(String userId);
@@ -19,21 +19,21 @@ abstract class PresenceRepository {
 
 final presenceRepositoryProvider = Provider<PresenceRepository>((ref) {
   return FirestorePresenceRepository(
-    ref.watch(firestoreProvider),
+    ref.watch(presenceGatewayProvider),
     streamLifecycleManager: ref.watch(streamLifecycleManagerProvider),
   );
 });
 
 class FirestorePresenceRepository implements PresenceRepository {
   FirestorePresenceRepository(
-    this._firestore, {
+    this._gateway, {
     required StreamLifecycleManager streamLifecycleManager,
   }) : _streamLifecycleManager = streamLifecycleManager;
 
   static const int _firestoreWhereInLimit = 30;
   static const Duration _transientOfflineHold = Duration(seconds: 8);
 
-  final FirebaseFirestore _firestore;
+  final PresenceGateway _gateway;
   final StreamLifecycleManager _streamLifecycleManager;
 
   bool _isPermissionDenied(Object error) {
@@ -49,9 +49,6 @@ class FirestorePresenceRepository implements PresenceRepository {
         normalized.contains('unauthenticated') ||
         normalized.contains('unauthorized');
   }
-
-  DocumentReference<Map<String, dynamic>> _ref(String userId) =>
-      _firestore.collection('presence').doc(userId);
 
   List<List<String>> _chunksOf(List<String> values, int size) {
     if (values.isEmpty) {
@@ -138,9 +135,9 @@ class FirestorePresenceRepository implements PresenceRepository {
             query: 'presence/$userId',
             userId: userId,
             itemCount: (_) => 1,
-            stream: _ref(
-              userId,
-            ).snapshots().map((doc) => _parsePresence(userId, doc.data())),
+            stream: _gateway
+                .watchPresence(userId)
+                .map((doc) => _parsePresence(userId, doc.data())),
           ).listen(
             (presence) {
               final resolved = _arbitratePresence(
@@ -226,7 +223,7 @@ class FirestorePresenceRepository implements PresenceRepository {
               .bind<DocumentSnapshot<Map<String, dynamic>>>(
                 key: streamKey,
                 routePrefixes: const <String>['*'],
-                create: () => _ref(userId).snapshots(),
+                create: () => _gateway.watchPresence(userId),
               )
               .listen(
                 (doc) {
@@ -281,10 +278,7 @@ class FirestorePresenceRepository implements PresenceRepository {
             .bind<QuerySnapshot<Map<String, dynamic>>>(
               key: streamKey,
               routePrefixes: const <String>['*'],
-              create: () => _firestore
-                  .collection('presence')
-                  .where(FieldPath.documentId, whereIn: chunk)
-                  .snapshots(),
+              create: () => _gateway.watchPresenceBatch(chunk),
             )
             .listen(
               (snapshot) {
@@ -327,10 +321,7 @@ class FirestorePresenceRepository implements PresenceRepository {
 
     try {
       for (final chunk in chunks) {
-        final snapshot = await _firestore
-            .collection('presence')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .get();
+        final snapshot = await _gateway.getPresenceBatch(chunk);
         for (final doc in snapshot.docs) {
           result[doc.id] = _parsePresence(doc.id, doc.data());
         }
@@ -341,7 +332,7 @@ class FirestorePresenceRepository implements PresenceRepository {
       }
 
       for (final userId in normalizedIds) {
-        final doc = await _ref(userId).get();
+        final doc = await _gateway.getPresence(userId);
         result[userId] = _parsePresence(userId, doc.data());
       }
     }
@@ -355,11 +346,7 @@ class FirestorePresenceRepository implements PresenceRepository {
   @override
   Future<int> countOnlineUsers({int limit = 500}) async {
     try {
-      final snapshot = await _firestore
-          .collection('presence')
-          .where('isOnline', isEqualTo: true)
-          .limit(limit + 1)
-          .get();
+      final snapshot = await _gateway.countOnlinePresence(limit: limit);
 
       return snapshot.docs
           .where((doc) => _parsePresence(doc.id, doc.data()).isOnline == true)
