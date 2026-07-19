@@ -5,6 +5,8 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../services/room_session_gateway.dart';
+
 class RoomJoinVerification {
   static Future<RoomJoinCheckResult> verifyRoomJoinability({
     required FirebaseFirestore firestore,
@@ -12,9 +14,10 @@ class RoomJoinVerification {
     required String userId,
   }) async {
     final result = RoomJoinCheckResult(roomId: roomId, userId: userId);
+    final roomSessionGateway = RoomSessionGateway(firestore);
 
     // Step 1: Verify room exists
-    final roomDoc = await firestore.collection('rooms').doc(roomId).get();
+    final roomDoc = await roomSessionGateway.getRoom(roomId);
     result.roomExists = roomDoc.exists;
     if (!roomDoc.exists) {
       result.errors.add('Room does not exist');
@@ -38,12 +41,9 @@ class RoomJoinVerification {
     }
 
     // Step 4: Check if participant doc already exists
-    final participantDoc = await firestore
-        .collection('rooms')
-        .doc(roomId)
-        .collection('participants')
-        .doc(userId)
-        .get();
+    final participantDoc = await roomSessionGateway
+      .participantRef(roomId, userId)
+      .get();
     result.participantDocExists = participantDoc.exists;
     if (participantDoc.exists) {
       final isBanned = (participantDoc.data()?['isBanned'] as bool?) ?? false;
