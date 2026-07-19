@@ -54,10 +54,9 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS=$(mktemp)
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}' > $GOOGLE_APPLICATION_CREDENTIALS
           
-          # Deploy to Firebase Hosting
-          # The error "already active version" is expected and means deployment succeeded
-          firebase deploy --only hosting:mix-and-mingle-v2 --project mix-and-mingle-v2 || \
-            (if [[ $? -eq 1 ]]; then echo "Deploy completed (version already active)"; exit 0; fi)
+          # Deploy to Firebase Hosting using the repo's configured hosting target
+          # (.firebaserc -> target "default" maps to site "mixvy-v2").
+          firebase deploy --only hosting --project mix-and-mingle-v2
           
           rm -f $GOOGLE_APPLICATION_CREDENTIALS
         env:
