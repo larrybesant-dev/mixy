@@ -68,6 +68,50 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'mixvy-root-navigator',
 );
 
+String? _profileDeepLinkLock;
+DateTime? _profileDeepLinkLockSetAt;
+const Duration _profileDeepLinkLockTtl = Duration(seconds: 25);
+
+bool _isTargetedProfileDeepLink(String path) {
+  if (path == '/profile/edit') {
+    return true;
+  }
+  final profileIdMatch = RegExp(r'^/profile/[^/]+$').hasMatch(path);
+  if (!profileIdMatch) {
+    return false;
+  }
+  // Exclude known nested static profile routes.
+  return path != '/profile/settings' &&
+      path != '/profile/friends' &&
+      path != '/profile/groups' &&
+      path != '/profile/payments' &&
+      path != '/profile/vip' &&
+      path != '/profile/account' &&
+      path != '/profile/about' &&
+      path != '/profile/verification' &&
+      path != '/profile/moderation' &&
+      path != '/profile/admin-entitlements';
+}
+
+void _setProfileDeepLinkLock(String path) {
+  _profileDeepLinkLock = path;
+  _profileDeepLinkLockSetAt = DateTime.now();
+}
+
+String? _activeProfileDeepLinkLock() {
+  final locked = _profileDeepLinkLock;
+  final at = _profileDeepLinkLockSetAt;
+  if (locked == null || at == null) {
+    return null;
+  }
+  if (DateTime.now().difference(at) > _profileDeepLinkLockTtl) {
+    _profileDeepLinkLock = null;
+    _profileDeepLinkLockSetAt = null;
+    return null;
+  }
+  return locked;
+}
+
 class _RouterRefreshNotifier extends ChangeNotifier {
   AuthState _authState = const AuthState();
   UserModel? _currentUser;
@@ -170,10 +214,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         final location = state.uri.path.isEmpty ? '/' : state.uri.path;
         final deepLink = state.uri.queryParameters['__dl'];
 
+        if (_isTargetedProfileDeepLink(location)) {
+          _setProfileDeepLinkLock(location);
+        }
+
+        final lockedProfileDeepLink = _activeProfileDeepLinkLock();
+        if (location == '/' && lockedProfileDeepLink != null) {
+          RedirectTrace.record(
+            from: location,
+            to: lockedProfileDeepLink,
+            reason: 'profile_deep_link_lock_restore',
+          );
+          return lockedProfileDeepLink;
+        }
+
         if (location == '/' &&
             deepLink != null &&
             deepLink.startsWith('/') &&
             !deepLink.startsWith('/?')) {
+          if (_isTargetedProfileDeepLink(deepLink)) {
+            _setProfileDeepLinkLock(deepLink);
+          }
           RedirectTrace.record(
             from: location,
             to: deepLink,

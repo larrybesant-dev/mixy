@@ -105,6 +105,69 @@
         }
       }
 
+      function isLockedProfilePath(path) {
+        if (!path || typeof path !== 'string') return false;
+        if (path === '/profile/edit') return true;
+        return /^\/profile\/[^/]+$/.test(path);
+      }
+
+      var initialPath = window.location.pathname || '/';
+      var lockedProfilePath = isLockedProfilePath(initialPath) ? initialPath : null;
+      var lockStartedAt = Date.now();
+      var lockWindowMs = 25000;
+
+      function profileLockActive() {
+        return !!lockedProfilePath && (Date.now() - lockStartedAt) < lockWindowMs;
+      }
+
+      function normalizeUrlArg(urlArg) {
+        if (urlArg && typeof urlArg === 'object' && typeof urlArg.pathname === 'string') {
+          return urlArg.pathname;
+        }
+        if (typeof urlArg !== 'string' || urlArg.length === 0) return '';
+        if (urlArg.startsWith('http://') || urlArg.startsWith('https://')) {
+          try {
+            return new URL(urlArg).pathname;
+          } catch (_) {
+            return urlArg;
+          }
+        }
+        return urlArg;
+      }
+
+      function shouldGuardUrl(urlArg) {
+        if (!profileLockActive()) return false;
+        var path = normalizeUrlArg(urlArg);
+        if (!path && (window.location.pathname === '/' || window.location.pathname === '/home')) {
+          path = window.location.pathname;
+        }
+        return path === '/' || path === '/home';
+      }
+
+      window.__mixvyDeepLinkGuard = {
+        active: function () { return profileLockActive(); },
+        lockedPath: lockedProfilePath,
+      };
+
+      if (profileLockActive()) {
+        var originalReplaceState = window.history.replaceState.bind(window.history);
+        var originalPushState = window.history.pushState.bind(window.history);
+
+        window.history.replaceState = function (state, title, url) {
+          if (shouldGuardUrl(url)) {
+            return originalReplaceState(state, title, lockedProfilePath);
+          }
+          return originalReplaceState(state, title, url);
+        };
+
+        window.history.pushState = function (state, title, url) {
+          if (shouldGuardUrl(url)) {
+            return originalPushState(state, title, lockedProfilePath);
+          }
+          return originalPushState(state, title, url);
+        };
+      }
+
       // Preserve deep links through early Flutter web bootstrap churn by
       // carrying the original path on a root query param once.
       if (window.location.pathname !== '/' &&
