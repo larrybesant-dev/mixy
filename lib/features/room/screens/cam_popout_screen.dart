@@ -6,6 +6,8 @@ import '../../../presentation/providers/user_provider.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../../services/room_management_gateway.dart';
+import '../../../services/room_session_gateway.dart';
 import '../../../services/room_service.dart';
 import '../../../services/notification_service.dart';
 
@@ -48,18 +50,16 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
     try {
       final roomService = ref.read(roomServiceProvider);
       final firestore = ref.read(firestoreProvider);
+      final roomManagementGateway = ref.read(roomManagementGatewayProvider);
+      final roomSessionGateway = ref.read(roomSessionGatewayProvider);
       final callerName = caller.username.trim().isEmpty
           ? 'Someone'
           : caller.username;
 
       // Fetch target user's display name for the room title.
-      final targetDoc = await firestore
-          .collection('users')
-          .doc(widget.targetUserId)
-          .get();
-      final targetName = targetDoc.exists
-          ? (targetDoc.data()?['username'] as String? ?? 'User').trim()
-          : 'User';
+      final targetDoc = await roomSessionGateway.getUser(widget.targetUserId);
+      final targetData = targetDoc.data();
+      final targetName = (targetData?['username'] as String? ?? 'User').trim();
 
       final roomId = await roomService.createRoom(
         hostId: caller.id,
@@ -70,7 +70,7 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
       );
 
       // Set maxBroadcasters = 2 and flag as a direct call.
-      await firestore.collection('rooms').doc(roomId).update({
+      await roomManagementGateway.updateRoom(roomId, {
         'maxBroadcasters': 2,
         'isDirectCall': true,
         'calleeId': widget.targetUserId,
