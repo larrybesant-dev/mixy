@@ -5,6 +5,7 @@ import 'package:mixvy/core/telemetry/app_telemetry.dart';
 import 'package:mixvy/features/feed/repository/feed_repository.dart';
 import 'package:mixvy/features/room/services/room_session_service.dart';
 import 'package:mixvy/services/presence_controller.dart';
+import 'package:mixvy/services/room_session_gateway.dart';
 import 'package:mixvy/features/speed_dating/services/speed_dating_service.dart';
 
 class _MockPresence extends PresenceController {
@@ -23,6 +24,7 @@ Future<void> main() async {
   final feedRepo = FeedRepository(firestore);
   final sessionService = RoomSessionService(
     firestore: firestore,
+    roomSessionGateway: RoomSessionGateway(firestore),
     presenceController: _MockPresence(),
   );
   final speedDatingService = SpeedDatingService(firestore: firestore);
