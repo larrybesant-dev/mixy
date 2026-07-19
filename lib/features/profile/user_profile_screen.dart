@@ -30,6 +30,7 @@ import '../../features/feed/providers/feed_providers.dart';
 import '../../features/feed/widgets/post_card.dart';
 import '../../presentation/providers/friend_provider.dart';
 import '../../presentation/providers/user_provider.dart';
+import '../../services/schema_mutation_service.dart';
 import 'profile_view_providers.dart';
 import 'widgets/profile_card.dart';
 import '../../core/flags/feature_flags.dart';
@@ -54,6 +55,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   late Future<Map<String, dynamic>> _profileFuture;
   late TabController _tabController;
   bool _sendingFriendRequest = false;
+  bool _attemptedProfileBootstrap = false;
 
   String? _stringOrNull(dynamic value) {
     if (value == null) return null;
@@ -118,12 +120,29 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 
   Future<Map<String, dynamic>> _loadProfile() async {
-    final basePayload = await ref.read(
+    var basePayload = await ref.read(
       userProfileBaseProvider(widget.userId).future,
     );
-    final userSnapshot = basePayload.userSnapshot;
-    final privacyData = basePayload.privacy;
-    final viewerId = FirebaseAuth.instance.currentUser?.uid;
+    var userSnapshot = basePayload.userSnapshot;
+    var privacyData = basePayload.privacy;
+    final viewerUser = FirebaseAuth.instance.currentUser;
+    final viewerId = viewerUser?.uid;
+
+    if (!userSnapshot.exists &&
+        !_attemptedProfileBootstrap &&
+        viewerUser != null &&
+        viewerUser.uid == widget.userId) {
+      _attemptedProfileBootstrap = true;
+      try {
+        await SchemaMutationService().createUserProfile(user: viewerUser);
+        ref.invalidate(userProfileBaseProvider(widget.userId));
+        basePayload = await ref.read(userProfileBaseProvider(widget.userId).future);
+        userSnapshot = basePayload.userSnapshot;
+        privacyData = basePayload.privacy;
+      } catch (_) {
+        // Fall through with missing snapshot so the UI can still show a clear empty state.
+      }
+    }
 
     bool isBlocked = false;
     bool isFollowing = false;
