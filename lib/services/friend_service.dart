@@ -11,6 +11,7 @@ import '../models/presence_model.dart';
 import '../models/user_model.dart';
 import 'analytics_service.dart';
 import 'moderation_service.dart';
+import 'presence_gateway.dart';
 import 'presence_repository.dart';
 import 'schema_mutation_service.dart';
 
@@ -30,7 +31,7 @@ class FriendService {
             ),
         _presenceRepository = presenceRepository ??
             FirestorePresenceRepository(
-              firestore ?? FirebaseFirestore.instance,
+              PresenceGateway(firestore ?? FirebaseFirestore.instance),
               streamLifecycleManager: streamLifecycleManager,
             ),
         _mutationService =

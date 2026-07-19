@@ -73,8 +73,8 @@ Widget _buildApp({
       coinTransactionStreamProvider('').overrideWith(
         (_) => Stream<List<CoinTransaction>>.value(<CoinTransaction>[]),
       ),
-      referralCodeProvider.overrideWith((_) => Stream<String?>.value(null)),
-      referralEarningsProvider.overrideWith((_) => Stream<double>.value(0)),
+      referralCodeProvider.overrideWithValue(const AsyncValue.data(null)),
+      referralEarningsProvider.overrideWithValue(const AsyncValue.data(0)),
     ],
     child: const MaterialApp(home: PaymentsScreen()),
   );

@@ -12,6 +12,7 @@ import 'test_helpers.dart';
 import 'package:mixvy/features/room/services/room_session_service.dart';
 import 'package:mixvy/models/room_participant_model.dart';
 import 'package:mixvy/services/presence_controller.dart';
+import 'package:mixvy/services/room_session_gateway.dart';
 
 class _SpyMicAccessController extends MicAccessController {
   _SpyMicAccessController() : super(FakeFirebaseFirestore());
@@ -58,6 +59,7 @@ class _TestPresenceController extends PresenceController {
 class _FlakyRoomSessionService extends RoomSessionService {
   _FlakyRoomSessionService({
     required super.firestore,
+    required super.roomSessionGateway,
     required super.presenceController,
     this.joinFailuresRemaining = 0,
   });
@@ -436,6 +438,7 @@ void main() {
 
       final flakySession = _FlakyRoomSessionService(
         firestore: firestore,
+        roomSessionGateway: RoomSessionGateway(firestore),
         presenceController: _TestPresenceController(),
         joinFailuresRemaining: 1,
       );
@@ -475,6 +478,7 @@ void main() {
 
       final flakySession = _FlakyRoomSessionService(
         firestore: firestore,
+        roomSessionGateway: RoomSessionGateway(firestore),
         presenceController: _TestPresenceController(),
       );
 

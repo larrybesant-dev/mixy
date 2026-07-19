@@ -3,6 +3,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
 import 'package:mixvy/features/room/services/room_session_service.dart';
 import 'package:mixvy/services/presence_controller.dart';
+import 'package:mixvy/services/room_session_gateway.dart';
 
 class _FakePresenceController extends PresenceController {
   @override
@@ -35,6 +36,7 @@ void main() {
       final firestore = FakeFirebaseFirestore();
       final sessionService = RoomSessionService(
         firestore: firestore,
+        roomSessionGateway: RoomSessionGateway(firestore),
         presenceController: _FakePresenceController(),
       );
 
@@ -65,6 +67,7 @@ void main() {
       final firestore = FakeFirebaseFirestore();
       final sessionService = RoomSessionService(
         firestore: firestore,
+        roomSessionGateway: RoomSessionGateway(firestore),
         presenceController: _FakePresenceController(),
       );
 

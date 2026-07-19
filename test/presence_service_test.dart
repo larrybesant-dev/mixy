@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/services/presence_controller.dart';
+import 'package:mixvy/services/presence_gateway.dart';
 import 'package:mixvy/services/presence_repository.dart';
 import 'package:mixvy/services/presence_service.dart';
 import 'package:mixvy/services/rtdb_presence_service.dart';
@@ -180,7 +181,7 @@ void main() {
       () async {
         final firestore = FakeFirebaseFirestore();
         final repository = FirestorePresenceRepository(
-          firestore,
+          PresenceGateway(firestore),
           streamLifecycleManager: _FakeLifecycle(),
         );
         final emissions = <PresenceModel>[];
