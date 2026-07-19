@@ -179,7 +179,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             location == '/onboarding';
         
         if (!authState.isRoutingStable && !isAuthBootstrapRoute) {
-          return '/auth'; // Redirect un-bootstrapped web states straight to login/auth view safely
+          RedirectTrace.record(
+            from: location,
+            to: 'stay',
+            reason: 'router_bootstrap_preserve_location',
+          );
+          return null; // Preserve deep link until auth state is fully resolved.
         }
 
         final evaluation = evaluateAppRedirectWithReason(
@@ -350,6 +355,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         name: 'profile',
         redirect: (context, state) {
+          final authState = refreshNotifier.authState;
+          if (!authState.isRoutingStable) {
+            RedirectTrace.record(
+              from: state.uri.path,
+              to: 'stay',
+              reason: 'profile_guard_wait_for_routing_stable',
+            );
+            return null;
+          }
+
           final uid = refreshNotifier.authState.uid;
           if (uid == null || uid.isEmpty) {
             RedirectTrace.record(
