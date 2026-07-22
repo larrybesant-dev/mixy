@@ -400,7 +400,7 @@
     },
     {
       "file": "lib/services/profile_service.dart",
-      "line": 137,
+      "line": 133,
       "operation": "set",
       "collections": [
         "users"
@@ -659,28 +659,14 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 133,
+      "line": 135,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 139,
-      "operation": "set",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/services/schema_mutation_service.dart",
-      "line": 192,
-      "operation": "set",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/services/schema_mutation_service.dart",
-      "line": 193,
+      "line": 141,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -694,28 +680,42 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 197,
+      "line": 195,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 201,
+      "line": 196,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 207,
+      "line": 199,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 242,
+      "line": 203,
+      "operation": "set",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/schema_mutation_service.dart",
+      "line": 209,
+      "operation": "set",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/schema_mutation_service.dart",
+      "line": 244,
       "operation": "set",
       "collections": [
         "verification",
@@ -725,7 +725,7 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 245,
+      "line": 247,
       "operation": "delete",
       "collections": [
         "verification",
@@ -735,18 +735,8 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 246,
+      "line": 248,
       "operation": "delete",
-      "collections": [
-        "verification",
-        "users"
-      ],
-      "inferredPath": "verification/{id}/users/{id}"
-    },
-    {
-      "file": "lib/services/schema_mutation_service.dart",
-      "line": 255,
-      "operation": "set",
       "collections": [
         "verification",
         "users"
@@ -756,6 +746,16 @@
     {
       "file": "lib/services/schema_mutation_service.dart",
       "line": 257,
+      "operation": "set",
+      "collections": [
+        "verification",
+        "users"
+      ],
+      "inferredPath": "verification/{id}/users/{id}"
+    },
+    {
+      "file": "lib/services/schema_mutation_service.dart",
+      "line": 259,
       "operation": "delete",
       "collections": [
         "verification",
@@ -765,7 +765,7 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 258,
+      "line": 260,
       "operation": "delete",
       "collections": [
         "users"
@@ -774,7 +774,7 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 283,
+      "line": 285,
       "operation": "set",
       "collections": [
         "users"
@@ -783,14 +783,14 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 337,
+      "line": 339,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 345,
+      "line": 347,
       "operation": "set",
       "collections": [
         "friend_links"
@@ -799,14 +799,14 @@
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 533,
+      "line": 535,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/schema_mutation_service.dart",
-      "line": 543,
+      "line": 545,
       "operation": "set",
       "collections": [
         "users"
@@ -1353,49 +1353,49 @@
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2427,
+      "line": 2388,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2428,
+      "line": 2389,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2433,
+      "line": 2394,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2434,
+      "line": 2395,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2929,
+      "line": 2890,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2934,
+      "line": 2895,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2947,
+      "line": 2908,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -1805,28 +1805,28 @@
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 729,
+      "line": 542,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 733,
+      "line": 546,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 737,
+      "line": 550,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 742,
+      "line": 555,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
