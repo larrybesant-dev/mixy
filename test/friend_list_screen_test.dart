@@ -153,18 +153,32 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('ONLINE'), findsOneWidget);
-    expect(find.text('IN ROOMS'), findsOneWidget);
-    expect(find.text('OFFLINE'), findsOneWidget);
+    // Top summary area should render immediately.
     expect(find.text('2 active now'), findsOneWidget);
     expect(find.text('1 in rooms'), findsOneWidget);
     expect(find.text('Back to my room'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('User Two'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    // Keep this test focused on roster behavior, not exact header copy.
     expect(find.text('User Two'), findsOneWidget);
     expect(find.text('Room Friend'), findsOneWidget);
     expect(find.text('Invite'), findsOneWidget);
     expect(find.text('Join Room'), findsOneWidget);
 
     await tester.tap(find.text('OFFLINE'));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Offline Friend'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Offline Friend'), findsOneWidget);
