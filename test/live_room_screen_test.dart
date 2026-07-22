@@ -10,7 +10,13 @@ import 'package:mixvy/features/room/providers/host_provider.dart';
 import 'package:mixvy/models/room_participant_model.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
+import 'package:mixvy/services/presence_controller.dart';
 import 'test_helpers.dart';
+
+class _StubPresenceController extends PresenceController {
+  @override
+  PresenceControllerState build() => const PresenceControllerState();
+}
 
 void main() {
   setUpAll(() async {
@@ -32,6 +38,9 @@ void main() {
       ProviderScope(
         overrides: [
           roomFirestoreProvider.overrideWithValue(firestore),
+          presenceControllerProvider.overrideWith(
+            () => _StubPresenceController(),
+          ),
           userProvider.overrideWithValue(
             UserModel(
               id: 'user-1',
