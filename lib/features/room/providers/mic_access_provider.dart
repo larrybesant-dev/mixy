@@ -100,6 +100,28 @@ class MicAccessController {
     final requestId = _requestDocId(requesterId, hostId);
     final requestRef = _requestCollection(roomId).doc(requestId);
     final now = DateTime.now();
+    String requesterDisplayName = requesterId;
+    String? requesterAvatarUrl;
+    int requesterRankTier = 0;
+    int requesterDiamondLevel = 0;
+
+    try {
+      final userDoc = await _db.collection('users').doc(requesterId).get();
+      final userData = userDoc.data() ?? const <String, dynamic>{};
+      final displayName = _asNullableString(userData['username']) ??
+          _asNullableString(userData['displayName']) ??
+          _asNullableString(userData['name']);
+      if (displayName != null && displayName.isNotEmpty) {
+        requesterDisplayName = displayName;
+      }
+      requesterAvatarUrl = _asNullableString(userData['avatarUrl']) ??
+          _asNullableString(userData['photoUrl']);
+      requesterRankTier = _asInt(userData['rankTier'], fallback: 0);
+      requesterDiamondLevel = _asInt(userData['diamondLevel'], fallback: 0);
+    } catch (_) {
+      // Best effort metadata hydration.
+    }
+
     final requesterSnapshot = await _requestCollection(
       roomId,
     ).where('requesterId', isEqualTo: requesterId).get();
@@ -179,6 +201,11 @@ class MicAccessController {
         'status': 'pending',
         'priority': nextPriority,
         'expiresAt': Timestamp.fromDate(now.add(_kRequestTtl)),
+        'requesterDisplayName': requesterDisplayName,
+        'requesterAvatarUrl': requesterAvatarUrl,
+        'requesterRankTier': requesterRankTier,
+        'requesterDiamondLevel': requesterDiamondLevel,
+        'requestSource': 'hand_raise',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

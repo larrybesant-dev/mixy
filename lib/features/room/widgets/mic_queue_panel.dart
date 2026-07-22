@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/mic_access_request_model.dart';
 import '../providers/mic_access_provider.dart';
+import 'room_rank_diamond_badge_row.dart';
 
 /// Paltalk-style mic queue panel.
 /// Shows the pending hand-raise queue with position numbers, requester names,
@@ -16,6 +17,9 @@ class MicQueuePanel extends ConsumerStatefulWidget {
     required this.currentUserId,
     required this.isHost,
     required this.displayNameById,
+    this.rankTierById = const <String, int>{},
+    this.diamondLevelById = const <String, int>{},
+    this.onJoinQueue,
     this.onApprove,
     this.onDeny,
     this.onWithdraw,
@@ -29,6 +33,11 @@ class MicQueuePanel extends ConsumerStatefulWidget {
 
   /// Display names keyed by userId (same map used by UserListPanel).
   final Map<String, String> displayNameById;
+  final Map<String, int> rankTierById;
+  final Map<String, int> diamondLevelById;
+
+  /// Called when the user taps "Join Queue to Talk".
+  final VoidCallback? onJoinQueue;
 
   /// Called when the host taps Approve on a request.
   final void Function(MicAccessRequestModel request)? onApprove;
@@ -95,7 +104,10 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
             .where((r) => r.status == 'pending' && !r.isExpired)
             .toList(growable: false);
 
-        if (pending.isEmpty) return const SizedBox.shrink();
+        final myPending = pending.where((r) => r.requesterId == widget.currentUserId).toList(growable: false);
+        final hasMyPending = myPending.isNotEmpty;
+
+        if (pending.isEmpty && widget.isHost) return const SizedBox.shrink();
 
         return DecoratedBox(
           decoration: BoxDecoration(
@@ -157,123 +169,159 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                 ),
               ),
               // Queue list (max 5 visible, scrollable)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 160),
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  shrinkWrap: true,
-                  itemCount: pending.length,
-                  itemBuilder: (context, index) {
-                    final req = pending[index];
-                    final name =
-                        widget.displayNameById[req.requesterId] ??
-                        req.requesterId;
-                    final isMe = req.requesterId == widget.currentUserId;
+              if (!widget.isHost)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: hasMyPending ? null : widget.onJoinQueue,
+                      icon: Icon(hasMyPending ? Icons.hourglass_top : Icons.campaign_outlined),
+                      label: Text(
+                        hasMyPending
+                            ? 'In Queue (#${pending.indexWhere((r) => r.requesterId == widget.currentUserId) + 1})'
+                            : 'Join Queue to Talk',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: npPrimary,
+                        foregroundColor: Colors.black,
+                        disabledBackgroundColor: npPrimary.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                ),
+              if (pending.isNotEmpty)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: pending.length,
+                    itemBuilder: (context, index) {
+                      final req = pending[index];
+                      final name =
+                          widget.displayNameById[req.requesterId] ??
+                          req.requesterDisplayName.ifEmpty(req.requesterId);
+                      final isMe = req.requesterId == widget.currentUserId;
+                      final rankTier = req.requesterRankTier > 0
+                          ? req.requesterRankTier
+                          : (widget.rankTierById[req.requesterId] ?? 0);
+                      final diamondLevel = req.requesterDiamondLevel > 0
+                          ? req.requesterDiamondLevel
+                          : (widget.diamondLevelById[req.requesterId] ?? 0);
 
-                    return Container(
-                      height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: isMe
-                            ? npPrimary.withValues(alpha: 0.08)
-                            : Colors.transparent,
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.05),
+                      return Container(
+                        height: 46,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: isMe
+                              ? npPrimary.withValues(alpha: 0.08)
+                              : Colors.transparent,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.05),
+                            ),
                           ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          // Position badge
-                          Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: npSurfaceHigh,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${index + 1}',
-                              style: const TextStyle(
-                                color: npOnVariant,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: npSurfaceHigh,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  color: npOnVariant,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Hand raise icon
-                          const Icon(
-                            Icons.pan_tool_outlined,
-                            color: Color(0xFFFFA040),
-                            size: 13,
-                          ),
-                          const SizedBox(width: 6),
-                          // Name
-                          Expanded(
-                            child: Text(
-                              isMe ? '$name (you)' : name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.pan_tool_outlined,
+                              color: Color(0xFFFFA040),
+                              size: 13,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isMe ? '$name (you)' : name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: isMe ? npPrimary : Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: isMe
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                  RoomRankDiamondBadgeRow(
+                                    rankTier: rankTier,
+                                    diamondLevel: diamondLevel,
+                                    compact: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              _countdownLabel(req.expiresAt),
                               style: TextStyle(
-                                color: isMe ? npPrimary : Colors.white,
-                                fontSize: 12,
-                                fontWeight: isMe
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
+                                color: _countdownColor(req.expiresAt),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                          // Countdown
-                          Text(
-                            _countdownLabel(req.expiresAt),
-                            style: TextStyle(
-                              color: _countdownColor(req.expiresAt),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                          if (isMe && !widget.isHost) ...[
-                            const SizedBox(width: 8),
-                            _IconBtn(
-                              icon: Icons.pan_tool_alt_outlined,
-                              color: const Color(0xFFFFD166),
-                              tooltip: 'Lower hand',
-                              onTap: () => widget.onWithdraw?.call(req),
-                            ),
-                          ] else if (widget.isHost) ...[
-                            const SizedBox(width: 8),
-                            _IconBtn(
-                              icon: Icons.check,
-                              color: const Color(0xFF4CAF50),
-                              tooltip: 'Approve',
-                              onTap: () => widget.onApprove?.call(req),
-                            ),
-                            const SizedBox(width: 4),
-                            _IconBtn(
-                              icon: Icons.close,
-                              color: const Color(0xFFFF6E84),
-                              tooltip: 'Deny',
-                              onTap: () => widget.onDeny?.call(req),
-                            ),
+                            if (isMe && !widget.isHost) ...[
+                              const SizedBox(width: 8),
+                              _IconBtn(
+                                icon: Icons.pan_tool_alt_outlined,
+                                color: const Color(0xFFFFD166),
+                                tooltip: 'Lower hand',
+                                onTap: () => widget.onWithdraw?.call(req),
+                              ),
+                            ] else if (widget.isHost) ...[
+                              const SizedBox(width: 8),
+                              _IconBtn(
+                                icon: Icons.check,
+                                color: const Color(0xFF4CAF50),
+                                tooltip: 'Approve',
+                                onTap: () => widget.onApprove?.call(req),
+                              ),
+                              const SizedBox(width: 4),
+                              _IconBtn(
+                                icon: Icons.close,
+                                color: const Color(0xFFFF6E84),
+                                tooltip: 'Deny',
+                                onTap: () => widget.onDeny?.call(req),
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         );
       },
     );
   }
+}
+
+extension on String {
+  String ifEmpty(String fallback) => trim().isEmpty ? fallback : this;
 }
 
 class _IconBtn extends StatelessWidget {

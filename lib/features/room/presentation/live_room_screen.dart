@@ -17,11 +17,15 @@ import '../room_controller.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 import '../providers/participant_providers.dart';
+import '../providers/mic_access_provider.dart';
+import '../providers/presence_provider.dart';
 import '../providers/connection_recovery_provider.dart';
 import '../providers/room_gift_provider.dart';
 import '../widgets/network_health_widget.dart';
 import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
+import '../widgets/mic_queue_panel.dart';
+import '../widgets/user_list_panel.dart';
 import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
@@ -43,6 +47,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
+  final Map<String, String> _resolvedUserNameCache = <String, String>{};
+
+  static final RegExp _generatedHandlePattern = RegExp(
+    r'^(User|Guest|Member)\s+[A-Z0-9]{1,6}$',
+  );
 
   @override
   void initState() {
@@ -66,11 +75,115 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     try {
       final firestore = ref.read(firestoreProvider);
       final userDoc = await firestore.collection('users').doc(uid).get();
-      final displayName = userDoc.data()?['displayName'] as String?;
-      return displayName ?? 'Anonymous';
+      final data = userDoc.data();
+      final displayName = (data?['displayName'] as String?)?.trim() ?? '';
+      final username = (data?['username'] as String?)?.trim() ?? '';
+
+      if (displayName.isNotEmpty && !_isPlaceholderIdentity(displayName)) {
+        return displayName;
+      }
+      if (username.isNotEmpty && !_isPlaceholderIdentity(username)) {
+        return username;
+      }
+
+      final authUser = ref.read(firebaseAuthProvider).currentUser;
+      if (authUser != null && authUser.uid == uid) {
+        return _displayNameFromAuthUser(authUser);
+      }
+
+      return _memberFallback(uid);
     } catch (e) {
-      return 'Anonymous';
+      final authUser = ref.read(firebaseAuthProvider).currentUser;
+      if (authUser != null && authUser.uid == uid) {
+        return _displayNameFromAuthUser(authUser);
+      }
+      return _memberFallback(uid);
     }
+  }
+
+  bool _isPlaceholderIdentity(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return true;
+    if (normalized == 'Anonymous' || normalized == 'MixVy Member') return true;
+    return _generatedHandlePattern.hasMatch(normalized);
+  }
+
+  String _memberFallback(String uid) {
+    final compact = uid.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
+    if (compact.isEmpty) return 'MixVy Member';
+    final suffix = compact.substring(0, compact.length < 4 ? compact.length : 4);
+    return 'Member $suffix';
+  }
+
+  String _displayNameFromAuthUser(User user) {
+    final displayName = user.displayName?.trim() ?? '';
+    if (displayName.isNotEmpty && !_isPlaceholderIdentity(displayName)) {
+      return displayName;
+    }
+    final email = user.email?.trim() ?? '';
+    if (email.isNotEmpty && email.contains('@')) {
+      final localPart = email.split('@').first.trim();
+      if (localPart.isNotEmpty) {
+        return localPart;
+      }
+    }
+    return _memberFallback(user.uid);
+  }
+
+  String _resolveHostLabel(
+    RoomModel room,
+    User? currentUser, {
+    String selfResolvedName = '',
+  }) {
+    if (currentUser != null &&
+        (room.hostId == currentUser.uid || room.ownerId == currentUser.uid)) {
+      if (selfResolvedName.isNotEmpty &&
+          !_isPlaceholderIdentity(selfResolvedName)) {
+        return selfResolvedName;
+      }
+      return _displayNameFromAuthUser(currentUser);
+    }
+
+    final hostName = room.hostUsername?.trim() ?? '';
+    if (hostName.isNotEmpty && !_isPlaceholderIdentity(hostName)) {
+      return hostName;
+    }
+
+    final hostId = room.hostId.trim().isNotEmpty ? room.hostId : room.ownerId;
+    return hostId.trim().isNotEmpty ? _memberFallback(hostId) : 'MixVy Member';
+  }
+
+  Future<String> _resolveMessageSenderName({
+    required String rawSenderName,
+    required String senderId,
+    required RoomSessionState sessionState,
+  }) async {
+    final raw = rawSenderName.trim();
+    if (raw.isNotEmpty && !_isPlaceholderIdentity(raw)) {
+      return raw;
+    }
+
+    final cachedSession = sessionState.userDisplayNames[senderId]?.trim() ?? '';
+    if (cachedSession.isNotEmpty && !_isPlaceholderIdentity(cachedSession)) {
+      return cachedSession;
+    }
+
+    final cachedResolved = _resolvedUserNameCache[senderId]?.trim() ?? '';
+    if (cachedResolved.isNotEmpty && !_isPlaceholderIdentity(cachedResolved)) {
+      return cachedResolved;
+    }
+
+    if (senderId.trim().isNotEmpty) {
+      final resolved = await _getUserDisplayName(senderId);
+      final normalized = resolved.trim();
+      if (normalized.isNotEmpty) {
+        _resolvedUserNameCache[senderId] = normalized;
+        return normalized;
+      }
+      return _memberFallback(senderId);
+    }
+
+    return 'MixVy Member';
   }
 
 
@@ -162,6 +275,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
       final sessionState = ref.watch(roomSessionProvider(widget.roomId));
       final firestore = ref.read(firestoreProvider);
+      final fallbackName = _displayNameFromAuthUser(currentUser);
+      final cachedName = sessionState.userDisplayNames[currentUser.uid]?.trim() ?? '';
+      final senderName = cachedName.isNotEmpty ? cachedName : fallbackName;
 
       final messageRef = firestore
           .collection('rooms')
@@ -171,7 +287,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       await messageRef.set({
         'id': messageRef.id,
         'senderId': currentUser.uid,
-        'senderName': sessionState.userDisplayNames[currentUser.uid] ?? 'Anonymous',
+        'senderName': senderName,
         'roomId': widget.roomId,
         'content': text,
         'createdAt': FieldValue.serverTimestamp(),
@@ -592,6 +708,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }
 
   Widget _buildDesktopLayout(RoomModel room, User? currentUser, RoomSessionState sessionState) {
+    final currentUserId = currentUser?.uid ?? '';
+    final isHostLike = currentUserId.isNotEmpty &&
+        (room.hostId == currentUserId || room.ownerId == currentUserId || room.adminUserIds.contains(currentUserId));
+
     return Row(
       children: [
         // Left: Video Grid
@@ -608,13 +728,92 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           ),
         ),
         VerticalDivider(color: VelvetNoir.surfaceHigh, width: 1),
-        // Right: Chat
+        // Middle: Chat
         Expanded(
           flex: 1,
           child: Column(
             children: [
               _buildRoomHeader(room, ref),
               Expanded(child: _buildChatArea(sessionState)),
+            ],
+          ),
+        ),
+        VerticalDivider(color: VelvetNoir.surfaceHigh, width: 1),
+        // Right: Queue + Roster sidebar
+        SizedBox(
+          width: 310,
+          child: Column(
+            children: [
+              Consumer(
+                builder: (context, sideRef, _) {
+                  final participantsAsync = sideRef.watch(roomParticipantsLiveProvider(widget.roomId));
+
+                  final participants = participantsAsync.valueOrNull ?? const [];
+                  final displayNameById = {
+                    for (final p in participants)
+                      p.userId: ((p.displayName?.trim().isNotEmpty ?? false) ? p.displayName!.trim() : p.userId),
+                  };
+                  final rankTierById = {
+                    for (final p in participants) p.userId: p.rankTier,
+                  };
+                  final diamondById = {
+                    for (final p in participants) p.userId: p.diamondLevel,
+                  };
+
+                  return MicQueuePanel(
+                    roomId: widget.roomId,
+                    currentUserId: currentUserId,
+                    isHost: isHostLike,
+                    displayNameById: displayNameById,
+                    rankTierById: rankTierById,
+                    diamondLevelById: diamondById,
+                    onJoinQueue: () {
+                      if (currentUserId.isEmpty) return;
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).requestMic(userId: currentUserId);
+                    },
+                    onWithdraw: (request) {
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).cancelMicRequest(request.id);
+                    },
+                    onApprove: (request) {
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).approveMicRequest(request);
+                    },
+                    onDeny: (request) {
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).denyMicRequest(request.id);
+                    },
+                  );
+                },
+              ),
+              Expanded(
+                child: Consumer(
+                  builder: (context, sideRef, _) {
+                    final participants = sideRef.watch(roomParticipantsLiveProvider(widget.roomId)).valueOrNull ?? const [];
+                    final presence = sideRef.watch(roomPresenceLiveProvider(widget.roomId)).valueOrNull ?? const [];
+                    final queue = sideRef.watch(roomMicAccessRequestsProvider(widget.roomId)).valueOrNull ?? const [];
+
+                    final pendingQueueUserIds = queue
+                        .where((q) => q.status == 'pending' && !q.isExpired)
+                        .map((q) => q.requesterId)
+                        .toSet();
+
+                    final displayNameById = {
+                      for (final p in participants)
+                        p.userId: ((p.displayName?.trim().isNotEmpty ?? false) ? p.displayName!.trim() : p.userId),
+                    };
+                    final avatarById = {
+                      for (final p in participants) p.userId: p.photoUrl,
+                    };
+
+                    return UserListPanel(
+                      participants: participants,
+                      currentUserId: currentUserId,
+                      presenceList: presence,
+                      displayNameById: displayNameById,
+                      avatarUrlById: avatarById,
+                      micQueueUserIds: pendingQueueUserIds,
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -1083,6 +1282,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }
 
   Widget _buildRoomHeader(RoomModel room, WidgetRef ref) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final sessionState = ref.watch(roomSessionProvider(widget.roomId));
+    final selfResolvedName = currentUser != null
+        ? (sessionState.userDisplayNames[currentUser.uid]?.trim() ?? '')
+        : '';
+    final hostLabel = _resolveHostLabel(
+      room,
+      currentUser,
+      selfResolvedName: selfResolvedName,
+    );
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1125,12 +1334,23 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           const SizedBox(height: 4),
           Row(
             children: [
-              Text(
-                'Hosted by ${room.hostUsername ?? 'Anonymous'}',
-                style: GoogleFonts.raleway(
-                  fontSize: 12,
-                  color: VelvetNoir.onSurfaceVariant,
+              FutureBuilder<String>(
+                future: _getUserDisplayName(
+                  room.hostId.trim().isNotEmpty ? room.hostId : room.ownerId,
                 ),
+                builder: (context, snapshot) {
+                  final resolved = (snapshot.data ?? '').trim();
+                  final effectiveHostLabel = resolved.isNotEmpty
+                      ? resolved
+                      : hostLabel;
+                  return Text(
+                    'Hosted by $effectiveHostLabel',
+                    style: GoogleFonts.raleway(
+                      fontSize: 12,
+                      color: VelvetNoir.onSurfaceVariant,
+                    ),
+                  );
+                },
               ),
               const Spacer(),
               Consumer(
@@ -1220,51 +1440,68 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 itemBuilder: (context, index) {
                   final msg = messages[index];
                   final data = msg.data() as Map<String, dynamic>;
-                  final senderName = data['senderName'] as String? ?? 'Anonymous';
+                  final senderName = data['senderName'] as String? ?? '';
+                  final senderId = data['senderId'] as String? ?? '';
                   final content = data['content'] as String? ?? '';
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: VelvetNoir.primary,
-                          child: Text(
-                            senderName[0].toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                senderName,
-                                style: GoogleFonts.raleway(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: VelvetNoir.primary,
-                                ),
-                              ),
-                              Text(
-                                content,
-                                style: GoogleFonts.raleway(
-                                  fontSize: 12,
-                                  color: VelvetNoir.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                  return FutureBuilder<String>(
+                    future: _resolveMessageSenderName(
+                      rawSenderName: senderName,
+                      senderId: senderId,
+                      sessionState: sessionState,
                     ),
+                    builder: (context, senderSnapshot) {
+                      final effectiveSenderName =
+                          (senderSnapshot.data ?? senderName).trim().isNotEmpty
+                          ? (senderSnapshot.data ?? senderName).trim()
+                          : (senderId.trim().isNotEmpty
+                                ? _memberFallback(senderId)
+                                : 'MixVy Member');
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: VelvetNoir.primary,
+                              child: Text(
+                                effectiveSenderName[0].toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    effectiveSenderName,
+                                    style: GoogleFonts.raleway(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: VelvetNoir.primary,
+                                    ),
+                                  ),
+                                  Text(
+                                    content,
+                                    style: GoogleFonts.raleway(
+                                      fontSize: 12,
+                                      color: VelvetNoir.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   );
                 },
               );
@@ -1310,6 +1547,26 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }
 
   Widget _buildControlBar(RoomModel room, User? currentUser, RoomSessionState sessionState) {
+    final roomState = ref.watch(roomControllerProvider(widget.roomId));
+    final currentUserId = currentUser?.uid ?? '';
+    final hasCurrentUser = currentUserId.isNotEmpty;
+    final isHostLike =
+        hasCurrentUser && roomState.canManageStage(currentUserId);
+    final isOnMic =
+        hasCurrentUser && roomState.isOnMicByAuthority(currentUserId);
+    final isMicFree = roomState.speakerIds.length < 4;
+    final myMicRequest = hasCurrentUser
+        ? ref
+              .watch(
+                myMicAccessRequestProvider((
+                  roomId: widget.roomId,
+                  requesterId: currentUserId,
+                )),
+              )
+              .valueOrNull
+        : null;
+    final hasPendingMicRequest = myMicRequest?.isPending == true;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1328,11 +1585,31 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                         if (mounted) {
                           try {
                             final controller = ref.read(roomControllerProvider(widget.roomId).notifier);
-                            await controller.joinRoom(
+                            final result = await controller.joinRoom(
                               currentUser.uid,
                               displayName: displayName,
                               avatarUrl: currentUser.photoURL,
                             );
+                            if (mounted && result.isSuccess) {
+                              final resolvedName = displayName.trim().isNotEmpty
+                                  ? displayName.trim()
+                                  : _displayNameFromAuthUser(currentUser);
+                              final sessionNotifier = ref.read(
+                                roomSessionProvider(widget.roomId).notifier,
+                              );
+                              sessionNotifier.updateDisplayName(
+                                currentUser.uid,
+                                resolvedName,
+                              );
+                              sessionNotifier.setJoined(true);
+                            } else if (mounted && !result.isSuccess) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(result.errormessage ?? 'Could not join room. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           } catch (e) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1379,6 +1656,83 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   backgroundColor: sessionState.isAudioSharingEnabled ? VelvetNoir.secondary : Colors.grey.shade700,
                 ),
               ),
+              if (!isHostLike && hasCurrentUser) ...[
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () async {
+                    try {
+                      final controller = ref.read(
+                        roomControllerProvider(widget.roomId).notifier,
+                      );
+
+                      if (isOnMic) {
+                        await controller.releaseMic(userId: currentUserId);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Mic released.')),
+                          );
+                        }
+                        return;
+                      }
+
+                      if (hasPendingMicRequest &&
+                          myMicRequest != null &&
+                          myMicRequest.id.trim().isNotEmpty) {
+                        await controller.cancelMicRequest(myMicRequest.id);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Hand lowered.')),
+                          );
+                        }
+                        return;
+                      }
+
+                      final result = await controller.requestMic(
+                        userId: currentUserId,
+                      );
+                      if (!mounted) return;
+                      final message = result == MicRequestResult.grabbed
+                          ? 'You are now on mic.'
+                          : 'Hand raised. Waiting for host approval.';
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(message)));
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Mic action failed: $e')),
+                      );
+                    }
+                  },
+                  icon: Icon(
+                    isOnMic
+                        ? Icons.mic_off_rounded
+                        : hasPendingMicRequest
+                        ? Icons.pan_tool_alt_outlined
+                        : isMicFree
+                        ? Icons.record_voice_over_rounded
+                        : Icons.queue_rounded,
+                  ),
+                  label: Text(
+                    isOnMic
+                        ? 'Release Mic'
+                        : hasPendingMicRequest
+                        ? 'Lower Hand'
+                        : isMicFree
+                        ? 'Grab Mic'
+                        : 'Raise Hand',
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isOnMic
+                        ? Colors.grey.shade700
+                        : hasPendingMicRequest
+                        ? const Color(0xFFD4A853)
+                        : isMicFree
+                        ? VelvetNoir.liveGlow
+                        : const Color(0xFFD4A853),
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: () => RoomGiftPickerSheet.show(context, ref, roomId: room.id),

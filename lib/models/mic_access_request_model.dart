@@ -10,6 +10,11 @@ class MicAccessRequestModel {
   final DateTime expiresAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String requesterDisplayName;
+  final String? requesterAvatarUrl;
+  final int requesterRankTier;
+  final int requesterDiamondLevel;
+  final String requestSource;
 
   const MicAccessRequestModel({
     required this.id,
@@ -21,6 +26,11 @@ class MicAccessRequestModel {
     required this.expiresAt,
     required this.createdAt,
     required this.updatedAt,
+    this.requesterDisplayName = '',
+    this.requesterAvatarUrl,
+    this.requesterRankTier = 0,
+    this.requesterDiamondLevel = 0,
+    this.requestSource = 'hand_raise',
   });
 
   static String _asString(dynamic value, {String fallback = ''}) {
@@ -67,6 +77,13 @@ class MicAccessRequestModel {
       expiresAt: parseDate(json['expiresAt']),
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
+      requesterDisplayName: _asString(json['requesterDisplayName']),
+      requesterAvatarUrl: _asString(json['requesterAvatarUrl']).isEmpty
+          ? null
+          : _asString(json['requesterAvatarUrl']),
+      requesterRankTier: _asInt(json['requesterRankTier'], fallback: 0),
+      requesterDiamondLevel: _asInt(json['requesterDiamondLevel'], fallback: 0),
+      requestSource: _asString(json['requestSource'], fallback: 'hand_raise'),
     );
   }
 

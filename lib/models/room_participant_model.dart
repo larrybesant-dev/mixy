@@ -27,6 +27,15 @@ class RoomParticipantModel {
   final DateTime joinedAt;
   final DateTime lastActiveAt;
 
+  /// Rank tier shown beside the user's display name in room roster/grid.
+  final int rankTier;
+
+  /// Diamond level shown beside the user's display name in room roster/grid.
+  final int diamondLevel;
+
+  /// Optional denormalized badge title (e.g. VIP, OG).
+  final String? badgeTitle;
+
   /// Set when the room owner has enabled a mic play-time limit.
   /// When DateTime.now() >= micExpiresAt the client demotes the user and
   /// the next grabMic call treats the doc as stale.
@@ -45,8 +54,18 @@ class RoomParticipantModel {
     this.photoUrl,
     required this.joinedAt,
     required this.lastActiveAt,
+    this.rankTier = 0,
+    this.diamondLevel = 0,
+    this.badgeTitle,
     this.micExpiresAt,
   });
+
+  static int _asInt(dynamic value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
+  }
 
   factory RoomParticipantModel.fromMap(Map<String, dynamic> map) {
     return RoomParticipantModel(
@@ -68,6 +87,9 @@ class RoomParticipantModel {
           ? (map['lastActiveAt'] as Timestamp).toDate()
           : DateTime.tryParse(map['lastActiveAt']?.toString() ?? '') ??
                 DateTime.fromMillisecondsSinceEpoch(0),
+      rankTier: _asInt(map['rankTier']),
+      diamondLevel: _asInt(map['diamondLevel']),
+      badgeTitle: map['badgeTitle'] as String?,
       micExpiresAt: _parseDateTimeField(map['micExpiresAt']),
     );
   }
@@ -85,6 +107,9 @@ class RoomParticipantModel {
       if (userStatus != null) 'userStatus': userStatus,
       if (displayName != null) 'displayName': displayName,
       if (photoUrl != null) 'photoUrl': photoUrl,
+      if (rankTier > 0) 'rankTier': rankTier,
+      if (diamondLevel > 0) 'diamondLevel': diamondLevel,
+      if (badgeTitle != null) 'badgeTitle': badgeTitle,
       'joinedAt': Timestamp.fromDate(joinedAt),
       'lastActiveAt': Timestamp.fromDate(lastActiveAt),
       if (expiresAt != null) 'micExpiresAt': Timestamp.fromDate(expiresAt),
@@ -104,6 +129,9 @@ class RoomParticipantModel {
     String? photoUrl,
     DateTime? joinedAt,
     DateTime? lastActiveAt,
+    int? rankTier,
+    int? diamondLevel,
+    String? badgeTitle,
     DateTime? micExpiresAt,
   }) {
     return RoomParticipantModel(
@@ -119,6 +147,9 @@ class RoomParticipantModel {
       photoUrl: photoUrl ?? this.photoUrl,
       joinedAt: joinedAt ?? this.joinedAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
+      rankTier: rankTier ?? this.rankTier,
+      diamondLevel: diamondLevel ?? this.diamondLevel,
+      badgeTitle: badgeTitle ?? this.badgeTitle,
       micExpiresAt: micExpiresAt ?? this.micExpiresAt,
     );
   }

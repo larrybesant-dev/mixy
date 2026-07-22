@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers/room_state.dart';
+import 'room_rank_diamond_badge_row.dart';
 
-// ── Colour constants ──────────────────────────────────────────────────────────
 const Color _kGold = Color(0xFFD4AF37);
 const Color _kWineRed = Color(0xFF722F37);
 const Color _kWineRedBright = Color(0xFF9B2535);
@@ -15,24 +15,8 @@ const Color _kSurface = Color(0xFF0B0B0B);
 const Color _kSurfaceHigh = Color(0xFF1C1617);
 const Color _kOnVariant = Color(0xFFAD9585);
 
-// ── Layout mode ───────────────────────────────────────────────────────────────
-enum RoomUserTileLayout {
-  /// Centred avatar column — used in featured host slot and speakers grid.
-  grid,
+enum RoomUserTileLayout { grid, list }
 
-  /// Compact horizontal row — used in audience list.
-  list,
-}
-
-// ── RoomUserTile ──────────────────────────────────────────────────────────────
-/// Reusable role-aware tile for live-room panels.
-///
-/// Supports two [layout] modes:
-/// * [RoomUserTileLayout.grid] — vertical column with avatar, name, and badge.
-/// * [RoomUserTileLayout.list] — compact horizontal row.
-///
-/// Set [compact] to `true` when rendering inside the on-mic panel so that
-/// avatar sizes stay proportionate inside the small panel height.
 class RoomUserTile extends StatefulWidget {
   const RoomUserTile({
     super.key,
@@ -43,6 +27,8 @@ class RoomUserTile extends StatefulWidget {
     this.isMicOn = false,
     this.isMuted = false,
     this.micExpiresAt,
+    this.rankTier = 0,
+    this.diamondLevel = 0,
     this.layout = RoomUserTileLayout.grid,
     this.compact = false,
     this.onTap,
@@ -50,22 +36,15 @@ class RoomUserTile extends StatefulWidget {
 
   final String displayName;
   final String? avatarUrl;
-
-  /// Participant role string: 'host', 'owner', 'cohost', 'stage',
-  /// 'audience', 'moderator'.
   final String role;
   final bool isMe;
   final bool isMicOn;
   final bool isMuted;
-
-  /// Expiry timestamp — renders a countdown badge for 'stage' users only.
   final DateTime? micExpiresAt;
-
+  final int rankTier;
+  final int diamondLevel;
   final RoomUserTileLayout layout;
-
-  /// Smaller avatar sizes for use inside the compact on-mic panel row.
   final bool compact;
-
   final VoidCallback? onTap;
 
   @override
@@ -74,14 +53,13 @@ class RoomUserTile extends StatefulWidget {
 
 class _RoomUserTileState extends State<RoomUserTile>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulseCtrl;
-  late Animation<double> _scaleAnim;
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _scaleAnim;
   Timer? _tickTimer;
   int _secondsLeft = 0;
 
   bool get _isSpeaking => widget.isMicOn && !widget.isMuted;
-  String get _normalizedRole =>
-      normalizeRoomRole(widget.role, fallbackRole: '');
+  String get _normalizedRole => normalizeRoomRole(widget.role, fallbackRole: '');
   bool get _isHost => isHostLikeRole(_normalizedRole);
   bool get _isCohost => _normalizedRole == roomRoleCohost;
   bool get _isSpeaker => _normalizedRole == roomRoleStage;
@@ -104,44 +82,6 @@ class _RoomUserTileState extends State<RoomUserTile>
     if (_isHost || _isCohost) return _kGold;
     if (_isSpeaker) return _kWineRed;
     return null;
-  }
-
-  List<BoxShadow> get _shadowLayers {
-    if (!_isSpeaking || !_hasRing) return [];
-    // Multi-layer shadow for luxury depth effect
-    final pulseValue = _pulseCtrl.value;
-    if (_isHost || _isCohost) {
-      return [
-        // Primary gold glow
-        BoxShadow(
-          color: _kGold.withValues(alpha: 0.35 + (pulseValue * 0.15)),
-          blurRadius: 12 + (pulseValue * 4),
-          spreadRadius: 2 + (pulseValue * 1),
-        ),
-        // Secondary wine-red outer layer for luxury feel
-        BoxShadow(
-          color: const Color(0xFF9B2535).withValues(alpha: 0.12 + (pulseValue * 0.08)),
-          blurRadius: 8,
-          spreadRadius: 3,
-        ),
-      ];
-    } else if (_isSpeaker) {
-      return [
-        // Primary wine-red glow
-        BoxShadow(
-          color: _kWineRedBright.withValues(alpha: 0.45 + (pulseValue * 0.15)),
-          blurRadius: 14 + (pulseValue * 6),
-          spreadRadius: 2 + (pulseValue * 2),
-        ),
-        // Secondary outer glow for intensity
-        BoxShadow(
-          color: _kWineRed.withValues(alpha: 0.20 + (pulseValue * 0.10)),
-          blurRadius: 6,
-          spreadRadius: 3,
-        ),
-      ];
-    }
-    return [];
   }
 
   String get _roleLabel {
@@ -173,24 +113,23 @@ class _RoomUserTileState extends State<RoomUserTile>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _scaleAnim = Tween<double>(
-      begin: 1.0,
-      end: 1.08,
-    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _scaleAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
     if (_isSpeaking) _pulseCtrl.repeat(reverse: true);
     _startTimer();
   }
 
   @override
-  void didUpdateWidget(RoomUserTile old) {
-    super.didUpdateWidget(old);
+  void didUpdateWidget(covariant RoomUserTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
     if (_isSpeaking && !_pulseCtrl.isAnimating) {
       _pulseCtrl.repeat(reverse: true);
     } else if (!_isSpeaking && _pulseCtrl.isAnimating) {
       _pulseCtrl.stop();
       _pulseCtrl.value = 0;
     }
-    if (old.micExpiresAt != widget.micExpiresAt) {
+    if (oldWidget.micExpiresAt != widget.micExpiresAt) {
       _tickTimer?.cancel();
       _startTimer();
     }
@@ -209,16 +148,13 @@ class _RoomUserTileState extends State<RoomUserTile>
       _secondsLeft = 0;
       return;
     }
-    // Set the initial value directly — no setState needed here because build
-    // hasn't been called yet (we're in initState or just after a param change
-    // before the next build).
-    final remaining = exp.difference(DateTime.now()).inSeconds;
-    _secondsLeft = remaining < 0 ? 0 : remaining;
+    _secondsLeft = exp.difference(DateTime.now()).inSeconds;
+    if (_secondsLeft < 0) _secondsLeft = 0;
     if (_secondsLeft > 0) {
       _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted) return;
-        final r = exp.difference(DateTime.now()).inSeconds;
-        setState(() => _secondsLeft = r < 0 ? 0 : r);
+        final next = exp.difference(DateTime.now()).inSeconds;
+        setState(() => _secondsLeft = next < 0 ? 0 : next);
         if (_secondsLeft <= 0) _tickTimer?.cancel();
       });
     }
@@ -231,7 +167,6 @@ class _RoomUserTileState extends State<RoomUserTile>
         : _buildGridCell();
   }
 
-  // ── Grid cell ──────────────────────────────────────────────────────────────
   Widget _buildGridCell() {
     final r = _avatarRadius;
     return GestureDetector(
@@ -251,11 +186,17 @@ class _RoomUserTileState extends State<RoomUserTile>
               style: GoogleFonts.raleway(
                 fontSize: widget.compact ? 9 : 10,
                 fontWeight: widget.isMe ? FontWeight.w700 : FontWeight.w500,
-                color: widget.isMe
-                    ? _kGold
-                    : Colors.white.withValues(alpha: 0.9),
+                color: widget.isMe ? _kGold : Colors.white.withValues(alpha: 0.9),
               ),
             ),
+            if (widget.rankTier > 0 || widget.diamondLevel > 0) ...[
+              const SizedBox(height: 2),
+              RoomRankDiamondBadgeRow(
+                rankTier: widget.rankTier,
+                diamondLevel: widget.diamondLevel,
+                compact: true,
+              ),
+            ],
             const SizedBox(height: 2),
             FittedBox(fit: BoxFit.scaleDown, child: _buildBadgeRow()),
           ],
@@ -264,7 +205,6 @@ class _RoomUserTileState extends State<RoomUserTile>
     );
   }
 
-  // ── List row ───────────────────────────────────────────────────────────────
   Widget _buildListRow() {
     return InkWell(
       onTap: widget.onTap,
@@ -281,19 +221,29 @@ class _RoomUserTileState extends State<RoomUserTile>
             _buildAvatar(),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                widget.isMe
-                    ? '${widget.displayName} (you)'
-                    : widget.displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.raleway(
-                  fontSize: 12,
-                  fontWeight: widget.isMe ? FontWeight.w700 : FontWeight.w500,
-                  color: widget.isMe
-                      ? _kGold
-                      : Colors.white.withValues(alpha: 0.85),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.isMe ? '${widget.displayName} (you)' : widget.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.raleway(
+                      fontSize: 12,
+                      fontWeight: widget.isMe ? FontWeight.w700 : FontWeight.w500,
+                      color: widget.isMe
+                          ? _kGold
+                          : Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  if (widget.rankTier > 0 || widget.diamondLevel > 0)
+                    RoomRankDiamondBadgeRow(
+                      rankTier: widget.rankTier,
+                      diamondLevel: widget.diamondLevel,
+                      compact: true,
+                    ),
+                ],
               ),
             ),
             Icon(
@@ -309,7 +259,6 @@ class _RoomUserTileState extends State<RoomUserTile>
     );
   }
 
-  // ── Avatar ─────────────────────────────────────────────────────────────────
   Widget _buildAvatar() {
     final r = _avatarRadius;
     final ringColor = _ringColor;
@@ -317,14 +266,11 @@ class _RoomUserTileState extends State<RoomUserTile>
     final avatar = CircleAvatar(
       radius: r,
       backgroundColor: _kSurfaceHigh,
-      backgroundImage: (widget.avatarUrl?.isNotEmpty == true)
-          ? NetworkImage(widget.avatarUrl!)
-          : null,
+      backgroundImage:
+          (widget.avatarUrl?.isNotEmpty == true) ? NetworkImage(widget.avatarUrl!) : null,
       child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
           ? Text(
-              widget.displayName.isEmpty
-                  ? '?'
-                  : widget.displayName[0].toUpperCase(),
+              widget.displayName.isEmpty ? '?' : widget.displayName[0].toUpperCase(),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: r * 0.56,
@@ -334,7 +280,6 @@ class _RoomUserTileState extends State<RoomUserTile>
           : null,
     );
 
-    // Mic overlay — shown in grid mode for host/cohost/speaker only.
     Widget? micOverlay;
     if (widget.layout == RoomUserTileLayout.grid && _hasRing) {
       micOverlay = Positioned(
@@ -343,10 +288,7 @@ class _RoomUserTileState extends State<RoomUserTile>
         child: Container(
           width: r * 0.65,
           height: r * 0.65,
-          decoration: const BoxDecoration(
-            color: _kSurface,
-            shape: BoxShape.circle,
-          ),
+          decoration: const BoxDecoration(color: _kSurface, shape: BoxShape.circle),
           child: Icon(
             widget.isMuted || !widget.isMicOn ? Icons.mic_off : Icons.mic,
             size: r * 0.40,
@@ -356,44 +298,37 @@ class _RoomUserTileState extends State<RoomUserTile>
       );
     }
 
-    final avatarDecoration = ringColor != null
-        ? BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: ringColor,
-              width: _isSpeaking ? 2.5 : 1.8,
+    final decorated = DecoratedBox(
+      decoration: ringColor == null
+          ? const BoxDecoration()
+          : BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: ringColor, width: _isSpeaking ? 2.5 : 1.8),
             ),
-            boxShadow: _shadowLayers.isNotEmpty ? _shadowLayers : null,
-          )
-        : const BoxDecoration();
-
-    Widget ringed = DecoratedBox(
-      decoration: avatarDecoration,
       child: Padding(
         padding: EdgeInsets.all(ringColor != null ? 2.0 : 0.0),
-        child: Stack(clipBehavior: Clip.none, children: [avatar, if (micOverlay != null) micOverlay]),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [avatar, if (micOverlay != null) micOverlay],
+        ),
       ),
     );
 
-    // Scale pulse animation when the user is actively speaking.
     if (_isSpeaking) {
-      ringed = AnimatedBuilder(
+      return AnimatedBuilder(
         animation: _scaleAnim,
-        builder: (context, child) =>
-            Transform.scale(scale: _scaleAnim.value, child: child),
-        child: ringed,
+        builder: (context, child) => Transform.scale(scale: _scaleAnim.value, child: child),
+        child: decorated,
       );
     }
 
-    return ringed;
+    return decorated;
   }
 
-  // ── Badge row ──────────────────────────────────────────────────────────────
   Widget _buildBadgeRow() {
     final label = _roleLabel;
     final showTimer = _isSpeaker && widget.micExpiresAt != null;
 
-    // Timer badge colour: green → orange → red as expiry approaches.
     Color timerColor = const Color(0xFF4CAF50);
     if (_secondsLeft <= 10) {
       timerColor = const Color(0xFFFF5252);
@@ -452,6 +387,3 @@ class _RoomUserTileState extends State<RoomUserTile>
     );
   }
 }
-
-
-
