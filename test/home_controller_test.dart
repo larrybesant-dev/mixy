@@ -30,7 +30,7 @@ void main() {
       final state = container.read(homeControllerProvider);
       expect(state.length, 1);
       expect(state.first.id, 'room1');
-    }, skip: skipIntegrationTests);
+    });
 
     test('removeRoom removes a room', () {
       final controller = container.read(homeControllerProvider.notifier);
@@ -44,6 +44,6 @@ void main() {
       controller.removeRoom('room1');
       final state = container.read(homeControllerProvider);
       expect(state.isEmpty, true);
-    }, skip: skipIntegrationTests);
+    });
   });
 }

@@ -9,6 +9,8 @@ import 'web_media_probe_stub.dart'
     if (dart.library.html) 'web_media_probe_web.dart'
     as web_media_probe;
 import 'rtc_room_service.dart';
+import 'connection_recovery_handler.dart';
+import 'diagnostic_logger.dart';
 
 class AgoraServiceException implements Exception {
   const AgoraServiceException({
@@ -25,7 +27,7 @@ class AgoraServiceException implements Exception {
   String toString() => 'AgoraServiceException($code): $message';
 }
 
-class AgoraService implements RtcRoomService {
+class AgoraService extends RtcRoomService with DiagnosticLogger {
   static RtcEngine? _sharedEngine;
   static bool _sharedInitialized = false;
   // Serializes concurrent initialize() calls (e.g. pre-warm racing with cam-tap).
@@ -34,12 +36,14 @@ class AgoraService implements RtcRoomService {
   // List of remote user IDs
   final List<int> _remoteUids = [];
   final Set<int> _speakingUids = <int>{};
-  final Map<int, VideoStreamType> _remoteStreamTypes =
-      <int, VideoStreamType>{};
+  final Map<int, VideoStreamType> _remoteStreamTypes = <int, VideoStreamType>{};
   bool _localSpeaking = false;
+  double _localAudioLevel = 0.0;
+  final Map<int, double> _remoteAudioLevels = <int, double>{};
   bool _joinedChannel = false;
   bool _broadcasterMode = false;
   bool _localVideoCapturing = false;
+  bool _localAudioMuted = true;
   bool _previewRunning = false;
   // Stored join credentials used to rejoin as broadcaster on web.
   String? _lastToken;
@@ -52,6 +56,10 @@ class AgoraService implements RtcRoomService {
   bool _isRejoinInProgress = false;
   Completer<void>? _localVideoCaptureCompleter;
 
+  // Connection recovery state
+  late ConnectionRecoveryHandler _recoveryHandler;
+  bool _userInitiatedDisconnect = false;
+
   // Callbacks for UI updates
   @override
   VoidCallback? onRemoteUserJoined;
@@ -61,19 +69,29 @@ class AgoraService implements RtcRoomService {
   VoidCallback? onSpeakerActivityChanged;
   @override
   VoidCallback? onLocalVideoCaptureChanged;
+
   /// Called when the token will expire — caller should fetch a fresh token
   /// and pass it to [renewToken].
   @override
   VoidCallback? onTokenWillExpire;
+
   /// Called when the SDK connection is lost so the screen can trigger a
   /// reconnect flow.
   @override
   VoidCallback? onConnectionLost;
 
+  /// Called when the connection state changes (idle, connecting, connected, degraded, reconnecting, failed).
+  @override
+  ValueChanged<RtcConnectionState>? onConnectionStateChanged;
+
   @override
   List<int> get remoteUids => List.unmodifiable(_remoteUids);
   @override
   bool get localSpeaking => _localSpeaking;
+  @override
+  double get localAudioLevel => _localAudioLevel;
+  @override
+  double remoteAudioLevelForUid(int uid) => _remoteAudioLevels[uid] ?? 0.0;
   @override
   bool get canRenderLocalView =>
       _initialized &&
@@ -86,9 +104,26 @@ class AgoraService implements RtcRoomService {
   bool get isJoinedChannel => _joinedChannel;
   @override
   bool get isLocalVideoCapturing => _localVideoCapturing;
+  @override
+  bool get isLocalAudioMuted => _localAudioMuted;
+
+  @override
+  RtcConnectionState get connectionState => _recoveryHandler.state;
+
+  @override
+  int get reconnectAttemptCount => _recoveryHandler.attemptCount;
+
+  // System-audio sharing is web-only (WebRtcRoomService); Agora is no-op.
+  @override
+  bool get isSharingSystemAudio => false;
+  @override
+  Future<void> shareSystemAudio(bool enabled) async {}
 
   @override
   bool isRemoteSpeaking(int uid) => _speakingUids.contains(uid);
+
+  @override
+  String? userIdForUid(int uid) => null; // Agora: caller falls back to hash lookup
 
   /// Get the local video view widget
   @override
@@ -146,6 +181,7 @@ class AgoraService implements RtcRoomService {
     if (!_initialized || !_joinedChannel) {
       return;
     }
+    _localAudioMuted = !enabled;
     await _engine.updateChannelMediaOptions(
       ChannelMediaOptions(
         channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
@@ -166,10 +202,7 @@ class AgoraService implements RtcRoomService {
         sourceType: VideoSourceType.videoSourceCameraPrimary,
         config: const CameraCapturerConfiguration(),
       );
-      developer.log(
-        'startCameraCapture called',
-        name: 'AgoraService',
-      );
+      developer.log('startCameraCapture called', name: 'AgoraService');
     } catch (error, stackTrace) {
       developer.log(
         'startCameraCapture failed: $error',
@@ -470,14 +503,23 @@ class AgoraService implements RtcRoomService {
     _engine = _sharedEngine!;
 
     if (_sharedInitialized) {
-      developer.log('INITIALIZE CALLED ONCE: already initialized', name: 'AgoraService');
+      developer.log(
+        'INITIALIZE CALLED ONCE: already initialized',
+        name: 'AgoraService',
+      );
     } else if (_initInProgress != null) {
       // Another caller is already running initialize() — wait for it instead
       // of firing a second concurrent call that would conflict on the engine.
-      developer.log('INITIALIZE: waiting for in-progress init', name: 'AgoraService');
+      developer.log(
+        'INITIALIZE: waiting for in-progress init',
+        name: 'AgoraService',
+      );
       try {
         await _initInProgress!.future;
-        developer.log('INITIALIZE: in-progress init completed, reusing result', name: 'AgoraService');
+        developer.log(
+          'INITIALIZE: in-progress init completed, reusing result',
+          name: 'AgoraService',
+        );
       } catch (error) {
         // The in-progress init failed; propagate so caller can retry.
         _throwMappedAgoraError(error, operation: 'initialize live media');
@@ -497,7 +539,10 @@ class AgoraService implements RtcRoomService {
             // Best effort stale track cleanup before initialize on web.
           }
         }
-        developer.log('Agora initialize attempt 1/1 starting', name: 'AgoraService');
+        developer.log(
+          'Agora initialize attempt 1/1 starting',
+          name: 'AgoraService',
+        );
         await _engine
             .initialize(
               RtcEngineContext(
@@ -556,18 +601,25 @@ class AgoraService implements RtcRoomService {
             (connection, speakers, speakerNumber, totalVolume) {
               final nextSpeakingUids = <int>{};
               var nextLocalSpeaking = false;
+              var nextLocalLevel = 0.0;
+              final nextRemoteLevels = <int, double>{};
               for (final speaker in speakers) {
                 final uid = speaker.uid ?? 0;
                 final volume = speaker.volume ?? 0;
-                if (volume <= 10) {
-                  continue;
-                }
+                final level = (volume / 255.0).clamp(0.0, 1.0);
                 if (uid == 0) {
-                  nextLocalSpeaking = true;
+                  nextLocalLevel = level;
+                  if (volume > 10) nextLocalSpeaking = true;
                 } else {
-                  nextSpeakingUids.add(uid);
+                  nextRemoteLevels[uid] = level;
+                  if (volume > 10) nextSpeakingUids.add(uid);
                 }
               }
+
+              _localAudioLevel = nextLocalLevel;
+              _remoteAudioLevels
+                ..clear()
+                ..addAll(nextRemoteLevels);
 
               final changed =
                   nextLocalSpeaking != _localSpeaking ||
@@ -607,8 +659,20 @@ class AgoraService implements RtcRoomService {
           // intentional leaveChannel() inside rejoinAsBroadcaster — on web the
           // SDK may not send connectionChangedLeaveChannel as the reason.
           if (state == ConnectionStateType.connectionStateDisconnected &&
-              reason != ConnectionChangedReasonType.connectionChangedLeaveChannel &&
-              !_isRejoinInProgress) {
+              reason !=
+                  ConnectionChangedReasonType.connectionChangedLeaveChannel &&
+              !_isRejoinInProgress &&
+              !_userInitiatedDisconnect) {
+            // Trigger automatic reconnection recovery (fire-and-forget).
+            // Note: This linter warning is expected; we intentionally don't await recovery.
+            developer.log('Connection lost, starting recovery...', name: 'AgoraService');
+            logWarning('Connection lost, starting recovery', metadata: {
+              'reason': reason.toString(),
+              'maxRetries': 3,
+              'baseDelayMs': 2000,
+            });
+            // ignore: unawaited_futures
+            unawaited(_recoveryHandler.beginRecovery(onReconnect: () => reconnect()));
             if (onConnectionLost != null) onConnectionLost!();
           }
         },
@@ -628,10 +692,7 @@ class AgoraService implements RtcRoomService {
               onLocalVideoCaptureChanged!();
             }
             if (changed) {
-              developer.log(
-                'CAMERA TRACK STARTED',
-                name: 'AgoraService',
-              );
+              developer.log('CAMERA TRACK STARTED', name: 'AgoraService');
             }
             final waiter = _localVideoCaptureCompleter;
             if (waiter != null && !waiter.isCompleted) {
@@ -727,6 +788,23 @@ class AgoraService implements RtcRoomService {
         stackTrace: stackTrace,
       );
     }
+
+    // Initialize recovery handler (max 3 attempts, 2s base delay)
+    _recoveryHandler = ConnectionRecoveryHandler(
+      maxRetries: 3,
+      baseDelayMs: 2000,
+      onStateChange: (state) {
+        developer.log('Connection state: $state', name: 'AgoraService');
+        onConnectionStateChanged?.call(state);
+      },
+      onRetryAttempt: (attemptNumber, delayMs) {
+        developer.log(
+          'Scheduling reconnection attempt $attemptNumber (delay: ${delayMs}ms)',
+          name: 'AgoraService',
+        );
+      },
+    );
+
     _initialized = true;
   }
 
@@ -897,7 +975,12 @@ class AgoraService implements RtcRoomService {
       // --- re‑enable video engine before join ---
       try {
         await _engine.enableVideo();
-      } catch (_) {}
+      } catch (e) {
+        developer.log(
+          'rejoinAsBroadcaster: enableVideo error: $e',
+          name: 'AgoraService',
+        );
+      }
 
       // --- rejoin as broadcaster ---
       developer.log(
@@ -1001,16 +1084,96 @@ class AgoraService implements RtcRoomService {
     _broadcasterMode = false;
     _localVideoCapturing = false;
     _previewRunning = false;
+    _userInitiatedDisconnect = true;
+  }
+
+  /// Attempt to reconnect using stored join credentials.
+  /// Called by recovery handler on connection loss.
+  @override
+  Future<void> reconnect() async {
+    if (!_initialized || _lastToken == null || _lastChannelName == null || _lastUid == null) {
+      throw StateError(
+        'Cannot reconnect: not initialized or missing stored credentials',
+      );
+    }
+
+    developer.log(
+      'Reconnecting to $_lastChannelName with uid $_lastUid',
+      name: 'AgoraService',
+    );
+    logInfo('Reconnection attempt started', metadata: {
+      'channelName': _lastChannelName,
+      'uid': _lastUid,
+      'attemptNumber': _recoveryHandler.attemptCount,
+    });
+
+    _userInitiatedDisconnect = false;
+    _recoveryHandler.reset(); // Reset for fresh recovery attempt
+
+    try {
+      await joinRoom(
+        _lastToken!,
+        _lastChannelName!,
+        _lastUid!,
+        publishCameraTrackOnJoin: _broadcasterMode,
+        publishMicrophoneTrackOnJoin: _broadcasterMode,
+      );
+      developer.log('Reconnection successful', name: 'AgoraService');
+      logInfo('Reconnection successful, connection restored');
+    } catch (e) {
+      developer.log('Reconnection failed: $e', name: 'AgoraService', error: e);
+      logError('Reconnection failed', error: e, metadata: {
+        'channelName': _lastChannelName,
+        'attemptNumber': _recoveryHandler.attemptCount,
+      });
+      rethrow;
+    }
+  }
+
+  /// Abort in-flight reconnection attempts.
+  @override
+  Future<void> abortReconnection() async {
+    logInfo('Aborting reconnection attempts');
+    _recoveryHandler.abort();
   }
 
   /// Mute/unmute local audio
   @override
   Future<void> mute(bool muted) async {
+    _localAudioMuted = muted;
     if (!_initialized) return;
     try {
       await _engine.muteLocalAudioStream(muted);
     } catch (error) {
       _throwMappedAgoraError(error, operation: 'toggle microphone');
+    }
+  }
+
+  /// Set local microphone input gain.
+  ///
+  /// [volume] range [0.0, 2.0]; 1.0 = default (maps to Agora value 100).
+  @override
+  Future<void> setMicVolume(double volume) async {
+    if (!_initialized) return;
+    final agoraVol = (volume.clamp(0.0, 2.0) * 100).round();
+    try {
+      await _engine.adjustRecordingSignalVolume(agoraVol);
+    } catch (e) {
+      developer.log('setMicVolume error: $e', name: 'AgoraService');
+    }
+  }
+
+  /// Set local speaker / playback output volume.
+  ///
+  /// [volume] range [0.0, 1.0]; 1.0 = default (maps to Agora value 100).
+  @override
+  Future<void> setSpeakerVolume(double volume) async {
+    if (!_initialized) return;
+    final agoraVol = (volume.clamp(0.0, 1.0) * 100).round();
+    try {
+      await _engine.adjustPlaybackSignalVolume(agoraVol);
+    } catch (e) {
+      developer.log('setSpeakerVolume error: $e', name: 'AgoraService');
     }
   }
 
@@ -1021,7 +1184,10 @@ class AgoraService implements RtcRoomService {
   /// currently muted so that enabling the camera does not silently re-enable
   /// audio. Defaults to `true` for backward-compatible behaviour.
   @override
-  Future<void> enableVideo(bool enabled, {bool publishMicrophoneTrack = true}) async {
+  Future<void> enableVideo(
+    bool enabled, {
+    bool publishMicrophoneTrack = true,
+  }) async {
     if (!_initialized) {
       developer.log(
         'enableVideo called but service not initialized',
@@ -1039,7 +1205,8 @@ class AgoraService implements RtcRoomService {
         // publish path. This is only needed the first time we go from audience
         // → broadcaster; if already in broadcaster mode (e.g. mic is on), the
         // standard updateChannelMediaOptions path is fine.
-        if (kIsWeb && !_broadcasterMode &&
+        if (kIsWeb &&
+            !_broadcasterMode &&
             _lastToken != null &&
             _lastChannelName != null &&
             _lastUid != null) {
@@ -1204,3 +1371,6 @@ class AgoraService implements RtcRoomService {
     _initialized = false;
   }
 }
+
+
+

@@ -1,0 +1,345 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helper Functions
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isFriendParticipant(data) {
+      return signedIn()
+        && data.userA is string
+        && data.userB is string
+        && (data.userA == request.auth.uid || data.userB == request.auth.uid);
+    }
+
+    function isFriendLinkUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['friends'])
+        && (
+          request.resource.data.friends.hasAny([request.auth.uid])
+          || resource.data.friends.hasAny([request.auth.uid])
+        );
+    }
+
+    function onlyIdentityFieldsAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'username',
+        'usernameLower',
+        'email',
+        'bio',
+        'isPrivate',
+        'updatedAt'
+      ]);
+    }
+
+    function onlyProfilePublicFieldsAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'age',
+        'gender',
+        'location',
+        'relationshipStatus',
+        'vibePrompt',
+        'firstDatePrompt',
+        'musicTastePrompt',
+        'interests',
+        'profileAccentColor',
+        'galleryUrls',
+        'introVideoUrl',
+        'updatedAt'
+      ]);
+    }
+
+    function onlyPreferencesFieldsAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'themeId',
+        'backgroundColor',
+        'profileMusicUrl',
+        'profileMusicTitle',
+        'profileBgGradientStart',
+        'profileBgGradientEnd',
+        'camViewPolicy',
+        'updatedAt'
+      ]);
+    }
+
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function adultModeEnabled(userId) {
+      return userDoc(userId).data.adultModeEnabled == true
+        && userDoc(userId).data.adultConsentAccepted == true;
+    }
+
+    function canReadSharedAdultProfile(userId) {
+      return signedIn() && adultModeEnabled(request.auth.uid) && adultModeEnabled(userId);
+    }
+
+    function roomDoc(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId));
+    }
+
+    function isRoomHost(roomId) {
+      return signedIn() && (
+        roomDoc(roomId).data.ownerId == request.auth.uid
+        || roomDoc(roomId).data.hostId == request.auth.uid
+      );
+    }
+
+    function participantDoc(roomId, userId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId)/participants/$(userId));
+    }
+
+    function participantRole(roomId, userId) {
+      return participantDoc(roomId, userId).data.role;
+    }
+
+    function isRoomModerator(roomId) {
+      return signedIn() && participantRole(roomId, request.auth.uid) == 'moderator';
+    }
+
+    function isRoomStaff(roomId) {
+      return isRoomHost(roomId) || isRoomModerator(roomId);
+    }
+
+    function isRoomParticipant(roomId) {
+      return signedIn()
+        && participantDoc(roomId, request.auth.uid).data.userId == request.auth.uid;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 1: Core Identity (users/<uid>)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      // Private profiles only readable by owner or followers.
+      allow read: if signedIn()
+        && (
+          isSelf(userId)
+          || !resource.data.get('isPrivate', false)
+          || request.auth.uid in resource.data.get('followers', [])
+        );
+
+      // Create: isSelf + membershipLevel guard.
+      allow create: if isSelf(userId)
+        && (!('membershipLevel' in request.resource.data)
+          || request.resource.data.membershipLevel == 'basic');
+
+      // Update: isSelf + strict field whitelist.
+      allow update: if (isSelf(userId) && onlyIdentityFieldsAllowed())
+        || (signedIn() && isFriendLinkUpdate());
+
+      // Delete: isSelf only.
+      allow delete: if isSelf(userId);
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 2: Profile Public (users/<uid>/profile_public)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /profile_public/{document=**} {
+        allow read: if signedIn();
+        allow create: if isSelf(userId);
+        allow update: if isSelf(userId) && onlyProfilePublicFieldsAllowed();
+        allow delete: if false; // Maintain history.
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 3: Wallet (users/<uid>/wallet) — Server Only
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /wallet/{document=**} {
+        allow read: if isSelf(userId);
+        // All writes server-only. Client cannot write coins/streaks.
+        allow create, update, delete: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 4: Preferences (users/<uid>/preferences)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /preferences/{document=**} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId);
+        allow update: if isSelf(userId) && onlyPreferencesFieldsAllowed();
+        allow delete: if false; // Maintain history.
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 5: Verification (users/<uid>/verification) — Server Only
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /verification/{document=**} {
+        // Only owner can read their own verification status.
+        allow read: if isSelf(userId);
+        // All writes server-only. Client cannot set verified status.
+        allow create, update, delete: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 6: Security (users/<uid>/security) — Server Only
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /security/{document=**} {
+        // Only owner can read (not even friends).
+        allow read: if isSelf(userId);
+        // All writes server-only. Client cannot manipulate security state.
+        allow create, update, delete: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 7: Adult Content (users/<uid>/adult_content) — Keep Existing
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /adult_content/{documentId} {
+        allow read: if isSelf(userId)
+          || (canReadSharedAdultProfile(userId)
+            && resource.data.visibility == 'optedInAdultsOnly');
+        allow create, update, delete: if isSelf(userId);
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // Independent Subcollections (Unchanged)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /stories/{storyId} {
+        allow read: if signedIn();
+        allow create: if isSelf(userId)
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isSelf(userId)
+          && resource.data.userId == request.auth.uid;
+      }
+
+      match /privacy/{documentId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      match /bookmarks/{bookmarkId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.postId is string;
+        allow delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /followers/{followerId} {
+        allow read: if signedIn();
+        allow create, update, delete: if false;
+      }
+
+      match /following/{followingId} {
+        allow read: if signedIn();
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Rooms (Unchanged from original)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /rooms/{roomId} {
+      allow read: if signedIn()
+        && (
+          !resource.data.get('isAdult', false)
+          || adultModeEnabled(request.auth.uid)
+        );
+      allow create: if signedIn()
+        && (
+          request.resource.data.ownerId == request.auth.uid
+          || request.resource.data.hostId == request.auth.uid
+        )
+        && (
+          !request.resource.data.get('isAdult', false)
+          || adultModeEnabled(request.auth.uid)
+        );
+      allow update: if isRoomHost(roomId)
+        || (signedIn()
+          && resource.data.isDirectCall == true
+          && resource.data.calleeId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['callDeclined', 'callDeclinedAt']));
+      allow delete: if isRoomHost(roomId);
+
+      match /members/{memberId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && memberId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.role in ['owner', 'mod', 'member'];
+        allow update: if memberId == request.auth.uid || isRoomHost(roomId);
+        allow delete: if memberId == request.auth.uid || isRoomHost(roomId);
+      }
+
+      match /participants/{participantId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && participantId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.role in ['audience', 'host', 'cohost', 'moderator', 'stage', 'owner', 'mod', 'member']
+          && request.resource.data.isBanned == false
+          && request.resource.data.isMuted == false;
+        allow update: if isRoomHost(roomId)
+          || (
+            participantId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['lastActiveAt', 'camOn', 'micOn', 'customStatus', 'userStatus'])
+          )
+          || (
+            participantId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['userId', 'role', 'lastActiveAt'])
+            && request.resource.data.role == 'member'
+            && resource.data.role == 'stage'
+          );
+        allow delete: if isRoomHost(roomId) || participantId == request.auth.uid;
+      }
+
+      match /presence/{userId} {
+        allow read: if signedIn();
+        allow create, update, delete: if isRoomHost(roomId) || userId == request.auth.uid;
+      }
+
+      match /typing/{userId} {
+        allow read: if signedIn();
+        allow create, update, delete: if userId == request.auth.uid;
+      }
+
+      match /messages/{messageId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isRoomHost(roomId) || resource.data.senderId == request.auth.uid;
+
+        match /reactions/{userId} {
+          allow read: if signedIn();
+          allow create, update, delete: if userId == request.auth.uid;
+        }
+      }
+
+      match /policies/{documentId} {
+        allow read: if signedIn();
+        allow create, update, delete: if isRoomHost(roomId);
+      }
+
+      match /gift_events/{giftEventId} {
+        allow read: if signedIn() && isRoomParticipant(roomId);
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Other Top-Level Collections (Unchanged)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

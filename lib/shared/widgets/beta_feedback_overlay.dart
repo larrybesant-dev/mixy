@@ -1,9 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mixvy/router/app_router.dart';
 
 class BetaFeedbackOverlay extends StatelessWidget {
   const BetaFeedbackOverlay({super.key, required this.child});
@@ -11,51 +10,28 @@ class BetaFeedbackOverlay extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    // Wrap in Navigator to provide Overlay for the FloatingActionButton's Tooltip
-    return Stack(
-      children: [
-        child,
-        Positioned(
-          right: 16,
-          top: 84,
-          child: Navigator(
-            onGenerateRoute: (settings) => MaterialPageRoute(
-              builder: (_) => FloatingActionButton.small(
-                heroTag: 'beta-feedback-fab',
-                tooltip: 'Report Issue',
-                child: const Icon(Icons.bug_report_outlined),
-                onPressed: () {
-                  final navigatorContext = rootNavigatorKey.currentContext;
-                  if (navigatorContext == null) {
-                    return;
-                  }
+  Widget build(BuildContext context) => child;
+}
 
-                  showModalBottomSheet<void>(
-                    context: navigatorContext,
-                    useRootNavigator: true,
-                    isScrollControlled: true,
-                    showDragHandle: true,
-                    builder: (_) => const _BetaFeedbackSheet(),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ],
+class BetaFeedbackSheet extends ConsumerStatefulWidget {
+  const BetaFeedbackSheet({super.key});
+
+  /// Convenience method to open the sheet from any context.
+  static void show(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const BetaFeedbackSheet(),
     );
   }
-}
-
-class _BetaFeedbackSheet extends StatefulWidget {
-  const _BetaFeedbackSheet();
 
   @override
-  State<_BetaFeedbackSheet> createState() => _BetaFeedbackSheetState();
+  ConsumerState<BetaFeedbackSheet> createState() => _BetaFeedbackSheetState();
 }
 
-class _BetaFeedbackSheetState extends State<_BetaFeedbackSheet> {
+class _BetaFeedbackSheetState extends ConsumerState<BetaFeedbackSheet> {
   final TextEditingController _messageController = TextEditingController();
   String _category = 'bug';
   bool _submitting = false;
@@ -78,7 +54,6 @@ class _BetaFeedbackSheetState extends State<_BetaFeedbackSheet> {
     setState(() => _submitting = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       String route = 'unknown';
       try {
         route = GoRouterState.of(context).uri.toString();
@@ -86,16 +61,15 @@ class _BetaFeedbackSheetState extends State<_BetaFeedbackSheet> {
         route = ModalRoute.of(context)?.settings.name ?? 'unknown';
       }
 
-      await FirebaseFirestore.instance.collection('beta_feedback').add({
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'submitBetaFeedback',
+      );
+      await callable.call<Map<String, dynamic>>({
         'category': _category,
         'message': message,
         'route': route,
-        'uid': user?.uid,
-        'email': user?.email,
         'platform': defaultTargetPlatform.name,
         'isWeb': kIsWeb,
-        'status': 'new',
-        'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;
@@ -136,8 +110,14 @@ class _BetaFeedbackSheetState extends State<_BetaFeedbackSheet> {
             items: const [
               DropdownMenuItem(value: 'bug', child: Text('Bug')),
               DropdownMenuItem(value: 'ux', child: Text('UX Issue')),
-              DropdownMenuItem(value: 'performance', child: Text('Performance')),
-              DropdownMenuItem(value: 'feature-request', child: Text('Feature request')),
+              DropdownMenuItem(
+                value: 'performance',
+                child: Text('Performance'),
+              ),
+              DropdownMenuItem(
+                value: 'feature-request',
+                child: Text('Feature request'),
+              ),
             ],
             onChanged: _submitting
                 ? null
@@ -177,3 +157,6 @@ class _BetaFeedbackSheetState extends State<_BetaFeedbackSheet> {
     );
   }
 }
+
+
+

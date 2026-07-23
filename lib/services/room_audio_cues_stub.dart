@@ -13,5 +13,11 @@ class RoomAudioCues {
   void playGiftReceived() {}
   void playHandRaised() {}
   void playMicApproved() {}
+  void playNewmessage() {}
+  void playPrivatemessage() {}
+  void playBuzz() {}
   void dispose() {}
 }
+
+
+

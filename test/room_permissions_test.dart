@@ -30,13 +30,12 @@ void main() {
   });
 
   group('RoomPermissions.canUseMic', () {
-    test('returns true for each named role', () {
+    test('returns true for host, cohost, moderator, and stage roles', () {
       for (final role in [
         RoomPermissions.host,
         RoomPermissions.cohost,
         RoomPermissions.moderator,
         RoomPermissions.stage,
-        RoomPermissions.audience,
       ]) {
         expect(
           RoomPermissions.canUseMic(role),
@@ -46,7 +45,8 @@ void main() {
       }
     });
 
-    test('returns false for empty string', () {
+    test('returns false for audience and empty roles', () {
+      expect(RoomPermissions.canUseMic(RoomPermissions.audience), isFalse);
       expect(RoomPermissions.canUseMic(''), isFalse);
     });
   });

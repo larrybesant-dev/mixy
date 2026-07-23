@@ -1,0 +1,18 @@
+{
+  "testPaths": [
+    "integration_test/",
+    "test/"
+  ],
+  "maxRetryAttempts": 5,
+  "excludePatterns": [
+    "test_helpers.dart",
+    "*.g.dart",
+    "*.freezed.dart",
+    ".dart_tool/**"
+  ],
+  "reportOutputDir": ".",
+  "remediationOutputDir": ".",
+  "consecutiveFailures": 0,
+  "lastRunTimestamp": "",
+  "comment": "MixVy Test Remediation Configuration. Modify test paths or max attempts as needed."
+}

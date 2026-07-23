@@ -1,9 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../presentation/providers/notification_provider.dart';
+import '../../widgets/friends_panel_button.dart';
 
 class TopAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String title;
@@ -18,6 +18,7 @@ class TopAppBar extends ConsumerWidget implements PreferredSizeWidget {
       centerTitle: true,
       actions: [
         if (actions != null) ...actions!,
+        const FriendsPanelButton(),
         IconButton(
           tooltip: 'Notifications',
           onPressed: () => context.go('/notifications'),
@@ -29,7 +30,6 @@ class TopAppBar extends ConsumerWidget implements PreferredSizeWidget {
               : const Icon(Icons.notifications_outlined),
         ),
       ],
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       elevation: 0,
     );
   }
@@ -37,3 +37,6 @@ class TopAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
+
+
+

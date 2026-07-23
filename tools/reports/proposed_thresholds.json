@@ -1,0 +1,71 @@
+﻿{
+    "contract_version":  "1.0.0",
+    "artifact_mode":  "primary",
+    "generatedAtUtc":  "2026-04-13T15:40:22.1543469Z",
+    "modelVersion":  "policy_tuner_v1",
+    "mode":  "recommend-only",
+    "recommendationType":  "hold",
+    "recommendationState":  "burn_in",
+    "policy_divergence_score":  0,
+    "divergence_classification":  "transient",
+    "policy_stability_score":  1,
+    "currentThresholds":  {
+                              "confidenceThreshold":  75,
+                              "slopeBlockThreshold":  -2,
+                              "varianceIncreaseWarningPercent":  30
+                          },
+    "recommendedThresholds":  {
+                                  "confidenceThreshold":  75,
+                                  "slopeBlockThreshold":  -2,
+                                  "varianceIncreaseWarningPercent":  30
+                              },
+    "delta":  {
+                  "confidenceThreshold":  0,
+                  "slopeBlockThreshold":  0,
+                  "varianceIncreaseWarningPercent":  0
+              },
+    "safetyFloors":  {
+                         "modelVersion":  "release_governor_safety_floors_v1",
+                         "minConfidenceThreshold":  70,
+                         "maxRegressionTolerance":  "fixed",
+                         "criticalFailAlwaysBlock":  true,
+                         "notes":  "Safety floors are immutable guardrails for tuner recommendations and must not be auto-lowered."
+                     },
+    "justificationSignals":  {
+                                 "runCount":  1,
+                                 "shortWindowSize":  10,
+                                 "baselineWindowSize":  30,
+                                 "burnInRcCount":  6,
+                                 "inBurnInFreeze":  true,
+                                 "burnInOverrideTriggered":  false,
+                                 "earlyExitOnSevereInstability":  true,
+                                 "policy_divergence_score":  0,
+                                 "divergenceThreshold":  8,
+                                 "divergenceDetected":  false,
+                                 "divergenceClassification":  "transient",
+                                 "changeMagnitude":  0,
+                                 "passConsistency":  1,
+                                 "policy_stability_score":  1,
+                                 "severeInstability":  false,
+                                 "shortWindow":  {
+                                                     "scoreAverage":  100,
+                                                     "scoreStdDev":  0,
+                                                     "scoreSlope":  0
+                                                 },
+                                 "baselineWindow":  {
+                                                        "scoreAverage":  100,
+                                                        "scoreStdDev":  0,
+                                                        "scoreSlope":  0
+                                                    },
+                                 "blended":  {
+                                                 "shortWeight":  0.4,
+                                                 "baselineWeight":  0.6,
+                                                 "scoreAverage":  100,
+                                                 "scoreStdDev":  0,
+                                                 "scoreSlope":  0
+                                             },
+                                 "latestVolatilityBand":  "stable",
+                                 "latestGovernanceDecision":  "ALLOW",
+                                 "sampleAwareMode":  true
+                             }
+}

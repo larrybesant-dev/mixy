@@ -1,12 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="description" content="Meet. Connect. Vibe. MixVy is the premium platform for live audio and video connection. Join curated rooms, explore chemistry, and experience VIP lounge energy from anywhere.">
+  <meta name="keywords" content="MixVy, Live Video, Audio Rooms, Social Networking, Speed Dating, Premium Connections">
+  <meta property="og:title" content="MixVy - Meet. Connect. Vibe.">
+  <meta property="og:description" content="Experience premium live connections. Audio and video rooms curated for real chemistry.">
+  <meta property="og:image" content="assets/images/branding/mixvy_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
   <base href="$FLUTTER_BASE_HREF">
   <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self)" />
-  <title>MixVy - Welcome &amp; Login</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="favicon.png">
+  <title>MixVy - Meet. Connect. Vibe.</title>
+  <!-- Firebase Web App Config -->
+  <meta name="firebase-config" content="mixvy-v2">
+  
+  <!-- Firestore Persistence: Enabled for better offline support -->
+  <meta name="firestore-persistence" content="enabled">
+  
+  <!-- AppCheck: activated in monitor-only mode from lib/main.dart (Phase 1). -->
+  <!-- Firestore Security Rules + Auth remain the enforced security layer. -->
+  
   <style>
     html, body {
       width: 100%;
@@ -14,33 +31,275 @@
       margin: 0;
       padding: 0;
       font-family: Roboto, sans-serif;
-      background: #ffffff;
+      background: #0D0D1A;
+      overflow: hidden;
+    }
+
+    #boot-shell {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 18% 78%, rgba(120, 30, 43, 0.35), transparent 45%),
+                  radial-gradient(circle at 82% 20%, rgba(212, 175, 55, 0.22), transparent 35%),
+                  #0B0B0B;
+      color: #F7EDE2;
+      z-index: 2147483646;
+      font-family: Raleway, Roboto, sans-serif;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    #boot-shell[hidden] {
+      display: none;
+    }
+
+    .boot-title {
+      font-size: 20px;
+      letter-spacing: 0.6px;
+      margin: 0 0 8px 0;
+    }
+
+    .boot-msg {
+      opacity: 0.86;
+      margin: 0;
+      max-width: 420px;
+      line-height: 1.4;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
+  <div id="boot-shell" role="status" aria-live="polite">
+    <div>
+      <h1 class="boot-title">Launching MixVy</h1>
+      <p id="boot-msg" class="boot-msg">Preparing your connection and live state...</p>
+    </div>
+  </div>
+
+  <script>
+    // Force unregister service workers that might cache old Firebase config
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) { reg.unregister(); });
+      }).catch(function() {});
+    }
+  </script>
+
   <script>
     (function () {
-      if ('serviceWorker' in navigator) {
-        // Register Firebase messaging worker at an absolute root path.
-        navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(function () {
-          // Ignore optional push setup failures.
-        });
-      }
-
+      var bootShell = document.getElementById('boot-shell');
+      var bootMsg = document.getElementById('boot-msg');
       var baseTag = document.querySelector('base');
       var baseHref = baseTag ? baseTag.getAttribute('href') : '/';
-      if (!baseHref || baseHref.indexOf('$FLUTTER_BASE_HREF') !== -1) {
+      if (!baseHref || baseHref.trim().length === 0) {
         baseHref = '/';
+      } else {
+        if (!baseHref.startsWith('/')) {
+          baseHref = '/' + baseHref;
+        }
+        if (!baseHref.endsWith('/')) {
+          baseHref = baseHref + '/';
+        }
       }
-      if (!baseHref.endsWith('/')) {
-        baseHref += '/';
+
+      function isLockedProfilePath(path) {
+        if (!path || typeof path !== 'string') return false;
+        if (path === '/profile/edit') return true;
+        return /^\/profile\/[^/]+$/.test(path);
+      }
+
+      var initialPath = window.location.pathname || '/';
+      var lockedProfilePath = isLockedProfilePath(initialPath) ? initialPath : null;
+      var lockStartedAt = Date.now();
+      var lockWindowMs = 25000;
+
+      function profileLockActive() {
+        return !!lockedProfilePath && (Date.now() - lockStartedAt) < lockWindowMs;
+      }
+
+      function normalizeUrlArg(urlArg) {
+        if (urlArg && typeof urlArg === 'object' && typeof urlArg.pathname === 'string') {
+          return urlArg.pathname;
+        }
+        if (typeof urlArg !== 'string' || urlArg.length === 0) return '';
+        if (urlArg.startsWith('http://') || urlArg.startsWith('https://')) {
+          try {
+            return new URL(urlArg).pathname;
+          } catch (_) {
+            return urlArg;
+          }
+        }
+        return urlArg;
+      }
+
+      function shouldGuardUrl(urlArg) {
+        if (!profileLockActive()) return false;
+        var path = normalizeUrlArg(urlArg);
+        if (!path && (window.location.pathname === '/' || window.location.pathname === '/home')) {
+          path = window.location.pathname;
+        }
+        return path === '/' || path === '/home';
+      }
+
+      window.__mixvyDeepLinkGuard = {
+        active: function () { return profileLockActive(); },
+        lockedPath: lockedProfilePath,
+      };
+
+      if (profileLockActive()) {
+        var originalReplaceState = window.history.replaceState.bind(window.history);
+        var originalPushState = window.history.pushState.bind(window.history);
+
+        window.history.replaceState = function (state, title, url) {
+          if (shouldGuardUrl(url)) {
+            return originalReplaceState(state, title, lockedProfilePath);
+          }
+          return originalReplaceState(state, title, url);
+        };
+
+        window.history.pushState = function (state, title, url) {
+          if (shouldGuardUrl(url)) {
+            return originalPushState(state, title, lockedProfilePath);
+          }
+          return originalPushState(state, title, url);
+        };
+      }
+
+      // Preserve deep links through early Flutter web bootstrap churn by
+      // carrying the original path on a root query param once.
+      if (window.location.pathname !== '/' &&
+          window.location.search.indexOf('__dl=') === -1) {
+        var deepLink = window.location.pathname +
+          window.location.search +
+          window.location.hash;
+        var rewritten = '/?__dl=' + encodeURIComponent(deepLink);
+        window.history.replaceState(window.history.state, '', rewritten);
+      }
+
+      function setBootMessage(message) {
+        if (bootMsg) bootMsg.textContent = message;
+      }
+
+      function hideBootShell() {
+        if (bootShell) bootShell.setAttribute('hidden', 'hidden');
+      }
+
+      function watchForFlutterSurface() {
+        var matcher = 'flt-glass-pane, flutter-view, flt-scene-host, flt-semantics-host, flt-platform-view';
+        var didHide = false;
+
+        function tryHide(reason) {
+          if (didHide) return;
+          if (document.querySelector(matcher)) {
+            didHide = true;
+            hideBootShell();
+          }
+        }
+
+        // Flutter emits this when the first frame is rendered.
+        window.addEventListener('flutter-first-frame', function () {
+          didHide = true;
+          hideBootShell();
+        }, { once: true });
+
+        tryHide('initial-query');
+        if (didHide) return;
+
+        var observer = new MutationObserver(function () {
+          if (didHide) {
+            observer.disconnect();
+            return;
+          }
+          if (document.querySelector(matcher)) {
+            didHide = true;
+            observer.disconnect();
+            hideBootShell();
+          }
+        });
+
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+        });
+
+        // Poll briefly to catch renderers attaching outside mutation timing.
+        var checks = 0;
+        var poll = setInterval(function () {
+          checks += 1;
+          if (didHide) {
+            clearInterval(poll);
+            return;
+          }
+          if (document.querySelector(matcher)) {
+            didHide = true;
+            clearInterval(poll);
+            observer.disconnect();
+            hideBootShell();
+            return;
+          }
+          // Final failsafe so the loader cannot permanently block the app.
+          if (checks >= 120) {
+            clearInterval(poll);
+            observer.disconnect();
+            hideBootShell();
+          }
+        }, 250);
+      }
+
+      if ('serviceWorker' in navigator) {
+        var isLocalDevHost =
+          location.hostname === 'localhost' ||
+          location.hostname === '127.0.0.1' ||
+          location.hostname === '[::1]';
+
+        if (isLocalDevHost) {
+          // Keep local dev sessions clean without disrupting production caching.
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (reg) {
+              reg.unregister();
+            });
+          }).catch(function () {
+            // Ignore cleanup failures; app still proceeds.
+          });
+        }
+
+        var swUrl = baseHref + 'firebase-messaging-sw.js';
+
+        // Keep messaging worker scope aligned with the deployed app base path.
+        navigator.serviceWorker.register(swUrl, {
+          scope: baseHref,
+        }).catch(function () {
+          // Ignore optional push setup failures.
+        });
       }
 
       var script = document.createElement('script');
       // Use an absolute path to avoid route-relative script requests on deep links.
       script.src = baseHref + 'flutter_bootstrap.js';
       script.async = true;
+      script.onerror = function () {
+        setBootMessage('Unable to load app runtime. Check your connection and hard refresh.');
+      };
+      script.onload = function () {
+        watchForFlutterSurface();
+      };
+
+      // Update message at 12 seconds
+      setTimeout(function () {
+        if (bootShell && !bootShell.hasAttribute('hidden')) {
+          setBootMessage('Still loading... network looks slow. MixVy will continue automatically.');
+        }
+      }, 12000);
+
+      // PRAGMATIC WORKAROUND: Force hide boot shell after 8 seconds if Flutter hasn't surfaced
+      // This prevents the loading screen from blocking the app indefinitely on web
+      setTimeout(function () {
+        hideBootShell();
+      }, 8000);
+
       document.body.appendChild(script);
     })();
   </script>

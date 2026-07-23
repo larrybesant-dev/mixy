@@ -1,6 +1,12 @@
 class PaymentService {
-	Future<void> processPayment(double amount) async {
-		// Stripe-ready structure
-		await Future.delayed(Duration(seconds: 1));
-	}
+  static const bool _legacyPaymentServiceEnabled = false;
+
+  Future<void> processPayment(double amount) async {
+    if (!_legacyPaymentServiceEnabled) {
+      return;
+    }
+  }
 }
+
+
+

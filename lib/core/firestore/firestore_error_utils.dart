@@ -17,10 +17,15 @@ class FirestoreErrorInfo {
 FirestoreErrorInfo parseFirestoreError(Object error) {
   if (error is FirebaseException) {
     final code = error.code.trim().isEmpty ? 'unknown' : error.code.trim();
-    final message = (error.message ?? '').trim().isEmpty ? 'No additional details provided.' : error.message!.trim();
+    final rawMessage = error.message?.trim();
+    final message = (rawMessage == null || rawMessage.isEmpty)
+        ? 'No additional details provided.'
+        : rawMessage;
     final normalized = code.toLowerCase();
     final isPermissionOrAuth =
-        normalized == 'permission-denied' || normalized == 'unauthenticated' || normalized == 'unauthorized';
+        normalized == 'permission-denied' ||
+        normalized == 'unauthenticated' ||
+        normalized == 'unauthorized';
     return FirestoreErrorInfo(
       code: code,
       message: message,
@@ -35,7 +40,10 @@ FirestoreErrorInfo parseFirestoreError(Object error) {
   );
 }
 
-String friendlyFirestoreMessage(Object error, {required String fallbackContext}) {
+String friendlyFirestoreMessage(
+  Object error, {
+  required String fallbackContext,
+}) {
   final info = parseFirestoreError(error);
   if (info.isPermissionOrAuth) {
     return 'You do not have access to this data right now. Please sign in again or contact support if this keeps happening.';
@@ -59,3 +67,6 @@ void logFirestoreError({
     stackTrace: stackTrace,
   );
 }
+
+
+

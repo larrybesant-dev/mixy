@@ -4,7 +4,7 @@ class RoomSlotModel {
 
   const RoomSlotModel({required this.slotId, this.userId});
 
-  bool get isAvailable => userId == null || userId!.isEmpty;
+  bool get isAvailable => (userId ?? '').isEmpty;
 
   factory RoomSlotModel.fromMap(String slotId, Map<String, dynamic>? data) {
     final rawUserId = data?['userId'];
@@ -23,3 +23,6 @@ class RoomSlotModel {
     );
   }
 }
+
+
+

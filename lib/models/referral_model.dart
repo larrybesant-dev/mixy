@@ -107,7 +107,10 @@ class ReferralAttributionModel {
       referrerUserId: _asString(json['referrerUserId']),
       referredUserId: _asString(json['referredUserId']),
       referralCode: _asString(json['referralCode']),
-      subscriptionStatus: _asString(json['subscriptionStatus'], fallback: 'pending'),
+      subscriptionStatus: _asString(
+        json['subscriptionStatus'],
+        fallback: 'pending',
+      ),
       rewardStatus: _asString(json['rewardStatus'], fallback: 'pending'),
       createdAt: _parseNullableDate(json['createdAt']),
       conversionAt: _parseNullableDate(json['conversionAt']),
@@ -162,3 +165,6 @@ class ReferralEarningModel {
     );
   }
 }
+
+
+

@@ -14,11 +14,9 @@ class DesktopWindowService {
   Future<void> openWhisperWindow(String userId, String username) async {
     final exePath = Platform.resolvedExecutable;
     try {
-      await Process.start(
-        exePath,
-        ['--popout-whisper=$userId'],
-        mode: ProcessStartMode.detached,
-      );
+      await Process.start(exePath, [
+        '--popout-whisper=$userId',
+      ], mode: ProcessStartMode.detached);
     } catch (_) {
       // Silently ignore — desktop pop-out is a best-effort feature.
     }
@@ -28,11 +26,12 @@ class DesktopWindowService {
   Future<void> openCamWindow(String userId) async {
     final exePath = Platform.resolvedExecutable;
     try {
-      await Process.start(
-        exePath,
-        ['--popout-cam=$userId'],
-        mode: ProcessStartMode.detached,
-      );
+      await Process.start(exePath, [
+        '--popout-cam=$userId',
+      ], mode: ProcessStartMode.detached);
     } catch (_) {}
   }
 }
+
+
+

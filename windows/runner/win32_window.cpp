@@ -155,10 +155,10 @@ bool Win32Window::Show() {
 
 // static
 LRESULT CALLBACK Win32Window::WndProc(HWND const window,
-                                      UINT const message,
+                                      UINT const MessageModel,
                                       WPARAM const wparam,
                                       LPARAM const lparam) noexcept {
-  if (message == WM_NCCREATE) {
+  if (MessageModel == WM_NCCREATE) {
     auto window_struct = reinterpret_cast<CREATESTRUCT*>(lparam);
     SetWindowLongPtr(window, GWLP_USERDATA,
                      reinterpret_cast<LONG_PTR>(window_struct->lpCreateParams));
@@ -167,18 +167,18 @@ LRESULT CALLBACK Win32Window::WndProc(HWND const window,
     EnableFullDpiSupportIfAvailable(window);
     that->window_handle_ = window;
   } else if (Win32Window* that = GetThisFromHandle(window)) {
-    return that->MessageHandler(window, message, wparam, lparam);
+    return that->MessageModelHandler(window, MessageModel, wparam, lparam);
   }
 
-  return DefWindowProc(window, message, wparam, lparam);
+  return DefWindowProc(window, MessageModel, wparam, lparam);
 }
 
 LRESULT
-Win32Window::MessageHandler(HWND hwnd,
-                            UINT const message,
+Win32Window::MessageModelHandler(HWND hwnd,
+                            UINT const MessageModel,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
-  switch (message) {
+  switch (MessageModel) {
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();
@@ -218,7 +218,7 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
   }
 
-  return DefWindowProc(window_handle_, message, wparam, lparam);
+  return DefWindowProc(window_handle_, MessageModel, wparam, lparam);
 }
 
 void Win32Window::Destroy() {

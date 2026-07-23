@@ -21,11 +21,15 @@ void main() {
       when(() => user.uid).thenReturn('user-123');
       when(() => gateway.currentUser).thenReturn(user);
       when(() => gateway.sendPayment(any(), any())).thenAnswer((_) async {});
-      when(() => gateway.requestPayment(any(), any(), any())).thenAnswer((_) async {});
+      when(
+        () => gateway.requestPayment(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
       container = ProviderContainer(
         overrides: [
-          paymentControllerProvider.overrideWith(() => PaymentController(gateway: gateway)),
+          paymentControllerProvider.overrideWith(
+            () => PaymentController(gateway: gateway),
+          ),
         ],
       );
     });
@@ -35,7 +39,7 @@ void main() {
       await controller.sendCoins(receiverId: 'receiver-1', amount: 100);
       final state = container.read(paymentControllerProvider);
       expect(state.amount, 100);
-      expect(state.successMessage, 'Payment sent successfully.');
+      expect(state.successmessage, 'Payment sent successfully.');
       expect(state.isConfirmed, true);
       expect(state.error, isNull);
     });
@@ -45,7 +49,7 @@ void main() {
       await controller.requestCoins(targetId: 'target-7', amount: 25);
       final state = container.read(paymentControllerProvider);
       expect(state.amount, 25);
-      expect(state.successMessage, 'Payment request sent successfully.');
+      expect(state.successmessage, 'Payment request sent successfully.');
       expect(state.isConfirmed, true);
       expect(state.error, isNull);
     });

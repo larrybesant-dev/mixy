@@ -23,13 +23,13 @@ class AppSettings {
   });
 
   const AppSettings.defaults()
-      : themeMode = ThemeMode.system,
-        notificationsEnabled = true,
-        analyticsEnabled = true,
-        legalAccepted = false,
-        legalAcceptedVersion = '',
-        legalAcceptedAt = null,
-        localeCode = 'en';
+    : themeMode = ThemeMode.system,
+      notificationsEnabled = true,
+      analyticsEnabled = true,
+      legalAccepted = false,
+      legalAcceptedVersion = '',
+      legalAcceptedAt = null,
+      localeCode = 'en';
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -80,11 +80,20 @@ class AppSettingsService {
   Future<void> save(AppSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, settings.themeMode.name);
-    await prefs.setBool(_notificationsEnabledKey, settings.notificationsEnabled);
+    await prefs.setBool(
+      _notificationsEnabledKey,
+      settings.notificationsEnabled,
+    );
     await prefs.setBool(_analyticsEnabledKey, settings.analyticsEnabled);
     await prefs.setBool(_legalAcceptedKey, settings.legalAccepted);
-    await prefs.setString(_legalAcceptedVersionKey, settings.legalAcceptedVersion);
-    await prefs.setString(_localeCodeKey, _normalizeLocaleCode(settings.localeCode));
+    await prefs.setString(
+      _legalAcceptedVersionKey,
+      settings.legalAcceptedVersion,
+    );
+    await prefs.setString(
+      _localeCodeKey,
+      _normalizeLocaleCode(settings.localeCode),
+    );
 
     final acceptedAt = settings.legalAcceptedAt?.toUtc().toIso8601String();
     if (acceptedAt == null || acceptedAt.isEmpty) {
@@ -123,3 +132,6 @@ class AppSettingsService {
     return normalized;
   }
 }
+
+
+

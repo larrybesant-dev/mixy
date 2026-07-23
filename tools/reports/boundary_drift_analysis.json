@@ -1,0 +1,34 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T19:37:17.1912563Z",
+    "analysisVersion":  "policy_boundary_drift_v1",
+    "schemaVersion":  "1.0.0",
+    "source":  {
+                   "indexPath":  "tools/reports/history/verdict_index.json",
+                   "entryCount":  1
+               },
+    "parameters":  {
+                       "sweepBurnInFrom":  1,
+                       "sweepBurnInTo":  6
+                   },
+    "summary":  {
+                    "boundaryBehavior":  "insufficient_history",
+                    "distinctFirstExitThresholds":  [
+                                                        "1"
+                                                    ],
+                    "distinctLastFrozenThresholds":  [
+                                                         "6"
+                                                     ],
+                    "latestFirstExitThreshold":  1,
+                    "latestLastFrozenThreshold":  6
+                },
+    "prefixes":  [
+                     {
+                         "historyDepth":  1,
+                         "firstExitThreshold":  1,
+                         "lastFrozenThreshold":  6,
+                         "boundaryFormed":  true,
+                         "exitThresholdCount":  1,
+                         "frozenThresholdCount":  5
+                     }
+                 ]
+}

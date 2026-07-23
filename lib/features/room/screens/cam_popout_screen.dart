@@ -1,9 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../presentation/providers/user_provider.dart';
+import '../../../core/providers/firebase_providers.dart';
+import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../services/room_management_gateway.dart';
+import '../../../services/room_session_gateway.dart';
 import '../../../services/room_service.dart';
 import '../../../services/notification_service.dart';
 
@@ -45,16 +49,17 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
 
     try {
       final roomService = ref.read(roomServiceProvider);
-      final callerName = caller.username.trim().isEmpty ? 'Someone' : caller.username;
+      final firestore = ref.read(firestoreProvider);
+      final roomManagementGateway = ref.read(roomManagementGatewayProvider);
+      final roomSessionGateway = ref.read(roomSessionGatewayProvider);
+      final callerName = caller.username.trim().isEmpty
+          ? 'Someone'
+          : caller.username;
 
       // Fetch target user's display name for the room title.
-      final targetDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.targetUserId)
-          .get();
-      final targetName = targetDoc.exists
-          ? (targetDoc.data()?['username'] as String? ?? 'User').trim()
-          : 'User';
+      final targetDoc = await roomSessionGateway.getUser(widget.targetUserId);
+      final targetData = targetDoc.data();
+      final targetName = (targetData?['username'] as String? ?? 'User').trim();
 
       final roomId = await roomService.createRoom(
         hostId: caller.id,
@@ -65,24 +70,19 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
       );
 
       // Set maxBroadcasters = 2 and flag as a direct call.
-      await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+      await roomManagementGateway.updateRoom(roomId, {
         'maxBroadcasters': 2,
         'isDirectCall': true,
         'calleeId': widget.targetUserId,
-        'callDeclined': false,
         'ownerName': callerName,
       });
 
-      // Notify the target user.
-      await NotificationService(
-        firestore: FirebaseFirestore.instance,
-      ).inAppNotification(
+      await NotificationService(firestore: firestore).inAppNotification(
         widget.targetUserId,
         '📹 $callerName is calling you! Join at mixvy.app/room/$roomId',
       );
 
       if (!mounted) return;
-      // Navigate the caller directly into the room.
       context.go('/room/$roomId');
     } catch (e) {
       if (mounted) {
@@ -97,54 +97,47 @@ class _CamPopoutScreenState extends ConsumerState<CamPopoutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return AppPageScaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_error != null) ...[
-                const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
-                const SizedBox(height: 16),
-                Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _startCall,
-                  child: const Text('Retry'),
-                ),
-              ] else ...[
-                const SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 3,
+      body: _error != null
+          ? AppErrorView(
+              error: _error!,
+              fallbackContext: 'Unable to start call.',
+              onRetry: _startCall,
+            )
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 3,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  _calling ? 'Starting call…' : 'Connecting…',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(color: Colors.white70),
-                ),
-                const SizedBox(height: 32),
-                TextButton(
-                  onPressed: () => context.pop(),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.white54),
+                  const SizedBox(height: 24),
+                  Text(
+                    _calling ? 'Starting call…' : 'Connecting…',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white70,
+                    ),
                   ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+                  const SizedBox(height: 32),
+                  TextButton(
+                    onPressed: () => context.pop(),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
+
+
+

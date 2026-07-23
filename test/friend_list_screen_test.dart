@@ -1,84 +1,191 @@
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mixvy/features/friends/models/friend_roster_entry.dart';
+import 'package:mixvy/features/friends/models/friendship_model.dart';
+import 'package:mixvy/features/friends/panes/friends_pane_view.dart';
+import 'package:mixvy/features/friends/providers/friends_providers.dart';
+import 'package:mixvy/features/schema_messenger/core/schema_engine/schema_module_health_provider.dart';
+import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/models/user_model.dart';
-import 'package:mixvy/presentation/providers/friend_provider.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
-import 'package:mixvy/presentation/screens/friend_list_screen.dart';
+import 'test_helpers.dart';
 
 void main() {
-  testWidgets('FriendListScreen renders friends and suggestions', (tester) async {
-    final firestore = FakeFirebaseFirestore();
-    await firestore.collection('users').doc('user-1').set({
-      'uid': 'user-1',
-      'email': 'user1@mixvy.dev',
-      'username': 'User One',
-      'friends': ['user-2'],
-    });
-    await firestore.collection('users').doc('user-2').set({
-      'uid': 'user-2',
-      'email': 'user2@mixvy.dev',
-      'username': 'User Two',
-    });
-    await firestore.collection('users').doc('user-3').set({
-      'uid': 'user-3',
-      'email': 'guest@mixvy.dev',
-      'username': 'Guest Person',
-    });
-    await firestore.collection('users').doc('user-4').set({
-      'uid': 'user-4',
-      'email': 'requested@mixvy.dev',
-      'username': 'Requested Person',
-    });
-    await firestore.collection('users').doc('user-5').set({
-      'uid': 'user-5',
-      'email': 'available@mixvy.dev',
-      'username': 'Available Person',
-    });
-    await firestore.collection('friend_requests').doc('incoming-1').set({
-      'fromUserId': 'user-3',
-      'toUserId': 'user-1',
-      'status': 'pending',
-      'createdAt': DateTime(2026, 1, 2),
-    });
-    await firestore.collection('friend_requests').doc('outgoing-1').set({
-      'fromUserId': 'user-1',
-      'toUserId': 'user-4',
-      'status': 'pending',
-      'createdAt': DateTime(2026, 1, 3),
-    });
+  setUpAll(() async {
+    await testSetup();
+  });
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          friendFirestoreProvider.overrideWithValue(firestore),
-          userProvider.overrideWithValue(
-            UserModel(
-              id: 'user-1',
-              email: 'user1@mixvy.dev',
-              username: 'User One',
-              createdAt: DateTime(2026, 1, 1),
+  testWidgets('FriendListScreen renders online, in-room, and offline sections', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final roster = <FriendRosterEntry>[
+      FriendRosterEntry(
+        friendship: FriendshipModel(
+          id: 'user-1_user-2',
+          userA: 'user-1',
+          userB: 'user-2',
+          status: 'accepted',
+          requestedBy: 'user-1',
+          createdAt: DateTime(2026, 1, 2),
+        ),
+        user: UserModel(
+          id: 'user-2',
+          email: 'user2@mixvy.dev',
+          username: 'User Two',
+          createdAt: DateTime(2026, 1, 2),
+        ),
+        presence: PresenceModel(
+          userId: 'user-2',
+          isOnline: true,
+          inRoom: null,
+          lastSeen: now,
+          status: UserStatus.online,
+        ),
+      ),
+      FriendRosterEntry(
+        friendship: FriendshipModel(
+          id: 'user-1_user-3',
+          userA: 'user-1',
+          userB: 'user-3',
+          status: 'accepted',
+          requestedBy: 'user-1',
+          createdAt: DateTime(2026, 1, 3),
+        ),
+        user: UserModel(
+          id: 'user-3',
+          email: 'user3@mixvy.dev',
+          username: 'Room Friend',
+          createdAt: DateTime(2026, 1, 3),
+        ),
+        presence: PresenceModel(
+          userId: 'user-3',
+          isOnline: true,
+          inRoom: 'room-123',
+          lastSeen: now,
+          status: UserStatus.online,
+        ),
+      ),
+      FriendRosterEntry(
+        friendship: FriendshipModel(
+          id: 'user-1_user-4',
+          userA: 'user-1',
+          userB: 'user-4',
+          status: 'accepted',
+          requestedBy: 'user-1',
+          createdAt: DateTime(2026, 1, 4),
+        ),
+        user: UserModel(
+          id: 'user-4',
+          email: 'user4@mixvy.dev',
+          username: 'Offline Friend',
+          createdAt: DateTime(2026, 1, 4),
+        ),
+        presence: PresenceModel(
+          userId: 'user-4',
+          isOnline: false,
+          inRoom: null,
+          lastSeen: now.subtract(const Duration(hours: 2)),
+          status: UserStatus.offline,
+        ),
+      ),
+    ];
+
+    final container = ProviderContainer(
+      overrides: [
+        schemaModuleHealthProvider('friends').overrideWith(
+          (ref) => const SchemaModuleHealth(
+            moduleId: 'friends',
+            compositeScore: 100,
+            structuralScore: 100,
+            parityScore: 100,
+            enforcementScore: 100,
+            trend: MigrationHealthTrend.stable,
+            comparable: false,
+            parityMatch: true,
+            mismatchCount: 0,
+            reasons: [],
+          ),
+        ),
+        schemaModuleHealthProvider('message').overrideWith(
+          (ref) => const SchemaModuleHealth(
+            moduleId: 'message',
+            compositeScore: 100,
+            structuralScore: 100,
+            parityScore: 100,
+            enforcementScore: 100,
+            trend: MigrationHealthTrend.stable,
+            comparable: false,
+            parityMatch: true,
+            mismatchCount: 0,
+            reasons: [],
+          ),
+        ),
+        friendRosterProvider.overrideWith((ref) => Stream.value(roster)),
+        currentUserPresenceProvider.overrideWith(
+          (ref) => Stream.value(
+            PresenceModel(
+              userId: 'user-1',
+              isOnline: true,
+              inRoom: 'my-room',
+              lastSeen: now,
+              status: UserStatus.online,
             ),
           ),
-        ],
-        child: const MaterialApp(home: FriendListScreen()),
+        ),
+        userProvider.overrideWithValue(
+          UserModel(
+            id: 'user-1',
+            email: 'user1@mixvy.dev',
+            username: 'User One',
+            createdAt: DateTime(2026, 1, 1),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: Scaffold(body: FriendsPaneView())),
       ),
     );
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Pending requests'), findsOneWidget);
-    expect(find.text('Guest Person'), findsOneWidget);
-    expect(find.text('Accept'), findsOneWidget);
-    expect(find.text('Decline'), findsOneWidget);
-    expect(find.text('Your friends'), findsOneWidget);
+    // Top summary area should render immediately.
+    expect(find.text('2 active now'), findsOneWidget);
+    expect(find.text('1 in rooms'), findsOneWidget);
+    expect(find.text('Back to my room'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('User Two'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    // Keep this test focused on roster behavior, not exact header copy.
     expect(find.text('User Two'), findsOneWidget);
-    expect(find.text('People you may know'), findsOneWidget);
-    expect(find.text('Available Person'), findsOneWidget);
-    expect(find.text('Add'), findsOneWidget);
-    expect(find.text('Requested'), findsNothing);
-    expect(find.text('Remove'), findsOneWidget);
+    expect(find.text('Room Friend'), findsOneWidget);
+    expect(find.text('Invite'), findsOneWidget);
+    expect(find.text('Join Room'), findsOneWidget);
+
+    await tester.tap(find.text('OFFLINE'));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Offline Friend'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offline Friend'), findsOneWidget);
+    expect(find.textContaining('Last seen'), findsOneWidget);
+    // Dispose container inside test body and pump to drain stream cancellation
+    // callbacks before the test completes, preventing "failed after completed".
+    container.dispose();
+    await tester.pump();
   });
 }

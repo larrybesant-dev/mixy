@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/firebase_providers.dart';
 import '../../models/user_model.dart';
 import '../../services/moderation_service.dart';
 
@@ -12,10 +13,14 @@ abstract class PaymentRecipientRepository {
   });
 }
 
-class FirestorePaymentRecipientRepository implements PaymentRecipientRepository {
-  FirestorePaymentRecipientRepository({FirebaseFirestore? firestore, ModerationService? moderationService})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _moderationService = moderationService ?? ModerationService(firestore: firestore ?? FirebaseFirestore.instance);
+class FirestorePaymentRecipientRepository
+    implements PaymentRecipientRepository {
+  FirestorePaymentRecipientRepository({
+    required FirebaseFirestore firestore,
+    ModerationService? moderationService,
+  }) : _firestore = firestore,
+       _moderationService =
+           moderationService ?? ModerationService(firestore: firestore);
 
   final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
@@ -53,7 +58,9 @@ class FirestorePaymentRecipientRepository implements PaymentRecipientRepository 
 }
 
 final paymentRecipientRepositoryProvider = Provider<PaymentRecipientRepository>(
-  (ref) => FirestorePaymentRecipientRepository(),
+  (ref) => FirestorePaymentRecipientRepository(
+    firestore: ref.read(firestoreProvider),
+  ),
 );
 
 final currentPaymentUserIdProvider = Provider<String?>((ref) {
@@ -62,7 +69,11 @@ final currentPaymentUserIdProvider = Provider<String?>((ref) {
 
 final paymentRecipientSearchProvider =
     FutureProvider.family<List<UserModel>, String>((ref, query) {
-  final repository = ref.read(paymentRecipientRepositoryProvider);
-  final currentUserId = ref.read(currentPaymentUserIdProvider);
-  return repository.searchRecipients(query, currentUserId: currentUserId);
-});
+      final repository = ref.read(paymentRecipientRepositoryProvider);
+      final currentUserId = ref.read(currentPaymentUserIdProvider);
+      return repository.searchRecipients(query, currentUserId: currentUserId);
+    });
+
+
+
+

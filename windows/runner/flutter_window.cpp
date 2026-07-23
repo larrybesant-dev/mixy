@@ -48,24 +48,24 @@ void FlutterWindow::OnDestroy() {
 }
 
 LRESULT
-FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
+FlutterWindow::MessageModelHandler(HWND hwnd, UINT const MessageModel,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
-  // Give Flutter, including plugins, an opportunity to handle window messages.
+  // Give Flutter, including plugins, an opportunity to handle window MessageModels.
   if (flutter_controller_) {
     std::optional<LRESULT> result =
-        flutter_controller_->HandleTopLevelWindowProc(hwnd, message, wparam,
+        flutter_controller_->HandleTopLevelWindowProc(hwnd, MessageModel, wparam,
                                                       lparam);
     if (result) {
       return *result;
     }
   }
 
-  switch (message) {
+  switch (MessageModel) {
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
   }
 
-  return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+  return Win32Window::MessageModelHandler(hwnd, MessageModel, wparam, lparam);
 }

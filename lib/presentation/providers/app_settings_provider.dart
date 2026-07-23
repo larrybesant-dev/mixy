@@ -8,10 +8,12 @@ final appSettingsServiceProvider = Provider<AppSettingsService>((ref) {
 });
 
 final appSettingsControllerProvider =
-    StateNotifierProvider<AppSettingsController, AsyncValue<AppSettings>>((ref) {
-  final service = ref.watch(appSettingsServiceProvider);
-  return AppSettingsController(service)..load();
-});
+    StateNotifierProvider<AppSettingsController, AsyncValue<AppSettings>>((
+      ref,
+    ) {
+      final service = ref.watch(appSettingsServiceProvider);
+      return AppSettingsController(service)..load();
+    });
 
 class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   AppSettingsController(this._service) : super(const AsyncValue.loading());
@@ -41,11 +43,15 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   }
 
   Future<void> setNotificationsEnabled(bool enabled) {
-    return _saveWith((settings) => settings.copyWith(notificationsEnabled: enabled));
+    return _saveWith(
+      (settings) => settings.copyWith(notificationsEnabled: enabled),
+    );
   }
 
   Future<void> setAnalyticsEnabled(bool enabled) {
-    return _saveWith((settings) => settings.copyWith(analyticsEnabled: enabled));
+    return _saveWith(
+      (settings) => settings.copyWith(analyticsEnabled: enabled),
+    );
   }
 
   Future<void> setLocaleCode(String localeCode) {
@@ -53,22 +59,28 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   }
 
   Future<void> acceptCurrentLegal() {
-    return _saveWith((settings) => settings.copyWith(
-          legalAccepted: true,
-          legalAcceptedVersion: AppSettings.currentLegalVersion,
-          legalAcceptedAt: DateTime.now(),
-        ));
+    return _saveWith(
+      (settings) => settings.copyWith(
+        legalAccepted: true,
+        legalAcceptedVersion: AppSettings.currentLegalVersion,
+        legalAcceptedAt: DateTime.now(),
+      ),
+    );
   }
 
   Future<void> clearLegalAcceptance() {
-    return _saveWith((settings) => settings.copyWith(
-          legalAccepted: false,
-          legalAcceptedVersion: '',
-          legalAcceptedAt: null,
-        ));
+    return _saveWith(
+      (settings) => settings.copyWith(
+        legalAccepted: false,
+        legalAcceptedVersion: '',
+        legalAcceptedAt: null,
+      ),
+    );
   }
 
-  Future<void> _saveWith(AppSettings Function(AppSettings current) update) async {
+  Future<void> _saveWith(
+    AppSettings Function(AppSettings current) update,
+  ) async {
     final current = state.valueOrNull ?? const AppSettings.defaults();
     final next = update(current);
     state = AsyncValue.data(next);
@@ -80,3 +92,6 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 }
+
+
+

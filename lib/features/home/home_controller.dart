@@ -13,6 +13,11 @@ class HomeController extends StateNotifier<List<RoomModel>> {
   }
 }
 
-final homeControllerProvider = StateNotifierProvider<HomeController, List<RoomModel>>(
-  (ref) => HomeController(),
-);
+final homeControllerProvider =
+    StateNotifierProvider<HomeController, List<RoomModel>>(
+      (ref) => HomeController(),
+    );
+
+
+
+

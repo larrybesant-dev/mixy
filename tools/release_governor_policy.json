@@ -1,0 +1,28 @@
+{
+  "modelVersion": "release_governor_policy_v1",
+  "contract": {
+    "contract_version": "1.0.0",
+    "validationMode": "observe",
+    "requiredCleanRcRunsForEnforcement": 3
+  },
+  "minimumSamplesForTrendRules": 5,
+  "recentWindowSize": 3,
+  "tuner": {
+    "burnInRcCount": 6,
+    "shortWindowSize": 10,
+    "baselineWindowSize": 30,
+    "shortWeight": 0.4,
+    "baselineWeight": 0.6,
+    "divergenceThreshold": 8,
+    "earlyExitOnSevereInstability": true
+  },
+  "slopeBlockThreshold": -2.0,
+  "confidenceThreshold": 75,
+  "consecutiveLowConfidenceToBlock": 2,
+  "volatilityEscalationBlock": {
+    "from": "stable",
+    "to": ["moderate", "volatile"]
+  },
+  "varianceIncreaseWarningPercent": 30,
+  "confidenceDropWarningThreshold": 10
+}

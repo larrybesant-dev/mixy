@@ -4,3 +4,6 @@ abstract class CoinTransactionRepository {
   Future<List<CoinTransactionModel>> getTransactions(String userId);
   Future<void> addTransaction(CoinTransactionModel transaction);
 }
+
+
+

@@ -1,0 +1,829 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\LARRY\\AppData\\Local\\fnm_multishells\\23776_1784164588256\\node.exe",
+      "C:\\Users\\LARRY\\MIXVY\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "e2e/06-critical-user-flows.spec.ts",
+      "--reporter=json"
+    ],
+    "configFile": "C:\\Users\\LARRY\\MIXVY\\playwright.config.ts",
+    "rootDir": "C:/Users/LARRY/MIXVY/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/LARRY/MIXVY/test-results/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/LARRY/MIXVY/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "06-critical-user-flows.spec.ts",
+      "file": "06-critical-user-flows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "MixVy - Critical User Flows",
+          "file": "06-critical-user-flows.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Gift System Complete Flow",
+              "file": "06-critical-user-flows.spec.ts",
+              "line": 4,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should navigate to room and access gift features",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3490,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:33:52.462Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-6ed6883e72944e319e11",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 10,
+                  "column": 5
+                },
+                {
+                  "title": "should display gift system UI elements",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 3987,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n    at C:\\Users\\LARRY\\MIXVY\\e2e\\06-critical-user-flows.spec.ts:29:23",
+                            "location": {
+                              "file": "C:\\Users\\LARRY\\MIXVY\\e2e\\06-critical-user-flows.spec.ts",
+                              "column": 23,
+                              "line": 29
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 27 |\u001b[39m       \u001b[90m// Check for interactive elements\u001b[39m\n \u001b[90m 28 |\u001b[39m       \u001b[36mconst\u001b[39m buttons \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'button'\u001b[39m)\u001b[33m.\u001b[39mcount()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 29 |\u001b[39m       expect(buttons)\u001b[33m.\u001b[39mtoBeGreaterThan(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 30 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 31 |\u001b[39m\n \u001b[90m 32 |\u001b[39m     test(\u001b[32m'should track allowance state'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "C:\\Users\\LARRY\\MIXVY\\e2e\\06-critical-user-flows.spec.ts",
+                                "column": 23,
+                                "line": 29
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n\n  27 |       // Check for interactive elements\n  28 |       const buttons = await page.locator('button').count();\n> 29 |       expect(buttons).toBeGreaterThan(0);\n     |                       ^\n  30 |     });\n  31 |\n  32 |     test('should track allowance state', async ({ page }) => {\n    at C:\\Users\\LARRY\\MIXVY\\e2e\\06-critical-user-flows.spec.ts:29:23"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:33:56.164Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "C:\\Users\\LARRY\\MIXVY\\test-results\\artifacts\\06-critical-user-flows-Mix-158cf-lay-gift-system-UI-elements-chromium\\test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "C:\\Users\\LARRY\\MIXVY\\test-results\\artifacts\\06-critical-user-flows-Mix-158cf-lay-gift-system-UI-elements-chromium\\video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "C:\\Users\\LARRY\\MIXVY\\test-results\\artifacts\\06-critical-user-flows-Mix-158cf-lay-gift-system-UI-elements-chromium\\error-context.md"
+                            },
+                            {
+                              "name": "trace",
+                              "contentType": "application/zip",
+                              "path": "C:\\Users\\LARRY\\MIXVY\\test-results\\artifacts\\06-critical-user-flows-Mix-158cf-lay-gift-system-UI-elements-chromium\\trace.zip"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "C:\\Users\\LARRY\\MIXVY\\e2e\\06-critical-user-flows.spec.ts",
+                            "column": 23,
+                            "line": 29
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-c3f53ef8d7e56a1e64ef",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 20,
+                  "column": 5
+                },
+                {
+                  "title": "should track allowance state",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3450,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:01.493Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-f28ff49ca7634d4b4cf9",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 32,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Coin Purchase Flow",
+              "file": "06-critical-user-flows.spec.ts",
+              "line": 57,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should have coin purchase capability",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3595,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:05.125Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-a4bbe14f674728bb82cf",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 63,
+                  "column": 5
+                },
+                {
+                  "title": "should support Stripe payment integration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3550,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:08.745Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-fb64b44e79e512f69079",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 86,
+                  "column": 5
+                },
+                {
+                  "title": "should display coin packages",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3523,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:12.319Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-c83e04c3a4eea94a9b43",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 97,
+                  "column": 5
+                },
+                {
+                  "title": "should track payment state",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3334,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:15.860Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-5112e14a4b0347fb6b8c",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 124,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Authentication & Session",
+              "file": "06-critical-user-flows.spec.ts",
+              "line": 150,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should manage auth session state",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3910,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:19.210Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-80699880d1490060d928",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 156,
+                  "column": 5
+                },
+                {
+                  "title": "should handle auth token expiry",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3553,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:23.139Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-16b07183e1a4fa4e19f9",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 181,
+                  "column": 5
+                },
+                {
+                  "title": "should persist auth across page reloads",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4970,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:26.707Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-501cc03babe2f0d600d7",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 197,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Error Handling",
+              "file": "06-critical-user-flows.spec.ts",
+              "line": 225,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle network failures gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3606,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:31.693Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-ea0d735a7518a3b37f25",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 226,
+                  "column": 5
+                },
+                {
+                  "title": "should track and handle errors",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2330,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:35.317Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-e965c2a7c61368ce7d30",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 247,
+                  "column": 5
+                },
+                {
+                  "title": "should handle payment errors",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 215,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:37.659Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-02c6f0f80b6313d711b4",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 269,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Data Integrity",
+              "file": "06-critical-user-flows.spec.ts",
+              "line": 284,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should validate gift event structure",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 195,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:37.884Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-4e83bfd840f3e357be2f",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 285,
+                  "column": 5
+                },
+                {
+                  "title": "should validate coin package structure",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 223,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:38.086Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-4d1275eee46250321409",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 305,
+                  "column": 5
+                },
+                {
+                  "title": "should maintain data consistency",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 199,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:38.319Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-6efcab018a7c18b7dd7b",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 325,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Performance Checks",
+              "file": "06-critical-user-flows.spec.ts",
+              "line": 349,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should load core features quickly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1426,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:38.528Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-64c2fa9f2dced7a955c1",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 350,
+                  "column": 5
+                },
+                {
+                  "title": "should handle rapid interactions",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1518,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:39.965Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-7c44d216166677148d7d",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 359,
+                  "column": 5
+                },
+                {
+                  "title": "should not leak memory on state updates",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 225,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-16T01:34:41.493Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "80a7487735b68cc89456-4a6d29264e77bc910af8",
+                  "file": "06-critical-user-flows.spec.ts",
+                  "line": 376,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-16T01:33:51.604Z",
+    "duration": 50270.639,
+    "expected": 18,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

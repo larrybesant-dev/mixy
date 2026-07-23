@@ -3,27 +3,34 @@ import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/firestore/firestore_debug_tracing.dart';
+import '../../../core/telemetry/app_telemetry.dart';
 import '../../../models/room_slot_model.dart';
 import 'room_firestore_provider.dart';
 
 /// Streams the `slots` subcollection for a room.
 /// Each document id is the slot identifier (e.g. '1', '2', …).
-final roomSlotsProvider =
-    StreamProvider.autoDispose.family<List<RoomSlotModel>, String>(
-  (ref, roomId) {
-    final firestore = ref.watch(roomFirestoreProvider);
-    return firestore
-        .collection('rooms')
-        .doc(roomId)
-        .collection('slots')
-        .snapshots()
-        .map(
-          (snap) => snap.docs
-              .map((doc) => RoomSlotModel.fromMap(doc.id, doc.data()))
-              .toList(growable: false),
-        );
-  },
-);
+final roomSlotsProvider = StreamProvider.autoDispose
+    .family<List<RoomSlotModel>, String>((ref, roomId) {
+      final firestore = ref.watch(roomFirestoreProvider);
+      return traceFirestoreStream<List<RoomSlotModel>>(
+        key: 'room_slots/$roomId',
+        query: 'rooms/$roomId/slots',
+        roomId: roomId,
+        itemCount: (value) => value.length,
+        stream: firestore
+            .collection('rooms')
+            .doc(roomId)
+            .collection('slots')
+            .limit(50)
+            .snapshots()
+            .map(
+              (snap) => snap.docs
+                  .map((doc) => RoomSlotModel.fromMap(doc.id, doc.data()))
+                  .toList(growable: false),
+            ),
+      );
+    });
 
 class RoomSlotService {
   RoomSlotService(this._db);
@@ -36,12 +43,11 @@ class RoomSlotService {
   DocumentReference<Map<String, dynamic>> _participantRef(
     String roomId,
     String userId,
-  ) =>
-      _db
-          .collection('rooms')
-          .doc(roomId)
-          .collection('participants')
-          .doc(userId);
+  ) => _db
+      .collection('rooms')
+      .doc(roomId)
+      .collection('participants')
+      .doc(userId);
 
   /// Tries to claim a free slot for [userId].
   ///
@@ -69,8 +75,7 @@ class RoomSlotService {
 
         // If the user already owns a slot, just confirm it.
         for (final snap in snaps) {
-          if (snap.exists &&
-              (snap.data()?['userId'] as String?) == userId) {
+          if (snap.exists && (snap.data()?['userId'] as String?) == userId) {
             claimedSlotId = snap.id;
             return;
           }
@@ -91,13 +96,29 @@ class RoomSlotService {
 
       if (claimedSlotId != null) {
         // Mirror camOn = true into the participant document.
-        await _participantRef(roomId, userId)
-            .set({'camOn': true}, SetOptions(merge: true));
+        await traceFirestoreWrite<void>(
+          path: 'rooms/$roomId/participants/$userId',
+          operation: 'mark_cam_on_after_slot_claim',
+          roomId: roomId,
+          userId: userId,
+          action: () => _participantRef(
+            roomId,
+            userId,
+          ).set({'camOn': true}, SetOptions(merge: true)),
+        );
       }
 
       developer.log(
         'claimSlot: room=$roomId user=$userId result=$claimedSlotId',
         name: 'RoomSlotService',
+      );
+      AppTelemetry.logAction(
+        domain: 'room',
+        action: 'claim_slot',
+        message: 'Camera slot claim finished.',
+        roomId: roomId,
+        userId: userId,
+        result: claimedSlotId ?? 'full',
       );
       return claimedSlotId;
     } catch (error, stackTrace) {
@@ -116,9 +137,9 @@ class RoomSlotService {
     if (roomId.trim().isEmpty || userId.trim().isEmpty) return;
 
     try {
-      final slotsSnap = await _slotsRef(roomId)
-          .where('userId', isEqualTo: userId)
-          .get();
+      final slotsSnap = await _slotsRef(
+        roomId,
+      ).where('userId', isEqualTo: userId).get();
       final batch = _db.batch();
       for (final doc in slotsSnap.docs) {
         // Delete the slot doc so the next claimant can create a fresh one.
@@ -126,16 +147,29 @@ class RoomSlotService {
         // request.resource.data.userId == request.auth.uid on updates.)
         batch.delete(doc.reference);
       }
-      batch.set(
-        _participantRef(roomId, userId),
-        {'camOn': false},
-        SetOptions(merge: true),
+      batch.set(_participantRef(roomId, userId), {
+        'camOn': false,
+      }, SetOptions(merge: true));
+      await traceFirestoreWrite<void>(
+        path: 'rooms/$roomId/slots',
+        operation: 'release_slot_batch',
+        roomId: roomId,
+        userId: userId,
+        metadata: <String, Object?>{'releasedSlotCount': slotsSnap.docs.length},
+        action: batch.commit,
       );
-      await batch.commit();
 
       developer.log(
         'releaseSlot: room=$roomId user=$userId released=${slotsSnap.docs.length} slots',
         name: 'RoomSlotService',
+      );
+      AppTelemetry.logAction(
+        domain: 'room',
+        action: 'release_slot',
+        message: 'Camera slot release finished.',
+        roomId: roomId,
+        userId: userId,
+        result: slotsSnap.docs.length.toString(),
       );
     } catch (error, stackTrace) {
       developer.log(
@@ -151,3 +185,7 @@ class RoomSlotService {
 final roomSlotServiceProvider = Provider<RoomSlotService>(
   (ref) => RoomSlotService(ref.watch(roomFirestoreProvider)),
 );
+
+
+
+

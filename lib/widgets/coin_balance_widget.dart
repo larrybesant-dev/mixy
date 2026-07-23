@@ -5,6 +5,25 @@ class CoinBalanceWidget extends StatelessWidget {
 
   const CoinBalanceWidget({required this.balance, super.key});
 
+  String _formatBalance(int value) {
+    if (value >= 100000000) {
+      return '∞';
+    }
+    if (value >= 1000000) {
+      final short = value / 1000000;
+      return short == short.roundToDouble()
+          ? '${short.toStringAsFixed(0)}M'
+          : '${short.toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      final short = value / 1000;
+      return short == short.roundToDouble()
+          ? '${short.toStringAsFixed(0)}K'
+          : '${short.toStringAsFixed(1)}K';
+    }
+    return value.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -18,14 +37,24 @@ class CoinBalanceWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.monetization_on, color: theme.colorScheme.primary, size: 20),
+          Icon(
+            Icons.monetization_on,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
           const SizedBox(width: 4),
           Text(
-            balance.toString(),
-            style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+            _formatBalance(balance),
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+
+

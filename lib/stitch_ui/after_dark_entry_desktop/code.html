@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "on-secondary-container": "#0f6d00",
+                  "on-tertiary": "#003543",
+                  "on-primary-fixed-variant": "#5700c9",
+                  "on-error": "#690005",
+                  "on-secondary-fixed": "#022100",
+                  "outline": "#958da3",
+                  "surface-container-low": "#1c1b1b",
+                  "on-secondary": "#053900",
+                  "surface-dim": "#131313",
+                  "secondary-fixed-dim": "#2ae500",
+                  "surface-container-lowest": "#0e0e0e",
+                  "surface-container": "#201f1f",
+                  "surface": "#131313",
+                  "on-surface-variant": "#ccc3da",
+                  "inverse-on-surface": "#313030",
+                  "surface-container-high": "#2a2a2a",
+                  "on-tertiary-fixed": "#001f28",
+                  "on-primary": "#3c0090",
+                  "tertiary-fixed-dim": "#4cd6ff",
+                  "surface-tint": "#d1bcff",
+                  "primary-container": "#7000ff",
+                  "on-error-container": "#ffdad6",
+                  "surface-variant": "#353534",
+                  "surface-bright": "#3a3939",
+                  "on-background": "#e5e2e1",
+                  "secondary": "#d7ffc5",
+                  "on-surface": "#e5e2e1",
+                  "inverse-surface": "#e5e2e1",
+                  "inverse-primary": "#7212ff",
+                  "on-secondary-fixed-variant": "#095300",
+                  "outline-variant": "#4a4457",
+                  "background": "#131313",
+                  "error": "#ffb4ab",
+                  "surface-container-highest": "#353534",
+                  "secondary-fixed": "#79ff5b",
+                  "on-primary-fixed": "#23005b",
+                  "on-primary-container": "#ddcdff",
+                  "primary-fixed": "#e9ddff",
+                  "tertiary-container": "#00647c",
+                  "primary": "#d1bcff",
+                  "on-tertiary-fixed-variant": "#004e60",
+                  "secondary-container": "#2ff801",
+                  "error-container": "#93000a",
+                  "on-tertiary-container": "#89e0ff",
+                  "tertiary": "#4cd6ff",
+                  "primary-fixed-dim": "#d1bcff",
+                  "tertiary-fixed": "#b7eaff"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "unit": "4px",
+                  "xs": "4px",
+                  "sm": "8px",
+                  "gutter": "20px",
+                  "md": "16px",
+                  "lg": "24px",
+                  "xl": "40px",
+                  "margin": "24px"
+          },
+          "fontFamily": {
+                  "body-md": ["Inter"],
+                  "body-lg": ["Inter"],
+                  "headline-lg": ["Space Grotesk"],
+                  "label-sm": ["Inter"],
+                  "label-bold": ["Inter"],
+                  "headline-md": ["Space Grotesk"],
+                  "display": ["Space Grotesk"]
+          },
+          "fontSize": {
+                  "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                  "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                  "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .neon-text-glow {
+      text-shadow: 0 0 10px rgba(112, 0, 255, 0.5), 0 0 20px rgba(112, 0, 255, 0.3);
+    }
+    .neon-border-glow {
+      box-shadow: 0 0 15px rgba(112, 0, 255, 0.2);
+    }
+    .glass-morphism {
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .after-dark-gradient {
+      background: radial-gradient(circle at top right, rgba(112, 0, 255, 0.15), transparent),
+                  radial-gradient(circle at bottom left, rgba(255, 0, 153, 0.05), transparent),
+                  #0D0D0D;
+    }
+  </style>
+</head>
+<body class="after-dark-gradient text-on-surface font-body-md min-h-screen overflow-hidden">
+<!-- Top Navigation Shell - Transactional Logic: Hide components by design for Focus -->
+<header class="bg-black/80 backdrop-blur-2xl text-[#7000FF] font-['Space_Grotesk'] tracking-tight border-b border-white/10 shadow-[0_0_20px_rgba(112,0,255,0.1)] flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50">
+<div class="text-2xl font-black text-white italic">MixVy</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-8">
+<span class="text-zinc-400 hover:text-white transition-colors cursor-pointer font-label-bold text-label-bold">Home</span>
+<span class="text-zinc-400 hover:text-white transition-colors cursor-pointer font-label-bold text-label-bold">Live</span>
+<span class="text-[#7000FF] font-bold border-b-2 border-[#7000FF] cursor-pointer font-label-bold text-label-bold">After Dark</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-400 cursor-pointer hover:bg-white/5 p-2 rounded-full transition-all" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-zinc-400 cursor-pointer hover:bg-white/5 p-2 rounded-full transition-all" data-icon="settings">settings</span>
+</div>
+</div>
+</header>
+<main class="relative h-screen w-full flex items-center justify-center pt-16">
+<!-- Background Visual Content (Blurred) -->
+<div class="absolute inset-0 z-0 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 opacity-20 scale-105 blur-md">
+<div class="rounded-xl overflow-hidden aspect-[9/16] bg-surface-container">
+<img alt="" class="w-full h-full object-cover" data-alt="vibrant pink and purple neon lights in a dark nightclub setting with silhouettes of people dancing in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO1ujp3aouRxcuRLs-RxNpZEHgFK0TMIVXDadgoHG3p9hX-QMlGhbSv6fD4polli9XIohS7R-8AEAJ1oFujFMB11kDIcYAjbC0ZO5mrzdBYc3rJm_z9ohS6P6Hl2rliiRnDhrE0Yqac-VDsWWsi-I9r2tD2B5Zx_5WgQJxyuWLvzbislD4ncKNwWEJt2CQoSFwxI4GMu2ic2ae7m4Yd7PHjSKa_DQkdoOi61v18ABWE5ENrOZmwtasMSrApPt98P4QRPWahOgSLiPA"/>
+</div>
+<div class="rounded-xl overflow-hidden aspect-[9/16] bg-surface-container">
+<img alt="" class="w-full h-full object-cover" data-alt="dramatic low angle shot of a dj mixing console with glowing blue and violet lights in a crowded music venue" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgtUXoig3ynxmnb_xxXk6PozlggmmR_jowix_dO7LHZqPfmPDujIfnS29pXGcj67vCTXoRVeVSBRCB9L6k1nb5zqk8t5OvkR4ZMsHgV9TAZ4401DFi1qiVygN3dTDgqlrO8696Y7zB8IGRKhgpPM1ht3m5lHNwtNk7Th-Wo9q3XXrZpQEcFFotvB4ipRQtdndadg59iiQHGJvrhjZ9iTAOpawuMBHyJXt4Pxs-6yzib8jEtQvM8iIjNNUor-f0xdX9NEJsRVy8xV4o"/>
+</div>
+<div class="rounded-xl overflow-hidden aspect-[9/16] bg-surface-container">
+<img alt="" class="w-full h-full object-cover" data-alt="aesthetic close-up of a neon sign glowing with magenta light reflecting off a dark glossy surface in a city at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-rJW1ebvyCs1SOV9MYH_Y_iia_fq6Efvn3EDYYOil1ZsrSANJZ8yCSjQaZCOj89rBzTRk8e6eRo17jFI8IYsBZDqdpruKT1Qe6aZGbMhWbsCcBC8fldsxSfGX8q2b-z5NSK3B1x3b82YGvopy-G4D8OP32A2KTjP46AAU33jUIoXadf_1HfETqzYXCfSa2H8UmqkYh_JdxEYfOJgSchhEViLaa5tr_2X0ji1js9pB7-H8ROXD2zGGtz-OxweDHoZfu-mZi3WN6_05"/>
+</div>
+<div class="rounded-xl overflow-hidden aspect-[9/16] bg-surface-container">
+<img alt="" class="w-full h-full object-cover" data-alt="cool toned futuristic urban skyline at night with streaks of light from traffic and glowing high-rise windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtgW-YSeziSUOgx_RmES_5wuLgHRmNSe3gSsHfGAI0WiprO4MpPjakEtETEy0FrhvfO2oJ6CNaYUc0uYYSvoDoIAopp7iLxPA_PDm594CFcas035Zd41W1D8wrIaqinedGlM2UW3ERHZGSLMhlltmmem44KXELsosM3YruNq2DyTnjBW7Qh6F4gy3sc0Fa27f-McYfo6IWthEQiAx1ElMH4A_xxnVcZ07_0BOy1XvigYYEbqIZU7oV3fb0qQL6Cri7YNootLD5VGZ1"/>
+</div>
+</div>
+<!-- Verification Gate Canvas -->
+<div class="relative z-10 w-full max-w-md mx-gutter">
+<div class="glass-morphism rounded-3xl p-xl shadow-2xl flex flex-col items-center text-center">
+<!-- Icon/Shield Header -->
+<div class="mb-lg relative">
+<div class="absolute inset-0 bg-primary-container/20 blur-3xl rounded-full"></div>
+<div class="w-20 h-20 bg-gradient-to-tr from-[#7000FF] to-[#FF0099] rounded-2xl flex items-center justify-center relative shadow-lg">
+<span class="material-symbols-outlined text-white text-4xl" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+</div>
+<div class="space-y-sm mb-xl">
+<h1 class="font-display text-display text-white tracking-tight leading-tight">After Dark</h1>
+<p class="font-body-md text-zinc-400 px-md">This zone contains restricted content intended for adult audiences. Please confirm your age to proceed.</p>
+</div>
+<!-- Verification Actions -->
+<div class="w-full space-y-md">
+<div class="flex flex-col gap-sm">
+<button class="w-full h-14 bg-gradient-to-r from-[#7000FF] to-[#9D00FF] hover:brightness-110 active:scale-[0.98] transition-all text-white font-label-bold text-body-lg rounded-xl flex items-center justify-center gap-2">
+              Confirm 18+ Entrance
+            </button>
+<p class="font-label-sm text-label-sm text-zinc-500 uppercase tracking-widest mt-2">By entering, you agree to our Terms of Service</p>
+</div>
+<div class="pt-lg border-t border-white/5 flex flex-col gap-md">
+<button class="w-full h-12 bg-transparent border border-zinc-700 hover:border-zinc-500 hover:bg-white/5 transition-all text-zinc-300 font-label-bold text-body-md rounded-xl">
+              Return to Safety
+            </button>
+</div>
+</div>
+<!-- Secondary Security Info -->
+<div class="mt-xl flex items-center gap-gutter text-zinc-500">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user">verified_user</span>
+<span class="font-label-sm text-label-sm">Secured</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility_off">visibility_off</span>
+<span class="font-label-sm text-label-sm">Private</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="emergency_home">emergency_home</span>
+<span class="font-label-sm text-label-sm">Encrypted</span>
+</div>
+</div>
+</div>
+<!-- Footer Branding -->
+<div class="mt-lg text-center">
+<p class="font-label-sm text-label-sm text-zinc-600 tracking-[0.2em] uppercase">Powered by MixVy Pulse Engine</p>
+</div>
+</div>
+</main>
+<!-- Side Navigation Rail - Hidden for Gate Focus but defined for structural integrity -->
+<nav class="hidden">
+<div class="bg-[#0D0D0D] text-zinc-500 font-['Space_Grotesk'] uppercase tracking-widest text-xs h-screen sticky left-0 w-64 border-r border-white/10 flex flex-col gap-8 py-8 px-4 h-full">
+<div class="text-xl font-black text-white">MixVy</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3 p-3 hover:bg-zinc-900/50 transition-all duration-200 hover:translate-x-1">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</div>
+<div class="flex items-center gap-3 p-3 text-[#7000FF] font-bold border-r-4 border-[#7000FF] pr-4 bg-gradient-to-l from-[#7000FF]/10 to-transparent">
+<span class="material-symbols-outlined" data-icon="nights_stay">nights_stay</span>
+<span>After Dark</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Bottom Navigation for Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/90 backdrop-blur-xl border-t border-white/5 z-50 flex items-center justify-around px-4">
+<div class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] uppercase font-label-bold">Home</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+<span class="text-[10px] uppercase font-label-bold">Live</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-[#7000FF]">
+<span class="material-symbols-outlined" data-icon="nights_stay" data-weight="fill" style="font-variation-settings: 'FILL' 1;">nights_stay</span>
+<span class="text-[10px] uppercase font-label-bold">After Dark</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] uppercase font-label-bold">Profile</span>
+</div>
+</nav>
+</body></html>

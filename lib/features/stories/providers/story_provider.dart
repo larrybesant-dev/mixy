@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/features/follow/providers/follow_provider.dart';
+import '../../../services/story_stream_service.dart';
 
 DateTime _parseDateTime(dynamic value) {
   if (value is Timestamp) {
@@ -54,7 +57,10 @@ bool _asBool(dynamic value, {bool fallback = false}) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
+        .map(
+          (item) =>
+              item is String ? item.trim() : item?.toString().trim() ?? '',
+        )
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
@@ -124,45 +130,46 @@ class Story {
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
 
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
+// firestoreProvider is the canonical instance from core/providers/firebase_providers.dart
+final followingIdsProvider = rawFollowGraphStreamProvider;
+
+final storyStreamServiceProvider = Provider<StoryStreamService>((ref) {
+  return StoryStreamService(firestore: ref.watch(firestoreProvider));
 });
 
 // Stream of stories from following users
-final followingStoriesProvider = StreamProvider.family<List<Story>, ({String userId, List<String> followingIds})>((ref, params) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collectionGroup('stories')
-      .where('userId', whereIn: params.followingIds.isNotEmpty ? params.followingIds : [params.userId])
-      .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
-      .orderBy('expiresAt', descending: true)
-      .snapshots()
-      .map((snapshot) {
-    return snapshot.docs
-        .map((doc) => Story.fromJson(doc.data(), doc.id))
-        .where((story) => !story.isExpired)
-        .toList();
-  });
-});
+final followingStoriesProvider = StreamProvider.autoDispose
+    .family<List<Story>, ({String userId, List<String> followingIds})>((
+      ref,
+      params,
+    ) {
+      final streamService = ref.watch(storyStreamServiceProvider);
+      return streamService
+          .watchFollowingStories(
+            userId: params.userId,
+            followingIds: params.followingIds,
+          )
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => Story.fromJson(doc.data(), doc.id))
+                .where((story) => !story.isExpired)
+                .toList();
+          });
+    });
 
 // Stream of user's own stories
-final myStoriesProvider = StreamProvider.family<List<Story>, String>((ref, userId) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('users')
-      .doc(userId)
-      .collection('stories')
-      .where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
-      .orderBy('expiresAt')
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map((snapshot) {
-    return snapshot.docs
-        .map((doc) => Story.fromJson(doc.data(), doc.id))
-        .where((story) => !story.isExpired)
-        .toList();
-  });
-});
+final myStoriesProvider = StreamProvider.autoDispose
+    .family<List<Story>, String>((ref, userId) {
+      final streamService = ref.watch(storyStreamServiceProvider);
+      return streamService
+          .watchUserStories(userId)
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => Story.fromJson(doc.data(), doc.id))
+                .where((story) => !story.isExpired)
+                .toList();
+          });
+    });
 
 // Controller for story operations
 final storyControllerProvider = Provider<StoryController>((ref) {
@@ -173,7 +180,8 @@ final storyControllerProvider = Provider<StoryController>((ref) {
 class StoryController {
   final FirebaseFirestore _firestore;
 
-  StoryController({required FirebaseFirestore firestore}) : _firestore = firestore;
+  StoryController({required FirebaseFirestore firestore})
+    : _firestore = firestore;
 
   Future<void> createStory({
     required String userId,
@@ -183,8 +191,7 @@ class StoryController {
     String? videoUrl,
     String? content,
   }) async {
-    final now = DateTime.now();
-    final expiresAt = now.add(const Duration(hours: 24));
+    final expiresAt = DateTime.now().add(const Duration(hours: 24));
 
     await _firestore.collection('users').doc(userId).collection('stories').add({
       'userId': userId,
@@ -193,7 +200,7 @@ class StoryController {
       'imageUrl': imageUrl,
       'videoUrl': videoUrl,
       'content': content,
-      'createdAt': Timestamp.fromDate(now),
+      'createdAt': FieldValue.serverTimestamp(),
       'expiresAt': Timestamp.fromDate(expiresAt),
       'viewedBy': [userId],
       'isDeleted': false,
@@ -211,8 +218,8 @@ class StoryController {
         .collection('stories')
         .doc(storyId)
         .update({
-      'viewedBy': FieldValue.arrayUnion([viewerId]),
-    });
+          'viewedBy': FieldValue.arrayUnion([viewerId]),
+        });
   }
 
   Future<void> deleteStory({
@@ -227,3 +234,7 @@ class StoryController {
         .update({'isDeleted': true});
   }
 }
+
+
+
+

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#0f6d00",
+                        "on-tertiary": "#003543",
+                        "on-primary-fixed-variant": "#5700c9",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#022100",
+                        "outline": "#958da3",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary": "#053900",
+                        "surface-dim": "#131313",
+                        "secondary-fixed-dim": "#2ae500",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container": "#201f1f",
+                        "surface": "#131313",
+                        "on-surface-variant": "#ccc3da",
+                        "inverse-on-surface": "#313030",
+                        "surface-container-high": "#2a2a2a",
+                        "on-tertiary-fixed": "#001f28",
+                        "on-primary": "#3c0090",
+                        "tertiary-fixed-dim": "#4cd6ff",
+                        "surface-tint": "#d1bcff",
+                        "primary-container": "#7000ff",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353534",
+                        "surface-bright": "#3a3939",
+                        "on-background": "#e5e2e1",
+                        "secondary": "#d7ffc5",
+                        "on-surface": "#e5e2e1",
+                        "inverse-surface": "#e5e2e1",
+                        "inverse-primary": "#7212ff",
+                        "on-secondary-fixed-variant": "#095300",
+                        "outline-variant": "#4a4457",
+                        "background": "#131313",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#353534",
+                        "secondary-fixed": "#79ff5b",
+                        "on-primary-fixed": "#23005b",
+                        "on-primary-container": "#ddcdff",
+                        "primary-fixed": "#e9ddff",
+                        "tertiary-container": "#00647c",
+                        "primary": "#d1bcff",
+                        "on-tertiary-fixed-variant": "#004e60",
+                        "secondary-container": "#2ff801",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#89e0ff",
+                        "tertiary": "#4cd6ff",
+                        "primary-fixed-dim": "#d1bcff",
+                        "tertiary-fixed": "#b7eaff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "margin": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Space Grotesk"],
+                        "label-sm": ["Inter"],
+                        "label-bold": ["Inter"],
+                        "headline-md": ["Space Grotesk"],
+                        "display": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .kinetic-gradient {
+            background: linear-gradient(135deg, #7000FF 0%, #2ff801 100%);
+        }
+        .live-pulse {
+            box-shadow: 0 0 0 0 rgba(47, 248, 1, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(47, 248, 1, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(47, 248, 1, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(47, 248, 1, 0); }
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #353534; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30">
+<!-- Top Navigation Bar -->
+<header class="bg-black/80 backdrop-blur-2xl text-[#7000FF] font-['Space_Grotesk'] tracking-tight docked full-width top-0 z-50 border-b border-white/10 shadow-[0_0_20px_rgba(112,0,255,0.1)] flex justify-between items-center px-6 h-16 w-full fixed">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-white italic">MixVy</span>
+<div class="hidden md:flex items-center gap-6">
+<span class="text-[#7000FF] font-bold border-b-2 border-[#7000FF] cursor-pointer active:scale-95 transition-all duration-300">Feed</span>
+<span class="text-zinc-400 hover:text-white transition-colors cursor-pointer active:scale-95 transition-all duration-300">Discover</span>
+<span class="text-zinc-400 hover:text-white transition-colors cursor-pointer active:scale-95 transition-all duration-300">Communities</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined text-zinc-400 group-hover:text-white p-2 hover:bg-white/5 rounded-full transition-all duration-300 cursor-pointer">notifications</span>
+<div class="absolute top-2 right-2 w-2 h-2 bg-secondary-container rounded-full border border-black"></div>
+</div>
+<span class="material-symbols-outlined text-zinc-400 hover:text-white p-2 hover:bg-white/5 rounded-full transition-all duration-300 cursor-pointer">settings</span>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/20">
+<img class="w-full h-full object-cover" data-alt="close up portrait of a stylish young man with neon lighting reflecting on his face, cinematic dark urban background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7Wee6kjx2neipj_lh0BTaLptGSJAISULguFugsxalw-jipy_X-enpKQKBY5xEONomSoJcS88de21VxLRazNi8xXZJXfxwym82__9V-eXXUIBHUQ5fHD7T_0Xu_iiez3wcLZjOFQ8_cv9EvBkjhiFLygVN1aH4aY1T-1Z8jnxYhIpqsO1JFA0ayJaN-Mp-DJ7DHUWTzzT6ZYOjY4a2h1AHDMy8hBzgiad8goAd8pM7vySJ8uv_oLuwHZnsuDWN5ec1fswbzCnBqrJq"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen pt-16 max-w-[1600px] mx-auto">
+<!-- Sidebar Navigation -->
+<aside class="hidden md:flex bg-[#0D0D0D] font-['Space_Grotesk'] uppercase tracking-widest text-xs h-[calc(100vh-64px)] sticky left-0 w-64 border-r border-white/10 flex-col gap-8 py-8 px-4">
+<div class="flex flex-col gap-1 px-2">
+<div class="flex items-center gap-4 py-3 px-4 text-[#7000FF] font-bold border-r-4 border-[#7000FF] bg-gradient-to-l from-[#7000FF]/10 to-transparent cursor-pointer">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</div>
+<div class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 hover:translate-x-1 duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+<span>Live</span>
+</div>
+<div class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 hover:translate-x-1 duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+<span>Dating</span>
+</div>
+<div class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 hover:translate-x-1 duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span>messages</span>
+</div>
+<div class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 hover:translate-x-1 duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span>Profile</span>
+</div>
+<div class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 hover:translate-x-1 duration-200 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="nights_stay">nights_stay</span>
+<span>After Dark</span>
+</div>
+</div>
+<div class="mt-auto px-2">
+<button class="w-full kinetic-gradient py-4 rounded-xl font-bold text-white tracking-[0.2em] shadow-[0_0_20px_rgba(112,0,255,0.4)] hover:shadow-[0_0_30px_rgba(47,248,1,0.4)] transition-all duration-300 active:scale-95 group">
+<span class="flex items-center justify-center gap-2">
+<span class="material-symbols-outlined animate-pulse" style="font-variation-settings: 'FILL' 1;">videocam</span>
+                        GO LIVE
+                    </span>
+</button>
+</div>
+</aside>
+<!-- Main Feed Center -->
+<main class="flex-1 min-w-0 px-gutter py-lg">
+<!-- Create Post Glass Container -->
+<div class="glass-panel rounded-xl p-md mb-lg">
+<div class="flex gap-4">
+<div class="h-12 w-12 rounded-full overflow-hidden flex-shrink-0 border border-[#7000FF]/30">
+<img class="w-full h-full object-cover" data-alt="profile image of user for posting section" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnRLga3om_wGnjYZSI7XhCOnf54iYfq2mv98Y-OIhwFY60dVs45cBEzgFQgP8nkBNw8gWX1MTekwKnwIjN1idaQpTaIeRJxl8Yk-2KASMMukluJhd7HdqUHX_9bkAOkbbKB4Ixkipf2eCbdJ-BRT9MqB81JL2A-jpR9c37xTMfXPhDrIPGadVa7MGD8Ydz2AnXivEcwxo8sEKKxAopXt_i9juooXBm5E47qLkWy0vGBdn2NnQlpOhnq1tj3A_PYv5_u-cuM8vQyn1Q"/>
+</div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-body-md font-body-md placeholder:text-zinc-600 resize-none h-12" placeholder="What's your pulse right now?"></textarea>
+</div>
+<div class="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+<div class="flex gap-2">
+<button class="p-2 text-zinc-400 hover:text-primary transition-colors hover:bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">image</span>
+</button>
+<button class="p-2 text-zinc-400 hover:text-tertiary transition-colors hover:bg-tertiary/10 rounded-lg">
+<span class="material-symbols-outlined">gif_box</span>
+</button>
+<button class="p-2 text-zinc-400 hover:text-secondary-container transition-colors hover:bg-secondary-container/10 rounded-lg">
+<span class="material-symbols-outlined">poll</span>
+</button>
+</div>
+<button class="bg-primary-container text-white px-6 py-2 rounded-full font-label-bold text-label-bold hover:brightness-110 active:scale-95 transition-all">Pulse</button>
+</div>
+</div>
+<!-- Feed Items -->
+<div class="flex flex-col gap-gutter">
+<!-- Feed Post 1 -->
+<div class="glass-panel rounded-xl overflow-hidden group">
+<div class="p-md flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="relative h-10 w-10 rounded-full p-[2px] kinetic-gradient">
+<div class="bg-[#0D0D0D] rounded-full p-[1px]">
+<img class="w-full h-full rounded-full object-cover" data-alt="portrait of a woman with colorful hair and artistic makeup in a bright neon lit environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXO2ynyLzW8FR3eaWT7Xy_NAVpy-Pq9gWaFpjF_U25bu6DejpfRivkQUjMaVI_lBZQGSp3Ss5kiVZyhT7bi_K9Vm1KTCWf2LM8GpVaqkx8VytqXvUguCuVkI18qlgGPgzKc4nfuXiMACpazVwHOJCrKHahhvG4diso50ORaJQQmYKhiefPZRJ7soCNm4LlVXStN3NY0k8iUlOlNfg_KroOEdOgYNpTVkkzCrqtRmKVw_CGvfWTQFvf1LDuNr5RtFmhmMGVqdE-S44Z"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-secondary-container rounded-full p-[2px] live-pulse">
+<div class="bg-black rounded-full p-1"></div>
+</div>
+</div>
+<div>
+<h4 class="font-label-bold text-white text-label-bold flex items-center gap-1">
+                                    Zara.Flux <span class="material-symbols-outlined text-tertiary text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</h4>
+<p class="text-zinc-500 text-label-sm font-label-sm">LIVE NOW • Tokyo, JP</p>
+</div>
+</div>
+<button class="text-zinc-500 hover:text-white">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="relative aspect-video">
+<img class="w-full h-full object-cover" data-alt="high tech cyber city landscape at night with multiple neon signs and flying vehicles in a synthwave aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfYVuRXInGTdh6ps5Lwqj9NnbzmKI0RVHdNK89vG0k49_HTervdMCVxwrsaGDupQFVs6gAqn2aYNNUhSSSVQ1EsNR91XzO3LFuRKQLT8CzDGNXNRZDH-3DjCgsSoSgFvtSWraRjt5lcsiCpRkBF1l-MN-CB0utsFIFPu_IG63UcYjB4ZmdBj5pGzbkl6kLQSHpoxop6QDyZKEvEq9pr6f64gAFBSqgNo1wVMQZx2OvIdavnL_-gpEI536mV2d1hk8W9PY0_fKpUmuQ"/>
+<div class="absolute top-4 left-4 bg-secondary-container text-black px-3 py-1 rounded-full text-label-sm font-bold flex items-center gap-1">
+<span class="w-2 h-2 bg-black rounded-full animate-pulse"></span>
+                            LIVE
+                        </div>
+<div class="absolute bottom-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-white text-label-sm">
+                            2.4k watching
+                        </div>
+</div>
+<div class="p-md">
+<p class="text-body-md font-body-md text-zinc-300 mb-4">Midnight coding session in Shibuya. Streaming the process of building the next MixVy layer. Jump in! ⚡️</p>
+<div class="flex items-center gap-6 text-zinc-500">
+<button class="flex items-center gap-2 hover:text-error transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+<span class="text-label-sm">1.2k</span>
+</button>
+<button class="flex items-center gap-2 hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="text-label-sm">84</span>
+</button>
+<button class="flex items-center gap-2 hover:text-secondary-container transition-colors">
+<span class="material-symbols-outlined">share</span>
+<span class="text-label-sm">12</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Feed Post 2 (Text Only Bento Style) -->
+<div class="glass-panel rounded-xl p-lg bg-gradient-to-br from-primary/5 to-transparent">
+<div class="flex items-center gap-3 mb-4">
+<div class="h-10 w-10 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="portrait of an older man with glasses and creative aesthetic in a professional studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz9__3VZs6zqT0PYoC_YACAZgfKKsLLS87xFjoEOP2ZX2hY-VVXaJg0KNJ1xSL8HhSWL5PPzl_JfyEGW0H5Qhv9MZwdtXniz8YONTScT4FZrBFHU69a-umVsjGjp9bhtBKkfdz1tSBxu5I0Daaj4Eh3RFHxqqv-YZssEylMtxNKrYSYX9bykyQaCeGb-nDGevrKvEeya7o8YHZVXHFRsBgWLkAc0id4DAG42hntEgSgb2Z9xewf0okzvfBvfR-fi_zEaSJjaKCBAVF"/>
+</div>
+<div>
+<h4 class="font-label-bold text-white text-label-bold">Professor_K</h4>
+<p class="text-zinc-500 text-label-sm font-label-sm">2h ago • Digital Theory</p>
+</div>
+</div>
+<blockquote class="text-headline-md font-headline-md text-white mb-6 leading-relaxed italic border-l-2 border-primary pl-4">
+                        "The interface is no longer a barrier; it's a sensory extension of our collective ambition. MixVy is the nervous system of the now."
+                    </blockquote>
+<div class="flex items-center gap-6 text-zinc-500">
+<button class="flex items-center gap-2 hover:text-error transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="text-label-sm text-error">450</span>
+</button>
+<button class="flex items-center gap-2 hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="text-label-sm">12</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Side Panel -->
+<aside class="hidden xl:flex w-80 flex-col gap-lg py-lg pr-6">
+<!-- Live Rooms Preview -->
+<section class="glass-panel rounded-xl p-md">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline-md text-white text-body-lg uppercase tracking-wider">Live Rooms</h3>
+<span class="text-primary text-label-sm font-bold cursor-pointer hover:underline">View All</span>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-all">
+<div class="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="abstract crowd at a concert with blue and purple stage lighting, intense energy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFL9uTzLJJ8gQT4NjAAjfC5mjdQmm713riDBqsrL_lPXs2d2b-7ZxMIN3z-Z83iVJ-fEn-NAKNJjoo6t-M6RBM4ripkaWvBjPIo87vkeQIiVVZBySay7LwHGPQkR_6uKskFFfVHTiJEyftVGJQYoYRAANn4x89oQupM-oUycQdiZtDK6NPn7QNxnOJg3iiuywZPfWq-anWU-_vxuhsh-gGxi3LqdmY2u-DVvqAmll8ZYL4fsOQ-Bx3pdoSoIWe6DeZwtGsjfbLkbao"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xs">play_arrow</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white font-label-bold text-label-sm truncate">Techno Bunker [Berlin]</p>
+<p class="text-zinc-500 text-label-sm">4.5k listeners</p>
+</div>
+<div class="h-2 w-2 bg-secondary-container rounded-full live-pulse"></div>
+</div>
+<div class="flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-all">
+<div class="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="vibrant fashion show with dramatic red lighting and models in avant garde clothing" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJ2cmK6t9BWkZNqF9-Gy5572Dxv-eo8lbanTQm2l6eGbMcX_vtPPG2GcBPsjEJinAbXQqWaC1NVR4rH-7J2bvODn0DiNwYDe-TqLRxLLUje3JRdlIvGVebWNl5Jf7KNsrNz6yrJtJies-WfxSApo0728-831yY7eshDOVH34sBoYV0AswY4Tobm65hLpxp311npvQaxDrXh4Kqfj2p6EQ73lckpyHuMcb_58eXI5U9TWKW9AOjN30VuX_mGBA7bYLx3LWK732GsAoI"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xs">play_arrow</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white font-label-bold text-label-sm truncate">After Dark Fashion Week</p>
+<p class="text-zinc-500 text-label-sm">1.2k listeners</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Trending Users -->
+<section class="glass-panel rounded-xl p-md">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline-md text-white text-body-lg uppercase tracking-wider">Pulse Trend</h3>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="close up of a beautiful woman with edgy makeup and futuristic jewelry in cold blue lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkHhp8vtB-5K0frKYYf_0LmNKe7KeBg7lteCv9S77YJitTkmcGXCmYJ5UB9K5MBTPqh9LACB31as2n2AF1W_FU2tw57PN9zP-7R-0SHWAcw6s2l4fYPcQae65uimpRBGGn56DMWCo_sKlcFCK4-d9DQk2P8zYENIPCo9SXo6vdrpyle5yDxRPhK89rP8BTxETkapBnwUg6qzdmtMec4TeXZ_Lg20P6iQ7q9nf2xYQBFED_GdqvMFwt5NHZngLwUF65iMFTQpJfvCfZ"/>
+</div>
+<div>
+<p class="text-white font-label-bold text-label-sm">CyberMuse</p>
+<p class="text-zinc-500 text-[10px]">#DIGITAL_ART #AI</p>
+</div>
+</div>
+<button class="border border-primary text-primary px-3 py-1 rounded-full text-label-sm font-bold hover:bg-primary hover:text-white transition-all">Follow</button>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="portrait of a masculine man with tattoos and a thoughtful expression in dark minimalist environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoCVDy7WS8P5hftIqghq1qxLa12Hv7amHhfNQiZjUbKF2qrh_UDEcQi8IQnWSxFoaf4F-o83qREKb8NggrDF57k0IfyAxv2aPUJxZ0xmZHdWVu_ZgWu4SkSm8iu3BEJeE0o_SrILWohrGSpyreKbsfcxcdXm4k87crcA_pNM3gEoMbLG1yG-60XKFhMNEEeQzFOCF_GvjAw3RpOjmrY4Dp4QDR6jNRnajtHPGd21yGPVsoZXEX50qWxCUxG5cHrQE1St4u8lSb1F-V"/>
+</div>
+<div>
+<p class="text-white font-label-bold text-label-sm">V_Void</p>
+<p class="text-zinc-500 text-[10px]">#MUSIC #PRODUCTION</p>
+</div>
+</div>
+<button class="border border-primary text-primary px-3 py-1 rounded-full text-label-sm font-bold hover:bg-primary hover:text-white transition-all">Follow</button>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full overflow-hidden bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="portrait of a trendy woman with sunglasses and street fashion style in a sunny outdoor setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvWR-E3qMVOr46kC6Rmob7KHiTOIOGFGGnEIY-xQwn3Fu54Cpy_QlWXr4NvWMprWmioqqG_xCal5wzz_pZITu5_Yh3Bf7y-aSFhz8orAahdImIIkyEMnU65wfRSWhZetCfFerfTXRF9eDbmhaN4jofnI1pQZETIS3kPtBSbNqLLQxi-eyl2MMLJeQcZi__MMzE0dLH6C9qwdMvByP6eec0kwt-slqDg5E9uAT5roTWMr7-FrvGvlkPvKorEELisZ2jwHEmCv73ktOP"/>
+</div>
+<div>
+<p class="text-white font-label-bold text-label-sm">NeonNight</p>
+<p class="text-zinc-500 text-[10px]">#PHOTOGRAPHY #LIT</p>
+</div>
+</div>
+<button class="border border-primary text-primary px-3 py-1 rounded-full text-label-sm font-bold hover:bg-primary hover:text-white transition-all">Follow</button>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-white/5">
+<div class="flex flex-wrap gap-2">
+<span class="text-[10px] bg-white/5 text-zinc-400 px-2 py-1 rounded">#metagalactic</span>
+<span class="text-[10px] bg-white/5 text-zinc-400 px-2 py-1 rounded">#cybernoir</span>
+<span class="text-[10px] bg-white/5 text-zinc-400 px-2 py-1 rounded">#tokyo_vibes</span>
+<span class="text-[10px] bg-white/5 text-zinc-400 px-2 py-1 rounded">#web4</span>
+</div>
+</div>
+</section>
+<!-- Footer Small -->
+<footer class="px-md">
+<div class="flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-zinc-600 font-medium">
+<a class="hover:text-zinc-400" href="#">Privacy</a>
+<a class="hover:text-zinc-400" href="#">Terms</a>
+<a class="hover:text-zinc-400" href="#">Cookies</a>
+<a class="hover:text-zinc-400" href="#">Ads Info</a>
+<span>© 2024 MixVy Pulse</span>
+</div>
+</footer>
+</aside>
+</div>
+<!-- Mobile Bottom Nav (Suppressed based on rules but kept for responsive pivot logic) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 flex justify-around items-center h-16 z-50">
+<span class="material-symbols-outlined text-[#7000FF]">home</span>
+<span class="material-symbols-outlined text-zinc-500">search</span>
+<div class="kinetic-gradient p-3 rounded-full -mt-8 shadow-lg border-4 border-background">
+<span class="material-symbols-outlined text-white">videocam</span>
+</div>
+<span class="material-symbols-outlined text-zinc-500">mail</span>
+<span class="material-symbols-outlined text-zinc-500">person</span>
+</nav>
+</body></html>

@@ -1,0 +1,7 @@
+{
+  "modelVersion": "release_governor_safety_floors_v1",
+  "minConfidenceThreshold": 70,
+  "maxRegressionTolerance": "fixed",
+  "criticalFailAlwaysBlock": true,
+  "notes": "Safety floors are immutable guardrails for tuner recommendations and must not be auto-lowered."
+}

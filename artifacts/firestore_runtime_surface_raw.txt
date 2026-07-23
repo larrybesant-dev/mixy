@@ -1,0 +1,1323 @@
+lib/services/agora_service.dart:574:_remoteUids.add(remoteUid);
+lib/services/agora_service.dart:599:if (volume > 10) nextSpeakingUids.add(uid);
+lib/services/cash_out_service.dart:28:.where('userId', isEqualTo: userId)
+lib/services/cash_out_service.dart:29:.snapshots()
+lib/services/cash_out_service.dart:52:final walletSnapshot = await _firestore.collection('wallets').doc(userId).get();
+lib/services/cash_out_service.dart:58:.where('userId', isEqualTo: userId)
+lib/services/cash_out_service.dart:59:.get();
+lib/services/cash_out_service.dart:62:.where((request) => request.status == 'pending' || request.status == 'processing')
+lib/services/cash_out_service.dart:70:await _firestore.collection('cash_out_requests').add({
+lib/services/daily_checkin_service.dart:35:final walletSnap = await walletRef.get();
+lib/services/daily_checkin_service.dart:49:final userDoc = await _db.collection('users').doc(uid).get();
+lib/services/follow_service.dart:65:.get();
+lib/services/follow_service.dart:69:Future<int> followerCount(String userId) async {
+lib/services/follow_service.dart:72:.where('followedUserId', isEqualTo: userId)
+lib/services/follow_service.dart:73:.count()
+lib/services/follow_service.dart:74:.get();
+lib/services/follow_service.dart:78:Future<int> followingCount(String userId) async {
+lib/services/follow_service.dart:81:.where('followerUserId', isEqualTo: userId)
+lib/services/follow_service.dart:82:.count()
+lib/services/follow_service.dart:83:.get();
+lib/services/follow_service.dart:96:.where('followerUserId', isEqualTo: normalizedUserId)
+lib/services/follow_service.dart:97:.snapshots()
+lib/services/follow_service.dart:103:.where((id) => id.isNotEmpty)
+lib/services/follow_service.dart:118:.where('followedUserId', isEqualTo: normalizedUserId)
+lib/services/follow_service.dart:119:.snapshots()
+lib/services/follow_service.dart:125:.where((id) => id.isNotEmpty)
+lib/services/follow_service.dart:160:.where('hostId', isEqualTo: inviterUserId)
+lib/services/follow_service.dart:161:.limit(10)
+lib/services/follow_service.dart:162:.get();
+lib/services/follow_service.dart:171:.firstWhere(
+lib/services/follow_service.dart:182:.get();
+lib/services/follow_service.dart:189:await _firestore.collection('notifications').add({
+lib/services/friend_service.dart:73:.where((entry) => entry.isNotEmpty)
+lib/services/friend_service.dart:100:chunks.add(values.sublist(index, end));
+lib/services/friend_service.dart:154:.where((status) => status.isNotEmpty)
+lib/services/friend_service.dart:182:controller.add(friendships);
+lib/services/friend_service.dart:186:var query = _friendshipsCollection.where(
+lib/services/friend_service.dart:191:query = query.where('status', isEqualTo: normalizedStatuses.first);
+lib/services/friend_service.dart:193:query = query.where(
+lib/services/friend_service.dart:202:var query = _friendLinksCollection.where(
+lib/services/friend_service.dart:207:query = query.where('status', isEqualTo: normalizedStatuses.first);
+lib/services/friend_service.dart:209:query = query.where(
+lib/services/friend_service.dart:217:final subA = buildLegacyQuery('userA').snapshots().listen(
+lib/services/friend_service.dart:236:final subB = buildLegacyQuery('userB').snapshots().listen(
+lib/services/friend_service.dart:255:final schemaSub = buildSchemaQuery().snapshots().listen(
+lib/services/friend_service.dart:259:.where((friendship) => friendship.involvesUser(normalizedUserId))
+lib/services/friend_service.dart:314:controller.add(friendships);
+lib/services/friend_service.dart:366:return _usersCollection.doc(userId).snapshots().map((doc) {
+lib/services/friend_service.dart:405:.where(
+lib/services/friend_service.dart:413:controller.add(const <UserModel>[]);
+lib/services/friend_service.dart:425:controller.add(ordered);
+lib/services/friend_service.dart:433:controller.add(const <UserModel>[]);
+lib/services/friend_service.dart:496:controller.add(entries);
+lib/services/friend_service.dart:518:.where(
+lib/services/friend_service.dart:526:.where((friendId) => friendId.isNotEmpty)
+lib/services/friend_service.dart:630:.where(
+lib/services/friend_service.dart:637:controller.add(const <UserModel>[]);
+lib/services/friend_service.dart:650:controller.add(ordered);
+lib/services/friend_service.dart:660:controller.add(const <UserModel>[]);
+lib/services/friend_service.dart:724:controller.add(entries);
+lib/services/friend_service.dart:750:.where(
+lib/services/friend_service.dart:757:.where((id) => id.isNotEmpty)
+lib/services/friend_service.dart:848:.where((friendship) => friendship.requestedBy != normalizedUserId)
+lib/services/friend_service.dart:875:.where((friendship) => friendship.requestedBy == normalizedUserId)
+lib/services/friend_service.dart:877:.where((friendId) => friendId.isNotEmpty)
+lib/services/friend_service.dart:910:final friendshipSnap = await friendshipRef.get();
+lib/services/friend_service.dart:993:final friendshipSnap = await friendshipRef.get();
+lib/services/friend_service.dart:1050:final friendshipSnap = await friendshipRef.get();
+lib/services/friend_service.dart:1064:friendshipRef.delete(),
+lib/services/friend_service.dart:1065:_firestore.collection('friend_links').doc(normalizedRequestId).delete(),
+lib/services/friend_service.dart:1075:.where((id) => !excludedIds.contains(id))
+lib/services/friend_service.dart:1094:final snapshot = await _usersCollection.doc(userId).get();
+lib/services/friend_service.dart:1112:.where(FieldPath.documentId, whereIn: chunk)
+lib/services/friend_service.dart:1113:.get();
+lib/services/friend_service.dart:1129:final doc = await _usersCollection.doc(userId).get();
+lib/services/friend_service.dart:1165:.where((friendId) => friendId.isNotEmpty)
+lib/services/friend_service.dart:1170:final userDoc = await _usersCollection.doc(userId).get();
+lib/services/friend_service.dart:1203:.where((friendship) => friendship.requestedBy != userId.trim())
+lib/services/friend_service.dart:1205:.where((requesterId) => requesterId.isNotEmpty)
+lib/services/friend_service.dart:1216:.where((friendship) => friendship.requestedBy == normalizedUserId)
+lib/services/friend_service.dart:1218:.where((friendId) => friendId.isNotEmpty)
+lib/services/friend_service.dart:1225:_friendshipsCollection.doc(friendshipId).delete(),
+lib/services/friend_service.dart:1226:_firestore.collection('friend_links').doc(friendshipId).delete(),
+lib/services/friend_service.dart:1244:.where('isPrivate', isEqualTo: false)
+lib/services/friend_service.dart:1245:.orderBy('createdAt', descending: true)
+lib/services/friend_service.dart:1246:.limit(50)
+lib/services/friend_service.dart:1247:.get();
+lib/services/friend_service.dart:1250:.where('isPrivate', isEqualTo: false)
+lib/services/friend_service.dart:1251:.where('usernameLower', isGreaterThanOrEqualTo: normalizedQuery)
+lib/services/friend_service.dart:1252:.where('usernameLower', isLessThan: '$normalizedQuery\uf8ff')
+lib/services/friend_service.dart:1253:.limit(20)
+lib/services/friend_service.dart:1254:.get();
+lib/services/friend_service.dart:1273:.orderBy('createdAt', descending: true)
+lib/services/friend_service.dart:1274:.limit(50)
+lib/services/friend_service.dart:1275:.get();
+lib/services/friend_service.dart:1278:.where('usernameLower', isGreaterThanOrEqualTo: normalizedQuery)
+lib/services/friend_service.dart:1279:.where('usernameLower', isLessThan: '$normalizedQuery\uf8ff')
+lib/services/friend_service.dart:1280:.limit(20)
+lib/services/friend_service.dart:1281:.get();
+lib/services/friend_service.dart:1289:.where((doc) => (doc.data()['isPrivate'] as bool?) != true)
+lib/services/friend_service.dart:1291:.where((user) => user.id.isNotEmpty)
+lib/services/friend_service.dart:1292:.where((user) => user.id != currentUserId)
+lib/services/friend_service.dart:1293:.where((user) => !excludeUserIds.contains(user.id))
+lib/services/friend_service.dart:1294:.where((user) => !blockedIds.contains(user.id))
+lib/services/friend_service.dart:1295:.where((user) {
+lib/services/friend_service.dart:1351:controller.add(
+lib/services/friend_service.dart:1385:.snapshots()
+lib/services/friend_service.dart:1414:subscriptions.add(sub);
+lib/services/friend_service.dart:1423:.where(FieldPath.documentId, whereIn: chunk)
+lib/services/friend_service.dart:1424:.snapshots()
+lib/services/friend_service.dart:1450:subscriptions.add(sub);
+lib/services/friend_service.dart:1478:.where((status) => status.isNotEmpty)
+lib/services/friend_service.dart:1482:var query = _friendshipsCollection.where(
+lib/services/friend_service.dart:1487:query = query.where('status', isEqualTo: normalizedStatuses.first);
+lib/services/friend_service.dart:1489:query = query.where(
+lib/services/friend_service.dart:1498:var query = _friendLinksCollection.where(
+lib/services/friend_service.dart:1503:query = query.where('status', isEqualTo: normalizedStatuses.first);
+lib/services/friend_service.dart:1505:query = query.where(
+lib/services/friend_service.dart:1517:final snapshot = await query.get();
+lib/services/friend_service.dart:1530:final snapshot = await buildSchemaQuery().get();
+lib/services/friend_service.dart:1553:final userDoc = await _usersCollection.doc(normalizedUserId).get();
+lib/services/friend_service.dart:1593:await _firestore.collection('notifications').add({
+lib/services/moderation_service.dart:56:await _firestore.collection('blocks').doc(docId).set(block.toJson(), SetOptions(merge: true));
+lib/services/moderation_service.dart:62:await _firestore.collection('blocks').doc(docId).delete();
+lib/services/moderation_service.dart:68:final snapshot = await _firestore.collection('blocks').doc(docId).get();
+lib/services/moderation_service.dart:89:await reportRef.set(report.toJson());
+lib/services/moderation_service.dart:97:.orderBy('createdAt', descending: true)
+lib/services/moderation_service.dart:98:.limit(cappedLimit)
+lib/services/moderation_service.dart:99:.snapshots()
+lib/services/moderation_service.dart:117:await _firestore.collection('reports').doc(normalizedReportId).set({
+lib/services/moderation_service.dart:135:_firestore.collection('blocks').where('blockerUserId', isEqualTo: userId).limit(500).get(),
+lib/services/moderation_service.dart:136:_firestore.collection('blocks').where('blockedUserId', isEqualTo: userId).limit(500).get(),
+lib/services/moderation_service.dart:145:.where((id) => id.isNotEmpty),
+lib/services/moderation_service.dart:148:.where((id) => id.isNotEmpty),
+lib/services/notification_service.dart:50:await _firestore.collection('notifications').add({
+lib/services/notification_service.dart:66:.where('userId', isEqualTo: userId)
+lib/services/notification_service.dart:67:.orderBy('createdAt', descending: true)
+lib/services/notification_service.dart:68:.limit(50)
+lib/services/notification_service.dart:69:.snapshots()
+lib/services/notification_service.dart:85:.where('userId', isEqualTo: userId)
+lib/services/notification_service.dart:86:.where('isRead', isEqualTo: false)
+lib/services/notification_service.dart:87:.limit(batchSize);
+lib/services/notification_service.dart:93:final snapshot = await query.get();
+lib/services/notification_service.dart:96:final batch = _firestore.batch();
+lib/services/notification_service.dart:98:batch.update(doc.reference, {
+lib/services/notification_service.dart:112:final snap = await ref.get();
+lib/services/notification_service.dart:122:await ref.update({'isRead': true, 'readAt': FieldValue.serverTimestamp()});
+lib/services/notification_service.dart:127:await _firestore.collection('notifications').add({
+lib/services/notification_service.dart:139:await _firestore.collection('notifications').add({
+lib/services/notification_service.dart:161:final batch = _firestore.batch();
+lib/services/notification_service.dart:164:batch.set(ref, {
+lib/services/payment_api.dart:417:.where('requesterId', isEqualTo: userId)
+lib/services/payment_api.dart:418:.snapshots()
+lib/services/payment_api.dart:439:.where('participants', arrayContains: userId)
+lib/services/payment_api.dart:440:.snapshots()
+lib/services/presence_repository.dart:56:chunks.add(values.sublist(index, end));
+lib/services/presence_repository.dart:135:).snapshots().map((doc) => _parsePresence(userId, doc.data())),
+lib/services/presence_repository.dart:144:controller.add(resolved);
+lib/services/presence_repository.dart:154:controller.add(_parsePresence(userId, null));
+lib/services/presence_repository.dart:194:controller.add(resolved);
+lib/services/presence_repository.dart:212:final sub = _ref(userId).snapshots().listen(
+lib/services/presence_repository.dart:226:subscriptions.add(sub);
+lib/services/presence_repository.dart:253:.where(FieldPath.documentId, whereIn: chunk)
+lib/services/presence_repository.dart:254:.snapshots()
+lib/services/presence_repository.dart:271:subscriptions.add(sub);
+lib/services/presence_repository.dart:298:.where(FieldPath.documentId, whereIn: chunk)
+lib/services/presence_repository.dart:299:.get();
+lib/services/presence_repository.dart:310:final doc = await _ref(userId).get();
+lib/services/presence_repository.dart:326:.where('isOnline', isEqualTo: true)
+lib/services/presence_repository.dart:327:.limit(limit + 1)
+lib/services/presence_repository.dart:328:.get();
+lib/services/presence_repository.dart:331:.where((doc) => _parsePresence(doc.id, doc.data()).isOnline == true)
+lib/services/presence_service.dart:21:stream: _ref(userId).snapshots().map((doc) {
+lib/services/profile_service.dart:38:userRef.get(),
+lib/services/profile_service.dart:39:profilePublicRef.get(),
+lib/services/profile_service.dart:40:preferencesRef.get(),
+lib/services/profile_service.dart:41:verificationRef.get(),
+lib/services/profile_service.dart:42:privacyRef.get(),
+lib/services/profile_service.dart:43:adultRef.get(),
+lib/services/referral_service.dart:79:.where('ownerUserId', isEqualTo: userId)
+lib/services/referral_service.dart:80:.where('isActive', isEqualTo: true)
+lib/services/referral_service.dart:81:.limit(1)
+lib/services/referral_service.dart:82:.snapshots()
+lib/services/referral_service.dart:93:.where('beneficiaryUserId', isEqualTo: userId)
+lib/services/referral_service.dart:94:.snapshots()
+lib/services/referral_service.dart:112:.where('referrerUserId', isEqualTo: userId)
+lib/services/referral_service.dart:113:.orderBy('createdAt', descending: true)
+lib/services/referral_service.dart:114:.snapshots()
+lib/services/room_discovery_service.dart:94:friendHosted.add(room);
+lib/services/room_discovery_service.dart:95:prioritised.add(room.id);
+lib/services/room_discovery_service.dart:108:friendPresent.add(room);
+lib/services/room_discovery_service.dart:109:prioritised.add(room.id);
+lib/services/room_discovery_service.dart:119:trending.add(room);
+lib/services/room_discovery_service.dart:120:prioritised.add(room.id);
+lib/services/room_discovery_service.dart:133:newRooms.add(room);
+lib/services/room_discovery_service.dart:134:prioritised.add(room.id);
+lib/services/room_discovery_service.dart:145:popular.add(room);
+lib/services/room_discovery_service.dart:146:prioritised.add(room.id);
+lib/services/room_discovery_service.dart:165:return room.members.where((id) => friendIds.contains(id)).length;
+lib/services/room_service.dart:30:Query<Map<String, dynamic>> query = _roomsCollection.where(
+lib/services/room_service.dart:36:query = query.where('category', isEqualTo: normalizedCategory);
+lib/services/room_service.dart:38:return query.orderBy('createdAt', descending: true).limit(limit);
+lib/services/room_service.dart:47:.where('isLive', isEqualTo: false)
+lib/services/room_service.dart:48:.where('scheduledAt', isGreaterThanOrEqualTo: now)
+lib/services/room_service.dart:49:.where('scheduledAt', isLessThanOrEqualTo: cutoff)
+lib/services/room_service.dart:50:.limit(limit);
+lib/services/room_service.dart:72:final effectiveCount = _effectiveRoomMemberCount(room);
+lib/services/room_service.dart:100:).where('lastActiveAt', isGreaterThanOrEqualTo: cutoff).limit(1).get();
+lib/services/room_service.dart:107:).where('lastActiveAt', isGreaterThanOrEqualTo: cutoff).limit(1).get();
+lib/services/room_service.dart:122:return _roomsCollection.doc(roomId).set({
+lib/services/room_service.dart:129:int _effectiveRoomMemberCount(RoomModel room) {
+lib/services/room_service.dart:137:return room.copyWith(memberCount: _effectiveRoomMemberCount(room));
+lib/services/room_service.dart:146:_effectiveRoomMemberCount(previous) > 0;
+lib/services/room_service.dart:155:memberCount: _effectiveRoomMemberCount(previous),
+lib/services/room_service.dart:202:incomingIds.add(room.id);
+lib/services/room_service.dart:234:controller.add(rooms);
+lib/services/room_service.dart:238:final subscription = query.snapshots().listen(
+lib/services/room_service.dart:271:activeRooms.add(room);
+lib/services/room_service.dart:275:activeRooms.add(room);
+lib/services/room_service.dart:327:DateTime.now().add(const Duration(hours: 48)),
+lib/services/room_service.dart:333:).snapshots().map((snap) {
+lib/services/room_service.dart:337:.where((room) => includeAdultRooms || !room.isAdult)
+lib/services/room_service.dart:362:DateTime.now().add(const Duration(hours: 48)),
+lib/services/room_service.dart:368:).get();
+lib/services/room_service.dart:373:.where((room) => includeAdultRooms || !room.isAdult)
+lib/services/room_service.dart:395:final snapshot = await _liveRoomsQuery(limit: limit).get();
+lib/services/room_service.dart:418:.where((room) => !excludedHostIds.contains(room.hostId))
+lib/services/room_service.dart:449:.where((memberId) => friendIds.contains(memberId))
+lib/services/room_service.dart:484:.where((memberId) => friendIds.contains(memberId))
+lib/services/room_service.dart:535:.where((memberId) => friendIds.contains(memberId))
+lib/services/room_service.dart:572:return _roomsCollection.doc(trimmedRoomId).snapshots().map((doc) {
+lib/services/room_service.dart:587:final doc = await _roomsCollection.doc(trimmedRoomId).get();
+lib/services/room_service.dart:624:await docRef.set({
+lib/services/room_service.dart:640:.where((tag) => tag.isNotEmpty)
+lib/services/room_service.dart:653:await _roomsCollection.doc(roomId).update({
+lib/services/room_service.dart:661:await _roomsCollection.doc(normalizedRoomId).update({
+lib/services/room_service.dart:669:await _roomsCollection.doc(normalizedRoomId).delete();
+lib/services/rtdb_presence_service.dart:81:await ref.onDisconnect().set(offlinePayload);
+lib/services/rtdb_presence_service.dart:82:await ref.update(_onlinePayload(includeSessionId: true));
+lib/services/rtdb_presence_service.dart:91:await _sessionRef(userId)?.update({'last_seen': ServerValue.timestamp});
+lib/services/rtdb_presence_service.dart:103:await ref.onDisconnect().update({
+lib/services/rtdb_presence_service.dart:110:await ref.update(_onlinePayload());
+lib/services/rtdb_presence_service.dart:122:await _sessionRef(userId)?.update(_onlinePayload());
+lib/services/rtdb_presence_service.dart:132:await _sessionRef(userId)?.update(_onlinePayload());
+lib/services/rtdb_presence_service.dart:142:await _sessionRef(userId)?.update(_onlinePayload());
+lib/services/rtdb_presence_service.dart:192:final snap = await ref.get();
+lib/services/schema_mutation_service.dart:77:final userSnapshot = await userRef.get();
+lib/services/schema_mutation_service.dart:133:await userRef.set({
+lib/services/schema_mutation_service.dart:139:await profilePublicRef.set({
+lib/services/schema_mutation_service.dart:143:if (!(await profilePublicRef.get()).exists) 'createdAt': now,
+lib/services/schema_mutation_service.dart:192:final batch = _firestore.batch();
+lib/services/schema_mutation_service.dart:194:batch.set(usersRef, identityPayload, SetOptions(merge: true));
+lib/services/schema_mutation_service.dart:195:batch.set(profilePublicRef, profilePublicPayload, SetOptions(merge: true));
+lib/services/schema_mutation_service.dart:196:batch.set(preferencesRef, preferencesPayload, SetOptions(merge: true));
+lib/services/schema_mutation_service.dart:197:batch.set(verificationRef, verificationPayload, SetOptions(merge: true));
+lib/services/schema_mutation_service.dart:200:batch.set(privacyRef, {
+lib/services/schema_mutation_service.dart:204:batch.set(adultRef, {
+lib/services/schema_mutation_service.dart:210:batch.set(usersRef, {
+lib/services/schema_mutation_service.dart:234:await verificationRef.set({
+lib/services/schema_mutation_service.dart:237:'verifiedAt': isVerified ? now : FieldValue.delete(),
+lib/services/schema_mutation_service.dart:238:'verifiedBy': isVerified ? verifiedBy : FieldValue.delete(),
+lib/services/schema_mutation_service.dart:247:await usersRef.set({
+lib/services/schema_mutation_service.dart:249:'verifiedAt': isVerified ? now : FieldValue.delete(),
+lib/services/schema_mutation_service.dart:250:'verifiedBy': isVerified ? verifiedBy : FieldValue.delete(),
+lib/services/schema_mutation_service.dart:275:await _firestore.collection('users').doc(userId).set({
+lib/services/schema_mutation_service.dart:328:final batch = _firestore.batch();
+lib/services/schema_mutation_service.dart:329:batch.set(
+lib/services/schema_mutation_service.dart:337:batch.set(
+lib/services/schema_mutation_service.dart:424:.where((key) => !_knownProfileWriteFields.contains(key))
+lib/services/social_activity_service.dart:23:.where('userId', isEqualTo: normalizedUserId)
+lib/services/social_activity_service.dart:24:.limit(limit * 3)
+lib/services/social_activity_service.dart:25:.snapshots()
+lib/services/social_activity_service.dart:47:.where('userId', isEqualTo: normalizedUserId)
+lib/services/social_activity_service.dart:48:.limit(limit * 3)
+lib/services/social_activity_service.dart:49:.get();
+lib/services/social_activity_service.dart:149:await _firestore.collection('activity_feed').add({
+lib/services/tenor_service.dart:39:final response = await http.get(uri).timeout(const Duration(seconds: 8));
+lib/services/web_device_enum_web.dart:33:.where((d) => d.kind == 'audioinput' || d.kind == 'videoinput')
+lib/services/webrtc_room_service.dart:164:.where((e) => e.value != _localUserId)
+lib/services/webrtc_room_service.dart:375:await _peersCol.doc(_localUserId).set({
+lib/services/webrtc_room_service.dart:387:_peersCol.doc(_localUserId).update({
+lib/services/webrtc_room_service.dart:394:.where('isBroadcasting', isEqualTo: true)
+lib/services/webrtc_room_service.dart:395:.snapshots()
+lib/services/webrtc_room_service.dart:400:.where('broadcasterId', isEqualTo: _localUserId)
+lib/services/webrtc_room_service.dart:401:.snapshots()
+lib/services/webrtc_room_service.dart:952:await _peersCol.doc(_localUserId).delete();
+lib/services/webrtc_room_service.dart:999:await _peersCol.doc(_localUserId).update(data);
+lib/services/webrtc_room_service.dart:1037:_peersCol.doc(remoteBroadcasterId).delete().ignore();
+lib/services/webrtc_room_service.dart:1235:await callRef.set({
+lib/services/webrtc_room_service.dart:1245:peer.answerSub = callRef.snapshots().listen((snap) async {
+lib/services/webrtc_room_service.dart:1272:peer.iceSub = callRef.collection('broadcaster_ice').snapshots().listen((
+lib/services/webrtc_room_service.dart:1316:_answeredCalls.add(callId);
+lib/services/webrtc_room_service.dart:1326:.where('broadcasterId', isEqualTo: _localUserId)
+lib/services/webrtc_room_service.dart:1327:.get();
+lib/services/webrtc_room_service.dart:1337:_answeredCalls.add(callId);
+lib/services/webrtc_room_service.dart:1416:await callRef.update({
+lib/services/webrtc_room_service.dart:1423:.snapshots()
+lib/services/webrtc_room_service.dart:1497:if (!seen.add(fingerprint)) {
+lib/services/webrtc_room_service.dart:1505:.set(candidate.toMap());
+lib/services/webrtc_room_service.dart:1642:? _remoteSpeakingUids.add(uid)
+lib/features/after_dark/providers/after_dark_provider.dart:34:.where('isLive', isEqualTo: true)
+lib/features/after_dark/providers/after_dark_provider.dart:35:.where('isAdult', isEqualTo: true)
+lib/features/after_dark/providers/after_dark_provider.dart:36:.limit(50);
+lib/features/after_dark/providers/after_dark_provider.dart:39:query = query.where('category', isEqualTo: category);
+lib/features/after_dark/providers/after_dark_provider.dart:42:return query.snapshots().map((snapshot) {
+lib/features/after_dark/providers/after_dark_provider.dart:73:await _ref.read(firestoreProvider).collection('users').doc(firestoreUid).set({
+lib/features/after_dark/providers/after_dark_provider.dart:109:await _ref.read(firestoreProvider).collection('users').doc(uid).set({
+lib/features/after_dark/screens/after_dark_create_lounge_screen.dart:102:await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+lib/features/after_dark/screens/after_dark_home_screen.dart:18:.where((room) => room.isLive && room.isAdult)
+lib/features/after_dark/screens/after_dark_home_screen.dart:134:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/after_dark/screens/after_dark_home_screen.dart:230:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/after_dark/screens/after_dark_lounges_screen.dart:260:.where((room) =>
+lib/features/after_dark/screens/after_dark_lounges_screen.dart:314:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/after_dark/screens/after_dark_lounges_screen.dart:404:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/after_dark/screens/after_dark_pin_screen.dart:50:_digits.add(d);
+lib/features/after_dark/screens/after_dark_profile_screen.dart:44:.get();
+lib/features/after_dark/screens/after_dark_profile_screen.dart:64:.set({
+lib/features/auth/username_validator.dart:7:.where('username', isEqualTo: username)
+lib/features/auth/username_validator.dart:8:.limit(1)
+lib/features/auth/username_validator.dart:9:.get();
+lib/features/bookmarks/providers/bookmark_provider.dart:23:.orderBy('savedAt', descending: true)
+lib/features/bookmarks/providers/bookmark_provider.dart:24:.snapshots()
+lib/features/bookmarks/providers/bookmark_provider.dart:33:final postDoc = await firestore.collection('posts').doc(postId).get();
+lib/features/bookmarks/providers/bookmark_provider.dart:39:bookmarks.add({
+lib/features/bookmarks/providers/bookmark_provider.dart:73:.set({
+lib/features/bookmarks/providers/bookmark_provider.dart:88:.delete();
+lib/features/bookmarks/providers/bookmark_provider.dart:100:.get();
+lib/features/dashboard/leaderboard_provider.dart:11:.orderBy('coinBalance', descending: true)
+lib/features/dashboard/leaderboard_provider.dart:12:.limit(10)
+lib/features/dashboard/leaderboard_provider.dart:13:.get();
+lib/features/feed/controllers/feed_controller.dart:93:final userDoc = await _firestore.collection('users').doc(userId).get();
+lib/features/feed/controllers/feed_controller.dart:143:.where('isPrivate', isEqualTo: false)
+lib/features/feed/controllers/feed_controller.dart:144:.limit(40)
+lib/features/feed/controllers/feed_controller.dart:145:.get();
+lib/features/feed/controllers/feed_controller.dart:149:.where((user) => !blockedIds.contains(user.id))
+lib/features/feed/controllers/paginated_following_feed_controller.dart:49:.where('followerUserId', isEqualTo: _userId)
+lib/features/feed/controllers/paginated_following_feed_controller.dart:50:.get();
+lib/features/feed/controllers/paginated_following_feed_controller.dart:69:.where('authorId', whereIn: batch)
+lib/features/feed/controllers/paginated_following_feed_controller.dart:70:.orderBy('createdAt', descending: true)
+lib/features/feed/controllers/paginated_following_feed_controller.dart:71:.limit(_pageSize);
+lib/features/feed/controllers/paginated_following_feed_controller.dart:77:final snapshot = await query.get();
+lib/features/feed/controllers/paginated_posts_controller.dart:65:.orderBy('createdAt', descending: true)
+lib/features/feed/controllers/paginated_posts_controller.dart:66:.limit(_pageSize);
+lib/features/feed/controllers/paginated_posts_controller.dart:72:final snapshot = await query.get();
+lib/features/feed/providers/feed_providers.dart:25:.orderBy('createdAt', descending: true)
+lib/features/feed/providers/feed_providers.dart:26:.limit(30)
+lib/features/feed/providers/feed_providers.dart:27:.snapshots()
+lib/features/feed/providers/feed_providers.dart:45:.where('authorId', isEqualTo: userId)
+lib/features/feed/providers/feed_providers.dart:46:.orderBy('createdAt', descending: true)
+lib/features/feed/providers/feed_providers.dart:47:.limit(30)
+lib/features/feed/providers/feed_providers.dart:48:.snapshots()
+lib/features/feed/providers/feed_providers.dart:84:.orderBy('createdAt', descending: true)
+lib/features/feed/providers/feed_providers.dart:85:.limit(12)
+lib/features/feed/providers/feed_providers.dart:86:.get();
+lib/features/feed/providers/feed_providers.dart:101:.orderBy('balance', descending: true)
+lib/features/feed/providers/feed_providers.dart:102:.limit(10)
+lib/features/feed/providers/feed_providers.dart:103:.get();
+lib/features/feed/providers/typing_providers.dart:20:.where((entry) => entry.value == true)
+lib/features/feed/providers/user_providers.dart:7:final doc = await firestore.collection('users').doc(userId).get();
+lib/features/feed/repository/feed_repository.dart:15:.orderBy('createdAt', descending: true)
+lib/features/feed/repository/feed_repository.dart:16:.limit(50)
+lib/features/feed/repository/feed_repository.dart:17:.get();
+lib/features/feed/repository/feed_repository.dart:35:.orderBy('date')
+lib/features/feed/repository/feed_repository.dart:36:.limit(50)
+lib/features/feed/repository/feed_repository.dart:37:.get();
+lib/features/feed/repository/feed_repository.dart:58:await ref.update({
+lib/features/feed/repository/feed_repository.dart:63:await ref.update({
+lib/features/feed/repository/host_controls_repository.dart:8:await _db.collection('rooms').doc(roomId).update({'isLocked': value});
+lib/features/feed/repository/host_controls_repository.dart:12:await _db.collection('rooms').doc(roomId).update({'slowModeSeconds': seconds});
+lib/features/feed/repository/host_controls_repository.dart:16:await _db.collection('rooms').doc(roomId).update({
+lib/features/feed/repository/host_controls_repository.dart:22:await _db.collection('rooms').doc(roomId).update({
+lib/features/feed/repository/host_controls_repository.dart:28:await _db.collection('rooms').doc(roomId).update({
+lib/features/feed/repository/host_controls_repository.dart:34:await _db.collection('rooms').doc(roomId).update({
+lib/features/feed/repository/reaction_repository.dart:16:.limit(QueryPolicy.messageReactionsLimit)
+lib/features/feed/repository/reaction_repository.dart:17:.snapshots()
+lib/features/feed/repository/reaction_repository.dart:29:.set({
+lib/features/feed/repository/reaction_repository.dart:44:.delete();
+lib/features/feed/repository/typing_repository.dart:32:.limit(QueryPolicy.typingUsersLimit)
+lib/features/feed/repository/typing_repository.dart:33:.snapshots()
+lib/features/feed/repository/typing_repository.dart:46:.set({
+lib/features/feed/screens/discovery_feed_screen.dart:60:.get();
+lib/features/feed/screens/discovery_feed_screen.dart:524:.where((r) => r.category?.toLowerCase() == _selectedCategory)
+lib/features/feed/screens/discovery_feed_screen.dart:653:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/feed/screens/discovery_feed_screen.dart:2198:if (seen.add(uid)) {
+lib/features/feed/screens/discovery_feed_screen.dart:2199:uids.add(uid);
+lib/features/feed/screens/discovery_feed_screen.dart:2204:if (seen.add(room.hostId)) {
+lib/features/feed/screens/discovery_feed_screen.dart:2205:uids.add(room.hostId);
+lib/features/feed/screens/discovery_feed_screen.dart:2215:final recentCount = liveRooms.where((r) {
+lib/features/feed/screens/discovery_feed_screen.dart:2679:events.add('Someone joined $name');
+lib/features/feed/screens/discovery_feed_screen.dart:2684:events.add('Audience growing · ${room.name.length > 18 ? '${room.name.substring(0, 18)}…' : room.name}');
+lib/features/feed/screens/discovery_feed_screen.dart:2690:final veryRecentCount = rooms.where((r) {
+lib/features/feed/screens/discovery_feed_screen.dart:2695:events.add('$veryRecentCount rooms had joins in the last 2 min');
+lib/features/feed/screens/discovery_feed_screen.dart:2859:.where((room) => followingIds.contains(room.hostId))
+lib/features/feed/screens/room_browser_screen.dart:91:final cat = _categories.where((c) => c.value == value).firstOrNull;
+lib/features/feed/screens/room_browser_screen.dart:236:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/feed/screens/room_browser_screen.dart:628:.where(
+lib/features/feed/screens/room_browser_screen.dart:710:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/feed/screens/room_browser_screen.dart:787:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/feed/services/home_feed_service.dart:36:pulseItems.add(
+lib/features/feed/services/home_feed_service.dart:110:if (seen.add(dedupeKey)) {
+lib/features/feed/services/home_feed_service.dart:111:uniqueItems.add(item);
+lib/features/follow/providers/follow_provider.dart:70:/// The only provider in the app allowed to open a follows `.snapshots()` stream.
+lib/features/follow/providers/follow_provider.dart:96:.where(FieldPath.documentId, whereIn: batch)
+lib/features/follow/providers/follow_provider.dart:97:.get();
+lib/features/follow/providers/follow_provider.dart:99:users.add(UserFollow.fromJson(doc.data(), doc.id));
+lib/features/follow/providers/follow_provider.dart:117:final ids = key.split('|').where((id) => id.isNotEmpty).toList(growable: false);
+lib/features/follow/providers/follow_provider.dart:142:.where((id) => id.isNotEmpty)
+lib/features/follow/providers/follow_provider.dart:169:.where((id) => id.isNotEmpty)
+lib/features/follow/providers/follow_provider.dart:181:.where('followedUserId', isEqualTo: userId)
+lib/features/follow/providers/follow_provider.dart:182:.count()
+lib/features/follow/providers/follow_provider.dart:183:.get();
+lib/features/follow/providers/follow_provider.dart:186:.where('followerUserId', isEqualTo: userId)
+lib/features/follow/providers/follow_provider.dart:187:.count()
+lib/features/follow/providers/follow_provider.dart:188:.get();
+lib/features/follow/providers/follow_provider.dart:203:.get();
+lib/features/follow/providers/follow_provider.dart:223:final batch = _firestore.batch();
+lib/features/follow/providers/follow_provider.dart:227:batch.set(
+lib/features/follow/providers/follow_provider.dart:237:batch.set(
+lib/features/follow/providers/follow_provider.dart:247:batch.set(
+lib/features/follow/providers/follow_provider.dart:263:final batch = _firestore.batch();
+lib/features/follow/providers/follow_provider.dart:266:batch.delete(
+lib/features/follow/providers/follow_provider.dart:275:batch.delete(
+lib/features/follow/providers/follow_provider.dart:284:batch.delete(
+lib/features/friends/panes/friends_pane_view.dart:77:.where((e) => e.user.username.toLowerCase().contains(q))
+lib/features/friends/panes/friends_pane_view.dart:81:.where((e) => (e.roomId ?? '').isNotEmpty)
+lib/features/friends/panes/friends_pane_view.dart:84:.where((e) => e.isOnline && (e.roomId ?? '').isEmpty)
+lib/features/friends/panes/friends_pane_view.dart:87:.where((e) => e.isRecentlyActive)
+lib/features/friends/panes/friends_pane_view.dart:90:.where((e) => !e.isOnline && !e.isRecentlyActive)
+lib/features/friends/providers/friends_providers.dart:74:.where((entry) => entry.isOnline)
+lib/features/friends/providers/friends_providers.dart:83:.where((entry) => (entry.roomId ?? '').isNotEmpty)
+lib/features/friends/providers/friends_providers.dart:92:.where((entry) => !entry.isOnline)
+lib/features/friends/providers/friends_providers.dart:115:.where((friendId) => friendId.isNotEmpty)
+lib/features/friends/providers/friends_providers.dart:150:.where(
+lib/features/friends/providers/friends_providers.dart:192:.where(
+lib/features/friends/providers/friends_providers.dart:196:.where((id) => id.isNotEmpty)
+lib/features/groups/models/group_model.dart:51:.where((item) => item.isNotEmpty)
+lib/features/groups/providers/groups_provider.dart:11:.orderBy('createdAt', descending: true)
+lib/features/groups/providers/groups_provider.dart:12:.snapshots()
+lib/features/groups/providers/groups_provider.dart:25:.snapshots()
+lib/features/groups/providers/groups_provider.dart:40:.where('memberIds', arrayContains: userId)
+lib/features/groups/providers/groups_provider.dart:41:.snapshots()
+lib/features/groups/providers/groups_provider.dart:55:.orderBy('createdAt', descending: true)
+lib/features/groups/providers/groups_provider.dart:56:.snapshots()
+lib/features/groups/providers/groups_provider.dart:74:await _firestore.collection('groups').add({
+lib/features/groups/providers/groups_provider.dart:89:await _firestore.collection('groups').doc(groupId).update({
+lib/features/groups/providers/groups_provider.dart:99:await _firestore.collection('groups').doc(groupId).update({
+lib/features/groups/providers/groups_provider.dart:117:.add({
+lib/features/groups/providers/groups_provider.dart:133:await _firestore.collection('groups').doc(groupId).delete();
+lib/features/home/home_controller.dart:12:state = state.where((room) => room.id != roomId).toList();
+lib/features/messaging/models/conversation_model.dart:57:.where((item) => item.isNotEmpty)
+lib/features/messaging/models/conversation_model.dart:170:final otherUserId = participantIds.firstWhere(
+lib/features/messaging/models/message_model.dart:43:.where((e) => e != null)
+lib/features/messaging/models/message_model.dart:45:.where((e) => e.isNotEmpty)
+lib/features/messaging/panes/chat_pane_view.dart:314:_pendingmessage.add(pendingmessage);
+lib/features/messaging/panes/chat_pane_view.dart:334:_pendingmessage.removeWhere(
+lib/features/messaging/panes/chat_pane_view.dart:393:final otherUserId = conversation.participantIds.firstWhere(
+lib/features/messaging/panes/chat_pane_view.dart:471:.where((message) => !liveClientIds.contains(message.clientmessageId))
+lib/features/messaging/panes/chat_pane_view.dart:565:conversation.participantIds.where((id) => id != widget.userId);
+lib/features/messaging/panes/messages_pane_view.dart:56:convs.where((c) => c.status == 'active').toList();
+lib/features/messaging/panes/messages_pane_view.dart:59:.where((c) => c.status == 'active' && c.hasUnreadmessage(widget.userId))
+lib/features/messaging/panes/messages_pane_view.dart:63:convs.where((c) => c.status == 'active' && c.type == 'group').toList();
+lib/features/messaging/panes/messages_pane_view.dart:67:return convs.where((c) {
+lib/features/messaging/panes/messages_pane_view.dart:451:final peer = conversation.participantIds.firstWhere(
+lib/features/messaging/providers/messaging_provider.dart:55:.where('participantIds', arrayContains: resolvedUserId)
+lib/features/messaging/providers/messaging_provider.dart:56:.orderBy('lastMessageAt', descending: true)
+lib/features/messaging/providers/messaging_provider.dart:57:.limit(QueryPolicy.conversationsLimit)
+lib/features/messaging/providers/messaging_provider.dart:58:.snapshots()
+lib/features/messaging/providers/messaging_provider.dart:82:.where((c) => !c.isArchived && c.status != 'pending')
+lib/features/messaging/providers/messaging_provider.dart:113:.where((c) => !c.isArchived && c.status == 'pending')
+lib/features/messaging/providers/messaging_provider.dart:127:.snapshots()
+lib/features/messaging/providers/messaging_provider.dart:152:.orderBy('createdAt', descending: false)
+lib/features/messaging/providers/messaging_provider.dart:153:.limit(QueryPolicy.messagesLimit)
+lib/features/messaging/providers/messaging_provider.dart:154:.snapshots(includeMetadataChanges: true)
+lib/features/messaging/providers/messaging_provider.dart:241:.orderBy('createdAt', descending: true)
+lib/features/messaging/providers/messaging_provider.dart:242:.limit(_kmessagePageSize);
+lib/features/messaging/providers/messaging_provider.dart:246:final snapshot = await query.get();
+lib/features/messaging/providers/messaging_provider.dart:300:.where((id) => id.isNotEmpty)
+lib/features/messaging/providers/messaging_provider.dart:318:.where((id) => id.isNotEmpty)
+lib/features/messaging/providers/messaging_provider.dart:392:final expiresAt = DateTime.now().add(const Duration(days: messageRetentionDays));
+lib/features/messaging/providers/messaging_provider.dart:400:final batch = _firestore.batch();
+lib/features/messaging/providers/messaging_provider.dart:405:batch.set(messageRef, {
+lib/features/messaging/providers/messaging_provider.dart:422:batch.update(convRef, {
+lib/features/messaging/providers/messaging_provider.dart:486:await convRef.set({
+lib/features/messaging/providers/messaging_provider.dart:515:final docRef = await _firestore.collection('conversations').add({
+lib/features/messaging/providers/messaging_provider.dart:537:await conversationRef.update({
+lib/features/messaging/providers/messaging_provider.dart:554:await conversationRef.set({
+lib/features/messaging/providers/messaging_provider.dart:577:await conversationRef.update({
+lib/features/messaging/providers/messaging_provider.dart:615:await conversationRef.update({
+lib/features/messaging/providers/messaging_provider.dart:653:final snap = await reactionRef.get();
+lib/features/messaging/providers/messaging_provider.dart:655:await reactionRef.delete();
+lib/features/messaging/providers/messaging_provider.dart:657:await reactionRef.set({
+lib/features/messaging/providers/messaging_provider.dart:680:await docRef.set({
+lib/features/messaging/providers/messaging_provider.dart:686:await docRef.set({
+lib/features/messaging/providers/messaging_provider.dart:687:'users.$actorUserId': FieldValue.delete(),
+lib/features/messaging/providers/messaging_provider.dart:705:.limit(QueryPolicy.messageReactionsLimit)
+lib/features/messaging/providers/messaging_provider.dart:706:.snapshots()
+lib/features/messaging/providers/messaging_provider.dart:729:.snapshots()
+lib/features/messaging/providers/messaging_provider.dart:735:.where((e) {
+lib/features/messaging/providers/messaging_provider.dart:757:(convs) => convs.where((c) => c.hasUnreadmessage(user.id)).length,
+lib/features/messaging/providers/messaging_provider.dart:769:.where((conversation) => conversation.status != 'pending')
+lib/features/messaging/providers/messaging_provider.dart:782:final visibleConversations = activeConversations.where((conv) {
+lib/features/messaging/providers/messaging_provider.dart:783:final others = conv.participantIds.where((id) => id != userId);
+lib/features/messaging/screens/create_group_chat_screen.dart:44:.where('username', isGreaterThanOrEqualTo: query)
+lib/features/messaging/screens/create_group_chat_screen.dart:45:.where('username', isLessThanOrEqualTo: '$query\uf8ff')
+lib/features/messaging/screens/create_group_chat_screen.dart:46:.limit(15)
+lib/features/messaging/screens/create_group_chat_screen.dart:47:.get();
+lib/features/messaging/screens/create_group_chat_screen.dart:50:.where((doc) => doc.id != widget.userId)
+lib/features/messaging/screens/create_group_chat_screen.dart:152:_selectedUserIds.add(id);
+lib/features/messaging/screens/new_message_screen.dart:178:.where('username', isGreaterThanOrEqualTo: normalized)
+lib/features/messaging/screens/new_message_screen.dart:179:.where('username', isLessThanOrEqualTo: '$normalized\uf8ff')
+lib/features/messaging/screens/new_message_screen.dart:180:.limit(20)
+lib/features/messaging/screens/new_message_screen.dart:181:.get();
+lib/features/messaging/screens/new_message_screen.dart:184:.where((doc) => doc.id != widget.userId)
+lib/features/onboarding/onboarding_screen.dart:152:.update(<String, dynamic>{
+lib/features/onboarding/onboarding_screen.dart:223:_selectedInterests.add(interest);
+lib/features/payments/admin_entitlement_providers.dart:24:.where('userId', isEqualTo: userId)
+lib/features/payments/admin_entitlement_providers.dart:25:.limit(25)
+lib/features/payments/admin_entitlement_providers.dart:26:.snapshots()
+lib/features/payments/admin_entitlement_providers.dart:40:final emailMatch = await users.where('email', isEqualTo: input).limit(1).get();
+lib/features/payments/admin_entitlement_providers.dart:47:final exactDoc = await users.doc(input).get();
+lib/features/payments/buy_coins_sheet.dart:194:gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/payments/payment_recipient_provider.dart:30:.orderBy('balance', descending: true)
+lib/features/payments/payment_recipient_provider.dart:31:.limit(25)
+lib/features/payments/payment_recipient_provider.dart:32:.get();
+lib/features/payments/payment_recipient_provider.dart:41:.where((user) => user.id != currentUserId)
+lib/features/payments/payment_recipient_provider.dart:42:.where((user) => !blockedIds.contains(user.id))
+lib/features/payments/payment_recipient_provider.dart:43:.where((user) {
+lib/features/payments/payments_screen.dart:490:.where((request) => request.status == 'pending' || request.status == 'processing')
+lib/features/payments/payments_screen.dart:625:final openRequests = requests.where((r) => r.status == 'pending' || r.status == 'under_review').length;
+lib/features/payments/payments_screen.dart:896:items.add(
+lib/features/posts/providers/post_comments_providers.dart:68:.orderBy('createdAt')
+lib/features/posts/providers/post_comments_providers.dart:69:.limit(100)
+lib/features/posts/providers/post_comments_providers.dart:70:.snapshots()
+lib/features/posts/screens/create_post_screen.dart:72:await FirebaseFirestore.instance.collection('posts').add({
+lib/features/posts/screens/post_comments_screen.dart:66:await postRef.collection('comments').add({
+lib/features/profile/widgets/device_settings_panel.dart:46:_cameras = devices.where((d) => d.kind == 'videoinput').toList();
+lib/features/profile/widgets/device_settings_panel.dart:47:_mics = devices.where((d) => d.kind == 'audioinput').toList();
+lib/features/profile/widgets/profile_card.dart:278:rows.add(
+lib/features/profile/widgets/profile_card.dart:289:rows.add(
+lib/features/profile/widgets/profile_card.dart:300:rows.add(
+lib/features/profile/widgets/profile_card.dart:310:rows.add(
+lib/features/profile/widgets/profile_card.dart:320:rows.add(
+lib/features/profile/widgets/profile_music_player_web.dart:70:_subscriptions.add(audio.onLoadedMetadata.listen((_) {
+lib/features/profile/widgets/profile_music_player_web.dart:75:_subscriptions.add(audio.onTimeUpdate.listen((_) {
+lib/features/profile/widgets/profile_music_player_web.dart:85:_subscriptions.add(audio.onEnded.listen((_) {
+lib/features/profile/widgets/profile_music_player_web.dart:94:_subscriptions.add(audio.onError.listen((_) {
+lib/features/profile/edit_profile_screen.dart:410:.where((s) => !_interests.contains(s))
+lib/features/profile/edit_profile_screen.dart:427:setState(() => _interests.add(trimmed));
+lib/features/profile/profile_completion.dart:6:if ((state.username ?? '').trim().length < 2) items.add('Set display name');
+lib/features/profile/profile_completion.dart:7:if ((state.avatarUrl ?? '').trim().isEmpty) items.add('Upload avatar');
+lib/features/profile/profile_completion.dart:8:if ((state.bio ?? '').trim().isEmpty) items.add('Write a short bio');
+lib/features/profile/profile_completion.dart:9:if (state.interests.isEmpty) items.add('Add interests');
+lib/features/profile/profile_completion.dart:25:items.add('Add a display name');
+lib/features/profile/profile_completion.dart:28:items.add('Add an email on your account');
+lib/features/profile/profile_completion.dart:47:if ((state.username ?? '').trim().length < 2) items.add('Set display name');
+lib/features/profile/profile_completion.dart:48:if ((state.avatarUrl ?? '').trim().isEmpty) items.add('Upload avatar');
+lib/features/profile/profile_completion.dart:49:if ((state.coverPhotoUrl ?? '').trim().isEmpty) items.add('Upload cover photo');
+lib/features/profile/profile_completion.dart:50:if ((state.bio ?? '').trim().isEmpty) items.add('Write a short bio');
+lib/features/profile/profile_completion.dart:51:if ((state.aboutMe ?? '').trim().isEmpty) items.add('Tell people about you');
+lib/features/profile/profile_completion.dart:52:if (state.interests.isEmpty) items.add('Add interests');
+lib/features/profile/profile_completion.dart:53:if ((state.introVideoUrl ?? '').trim().isEmpty) items.add('Add intro video');
+lib/features/profile/profile_controller.dart:293:.where((item) => item.isNotEmpty)
+lib/features/profile/profile_controller.dart:308:.where((item) => item.isNotEmpty)
+lib/features/profile/profile_controller.dart:503:camViewPolicy: CamViewPolicy.values.firstWhere(
+lib/features/profile/profile_screen.dart:617:.where((item) => item.isNotEmpty)
+lib/features/profile/profile_screen.dart:627:interests.add(suggestion);
+lib/features/profile/profile_screen.dart:1298:_adultLookingFor.add(intent);
+lib/features/profile/profile_view_providers.dart:26:final userSnapshot = await userRef.get();
+lib/features/profile/profile_view_providers.dart:30:final privacySnapshot = await userRef.collection('privacy').doc('settings').get();
+lib/features/profile/user_profile_screen.dart:139:followerCount = await _followService.followerCount(widget.userId);
+lib/features/profile/user_profile_screen.dart:140:followingCount = await _followService.followingCount(widget.userId);
+lib/features/profile/user_profile_screen.dart:516:if (age != null) details.add('$age');
+lib/features/profile/user_profile_screen.dart:520:if ((gender ?? '').isNotEmpty) details.add(gender!);
+lib/features/profile/user_profile_screen.dart:524:if ((location ?? '').isNotEmpty) details.add(location!);
+lib/features/profile/user_profile_screen.dart:529:details.add(relationshipStatus!);
+lib/features/profile/user_profile_screen.dart:555:].where((entry) => (entry ?? '').trim().isNotEmpty).length,
+lib/features/profile/user_profile_screen.dart:787:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/room/controllers/room_state.dart:244:const RoomSessionSnapshot({
+lib/features/room/controllers/room_state.dart:262:return RoomSessionSnapshot(
+lib/features/room/media/room_media_controller.dart:60:_pendingUpdates.add(state);
+lib/features/room/media/stream_control.dart:140:high.add(uid);
+lib/features/room/media/stream_control.dart:142:low.add(uid);
+lib/features/room/models/room_theme_model.dart:83:return RoomVibePreset.values.firstWhere(
+lib/features/room/providers/buzz_provider.dart:35:.add({
+lib/features/room/providers/buzz_provider.dart:58:.where('toUserId', isEqualTo: params.currentUserId)
+lib/features/room/providers/buzz_provider.dart:59:.where('sentAt', isGreaterThan: Timestamp.fromDate(since))
+lib/features/room/providers/buzz_provider.dart:60:.snapshots()
+lib/features/room/providers/cam_access_provider.dart:36:final existingSnapshot = await requestRef.get();
+lib/features/room/providers/cam_access_provider.dart:42:await requestRef.set({
+lib/features/room/providers/cam_access_provider.dart:61:final batch = _db.batch();
+lib/features/room/providers/cam_access_provider.dart:62:batch.update(_requestCollection(roomId).doc(request.id), {
+lib/features/room/providers/cam_access_provider.dart:66:batch.set(
+lib/features/room/providers/cam_access_provider.dart:83:final requestSnapshot = await _requestCollection(roomId).doc(requestId).get();
+lib/features/room/providers/cam_access_provider.dart:85:await _requestCollection(roomId).doc(requestId).update({
+lib/features/room/providers/cam_access_provider.dart:108:.orderBy('createdAt', descending: true)
+lib/features/room/providers/cam_access_provider.dart:109:.snapshots()
+lib/features/room/providers/cam_access_provider.dart:122:.where((request) => request.requesterId == params.requesterId)
+lib/features/room/providers/cam_view_request_provider.dart:87:.where('targetId', isEqualTo: normalizedTargetId)
+lib/features/room/providers/cam_view_request_provider.dart:88:.get();
+lib/features/room/providers/cam_view_request_provider.dart:89:final pendingToSupersede = existingSnapshot.docs.where((doc) {
+lib/features/room/providers/cam_view_request_provider.dart:97:final batch = _db.batch();
+lib/features/room/providers/cam_view_request_provider.dart:99:batch.update(doc.reference, {
+lib/features/room/providers/cam_view_request_provider.dart:106:batch.set(requestRef, {
+lib/features/room/providers/cam_view_request_provider.dart:139:final snapshot = await requestRef.get();
+lib/features/room/providers/cam_view_request_provider.dart:143:await requestRef.update({
+lib/features/room/providers/cam_view_request_provider.dart:179:.where('targetId', isEqualTo: params.targetId)
+lib/features/room/providers/cam_view_request_provider.dart:180:.snapshots()
+lib/features/room/providers/cam_view_request_provider.dart:184:.where((r) => r.isPending)
+lib/features/room/providers/host_controls_provider.dart:52:return _roomRef(roomId).update({'slowModeSeconds': seconds});
+lib/features/room/providers/host_controls_provider.dart:57:final snapshot = await roomRef.get();
+lib/features/room/providers/host_controls_provider.dart:59:await roomRef.update({'isLocked': !currentValue});
+lib/features/room/providers/host_controls_provider.dart:64:final snapshot = await policyRef.get();
+lib/features/room/providers/host_controls_provider.dart:66:await policyRef.set({'allowChat': !currentValue}, SetOptions(merge: true));
+lib/features/room/providers/host_controls_provider.dart:71:final snapshot = await policyRef.get();
+lib/features/room/providers/host_controls_provider.dart:76:await policyRef.set({
+lib/features/room/providers/host_controls_provider.dart:83:final snapshot = await policyRef.get();
+lib/features/room/providers/host_controls_provider.dart:88:await policyRef.set({
+lib/features/room/providers/host_controls_provider.dart:95:final snapshot = await policyRef.get();
+lib/features/room/providers/host_controls_provider.dart:100:await policyRef.set({'allowGifts': !currentValue}, SetOptions(merge: true));
+lib/features/room/providers/host_controls_provider.dart:104:await _participantRef(roomId, userId).update({'isMuted': true});
+lib/features/room/providers/host_controls_provider.dart:109:await _participantRef(roomId, userId).update({'isMuted': false});
+lib/features/room/providers/host_controls_provider.dart:114:await _participantRef(roomId, userId).update({'isBanned': true});
+lib/features/room/providers/host_controls_provider.dart:119:await _participantRef(roomId, userId).update({'isBanned': false});
+lib/features/room/providers/host_controls_provider.dart:124:await _participantRef(roomId, userId).update({'role': 'cohost'});
+lib/features/room/providers/host_controls_provider.dart:129:await _participantRef(roomId, userId).update({'role': 'moderator'});
+lib/features/room/providers/host_controls_provider.dart:134:await _participantRef(roomId, userId).update({'role': 'trusted_speaker'});
+lib/features/room/providers/host_controls_provider.dart:139:await _participantRef(roomId, userId).update({'role': 'audience'});
+lib/features/room/providers/host_controls_provider.dart:150:final roomSnapshot = await _roomRef(roomId).get();
+lib/features/room/providers/host_controls_provider.dart:157:).collection('speakers').get();
+lib/features/room/providers/host_controls_provider.dart:168:).get();
+lib/features/room/providers/host_controls_provider.dart:175:final batch = _db.batch();
+lib/features/room/providers/host_controls_provider.dart:176:batch.set(_roomRef(roomId), {
+lib/features/room/providers/host_controls_provider.dart:183:batch.set(_participantRef(roomId, normalizedUserId), {
+lib/features/room/providers/host_controls_provider.dart:199:).get();
+lib/features/room/providers/host_controls_provider.dart:209:final batch = _db.batch();
+lib/features/room/providers/host_controls_provider.dart:212:batch.set(_roomRef(roomId), {
+lib/features/room/providers/host_controls_provider.dart:217:batch.set(_participantRef(roomId, normalizedUserId), {
+lib/features/room/providers/host_controls_provider.dart:228:await _participantRef(roomId, userId).delete();
+lib/features/room/providers/host_controls_provider.dart:244:final roomSnapshot = await _roomRef(roomId).get();
+lib/features/room/providers/host_controls_provider.dart:256:).get();
+lib/features/room/providers/host_controls_provider.dart:267:final batch = _db.batch();
+lib/features/room/providers/host_controls_provider.dart:269:batch.update(roomRef, {
+lib/features/room/providers/host_controls_provider.dart:273:batch.set(_participantRef(roomId, toUserId), {
+lib/features/room/providers/host_controls_provider.dart:278:batch.set(_participantRef(roomId, fromUserId), {
+lib/features/room/providers/host_controls_provider.dart:322:.add(entry)
+lib/features/room/providers/host_controls_provider.dart:337:final batch = _db.batch();
+lib/features/room/providers/host_controls_provider.dart:338:batch.update(_roomRef(roomId), {
+lib/features/room/providers/host_controls_provider.dart:343:batch.set(_policyRef(roomId), {
+lib/features/room/providers/host_controls_provider.dart:353:await _roomRef(roomId).collection('slots').doc(userId).delete();
+lib/features/room/providers/host_controls_provider.dart:360:.orderBy('lastActiveAt', descending: true)
+lib/features/room/providers/host_controls_provider.dart:361:.get();
+lib/features/room/providers/host_controls_provider.dart:368:await _roomRef(roomId).update({
+lib/features/room/providers/host_controls_provider.dart:395:updates['category'] = FieldValue.delete();
+lib/features/room/providers/host_controls_provider.dart:400:await _roomRef(roomId).update(updates);
+lib/features/room/providers/host_controls_provider.dart:406:await _roomRef(roomId).update({
+lib/features/room/providers/host_controls_provider.dart:415:await _roomRef(roomId).update({
+lib/features/room/providers/host_controls_provider.dart:416:'theme': FieldValue.delete(),
+lib/features/room/providers/host_provider.dart:21:return firestore.collection('rooms').doc(roomId).snapshots().map((doc) {
+lib/features/room/providers/message_providers.dart:52:.where('isDirectCall', isEqualTo: true)
+lib/features/room/providers/message_providers.dart:53:.where('isLive', isEqualTo: true)
+lib/features/room/providers/message_providers.dart:54:.where('calleeId', isEqualTo: uid)
+lib/features/room/providers/message_providers.dart:55:.where('callDeclined', isEqualTo: false)
+lib/features/room/providers/message_providers.dart:56:.limit(1)
+lib/features/room/providers/message_providers.dart:57:.snapshots()
+lib/features/room/providers/message_providers.dart:80:.orderBy('sentAt')
+lib/features/room/providers/message_providers.dart:81:.limit(QueryPolicy.messagesLimit)
+lib/features/room/providers/message_providers.dart:82:.snapshots()
+lib/features/room/providers/message_providers.dart:85:.where((doc) {
+lib/features/room/providers/message_providers.dart:202:.get();
+lib/features/room/providers/message_providers.dart:216:.get();
+lib/features/room/providers/message_providers.dart:238:.get();
+lib/features/room/providers/message_providers.dart:253:await messageRef.set({
+lib/features/room/providers/message_providers.dart:299:await messageRef.set({
+lib/features/room/providers/mic_access_provider.dart:65:).where('status', isEqualTo: 'pending').get();
+lib/features/room/providers/mic_access_provider.dart:67:.where((doc) {
+lib/features/room/providers/mic_access_provider.dart:78:final batch = _db.batch();
+lib/features/room/providers/mic_access_provider.dart:80:batch.update(staleDoc.reference, {
+lib/features/room/providers/mic_access_provider.dart:105:).where('requesterId', isEqualTo: requesterId).get();
+lib/features/room/providers/mic_access_provider.dart:108:).where('status', isEqualTo: 'pending').get();
+lib/features/room/providers/mic_access_provider.dart:112:.where((doc) {
+lib/features/room/providers/mic_access_provider.dart:150:await _db.runTransaction((tx) async {
+lib/features/room/providers/mic_access_provider.dart:151:final existingSnapshot = await tx.get(requestRef);
+lib/features/room/providers/mic_access_provider.dart:166:tx.set(conflictingDoc.reference, {
+lib/features/room/providers/mic_access_provider.dart:174:tx.set(requestRef, {
+lib/features/room/providers/mic_access_provider.dart:181:'expiresAt': Timestamp.fromDate(now.add(_kRequestTtl)),
+lib/features/room/providers/mic_access_provider.dart:199:final snapshot = await requestRef.get();
+lib/features/room/providers/mic_access_provider.dart:205:await requestRef.update({
+lib/features/room/providers/mic_access_provider.dart:213:final snapshot = await requestRef.get();
+lib/features/room/providers/mic_access_provider.dart:218:await requestRef.update({
+lib/features/room/providers/mic_access_provider.dart:226:final snapshot = await requestRef.get();
+lib/features/room/providers/mic_access_provider.dart:231:await requestRef.update({
+lib/features/room/providers/mic_access_provider.dart:246:final snapshot = await requestRef.get();
+lib/features/room/providers/mic_access_provider.dart:250:await requestRef.update({
+lib/features/room/providers/mic_access_provider.dart:282:.set({
+lib/features/room/providers/mic_access_provider.dart:297:await _requestCollection(roomId).doc(request.id).set({
+lib/features/room/providers/mic_access_provider.dart:311:).doc(requestId).get();
+lib/features/room/providers/mic_access_provider.dart:315:await _requestCollection(roomId).doc(requestId).update({
+lib/features/room/providers/mic_access_provider.dart:339:.orderBy('createdAt', descending: true)
+lib/features/room/providers/mic_access_provider.dart:340:.snapshots()
+lib/features/room/providers/mic_access_provider.dart:349:.where(
+lib/features/room/providers/mic_access_provider.dart:380:.where((request) => request.requesterId == params.requesterId)
+lib/features/room/providers/participant_providers.dart:27:.snapshots()
+lib/features/room/providers/participant_providers.dart:44:.limit(QueryPolicy.roomMembersLimit)
+lib/features/room/providers/participant_providers.dart:45:.snapshots()
+lib/features/room/providers/participant_providers.dart:56:.where((userId) => userId.isNotEmpty)
+lib/features/room/providers/participant_providers.dart:124:.where(
+lib/features/room/providers/participant_providers.dart:147:.snapshots()
+lib/features/room/providers/participant_providers.dart:183:.where((participant) => _isParticipantFresh(participant, now: now))
+lib/features/room/providers/participant_providers.dart:199:.orderBy('joinedAt')
+lib/features/room/providers/participant_providers.dart:200:.limit(QueryPolicy.roomParticipantsLimit)
+lib/features/room/providers/participant_providers.dart:201:.snapshots()
+lib/features/room/providers/participant_providers.dart:246:controller.add(
+lib/features/room/providers/participant_providers.dart:255:controller.add(
+lib/features/room/providers/participant_providers.dart:257:.where((p) {
+lib/features/room/providers/participant_providers.dart:294:.orderBy('ts', descending: true)
+lib/features/room/providers/participant_providers.dart:295:.limit(QueryPolicy.modLogLimit)
+lib/features/room/providers/participant_providers.dart:296:.snapshots()
+lib/features/room/providers/presence_provider.dart:122:.where((presence) => presence.userId.isNotEmpty)
+lib/features/room/providers/room_gift_provider.dart:21:.orderBy('sentAt', descending: true)
+lib/features/room/providers/room_gift_provider.dart:22:.limit(20)
+lib/features/room/providers/room_gift_provider.dart:23:.snapshots()
+lib/features/room/providers/room_policy_provider.dart:21:.set({
+lib/features/room/providers/room_policy_provider.dart:27:Future<void> setMicLimit(String roomId, int limit) {
+lib/features/room/providers/room_policy_provider.dart:35:Future<void> setCamLimit(String roomId, int limit) {
+lib/features/room/providers/room_policy_provider.dart:57:return policyRef.snapshots().map((snapshot) {
+lib/features/room/providers/room_render_selectors.dart:101:typingMap.values.where((v) => v == true).length;
+lib/features/room/providers/room_render_selectors.dart:111:participants.where((p) => roomParticipantCanBeShownAsTalking(p)).length;
+lib/features/room/providers/room_slot_provider.dart:26:.snapshots()
+lib/features/room/providers/room_slot_provider.dart:74:await _db.runTransaction((txn) async {
+lib/features/room/providers/room_slot_provider.dart:92:txn.set(snap.reference, {'userId': userId});
+lib/features/room/providers/room_slot_provider.dart:108:.set({'camOn': true}, SetOptions(merge: true)),
+lib/features/room/providers/room_slot_provider.dart:142:.where('userId', isEqualTo: userId)
+lib/features/room/providers/room_slot_provider.dart:143:.get();
+lib/features/room/providers/room_slot_provider.dart:144:final batch = _db.batch();
+lib/features/room/providers/room_slot_provider.dart:149:batch.delete(doc.reference);
+lib/features/room/providers/room_slot_provider.dart:151:batch.set(
+lib/features/room/providers/user_cam_permissions_provider.dart:15:await _db.collection('userCamPermissions').doc(userId).set({
+lib/features/room/providers/user_cam_permissions_provider.dart:26:await _db.collection('userCamPermissions').doc(userId).set({
+lib/features/room/providers/user_cam_permissions_provider.dart:37:await _db.collection('userCamPermissions').doc(userId).set({
+lib/features/room/providers/user_cam_permissions_provider.dart:55:.snapshots()
+lib/features/room/providers/user_cam_permissions_provider.dart:68:.where((value) => value.isNotEmpty)
+lib/features/room/repository/room_repository.dart:206:.where((id) => id.isNotEmpty)
+lib/features/room/repository/room_repository.dart:222:.where(FieldPath.documentId, whereIn: batchIds)
+lib/features/room/repository/room_repository.dart:223:.get();
+lib/features/room/repository/room_repository.dart:246:return _speakerCollection(roomId).snapshots().map((snapshot) {
+lib/features/room/repository/room_repository.dart:256:.where((userId) => userId.isNotEmpty)
+lib/features/room/repository/room_repository.dart:274:final roomSnapshot = await _roomRef(roomId).get();
+lib/features/room/repository/room_repository.dart:282:).get();
+lib/features/room/repository/room_repository.dart:283:final memberSnapshot = await _memberRef(roomId, normalizedUserId).get();
+lib/features/room/repository/room_repository.dart:301:).get();
+lib/features/room/repository/room_repository.dart:303:final speakersSnapshot = await _speakerCollection(roomId).get();
+lib/features/room/repository/room_repository.dart:342:).get();
+lib/features/room/repository/room_repository.dart:356:await _participantRef(roomId, normalizedUserId).set({
+lib/features/room/screens/cam_popout_screen.dart:56:.get();
+lib/features/room/screens/cam_popout_screen.dart:70:await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+lib/features/room/screens/create_room_screen.dart:96:.where((tag) => tag != _selectedCategory)
+lib/features/room/screens/create_room_screen.dart:561:_selectedTags.add(cat);
+lib/features/room/screens/create_room_screen.dart:604:_selectedTags.add(tag);
+lib/features/room/screens/create_room_screen.dart:735:initialDate: _scheduledAt ?? now.add(const Duration(hours: 1)),
+lib/features/room/screens/create_room_screen.dart:737:lastDate: now.add(const Duration(days: 30)),
+lib/features/room/screens/create_room_screen.dart:754:_scheduledAt ?? now.add(const Duration(hours: 1)),
+lib/features/room/services/room_session_service.dart:129:action: () => _firestore.collection('rooms').doc(normalizedRoomId).get(),
+lib/features/room/services/room_session_service.dart:217:final batch = _firestore.batch();
+lib/features/room/services/room_session_service.dart:229:batch.set(participantRef, {
+lib/features/room/services/room_session_service.dart:240:batch.set(memberRef, {
+lib/features/room/services/room_session_service.dart:251:batch.set(participantRef, {
+lib/features/room/services/room_session_service.dart:265:batch.set(memberRef, {
+lib/features/room/services/room_session_service.dart:316:final batch = _firestore.batch();
+lib/features/room/services/room_session_service.dart:317:batch.delete(_firestore
+lib/features/room/services/room_session_service.dart:322:batch.delete(_firestore
+lib/features/room/services/room_session_service.dart:374:.update({'lastActiveAt': now}),
+lib/features/room/services/room_session_service.dart:407:await typingRef.set({
+lib/features/room/services/room_session_service.dart:412:await typingRef.delete();
+lib/features/room/services/room_session_service.dart:426:action: () => _firestore.collection('rooms').doc(roomId).update({
+lib/features/room/services/room_session_service.dart:428:? FieldValue.delete()
+lib/features/room/widgets/background_picker_sheet.dart:242:const SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/room/widgets/cam_preview_sheet.dart:75:final cameras = devices.where((d) => d.kind == 'videoinput').toList();
+lib/features/room/widgets/cam_preview_sheet.dart:76:final mics = devices.where((d) => d.kind == 'audioinput').toList();
+lib/features/room/widgets/camera_wall.dart:100:.where((tile) => tile.canView)
+lib/features/room/widgets/camera_wall.dart:103:.where((tile) => !tile.canView)
+lib/features/room/widgets/camera_wall.dart:144:.where((tile) => tile.canView)
+lib/features/room/widgets/camera_wall.dart:158:...mainGridRemoteTiles.where((t) => t.isSpeaking).map((t) => t.label),
+lib/features/room/widgets/camera_wall.dart:433:const SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/room/widgets/camera_wall.dart:473:gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/room/widgets/emoji_reaction_overlay.dart:134:_particles.add(_ParticleEntry(id: id, emoji: emoji, leftFraction: fraction));
+lib/features/room/widgets/emoji_reaction_overlay.dart:140:setState(() => _particles.removeWhere((p) => p.id == id));
+lib/features/room/widgets/floating_cam_window.dart:49:state = state.where((w) => w.id != id).toList();
+lib/features/room/widgets/floating_gift_overlay.dart:107:_particles.add(_ParticleEntry(id: id, emoji: emoji, leftFraction: fraction.toDouble()));
+lib/features/room/widgets/floating_gift_overlay.dart:114:_particles.removeWhere((p) => p.id == id);
+lib/features/room/widgets/mic_queue_panel.dart:93:.where((r) => r.status == 'pending' && !r.isExpired)
+lib/features/room/widgets/rich_text_toolbar.dart:41:out.add(TextSpan(text: input.substring(cursor, match.start), style: style));
+lib/features/room/widgets/rich_text_toolbar.dart:105:out.add(TextSpan(text: input.substring(cursor), style: style));
+lib/features/room/widgets/room_host_control_panel.dart:576:roomController.setCamLimit(v.round());
+lib/features/room/widgets/room_host_control_panel.dart:594:.where((r) => r.status == 'pending')
+lib/features/room/widgets/room_host_control_panel.dart:1063:final mods = participants.where((p) {
+lib/features/room/widgets/room_host_control_panel.dart:1068:.where(
+lib/features/room/widgets/user_list_panel.dart:63:final hosts = participants.where((p) => isHostLikeRole(p.role)).toList();
+lib/features/room/widgets/user_list_panel.dart:65:participants.where((p) {
+lib/features/room/widgets/user_list_panel.dart:71:participants.where((p) {
+lib/features/room/widgets/user_list_panel.dart:119:gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/room/widgets/user_list_panel.dart:164:.firstWhere(
+lib/features/room/room_controller.dart:248:final sessionSnapshotsByUser = _resolveSessionSnapshots(
+lib/features/room/room_controller.dart:261:mergedUserIds.add(normalizedCurrentUserId);
+lib/features/room/room_controller.dart:369:}.where((userId) => userId.isNotEmpty).toList(growable: false);
+lib/features/room/room_controller.dart:394:.where((userId) => userId.isNotEmpty)
+lib/features/room/room_controller.dart:437:participants.where(_isSpeakerParticipant).toList(growable: false)
+lib/features/room/room_controller.dart:449:.where((userId) => userId.isNotEmpty)
+lib/features/room/room_controller.dart:504:.where((viewerId) => viewerId.isNotEmpty)
+lib/features/room/room_controller.dart:646:Map<String, RoomSessionSnapshot> _resolveSessionSnapshots(
+lib/features/room/room_controller.dart:678:result[userId] = RoomSessionSnapshot(
+lib/features/room/room_controller.dart:692:() => RoomSessionSnapshot(
+lib/features/room/room_controller.dart:736:.where(
+lib/features/room/room_controller.dart:755:.where((id) => !ghostSpeakers.contains(id))
+lib/features/room/room_controller.dart:848:_pendingUserIds.add(normalizedUserId);
+lib/features/room/room_controller.dart:860:_stableUserIds.add(normalizedUserId);
+lib/features/room/room_controller.dart:940:_sessionSnapshotsByUser[normalizedUserId] = RoomSessionSnapshot(
+lib/features/room/room_controller.dart:984:_sessionSnapshotsByUser[normalizedUserId] = RoomSessionSnapshot(
+lib/features/room/room_controller.dart:1003:_stableUserIds.add(normalizedUserId);
+lib/features/room/room_controller.dart:1069:final roomSnapshot = await firestore.collection('rooms').doc(arg).get();
+lib/features/room/room_controller.dart:1075:.get();
+lib/features/room/room_controller.dart:1199:_sessionSnapshotsByUser[normalizedUserId] = RoomSessionSnapshot(
+lib/features/room/room_controller.dart:1301:_sessionSnapshotsByUser[normalizedUserId] = RoomSessionSnapshot(
+lib/features/room/room_controller.dart:1485:.where((speakerId) => speakerId != normalizedUserId)
+lib/features/room/room_controller.dart:1765:Future<void> setMicLimit(int limit) async {
+lib/features/room/room_controller.dart:1767:return _roomPolicy.setMicLimit(arg, limit);
+lib/features/room/room_controller.dart:1775:Future<void> setCamLimit(int limit) async {
+lib/features/room/room_controller.dart:1777:return _roomPolicy.setCamLimit(arg, limit);
+lib/features/room/room_state_contract.dart:135:violations.add(
+lib/features/room/room_state_contract.dart:147:.where(
+lib/features/room/room_state_contract.dart:154:violations.add(
+lib/features/room/room_state_contract.dart:170:violations.add(
+lib/features/room/room_state_contract.dart:184:violations.add(
+lib/features/schema_messenger/consistency/architecture_health_interpretation_provider.dart:62:reasons.add(ArchitectureHealthInterpretationContract.reasonLoadingNoise);
+lib/features/schema_messenger/consistency/architecture_health_interpretation_provider.dart:106:reasons.add(
+lib/features/schema_messenger/consistency/architecture_health_interpretation_provider.dart:111:reasons.add(
+lib/features/schema_messenger/consistency/architecture_health_interpretation_provider.dart:134:reasons.add(ArchitectureHealthInterpretationContract.reasonAligned);
+lib/features/schema_messenger/consistency/consistency_template.dart:117:violations.add(
+lib/features/schema_messenger/consistency/consistency_template.dart:122:violations.add(
+lib/features/schema_messenger/consistency/consistency_template.dart:127:violations.add(
+lib/features/schema_messenger/consistency/consistency_template.dart:132:violations.add('module_id_empty');
+lib/features/schema_messenger/consistency/cross_module_equivalence_provider.dart:39:violations.add('reference_mismatch:$moduleReference!=$expectedReference');
+lib/features/schema_messenger/consistency/cross_module_equivalence_provider.dart:45:violations.add(
+lib/features/schema_messenger/consistency/cross_module_equivalence_provider.dart:53:violations.add(
+lib/features/schema_messenger/core/schema_engine/schema_module_health_provider.dart:188:.where((reason) => reason.isNotEmpty)
+lib/features/schema_messenger/core/schema_engine/schema_module_health_provider.dart:202:final readyCount = readinessSignals.where((signal) => signal).length;
+lib/features/schema_messenger/core/schema_engine/schema_parity_monitor.dart:121:.where((id) => id.isNotEmpty)
+lib/features/schema_messenger/core/schema_engine/schema_parity_monitor.dart:124:?.where((entry) => entry.isOnline)
+lib/features/schema_messenger/core/schema_engine/schema_parity_monitor.dart:129:.where((entry) => entry.value.isOnline)
+lib/features/schema_messenger/friends/models/schema_friend_link.dart:63:.where((id) => id.isNotEmpty)
+lib/features/schema_messenger/friends/parity/friend_parity_validator.dart:64:.where((id) => !schemaIds.contains(id))
+lib/features/schema_messenger/friends/parity/friend_parity_validator.dart:67:.where((id) => !legacyIds.contains(id))
+lib/features/schema_messenger/friends/parity/friend_parity_validator.dart:71:.where((id) => schemaIds.contains(id))
+lib/features/schema_messenger/friends/parity/friend_parity_validator.dart:75:.where((id) => snapshot.legacyOnlineIds.contains(id) != snapshot.schemaOnlineIds.contains(id))
+lib/features/schema_messenger/friends/providers/schema_boot_timeline_provider.dart:95:.where((event) => event.bootId == lastBootId && event.bootId != 'none')
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:48:.where((link) => link.includesUser(userId))
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:71:return links.where((link) => link.isAccepted).toList(growable: false);
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:83:.where((id) => id.isNotEmpty)
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:97:.where((link) => link.isPending && link.requestedBy != userId)
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:110:.where((link) => link.isPending && link.requestedBy == userId)
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:128:controller.add(
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:140:.snapshots()
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:155:.limit(1)
+lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:156:.snapshots()
+lib/features/schema_messenger/friends/providers/schema_friend_presence_stability_provider.dart:25:controller.add(stablePresence!);
+lib/features/schema_messenger/friends/providers/schema_friend_presence_stability_provider.dart:124:controller.add(Map<String, SchemaFriendPresence>.unmodifiable(stablePresenceMap));
+lib/features/schema_messenger/friends/providers/schema_friend_presence_stability_provider.dart:138:.where((friendId) => !normalizedSnapshot.containsKey(friendId))
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:91:entries.add(
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:125:controller.add(roster);
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:242:inRooms.add(entry);
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:244:online.add(entry);
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:246:offline.add(entry);
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:310:projected.add(nextEntry);
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:311:usedIds.add(nextEntry.friendId);
+lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:315:.where((entry) => entry.presence.group == group && !usedIds.contains(entry.friendId))
+lib/features/schema_messenger/friends/views/friends_schema_bridge_view.dart:208:.where((id) => id.isNotEmpty)
+lib/features/schema_messenger/friends/views/friends_schema_bridge_view.dart:211:?.where((entry) => entry.isOnline)
+lib/features/schema_messenger/friends/views/friends_schema_bridge_view.dart:216:.where((entry) => entry.value.isOnline)
+lib/features/schema_messenger/friends/views/schema_friends_module_view.dart:83:_scrollLockUntil = DateTime.now().add(duration);
+lib/features/schema_messenger/friends/views/schema_friends_module_view.dart:267:final incoming = links.where((l) => l.isPending && l.requestedBy != authUserId).toList(growable: false);
+lib/features/schema_messenger/friends/views/schema_friends_module_view.dart:268:final outgoing = links.where((l) => l.isPending && l.requestedBy == authUserId).toList(growable: false);
+lib/features/schema_messenger/friends/views/schema_friends_module_view.dart:269:final accepted = links.where((l) => l.isAccepted).toList(growable: false);
+lib/features/schema_messenger/friends/widgets/schema_friend_tile.dart:161:final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList(growable: false);
+lib/features/schema_messenger/messages/models/schema_conversation.dart:108:.where((item) => item.isNotEmpty)
+lib/features/schema_messenger/messages/providers/schema_conversations_providers.dart:39:.where((c) => !c.isArchived)
+lib/features/schema_messenger/messages/providers/schema_conversations_providers.dart:51:return convs.where((c) => c.isActive).toList(growable: false);
+lib/features/schema_messenger/messages/messages_consistency_contract.dart:124:.where((id) => !schemaIds.contains(id))
+lib/features/schema_messenger/messages/messages_consistency_contract.dart:127:.where((id) => !legacyIds.contains(id))
+lib/features/schema_messenger/messages/messages_consistency_contract.dart:136:unreadMismatches.add(id);
+lib/features/search/providers/search_provider.dart:77:.where((item) => item.isNotEmpty)
+lib/features/search/providers/search_provider.dart:177:.where('isPrivate', isEqualTo: false)
+lib/features/search/providers/search_provider.dart:178:.where('usernameLower', isGreaterThanOrEqualTo: lowerQuery)
+lib/features/search/providers/search_provider.dart:179:.where('usernameLower', isLessThan: '$lowerQuery\uf8ff')
+lib/features/search/providers/search_provider.dart:180:.limit(20)
+lib/features/search/providers/search_provider.dart:181:.get();
+lib/features/search/providers/search_provider.dart:186:.where('usernameLower', isGreaterThanOrEqualTo: lowerQuery)
+lib/features/search/providers/search_provider.dart:187:.where('usernameLower', isLessThan: '$lowerQuery\uf8ff')
+lib/features/search/providers/search_provider.dart:188:.limit(20)
+lib/features/search/providers/search_provider.dart:189:.get();
+lib/features/search/providers/search_provider.dart:193:.where((doc) => (doc.data()['isPrivate'] as bool?) != true)
+lib/features/search/providers/search_provider.dart:218:.where('tags', arrayContains: query.toLowerCase())
+lib/features/search/providers/search_provider.dart:219:.orderBy('createdAt', descending: true)
+lib/features/search/providers/search_provider.dart:220:.limit(20)
+lib/features/search/providers/search_provider.dart:221:.get();
+lib/features/search/providers/search_provider.dart:238:.where('hashtag', isGreaterThanOrEqualTo: lowerQuery)
+lib/features/search/providers/search_provider.dart:239:.where('hashtag', isLessThan: '${lowerQuery}z')
+lib/features/search/providers/search_provider.dart:240:.orderBy('hashtag')
+lib/features/search/providers/search_provider.dart:241:.orderBy('postCount', descending: true)
+lib/features/search/providers/search_provider.dart:242:.limit(10)
+lib/features/search/providers/search_provider.dart:243:.get();
+lib/features/search/providers/search_provider.dart:256:.orderBy('createdAt', descending: true)
+lib/features/search/providers/search_provider.dart:257:.limit(50)
+lib/features/search/providers/search_provider.dart:258:.get();
+lib/features/search/providers/search_provider.dart:272:.orderBy('postCount', descending: true)
+lib/features/search/providers/search_provider.dart:273:.orderBy('lastUsedAt', descending: true)
+lib/features/search/providers/search_provider.dart:274:.limit(20)
+lib/features/search/providers/search_provider.dart:275:.get();
+lib/features/social/providers/social_providers.dart:24:.where((id) => id.isNotEmpty)
+lib/features/social/providers/social_providers.dart:62:.where((room) => followedIds.contains(room.hostId))
+lib/features/social/providers/social_providers.dart:78:final ids = key.split('|').where((id) => id.isNotEmpty).toList(growable: false);
+lib/features/social/providers/social_providers.dart:89:.where(FieldPath.documentId, whereIn: batch)
+lib/features/social/providers/social_providers.dart:90:.get();
+lib/features/social/providers/social_providers.dart:94:users.add(UserModel.fromJson(data));
+lib/features/social/providers/social_providers.dart:124:.where((id) => id.isNotEmpty)
+lib/features/social/providers/social_providers.dart:145:final doc = await firestore.collection('users').doc(userId).get();
+lib/features/social/providers/social_providers.dart:163:.where(validCats.contains)
+lib/features/social/providers/social_providers.dart:189:.where((room) {
+lib/features/social/screens/explore_screen.dart:55:.where((r) => r.category?.toLowerCase() == _selectedCategory)
+lib/features/social/screens/explore_screen.dart:60:.where((r) =>
+lib/features/social/screens/explore_screen.dart:123:gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+lib/features/social/screens/home_lobby_screen.dart:32:int _stablePeopleCount(RoomModel room) {
+lib/features/social/screens/home_lobby_screen.dart:40:final total = _stablePeopleCount(room);
+lib/features/social/screens/home_lobby_screen.dart:117:'members': _stablePeopleCount(room),
+lib/features/social/screens/home_lobby_screen.dart:156:if (depthPercent >= milestone && _scrollMilestonesLogged.add(milestone)) {
+lib/features/social/screens/home_lobby_screen.dart:195:'members': _stablePeopleCount(room),
+lib/features/social/widgets/social_room_card.dart:253:label: _formatCount(totalCount),
+lib/features/social/widgets/social_room_card.dart:468:_formatCount(totalCount),
+lib/features/social/widgets/social_room_card.dart:815:String _formatCount(int count) {
+lib/features/speed_dating/models/speed_dating_models.dart:15:.where((item) => item.isNotEmpty)
+lib/features/speed_dating/models/speed_dating_models.dart:63:return participantIds.firstWhere((id) => id != selfId, orElse: () => selfId);
+lib/features/speed_dating/services/speed_dating_service.dart:31:.where('username', isGreaterThan: '')
+lib/features/speed_dating/services/speed_dating_service.dart:32:.orderBy('username')
+lib/features/speed_dating/services/speed_dating_service.dart:33:.limit(40)
+lib/features/speed_dating/services/speed_dating_service.dart:34:.snapshots()
+lib/features/speed_dating/services/speed_dating_service.dart:38:.where((doc) => doc.id != currentUserId)
+lib/features/speed_dating/services/speed_dating_service.dart:39:.where((doc) => !blockedIds.contains(doc.id))
+lib/features/speed_dating/services/speed_dating_service.dart:41:.where((candidate) => candidate.username.trim().isNotEmpty)
+lib/features/speed_dating/services/speed_dating_service.dart:49:.where('participantIds', arrayContains: currentUserId)
+lib/features/speed_dating/services/speed_dating_service.dart:50:.snapshots()
+lib/features/speed_dating/services/speed_dating_service.dart:68:await _firestore.collection('speed_dating_actions').doc(actionId).set({
+lib/features/speed_dating/services/speed_dating_service.dart:86:return await _firestore.runTransaction((txn) async {
+lib/features/speed_dating/services/speed_dating_service.dart:87:final reciprocalDoc = await txn.get(
+lib/features/speed_dating/services/speed_dating_service.dart:97:final matchSnap = await txn.get(matchRef);
+lib/features/speed_dating/services/speed_dating_service.dart:104:txn.set(matchRef, {
+lib/features/speed_dating/services/speed_dating_service.dart:112:txn.set(_firestore.collection('notifications').doc(), {
+lib/features/speed_dating/services/speed_dating_service.dart:142:return await _firestore.runTransaction((txn) async {
+lib/features/speed_dating/services/speed_dating_service.dart:143:final matchSnap = await txn.get(matchRef);
+lib/features/speed_dating/services/speed_dating_service.dart:152:final expiresAt = DateTime.now().add(Duration(seconds: durationSeconds));
+lib/features/speed_dating/services/speed_dating_service.dart:154:txn.set(roomRef, {
+lib/features/speed_dating/services/speed_dating_service.dart:171:txn.set(matchRef, {
+lib/features/speed_dating/services/speed_dating_service.dart:210:.snapshots()
+lib/features/speed_dating/services/speed_dating_service.dart:228:.snapshots()
+lib/features/stories/providers/story_provider.dart:64:.where((item) => item.isNotEmpty)
+lib/features/stories/providers/story_provider.dart:108:? DateTime.now().add(const Duration(hours: 24))
+lib/features/stories/providers/story_provider.dart:144:.collectionGroup('stories')
+lib/features/stories/providers/story_provider.dart:145:.where(
+lib/features/stories/providers/story_provider.dart:151:.where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
+lib/features/stories/providers/story_provider.dart:152:.orderBy('expiresAt', descending: true)
+lib/features/stories/providers/story_provider.dart:153:.limit(QueryPolicy.trendingPostsLimit)
+lib/features/stories/providers/story_provider.dart:154:.snapshots()
+lib/features/stories/providers/story_provider.dart:158:.where((story) => !story.isExpired)
+lib/features/stories/providers/story_provider.dart:173:.where('expiresAt', isGreaterThan: Timestamp.fromDate(DateTime.now()))
+lib/features/stories/providers/story_provider.dart:174:.orderBy('expiresAt')
+lib/features/stories/providers/story_provider.dart:175:.orderBy('createdAt', descending: true)
+lib/features/stories/providers/story_provider.dart:176:.snapshots()
+lib/features/stories/providers/story_provider.dart:180:.where((story) => !story.isExpired)
+lib/features/stories/providers/story_provider.dart:206:final expiresAt = now.add(const Duration(hours: 24));
+lib/features/stories/providers/story_provider.dart:208:await _firestore.collection('users').doc(userId).collection('stories').add({
+lib/features/stories/providers/story_provider.dart:232:.update({
+lib/features/stories/providers/story_provider.dart:246:.update({'isDeleted': true});
+lib/features/stories/screens/story_viewer_screen.dart:105:final active = stories.where((s) => !s.isDeleted && !s.isExpired).toList();
+lib/features/stories/widgets/stories_row.dart:39:if (seen.add(s.userId)) {
+lib/features/stories/widgets/stories_row.dart:40:authorIds.add(s.userId);
+lib/features/stories/widgets/stories_row.dart:46:final items = <String>[uid, ...authorIds.where((id) => id != uid)];
+lib/features/trending/providers/trending_provider.dart:67:.where((item) => item.isNotEmpty)
+lib/features/trending/providers/trending_provider.dart:118:.orderBy('postCount', descending: true)
+lib/features/trending/providers/trending_provider.dart:119:.limit(20)
+lib/features/trending/providers/trending_provider.dart:120:.get()
+lib/features/trending/providers/trending_provider.dart:142:.where((post) => post.text.toLowerCase().contains(needle))
+lib/features/trending/providers/trending_provider.dart:174:.where((post) => post.createdAt.isAfter(sevenDaysAgo))
+lib/features/verification/providers/verification_provider.dart:34:return verificationRef.snapshots().asyncMap((snapshot) async {
+lib/features/verification/providers/verification_provider.dart:43:final userSnapshot = await usersRef.get();
+lib/features/verification/providers/verification_provider.dart:58:.where('isVerified', isEqualTo: true)
+lib/features/verification/providers/verification_provider.dart:59:.limit(200)
+lib/features/verification/providers/verification_provider.dart:60:.snapshots()
+lib/features/verification/providers/verification_provider.dart:106:.snapshots()
+lib/features/verification/screens/verification_screen.dart:47:.set({
+lib/features/verification/screens/verification_screen.dart:148:.delete();
+functions/scripts/backfill-beta-membership.js:33:.orderBy(admin.firestore.FieldPath.documentId())
+functions/scripts/backfill-beta-membership.js:34:.limit(PAGE_SIZE);
+functions/scripts/backfill-beta-membership.js:37:query = query.startAfter(lastDoc);
+functions/scripts/backfill-beta-membership.js:40:const snapshot = await query.get();
+functions/scripts/backfill-beta-membership.js:43:const batch = db.batch();
+functions/scripts/backfill-beta-membership.js:56:batch.update(doc.ref, {membershipLevel: BETA_LEVEL});
+functions/scripts/backfill-transactions-participants.js:40:let query = collection.orderBy(admin.firestore.FieldPath.documentId()).limit(pageSize);
+functions/scripts/backfill-transactions-participants.js:42:query = query.startAfter(lastDoc);
+functions/scripts/backfill-transactions-participants.js:45:const snapshot = await query.get();
+functions/scripts/backfill-transactions-participants.js:50:const batch = db.batch();
+functions/scripts/backfill-transactions-participants.js:75:batch.update(doc.ref, {participants: nextParticipants});
+functions/scripts/repair-conversations.js:7:*   - lastMessageAt    — if missing, falls back to createdAt or FieldValue.delete()
+functions/scripts/repair-conversations.js:56:let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(PAGE_SIZE);
+functions/scripts/repair-conversations.js:57:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/repair-conversations.js:59:const snap = await q.get();
+functions/scripts/repair-conversations.js:62:const batch = db.batch();
+functions/scripts/repair-conversations.js:109:batch.update(doc.ref, updates);
+functions/scripts/repair-follows.js:80:let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(PAGE_SIZE);
+functions/scripts/repair-follows.js:81:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/repair-follows.js:83:const snap = await q.get();
+functions/scripts/repair-follows.js:87:const symmetryBatch = db.batch();
+functions/scripts/repair-follows.js:89:const flatBatch = db.batch();
+functions/scripts/repair-follows.js:138:flatBatch.update(doc.ref, flatUpdates);
+functions/scripts/repair-follows.js:150:const followerSnap = await followerEntry.get();
+functions/scripts/repair-follows.js:155:symmetryBatch.set(followerEntry, {
+functions/scripts/repair-follows.js:170:const followingSnap = await followingEntry.get();
+functions/scripts/repair-follows.js:175:symmetryBatch.set(followingEntry, {
+functions/scripts/repair-messages.js:47:const group = db.collectionGroup("messages");
+functions/scripts/repair-messages.js:60:let q = group.orderBy(admin.firestore.FieldPath.documentId()).limit(PAGE_SIZE);
+functions/scripts/repair-messages.js:61:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/repair-messages.js:63:const snap = await q.get();
+functions/scripts/repair-messages.js:66:const batch = db.batch();
+functions/scripts/repair-messages.js:82:batch.delete(doc.ref);
+functions/scripts/repair-messages.js:94:batch.delete(doc.ref);
+functions/scripts/repair-messages.js:131:batch.update(doc.ref, updates);
+functions/scripts/repair-rooms.js:96:batch.update(doc.ref, updates);
+functions/scripts/repair-rooms.js:133:batch.update(doc.ref, updates);
+functions/scripts/repair-rooms.js:151:let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(PAGE_SIZE);
+functions/scripts/repair-rooms.js:152:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/repair-rooms.js:154:const snap = await q.get();
+functions/scripts/repair-rooms.js:161:const batch = db.batch();
+functions/scripts/repair-rooms.js:171:const participantsSnap = await roomDoc.ref.collection("participants").get();
+functions/scripts/ship-checklist.js:102:await db.collection("_healthcheck_").limit(1).get();
+functions/scripts/ship-checklist.js:120:const snap = await db.collection("conversations").limit(100).get();
+functions/scripts/ship-checklist.js:136:const snap = await db.collectionGroup("messages").limit(50).get();
+functions/scripts/ship-checklist.js:152:const snap = await db.collection("rooms").limit(50).get();
+functions/scripts/ship-checklist.js:168:const snap = await db.collection("follows").limit(50).get();
+functions/scripts/stress-test-harness.js:80:await ref.set(data, {merge: true});
+functions/scripts/stress-test-harness.js:86:await ref.delete();
+functions/scripts/stress-test-harness.js:193:DRY_RUN ? Promise.resolve() : convRef.update({
+functions/scripts/stress-test-harness.js:298:const snap = await db.collection("conversations").doc(convId).get();
+functions/scripts/stress-test-harness.js:326:const followsSnap = await db.collection("follows").doc(docId).get();
+functions/scripts/stress-test-harness.js:332:.collection("followers").doc(follower).get();
+functions/scripts/stress-test-harness.js:350:.collection("participants").get();
+functions/scripts/stress-test-harness.js:388:db.collection("follows").doc(`${syntheticUid(a)}_${syntheticUid(b)}`).delete().catch(() => {}),
+functions/scripts/stress-test-harness.js:399:deletions.push(...msgs.map((r) => r.delete().catch(() => {})));
+functions/scripts/stress-test-harness.js:400:deletions.push(convRef.delete().catch(() => {}));
+functions/scripts/stress-test-harness.js:408:deletions.push(...participants.map((p) => p.delete().catch(() => {})));
+functions/scripts/stress-test-harness.js:409:deletions.push(roomRef.delete().catch(() => {}));
+functions/scripts/validate-firestore-truth.js:78:let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(Math.min(remaining, 400));
+functions/scripts/validate-firestore-truth.js:79:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/validate-firestore-truth.js:81:const snap = await q.get();
+functions/scripts/validate-firestore-truth.js:115:const group = db.collectionGroup("messages");
+functions/scripts/validate-firestore-truth.js:121:let q = group.orderBy(admin.firestore.FieldPath.documentId()).limit(Math.min(remaining, 400));
+functions/scripts/validate-firestore-truth.js:122:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/validate-firestore-truth.js:124:const snap = await q.get();
+functions/scripts/validate-firestore-truth.js:179:let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(Math.min(remaining, 200));
+functions/scripts/validate-firestore-truth.js:180:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/validate-firestore-truth.js:182:const snap = await q.get();
+functions/scripts/validate-firestore-truth.js:211:const participantsSnap = await doc.ref.collection("participants").limit(50).get();
+functions/scripts/validate-firestore-truth.js:253:let q = col.orderBy(admin.firestore.FieldPath.documentId()).limit(Math.min(remaining, 200));
+functions/scripts/validate-firestore-truth.js:254:if (lastDoc) q = q.startAfter(lastDoc);
+functions/scripts/validate-firestore-truth.js:256:const snap = await q.get();
+functions/scripts/validate-firestore-truth.js:286:const followerSnap = await followerEntry.get();
+functions/scripts/validate-firestore-truth.js:298:const followingSnap = await followingEntry.get();
+functions/test/incoming_call_push.spec.js:27:limit(n) {
+functions/test/incoming_call_push.spec.js:50:const data = usersMap.get(id);
+functions/test/incoming_call_push.spec.js:67:const data = roomsMap.get(id);
+functions/test/incoming_call_push.spec.js:81:batch() {
+functions/test/incoming_call_push.spec.js:85:ops.push(() => ref.delete());
+functions/test/payments.spec.js:110:const data = store.get(id);
+functions/test/payments.spec.js:117:const previous = store.get(id) || {};
+functions/test/payments.spec.js:118:store.set(
+functions/test/payments.spec.js:124:const previous = store.get(id);
+functions/test/payments.spec.js:128:store.set(id, applyFieldValues(previous, data));
+functions/test/payments.spec.js:131:store.delete(id);
+functions/test/payments.spec.js:137:subcollections.set(subKey, new Map());
+functions/test/payments.spec.js:140:const subStore = subcollections.get(subKey);
+functions/test/payments.spec.js:148:const d = subStore.get(resolvedId);
+functions/test/payments.spec.js:152:const prev = subStore.get(resolvedId) || {};
+functions/test/payments.spec.js:153:subStore.set(resolvedId, opts.merge ? applyFieldValues(prev, data) : {...data});
+functions/test/payments.spec.js:156:const prev = subStore.get(resolvedId) || {};
+functions/test/payments.spec.js:157:subStore.set(resolvedId, applyFieldValues(prev, data));
+functions/test/payments.spec.js:160:subStore.delete(resolvedId);
+functions/test/payments.spec.js:164:where(field, op, value) {
+functions/test/payments.spec.js:183:const prev = subStore.get(k) || {};
+functions/test/payments.spec.js:184:subStore.set(k, opts.merge ? applyFieldValues(prev, data) : {...data});
+functions/test/payments.spec.js:187:const prev = subStore.get(k) || {};
+functions/test/payments.spec.js:188:subStore.set(k, applyFieldValues(prev, data));
+functions/test/payments.spec.js:191:subStore.delete(k);
+functions/test/payments.spec.js:201:limit(n) {
+functions/test/payments.spec.js:206:ref: {async delete() { subStore.delete(k); }},
+functions/test/payments.spec.js:216:ref: {async delete() { subStore.delete(k); }},
+functions/test/payments.spec.js:235:await ref.set(data);
+functions/test/payments.spec.js:238:where(field, op, value) {
+functions/index.js:105:const conversationSnap = await conversationRef.get();
+functions/index.js:110:.orderBy("createdAt", "desc")
+functions/index.js:111:.limit(50);
+functions/index.js:114:let pageSnap = await query.get();
+functions/index.js:127:.orderBy("createdAt", "desc")
+functions/index.js:128:.startAfter(pageSnap.docs[pageSnap.docs.length - 1])
+functions/index.js:129:.limit(50);
+functions/index.js:130:pageSnap = await query.get();
+functions/index.js:134:await conversationRef.update({
+functions/index.js:145:await conversationRef.update({
+functions/index.js:203:function enforceRateLimit(functionName, uid) {
+functions/index.js:211:const entry = rateLimitState.get(key);
+functions/index.js:214:rateLimitState.set(key, {windowStart: now, count: 1});
+functions/index.js:328:function mapStripeConnectAccount(account) {
+functions/index.js:343:async function ensureStripeConnectAccount(uid, deps = {}) {
+functions/index.js:347:const accountSnap = await accountRef.get();
+functions/index.js:370:const mapped = mapStripeConnectAccount(account);
+functions/index.js:379:await accountRef.set(payload, {merge: true});
+functions/index.js:418:const userSnap = await userRef.get();
+functions/index.js:420:await userRef.set({
+functions/index.js:430:await firestore.collection("wallets").doc(uid).set({
+functions/index.js:444:txn.set(walletRef, {
+functions/index.js:453:txn.set(entryRef, {
+functions/index.js:522:enforceRateLimit("createPaymentIntent", senderId);
+functions/index.js:635:enforceRateLimit("recordStripePaymentSuccess", senderId);
+functions/index.js:657:const existingSnap = await transactionRef.get();
+functions/index.js:672:await transactionRef.set({
+functions/index.js:708:return firestore.runTransaction(async (txn) => {
+functions/index.js:709:const reads = [txn.get(webhookEventRef)];
+functions/index.js:710:if (eventDedupRef) reads.push(txn.get(eventDedupRef));
+functions/index.js:717:const userSnap = await txn.get(userRef);
+functions/index.js:725:txn.set(userRef, {
+functions/index.js:733:txn.set(userRef, {
+functions/index.js:749:txn.set(entitlementEventRef, {
+functions/index.js:765:txn.set(webhookEventRef, {
+functions/index.js:779:txn.set(eventDedupRef, {
+functions/index.js:796:enforceRateLimit("sendCoinTransfer", senderId);
+functions/index.js:820:const transactionId = await firestore.runTransaction(async (txn) => {
+functions/index.js:824:const existingTransaction = await txn.get(transactionRef);
+functions/index.js:830:txn.get(senderRef),
+functions/index.js:831:txn.get(receiverRef),
+functions/index.js:844:txn.update(senderRef, {balance: nextSenderBalance, coinBalance: nextSenderBalance});
+functions/index.js:848:txn.update(receiverRef, {balance: nextReceiverBalance, coinBalance: nextReceiverBalance});
+functions/index.js:850:txn.set(transactionRef, {
+functions/index.js:872:enforceRateLimit("requestCoinTransfer", requesterId);
+functions/index.js:893:const existingSnap = await transactionRef.get();
+functions/index.js:898:await transactionRef.set({
+functions/index.js:919:enforceRateLimit("generateReferralCode", userId);
+functions/index.js:924:.where("ownerUserId", "==", userId)
+functions/index.js:925:.where("isActive", "==", true)
+functions/index.js:926:.limit(1)
+functions/index.js:927:.get();
+functions/index.js:936:const snapshot = await codeRef.get();
+functions/index.js:941:await codeRef.set({
+functions/index.js:959:enforceRateLimit("redeemReferralCode", userId);
+functions/index.js:964:const codeSnapshot = await codeRef.get();
+functions/index.js:978:.where("referredUserId", "==", userId)
+functions/index.js:979:.limit(1)
+functions/index.js:980:.get();
+functions/index.js:986:await referralRef.set({
+functions/index.js:1023:await tokenRef.set({
+functions/index.js:1050:await tokensRef.doc(token).delete();
+functions/index.js:1054:const snapshot = await tokensRef.limit(200).get();
+functions/index.js:1059:const batch = firestore.batch();
+functions/index.js:1061:batch.delete(doc.ref);
+functions/index.js:1090:.limit(200)
+functions/index.js:1091:.get();
+functions/index.js:1132:const batch = firestore.batch();
+functions/index.js:1139:batch.delete(tokenRef);
+functions/index.js:1168:const callerSnap = await firestore.collection("users").doc(callerId).get();
+functions/index.js:1178:.limit(200)
+functions/index.js:1179:.get();
+functions/index.js:1215:const batch = firestore.batch();
+functions/index.js:1217:batch.delete(
+functions/index.js:1236:enforceRateLimit("sendRoomGift", senderId);
+functions/index.js:1261:const giftEventId = await firestore.runTransaction(async (txn) => {
+functions/index.js:1276:txn.get(senderRef),
+functions/index.js:1277:txn.get(receiverRef),
+functions/index.js:1278:txn.get(roomRef),
+functions/index.js:1279:txn.get(senderParticipantRef),
+functions/index.js:1309:txn.update(senderRef, {balance: nextSenderBalance, coinBalance: nextSenderBalance});
+functions/index.js:1321:txn.update(receiverRef, {balance: nextReceiverBalance, coinBalance: nextReceiverBalance});
+functions/index.js:1341:txn.set(giftEventRef, {
+functions/index.js:1367:enforceRateLimit("sendRoomGift", senderId); // reuse same rate-limit bucket
+functions/index.js:1391:const giftEventId = await firestore.runTransaction(async (txn) => {
+functions/index.js:1397:txn.get(senderRef),
+functions/index.js:1398:txn.get(receiverRef),
+functions/index.js:1415:txn.update(senderRef, {balance: nextSenderBalance, coinBalance: nextSenderBalance});
+functions/index.js:1427:txn.update(receiverRef, {balance: nextReceiverBalance, coinBalance: nextReceiverBalance});
+functions/index.js:1447:txn.set(giftEventRef, {
+functions/index.js:1471:enforceRateLimit("getStripeConnectStatus", uid);
+functions/index.js:1475:const accountSnap = await accountRef.get();
+functions/index.js:1490:const mapped = mapStripeConnectAccount(account);
+functions/index.js:1491:await accountRef.set({
+functions/index.js:1508:enforceRateLimit("createStripeConnectOnboardingLink", uid);
+functions/index.js:1512:const mapped = await ensureStripeConnectAccount(uid, deps);
+functions/index.js:1533:enforceRateLimit("createStripeConnectDashboardLink", uid);
+functions/index.js:1535:const status = await ensureStripeConnectAccount(uid, deps);
+functions/index.js:1549:enforceRateLimit("generateAgoraToken", authUid);
+functions/index.js:1570:.get();
+functions/index.js:1618:enforceRateLimit("generateTurnCredentials", authUid);
+functions/index.js:1668:enforceRateLimit("requestRefund", requesterId);
+functions/index.js:1685:const txSnap = await txRef.get();
+functions/index.js:1707:const refundSnap = await refundRef.get();
+functions/index.js:1716:await refundRef.set({
+functions/index.js:1768:const snap = await userRef.collection(collName).limit(500).get();
+functions/index.js:1770:const batch = firestore.batch();
+functions/index.js:1771:snap.docs.forEach((doc) => batch.delete(doc.ref));
+functions/index.js:1778:userRef.delete(),
+functions/index.js:1779:profilePublicRef.delete(),
+functions/index.js:1780:preferencesRef.delete(),
+functions/index.js:1781:verificationRef.delete(),
+functions/index.js:1782:walletRef.delete(),
+functions/index.js:1783:presenceRef.delete(),
+functions/index.js:1784:connectRef.delete(),
+functions/index.js:1809:await snapshot.ref.set(payload, {merge: true});
+functions/index.js:1836:await firestore.collection("logs").add({
+functions/index.js:1880:const entitlementSnap = await entitlementEventRef.get();
+functions/index.js:1892:const dedupSnap = await dedupRef.get();
+functions/index.js:1901:await firestore.runTransaction(async (txn) => {
+functions/index.js:1902:txn.set(userRef, {
+functions/index.js:1913:txn.set(revokeEventRef, {
+functions/index.js:1925:txn.set(dedupRef, {
+functions/index.js:1947:const callerSnap = await firestore.collection("users").doc(callerId).get();
+functions/index.js:1962:const userSnap = await userRef.get();
+functions/index.js:1968:await firestore.runTransaction(async (txn) => {
+functions/index.js:1969:txn.set(userRef, {
+functions/index.js:1981:txn.set(auditRef, {
+functions/index.js:2035:await db.collection("beta_feedback").doc(uid).collection("submissions").add({
+functions/index.js:2053:enforceRateLimit("claimDailyCheckin", userId);
+functions/index.js:2058:return await firestore.runTransaction(async (tx) => {
+functions/index.js:2059:const userSnap = await tx.get(userRef);
+functions/index.js:2094:tx.update(userRef, {
+functions/index.js:2123:await db.collection("posts").doc(postId).set({
+functions/index.js:2142:const callerDoc = await db.collection("users").doc(auth.uid).get();
+functions/index.js:2150:await db.collection("users").doc(String(targetUid)).set(
+functions/index.js:2161:let query = db.collection("users").limit(500);
+functions/index.js:2162:if (lastDoc) query = query.startAfter(lastDoc);
+functions/index.js:2163:const snap = await query.get();
+functions/index.js:2166:const batch = db.batch();
+functions/index.js:2168:batch.set(doc.ref, { betaTester: true }, { merge: true });
+functions/index.js:2190:.limit(100)
+functions/index.js:2191:.get();
+functions/index.js:2230:await queueRef.set({
+functions/index.js:2239:.where("matched", "==", false)
+functions/index.js:2240:.where("uid", "!=", uid)
+functions/index.js:2241:.limit(1)
+functions/index.js:2242:.get();
+functions/index.js:2257:await db.runTransaction(async (tx) => {
+functions/index.js:2259:const freshPartner = await tx.get(partnerDoc.ref);
+functions/index.js:2265:tx.set(sessionRef, {
+functions/index.js:2271:tx.update(queueRef, { matched: true, sessionId: sessionRef.id });
+functions/index.js:2272:tx.update(partnerDoc.ref, { matched: true, sessionId: sessionRef.id });
+functions/index.js:2295:await db.collection("speed_dating_queue").doc(auth.uid).delete();
+functions/index.js:2312:.where("active", "==", true)
+functions/index.js:2313:.where("expiresAt", "<=", now)
+functions/index.js:2314:.limit(200)
+functions/index.js:2315:.get();
+functions/index.js:2317:const sessionBatch = db.batch();
+functions/index.js:2319:sessionBatch.update(doc.ref, {active: false});
+functions/index.js:2326:.where("category", "==", "speed_dating")
+functions/index.js:2327:.where("isLive", "==", true)
+functions/index.js:2328:.where("expiresAt", "<=", now)
+functions/index.js:2329:.limit(200)
+functions/index.js:2330:.get();
+functions/index.js:2332:const roomBatch = db.batch();
+functions/index.js:2334:roomBatch.update(doc.ref, {
+functions/index.js:2347:.where("joinedAt", "<=", staleCutoff)
+functions/index.js:2348:.limit(200)
+functions/index.js:2349:.get();
+functions/index.js:2351:const queueBatch = db.batch();
+functions/index.js:2353:queueBatch.delete(doc.ref);
+functions/index.js:2370:.collectionGroup("stories")
+functions/index.js:2371:.where("expiresAt", "<=", now)
+functions/index.js:2372:.where("isDeleted", "==", false)
+functions/index.js:2373:.limit(500)
+functions/index.js:2374:.get();
+functions/index.js:2379:const batch = db.batch();
+functions/index.js:2380:expired.docs.forEach((doc) => batch.delete(doc.ref));
+functions/index.js:2397:.collectionGroup("messages")
+functions/index.js:2398:.where("expiresAt", "<=", now)
+functions/index.js:2399:.limit(CHAT_RETENTION_BATCH_LIMIT)
+functions/index.js:2400:.get();
+functions/index.js:2404:const batch = db.batch();
+functions/index.js:2407:if (conversationRef) touchedConversationIds.add(conversationRef.id);
+functions/index.js:2408:batch.delete(doc.ref);
+functions/index.js:2437:.get();
+functions/index.js:2480:const presenceSnap = await presenceRef.get();
+functions/index.js:2486:await db.collection("rooms").doc(oldInRoom).collection("participants").doc(userId).delete();
+functions/index.js:2487:await db.collection("rooms").doc(oldInRoom).collection("members").doc(userId).delete();
+functions/index.js:2494:await presenceRef.set(
+functions/index.js:2550:await event.data.after.ref.set(
+functions/index.js:2555:const userSnap = await db.collection("users").doc(userId).get();
+functions/index.js:2563:.where("userA", "==", userId)
+functions/index.js:2564:.where("status", "==", "accepted")
+functions/index.js:2565:.limit(50)
+functions/index.js:2566:.get(),
+functions/index.js:2568:.where("userB", "==", userId)
+functions/index.js:2569:.where("status", "==", "accepted")
+functions/index.js:2570:.limit(50)
+functions/index.js:2571:.get(),
+functions/index.js:2581:const batch = db.batch();
+functions/index.js:2585:batch.set(notifRef, {
+functions/index.js:2605:enforceRateLimit("grabMic", userId);
+functions/index.js:2620:await firestore.runTransaction(async (tx) => {
+functions/index.js:2622:const callerSnap = await tx.get(participantsCol.doc(userId));
+functions/index.js:2637:const policySnap = await tx.get(policyRef);
+functions/index.js:2647:const stageQuery = participantsCol.where("role", "==", "stage");
+functions/index.js:2648:const stageSnap = await tx.get(stageQuery);
+functions/index.js:2682:tx.set(
+functions/index.js:2703:promotionPayload.micExpiresAt = admin.firestore.FieldValue.delete();
+functions/index.js:2705:tx.set(
+functions/index.js:2722:enforceRateLimit("inviteToMic", callerId);
+functions/index.js:2742:await firestore.runTransaction(async (tx) => {
+functions/index.js:2744:const callerSnap = await tx.get(participantsCol.doc(callerId));
+functions/index.js:2754:const targetSnap = await tx.get(participantsCol.doc(targetId));
+functions/index.js:2763:const policySnap = await tx.get(policyRef);
+functions/index.js:2772:const stageSnap = await tx.get(participantsCol.where("role", "==", "stage"));
+functions/index.js:2801:tx.set(
+functions/index.js:2819:invitePayload.micExpiresAt = admin.firestore.FieldValue.delete();
+functions/index.js:2821:tx.set(

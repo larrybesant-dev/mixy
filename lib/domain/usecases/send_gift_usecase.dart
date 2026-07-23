@@ -6,3 +6,6 @@ class SendGiftUseCase {
   SendGiftUseCase(this.repository);
   Future<void> call(GiftModel gift) => repository.sendGift(gift);
 }
+
+
+

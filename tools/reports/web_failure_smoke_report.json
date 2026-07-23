@@ -1,0 +1,8 @@
+{
+    "contractVersion":  "web_smoke_report_v1",
+    "status":  "FAIL",
+    "reason":  "probe_failure",
+    "scenarios":  [
+
+                  ]
+}

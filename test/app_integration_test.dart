@@ -9,23 +9,21 @@ void main() {
     await testSetup();
   });
 
-  testWidgets(
-    'Onboarding renders and advances pages',
-    (tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: OnboardingScreen()),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('Onboarding renders and advances pages', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: OnboardingScreen())),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.byType(Directionality), findsWidgets);
-      expect(find.text('Step Into The Hottest Rooms'), findsOneWidget);
+    expect(find.byType(Directionality), findsWidgets);
+    expect(find.text('Step into rooms with real chemistry.'), findsOneWidget);
 
-      await tester.tap(find.text('KEEP THE VIBE'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('CONTINUE'));
+    await tester.pumpAndSettle();
 
-      expect(find.text('Find Your Night Crew Fast'), findsOneWidget);
-    },
-  );
+    expect(
+      find.text('Meet people who match your energy fast.'),
+      findsOneWidget,
+    );
+  });
 }

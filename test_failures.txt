@@ -1,0 +1,227 @@
+
+test_results.txt:6:00:01 +3: C:/MixVy/test/after_dark_test.dart: AfterDarkAgeGateScreen shows under-18 error for young DOB
+test_results.txt:7:00:01 +4: C:/MixVy/test/after_dark_test.dart: AfterDarkAgeGateScreen shows consent error when checkbox not ticked
+test_results.txt:14:00:02 +11: C:/MixVy/test/after_dark_test.dart: AfterDarkPinScreen setup mode mismatch PIN shows error and resets
+test_results.txt:65:[MixVy][ERROR] [2026-05-07T00:15:17.816865] [ROOM HEALTH_STATUS_CHANGED] Room health changed to critical. userId=user-1 roomId=room-a result=critical score=0 suppressedAlertCount=0 warningAlertCount=2 criticalAlertCount=3
+test_results.txt:66:[MixVy][ERROR] [2026-05-07T00:15:17.823619] [ROOM HEALTH_ALERT] Presence and room authority are drifting out of sync. userId=user-1 roomId=room-a result=critical alertCode=ghost_leave_risk score=0
+test_results.txt:67:[MixVy][ERROR] [2026-05-07T00:15:17.824366] [ROOM HEALTH_ALERT] Local media UI is out of sync with room authority. userId=user-1 roomId=room-a result=critical alertCode=mic_desync score=0
+test_results.txt:68:[MixVy][ERROR] [2026-05-07T00:15:17.825118] [ROOM HEALTH_ALERT] More than one user is claiming host authority. userId=user-1 roomId=room-a result=critical alertCode=host_split_brain score=0
+test_results.txt:72:[MixVy][ERROR] [2026-05-07T00:15:17.827197] [PRESENCE PRESENCE_MISMATCH] Joined room state conflicts with presence document. userId=user-1 roomId=room-a result=critical presenceStatus=null inRoom=null
+test_results.txt:73:[MixVy][ERROR] [2026-05-07T00:15:17.828581] [ROOM MULTIPLE_HOSTS_DETECTED] Multiple host claims were detected for the active room. userId=user-1 roomId=room-a result=critical
+test_results.txt:223:00:17 +64 -10: C:/MixVy/test/core/logger_repeated_error_test.dart: Logger repeated-error escalation escalates once when the same error repeats five times in window
+test_results.txt:224:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:225:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:226:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:227:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:228:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:229:[MixVy][FATAL] Repeated error escalation: 5 hits in 10m | Bad state: stream closed
+test_results.txt:231:00:17 +65 -10: C:/MixVy/test/core/logger_repeated_error_test.dart: Logger repeated-error escalation does not escalate repeatedly for the same burst window
+test_results.txt:232:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:233:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:234:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:235:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:236:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:237:[MixVy][FATAL] Repeated error escalation: 5 hits in 10m | Bad state: stream closed
+test_results.txt:238:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:239:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:240:[MixVy][ERROR] Room stream failure | Bad state: stream closed
+test_results.txt:245:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:246:The following StateError was thrown running a test:
+test_results.txt:249:When the exception was thrown, this was the stack:
+test_results.txt:280:  Test failed. See exception logs above.
+test_results.txt:285:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:290:When the exception was thrown, this was the stack:
+test_results.txt:334:  Test failed. See exception logs above.
+test_results.txt:338:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:343:When the exception was thrown, this was the stack:
+test_results.txt:379:  Test failed. See exception logs above.
+test_results.txt:382:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:387:When the exception was thrown, this was the stack:
+test_results.txt:421:  Test failed. See exception logs above.
+test_results.txt:425:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:426:The following TestFailure was thrown running a test:
+test_results.txt:431:When the exception was thrown, this was the stack:
+test_results.txt:448:  Test failed. See exception logs above.
+test_results.txt:453:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:458:When the exception was thrown, this was the stack:
+test_results.txt:504:  Test failed. See exception logs above.
+test_results.txt:507:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:512:When the exception was thrown, this was the stack:
+test_results.txt:551:  Test failed. See exception logs above.
+test_results.txt:554:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:555:The following StateError was thrown running a test (but after the test had completed):
+test_results.txt:558:When the exception was thrown, this was the stack:
+test_results.txt:572:  Test failed. See exception logs above.
+test_results.txt:667:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=0 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:676:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=1 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:678:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=0 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:685:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=3 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:694:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=5 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:708:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=10 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:710:00:25 +134 -14: C:/MixVy/test/hardening/telemetry_hardening_test.dart: Reconnect telemetry continuity peer failure emits WARNING alert
+test_results.txt:712:[WebRtcTelemetry] ΓÜá∩╕Å peer failure #1 (host1)
+test_results.txt:713:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=0 failures=1 streamRefreshes=0 iceCandidates=0
+test_results.txt:717:[WebRtcTelemetry] session ended ΓÇö offers=1 answers=1 reconnects=0 failures=0 streamRefreshes=0 iceCandidates=0
+test_results.txt:732:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=0 failures=0 streamRefreshes=0 iceCandidates=20
+test_results.txt:736:[WebRtcTelemetry] session ended ΓÇö offers=0 answers=0 reconnects=0 failures=0 streamRefreshes=0 iceCandidates=10
+test_results.txt:754:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:755:The following RoomSchemaException was thrown running a test:
+test_results.txt:756:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:758:When the exception was thrown, this was the stack:
+test_results.txt:889:  Test failed. See exception logs above.
+test_results.txt:892:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:893:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:894:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:896:When the exception was thrown, this was the stack:
+test_results.txt:1022:  Test failed. See exception logs above.
+test_results.txt:1025:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1026:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1027:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:1029:When the exception was thrown, this was the stack:
+test_results.txt:1155:  Test failed. See exception logs above.
+test_results.txt:1158:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1159:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1160:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:1162:When the exception was thrown, this was the stack:
+test_results.txt:1288:  Test failed. See exception logs above.
+test_results.txt:1294:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1295:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1296:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:1298:When the exception was thrown, this was the stack:
+test_results.txt:1329:  Test failed. See exception logs above.
+test_results.txt:1332:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1333:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1334:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:1336:When the exception was thrown, this was the stack:
+test_results.txt:1367:  Test failed. See exception logs above.
+test_results.txt:1370:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1371:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1372:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:1374:When the exception was thrown, this was the stack:
+test_results.txt:1405:  Test failed. See exception logs above.
+test_results.txt:1409:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1410:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1411:[RoomSchemaException] Room document is null or empty | roomId= | docKeys=0 | missing=[meta]
+test_results.txt:1413:When the exception was thrown, this was the stack:
+test_results.txt:1444:  Test failed. See exception logs above.
+test_results.txt:1447:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1448:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1449:[RoomSchemaException] Room document missing required root keys | roomId= | docKeys=3 |
+test_results.txt:1452:When the exception was thrown, this was the stack:
+test_results.txt:1483:  Test failed. See exception logs above.
+test_results.txt:1493:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1494:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1495:[RoomSchemaException] Room document missing required root keys | roomId= | docKeys=6 |
+test_results.txt:1498:When the exception was thrown, this was the stack:
+test_results.txt:1529:  Test failed. See exception logs above.
+test_results.txt:1532:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1533:The following RoomSchemaException was thrown running a test (but after the test had completed):
+test_results.txt:1534:[RoomSchemaException] Room document missing required root keys | roomId= | docKeys=6 |
+test_results.txt:1537:When the exception was thrown, this was the stack:
+test_results.txt:1568:  Test failed. See exception logs above.
+test_results.txt:1589:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1594:When the exception was thrown, this was the stack:
+test_results.txt:1625:  Test failed. See exception logs above.
+test_results.txt:1634:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1635:The following TestFailure was thrown running a test:
+test_results.txt:1640:When the exception was thrown, this was the stack:
+test_results.txt:1657:  Test failed. See exception logs above.
+test_results.txt:1661:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1666:When the exception was thrown, this was the stack:
+test_results.txt:1712:  Test failed. See exception logs above.
+test_results.txt:1715:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1720:When the exception was thrown, this was the stack:
+test_results.txt:1759:  Test failed. See exception logs above.
+test_results.txt:1762:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1763:The following TestFailure was thrown running a test (but after the test had completed):
+test_results.txt:1768:When the exception was thrown, this was the stack:
+test_results.txt:1769:#0      fail (package:matcher/src/expect/expect.dart:187:31)
+test_results.txt:1782:  Test failed. See exception logs above.
+test_results.txt:1786:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1791:When the exception was thrown, this was the stack:
+test_results.txt:1837:  Test failed. See exception logs above.
+test_results.txt:1840:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1845:When the exception was thrown, this was the stack:
+test_results.txt:1884:  Test failed. See exception logs above.
+test_results.txt:1887:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1892:When the exception was thrown, this was the stack:
+test_results.txt:1904:  Test failed. See exception logs above.
+test_results.txt:1908:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1913:When the exception was thrown, this was the stack:
+test_results.txt:1959:  Test failed. See exception logs above.
+test_results.txt:1962:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:1967:When the exception was thrown, this was the stack:
+test_results.txt:2006:  Test failed. See exception logs above.
+test_results.txt:2009:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2014:When the exception was thrown, this was the stack:
+test_results.txt:2043:  Test failed. See exception logs above.
+test_results.txt:2046:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2051:When the exception was thrown, this was the stack:
+test_results.txt:2078:  Test failed. See exception logs above.
+test_results.txt:2095:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2096:The following TestFailure was thrown running a test:
+test_results.txt:2101:When the exception was thrown, this was the stack:
+test_results.txt:2118:  Test failed. See exception logs above.
+test_results.txt:2124:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2129:When the exception was thrown, this was the stack:
+test_results.txt:2161:  Test failed. See exception logs above.
+test_results.txt:2184:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2185:The following FirebaseException was thrown running a test:
+test_results.txt:2188:When the exception was thrown, this was the stack:
+test_results.txt:2209:  Test failed. See exception logs above.
+test_results.txt:2214:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2215:The following FirebaseException was thrown running a test:
+test_results.txt:2218:When the exception was thrown, this was the stack:
+test_results.txt:2238:  Test failed. See exception logs above.
+test_results.txt:2242:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2243:The following FirebaseException was thrown running a test:
+test_results.txt:2246:When the exception was thrown, this was the stack:
+test_results.txt:2266:  Test failed. See exception logs above.
+test_results.txt:2271:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2272:The following FirebaseException was thrown running a test:
+test_results.txt:2275:When the exception was thrown, this was the stack:
+test_results.txt:2295:  Test failed. See exception logs above.
+test_results.txt:2299:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2300:The following FirebaseException was thrown running a test:
+test_results.txt:2303:When the exception was thrown, this was the stack:
+test_results.txt:2323:  Test failed. See exception logs above.
+test_results.txt:2327:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2328:The following FirebaseException was thrown running a test:
+test_results.txt:2331:When the exception was thrown, this was the stack:
+test_results.txt:2351:  Test failed. See exception logs above.
+test_results.txt:2355:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2356:The following FirebaseException was thrown running a test:
+test_results.txt:2359:When the exception was thrown, this was the stack:
+test_results.txt:2380:  Test failed. See exception logs above.
+test_results.txt:2385:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2386:The following FirebaseException was thrown running a test:
+test_results.txt:2389:When the exception was thrown, this was the stack:
+test_results.txt:2409:  Test failed. See exception logs above.
+test_results.txt:2413:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:2414:The following FirebaseException was thrown running a test:
+test_results.txt:2417:When the exception was thrown, this was the stack:
+test_results.txt:2437:  Test failed. See exception logs above.
+test_results.txt:2615:[MixVy][ERROR] [2026-05-07T00:15:47.621169] [ROOM HEALTH_STATUS_CHANGED] Room health changed to critical. userId=host-1 roomId=room-a result=critical score=70 suppressedAlertCount=0 warningAlertCount=0 criticalAlertCount=1
+test_results.txt:2616:[MixVy][ERROR] [2026-05-07T00:15:47.622668] [ROOM HEALTH_ALERT] More than one user is claiming host authority. userId=host-1 roomId=room-a result=critical alertCode=host_split_brain score=70
+test_results.txt:2617:[MixVy][ERROR] [2026-05-07T00:15:47.622668] [ROOM MULTIPLE_HOSTS_DETECTED] Multiple host claims were detected for the active room. userId=host-1 roomId=room-a result=critical
+test_results.txt:2626:[MixVy][ERROR] [2026-05-07T00:15:47.641827] [ROOM HEALTH_STATUS_CHANGED] Room health changed to critical. userId=host-2 roomId=room-a result=critical score=55 suppressedAlertCount=0 warningAlertCount=1 criticalAlertCount=1
+test_results.txt:2627:[MixVy][ERROR] [2026-05-07T00:15:47.642583] [ROOM MULTIPLE_HOSTS_DETECTED] Multiple host claims were detected for the active room. userId=host-2 roomId=room-a result=critical
+test_results.txt:2733:[MixVy][ERROR] [2026-05-07T00:15:48.183947] [ROOM JOIN] Could not join room. Please try again. userId=user-1 roomId=room-a result=failure
+test_results.txt:2738:00:43 +250 -32: C:/MixVy/test/room_controller_test.dart: RoomController room lifecycle recovers after a transient sync failure
+test_results.txt:3214:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:3218:When the exception was thrown, this was the stack:
+test_results.txt:3237:  Test failed. See exception logs above.
+test_results.txt:3241:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:3246:When the exception was thrown, this was the stack:
+test_results.txt:3278:  Test failed. See exception logs above.
+test_results.txt:3299:ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+test_results.txt:3300:The following TestFailure was thrown running a test:
+test_results.txt:3305:When the exception was thrown, this was the stack:
+test_results.txt:3322:  Test failed. See exception logs above.
+test_results.txt:3334:  dart:async                                                            _Completer.completeError
+test_results.txt:3381:  dart:async                                                              _BroadcastStreamController.addError
+test_results.txt:3382:  package:riverpod/src/stream_provider/base.dart 203:25                   StreamProviderElement.onError
+test_results.txt:3443:  dart:async                                                              _BroadcastStreamController.addError
+test_results.txt:3444:  package:riverpod/src/stream_provider/base.dart 203:25                   StreamProviderElement.onError
+test_results.txt:3633:01:02 +382 -40: Some tests failed.
+

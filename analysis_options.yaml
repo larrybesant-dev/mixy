@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - 'node_modules/**'  # Exclude Firebase CLI templates and npm dependencies
+  errors:
+    unawaited_futures: ignore  # ConnectionRecoveryHandler.beginRecovery() is intentionally fire-and-forget
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
@@ -21,8 +27,20 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # ── Architecture enforcement ──────────────────────────────────────────────
+    # These rules guard the governed architecture defined in
+    # docs/ROOM_CONTROLLER_CONFLICT_RULES.md.
+    avoid_dynamic_calls: true           # no dynamic dispatch escaping type system
+    prefer_final_fields: true           # immutable-by-default for private fields
+    prefer_final_locals: true           # immutable-by-default for local variables
+    unnecessary_late: true              # late without lazy init is likely a smell
+    use_decorated_box: true             # enforce Flutter widget discipline
+    # ── General quality ───────────────────────────────────────────────────────
+    avoid_print: true                   # use AppTelemetry.log, not print()
+    cancel_subscriptions: true          # all StreamSubscription.cancel() must be called
+    close_sinks: true                   # all StreamSink.close() must be called
+    unawaited_futures: true             # no fire-and-forget async calls
+    always_declare_return_types: true   # no implicit dynamic returns
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

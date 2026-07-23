@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "error": "#ffb4ab",
+                  "secondary-container": "#2ff801",
+                  "surface-container-highest": "#353534",
+                  "surface-container-high": "#2a2a2a",
+                  "on-error-container": "#ffdad6",
+                  "on-secondary-fixed-variant": "#095300",
+                  "surface-tint": "#d1bcff",
+                  "on-surface-variant": "#ccc3da",
+                  "secondary-fixed": "#79ff5b",
+                  "surface-dim": "#131313",
+                  "primary": "#d1bcff",
+                  "on-tertiary": "#003543",
+                  "inverse-primary": "#7212ff",
+                  "primary-container": "#7000ff",
+                  "on-secondary-container": "#0f6d00",
+                  "surface-variant": "#353534",
+                  "surface": "#131313",
+                  "on-error": "#690005",
+                  "secondary-fixed-dim": "#2ae500",
+                  "on-tertiary-container": "#89e0ff",
+                  "surface-bright": "#3a3939",
+                  "primary-fixed-dim": "#d1bcff",
+                  "on-tertiary-fixed-variant": "#004e60",
+                  "on-primary-container": "#ddcdff",
+                  "tertiary-fixed": "#b7eaff",
+                  "tertiary-fixed-dim": "#4cd6ff",
+                  "error-container": "#93000a",
+                  "outline": "#958da3",
+                  "secondary": "#d7ffc5",
+                  "on-primary-fixed": "#23005b",
+                  "on-surface": "#e5e2e1",
+                  "on-primary-fixed-variant": "#5700c9",
+                  "surface-container-low": "#1c1b1b",
+                  "background": "#131313",
+                  "surface-container": "#201f1f",
+                  "on-secondary-fixed": "#022100",
+                  "inverse-on-surface": "#313030",
+                  "tertiary-container": "#00647c",
+                  "inverse-surface": "#e5e2e1",
+                  "tertiary": "#4cd6ff",
+                  "outline-variant": "#4a4457",
+                  "on-background": "#e5e2e1",
+                  "on-tertiary-fixed": "#001f28",
+                  "surface-container-lowest": "#0e0e0e",
+                  "on-secondary": "#053900",
+                  "primary-fixed": "#e9ddff",
+                  "on-primary": "#3c0090"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "xs": "4px",
+                  "unit": "4px",
+                  "md": "16px",
+                  "lg": "24px",
+                  "xl": "40px",
+                  "margin": "24px",
+                  "sm": "8px",
+                  "gutter": "20px"
+          },
+          "fontFamily": {
+                  "body-md": ["Inter"],
+                  "body-lg": ["Inter"],
+                  "headline-lg": ["Space Grotesk"],
+                  "display": ["Space Grotesk"],
+                  "headline-md": ["Space Grotesk"],
+                  "label-sm": ["Inter"],
+                  "label-bold": ["Inter"]
+          },
+          "fontSize": {
+                  "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                  "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                  "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-card {
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .neon-pulse {
+      box-shadow: 0 0 15px rgba(47, 248, 1, 0.4);
+    }
+    .card-stack-offset-1 { transform: translateY(12px) scale(0.96); z-index: 10; opacity: 0.6; }
+    .card-stack-offset-2 { transform: translateY(24px) scale(0.92); z-index: 5; opacity: 0.3; }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0D0D0D] text-on-background font-body-md min-h-screen overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-[#0D0D0D] dark:bg-[#0D0D0D] font-['Space_Grotesk'] tracking-tight docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-purple-500/10 flex justify-between items-center w-full px-6 h-16 fixed">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">MixVy</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-white/60 hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+<div class="relative">
+<button class="text-white/60 hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<span class="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full neon-pulse"></span>
+</div>
+</div>
+</header>
+<!-- SideNavBar / Desktop Rail (Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 border-r border-white/10 bg-[#1A1A1A]/80 backdrop-blur-2xl py-8 gap-4 z-40">
+<div class="px-6 mb-8">
+<h1 class="text-xl font-black text-white">MixVy</h1>
+<p class="text-white/40 text-xs font-['Space_Grotesk'] font-medium">Live Now</p>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 rounded-xl group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="home_max">home_max</span>
+<span class="font-['Space_Grotesk'] font-medium text-sm">Home</span>
+</a>
+<!-- ACTIVE TAB: Search maps to speed dating intent -->
+<a class="flex items-center gap-4 px-4 py-3 bg-gradient-to-r from-purple-600/20 to-blue-500/20 border-r-2 border-purple-500 text-white transition-all duration-300 rounded-xl group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="search">search</span>
+<span class="font-['Space_Grotesk'] font-medium text-sm">Search</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 rounded-xl group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="forum">forum</span>
+<span class="font-['Space_Grotesk'] font-medium text-sm">messages</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 rounded-xl group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="account_circle">account_circle</span>
+<span class="font-['Space_Grotesk'] font-medium text-sm">Profile</span>
+</a>
+</nav>
+<div class="px-6">
+<button class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-bold py-3 rounded-xl hover:brightness-110 active:scale-95 transition-all">
+        Go Live
+      </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="pt-16 pb-24 md:pl-64 min-h-screen flex flex-col items-center">
+<!-- Speed Dating Session Header -->
+<div class="w-full max-w-md px-6 py-6 flex justify-between items-end">
+<div>
+<h2 class="font-display text-headline-md text-white">Midnight Flash</h2>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></div>
+<span class="text-label-bold text-secondary-container">12,403 SWIPING LIVE</span>
+</div>
+</div>
+<div class="glass-card px-4 py-2 rounded-xl border-primary/20">
+<p class="text-label-sm text-white/40 uppercase">Session ends</p>
+<p class="font-headline-md text-primary font-black tracking-widest">04:52</p>
+</div>
+</div>
+<!-- Swipe Stack Container -->
+<section class="relative w-full max-w-md px-6 aspect-[3/4] flex items-center justify-center mb-xl">
+<!-- Card 3 (Bottom) -->
+<div class="absolute inset-x-6 h-full glass-card rounded-[2rem] card-stack-offset-2 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="portrait of a creative woman with colorful hair in a neon-lit studio setting with soft pink and blue shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi_QBfq78A1t3rq0e5ksvgl5c0mZUdi_i5MhPUrXwSBuFXk0DAnpFk7MNnfhkzYvVzWmOJTmXgXCgQVOaihkEQe2U45GUjyVFcYP4whyIk6MCkIr4La7lfdLZwMGOjkGhE7_ZHjMWBO589Mq5SpKhE_1EodWirmhgtdCBuga8M0exG_wSPuzCC5HpyhK4GnJXFHGd-Ty8EH0XgXBkNMO__XcButuGPoMhATjPwwoGCcS3sExHFL7xPBFUdKC0R8fU0CRvH1UGTPSX8"/>
+</div>
+<!-- Card 2 (Middle) -->
+<div class="absolute inset-x-6 h-full glass-card rounded-[2rem] card-stack-offset-1 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="stylish man in a dark urban environment with subtle neon backlight from a nearby storefront window" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABh0NThwgiuYSgit9bn6bdSMXgzk2dMoyM3-d68yZMPZAY0WCUFWVlRSKOtV1PkJQ2i-TfOiwH9IelHA0vJLcLtHUZqqX1Oi17ee-fgAlRb12Z66rJ3ow_IV-Y4h4fZSgz9JmHLderr8__1xU2FXrp-EF437UHCBP3pHL60WFzzMs1A4VblYeTMq4IIgiRri-9zGvub5SI2lvX14mvUP9DVQxBbBPJ4K3HxMfgeHsE0d3lORJEVFl6tfTPrVtbz-Rz4LszDC0D941M"/>
+</div>
+<!-- Card 1 (Active) -->
+<div class="absolute inset-x-6 h-full glass-card rounded-[32px] z-20 overflow-hidden shadow-2xl border-white/20">
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+<img class="w-full h-full object-cover" data-alt="headshot of a smiling woman with cinematic lighting and a vibrant pink neon sign reflected in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMTNf-kbucVv_yX1RHzS8V_mHcBJuredQfYDgc9HSyQVrpIi4V_9dvI8U9flDLTejS1OM8UxgSxd7VgMYWtmupxoAtRncYDoto1lfaiPI1P5reAW8Z1ipftcaUQYTv8LvI_veWatP6W-xDZBVCibMBhd7bUUPe1-Mm2yi9LEQGZRxYhf6IQtVKFUbkVqxCKS4hSAvT6nermpWMyX88rjWQ8Y-r0-VPtpr5tyyQcbS9F6wypwwsBYDY4-gAt-gG2V_WFtcHyc-eBwMI"/>
+<!-- Profile Overlay -->
+<div class="absolute bottom-0 left-0 w-full p-8 text-white">
+<div class="flex items-center justify-between mb-2">
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-display text-headline-lg">Sofia, 24</h3>
+<span class="material-symbols-outlined text-blue-400" data-icon="verified" data-weight="fill">verified</span>
+</div>
+<p class="text-body-md text-white/80">Digital Artist • 2km away</p>
+</div>
+<div class="w-12 h-12 rounded-full border-2 border-secondary flex items-center justify-center bg-black/40 backdrop-blur-md">
+<span class="material-symbols-outlined text-secondary" data-icon="bolt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+</div>
+<div class="flex gap-2 flex-wrap">
+<span class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-label-sm border border-white/10">Gaming</span>
+<span class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-label-sm border border-white/10">Techno</span>
+<span class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-label-sm border border-white/10">Coffee</span>
+</div>
+</div>
+<!-- Swipe Indicators -->
+<div class="absolute top-8 left-8 border-4 border-secondary text-secondary font-black text-2xl px-4 py-1 rounded-xl rotate-[-15deg] opacity-0">
+          YES
+        </div>
+<div class="absolute top-8 right-8 border-4 border-error text-error font-black text-2xl px-4 py-1 rounded-xl rotate-[15deg] opacity-0">
+          NO
+        </div>
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="w-full max-w-md px-6 flex justify-center items-center gap-6">
+<button class="w-16 h-16 rounded-full bg-surface-container-high border border-white/10 flex items-center justify-center text-error hover:bg-error/10 transition-colors shadow-lg active:scale-90">
+<span class="material-symbols-outlined text-3xl" data-icon="close">close</span>
+</button>
+<button class="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 p-[2px] shadow-[0_0_30px_rgba(112,0,255,0.4)] active:scale-95 transition-all">
+<div class="w-full h-full rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-white" data-icon="favorite" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high border border-white/10 flex items-center justify-center text-tertiary hover:bg-tertiary/10 transition-colors shadow-lg active:scale-90">
+<span class="material-symbols-outlined text-3xl" data-icon="star">star</span>
+</button>
+</div>
+<!-- Match Indicator Toast (Subtle) -->
+<div class="mt-xl max-w-md px-6 w-full">
+<div class="glass-card p-4 rounded-2xl flex items-center gap-4">
+<div class="flex -space-x-3">
+<img class="w-10 h-10 rounded-full border-2 border-[#1A1A1A] object-cover" data-alt="avatar of a male user with a friendly expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKHVJeQ3ZTlDQgbegYTc7mrKkEbwsDKObup1OWEzdUGvoydWnwRef__j2gCJw51aV2FGCl9QIZKYqUJ2dXXOCnIUHdEDuil8SevxbALC8721dsK47SHmLPRt2b0_dbegSPaJOWY1-KpJjaEvQjPXQds8EA1jJqKhUd15q5H9hZYDCbdRKpUBWCdrr0vxWUMaqrlo9pJ3KACcRrv1KYBjGhqSvjLOlriac9To14tljtW9fiWWBgYVf9ItnCHi16m5jGvY7pzQmy3bBD"/>
+<img class="w-10 h-10 rounded-full border-2 border-[#1A1A1A] object-cover" data-alt="avatar of a female user with short dark hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG1UclsOoAVZH241bpVZR30_V3H0-gg_YbXlEqiaaQ1_FFQu1Pdra_gBz-vWpy5mzlgtDQFpwZ7JZVFQxWQdsqjoR9zgZVxYDd33FndEvc0lBX7Fl8KxjL4X4J3OCVX1g0Iz0r29-U5riV1LqbGqWuNDSAkQybPq07ZOyJ3dket9n3ESI51vmctvFd6aMj7lVpBJ-eoPv-uZXa95sw8VohH1aYy0MDBKZoQaAWZ6n91x2_QMfk1pdbPapVg_R3ybISu4HxTpESYWrs"/>
+</div>
+<p class="text-label-sm text-white/60 flex-1">
+<span class="text-white font-bold">Liam and Sarah</span> just matched!
+        </p>
+<span class="material-symbols-outlined text-primary" data-icon="flash_on">flash_on</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-20 bg-[#1A1A1A]/80 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-50">
+<a class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home_max">home_max</span>
+<span class="text-[10px] font-['Space_Grotesk'] font-medium">Home</span>
+</a>
+<!-- ACTIVE TAB: Search represents the current "Dating" swipe context -->
+<a class="flex flex-col items-center gap-1 text-white font-bold" href="#">
+<div class="absolute -top-3 w-12 h-1 bg-purple-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
+<span class="material-symbols-outlined text-purple-500" data-icon="search" data-weight="fill" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="text-[10px] font-['Space_Grotesk']">Search</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-colors" href="#">
+<div class="relative">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<span class="text-[10px] font-['Space_Grotesk'] font-medium">messages</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="text-[10px] font-['Space_Grotesk'] font-medium">Profile</span>
+</a>
+</nav>
+<!-- FAB (Contextual for Speed Dating Screen) -->
+<button class="md:hidden fixed right-6 bottom-24 w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-500 rounded-full shadow-2xl flex items-center justify-center text-white active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+</button>
+</body></html>

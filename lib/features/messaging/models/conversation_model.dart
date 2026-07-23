@@ -53,7 +53,10 @@ bool _asBool(dynamic value, {bool fallback = false}) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
+        .map(
+          (item) =>
+              item is String ? item.trim() : item?.toString().trim() ?? '',
+        )
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
@@ -78,6 +81,7 @@ class Conversation {
   final String type; // 'direct' or 'group'
   final List<String> participantIds;
   final Map<String, String> participantNames; // {userId: username}
+  final List<String> pinnedBy;
   final String? groupName;
   final String? groupAvatarUrl;
   final String? lastMessageId;
@@ -94,6 +98,7 @@ class Conversation {
     required this.type,
     required this.participantIds,
     required this.participantNames,
+    this.pinnedBy = const [],
     this.groupName,
     this.groupAvatarUrl,
     this.lastMessageId,
@@ -112,6 +117,7 @@ class Conversation {
       type: _asString(json['type'], fallback: 'direct'),
       participantIds: _asStringList(json['participantIds']),
       participantNames: _asStringMap(json['participantNames']),
+      pinnedBy: _asStringList(json['pinnedBy']),
       groupName: _asNullableString(json['groupName']),
       groupAvatarUrl: _asNullableString(json['groupAvatarUrl']),
       lastMessageId: _asNullableString(json['lastMessageId']),
@@ -146,12 +152,15 @@ class Conversation {
       'type': type,
       'participantIds': participantIds,
       'participantNames': participantNames,
+      'pinnedBy': pinnedBy,
       'groupName': groupName,
       'groupAvatarUrl': groupAvatarUrl,
       'lastMessageId': lastMessageId,
       'lastMessagePreview': lastMessagePreview,
       'lastMessageSenderId': lastMessageSenderId,
-      'lastMessageAt': lastMessageAt != null ? Timestamp.fromDate(lastMessageAt!) : null,
+      'lastMessageAt': lastMessageAt != null
+          ? Timestamp.fromDate(lastMessageAt!)
+          : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastReadAt': lastReadAt.map(
         (key, value) => MapEntry(key, Timestamp.fromDate(value)),
@@ -171,7 +180,17 @@ class Conversation {
   }
 
   bool hasUnreadMessages(String userId) {
-    return lastMessageAt != null &&
-        (lastReadAt[userId] == null || lastReadAt[userId]!.isBefore(lastMessageAt!));
+    final latestMessageAt = lastMessageAt;
+    if (latestMessageAt == null) {
+      return false;
+    }
+    final readAt = lastReadAt[userId];
+    return readAt == null || readAt.isBefore(latestMessageAt);
   }
+
+  bool isPinnedFor(String userId) => pinnedBy.contains(userId);
 }
+
+
+
+

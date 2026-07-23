@@ -1,5 +1,94 @@
+import 'dart:developer' as developer;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
+
+class _SearchCacheEntry<T> {
+  const _SearchCacheEntry({required this.value, required this.expiresAt});
+
+  final T value;
+  final DateTime expiresAt;
+
+  bool get isFresh => DateTime.now().isBefore(expiresAt);
+}
+
+class SearchQueryCache {
+  final Map<String, _SearchCacheEntry<List<SearchUser>>> _userCache = {};
+  final Map<String, _SearchCacheEntry<List<SearchPost>>> _postCache = {};
+  final Map<String, _SearchCacheEntry<List<SearchHashtag>>> _hashtagCache = {};
+  _SearchCacheEntry<List<SearchUser>>? _browseAllUsers;
+  _SearchCacheEntry<List<SearchHashtag>>? _trendingHashtags;
+
+  Future<List<SearchUser>> users(
+    String query,
+    Future<List<SearchUser>> Function() loader,
+  ) => _resolveList(_userCache, query, const Duration(seconds: 45), loader);
+
+  Future<List<SearchPost>> posts(
+    String query,
+    Future<List<SearchPost>> Function() loader,
+  ) => _resolveList(_postCache, query, const Duration(seconds: 30), loader);
+
+  Future<List<SearchHashtag>> hashtags(
+    String query,
+    Future<List<SearchHashtag>> Function() loader,
+  ) => _resolveList(_hashtagCache, query, const Duration(seconds: 45), loader);
+
+  Future<List<SearchUser>> browseAllUsers(
+    Future<List<SearchUser>> Function() loader,
+  ) async {
+    final cached = _browseAllUsers;
+    if (cached != null && cached.isFresh) {
+      return cached.value;
+    }
+    final value = await loader();
+    _browseAllUsers = _SearchCacheEntry(
+      value: value,
+      expiresAt: DateTime.now().add(const Duration(seconds: 60)),
+    );
+    return value;
+  }
+
+  Future<List<SearchHashtag>> trendingHashtags(
+    Future<List<SearchHashtag>> Function() loader,
+  ) async {
+    final cached = _trendingHashtags;
+    if (cached != null && cached.isFresh) {
+      return cached.value;
+    }
+    final value = await loader();
+    _trendingHashtags = _SearchCacheEntry(
+      value: value,
+      expiresAt: DateTime.now().add(const Duration(seconds: 60)),
+    );
+    return value;
+  }
+
+  Future<List<T>> _resolveList<T>(
+    Map<String, _SearchCacheEntry<List<T>>> cache,
+    String key,
+    Duration ttl,
+    Future<List<T>> Function() loader,
+  ) async {
+    final normalizedKey = key.trim().toLowerCase();
+    final cached = cache[normalizedKey];
+    if (cached != null && cached.isFresh) {
+      return cached.value;
+    }
+
+    final value = await loader();
+    cache[normalizedKey] = _SearchCacheEntry(
+      value: value,
+      expiresAt: DateTime.now().add(ttl),
+    );
+    return value;
+  }
+}
+
+final searchQueryCacheProvider = Provider<SearchQueryCache>((ref) {
+  return SearchQueryCache();
+});
 
 DateTime _parseDateTime(dynamic value) {
   if (value is Timestamp) {
@@ -67,7 +156,10 @@ int _asInt(dynamic value, {int fallback = 0}) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
+        .map(
+          (item) =>
+              item is String ? item.trim() : item?.toString().trim() ?? '',
+        )
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
@@ -155,80 +247,137 @@ class SearchHashtag {
   }
 }
 
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
-
 // Search users by name or username
-final searchUsersProvider = FutureProvider.family<List<SearchUser>, String>((ref, query) async {
-  if (query.isEmpty) return [];
+final searchUsersProvider = FutureProvider.autoDispose
+    .family<List<SearchUser>, String>((ref, query) async {
+      if (query.isEmpty) return [];
 
-  final firestore = ref.watch(firestoreProvider);
-  final lowerQuery = query.toLowerCase();
+      final firestore = ref.watch(firestoreProvider);
+      final cache = ref.watch(searchQueryCacheProvider);
+      final lowerQuery = query.trim().toLowerCase();
 
-  final snapshot = await firestore
-      .collection('users')
-      .where('username', isGreaterThanOrEqualTo: lowerQuery)
-      .where('username', isLessThan: '${lowerQuery}z')
-      .limit(20)
-      .get();
+      return cache.users(lowerQuery, () async {
+        try {
+          var snapshot = await firestore
+              .collection('users')
+              .where('isPrivate', isEqualTo: false)
+              .where('usernameLower', isGreaterThanOrEqualTo: lowerQuery)
+              .where('usernameLower', isLessThan: '$lowerQuery\uf8ff')
+              .limit(20)
+              .get();
 
-  return snapshot.docs
-      .map((doc) => SearchUser.fromJson(doc.data(), doc.id))
-      .toList();
-});
+          if (snapshot.docs.isEmpty) {
+            snapshot = await firestore
+                .collection('users')
+                .where('usernameLower', isGreaterThanOrEqualTo: lowerQuery)
+                .where('usernameLower', isLessThan: '$lowerQuery\uf8ff')
+                .limit(20)
+                .get();
+          }
+
+          return snapshot.docs
+              .where((doc) => (doc.data()['isPrivate'] as bool?) != true)
+              .map((doc) => SearchUser.fromJson(doc.data(), doc.id))
+              .toList(growable: false);
+        } on FirebaseException catch (error, stackTrace) {
+          developer.log(
+            'searchUsersProvider query failed for "$lowerQuery"',
+            name: 'search_provider',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          return const <SearchUser>[];
+        }
+      });
+    });
 
 // Search posts by content
-final searchPostsProvider = FutureProvider.family<List<SearchPost>, String>((ref, query) async {
-  if (query.isEmpty) return [];
+final searchPostsProvider = FutureProvider.autoDispose
+    .family<List<SearchPost>, String>((ref, query) async {
+      if (query.isEmpty) return [];
 
-  final firestore = ref.watch(firestoreProvider);
+      final firestore = ref.watch(firestoreProvider);
+      final cache = ref.watch(searchQueryCacheProvider);
+      final normalizedQuery = query.trim().toLowerCase();
 
-  final snapshot = await firestore
-      .collection('posts')
-      .where('tags', arrayContains: query.toLowerCase())
-      .orderBy('createdAt', descending: true)
-      .limit(20)
-      .get();
+      return cache.posts(normalizedQuery, () async {
+        final snapshot = await firestore
+            .collection('posts')
+            .where('tags', arrayContains: normalizedQuery)
+            .orderBy('createdAt', descending: true)
+            .limit(20)
+            .get();
 
-  return snapshot.docs
-      .map((doc) => SearchPost.fromJson(doc.data(), doc.id))
-      .toList();
-});
+        return snapshot.docs
+            .map((doc) => SearchPost.fromJson(doc.data(), doc.id))
+            .toList(growable: false);
+      });
+    });
 
 // Search hashtags
-final searchHashtagsProvider = FutureProvider.family<List<SearchHashtag>, String>((ref, query) async {
-  if (query.isEmpty) return [];
+final searchHashtagsProvider = FutureProvider.autoDispose
+    .family<List<SearchHashtag>, String>((ref, query) async {
+      if (query.isEmpty) return [];
 
+      final firestore = ref.watch(firestoreProvider);
+      final cache = ref.watch(searchQueryCacheProvider);
+      final lowerQuery = query.toLowerCase().replaceAll('#', '');
+
+      return cache.hashtags(lowerQuery, () async {
+        final snapshot = await firestore
+            .collection('hashtags')
+            .where('hashtag', isGreaterThanOrEqualTo: lowerQuery)
+            .where('hashtag', isLessThan: '${lowerQuery}z')
+            .orderBy('hashtag')
+            .orderBy('postCount', descending: true)
+            .limit(10)
+            .get();
+
+        return snapshot.docs
+            .map((doc) => SearchHashtag.fromJson(doc.data(), doc.id))
+            .toList(growable: false);
+      });
+    });
+
+/// Returns the 50 most-recently joined users — shown on the People tab before
+/// the user has typed anything.
+final browseAllUsersProvider = FutureProvider.autoDispose<List<SearchUser>>((
+  ref,
+) async {
   final firestore = ref.watch(firestoreProvider);
-  final lowerQuery = query.toLowerCase().replaceAll('#', '');
-
-  final snapshot = await firestore
-      .collection('hashtags')
-      .where('hashtag', isGreaterThanOrEqualTo: lowerQuery)
-      .where('hashtag', isLessThan: '${lowerQuery}z')
-      .orderBy('hashtag')
-      .orderBy('postCount', descending: true)
-      .limit(10)
-      .get();
-
-  return snapshot.docs
-      .map((doc) => SearchHashtag.fromJson(doc.data(), doc.id))
-      .toList();
+  final cache = ref.watch(searchQueryCacheProvider);
+  return cache.browseAllUsers(() async {
+    final snapshot = await firestore
+        .collection('users')
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .get();
+    return snapshot.docs
+        .map((doc) => SearchUser.fromJson(doc.data(), doc.id))
+        .toList(growable: false);
+  });
 });
 
 // Trending hashtags
-final trendingHashtagsProvider = FutureProvider<List<SearchHashtag>>((ref) async {
-  final firestore = ref.watch(firestoreProvider);
+final trendingHashtagsProvider =
+    FutureProvider.autoDispose<List<SearchHashtag>>((ref) async {
+      final firestore = ref.watch(firestoreProvider);
+      final cache = ref.watch(searchQueryCacheProvider);
 
-  final snapshot = await firestore
-      .collection('hashtags')
-      .orderBy('postCount', descending: true)
-      .orderBy('lastUsedAt', descending: true)
-      .limit(20)
-      .get();
+      return cache.trendingHashtags(() async {
+        final snapshot = await firestore
+            .collection('hashtags')
+            .orderBy('postCount', descending: true)
+            .orderBy('lastUsedAt', descending: true)
+            .limit(20)
+            .get();
 
-  return snapshot.docs
-      .map((doc) => SearchHashtag.fromJson(doc.data(), doc.id))
-      .toList();
-});
+        return snapshot.docs
+            .map((doc) => SearchHashtag.fromJson(doc.data(), doc.id))
+            .toList(growable: false);
+      });
+    });
+
+
+
+

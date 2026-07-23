@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_options.dart';
 
@@ -19,6 +20,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+    }
+    final pushEnabled = await PushMessagingService.readPersistedPushEnabled();
+    if (!pushEnabled) {
+      developer.log(
+        '[CONTROL_GATE] push_suppressed reason=background_delivery_blocked messageId=${message.messageId ?? 'unknown'}',
+        name: 'PushMessagingService',
+      );
+      return;
     }
     developer.log(
       'Background push received: ${message.messageId}',
@@ -38,6 +47,8 @@ class PushMessagingService {
   PushMessagingService._();
 
   static final PushMessagingService instance = PushMessagingService._();
+  static const String _pushEnabledPreferenceKey =
+      'control.enable_push_notifications';
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
@@ -49,18 +60,74 @@ class PushMessagingService {
     _navigatorKey = key;
   }
 
-  StreamSubscription<User?>? _authSubscription;
   StreamSubscription<String>? _tokenRefreshSubscription;
 
   bool _isInitialized = false;
+  bool _isPushEnabled = true;
   String? _lastRegisteredUid;
   String? _lastRegisteredToken;
+
+  bool get isPushEnabled => _isPushEnabled;
+
+  static Future<bool> readPersistedPushEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_pushEnabledPreferenceKey) ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> _persistPushEnabled(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_pushEnabledPreferenceKey, enabled);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to persist push gate state',
+        name: 'PushMessagingService',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _logPushSuppressed(String reason, {String? messageId}) {
+    developer.log(
+      '[CONTROL_GATE] push_suppressed reason=$reason messageId=${messageId ?? 'unknown'}',
+      name: 'PushMessagingService',
+    );
+  }
+
+  Future<void> setPushEnabled(bool enabled) async {
+    if (_isPushEnabled == enabled) {
+      return;
+    }
+
+    _isPushEnabled = enabled;
+    await _persistPushEnabled(enabled);
+    if (!enabled) {
+      await unregisterCurrentToken();
+      developer.log(
+        'Push delivery disabled via runtime gate',
+        name: 'PushMessagingService',
+      );
+      return;
+    }
+
+    developer.log(
+      'Push delivery re-enabled via runtime gate',
+      name: 'PushMessagingService',
+    );
+    await _registerCurrentToken();
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) {
       return;
     }
 
+    _isPushEnabled = await readPersistedPushEnabled();
     _isInitialized = true;
 
     FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -68,15 +135,21 @@ class PushMessagingService {
     _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
       unawaited(_registerTokenIfPossible(token));
     });
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user != null) {
-        unawaited(_registerCurrentToken());
-      }
-    });
+    // Note: auth subscription coordination is now handled by pushMessagingAuthCoordinatorProvider
+    // in lib/core/providers/push_messaging_providers.dart to avoid duplicate listeners.
 
-    await _requestPermission();
-
-    await _handleInitialMessage();
+    try {
+      await _requestPermission();
+      await _handleInitialMessage();
+    } catch (error, stackTrace) {
+      developer.log(
+        'Push messaging initialization failed',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'PushMessagingService',
+      );
+      // Continue without messaging; not fatal.
+    }
 
     await _registerCurrentToken();
   }
@@ -138,6 +211,11 @@ class PushMessagingService {
   }
 
   Future<void> _registerCurrentToken() async {
+    if (!_isPushEnabled) {
+      _logPushSuppressed('token_registration_blocked');
+      return;
+    }
+
     try {
       final token = await _messaging.getToken();
       if (token == null || token.trim().isEmpty) {
@@ -154,7 +232,17 @@ class PushMessagingService {
     }
   }
 
+  /// Public method for Riverpod push messaging coordinator to trigger token re-registration.
+  Future<void> registerCurrentTokenForAuthState() async {
+    await _registerCurrentToken();
+  }
+
   Future<void> _registerTokenIfPossible(String token) async {
+    if (!_isPushEnabled) {
+      _logPushSuppressed('token_refresh_registration_blocked');
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return;
@@ -234,6 +322,14 @@ class PushMessagingService {
   }
 
   void _onForegroundMessage(RemoteMessage message) {
+    if (!_isPushEnabled) {
+      _logPushSuppressed(
+        'foreground_delivery_blocked',
+        messageId: message.messageId,
+      );
+      return;
+    }
+
     developer.log(
       'Foreground push received: ${message.messageId}',
       name: 'PushMessagingService',
@@ -243,6 +339,14 @@ class PushMessagingService {
   }
 
   void _onOpenedMessage(RemoteMessage message) {
+    if (!_isPushEnabled) {
+      _logPushSuppressed(
+        'open_navigation_blocked',
+        messageId: message.messageId,
+      );
+      return;
+    }
+
     developer.log(
       'Push opened by user: ${message.messageId}',
       name: 'PushMessagingService',
@@ -264,11 +368,11 @@ class PushMessagingService {
     switch (type) {
       case 'incoming_call':
         final roomId = data['roomId'] as String? ?? '';
-        route = roomId.isNotEmpty ? '/room/$roomId' : '/discover';
+        route = roomId.isNotEmpty ? '/room/$roomId' : '/home';
       case 'room_invite':
       case 'room_started':
         final roomId = data['roomId'] as String? ?? '';
-        route = roomId.isNotEmpty ? '/room/$roomId' : '/discover';
+        route = roomId.isNotEmpty ? '/room/$roomId' : '/home';
       case 'friend_request':
       case 'friend_accepted':
         final senderId = data['senderId'] as String? ?? '';
@@ -277,7 +381,7 @@ class PushMessagingService {
         final roomId = data['roomId'] as String? ?? '';
         route = roomId.isNotEmpty ? '/room/$roomId' : '/speed-dating';
       case 'payment':
-        route = '/wallet';
+        route = '/payments';
       case 'notification':
       default:
         route = '/notifications';
@@ -301,10 +405,11 @@ class PushMessagingService {
   }
 
   Future<void> dispose() async {
-    await _authSubscription?.cancel();
     await _tokenRefreshSubscription?.cancel();
-    _authSubscription = null;
     _tokenRefreshSubscription = null;
     _isInitialized = false;
   }
 }
+
+
+

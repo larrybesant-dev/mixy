@@ -1,0 +1,79 @@
+name: Governance Lite (PR Smoke)
+
+# Lightweight, ubuntu-latest counterpart to startup_release_governance.yaml.
+# That workflow stays manual-only because it runs on windows-latest (2x
+# billing multiplier) and depends on tools/port_preflight_guard.ps1, which
+# uses Windows-only WMI classes (Win32_Process/Win32_Service) and can't run
+# on Linux runners.
+#
+# This workflow drops the Windows-only port-preflight stage (both probe
+# calls already pass -SkipPreflight) and the deployment-contract/hash-chain
+# bookkeeping, keeping only the real browser-driven signal: build the
+# release web bundle, boot it, and run the startup + failure-mode smoke
+# probes. It runs on every PR to main so regressions are caught before
+# merge, without windows-latest cost or CIM/WMI flakiness.
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Web Startup + Smoke Probes (ubuntu-latest)
+    runs-on: ubuntu-latest
+    env:
+      STARTUP_LOG_PATH: tools/reports/startup_timeline.log
+      STARTUP_PROBE_REPORT_PATH: tools/reports/startup_probe_report.json
+      STARTUP_APP_URL: http://127.0.0.1:9090/
+      WEB_SMOKE_REPORT_PATH: tools/reports/web_failure_smoke_report.json
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Setup Node (for web runtime probes)
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install Playwright runtime probes
+        shell: bash
+        run: |
+          npm install --no-save playwright@1.53.0
+          npm install --no-save http-server@14.1.1
+          npx playwright install --with-deps chromium
+
+      - name: Build release web bundle
+        run: flutter build web --release --base-href "/"
+
+      - name: Produce startup timeline from real web runtime
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/run_startup_probe.ps1 -Mode startup -SkipPreflight -Port 9090 -BuildPath build/web -AppUrl $env:STARTUP_APP_URL -StartupLogPath $env:STARTUP_LOG_PATH -StartupReportPath $env:STARTUP_PROBE_REPORT_PATH -WebSmokeReportPath $env:WEB_SMOKE_REPORT_PATH
+
+      - name: Run deterministic web failure-mode smoke suite
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/run_startup_probe.ps1 -Mode smoke -SkipPreflight -Port 9090 -BuildPath build/web -AppUrl $env:STARTUP_APP_URL -StartupLogPath $env:STARTUP_LOG_PATH -StartupReportPath $env:STARTUP_PROBE_REPORT_PATH -WebSmokeReportPath $env:WEB_SMOKE_REPORT_PATH
+
+      - name: Upload probe reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-lite-reports
+          path: |
+            tools/reports/startup_timeline.log
+            tools/reports/startup_probe_report.json
+            tools/reports/web_failure_smoke_report.json
+          if-no-files-found: ignore
+          retention-days: 7
+

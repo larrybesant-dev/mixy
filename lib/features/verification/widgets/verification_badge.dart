@@ -18,11 +18,7 @@ class VerificationBadge extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4),
       child: Tooltip(
         message: 'Verified account',
-        child: Icon(
-          Icons.verified,
-          size: size,
-          color: Colors.blue,
-        ),
+        child: Icon(Icons.verified, size: size, color: const Color(0xFFC45E7A)),
       ),
     );
   }
@@ -55,3 +51,6 @@ class VerificationBadgeRow extends StatelessWidget {
     );
   }
 }
+
+
+

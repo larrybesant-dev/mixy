@@ -1,0 +1,263 @@
+{
+  "schemaVersion": "1.0.0",
+  "analysisArtifacts": {
+    "replaySingle": {
+      "requiredTopLevel": [
+        "generatedAtUtc",
+        "replayVersion",
+        "schemaVersion",
+        "source",
+        "parameters",
+        "summary",
+        "runs",
+        "mode"
+      ],
+      "mode": "single",
+      "requiredSourceFields": ["indexPath", "entryCount"],
+      "requiredParameterFields": ["burnInRcCount"],
+      "requiredSummaryFields": [
+        "totalRuns",
+        "monotonicSequence",
+        "firstBurnInExitRun",
+        "burnInExited",
+        "runsInBurnIn",
+        "runsPostBurnIn"
+      ],
+      "requiredRunFields": [
+        "sequence",
+        "generatedAtUtc",
+        "file",
+        "runId",
+        "runNumber",
+        "gitRef",
+        "gitSha",
+        "releaseCandidateVerdict",
+        "releaseConfidenceScore",
+        "simulated"
+      ],
+      "requiredSimulatedFields": ["runCount", "burnInRcCount", "inBurnInFreeze"]
+    },
+    "replaySweep": {
+      "requiredTopLevel": [
+        "generatedAtUtc",
+        "replayVersion",
+        "schemaVersion",
+        "source",
+        "parameters",
+        "invariants",
+        "sweep",
+        "mode"
+      ],
+      "mode": "sweep",
+      "requiredSourceFields": ["indexPath", "entryCount"],
+      "requiredParameterFields": ["sweepBurnInFrom", "sweepBurnInTo"],
+      "requiredInvariantFields": [
+        "scannedThresholdCount",
+        "entryCount",
+        "thresholdsWhereBurnInExited",
+        "thresholdsWhereBurnInStayedFrozen",
+        "exitThresholdRanges",
+        "frozenThresholdRanges",
+        "firstExitThreshold",
+        "lastFrozenThreshold",
+        "transitionBoundary"
+      ],
+      "requiredSweepFields": [
+        "burnInRcCount",
+        "firstBurnInExitRun",
+        "burnInExited",
+        "runsInBurnIn",
+        "runsPostBurnIn"
+      ],
+      "requiredRangeFields": ["from", "to"]
+    },
+    "boundaryDrift": {
+      "requiredTopLevel": [
+        "generatedAtUtc",
+        "analysisVersion",
+        "schemaVersion",
+        "source",
+        "parameters",
+        "summary",
+        "prefixes"
+      ],
+      "requiredSourceFields": ["indexPath", "entryCount"],
+      "requiredParameterFields": ["sweepBurnInFrom", "sweepBurnInTo"],
+      "requiredSummaryFields": [
+        "boundaryBehavior",
+        "distinctFirstExitThresholds",
+        "distinctLastFrozenThresholds",
+        "latestFirstExitThreshold",
+        "latestLastFrozenThreshold"
+      ],
+      "requiredPrefixFields": [
+        "historyDepth",
+        "firstExitThreshold",
+        "lastFrozenThreshold",
+        "boundaryFormed",
+        "exitThresholdCount",
+        "frozenThresholdCount"
+      ],
+      "allowedBoundaryBehavior": ["insufficient_history", "stable", "drifting"]
+    },
+    "policySurfaceDiff": {
+      "requiredTopLevel": [
+        "generatedAtUtc",
+        "diffVersion",
+        "schemaVersion",
+        "source",
+        "parameters",
+        "summary",
+        "surfaces"
+      ],
+      "requiredSourceTopLevel": ["historyA", "historyB"],
+      "requiredSourceHistoryFields": ["label", "indexPath", "entryCount"],
+      "requiredParameterFields": ["sweepBurnInFrom", "sweepBurnInTo"],
+      "requiredSummaryFields": [
+        "entryCountDelta",
+        "firstExitThresholdDelta",
+        "lastFrozenThresholdDelta",
+        "exitSetJaccard",
+        "differingThresholds",
+        "differingThresholdCount"
+      ],
+      "requiredSurfacesTopLevel": ["historyA", "historyB"],
+      "requiredSurfaceFields": [
+        "entryCount",
+        "firstExitThreshold",
+        "lastFrozenThreshold",
+        "thresholdsWhereBurnInExited",
+        "thresholdsWhereBurnInStayedFrozen",
+        "points"
+      ],
+      "requiredPointFields": ["burnInRcCount", "burnInExited"]
+    },
+    "policyDriftScore": {
+      "optionalDerivedArtifact": true,
+      "requiredTopLevel": [
+        "generatedAtUtc",
+        "scoreVersion",
+        "schemaVersion",
+        "source",
+        "parameters",
+        "components",
+        "summary",
+        "breakdown"
+      ],
+      "requiredSourceFields": [
+        "replayPath",
+        "boundaryDriftPath",
+        "policySurfaceDiffPath",
+        "replayEntryCount",
+        "boundaryDriftEntryCount",
+        "diffHistoryAEntryCount",
+        "diffHistoryBEntryCount"
+      ],
+      "requiredParameterFields": [
+        "driftScoreThreshold",
+        "alphaWeight",
+        "betaWeight",
+        "formulaDescription"
+      ],
+      "requiredComponentsFields": [
+        "structuralSimilarity",
+        "boundaryFragmentation",
+        "temporalDrift"
+      ],
+      "requiredStructuralSimilarityFields": [
+        "metric",
+        "value",
+        "role",
+        "interpretation"
+      ],
+      "requiredBoundaryFragmentationFields": [
+        "metric",
+        "rawValue",
+        "sweepSize",
+        "normalizedValue",
+        "role",
+        "interpretation"
+      ],
+      "requiredTemporalDriftFields": [
+        "metric",
+        "rawValue",
+        "maxHistoryDepth",
+        "normalizedValue",
+        "role",
+        "interpretation"
+      ],
+      "requiredSummaryFields": [
+        "driftScore",
+        "tier",
+        "recommendation"
+      ],
+      "requiredRecommendationFields": [
+        "action",
+        "explanation"
+      ],
+      "allowedTiers": ["pass", "soft_fail", "hard_fail"],
+      "allowedActions": ["proceed_with_observation", "gate_pending_review", "reject_with_review"],
+      "requiredBreakdownFields": [
+        "formula",
+        "componentContribution"
+      ],
+      "requiredComponentContributionFields": [
+        "structuralTerm",
+        "boundaryTerm",
+        "temporalTerm",
+        "total"
+      ]
+    },
+    "policyAnalysisDelta": {
+      "optionalDerivedArtifact": true,
+      "requiredTopLevel": [
+        "generatedAtUtc",
+        "deltaVersion",
+        "schemaVersion",
+        "source",
+        "current",
+        "summary"
+      ],
+      "requiredSourceFields": [
+        "snapshotIndexPath",
+        "snapshotCount",
+        "currentSnapshotPath",
+        "previousSnapshotPath"
+      ],
+      "requiredCurrentFields": [
+        "generatedAtUtc",
+        "driftScore",
+        "jaccard",
+        "differingThresholdCount",
+        "boundaryBehavior",
+        "tier",
+        "action"
+      ],
+      "requiredPreviousFields": [
+        "generatedAtUtc",
+        "driftScore",
+        "jaccard",
+        "differingThresholdCount",
+        "boundaryBehavior",
+        "tier",
+        "action"
+      ],
+      "requiredSummaryFields": [
+        "mode",
+        "driftScoreDelta",
+        "jaccardDelta",
+        "differingThresholdCountDelta",
+        "entryCountDelta",
+        "boundaryBehaviorChanged",
+        "tierChanged",
+        "classification",
+        "changeClassification",
+        "confidence",
+        "notes"
+      ],
+      "allowedModes": ["baseline", "delta"],
+      "allowedChangeClassification": ["baseline", "no_change", "minor_drift", "structural_shift"],
+      "allowedConfidence": ["low", "normal"]
+    }
+  }
+}

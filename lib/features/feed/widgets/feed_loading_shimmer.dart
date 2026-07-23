@@ -17,7 +17,9 @@ class FeedLoadingShimmer extends StatelessWidget {
               width: 160,
               height: 180,
               decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -32,7 +34,9 @@ class FeedLoadingShimmer extends StatelessWidget {
               width: 72,
               height: 100,
               decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -42,3 +46,6 @@ class FeedLoadingShimmer extends StatelessWidget {
     );
   }
 }
+
+
+

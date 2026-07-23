@@ -1,0 +1,45 @@
+{
+    "status":  "FAIL",
+    "reasonCode":  "app_contract_failure",
+    "summary":  {
+                    "authority":  {
+                                      "runtime":  "flutter",
+                                      "ci":  "github-actions",
+                                      "resolvedBy":  "deployment_contract"
+                                  },
+                    "contractState":  "FINAL",
+                    "contractHash":  "7f9eae1b0c26fdbc4f2af3390f0d07f1a979c900bb9cd4092121de240c01ce17",
+                    "previousContractHash":  null,
+                    "artifact":  {
+                                     "commitSha":  "3f986263dfd19cdba7fb6e906ed629e827fe7ebb",
+                                     "buildId":  "unknown",
+                                     "workflowRunId":  "unknown"
+                                 },
+                    "startup":  {
+                                    "contractVersion":  "unknown",
+                                    "ready":  false,
+                                    "checkpoints":  [
+
+                                                    ]
+                                },
+                    "environment":  {
+                                        "class":  "unknown",
+                                        "os":  "windows"
+                                    },
+                    "privilege":  {
+                                      "class":  "restricted"
+                                  },
+                    "networking":  {
+                                       "port":  8080,
+                                       "portOwnership":  "service"
+                                   },
+                    "probeResults":  {
+                                         "startupProbe":  "fail",
+                                         "smokeProbe":  "fail"
+                                     },
+                    "governance":  {
+                                       "decision":  "deny",
+                                       "reasonCode":  "app_contract_failure"
+                                   }
+                }
+}

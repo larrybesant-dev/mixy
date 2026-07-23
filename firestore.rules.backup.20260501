@@ -1,0 +1,1186 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Core helpers (zero-trust defaults)
+    // ---------------------------------------------------------------------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && uid() == userId;
+    }
+
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function verificationDoc(userId) {
+      return get(/databases/$(database)/documents/verification/$(userId));
+    }
+
+    function roomDoc(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId));
+    }
+
+    function conversationDoc(conversationId) {
+      return get(/databases/$(database)/documents/conversations/$(conversationId));
+    }
+
+    // Server-trusted admin authority:
+    // 1) custom claim: request.auth.token.admin == true
+    // 2) roles/admins/<uid> doc maintained server-side only
+    function isAdminClaim() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isAdminRoleDoc() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/roles/admins/$(uid()));
+    }
+
+    function isAdmin() {
+      return isAdminClaim() || isAdminRoleDoc();
+    }
+
+    // Adult verification must come from server-managed verification doc.
+    // Client-side flags (routing/providers/local state) are never trusted.
+    function isAdultVerified(userId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/verification/$(userId))
+        && verificationDoc(userId).data.isAdultVerified == true
+        && verificationDoc(userId).data.verificationStatus == 'verified';
+    }
+
+    function roomAllowsGuest(roomData) {
+      return roomData.get('allowGuestAccess', false) == true;
+    }
+
+    function roomReadableByRequester(roomData) {
+      return (
+          signedIn()
+          && (
+            !roomData.get('isAdult', false)
+            || isAdultVerified(uid())
+          )
+        )
+        || (
+          !signedIn()
+          && roomAllowsGuest(roomData)
+          && !roomData.get('isAdult', false)
+        );
+    }
+
+    function canReadRoomById(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId))
+        && roomReadableByRequester(roomDoc(roomId).data);
+    }
+
+    function isRoomParticipant(roomId, userId) {
+      return exists(
+        /databases/$(database)/documents/rooms/$(roomId)/participants/$(userId)
+      );
+    }
+
+    function isConversationParticipant(convData) {
+      return signedIn()
+        && convData.participantIds is list
+        && convData.participantIds.hasAny([uid()]);
+    }
+
+    function canAccessConversationById(conversationId) {
+      return exists(/databases/$(database)/documents/conversations/$(conversationId))
+        && isConversationParticipant(conversationDoc(conversationId).data);
+    }
+
+    // ---------------------------------------------------------------------
+    // Users + profile hardening
+    // ---------------------------------------------------------------------
+
+    function restrictedUserFields() {
+      return [
+        'admin',
+        'isAdmin',
+        'role',
+        'roles',
+        'membershipLevel',
+        'coins',
+        'coinBalance',
+        'cashBalance',
+        'wallet',
+        'security',
+        'isVerified',
+        'isAdultVerified',
+        'adultVerified',
+        'verificationStatus',
+        'adultModeEnabled',
+        'adultConsentAccepted',
+        'adultModeEnabledAt'
+      ];
+    }
+
+    function allowedSelfUserFields() {
+      return [
+        'uid',
+        'id',
+        'username',
+        'usernameLower',
+        'displayName',
+        'email',
+        'photoUrl',
+        'avatarUrl',
+        'bio',
+        'isPrivate',
+        'isComplete',
+        'followers',
+        'following',
+        'createdAt',
+        'updatedAt'
+      ];
+    }
+
+    function userCreateValid(userId) {
+      return request.resource.data.keys().hasOnly(allowedSelfUserFields())
+        && request.resource.data.uid == userId
+        && request.resource.data.uid == uid()
+        && request.resource.data.keys().hasAny(['createdAt', 'updatedAt'])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && !request.resource.data.keys().hasAny(restrictedUserFields());
+    }
+
+    function userUpdateValid() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedSelfUserFields())
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(restrictedUserFields())
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == uid();
+    }
+
+    match /users/{userId} {
+      // Keep read authenticated; tighten further with profile projection if needed.
+      allow read: if signedIn();
+
+      // Client can manage only non-privileged profile identity fields.
+      allow create: if isSelf(userId) && userCreateValid();
+      allow update: if isSelf(userId) && userUpdateValid();
+      allow delete: if isSelf(userId);
+
+      // Server-only security/verification/wallet internals.
+      match /wallet/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      match /verification/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      match /security/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      // After Dark profile data: readable only by verified adults.
+      // Writes are owner-only and limited to non-authoritative profile content.
+      match /adult_content/{docId} {
+        allow read: if signedIn()
+          && isAdultVerified(uid())
+          && isAdultVerified(userId);
+        allow create, update, delete: if isSelf(userId)
+          && isAdultVerified(uid());
+      }
+
+      match /adult_profile/{docId} {
+        allow read: if signedIn()
+          && isAdultVerified(uid())
+          && isAdultVerified(userId);
+        allow create, update, delete: if isSelf(userId)
+          && isAdultVerified(uid());
+      }
+
+      match /stories/{storyId} {
+        allow read: if signedIn();
+        allow create: if isSelf(userId)
+          && request.resource.data.userId == uid();
+        allow update: if isSelf(userId)
+          && resource.data.userId == uid()
+          && request.resource.data.userId == uid();
+        allow delete: if isSelf(userId)
+          && resource.data.userId == uid();
+      }
+
+      match /following/{docId} {
+        allow read, create, delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /followers/{docId} {
+        allow read: if isSelf(userId);
+        allow create, delete: if signedIn() && docId == uid();
+        allow update: if false;
+      }
+
+      match /bookmarks/{bookmarkId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.postId is string;
+        allow delete: if isSelf(userId);
+        allow update: if false;
+      }
+
+      match /privacy/{docId} {
+        allow read: if isSelf(userId);
+        allow create, update: if isSelf(userId);
+        allow delete: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Server-managed verification source of truth
+    // ---------------------------------------------------------------------
+
+    match /verification/{userId} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /verification_requests/{requestId} {
+      allow read: if signedIn() && (requestId == uid() || isAdmin());
+      allow create: if signedIn()
+        && requestId == uid()
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'reason',
+          'status',
+          'submittedAt',
+          'reviewedAt',
+          'reviewNote'
+        ])
+        && request.resource.data.userId == uid()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.submittedAt == request.time
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.reviewNote == null;
+      allow update: if false;
+      allow delete: if signedIn()
+        && requestId == uid()
+        && resource.data.userId == uid()
+        && resource.data.status == 'rejected';
+    }
+
+    // ---------------------------------------------------------------------
+    // Rooms: auth/adult gating + strict mutation controls
+    // ---------------------------------------------------------------------
+
+    function validRoomCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'hostId',
+          'isLive',
+          'isAdult',
+          'allowGuestAccess',
+          'thumbnailUrl',
+          'createdAt',
+          'updatedAt',
+          'stageUserIds',
+          'audienceUserIds',
+          'memberCount',
+          'category',
+          'tags',
+          'coHosts',
+          'isLocked',
+          'slowModeSeconds',
+          'scheduledAt',
+          'maxBroadcasters',
+          'maxSpeakers',
+          'speakerSyncVersion',
+          'theme'
+        ])
+        && request.resource.data.hostId == uid()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.isLive is bool
+        && request.resource.data.isAdult is bool
+        && (!request.resource.data.isAdult || isAdultVerified(uid()))
+        && request.resource.data.memberCount is int
+        && request.resource.data.memberCount >= 0
+        && request.resource.data.audienceUserIds is list
+        && request.resource.data.stageUserIds is list
+        && request.resource.data.audienceUserIds.hasAny([uid()])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validHostRoomUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'isLive',
+          'thumbnailUrl',
+          'updatedAt',
+          'isLocked',
+          'slowModeSeconds',
+          'category',
+          'tags',
+          'coHosts',
+          'scheduledAt',
+          'maxBroadcasters',
+          'maxSpeakers',
+          'speakerSyncVersion',
+          'theme'
+        ])
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.isAdult == resource.data.isAdult;
+    }
+
+    match /rooms/{roomId} {
+      // Room reads are source-of-truth authorization gates.
+      allow read: if roomReadableByRequester(resource.data);
+
+      // Signed-in host can create a room. Adult rooms require server-verified adult status.
+      allow create: if signedIn() && validRoomCreate();
+
+      // Host controls mutable room metadata; cannot rewrite ownership or adult flag.
+      allow update: if signedIn()
+        && resource.data.hostId == uid()
+        && validHostRoomUpdate();
+
+      // Delete restricted to host/admin.
+      allow delete: if signedIn() && (resource.data.hostId == uid() || isAdmin());
+
+      // Participant roster
+      match /participants/{participantId} {
+        allow read: if canReadRoomById(roomId);
+
+        // Self-only participant heartbeat/mic state updates.
+        // Role elevation is blocked client-side to prevent spoofing.
+        allow create: if signedIn()
+          && participantId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'role',
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'isBanned',
+            'userStatus',
+            'displayName',
+            'photoUrl',
+            'joinedAt',
+            'lastActiveAt',
+            'updatedAt'
+          ])
+          && request.resource.data.userId == uid()
+          && (
+            request.resource.data.role == 'audience'
+            || roomDoc(roomId).data.hostId == uid()
+            || isAdmin()
+          );
+
+        allow update: if signedIn()
+          && participantId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.userId == uid()
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'userStatus',
+            'displayName',
+            'photoUrl',
+            'lastActiveAt',
+            'updatedAt'
+          ]);
+
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin())
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'role',
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'isBanned',
+            'userStatus',
+            'lastActiveAt',
+            'updatedAt'
+          ]);
+
+        allow delete: if signedIn() && (participantId == uid() || isAdmin());
+      }
+
+      match /members/{memberId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && memberId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'role',
+            'joinedAt',
+            'displayName',
+            'photoUrl',
+            'lastActiveAt',
+            'updatedAt'
+          ])
+          && request.resource.data.userId == uid();
+        allow delete: if signedIn() && (memberId == uid() || isAdmin());
+      }
+
+      // WebRTC peer presence
+      match /webrtc_peers/{peerId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && peerId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'isBroadcasting',
+            'cameraActive',
+            'joinedAt',
+            'lastHeartbeatAt',
+            'streamRefreshAt',
+            'createdAt',
+            'updatedAt'
+          ]);
+        allow delete: if signedIn() && (peerId == uid() || isAdmin());
+      }
+
+      match /messages/{messageId} {
+        allow read: if signedIn() && canReadRoomById(roomId);
+
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && isRoomParticipant(roomId, uid())
+          && request.resource.data.senderId == uid()
+          && request.resource.data.roomId == roomId
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0;
+
+        allow update, delete: if false;
+
+        match /reactions/{reactionId} {
+          allow read: if signedIn() && canReadRoomById(roomId);
+          allow create, update: if signedIn()
+            && canReadRoomById(roomId)
+            && isRoomParticipant(roomId, uid())
+            && reactionId == uid()
+            && request.resource.data.userId == uid()
+            && request.resource.data.keys().hasOnly(['userId', 'emoji', 'timestamp']);
+          allow delete: if signedIn()
+            && canReadRoomById(roomId)
+            && reactionId == uid();
+        }
+      }
+
+      match /typing/{typingUserId} {
+        allow read: if signedIn() && canReadRoomById(roomId);
+
+        allow create, update: if signedIn()
+          && typingUserId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'isTyping',
+            'typing',
+            'updatedAt',
+            'timestamp'
+          ])
+          && (
+            !('userId' in request.resource.data)
+            || request.resource.data.userId == uid()
+          );
+
+        allow delete: if signedIn() && typingUserId == uid();
+      }
+
+      // WebRTC call signaling
+      match /webrtc_calls/{callId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+
+        // Viewer starts call offer.
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'viewerId',
+            'broadcasterId',
+            'viewerUid',
+            'broadcasterUid',
+            'offer',
+            'createdAt'
+          ])
+          && request.resource.data.viewerId == uid();
+
+        // Broadcaster may only attach answer payload.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && resource.data.broadcasterId == uid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'answer',
+            'updatedAt'
+          ]);
+
+        allow delete: if signedIn()
+          && (
+            resource.data.viewerId == uid()
+            || resource.data.broadcasterId == uid()
+            || isAdmin()
+          );
+
+        match /viewer_ice/{iceId} {
+          allow read: if canReadRoomById(roomId) && signedIn();
+          allow create: if signedIn()
+            && get(/databases/$(database)/documents/rooms/$(roomId)/webrtc_calls/$(callId)).data.viewerId == uid()
+            && request.resource.data.keys().hasOnly([
+              'candidate',
+              'sdpMid',
+              'sdpMLineIndex',
+              'createdAt'
+            ]);
+          allow update, delete: if false;
+        }
+
+        match /broadcaster_ice/{iceId} {
+          allow read: if canReadRoomById(roomId) && signedIn();
+          allow create: if signedIn()
+            && get(/databases/$(database)/documents/rooms/$(roomId)/webrtc_calls/$(callId)).data.broadcasterId == uid()
+            && request.resource.data.keys().hasOnly([
+              'candidate',
+              'sdpMid',
+              'sdpMLineIndex',
+              'createdAt'
+            ]);
+          allow update, delete: if false;
+        }
+      }
+
+      match /speakers/{speakerId} {
+        // Explicitly server-only to prevent role/mic spoofing.
+        allow read: if canReadRoomById(roomId);
+        allow create, update, delete: if false;
+      }
+
+      match /cam_access_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        allow update, delete: if false;
+      }
+
+      match /mod_log/{entryId} {
+        allow read: if canReadRoomById(roomId);
+        allow create: if signedIn()
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin());
+        allow update, delete: if false;
+      }
+
+      match /cam_view_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (
+            // Requester supersedes their own pending request.
+            (
+              resource.data.requesterId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'supersededBy', 'updatedAt'])
+            )
+            ||
+            // Target (camera owner) resolves the request.
+            (
+              resource.data.targetId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'resolvedAt', 'updatedAt'])
+            )
+          );
+        allow delete: if false;
+      }
+
+      match /mic_access_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        // Host manages all requests; requester manages their own.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (
+            resource.data.requesterId == uid()
+            || roomDoc(roomId).data.hostId == uid()
+            || isAdmin()
+          );
+        allow delete: if false;
+      }
+
+      match /policies/{docId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin());
+        allow delete: if false;
+      }
+
+      match /slots/{slotId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.userId == uid();
+        allow delete: if signedIn()
+          && (resource.data.userId == uid() || isAdmin());
+      }
+
+      match /buzz_events/{eventId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.fromUserId == uid();
+        allow update, delete: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    function validConversationCreate() {
+      return request.resource.data.keys().hasOnly([
+          'type',
+          'groupName',
+          'groupAvatarUrl',
+          'participantIds',
+          'participantNames',
+          'createdAt',
+          'lastReadAt',
+          'isArchived',
+          'status'
+        ])
+        && request.resource.data.type in ['direct', 'group']
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() >= 2
+        && request.resource.data.participantIds.size() <= 50
+        && request.resource.data.participantIds.hasAny([uid()])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.isArchived == false
+        && request.resource.data.status == 'active';
+    }
+
+    function validConversationUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastReadAt',
+          'isArchived',
+          'updatedAt',
+          'lastMessageId',
+          'lastMessagePreview',
+          'lastMessageSenderId',
+          'lastMessageAt',
+          'lastMessageClientMessageId',
+          'status'
+        ])
+        // Membership is immutable from client writes.
+        && request.resource.data.participantIds == resource.data.participantIds
+        && request.resource.data.type == resource.data.type
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isConversationParticipant(resource.data);
+      allow create: if signedIn() && validConversationCreate();
+      allow update: if signedIn()
+        && isConversationParticipant(resource.data)
+        && validConversationUpdate();
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if canAccessConversationById(conversationId);
+
+        allow create: if signedIn()
+          && canAccessConversationById(conversationId)
+          && request.resource.data.keys().hasOnly([
+            'conversationId',
+            'senderId',
+            'senderName',
+            'senderAvatarUrl',
+            'content',
+            'clientMessageId',
+            'clientmessageId',
+            'createdAt',
+            'clientSentAt',
+            'expiresAt',
+            'isDeleted',
+            'readBy'
+          ])
+          && request.resource.data.conversationId == conversationId
+          && request.resource.data.senderId == uid()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.isDeleted == false
+          && request.resource.data.readBy is list
+          && request.resource.data.readBy.hasAny([uid()]);
+
+        allow update, delete: if false;
+
+        match /reactions/{reactionUserId} {
+          allow read: if canAccessConversationById(conversationId);
+          allow create, update: if signedIn()
+            && canAccessConversationById(conversationId)
+            && reactionUserId == uid()
+            && request.resource.data.keys().hasOnly(['emoji', 'updatedAt']);
+          allow delete: if signedIn()
+            && canAccessConversationById(conversationId)
+            && reactionUserId == uid();
+        }
+      }
+
+      match /ephemeral/{ephemeralId} {
+        allow read: if canAccessConversationById(conversationId);
+        // Typing indicators: conversation participants only, scoped to the
+        // shared 'typing' doc. Clients write their own userId key only.
+        allow create, update: if signedIn()
+          && canAccessConversationById(conversationId)
+          && ephemeralId == 'typing';
+        allow delete: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Moderation
+    // ---------------------------------------------------------------------
+
+    match /blocks/{blockId} {
+      allow read: if signedIn()
+        && (
+          resource.data.blockerUserId == uid()
+          || resource.data.blockedUserId == uid()
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'blockerUserId',
+          'blockedUserId',
+          'createdAt'
+        ])
+        && request.resource.data.blockerUserId == uid()
+        && request.resource.data.blockedUserId is string
+        && request.resource.data.blockedUserId != uid();
+
+      allow delete: if signedIn() && resource.data.blockerUserId == uid();
+      allow update: if false;
+    }
+
+    match /reports/{reportId} {
+      // Only admin/staff can read or action reports.
+      allow read: if isAdmin();
+
+      // Reporter can submit, but cannot self-resolve/update.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'reporterUserId',
+          'targetId',
+          'targetType',
+          'reason',
+          'details',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.reporterUserId == uid()
+        && request.resource.data.targetId is string
+        && request.resource.data.targetType is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 3;
+
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Payments / coins: server authority only for balances & ledger
+    // ---------------------------------------------------------------------
+
+    match /wallets/{userId} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if signedIn()
+        && (
+          (resource.data.participants is list
+            && resource.data.participants.hasAny([uid()]))
+          || resource.data.userId == uid()
+          || resource.data.fromUserId == uid()
+          || resource.data.toUserId == uid()
+        );
+      allow create, update, delete: if false;
+    }
+
+    match /refund_requests/{requestId} {
+      allow read: if signedIn()
+        && (
+          resource.data.requesterId == uid()
+          || isAdmin()
+        );
+
+      // Request submission only; fulfillment fields are server-only.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'requesterId',
+          'transactionId',
+          'reason',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.requesterId == uid()
+        && request.resource.data.transactionId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 10
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /cash_out_requests/{requestId} {
+      allow read: if signedIn()
+        && (
+          resource.data.userId == uid()
+          || isAdmin()
+        );
+
+      // Optional client request record. Processing remains server-only.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'amount',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.userId == uid()
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /entitlement_events/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Presence
+    // ---------------------------------------------------------------------
+
+    match /presence/{userId} {
+      allow read: if signedIn();
+
+      allow create, update: if isSelf(userId)
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'isOnline',
+          'online',
+          'status',
+          'lastSeen',
+          'lastActiveAt',
+          'lastHeartbeatAt',
+          'inRoom',
+          'roomId',
+          'appState',
+          'rtdbActiveSessionCount',
+          'updatedAt'
+        ])
+        && (
+          !('userId' in request.resource.data)
+          || request.resource.data.userId == uid()
+        )
+        && (
+          !('status' in request.resource.data)
+          || request.resource.data.status in ['online', 'away', 'dnd', 'offline']
+        )
+        && (
+          !('appState' in request.resource.data)
+          || request.resource.data.appState in ['foreground', 'background', 'detached', 'unknown']
+        );
+
+      allow delete: if isSelf(userId) || isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read: if signedIn()
+        && (resource.data.userId == uid() || isAdmin());
+
+      allow create: if signedIn()
+        && request.resource.data.userId is string
+        && request.resource.data.actorId is string
+        && request.resource.data.actorId == uid()
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if signedIn()
+        && (resource.data.userId == uid() || isAdmin())
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['isRead', 'readAt']);
+
+      allow delete: if signedIn()
+        && (resource.data.userId == uid() || isAdmin());
+    }
+
+    match /profile_public/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.userId == uid();
+      allow delete: if signedIn()
+        && userId == uid()
+        && resource.data.userId == uid();
+    }
+
+    match /preferences/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.userId == uid();
+      allow delete: if signedIn()
+        && userId == uid()
+        && resource.data.userId == uid();
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.followerUserId == uid()
+        && followId == (
+          request.resource.data.followerUserId + '_' + request.resource.data.followedUserId
+        );
+
+      allow delete: if signedIn()
+        && resource.data.followerUserId == uid();
+
+      allow update: if false;
+    }
+
+    match /friend_links/{id} {
+      allow read: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+
+      allow create: if signedIn()
+        && request.resource.data.users is list
+        && request.resource.data.users.hasAny([uid()]);
+
+      // Update must be anchored to the EXISTING document's user list,
+      // not the incoming payload, to prevent takeover of stranger friendships.
+      allow update: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+
+      allow delete: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+    }
+
+    match /friendships/{id} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && (
+          (request.resource.data.users is list
+            && request.resource.data.users.hasAny([uid()]))
+          || request.resource.data.userA == uid()
+          || request.resource.data.userB == uid()
+        );
+
+      // Update must verify actor is in the EXISTING document, not the payload,
+      // to prevent a bad actor from overwriting stranger-to-stranger friendships.
+      allow update: if signedIn()
+        && (
+          (resource.data.users is list
+            && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
+
+      allow delete: if signedIn()
+        && (
+          (resource.data.users is list
+            && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
+    }
+
+    match /speed_dating_queue/{userId} {
+      allow read: if isSelf(userId);
+      allow create, update, delete: if false;
+    }
+
+    match /speed_dating_sessions/{sessionId} {
+      allow read: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()]);
+      allow create, update, delete: if false;
+    }
+
+    // Speed-dating decision actions (own decisions only)
+    match /speed_dating_actions/{actionId} {
+      allow read: if signedIn()
+        && (resource.data.fromUserId == uid() || resource.data.toUserId == uid());
+      allow create, update: if signedIn()
+        && request.resource.data.fromUserId == uid()
+        && request.resource.data.toUserId is string
+        && request.resource.data.toUserId != uid()
+        && request.resource.data.decision in ['like', 'pass'];
+      allow delete: if false;
+    }
+
+    // Speed-dating mutual matches (read by participants; write server-only except via transactions)
+    match /speed_dating_matches/{matchId} {
+      allow read: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()]);
+      allow create: if signedIn()
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.hasAny([uid()]);
+      allow update, delete: if false;
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == uid();
+      // Allow only like/unlike field mutations from the client.
+      // All other post mutations are server-only.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['likes', 'likeCount']);
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.authorId == uid();
+        allow update: if false;
+        allow delete: if signedIn()
+          && resource.data.authorId == uid();
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Activity feed (self-generated activity events)
+    // ---------------------------------------------------------------------
+
+    match /activity_feed/{activityId} {
+      allow read: if signedIn()
+        && resource.data.userId == uid();
+      allow create: if signedIn()
+        && request.resource.data.userId == uid()
+        && request.resource.data.type is string
+        && request.resource.data.type.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Groups
+    // ---------------------------------------------------------------------
+
+    match /groups/{groupId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.creatorId == uid()
+        && request.resource.data.adminId == uid()
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.hasAny([uid()]);
+      // Group admin can update all fields; members can only add/remove themselves.
+      allow update: if signedIn()
+        && (
+          resource.data.adminId == uid()
+          || isAdmin()
+          || (
+            // Self-join: caller is not yet a member and is adding themselves.
+            !resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['memberIds', 'memberCount'])
+          )
+          || (
+            // Self-leave: caller is currently a member and is removing themselves.
+            resource.data.memberIds.hasAny([uid()])
+            && !request.resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['memberIds', 'memberCount'])
+          )
+        );
+      allow delete: if signedIn()
+        && (resource.data.adminId == uid() || resource.data.creatorId == uid() || isAdmin());
+
+      match /posts/{postId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.authorId == uid()
+          && request.resource.data.groupId == groupId;
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Per-user camera viewer permissions (owner manages their own list)
+    // ---------------------------------------------------------------------
+
+    match /userCamPermissions/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.keys().hasOnly(['allowedViewers', 'updatedAt']);
+      allow delete: if isSelf(userId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Server-trusted admin role docs (immutable from clients)
+    // ---------------------------------------------------------------------
+
+    match /roles/admins/{adminUid} {
+      allow read: if isAdmin() || isSelf(adminUid);
+      allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Default deny
+    // ---------------------------------------------------------------------
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

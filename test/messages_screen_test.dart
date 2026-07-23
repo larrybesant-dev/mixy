@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
+import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
+import 'test_helpers.dart';
 
 Widget _buildApp({
   required FirebaseFirestore firestore,
@@ -17,42 +18,44 @@ Widget _buildApp({
     routes: [
       GoRoute(
         path: '/messages',
-        builder: (_, _) => MessagesScreen(userId: userId, username: username),
+        builder: (_, __) => MessagesScreen(userId: userId, username: username),
       ),
       GoRoute(
         path: '/messages/new',
-        builder: (_, _) => const Scaffold(body: Text('New Message')),
+        builder: (_, __) => const Scaffold(body: Text('New message')),
       ),
       GoRoute(
         path: '/messages/:conversationId',
-        builder: (_, _) => const Scaffold(body: Text('Chat')),
+        builder: (_, __) => const Scaffold(body: Text('Chat')),
       ),
     ],
   );
 
   return ProviderScope(
-    overrides: [
-      firestoreProvider.overrideWithValue(firestore),
-    ],
+    overrides: [firestoreProvider.overrideWithValue(firestore)],
     child: MaterialApp.router(routerConfig: router),
   );
 }
 
 void main() {
-  group('MessagesScreen', () {
-    testWidgets('renders Messages AppBar with Chats and Requests tabs',
-        (tester) async {
+  setUpAll(() async {
+    await testSetup();
+  });
+
+  group('messagescreen', () {
+    testWidgets('renders Inbox AppBar and request action', (tester) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
 
-      expect(find.text('Messages'), findsOneWidget);
-      expect(find.text('Chats'), findsOneWidget);
-      expect(find.text('Requests'), findsOneWidget);
+      expect(find.text('Inbox'), findsOneWidget);
+      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
     });
 
-    testWidgets('shows empty Chats state when no conversations exist',
-        (tester) async {
+    testWidgets('shows empty Chats state when no conversations exist', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
@@ -81,7 +84,59 @@ void main() {
       expect(find.text('Hey there!'), findsOneWidget);
     });
 
-    testWidgets('add message button is shown in AppBar actions', (tester) async {
+    testWidgets(
+      'shows pinned conversations before newer unpinned conversations',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1280, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final firestore = FakeFirebaseFirestore();
+        final now = DateTime.now();
+
+        await firestore
+            .collection('conversations')
+            .doc('conv-older-pinned')
+            .set({
+              'participantIds': ['user-1', 'user-2'],
+              'lastMessagePreview': 'Pinned hello',
+              'lastMessageAt': Timestamp.fromDate(
+                now.subtract(const Duration(minutes: 5)),
+              ),
+              'isArchived': false,
+              'status': 'active',
+              'participantNames': {'user-2': 'Alice'},
+              'pinnedBy': ['user-1'],
+              'type': 'direct',
+              'createdAt': Timestamp.fromDate(
+                now.subtract(const Duration(days: 1)),
+              ),
+            });
+        await firestore.collection('conversations').doc('conv-newer').set({
+          'participantIds': ['user-1', 'user-3'],
+          'lastMessagePreview': 'Fresh message',
+          'lastMessageAt': Timestamp.fromDate(now),
+          'isArchived': false,
+          'status': 'active',
+          'participantNames': {'user-3': 'Bianca'},
+          'type': 'direct',
+          'createdAt': Timestamp.fromDate(
+            now.subtract(const Duration(hours: 3)),
+          ),
+        });
+
+        await tester.pumpWidget(_buildApp(firestore: firestore));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final aliceTop = tester.getTopLeft(find.text('Alice')).dy;
+        final biancaTop = tester.getTopLeft(find.text('Bianca')).dy;
+        expect(aliceTop, lessThan(biancaTop));
+      },
+    );
+
+    testWidgets('add message button is shown in AppBar actions', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
@@ -89,18 +144,20 @@ void main() {
       expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
     });
 
-    testWidgets('Requests tab shows empty state when no pending requests',
-        (tester) async {
+    testWidgets('requests sheet shows empty state when no pending requests', (
+      tester,
+    ) async {
       final firestore = FakeFirebaseFirestore();
       await tester.pumpWidget(_buildApp(firestore: firestore));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Requests'));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('No message requests'), findsOneWidget);
+      expect(find.text('Message Requests'), findsOneWidget);
+      expect(find.text('No pending message requests.'), findsOneWidget);
     });
   });
 }

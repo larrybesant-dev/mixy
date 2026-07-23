@@ -12,13 +12,22 @@ class RoomTile extends StatelessWidget {
     return ListTile(
       title: Text(
         roomName,
-        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       tileColor: theme.colorScheme.surface,
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      trailing: Icon(Icons.arrow_forward_ios, size: 18, color: theme.colorScheme.primary),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: 18,
+        color: theme.colorScheme.primary,
+      ),
     );
   }
 }
+
+
+

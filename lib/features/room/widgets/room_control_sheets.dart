@@ -1,7 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../models/room_participant_model.dart';
+import '../../../presentation/providers/user_provider.dart';
+import '../../../widgets/safe_network_avatar.dart';
+import '../controllers/room_state.dart';
 
 class RoomUserPresentation {
   const RoomUserPresentation({required this.displayName, this.avatarUrl});
@@ -45,12 +47,17 @@ class RoomParticipantActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final normalizedRole = normalizeRoomRole(
+      participant.role,
+      fallbackRole: roomRoleAudience,
+    );
     final chips = <Widget>[
-      _RoleChip(label: participant.role.toUpperCase()),
+      _RoleChip(label: normalizedRole.toUpperCase()),
       if (participant.userId == currentUserId) const _RoleChip(label: 'YOU'),
-      if (participant.userId == hostUserId && participant.role != 'host')
+      if (participant.userId == hostUserId && !isHostLikeRole(normalizedRole))
         const _RoleChip(label: 'ROOM HOST'),
-      if (participant.role == 'moderator') const _RoleChip(label: 'MODERATOR'),
+      if (normalizedRole == roomRoleModerator)
+        const _RoleChip(label: 'MODERATOR'),
       if (participant.isMuted) const _RoleChip(label: 'MUTED'),
       if (participant.isBanned)
         const _RoleChip(label: 'BANNED', destructive: true),
@@ -76,19 +83,15 @@ class RoomParticipantActionSheet extends StatelessWidget {
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundImage: _avatarImageProvider(
-                  userPresentation.avatarUrl,
-                ),
-                child: _avatarImageProvider(userPresentation.avatarUrl) == null
-                    ? const Icon(Icons.person)
-                    : null,
+              leading: SafeNetworkAvatar(
+                radius: 20,
+                avatarUrl: userPresentation.avatarUrl,
               ),
               title: Text(
                 userPresentation.displayName,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              subtitle: Text(participant.userId),
+              subtitle: const Text('Room member'),
             ),
             const SizedBox(height: 10),
             Wrap(spacing: 8, runSpacing: 8, children: chips),
@@ -133,6 +136,7 @@ class RoomRosterSheet extends StatelessWidget {
   final String currentUserId;
   final String hostUserId;
   final ValueChanged<RoomParticipantModel> onParticipantTap;
+
   /// userId → true if the user is currently online (heartbeat fresh)
   final Map<String, bool> onlineStatusByUserId;
 
@@ -177,21 +181,29 @@ class RoomRosterSheet extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: sortedParticipants.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
+                separatorBuilder: (__, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final participant = sortedParticipants[index];
                   final presentation =
                       presentationByUserId[participant.userId] ??
-                      RoomUserPresentation(displayName: participant.userId);
+                      RoomUserPresentation(
+                        displayName: resolvePublicUsername(
+                          uid: participant.userId,
+                        ),
+                      );
+                  final role = normalizeRoomRole(
+                    participant.role,
+                    fallbackRole: roomRoleAudience,
+                  );
                   final chips = <String>[
                     if (participant.userId == currentUserId) 'You',
                     if (participant.userId == hostUserId ||
-                        participant.role == 'host')
+                        isHostLikeRole(role))
                       'Host',
-                    if (participant.role == 'moderator') 'Moderator',
-                    if (participant.role == 'cohost') 'Cohost',
-                    if (participant.role == 'stage') 'Stage',
-                    if (participant.role == 'audience') 'Audience',
+                    if (role == roomRoleModerator) 'Moderator',
+                    if (role == roomRoleCohost) 'Cohost',
+                    if (role == roomRoleStage) 'Stage',
+                    if (role == roomRoleAudience) 'Audience',
                     if (participant.isMuted) 'Muted',
                     if (participant.isBanned) 'Banned',
                   ];
@@ -201,14 +213,10 @@ class RoomRosterSheet extends StatelessWidget {
                     leading: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        CircleAvatar(
-                          backgroundImage: _avatarImageProvider(
-                            presentation.avatarUrl,
-                          ),
-                          child: _avatarImageProvider(presentation.avatarUrl) ==
-                                  null
-                              ? Icon(_roleIcon(participant, hostUserId))
-                              : null,
+                        SafeNetworkAvatar(
+                          radius: 20,
+                          avatarUrl: presentation.avatarUrl,
+                          fallbackText: null,
                         ),
                         Positioned(
                           right: -2,
@@ -217,7 +225,8 @@ class RoomRosterSheet extends StatelessWidget {
                             width: 12,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: (onlineStatusByUserId[participant.userId] ??
+                              color:
+                                  (onlineStatusByUserId[participant.userId] ??
                                       false)
                                   ? const Color(0xFF4CAF50)
                                   : Colors.grey.shade400,
@@ -247,47 +256,21 @@ class RoomRosterSheet extends StatelessWidget {
   }
 
   static int _roleRank(RoomParticipantModel participant, String hostUserId) {
-    if (participant.userId == hostUserId || participant.role == 'host') {
+    final role = normalizeRoomRole(participant.role, fallbackRole: '');
+    if (participant.userId == hostUserId || isHostLikeRole(role)) {
       return 0;
     }
-    if (participant.role == 'moderator') {
+    if (role == roomRoleModerator) {
       return 1;
     }
-    if (participant.role == 'cohost') {
+    if (role == roomRoleCohost) {
       return 2;
     }
-    if (participant.role == 'stage') {
+    if (role == roomRoleStage) {
       return 3;
     }
     return 4;
   }
-
-  static IconData _roleIcon(
-    RoomParticipantModel participant,
-    String hostUserId,
-  ) {
-    if (participant.userId == hostUserId || participant.role == 'host') {
-      return Icons.workspace_premium;
-    }
-    if (participant.role == 'moderator') {
-      return Icons.shield_outlined;
-    }
-    if (participant.role == 'cohost') {
-      return Icons.mic;
-    }
-    if (participant.role == 'stage') {
-      return Icons.record_voice_over_outlined;
-    }
-    return Icons.person;
-  }
-}
-
-ImageProvider<Object>? _avatarImageProvider(String? avatarUrl) {
-  final value = avatarUrl?.trim();
-  if (value == null || value.isEmpty) {
-    return null;
-  }
-  return CachedNetworkImageProvider(value);
 }
 
 class _RoleChip extends StatelessWidget {
@@ -319,3 +302,6 @@ class _RoleChip extends StatelessWidget {
     );
   }
 }
+
+
+

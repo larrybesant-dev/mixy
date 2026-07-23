@@ -1,0 +1,55 @@
+﻿{
+    "generatedAtUtc":  "2026-04-27T02:12:17.2028803Z",
+    "cycles":  2,
+    "shuffle":  false,
+    "pressureRepeatsPerCycle":  2,
+    "totalRuns":  2,
+    "passedRuns":  1,
+    "failedRuns":  1,
+    "caseSummary":  [
+                        {
+                            "CaseId":  "MC-1",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  14092,
+                            "AvgDurationMs":  14092,
+                            "MaxDurationMs":  14092
+                        },
+                        {
+                            "CaseId":  "MC-2",
+                            "Runs":  1,
+                            "Fails":  1,
+                            "PassRate":  0,
+                            "MinDurationMs":  7297,
+                            "AvgDurationMs":  7297,
+                            "MaxDurationMs":  7297
+                        }
+                    ],
+    "runs":  [
+                 {
+                     "cycle":  1,
+                     "caseId":  "MC-1",
+                     "caseName":  "Ordering Determinism",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/home_controller_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:11:55.5908887Z",
+                     "endedAtUtc":  "2026-04-27T02:12:09.6833863Z",
+                     "durationMs":  14092,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "MC-2",
+                     "caseName":  "Duplicate Suppression",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/chat_pane_view_test.dart",
+                     "exitCode":  1,
+                     "startedAtUtc":  "2026-04-27T02:12:09.7343273Z",
+                     "endedAtUtc":  "2026-04-27T02:12:17.0316352Z",
+                     "durationMs":  7297,
+                     "passed":  false
+                 }
+             ]
+}

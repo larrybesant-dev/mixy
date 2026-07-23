@@ -6,3 +6,6 @@ class GetUserUseCase {
   GetUserUseCase(this.repository);
   Future<UserModel?> call(String uid) => repository.getUser(uid);
 }
+
+
+

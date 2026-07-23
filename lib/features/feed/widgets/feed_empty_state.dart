@@ -33,7 +33,9 @@ class FeedEmptyState extends StatelessWidget {
             if (heading != null)
               Text(
                 heading!,
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
                 textAlign: TextAlign.center,
               ),
             const SizedBox(height: 8),
@@ -46,10 +48,7 @@ class FeedEmptyState extends StatelessWidget {
             ),
             if (onAction != null && actionLabel != null) ...[
               const SizedBox(height: 20),
-              FilledButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),
@@ -57,3 +56,6 @@ class FeedEmptyState extends StatelessWidget {
     );
   }
 }
+
+
+

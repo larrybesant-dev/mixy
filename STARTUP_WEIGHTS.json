@@ -1,0 +1,9 @@
+{
+  "pipeline_version": "1.0.0",
+  "bindingReady": 0.10,
+  "firebaseReady": 0.15,
+  "bootstrapResolved": 0.25,
+  "firstFrameRendered": 0.50,
+  "passThreshold": 0.70,
+  "warnThreshold": 0.85
+}

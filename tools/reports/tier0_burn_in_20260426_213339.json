@@ -1,0 +1,181 @@
+﻿{
+    "generatedAtUtc":  "2026-04-27T02:33:39.5260584Z",
+    "cycles":  1,
+    "shuffle":  false,
+    "pressureRepeatsPerCycle":  2,
+    "totalRuns":  8,
+    "passedRuns":  7,
+    "failedRuns":  1,
+    "caseSummary":  [
+                        {
+                            "CaseId":  "MC-1",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  5438,
+                            "AvgDurationMs":  5438,
+                            "MaxDurationMs":  5438
+                        },
+                        {
+                            "CaseId":  "MC-2",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  8466,
+                            "AvgDurationMs":  8466,
+                            "MaxDurationMs":  8466
+                        },
+                        {
+                            "CaseId":  "MC-3",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  5542,
+                            "AvgDurationMs":  5542,
+                            "MaxDurationMs":  5542
+                        },
+                        {
+                            "CaseId":  "MC-4",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  6529,
+                            "AvgDurationMs":  6529,
+                            "MaxDurationMs":  6529
+                        },
+                        {
+                            "CaseId":  "PS-1",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  5755,
+                            "AvgDurationMs":  5755,
+                            "MaxDurationMs":  5755
+                        },
+                        {
+                            "CaseId":  "PS-2",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  5116,
+                            "AvgDurationMs":  5116,
+                            "MaxDurationMs":  5116
+                        },
+                        {
+                            "CaseId":  "PS-3",
+                            "Runs":  1,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MinDurationMs":  6283,
+                            "AvgDurationMs":  6283,
+                            "MaxDurationMs":  6283
+                        },
+                        {
+                            "CaseId":  "PS-4",
+                            "Runs":  1,
+                            "Fails":  1,
+                            "PassRate":  0,
+                            "MinDurationMs":  12042,
+                            "AvgDurationMs":  12042,
+                            "MaxDurationMs":  12042
+                        }
+                    ],
+    "runs":  [
+                 {
+                     "cycle":  1,
+                     "caseId":  "MC-1",
+                     "caseName":  "Ordering Determinism",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/home_controller_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:32:44.2002753Z",
+                     "endedAtUtc":  "2026-04-27T02:32:49.6381367Z",
+                     "durationMs":  5438,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "MC-2",
+                     "caseName":  "Duplicate Suppression",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/chat_pane_view_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:32:49.6616166Z",
+                     "endedAtUtc":  "2026-04-27T02:32:58.1271872Z",
+                     "durationMs":  8466,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "MC-3",
+                     "caseName":  "Offline Queue Integrity",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/messaging_retention_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:32:58.1279435Z",
+                     "endedAtUtc":  "2026-04-27T02:33:03.6701601Z",
+                     "durationMs":  5542,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "MC-4",
+                     "caseName":  "Crash Recovery Consistency",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/app_integration_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:33:03.6701601Z",
+                     "endedAtUtc":  "2026-04-27T02:33:10.1987777Z",
+                     "durationMs":  6529,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "PS-1",
+                     "caseName":  "Lifecycle Correctness",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/presence_service_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:33:10.1987777Z",
+                     "endedAtUtc":  "2026-04-27T02:33:15.9538678Z",
+                     "durationMs":  5755,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "PS-2",
+                     "caseName":  "Multi-Device Truth Convergence",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/presence_guardrail_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:33:15.9546261Z",
+                     "endedAtUtc":  "2026-04-27T02:33:21.0703970Z",
+                     "durationMs":  5116,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "PS-3",
+                     "caseName":  "Partition Recovery",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/room_session_stress_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-27T02:33:21.0711478Z",
+                     "endedAtUtc":  "2026-04-27T02:33:27.3540788Z",
+                     "durationMs":  6283,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "PS-4",
+                     "caseName":  "Room Dominance Rule",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/live_room_screen_test.dart",
+                     "exitCode":  1,
+                     "startedAtUtc":  "2026-04-27T02:33:27.3540788Z",
+                     "endedAtUtc":  "2026-04-27T02:33:39.3959340Z",
+                     "durationMs":  12042,
+                     "passed":  false
+                 }
+             ]
+}

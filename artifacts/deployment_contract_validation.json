@@ -1,0 +1,37 @@
+﻿{
+    "status":  "FAIL",
+    "reasonCode":  "app_contract_failure",
+    "summary":  {
+                    "artifact":  {
+                                     "commitSha":  "6eab6f20823c5bd4466c89dda2056039a8b489fa",
+                                     "buildId":  "unknown",
+                                     "workflowRunId":  "unknown"
+                                 },
+                    "startup":  {
+                                    "contractVersion":  "unknown",
+                                    "ready":  false,
+                                    "checkpoints":  [
+
+                                                    ]
+                                },
+                    "environment":  {
+                                        "class":  "local",
+                                        "os":  "windows"
+                                    },
+                    "privilege":  {
+                                      "class":  "non-admin"
+                                  },
+                    "networking":  {
+                                       "port":  8080,
+                                       "portOwnership":  "service"
+                                   },
+                    "probeResults":  {
+                                         "startupProbe":  "fail",
+                                         "smokeProbe":  "fail"
+                                     },
+                    "governance":  {
+                                       "decision":  "deny",
+                                       "reasonCode":  "probe_failure"
+                                   }
+                }
+}

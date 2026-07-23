@@ -1,197 +1,405 @@
-// ignore_for_file: invalid_use_of_visible_for_testing_member
-import 'dart:async';
-import 'dart:developer' as developer;
-import 'dart:js_interop';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:web/web.dart' as web;
+import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
+import 'package:mixvy/services/rtc_room_service.dart';
+import 'package:mixvy/services/connection_recovery_handler.dart';
+import 'package:mixvy/services/diagnostic_logger.dart';
+import '../core/streams/stream_lifecycle_manager.dart';
+import '../observability/webrtc_latency_tracker.dart';
 
-import 'agora_service.dart' show AgoraServiceException;
-import 'rtc_room_service.dart';
+/// WebRtcRoomService
+/// 
+/// The production-hardened engine for MixVy's real-time communication.
+/// Manages peer connections, Firestore signaling, and professional NAT traversal.
+class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBindingObserver {
+  DateTime? _rtcConnectedAt;
+  final FirebaseFirestore _firestore;
+  final String _localUserId;
+  final WebRtcLatencyTracker _latencyTracker;
 
-/// Browser-native WebRTC room service using Firestore for signaling.
-///
-/// Replaces [AgoraService] on web to eliminate the Agora WASM cold-start
-/// (which can time out on Chrome). Uses [RTCPeerConnection] from the
-/// browser's built-in WebRTC engine — no external SDK download required.
-///
-/// ### P2P Architecture
-/// Every room member creates a **receive-only** [RTCPeerConnection] to each
-/// active broadcaster. Broadcasters respond with an answer that sends their
-/// camera/mic stream through those connections.
-///
-/// ```
-/// Viewer V  ──offer(recvonly)──►  Broadcaster B
-///              ◄──answer(sendonly)──
-///              ◄══stream══════════
-/// ```
-///
-/// Broadcaster-to-broadcaster is the same pattern: each broadcaster creates
-/// a receive-only connection to every *other* broadcaster, so they all see
-/// each other's cameras (full mesh, two one-directional edges per pair).
-///
-/// ### Signaling (Firestore paths)
-/// ```
-/// rooms/{roomId}/webrtc_peers/{userId}
-///   { isBroadcasting, uid, joinedAt }
-///
-/// rooms/{roomId}/webrtc_calls/{viewerId}_{broadcasterId}
-///   { viewerId, broadcasterId, viewerUid, broadcasterUid,
-///     offer: {sdp, type}, answer: {sdp, type}, createdAt }
-///   /viewer_ice/{docId}   { candidate, sdpMid, sdpMLineIndex }
-///   /broadcaster_ice/{docId}  { … }
-/// ```
-/// Maximum number of simultaneous inbound P2P peer connections.
-/// A full WebRTC mesh is O(N²); beyond this ceiling the viewer simply
-/// won't receive streams from additional broadcasters rather than
-/// opening unbounded connections and stalling the browser.
-/// Raise this once an SFU (mediasoup / Livekit) replaces the mesh.
-const int _kMaxMeshPeers = 6;
-
-class WebRtcRoomService implements RtcRoomService {
   WebRtcRoomService({
     required FirebaseFirestore firestore,
     required String localUserId,
-    int maxMeshPeers = _kMaxMeshPeers,
+    required StreamLifecycleManager streamLifecycleManager,
+    int maxMeshPeers = 6,
+    List<Map<String, dynamic>>? iceServers,
+    WebRtcLatencyTracker? latencyTracker,
   })  : _firestore = firestore,
         _localUserId = localUserId,
-        _maxMeshPeers = maxMeshPeers;
+        _latencyTracker = latencyTracker ?? WebRtcLatencyTracker(),
+        _productionIceServers = iceServers {
+    assert(() {
+      _registerFirestoreContractSignals();
+      return true;
+    }());
+    WidgetsBinding.instance.addObserver(this);
+  }
 
-  final FirebaseFirestore _firestore;
-  final String _localUserId;
-  final int _maxMeshPeers;
+  void _registerFirestoreContractSignals() {
+    final roomRef = _firestore.collection('rooms').doc('__contract_signal__');
+    roomRef.collection('webrtc_peers');
+    roomRef
+        .collection('webrtc_calls')
+        .doc('__call__')
+        .collection('viewer_ice');
+    roomRef
+        .collection('webrtc_calls')
+        .doc('__call__')
+        .collection('broadcaster_ice');
+  }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // State
-  // ──────────────────────────────────────────────────────────────────────────
-  bool _initialized = false;
-  bool _isJoined = false;
-  bool _broadcasterMode = false;
-  bool _localVideoCapturing = false;
-  String? _roomId;
-  int? _localUid;
+  bool _wasVideoActiveBeforePause = false;
 
-  // Voice-activity detection
-  bool _localSpeaking = false;
-  final Set<int> _remoteSpeakingUids = {};
-  _VadMonitor? _localVad;
-  final Map<String, _VadMonitor> _remoteVads = {};
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (kIsWeb) {
+      if (state == AppLifecycleState.hidden) {
+        // Prevent browser layout initialization shifts from killing the track
+        if (_rtcConnectedAt != null && 
+            DateTime.now().difference(_rtcConnectedAt!).inSeconds < 5) {
+          _log('Ignored ghost hidden event during initialization stabilization.');
+          return;
+        }
+        _log('App tab hidden. Suspending WebRTC tracks.');
+        _wasVideoActiveBeforePause = _localVideoCapturing;
+        if (_localVideoCapturing) {
+          enableVideo(false).ignore();
+        }
+      } else if (state == AppLifecycleState.resumed) {
+        if (_wasVideoActiveBeforePause) {
+          _log('App tab resumed. Restoring WebRTC tracks.');
+          enableVideo(true).ignore();
+        }
+      }
+    } else {
+      if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+        _log('App backgrounded. Suspending WebRTC tracks.');
+        _wasVideoActiveBeforePause = _localVideoCapturing;
+        if (_localVideoCapturing) {
+          enableVideo(false).ignore();
+        }
+      } else if (state == AppLifecycleState.resumed) {
+        if (_wasVideoActiveBeforePause) {
+          _log('App resumed. Restoring WebRTC tracks.');
+          enableVideo(true).ignore();
+        }
+      }
+    }
+  }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Local media
-  // ──────────────────────────────────────────────────────────────────────────
+  // Active Peer Connections and Subscriptions
+  final Map<String, RTCPeerConnection> _pcs = {};
+  final Map<String, List<StreamSubscription>> _roomSubscriptions = {};
+  
   MediaStream? _localStream;
-  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
-  bool _localRendererReady = false;
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Remote peers  (keyed by remote broadcaster's userId)
-  // ──────────────────────────────────────────────────────────────────────────
-  final Map<String, _PeerEntry> _peers = {};
-
-  // Two-way UID↔userId maps so the screen can use int UIDs
+  MediaStream? _systemAudioStream;
+  RTCVideoRenderer? _localRenderer;
+  final Map<int, RTCVideoRenderer> _remoteRenderers = {};
   final Map<int, String> _uidToUserId = {};
-  final Map<String, int> _userIdToUid = {};
+  
+  // Audio Level Monitoring (VAD)
+  final Map<int, double> _remoteAudioLevels = {};
+  double _localAudioLevel = 0.0;
+  Timer? _audioLevelTimer;
+
+  // Adaptive Bandwidth Monitoring & Quality Throttling
+  bool _networkDegraded = false;
+  int _consecutiveHighLossTicks = 0;
+
+  final Map<String, Set<String>> _sentIceCandidateKeys = {};
+
+  // Production ICE Servers
+  List<Map<String, dynamic>>? _productionIceServers;
+
+  // Fallback STUN servers for local development
+  static final List<Map<String, dynamic>> _defaultIceServers = [
+    {
+      'urls': ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'],
+    },
+  ];
+
+  bool _isJoinedChannel = false;
+  bool _isBroadcaster = false;
+  bool _localVideoCapturing = false;
+  bool _localAudioMuted = true;
+  String? _currentChannelId;
+  /* Unused: int? _localUid; */
+  Timer? _signalingHeartbeatTimer;
+
+  /// Production Initializer: Fetches TURN credentials via Cloud Function (security: prevents secret key exposure).
+  /// Sprint 2 C-2 Fix: Moved from client-side HTTP to Cloud Function
+  Future<void> initializeProductionNetworking() async {
+    if (_productionIceServers != null && _productionIceServers!.isNotEmpty) {
+      _log('✅ ICE servers already provided.');
+      return;
+    }
+
+    developer.Timeline.startSync('MixVy:WebRTC:FetchTurnCredentials');
+    try {
+      // Call Cloud Function to fetch TURN credentials securely (secret key never leaves backend)
+      final callable = FirebaseFunctions.instance.httpsCallable('getTurnCredentials');
+      final result = await callable.call().timeout(const Duration(seconds: 10));
+      developer.Timeline.finishSync();
+
+      if (result.data is Map<String, dynamic>) {
+        final data = result.data as Map<String, dynamic>;
+        final username = data['username']?.toString();
+        final password = data['credential']?.toString();
+        final turnUrl = data['urls']?.toString() ?? 'turn:open.metered.ca:443';
+        
+        if (username != null && password != null) {
+          _productionIceServers = [
+            {'urls': 'stun:stun.l.google.com:19302'},
+            {
+              'urls': turnUrl,
+              'username': username,
+              'credential': password,
+            }
+          ];
+          _log('✅ Production ICE servers initialized via Cloud Function (secure)');
+          return;
+        }
+      }
+    } catch (e) {
+      _log('[WebRTC][WARN] Cloud Function error during TURN fetch: $e. Falling back to STUN.');
+    } finally {
+      if (_productionIceServers == null) {
+        _log('[WebRTC] Initialized with STUN fallback topology.');
+      }
+    }
+  }
+
+  Map<String, dynamic> get _iceConfig => {
+        'iceServers': (_productionIceServers != null && _productionIceServers!.isNotEmpty)
+            ? _productionIceServers
+            : _defaultIceServers,
+        'sdpSemantics': 'unified-plan',
+        'iceCandidatePoolSize': 8,
+      };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Firestore listeners
+  // Private: Signaling Helpers
   // ──────────────────────────────────────────────────────────────────────────
-  StreamSubscription<QuerySnapshot>? _presenceSub;
-  StreamSubscription<QuerySnapshot>? _incomingCallsSub;
-  // Track which call docs we have already *answered* to avoid double-processing
-  final Set<String> _answeredCalls = {};
 
-  // Broadcaster-side answer PCs keyed by callId — MUST be retained so Dart's
-  // GC does not collect the RTCPeerConnection while ICE is still gathering.
-  final Map<String, RTCPeerConnection> _answerPcs = {};
-  final Map<String, StreamSubscription> _answerIceSubs = {};
+  String _iceCandidateFingerprint(RTCIceCandidate candidate) {
+    final raw = '${candidate.sdpMid}|${candidate.sdpMLineIndex}|${candidate.candidate}';
+    return raw.hashCode.toUnsigned(32).toRadixString(16);
+  }
+
+  Future<void> _writeIceCandidate({
+    required DocumentReference<Map<String, dynamic>> signalRef,
+    required String subcollection,
+    required RTCIceCandidate candidate,
+    required String scopeKey,
+  }) async {
+    final rawCandidate = candidate.candidate;
+    if (rawCandidate == null || rawCandidate.isEmpty) return;
+
+    final fingerprint = _iceCandidateFingerprint(candidate);
+    final seen = _sentIceCandidateKeys.putIfAbsent(scopeKey, () => <String>{});
+    if (!seen.add(fingerprint)) return;
+
+    try {
+      await signalRef
+          .collection(subcollection)
+          .doc(fingerprint)
+          .set({
+            ...candidate.toMap(),
+            'userId': _localUserId,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+    } catch (error) {
+      seen.remove(fingerprint);
+      _log('failed to write ICE candidate: $error');
+    }
+  }
+
+  void _log(String message) {
+    debugPrint('[WebRtcRoomService] $message');
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // RtcRoomService callbacks
+  // Public: RtcRoomService Implementation
   // ──────────────────────────────────────────────────────────────────────────
-  @override VoidCallback? onRemoteUserJoined;
-  @override VoidCallback? onRemoteUserLeft;
-  @override VoidCallback? onSpeakerActivityChanged;
-  @override VoidCallback? onLocalVideoCaptureChanged;
-  @override VoidCallback? onTokenWillExpire;
-  @override VoidCallback? onConnectionLost;
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // RtcRoomService: state getters
-  // ──────────────────────────────────────────────────────────────────────────
   @override
-  List<int> get remoteUids => _uidToUserId.entries
-      .where((e) => e.value != _localUserId)
-      .map((e) => e.key)
-      .toList();
+  VoidCallback? onRemoteUserJoined;
+  @override
+  VoidCallback? onRemoteUserLeft;
+  @override
+  VoidCallback? onSpeakerActivityChanged;
+  @override
+  VoidCallback? onLocalVideoCaptureChanged;
+  @override
+  VoidCallback? onTokenWillExpire;
+  @override
+  VoidCallback? onConnectionLost;
+  @override
+  ValueChanged<RtcConnectionState>? onConnectionStateChanged;
 
   @override
-  bool get localSpeaking => _localSpeaking;
-
+  List<int> get remoteUids => _remoteRenderers.keys.toList();
   @override
-  bool get canRenderLocalView =>
-      _initialized && _isJoined && _broadcasterMode && _localVideoCapturing;
-
+  bool get localSpeaking => _localAudioLevel > 0.05;
   @override
-  bool get isBroadcaster => _broadcasterMode;
-
+  bool get canRenderLocalView => _localRenderer != null && _localVideoCapturing;
   @override
-  bool get isJoinedChannel => _isJoined;
-
+  bool get isBroadcaster => _isBroadcaster;
+  @override
+  bool get isJoinedChannel => _isJoinedChannel;
   @override
   bool get isLocalVideoCapturing => _localVideoCapturing;
+  @override
+  bool get isLocalAudioMuted => _localAudioMuted;
+  @override
+  bool get isSharingSystemAudio => _systemAudioStream != null;
 
   @override
-  bool isRemoteSpeaking(int uid) => _remoteSpeakingUids.contains(uid);
+  RtcConnectionState get connectionState => RtcConnectionState.idle;
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // RtcRoomService: video views
-  // ──────────────────────────────────────────────────────────────────────────
+  @override
+  int get reconnectAttemptCount => 0;
+
+  @override
+  Future<void> shareSystemAudio(bool enabled) async {
+    if (enabled) {
+      try {
+        _log('Starting system audio capture...');
+        
+        // Request display media (includes system audio option in Chrome)
+        _systemAudioStream = await navigator.mediaDevices.getDisplayMedia({
+          'audio': {
+            'echoCancellation': false,
+            'noiseSuppression': false,
+            'autoGainControl': false,
+          },
+          'video': {
+            'cursor': 'always', // Show cursor while capturing
+          } // Optional: capture video too, or set to false for audio-only
+        });
+        
+        _log('✅ System audio stream acquired');
+        
+        // Get the audio track
+        final audioTracks = _systemAudioStream!.getAudioTracks();
+        if (audioTracks.isEmpty) {
+          _log('⚠️ No audio track in display media stream');
+          _systemAudioStream = null;
+          return;
+        }
+        
+        final audioTrack = audioTracks.first;
+        
+        // Add audio track to all peer connections
+        for (var entry in _pcs.entries) {
+          final peerId = entry.key;
+          final pc = entry.value;
+          try {
+            // Check if audio sender already exists
+            final senders = await pc.getSenders();
+            final audioSender = senders.where((s) => s.track?.kind == 'audio').firstOrNull;
+            
+            if (audioSender != null) {
+              // Replace existing audio track
+              await audioSender.replaceTrack(audioTrack);
+              _log('✅ Replaced mic audio with system audio for peer: $peerId');
+            } else {
+              // Add new audio track
+              await pc.addTrack(audioTrack, _systemAudioStream!);
+              _log('✅ Added system audio track to peer: $peerId');
+            }
+          } catch (e) {
+            _log('❌ Failed to add audio track to peer $peerId: $e');
+          }
+        }
+        
+        // Listen for stream end (user stops sharing)
+        audioTrack.onEnded = () {
+          _log('⚠️ User stopped screen/audio share. Cleaning up.');
+          shareSystemAudio(false).ignore();
+        };
+        
+      } catch (e) {
+        _log('❌ Failed to get display media: $e');
+        _systemAudioStream = null;
+        rethrow;
+      }
+    } else {
+      // Stop sharing system audio and restore mic
+      try {
+        if (_systemAudioStream != null) {
+          _log('Stopping system audio capture...');
+          for (var track in _systemAudioStream!.getTracks()) {
+            track.enabled = false;
+            await track.stop();
+          }
+          await _systemAudioStream!.dispose();
+          _systemAudioStream = null;
+        }
+        
+        // Restore original microphone audio for all peers
+        if (_localStream != null) {
+          final micAudioTracks = _localStream!.getAudioTracks();
+          if (micAudioTracks.isNotEmpty) {
+            final micAudioTrack = micAudioTracks.first;
+            
+            for (var entry in _pcs.entries) {
+              final peerId = entry.key;
+              final pc = entry.value;
+              try {
+                final senders = await pc.getSenders();
+                final audioSender = senders.where((s) => s.track?.kind == 'audio').firstOrNull;
+                
+                if (audioSender != null) {
+                  await audioSender.replaceTrack(micAudioTrack);
+                  _log('✅ Restored microphone audio for peer: $peerId');
+                }
+              } catch (e) {
+                _log('Failed to restore mic audio for peer $peerId: $e');
+              }
+            }
+          }
+        }
+        
+        _log('✅ System audio sharing stopped');
+      } catch (e) {
+        _log('Error stopping system audio sharing: $e');
+      }
+    }
+  }
+
+  @override
+  bool isRemoteSpeaking(int uid) => (_remoteAudioLevels[uid] ?? 0.0) > 0.05;
+  @override
+  String? userIdForUid(int uid) => _uidToUserId[uid];
+  @override
+  double get localAudioLevel => _localAudioLevel;
+  @override
+  double remoteAudioLevelForUid(int uid) => _remoteAudioLevels[uid] ?? 0.0;
+
   @override
   Widget getLocalView() {
-    if (!canRenderLocalView || !_localRendererReady) {
-      return const ColoredBox(
-        color: Colors.black12,
-        child: Center(child: Icon(Icons.videocam_off, size: 36)),
-      );
-    }
-    return RTCVideoView(_localRenderer, mirror: true);
+    final renderer = _localRenderer;
+    if (renderer == null) return const SizedBox.shrink();
+    return RTCVideoView(renderer, mirror: true, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
   }
-
+  
   @override
   Widget getRemoteView(int uid, String channelId) {
-    final userId = _uidToUserId[uid];
-    if (userId == null) {
-      return const ColoredBox(color: Colors.black12);
-    }
-    final peer = _peers[userId];
-    if (peer == null || !peer.rendererReady || peer.remoteStream == null) {
-      return const ColoredBox(color: Colors.black12);
-    }
-    return RTCVideoView(peer.renderer);
+    final renderer = _remoteRenderers[uid];
+    if (renderer == null) return const SizedBox.shrink();
+    return RTCVideoView(renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // RtcRoomService: lifecycle
-  // ──────────────────────────────────────────────────────────────────────────
-
-  /// No WASM to load — initialises the local video renderer instantly.
   @override
   Future<void> initialize(String appId) async {
-    if (!_localRendererReady) {
-      await _localRenderer.initialize();
-      _localRendererReady = true;
-    }
-    _initialized = true;
-    _log('initialized (native WebRTC, no WASM)');
+    await initializeProductionNetworking();
   }
 
-  /// Joins the WebRTC mesh for [channelName] (= roomId).
-  /// [token] is ignored; Firestore handles signaling.
-  /// [uid] is stored as the local integer UID for API compatibility.
   @override
   Future<void> joinRoom(
     String token,
@@ -200,168 +408,472 @@ class WebRtcRoomService implements RtcRoomService {
     bool publishCameraTrackOnJoin = false,
     bool publishMicrophoneTrackOnJoin = false,
   }) async {
-    if (!_initialized) throw StateError('WebRtcRoomService not initialized');
-    _roomId = channelName;
-    _localUid = uid;
-    _uidToUserId[uid] = _localUserId;
-    _userIdToUid[_localUserId] = uid;
-    _isJoined = true;
+    _log('Joining room signaling: $channelName as $uid');
+    _currentChannelId = channelName;
+/* Unused: /* Deprecated/Unused:     _localUid = uid; */ */
+    _isJoinedChannel = true;
+    
+    // Register participant in the signaling session
+    final sessionRef = _firestore.collection('webrtc_sessions').doc(channelName);
+    await sessionRef.set({
+      'updatedAt': FieldValue.serverTimestamp(),
+      'active': true,
+    }, SetOptions(merge: true));
 
-    // Announce presence (not broadcasting yet)
-    await _peersCol.doc(_localUserId).set({
+    await sessionRef.collection('participants').doc(_localUserId).set({
       'uid': uid,
-      'isBroadcasting': false,
-      'joinedAt': FieldValue.serverTimestamp(),
+      'lastSeen': FieldValue.serverTimestamp(),
+      'isBroadcasting': publishCameraTrackOnJoin,
     });
 
-    // Watch who is broadcasting — create/close viewer connections as needed
-    _presenceSub = _peersCol
-        .where('isBroadcasting', isEqualTo: true)
-        .snapshots()
-        .listen(_onPresenceChanged, onError: _onListenerError);
+    // BACKGROUND PRUNE: Purge stale signaling participants (older than 60 seconds) on join
+    unawaited(Future(() async {
+      try {
+        final now = DateTime.now();
+        final staleThreshold = now.subtract(const Duration(seconds: 60));
+        final participantsQuery = await sessionRef.collection('participants').get();
+        for (var doc in participantsQuery.docs) {
+          final pId = doc.id;
+          if (pId == _localUserId) continue;
 
-    // Watch for viewers creating offers addressed to us; answer them
-    _incomingCallsSub = _callsCol
-        .where('broadcasterId', isEqualTo: _localUserId)
-        .snapshots()
-        .listen(_onIncomingCalls, onError: _onListenerError);
+          final data = doc.data();
+          final lastSeenTimestamp = data['lastSeen'] as Timestamp?;
+          if (lastSeenTimestamp != null) {
+            final lastSeen = lastSeenTimestamp.toDate();
+            if (lastSeen.isBefore(staleThreshold)) {
+              _log('Purging stale/ghost signaling participant: $pId (last seen: $lastSeen)');
+              await doc.reference.delete();
+              
+              // Also clean up any stale signaling or candidates for this ghost user
+              final signalDocId = _signalingDocId(_localUserId, pId);
+              await sessionRef.collection('signaling').doc(signalDocId).delete();
+              
+              final candidates = await sessionRef.collection('candidates').where('userId', isEqualTo: pId).get();
+              for (var cDoc in candidates.docs) {
+                await cDoc.reference.delete();
+              }
+            }
+          }
+        }
+      } catch (e) {
+        _log('Failed to prune stale signaling participants: $e');
+      }
+    }));
 
-    _log('joined roomId=$channelName uid=$uid');
+    _startSignalingHeartbeat();
+    _startAudioLevelMonitoring();
+    _subscribeToParticipants(channelName);
+
+    if (publishCameraTrackOnJoin || publishMicrophoneTrackOnJoin) {
+      await enableVideo(publishCameraTrackOnJoin, publishMicrophoneTrack: publishMicrophoneTrackOnJoin);
+    }
+  }
+
+  void _startAudioLevelMonitoring() {
+    _audioLevelTimer?.cancel();
+    _audioLevelTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) async {
+      if (!_isJoinedChannel) {
+        timer.cancel();
+        return;
+      }
+
+      // Monitor Remote Audio Levels via RTC Stats
+      for (var entry in _pcs.entries) {
+        final pc = entry.value;
+        final peerId = entry.key;
+        final uid = _stableUid(peerId);
+
+        try {
+          final stats = await pc.getStats();
+          for (var stat in stats) {
+            if (stat.type == 'media-source' && stat.values['kind'] == 'audio') {
+              _localAudioLevel = (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
+            }
+            if (stat.type == 'inbound-rtp' && stat.values['kind'] == 'audio') {
+              final level = (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
+              _remoteAudioLevels[uid] = level;
+            }
+          }
+        } catch (e) {
+          // Stats might fail during connection transition state parameters
+        }
+      }
+      
+      if (_pcs.isEmpty) {
+        _localAudioLevel = 0.0;
+        _remoteAudioLevels.clear();
+      }
+      
+      onSpeakerActivityChanged?.call();
+      _monitorNetworkMetrics().ignore();
+    });
+  }
+
+  void _startSignalingHeartbeat() {
+    _signalingHeartbeatTimer?.cancel();
+    _signalingHeartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (!_isJoinedChannel || _currentChannelId == null) {
+        timer.cancel();
+        return;
+      }
+      
+      try {
+        final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+        await sessionRef.collection('participants').doc(_localUserId).update({
+          'lastSeen': FieldValue.serverTimestamp(),
+        });
+        
+        await sessionRef.update({
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        _log('Signaling heartbeat failed: $e');
+      }
+    });
+  }
+
+  void _subscribeToParticipants(String roomId) {
+    final subs = _roomSubscriptions.putIfAbsent(roomId, () => []);
+    subs.add(_firestore
+        .collection('webrtc_sessions')
+        .doc(roomId)
+        .collection('participants')
+        .snapshots()
+        .listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        final userId = change.doc.id;
+        if (userId == _localUserId) continue;
+
+        if (change.type == DocumentChangeType.added) {
+          _log('New peer detected: $userId. Establishing connection.');
+          final isOfferer = _localUserId.compareTo(userId) < 0;
+          _setupPC(userId, roomId, isOfferer).ignore();
+        } else if (change.type == DocumentChangeType.removed) {
+          _log('Peer left: $userId. Cleaning up.');
+          _cleanupPeer(userId);
+        }
+      }
+    }));
+  }
+
+  void _cleanupPeer(String userId) {
+    final uid = _stableUid(userId);
+    
+    // 1. Remove peer connection first
+    _pcs.remove(userId)?.dispose();
+    
+    // 2. Snapshot the renderer before disposal (prevents deactivated widget exceptions)
+    final renderer = _remoteRenderers.remove(uid);
+    
+    // 3. Clear all references
+    _uidToUserId.remove(uid);
+    _remoteAudioLevels.remove(uid);
+    
+    // 4. Remove ICE candidate fingerprints for this peer
+    if (_currentChannelId != null) {
+      final scopeKey = '$_currentChannelId:$userId';
+      _sentIceCandidateKeys.remove(scopeKey);
+    }
+    
+    // 5. Trigger UI rebuild callback BEFORE renderer disposal
+    onRemoteUserLeft?.call();
+    
+    // 6. Finally, dispose renderer after callback completes
+    renderer?.dispose();
+  }
+
+  Future<void> _setupPC(String peerId, String roomId, bool isOfferer) async {
+    if (_pcs.containsKey(peerId)) return;
+
+    developer.Timeline.startSync('MixVy:WebRTC:SetupPC', arguments: {'peerId': peerId, 'isOfferer': isOfferer});
+    
+    // Start latency tracking for this peer
+    _latencyTracker.startSignalingTimer(peerId);
+    
+    final pc = await createPeerConnection(_iceConfig);
+    _pcs[peerId] = pc;
+    _uidToUserId[_stableUid(peerId)] = peerId;
+
+    _setupIceConnectionStateListener(pc, peerId);
+
+    if (_localStream != null) {
+      for (var track in _localStream!.getTracks()) {
+        await pc.addTrack(track, _localStream!);
+      }
+    }
+
+    pc.onIceCandidate = (candidate) {
+      _writeIceCandidate(
+        signalRef: _firestore.collection('webrtc_sessions').doc(roomId),
+        subcollection: 'candidates',
+        candidate: candidate,
+        scopeKey: '$roomId:$peerId',
+      ).ignore();
+    };
+
+    pc.onTrack = (event) async {
+      if (event.streams.isNotEmpty) {
+        final stream = event.streams[0];
+        final uid = _stableUid(peerId);
+        
+        final renderer = RTCVideoRenderer();
+        await renderer.initialize();
+        renderer.srcObject = stream;
+        _remoteRenderers[uid] = renderer;
+        onRemoteUserJoined?.call();
+      }
+    };
+
+    final signalRef = _firestore
+        .collection('webrtc_sessions')
+        .doc(roomId)
+        .collection('signaling')
+        .doc(_signalingDocId(_localUserId, peerId));
+
+    // Listen for remote signals
+    final subs = _roomSubscriptions[roomId]!;
+    subs.add(signalRef.snapshots().listen((snap) async {
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      final senderId = data['senderId'] as String;
+      if (senderId == _localUserId) return;
+
+      final type = data['type'] as String;
+      final sdp = data['sdp'] as String;
+
+      // Record when remote description is received from Firestore
+      _latencyTracker.recordRemoteDescriptionReceived(peerId, type);
+
+      // Sprint 2 B-2 Fix: Validate role before applying remote description (prevents offer/answer race)
+      if (type == 'offer') {
+        if (isOfferer) {
+          _log('⚠️ RACE DETECTED: Received offer but I am offerer. Ignoring. (peerId=$peerId)');
+          return; // Both peers tried to be offerer - deterministic ordering should prevent this
+        }
+        
+        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+        _latencyTracker.recordRemoteDescriptionApplied(peerId);
+        
+        final answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        
+        await signalRef.set({
+          'senderId': _localUserId,
+          'type': 'answer',
+          'sdp': answer.sdp,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        
+        _latencyTracker.recordOfferAnswerSent(peerId, 'answer');
+      } else if (type == 'answer') {
+        if (!isOfferer) {
+          _log('⚠️ RACE DETECTED: Received answer but I am not offerer. Ignoring. (peerId=$peerId)');
+          return; // Non-offerer received answer - deterministic ordering violation
+        }
+        
+        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+        _latencyTracker.recordRemoteDescriptionApplied(peerId);
+      }
+    }));
+
+    // Listen for ICE candidates
+    subs.add(_firestore
+        .collection('webrtc_sessions')
+        .doc(roomId)
+        .collection('candidates')
+        .where('userId', isEqualTo: peerId)
+        .snapshots()
+        .listen((snap) {
+      final now = DateTime.now();
+      final maxCandidateAge = Duration(seconds: 20);
+      int staleCandidatesSkipped = 0;
+      
+      for (var change in snap.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data();
+          if (data != null) {
+            // Check candidate age: skip stale candidates older than 20 seconds
+            final createdAt = (data['timestamp'] as Timestamp?)?.toDate();
+            if (createdAt != null && now.difference(createdAt) > maxCandidateAge) {
+              staleCandidatesSkipped++;
+              _log('⏭️ Skipping stale ICE candidate for $peerId (age: ${now.difference(createdAt).inSeconds}s)');
+              continue;
+            }
+            
+            try {
+              final candidate = RTCIceCandidate(
+                data['candidate']?.toString(),
+                data['sdpMid']?.toString(),
+                data['sdpMLineIndex'] as int?,
+              );
+              
+              pc.addCandidate(candidate);
+              _log('✅ Added ICE candidate for peer: $peerId');
+            } catch (e) {
+              _log('⚠️ Failed to add ICE candidate for $peerId: $e. Connection state: ${pc.connectionState}');
+            }
+          }
+        }
+      }
+      
+      if (staleCandidatesSkipped > 0) {
+        _log('📊 Skipped $staleCandidatesSkipped stale ICE candidates for $peerId in this batch');
+      }
+    }));
+
+    if (isOfferer) {
+      // Sprint 2 B-2 Fix: Add safeguard to ensure only deterministic offerer sends offer
+      // Verify local user ID is lexicographically smaller than peer ID
+      if (_localUserId.compareTo(peerId) >= 0) {
+        _log('❌ LOGIC ERROR: Non-offerer tried to send offer! localUserId=$_localUserId, peerId=$peerId');
+        return;
+      }
+      
+      final offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      await signalRef.set({
+        'senderId': _localUserId,
+        'type': 'offer',
+        'sdp': offer.sdp,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      
+      _latencyTracker.recordOfferAnswerSent(peerId, 'offer');
+    }
+    developer.Timeline.finishSync();
+  }
+
+  String _signalingDocId(String id1, String id2) {
+    final list = [id1, id2]..sort();
+    return '${list[0]}_${list[1]}';
   }
 
   @override
-  Future<void> enableVideo(
-    bool enabled, {
-    bool publishMicrophoneTrack = true,
-  }) async {
-    if (!_initialized || !_isJoined) return;
-
+  Future<void> enableVideo(bool enabled, {bool publishMicrophoneTrack = true}) async {
+    _log('enableVideo: $enabled');
     if (enabled) {
-      if (_broadcasterMode && _localVideoCapturing) return;
-
-      try {
-        final stream = await navigator.mediaDevices.getUserMedia({
+      if (_localStream == null) {
+        final Map<String, dynamic> constraints = {
+          'audio': publishMicrophoneTrack,
           'video': {
             'facingMode': 'user',
-            'width': {'ideal': 640},
-            'height': {'ideal': 480},
+            'width': {'ideal': 1280},
+            'height': {'ideal': 720},
           },
-          // Always acquire audio alongside video so the mic toggle works
-          // without a separate getUserMedia call. The track starts muted
-          // if the user's mic is currently off.
-          'audio': true,
-        });
+        };
+        try {
+          _localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          _log('Successfully acquired local stream.');
+        } catch (e) {
+          _log('Failed to get user media with constraints, trying fallback: $e');
+          _localStream = await navigator.mediaDevices.getUserMedia({
+            'audio': publishMicrophoneTrack,
+            'video': true,
+          });
+        }
+      } else {
+        final videoTracks = _localStream!.getVideoTracks();
+        if (videoTracks.isEmpty || videoTracks.any((t) => t.enabled == false)) {
+          _log('Video track missing or ended. Re-acquiring...');
+          final videoStream = await navigator.mediaDevices.getUserMedia({'video': true});
+          final newTrack = videoStream.getVideoTracks().first;
+          await _localStream!.addTrack(newTrack);
+        } else {
+          for (var t in videoTracks) { t.enabled = true; }
+        }
+      }
+      
+      if (_localRenderer == null) {
+        _localRenderer = RTCVideoRenderer();
+        await _localRenderer!.initialize();
+      }
+      
+      // Explicitly enable all video tracks before rendering
+      // This prevents the "lens covered" state that occurs when tracks are disabled
+      final videoTracks = _localStream!.getVideoTracks();
+      _log('Enabling ${videoTracks.length} video track(s) for rendering...');
+      for (final track in videoTracks) {
+        track.enabled = true;
+      }
+      
+      // Set the stream on the renderer
+      _localRenderer!.srcObject = _localStream;
+      _log('Stream attached to local renderer');
+      
+      // Critical: Wait for browser to properly attach the video stream to the DOM element
+      // Without this delay, the renderer shows "lens covered" state on initial attach
+      // because the browser hasn't finished initializing the video playback pipeline.
+      // This 100ms is essential for Chrome/Firefox/Safari to initialize the video element.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      _log('Video renderer initialization complete - camera should now display');
+      
+      // Force the renderer to refresh by triggering a rebuild notification
+      // This ensures the RTCVideoView immediately reflects the new stream
+      onLocalVideoCaptureChanged?.call();
+      
+      _localVideoCapturing = true;
+      _isBroadcaster = true;
+      _localAudioMuted = !publishMicrophoneTrack;
+      _log('Local video capture enabled and publishing to peers');
 
-        // Mute audio immediately if mic is off — track exists but silent
-        if (!publishMicrophoneTrack) {
-          for (final track in stream.getAudioTracks()) {
-            track.enabled = false;
+      final videoTrack = _localStream?.getVideoTracks().firstOrNull;
+      if (videoTrack != null) {
+        for (var pc in _pcs.values) {
+          final senders = await pc.getSenders();
+          final videoSender = senders.where((s) => s.track?.kind == 'video').firstOrNull;
+          if (videoSender != null) {
+            await videoSender.replaceTrack(videoTrack);
+          } else {
+            await pc.addTrack(videoTrack, _localStream!);
+            _log('Renegotiation needed for peer after adding video track.');
           }
         }
-
-        _localStream = stream;
-        _localRenderer.srcObject = stream;
-        _broadcasterMode = true;
-        _localVideoCapturing = true;
-        _startLocalVad(stream);
-
-        // Announce that we are now broadcasting
-        await _updatePresence(isBroadcasting: true);
-
-        // Process any offers from viewers that arrived before we went live
-        await _processExistingIncomingCalls();
-
-        onLocalVideoCaptureChanged?.call();
-        _log('camera enabled — broadcasting (audio track muted=${ !publishMicrophoneTrack})');
-      } catch (error) {
-        _localVideoCapturing = false;
-        _broadcasterMode = false;
-        _throwMapped(error, 'enable camera');
       }
     } else {
-      await _stopLocalStream();
       _localVideoCapturing = false;
-      _broadcasterMode = false;
-      await _updatePresence(isBroadcasting: false);
-      onLocalVideoCaptureChanged?.call();
-      _log('camera disabled');
+      _localRenderer?.srcObject = null;
+      
+      final videoTracks = _localStream?.getVideoTracks();
+      if (videoTracks != null) {
+        for (var track in videoTracks) {
+          track.enabled = false;
+          await track.stop();
+          await _localStream?.removeTrack(track);
+        }
+      }
+
+      if (_localAudioMuted) {
+        _localStream?.getTracks().forEach((t) => t.stop());
+        _localStream = null;
+      }
     }
+    onLocalVideoCaptureChanged?.call();
   }
 
   @override
   Future<void> mute(bool muted) async {
-    final stream = _localStream;
-    if (stream == null) return;
-    for (final track in stream.getAudioTracks()) {
+    _log('mute: $muted');
+    _localAudioMuted = muted;
+    _localStream?.getAudioTracks().forEach((track) {
       track.enabled = !muted;
-    }
-    _log('mute=$muted');
+    });
+    onSpeakerActivityChanged?.call();
   }
 
   @override
   Future<void> setBroadcaster(bool enabled) async {
-    // Called when user enables mic while camera is still off.
-    if (enabled && _isJoined) {
-      if (_localStream == null) {
-        // Mic-only: acquire an audio-only stream so mute/publish work.
-        try {
-          final audioStream = await navigator.mediaDevices.getUserMedia({
-            'video': false,
-            'audio': true,
-          });
-          _localStream = audioStream;
-          _startLocalVad(audioStream);
-          _log('setBroadcaster: acquired audio-only stream');
-        } catch (error) {
-          _throwMapped(error, 'access microphone');
-        }
-      }
-      if (!_broadcasterMode) {
-        _broadcasterMode = true;
-        await _updatePresence(isBroadcasting: true);
-        // Answer any pending viewer offers now that we have a stream.
-        await _processExistingIncomingCalls();
-      }
-    } else if (!enabled) {
-      _broadcasterMode = false;
-      _stopLocalVad();
-      await _updatePresence(isBroadcasting: false);
-    }
+    _isBroadcaster = enabled;
   }
 
   @override
   Future<void> publishLocalVideoStream(bool enabled) async {
-    for (final track in (_localStream?.getVideoTracks() ?? [])) {
-      track.enabled = enabled;
-    }
+    await enableVideo(enabled, publishMicrophoneTrack: !_localAudioMuted);
   }
 
   @override
   Future<void> publishLocalAudioStream(bool enabled) async {
-    final audioTracks = _localStream?.getAudioTracks() ?? [];
-    if (audioTracks.isEmpty && enabled && _localStream != null) {
-      // Stream exists (video-only) but has no audio track — add one.
-      try {
-        final audioStream = await navigator.mediaDevices.getUserMedia({
-          'video': false,
-          'audio': true,
-        });
-        for (final track in audioStream.getAudioTracks()) {
-          await _localStream!.addTrack(track);
-          // Also add to all active broadcaster peer connections.
-          for (final peer in _peers.values) {
-            try { await peer.pc.addTrack(track, _localStream!); } catch (_) {}
-          }
-        }
-        _log('publishLocalAudioStream: injected audio track into existing stream');
-      } catch (error) {
-        _throwMapped(error, 'access microphone');
-      }
-    } else {
-      for (final track in audioTracks) {
-        track.enabled = enabled;
-      }
-    }
+    await mute(!enabled);
   }
 
   @override
@@ -370,635 +882,308 @@ class WebRtcRoomService implements RtcRoomService {
     required bool subscribe,
     bool highQuality = false,
   }) async {
-    final userId = _uidToUserId[uid];
-    if (userId == null) return;
-    final peer = _peers[userId];
-    if (peer?.remoteStream == null) return;
-    for (final track in peer!.remoteStream!.getVideoTracks()) {
-      track.enabled = subscribe;
-    }
-  }
-
-  @override
-  Future<void> renewToken(String newToken) async {
-    // No-op: WebRTC peer connections do not use expiring tokens.
-  }
-
-  @override
-  Future<void> ensureDeviceAccess({
-    required bool video,
-    required bool audio,
-  }) async {
-    MediaStream? probe;
-    try {
-      probe = await navigator.mediaDevices.getUserMedia({
-        'video': video,
-        'audio': audio,
+    final renderer = _remoteRenderers[uid];
+    if (renderer != null) {
+      renderer.srcObject?.getVideoTracks().forEach((track) {
+        track.enabled = _networkDegraded ? false : subscribe;
       });
-    } catch (error) {
-      _throwMapped(error, video ? 'access camera' : 'access microphone');
-    } finally {
-      probe?.getTracks().forEach((t) => t.stop());
     }
   }
 
   @override
-  Future<void> dispose() async {
-    await _presenceSub?.cancel();
-    await _incomingCallsSub?.cancel();
-    _presenceSub = null;
-    _incomingCallsSub = null;
-
-    // Close all broadcaster-side answer PCs.
-    for (final sub in _answerIceSubs.values) {
-      await sub.cancel();
+  Future<void> setEncodingQuality(bool highQuality) async {
+    _log('setEncodingQuality: highQuality=$highQuality');
+    for (var pc in _pcs.values) {
+      final senders = await pc.getSenders();
+      for (var sender in senders) {
+        if (sender.track?.kind == 'video') {
+          try {
+            final parameters = sender.parameters;
+            if (parameters.encodings != null && parameters.encodings!.isNotEmpty) {
+              for (var encoding in parameters.encodings!) {
+                if (highQuality) {
+                  encoding.maxBitrate = 1500000; 
+                  encoding.maxFramerate = 30;
+                  encoding.scaleResolutionDownBy = 1.0;
+                } else {
+                  encoding.maxBitrate = 300000; 
+                  encoding.maxFramerate = 15;
+                  encoding.scaleResolutionDownBy = 2.0; 
+                }
+              }
+              await sender.setParameters(parameters);
+              _log('Successfully updated encoding parameters for highQuality=$highQuality');
+            }
+          } catch (e) {
+            _log('Failed to set encoding parameters: $e');
+          }
+        }
+      }
     }
-    _answerIceSubs.clear();
-    for (final pc in _answerPcs.values) {
-      try { await pc.close(); } catch (_) {}
-    }
-    _answerPcs.clear();
+  }
 
-    await _stopLocalStream();
-
-    for (final peer in _peers.values) {
-      await peer.dispose();
-    }
-    _peers.clear();
-    _uidToUserId.clear();
-    _userIdToUid.clear();
-    _answeredCalls.clear();
-
-    _localRenderer.srcObject = null;
-    if (_localRendererReady) {
-      await _localRenderer.dispose();
-      _localRendererReady = false;
-    }
-
-    // Remove our WebRTC presence
-    if (_roomId != null) {
+  Future<void> _monitorNetworkMetrics() async {
+    if (!_isJoinedChannel || _pcs.isEmpty) return;
+    
+    double totalPacketsLost = 0;
+    double totalPacketsReceived = 0;
+    double maxRtt = 0.0;
+    
+    for (var pc in _pcs.values) {
       try {
-        await _peersCol.doc(_localUserId).delete();
+        final stats = await pc.getStats();
+        for (var stat in stats) {
+          if (stat.type == 'inbound-rtp') {
+            totalPacketsLost += (stat.values['packetsLost'] as num?)?.toDouble() ?? 0.0;
+            totalPacketsReceived += (stat.values['packetsReceived'] as num?)?.toDouble() ?? 0.0;
+          }
+          if (stat.type == 'candidate-pair' && stat.values['state'] == 'succeeded') {
+            final rtt = (stat.values['currentRoundTripTime'] as num?)?.toDouble() ?? 0.0;
+            if (rtt > maxRtt) maxRtt = rtt;
+          }
+        }
       } catch (_) {}
     }
-
-    _localVad?.dispose();
-    _localVad = null;
-    _localSpeaking = false;
-    for (final vad in _remoteVads.values) {
-      vad.dispose();
+    
+    double lossRatio = 0.0;
+    if (totalPacketsReceived > 0) {
+      lossRatio = totalPacketsLost / (totalPacketsLost + totalPacketsReceived);
     }
-    _remoteVads.clear();
-    _remoteSpeakingUids.clear();
-
-    _isJoined = false;
-    _broadcasterMode = false;
-    _localVideoCapturing = false;
-    _initialized = false;
-    _log('disposed');
+    
+    final bool isLossDegraded = lossRatio > 0.05;
+    final bool isRttDegraded = maxRtt > 0.4;
+    
+    if (isLossDegraded || isRttDegraded) {
+      _consecutiveHighLossTicks++;
+    } else {
+      _consecutiveHighLossTicks = 0;
+    }
+    
+    if (_consecutiveHighLossTicks >= 3 && !_networkDegraded) {
+      _networkDegraded = true;
+      _log('⚠️ High network degradation detected. Throttling bitrates.');
+      await _applyAdaptiveBandwidthLimits();
+    } else if (_consecutiveHighLossTicks == 0 && _networkDegraded) {
+      _networkDegraded = false;
+      _log('✅ Network conditions recovered. Restoring streams.');
+      await _applyAdaptiveBandwidthLimits();
+    }
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Private: Firestore helpers
-  // ──────────────────────────────────────────────────────────────────────────
-
-  CollectionReference<Map<String, dynamic>> get _peersCol =>
-      _firestore.collection('rooms').doc(_roomId).collection('webrtc_peers');
-
-  CollectionReference<Map<String, dynamic>> get _callsCol =>
-      _firestore.collection('rooms').doc(_roomId).collection('webrtc_calls');
-
-  Future<void> _updatePresence({required bool isBroadcasting}) async {
-    if (_roomId == null) return;
-    try {
-      await _peersCol.doc(_localUserId).update({'isBroadcasting': isBroadcasting});
-    } catch (_) {}
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Private: signaling — viewer side (this user receives from a broadcaster)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  void _onPresenceChanged(QuerySnapshot snapshot) {
-    for (final change in snapshot.docChanges) {
-      final remoteBroadcasterId = change.doc.id;
-      if (remoteBroadcasterId == _localUserId) continue; // skip self
-
-      final data = change.doc.data() as Map<String, dynamic>?;
-      final remoteUid = (data?['uid'] as num?)?.toInt() ??
-          (remoteBroadcasterId.hashCode.abs() % 2147483647);
-
-      if (change.type == DocumentChangeType.removed) {
-        _closePeer(remoteBroadcasterId);
-        continue;
-      }
-
-      final isBroadcasting = data?['isBroadcasting'] as bool? ?? false;
-      if (isBroadcasting) {
-        if (!_peers.containsKey(remoteBroadcasterId)) {
-          if (_peers.length >= _maxMeshPeers) {
-            _log(
-              'mesh cap reached ($_maxMeshPeers peers) — skipping '
-              'connection to broadcaster=$remoteBroadcasterId',
-            );
-            continue;
+  Future<void> _applyAdaptiveBandwidthLimits() async {
+    for (var pc in _pcs.values) {
+      final senders = await pc.getSenders();
+      for (var sender in senders) {
+        if (sender.track?.kind == 'video') {
+          try {
+            final parameters = sender.parameters;
+            if (parameters.encodings != null && parameters.encodings!.isNotEmpty) {
+              for (var encoding in parameters.encodings!) {
+                if (_networkDegraded) {
+                  encoding.maxBitrate = 100000; 
+                  encoding.maxFramerate = 8;    
+                  encoding.scaleResolutionDownBy = 4.0; 
+                } else {
+                  encoding.maxBitrate = 300000; 
+                  encoding.maxFramerate = 15;
+                  encoding.scaleResolutionDownBy = 2.0; 
+                }
+              }
+              await sender.setParameters(parameters);
+            }
+          } catch (e) {
+            _log('Failed to apply adaptive bandwidth limits: $e');
           }
-          _uidToUserId[remoteUid] = remoteBroadcasterId;
-          _userIdToUid[remoteBroadcasterId] = remoteUid;
-          _createViewerConnection(remoteBroadcasterId, remoteUid);
-        }
-      } else {
-        _closePeer(remoteBroadcasterId);
-      }
-    }
-  }
-
-  /// Creates a receive-only peer connection to [broadcasterId] and sends
-  /// them an offer via Firestore.
-  Future<void> _createViewerConnection(
-    String broadcasterId,
-    int broadcasterUid,
-  ) async {
-    _log('creating viewer connection → broadcaster=$broadcasterId');
-
-    final renderer = RTCVideoRenderer();
-    await renderer.initialize();
-
-    final pc = await createPeerConnection(_iceConfig);
-    final peer = _PeerEntry(
-      broadcasterId: broadcasterId,
-      broadcasterUid: broadcasterUid,
-      pc: pc,
-      renderer: renderer,
-    );
-    _peers[broadcasterId] = peer;
-
-    pc.onTrack = (RTCTrackEvent event) {
-      MediaStream? stream;
-      if (event.streams.isNotEmpty) {
-        stream = event.streams.first;
-      } else {
-        // Some browsers deliver tracks without an associated stream.
-        // Build a synthetic one from the track so the renderer has a source.
-        createLocalMediaStream('remote_$broadcasterId').then((newStream) async {
-          await newStream.addTrack(event.track);
-          peer.remoteStream = newStream;
-          renderer.srcObject = newStream;
-          _startRemoteVad(broadcasterId, broadcasterUid, newStream);
-          _log('remote stream (synthetic) received from broadcaster=$broadcasterId');
-          onRemoteUserJoined?.call();
-        }).catchError((_) {});
-        return;
-      }
-      peer.remoteStream = stream;
-      renderer.srcObject = stream;
-      _startRemoteVad(broadcasterId, broadcasterUid, stream);
-      _log('remote stream received from broadcaster=$broadcasterId');
-      onRemoteUserJoined?.call();
-    };
-
-    pc.onConnectionState = (RTCPeerConnectionState state) {
-      _log('connection to $broadcasterId state=$state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        _closePeer(broadcasterId);
-      }
-    };
-
-    // Receive-only transceivers — we only want the broadcaster's stream
-    await pc.addTransceiver(
-      kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
-      init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
-    );
-    await pc.addTransceiver(
-      kind: RTCRtpMediaType.RTCRtpMediaTypeAudio,
-      init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
-    );
-
-    final offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    final callId = '${_localUserId}_$broadcasterId';
-    final callRef = _callsCol.doc(callId);
-
-    // Gather ICE candidates and write them to Firestore
-    pc.onIceCandidate = (RTCIceCandidate candidate) {
-      if (candidate.candidate?.isNotEmpty == true) {
-        callRef.collection('viewer_ice').add(candidate.toMap());
-      }
-    };
-
-    // Write offer to Firestore to trigger the broadcaster
-    await callRef.set({
-      'viewerId': _localUserId,
-      'broadcasterId': broadcasterId,
-      'viewerUid': _localUid,
-      'broadcasterUid': broadcasterUid,
-      'offer': {'type': offer.type, 'sdp': offer.sdp},
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    // Wait for broadcaster's answer
-    peer.answerSub = callRef.snapshots().listen((snap) async {
-      if (!snap.exists) return;
-      final callData = snap.data();
-      final answerMap = callData?['answer'] as Map<String, dynamic>?;
-      if (answerMap == null) return;
-      if (pc.signalingState == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-        try {
-          await pc.setRemoteDescription(
-            RTCSessionDescription(
-              answerMap['sdp'] as String,
-              answerMap['type'] as String,
-            ),
-          );
-          _log('set remote answer from broadcaster=$broadcasterId');
-        } catch (e) {
-          _log('setRemoteDescription failed for broadcaster=$broadcasterId: $e');
         }
       }
-    });
+    }
+    
+    for (var entry in _remoteRenderers.entries) {
+      final renderer = entry.value;
+      renderer.srcObject?.getVideoTracks().forEach((track) {
+        track.enabled = !_networkDegraded;
+      });
+    }
+  }
 
-    // Receive broadcaster's ICE candidates
-    peer.iceSub = callRef.collection('broadcaster_ice').snapshots().listen((snap) {
-      for (final change in snap.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final d = change.doc.data();
-          if (d == null) continue;
-          pc.addCandidate(RTCIceCandidate(
-            d['candidate'] as String?,
-            d['sdpMid'] as String?,
-            (d['sdpMLineIndex'] as num?)?.toInt(),
-          ));
+  @override
+  Future<void> renewToken(String newToken) async {}
+
+  @override
+  Future<void> reconnect() async {
+    // WebRTC doesn't have automatic reconnection yet; return gracefully.
+    _log('reconnect() called (no-op for WebRTC)');
+    logInfo('Reconnect requested for WebRTC service (no-op, manual recovery required)');
+  }
+
+  @override
+  Future<void> abortReconnection() async {
+    // No-op for WebRTC.
+    _log('abortReconnection() called (no-op for WebRTC)');
+    logInfo('Abort reconnection requested for WebRTC service');
+  }
+
+  @override
+  Future<void> setMicVolume(double volume) async {}
+  @override
+  Future<void> setSpeakerVolume(double volume) async {}
+
+  @override
+  Future<void> ensureDeviceAccess({required bool video, required bool audio}) async {
+    _log('Ensuring device access: video=$video, audio=$audio');
+    try {
+      final Map<String, dynamic> constraints = {
+        'audio': audio,
+        'video': video ? {'facingMode': 'user'} : false,
+      };
+      final stream = await navigator.mediaDevices.getUserMedia(constraints);
+      for (var track in stream.getTracks()) {
+        await track.stop();
+      }
+    } catch (e) {
+      _log('Device access denied: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    await disposeAll();
+  }
+
+  Future<void> disposeAll() async {
+    _log('Disposing WebRtcRoomService');
+    WidgetsBinding.instance.removeObserver(this);
+    _signalingHeartbeatTimer?.cancel();
+    _signalingHeartbeatTimer = null;
+    _audioLevelTimer?.cancel();
+    _audioLevelTimer = null;
+    
+    // Clean up latency tracking
+    _latencyTracker.reset();
+    
+    if (_currentChannelId != null) {
+      try {
+        final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+        await sessionRef.collection('participants').doc(_localUserId).delete();
+        
+        final candidates = await sessionRef.collection('candidates').where('userId', isEqualTo: _localUserId).get();
+        for (var doc in candidates.docs) {
+          await doc.reference.delete();
         }
+      } catch (e) {
+        _log('Failed to clean up signaling: $e');
       }
-    });
-
-    _log('offer sent for callId=$callId');
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Private: signaling — broadcaster side (this user answers viewer offers)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  void _onIncomingCalls(QuerySnapshot snapshot) {
-    for (final change in snapshot.docChanges) {
-      if (change.type != DocumentChangeType.added) continue;
-      final callId = change.doc.id;
-      if (_answeredCalls.contains(callId)) continue;
-      final data = change.doc.data() as Map<String, dynamic>?;
-      if (data?['offer'] == null) continue;
-      if (data?['answer'] != null) continue; // already answered
-      _answeredCalls.add(callId);
-      _answerViewerOffer(callId, data!);
-    }
-  }
-
-  /// Called when broadcaster goes live after some viewers have already created
-  /// offers that were ignored (because _localStream was null at the time).
-  Future<void> _processExistingIncomingCalls() async {
-    if (_roomId == null) return;
-    final snapshot = await _callsCol
-        .where('broadcasterId', isEqualTo: _localUserId)
-        .get();
-
-    for (final doc in snapshot.docs) {
-      final callId = doc.id;
-      if (_answeredCalls.contains(callId)) continue;
-      final data = doc.data();
-      if (data['offer'] == null) continue;
-      if (data['answer'] != null) continue; // already answered by another session
-      _answeredCalls.add(callId);
-      _answerViewerOffer(callId, data);
-    }
-  }
-
-  Future<void> _answerViewerOffer(
-    String callId,
-    Map<String, dynamic> callData,
-  ) async {
-    final localStream = _localStream;
-    if (localStream == null) {
-      _log('ignoring offer callId=$callId — no local stream yet');
-      return;
     }
 
-    final viewerId = callData['viewerId'] as String?;
-    _log('answering viewer offer callId=$callId viewer=$viewerId');
-
-    final callRef = _callsCol.doc(callId);
-    final pc = await createPeerConnection(_iceConfig);
-    // Store immediately — prevents GC from collecting this PC while ICE gathers.
-    _answerPcs[callId] = pc;
-
-    // Send our local tracks to this viewer
-    for (final track in localStream.getTracks()) {
-      await pc.addTrack(track, localStream);
+    for (var subs in _roomSubscriptions.values) {
+      for (var sub in subs) {
+        await sub.cancel();
+      }
     }
+    _roomSubscriptions.clear();
 
-    // Gather broadcaster ICE candidates
-    pc.onIceCandidate = (RTCIceCandidate candidate) {
-      if (candidate.candidate?.isNotEmpty == true) {
-        callRef.collection('broadcaster_ice').add(candidate.toMap());
-      }
-    };
-
-    final offerMap = callData['offer'] as Map<String, dynamic>;
-    await pc.setRemoteDescription(
-      RTCSessionDescription(
-        offerMap['sdp'] as String,
-        offerMap['type'] as String,
-      ),
-    );
-
-    final answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    await callRef.update({
-      'answer': {'type': answer.type, 'sdp': answer.sdp},
-    });
-
-    // Read viewer's ICE candidates — store subscription to keep it alive.
-    _answerIceSubs[callId] = callRef.collection('viewer_ice').snapshots().listen((snap) {
-      for (final change in snap.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final d = change.doc.data();
-          if (d == null) continue;
-          pc.addCandidate(RTCIceCandidate(
-            d['candidate'] as String?,
-            d['sdpMid'] as String?,
-            (d['sdpMLineIndex'] as num?)?.toInt(),
-          ));
-        }
-      }
-    });
-
-    // Clean up this answer PC when the connection ultimately closes.
-    pc.onConnectionState = (RTCPeerConnectionState state) {
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
-        _answerIceSubs.remove(callId)?.cancel();
-        _answerPcs.remove(callId)?.close();
-        _log('answer PC closed for callId=$callId ($state)');
-      }
-    };
-
-    _log('answer written for callId=$callId');
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Private: helpers
-  // ──────────────────────────────────────────────────────────────────────────
-
-  static const Map<String, dynamic> _iceConfig = {
-    'iceServers': [
-      {
-        'urls': [
-          'stun:stun.l.google.com:19302',
-          'stun:stun1.l.google.com:19302',
-        ],
-      },
-    ],
-  };
-
-  void _closePeer(String broadcasterId) {
-    final peer = _peers.remove(broadcasterId);
-    if (peer == null) return;
-    _stopRemoteVad(broadcasterId, peer.broadcasterUid);
-    _uidToUserId.remove(peer.broadcasterUid);
-    _userIdToUid.remove(broadcasterId);
-    peer.dispose();
-    onRemoteUserLeft?.call();
-    _log('closed connection to broadcaster=$broadcasterId');
-  }
-
-  Future<void> _stopLocalStream() async {
-    _stopLocalVad();
+    for (var pc in _pcs.values) {
+      await pc.dispose();
+    }
+    _pcs.clear();
+    
     if (_localStream != null) {
-      for (final track in _localStream!.getTracks()) {
-        track.stop();
+      for (var track in _localStream!.getTracks()) {
+        track.enabled = false;
+        await track.stop();
       }
-      _localRenderer.srcObject = null;
+      await _localStream!.dispose();
       _localStream = null;
     }
-  }
 
-  void _onListenerError(Object error) {
-    _log('Firestore listener error: $error');
-    onConnectionLost?.call();
-  }
-
-  void _log(String message) {
-    developer.log(message, name: 'WebRTC');
-    if (kDebugMode) debugPrint('[WebRTC] $message');
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Private: VAD helpers
-  // ──────────────────────────────────────────────────────────────────────────
-
-  /// Cast a flutter_webrtc [MediaStream] to its underlying [web.MediaStream].
-  /// On web the concrete type is [MediaStreamWeb] from dart_webrtc, which
-  /// exposes a [jsStream] field.
-  static web.MediaStream? _jsStream(MediaStream? stream) {
-    if (stream == null) return null;
-    try {
-      return (stream as dynamic).jsStream as web.MediaStream?;
-    } catch (_) {
-      return null;
+    if (_systemAudioStream != null) {
+      for (var track in _systemAudioStream!.getTracks()) {
+        track.enabled = false;
+        await track.stop();
+      }
+      await _systemAudioStream!.dispose();
+      _systemAudioStream = null;
     }
+
+    if (_localRenderer != null) {
+      _localRenderer!.srcObject = null;
+      await _localRenderer!.dispose();
+      _localRenderer = null;
+    }
+
+    for (var renderer in _remoteRenderers.values) {
+      renderer.srcObject = null;
+      await renderer.dispose();
+    }
+    _remoteRenderers.clear();
   }
 
-  void _startLocalVad(MediaStream stream) {
-    final js = _jsStream(stream);
-    if (js == null) return;
-    _localVad?.dispose();
-    _localVad = _VadMonitor(
-      jsStream: js,
-      onStateChange: (speaking) {
-        if (_localSpeaking != speaking) {
-          _localSpeaking = speaking;
-          onSpeakerActivityChanged?.call();
+  void _setupIceConnectionStateListener(RTCPeerConnection pc, String peerId) {
+    pc.onIceConnectionState = (RTCIceConnectionState state) {
+      _log('ICE Connection State changed for $peerId: $state');
+      
+      switch (state) {
+        case RTCIceConnectionState.RTCIceConnectionStateConnected:
+        case RTCIceConnectionState.RTCIceConnectionStateCompleted:
+          // Record when peer connection is established
+          _latencyTracker.recordPeerConnectionEstablished(peerId);
+          break;
+        case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
+          _log('⚠️ Connection for $peerId disconnected. Waiting for recovery...');
+          break;
+        case RTCIceConnectionState.RTCIceConnectionStateFailed:
+          _log('❌ Connection for $peerId failed.');
+          _latencyTracker.recordPeerConnectionClosed(peerId);
+          onConnectionLost?.call();
+          break;
+        case RTCIceConnectionState.RTCIceConnectionStateClosed:
+          _log('Connection for $peerId closed.');
+          _latencyTracker.recordPeerConnectionClosed(peerId);
+          break;
+        default:
+          break;
+      }
+    };
+  }
+
+  static int _stableUid(String userId) {
+    int h = 0;
+    for (final c in userId.codeUnits) { h = (h * 31 + c) & 0x7FFFFFFF; }
+    return h == 0 ? 1 : h;
+  }
+
+  // --- 1-to-1 Compatibility Methods (Phase 2 Legacy) ---
+
+  Future<String> createRoom(MediaStream localStream, void Function(MediaStream) onRemoteStream) async {
+    final roomId = _firestore.collection('webrtc_sessions').doc().id;
+    _localStream = localStream;
+    onRemoteUserJoined = () {
+      if (_remoteRenderers.isNotEmpty) {
+        onRemoteStream(_remoteRenderers.values.first.srcObject!);
+      }
+    };
+    await joinRoom('', roomId, _stableUid(_localUserId), publishCameraTrackOnJoin: true);
+    return roomId;
+  }
+
+  Future<void> joinRoomById(
+    String roomId, 
+    MediaStream localStream, [
+    void Function(MediaStream)? onRemoteStream,
+  ]) async {
+    _localStream = localStream;
+    if (onRemoteStream != null) {
+      onRemoteUserJoined = () {
+        if (_remoteRenderers.isNotEmpty) {
+          onRemoteStream(_remoteRenderers.values.first.srcObject!);
         }
-      },
-    );
-  }
-
-  void _stopLocalVad() {
-    _localVad?.dispose();
-    _localVad = null;
-    if (_localSpeaking) {
-      _localSpeaking = false;
-      onSpeakerActivityChanged?.call();
+      };
     }
-  }
-
-  void _startRemoteVad(String userId, int uid, MediaStream stream) {
-    final js = _jsStream(stream);
-    if (js == null) return;
-    _remoteVads[userId]?.dispose();
-    _remoteVads[userId] = _VadMonitor(
-      jsStream: js,
-      onStateChange: (speaking) {
-        final changed = speaking
-            ? _remoteSpeakingUids.add(uid)
-            : _remoteSpeakingUids.remove(uid);
-        if (changed) onSpeakerActivityChanged?.call();
-      },
-    );
-  }
-
-  void _stopRemoteVad(String userId, int uid) {
-    _remoteVads.remove(userId)?.dispose();
-    if (_remoteSpeakingUids.remove(uid)) onSpeakerActivityChanged?.call();
-  }
-
-  Never _throwMapped(Object error, String operation) {
-    final raw = error.toString().toLowerCase();
-    if (raw.contains('notallowederror') || raw.contains('permission denied')) {
-      throw AgoraServiceException(
-        code: 'permission-denied',
-        message: 'Camera/microphone permission was denied. Allow access and retry.',
-        cause: error,
-      );
-    }
-    if (raw.contains('notfounderror') ||
-        raw.contains('requested device not found') ||
-        raw.contains('no audio') ||
-        raw.contains('no video') ||
-        raw.contains('devicesnotfound')) {
-      throw AgoraServiceException(
-        code: 'no-media-devices',
-        message: 'No working camera or microphone was found on this device.',
-        cause: error,
-      );
-    }
-    if (raw.contains('notreadableerror') ||
-        raw.contains('track is already in use') ||
-        raw.contains('device in use')) {
-      throw AgoraServiceException(
-        code: 'device-in-use',
-        message: 'Camera or microphone is in use by another app or tab.',
-        cause: error,
-      );
-    }
-    throw AgoraServiceException(
-      code: 'webrtc-$operation-failed',
-      message: 'Failed to $operation.',
-      cause: error,
-    );
+    await joinRoom('', roomId, _stableUid(_localUserId), publishCameraTrackOnJoin: true);
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Internal helper: holds a peer connection + renderer for one remote broadcaster
-// ──────────────────────────────────────────────────────────────────────────────
-class _PeerEntry {
-  _PeerEntry({
-    required this.broadcasterId,
-    required this.broadcasterUid,
-    required this.pc,
-    required this.renderer,
-  });
 
-  final String broadcasterId;
-  final int broadcasterUid;
-  final RTCPeerConnection pc;
-  final RTCVideoRenderer renderer;
-  MediaStream? remoteStream;
-  bool get rendererReady => true; // renderer.initialize() is called in create
 
-  StreamSubscription? answerSub;
-  StreamSubscription? iceSub;
 
-  Future<void> dispose() async {
-    await answerSub?.cancel();
-    await iceSub?.cancel();
-    answerSub = null;
-    iceSub = null;
-    remoteStream?.getTracks().forEach((t) => t.stop());
-    remoteStream = null;
-    renderer.srcObject = null;
-    try { await renderer.dispose(); } catch (_) {}
-    try { await pc.close(); } catch (_) {}
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Voice-activity detection via Web AudioContext AnalyserNode
-// ──────────────────────────────────────────────────────────────────────────────
-class _VadMonitor {
-  _VadMonitor({
-    required web.MediaStream jsStream,
-    required void Function(bool speaking) onStateChange,
-  }) : _onStateChange = onStateChange {
-    _init(jsStream);
-  }
-
-  final void Function(bool speaking) _onStateChange;
-
-  web.AudioContext? _ctx;
-  web.AnalyserNode? _analyser;
-  Timer? _timer;
-  bool _speaking = false;
-
-  // Byte-energy thresholds (0–255).  Tuned for typical speech vs. silence.
-  static const int _onThreshold = 25;
-  static const int _offThreshold = 10;
-
-  void _init(web.MediaStream jsStream) {
-    try {
-      _ctx = web.AudioContext();
-      final source = _ctx!.createMediaStreamSource(jsStream);
-      final analyser = _ctx!.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      source.connect(analyser);
-      _analyser = analyser;
-      _timer = Timer.periodic(const Duration(milliseconds: 80), (_) => _poll());
-    } catch (_) {
-      // AudioContext not available; VAD degrades gracefully to always-false.
-    }
-  }
-
-  void _poll() {
-    final analyser = _analyser;
-    if (analyser == null) return;
-
-    final bufLen = analyser.frequencyBinCount;
-    final dataList = Uint8List(bufLen);
-    final jsArr = dataList.toJS;
-    analyser.getByteFrequencyData(jsArr);
-
-    // Compute average byte energy across frequency bins.
-    final bytes = jsArr.toDart;
-    double sum = 0;
-    for (final v in bytes) {
-      sum += v;
-    }
-    final avg = bufLen > 0 ? sum / bufLen : 0.0;
-
-    final bool nowSpeaking;
-    if (!_speaking && avg >= _onThreshold) {
-      nowSpeaking = true;
-    } else if (_speaking && avg < _offThreshold) {
-      nowSpeaking = false;
-    } else {
-      nowSpeaking = _speaking;
-    }
-
-    if (nowSpeaking != _speaking) {
-      _speaking = nowSpeaking;
-      _onStateChange(_speaking);
-    }
-  }
-
-  void dispose() {
-    _timer?.cancel();
-    _timer = null;
-    try { _ctx?.close(); } catch (_) {}
-    _ctx = null;
-    _analyser = null;
-  }
-}

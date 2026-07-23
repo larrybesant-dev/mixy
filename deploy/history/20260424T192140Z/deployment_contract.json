@@ -1,0 +1,41 @@
+{
+    "authority":  {
+                      "runtime":  "flutter",
+                      "ci":  "github-actions",
+                      "resolvedBy":  "deployment_contract"
+                  },
+    "contractState":  "INIT",
+    "contractHash":  "unknown",
+    "previousContractHash":  "3631a9317d37e858b5363065a9881142a36d8a7d5c15caac04403e8adc6a4ba0",
+    "artifact":  {
+                     "commitSha":  "15a47be9de9c278debd9426002430aa1d6e231a1",
+                     "buildId":  "unknown",
+                     "workflowRunId":  "unknown"
+                 },
+    "startup":  {
+                    "contractVersion":  "unknown",
+                    "ready":  false,
+                    "checkpoints":  [
+
+                                    ]
+                },
+    "environment":  {
+                        "class":  "local",
+                        "os":  "windows"
+                    },
+    "privilege":  {
+                      "class":  "non-admin"
+                  },
+    "networking":  {
+                       "port":  9090,
+                       "portOwnership":  "user"
+                   },
+    "probeResults":  {
+                         "startupProbe":  "fail",
+                         "smokeProbe":  "fail"
+                     },
+    "governance":  {
+                       "decision":  "deny",
+                       "reasonCode":  "schema_invalid"
+                   }
+}

@@ -50,3 +50,7 @@ class AuthRepository {
     await _auth.currentUser?.sendEmailVerification();
   }
 }
+
+
+
+

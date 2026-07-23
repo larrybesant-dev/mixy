@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0.0",
+  "startedAt": "2026-07-18T13:26:05.440Z",
+  "finishedAt": "2026-07-18T13:26:07.104Z",
+  "durationMs": 1664,
+  "sampleSize": 500,
+  "totalScanned": 4,
+  "totalViolations": 0,
+  "passed": true,
+  "summary": {
+    "conversations": {
+      "scanned": 3,
+      "violations": 0
+    },
+    "messages": {
+      "scanned": 0,
+      "violations": 0
+    },
+    "rooms": {
+      "scanned": 1,
+      "violations": 0
+    },
+    "roomParticipants": {
+      "scanned": 0,
+      "violations": 0
+    },
+    "follows": {
+      "scanned": 0,
+      "violations": 0
+    },
+    "followersSymmetry": {
+      "violations": 0
+    },
+    "followingSymmetry": {
+      "violations": 0
+    }
+  },
+  "violations": {
+    "conversations": [],
+    "messages": [],
+    "rooms": [],
+    "roomParticipants": [],
+    "follows": [],
+    "followersSymmetry": [],
+    "followingSymmetry": []
+  }
+}

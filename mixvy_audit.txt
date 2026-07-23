@@ -1,0 +1,196 @@
+Analyzing MixVy...                                              
+
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\after_dark\screens\after_dark_create_lounge_screen.dart:621:12 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\after_dark\screens\after_dark_create_lounge_screen.dart:659:12 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\after_dark\screens\after_dark_home_screen.dart:186:35 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\after_dark\screens\after_dark_lounges_screen.dart:380:35 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\after_dark\screens\after_dark_profile_screen.dart:225:13 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\after_dark\widgets\after_dark_shell.dart:146:16 - use_decorated_box
+   info - Method invocation or property access on a 'dynamic' target - lib\features\auth\register_screen.dart:328:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\auth\register_screen.dart:329:25 - avoid_dynamic_calls
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\auth\screens\signup_screen.dart:85:29 - unawaited_futures
+   info - Method invocation or property access on a 'dynamic' target - lib\features\bookmarks\screens\bookmarks_screen.dart:86:26 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:706:22 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:706:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:734:39 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:741:33 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:741:33 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:742:39 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:742:39 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:742:39 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:779:21 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:779:21 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:797:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:797:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:798:34 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:798:35 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:798:35 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:799:34 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:812:15 - avoid_dynamic_calls
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\dashboard\dashboard_screen.dart:857:21 - use_decorated_box
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:946:22 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:946:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:965:33 - avoid_dynamic_calls
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\dashboard\dashboard_screen.dart:968:21 - use_decorated_box
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:1016:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:1044:32 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\dashboard\dashboard_screen.dart:1063:19 - avoid_dynamic_calls
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\feed\screens\discovery_feed_screen.dart:81:24 - use_decorated_box
+   info - Method invocation or property access on a 'dynamic' target - lib\features\feed\screens\discovery_feed_screen.dart:545:56 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\feed\screens\discovery_feed_screen.dart:553:56 - avoid_dynamic_calls
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\feed\screens\room_browser_screen.dart:725:35 - use_decorated_box
+   info - Unnecessary cascade expression - lib\features\feed\services\home_feed_service.dart:30:11 - avoid_single_cascade_in_expression_statements
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:37:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:38:26 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:39:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:40:27 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:41:53 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:75:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:76:26 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:77:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:78:27 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\follow\screens\follow_screens.dart:79:53 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:176:33 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:177:37 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:178:35 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:179:41 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:180:46 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:181:40 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:182:38 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\group_details_screen.dart:183:40 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:66:38 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:79:61 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:89:39 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:99:42 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:115:54 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:120:54 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:180:27 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:187:30 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\groups\screens\groups_screen.dart:194:61 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:221:22 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:231:16 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:235:13 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:235:13 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:235:44 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:258:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:259:27 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\messaging\panes\chat_pane_view.dart:259:27 - avoid_dynamic_calls
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\messaging\panes\messages_pane_view.dart:422:52 - unawaited_futures
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\payments\stripe_web_payment_widget.dart:77:40 - unawaited_futures
+   info - Statements in an if should be enclosed in a block - lib\features\profile\user_profile_screen.dart:541:19 - curly_braces_in_flow_control_structures
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\room\providers\host_controls_provider.dart:322:7 - use_null_aware_elements
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\room\screens\create_room_screen.dart:479:12 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\room\widgets\background_picker_sheet.dart:178:16 - use_decorated_box
+   info - Unnecessary use of multiple underscores - lib\features\room\widgets\background_picker_sheet.dart:364:49 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\room\widgets\background_picker_sheet.dart:364:53 - unnecessary_underscores
+   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\room\widgets\live_room_app_bar_actions.dart:1:8 - unnecessary_import
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\room\widgets\mic_queue_panel.dart:98:16 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\room\widgets\on_mic_panel.dart:58:12 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\room\widgets\room_user_tile.dart:329:21 - use_decorated_box
+   info - Local variables should be final - lib\features\schema_messenger\friends\providers\schema_friend_presence_stability_provider.dart:116:5 - prefer_final_locals
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\schema_messenger\friends\views\friends_schema_bridge_view.dart:175:14 - unawaited_futures
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:124:37 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:125:39 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:127:52 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:128:57 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:157:36 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:158:52 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:160:26 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:161:30 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:161:30 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:161:30 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:166:26 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:167:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:174:35 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:178:56 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:179:49 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:182:55 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:202:23 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:203:27 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:204:25 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:205:31 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:206:36 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:207:30 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:208:30 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:229:33 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\features\search\screens\search_screen.dart:230:35 - avoid_dynamic_calls
+warning - Unused import: 'package:mixvy/widgets/brand_ui_kit.dart' - lib\features\social\screens\explore_screen.dart:13:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\explore_screen.dart:204:24 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\explore_screen.dart:251:30 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\explore_screen.dart:258:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\explore_screen.dart:288:30 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\explore_screen.dart:295:45 - unnecessary_underscores
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\social\screens\explore_screen.dart:324:12 - use_decorated_box
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\explore_screen.dart:343:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\home_lobby_screen.dart:108:26 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\home_lobby_screen.dart:149:49 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\home_lobby_screen.dart:166:34 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\home_lobby_screen.dart:238:34 - unnecessary_underscores
+warning - Unused import: 'package:mixvy/widgets/brand_ui_kit.dart' - lib\features\social\screens\live_floor_screen.dart:11:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\social_circle_screen.dart:67:24 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\social_circle_screen.dart:90:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\social_circle_screen.dart:116:24 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\social_circle_screen.dart:139:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\screens\social_circle_screen.dart:164:24 - unnecessary_underscores
+   info - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\social\widgets\social_room_card.dart:2:8 - unnecessary_import
+warning - The value of the local variable 'accentColor' isn't used - lib\features\social\widgets\social_room_card.dart:316:11 - unused_local_variable
+   info - Unnecessary use of multiple underscores - lib\features\social\widgets\social_room_card.dart:327:28 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\social\widgets\social_room_card.dart:327:32 - unnecessary_underscores
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\speed_dating\screens\speed_dating_screen.dart:84:18 - unawaited_futures
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\speed_dating\screens\speed_dating_screen.dart:121:16 - unawaited_futures
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\features\speed_dating\screens\speed_dating_screen.dart:122:18 - unawaited_futures
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\features\stories\screens\create_story_screen.dart:501:9 - use_decorated_box
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\main.dart:40:3 - unawaited_futures
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\main.dart:152:42 - unawaited_futures
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\presentation\screens\live_room_screen.dart:6150:19 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\presentation\screens\live_room_screen.dart:7324:16 - use_decorated_box
+   info - Unnecessary use of multiple underscores - lib\presentation\screens\live_room_screen.dart:7903:31 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\presentation\screens\live_room_screen.dart:7903:35 - unnecessary_underscores
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\mixvy_login_screen.dart:433:32 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\mixvy_login_screen.dart:442:34 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\mixvy_login_screen.dart:523:34 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\mixvy_login_screen.dart:545:32 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\mixvy_login_screen.dart:546:28 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\mixvy_login_screen.dart:570:32 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - lib\presentation\screens\notifications_screen.dart:56:15 - avoid_dynamic_calls
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\agora_service.dart:59:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\agora_service.dart:61:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\agora_service.dart:63:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\agora_service.dart:65:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\agora_service.dart:70:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\agora_service.dart:75:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service.dart:146:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service.dart:148:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service.dart:150:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service.dart:152:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service.dart:154:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service.dart:156:17 - overridden_fields
+   info - Statements in an if should be enclosed in a block - lib\services\webrtc_room_service.dart:1108:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\services\webrtc_room_service.dart:1311:9 - curly_braces_in_flow_control_structures
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service_stub.dart:23:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service_stub.dart:25:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service_stub.dart:27:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service_stub.dart:29:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service_stub.dart:31:17 - overridden_fields
+   info - Field overrides a field inherited from 'RtcRoomService' - lib\services\webrtc_room_service_stub.dart:33:17 - overridden_fields
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\shared\widgets\app_shell.dart:90:16 - use_decorated_box
+warning - The declaration '_navItemBadge' isn't referenced - lib\shared\widgets\app_shell.dart:201:10 - unused_element
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\shared\widgets\desktop_messenger_shell.dart:255:12 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\shared\widgets\desktop_messenger_shell.dart:445:12 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\widgets\emoji_pack\emoji_pack_picker.dart:351:16 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\widgets\friends_panel_button.dart:81:16 - use_decorated_box
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\widgets\friends_panel_button.dart:326:18 - unawaited_futures
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\widgets\profile_avatar.dart:16:14 - use_decorated_box
+   info - Use 'DecoratedBox' rather than a 'Container' with only a 'Decoration' - lib\widgets\user_avatar.dart:18:14 - use_decorated_box
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\widgets\user_profile_popup.dart:88:9 - unawaited_futures
+   info - The import of 'dart:async' is unnecessary because all of the used elements are also provided by the import of 'package:flutter_test/flutter_test.dart' - test\event_pipeline_test.dart:1:8 - unnecessary_import
+   info - The import of 'package:mixvy/features/room/room_controller.dart' is unnecessary because all of the used elements are also provided by the import of 'package:mixvy/features/room/room_controller.dart' - test\live_room_screen_test.dart:23:8 - unnecessary_import
+   info - Unnecessary use of multiple underscores - test\live_room_screen_test.dart:329:13 - unnecessary_underscores
+   info - The import of 'package:mixvy/features/room/controllers/room_state.dart' is unnecessary because all of the used elements are also provided by the import of 'package:mixvy/features/room/room_controller.dart' - test\room_chaos_master_test.dart:6:8 - unnecessary_import
+   info - Unnecessary use of multiple underscores - test\room_controller_test.dart:593:15 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - test\room_controller_test.dart:683:15 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - test\room_controller_test.dart:771:15 - unnecessary_underscores
+   info - Unnecessary 'const' keyword - test\social_pulse_section_test.dart:52:27 - unnecessary_const
+   info - Method invocation or property access on a 'dynamic' target - test\test_helpers.dart:92:27 - avoid_dynamic_calls
+   info - Method invocation or property access on a 'dynamic' target - test\test_helpers.dart:93:29 - avoid_dynamic_calls
+

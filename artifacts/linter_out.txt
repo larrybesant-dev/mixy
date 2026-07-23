@@ -1,0 +1,1833 @@
+Running build hooks...Running build hooks...
+≡ƒöì MixVy Stream Architecture Linter ΓÇö scanning C:\MixVy/libΓÇª
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-001
+Γòæ  File  : lib/core/providers/firebase_providers.dart:24
+Γòæ  Issue : StreamProvider.family declared without autoDispose
+Γòæ  Code  : StreamProvider.family<DocumentSnapshot<Map<String, dynamic>>?, String>((
+Γòæ  Fix   : Change to StreamProvider.autoDispose.family<...>. Per-user/per-id StreamProviders MUST autoDispose ΓÇö without it, stale listeners accumulate as users navigate between rooms/profiles. Exceptions: auth, presence heartbeat, notification badge (explicitly documented).
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/auth/providers/admin_provider.dart:19
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/bookmarks/providers/bookmark_provider.dart:24
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-006
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:12
+Γòæ  Issue : Duplicate Firestore subscription to "groups" collection found in 3 files. SINGLE_STREAM_RULE violated. Files: lib/features/groups/providers/groups_provider.dart
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Remove this .snapshots() and derive state from the single canonical StreamProvider for "groups". See lib/core/architecture/stream_registry.dart for the registered provider.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:12
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-001
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:21
+Γòæ  Issue : StreamProvider.family declared without autoDispose
+Γòæ  Code  : final groupDetailsProvider = StreamProvider.family<Group?, String>((
+Γòæ  Fix   : Change to StreamProvider.autoDispose.family<...>. Per-user/per-id StreamProviders MUST autoDispose ΓÇö without it, stale listeners accumulate as users navigate between rooms/profiles. Exceptions: auth, presence heartbeat, notification badge (explicitly documented).
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:26
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : return firestore.collection('groups').doc(groupId).snapshots().map((
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-006
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:26
+Γòæ  Issue : Duplicate Firestore subscription to "groups" collection found in 3 files. SINGLE_STREAM_RULE violated. Files: lib/features/groups/providers/groups_provider.dart
+Γòæ  Code  : return firestore.collection('groups').doc(groupId).snapshots().map((
+Γòæ  Fix   : Remove this .snapshots() and derive state from the single canonical StreamProvider for "groups". See lib/core/architecture/stream_registry.dart for the registered provider.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-001
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:37
+Γòæ  Issue : StreamProvider.family declared without autoDispose
+Γòæ  Code  : final userGroupsProvider = StreamProvider.family<List<Group>, String>((
+Γòæ  Fix   : Change to StreamProvider.autoDispose.family<...>. Per-user/per-id StreamProviders MUST autoDispose ΓÇö without it, stale listeners accumulate as users navigate between rooms/profiles. Exceptions: auth, presence heartbeat, notification badge (explicitly documented).
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-006
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:45
+Γòæ  Issue : Duplicate Firestore subscription to "groups" collection found in 3 files. SINGLE_STREAM_RULE violated. Files: lib/features/groups/providers/groups_provider.dart
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Remove this .snapshots() and derive state from the single canonical StreamProvider for "groups". See lib/core/architecture/stream_registry.dart for the registered provider.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:45
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-001
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:54
+Γòæ  Issue : StreamProvider.family declared without autoDispose
+Γòæ  Code  : final groupPostsProvider = StreamProvider.family<List<GroupPost>, String>((
+Γòæ  Fix   : Change to StreamProvider.autoDispose.family<...>. Per-user/per-id StreamProviders MUST autoDispose ΓÇö without it, stale listeners accumulate as users navigate between rooms/profiles. Exceptions: auth, presence heartbeat, notification badge (explicitly documented).
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/groups/providers/groups_provider.dart:64
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/messaging/providers/messaging_provider.dart:137
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/messaging/providers/messaging_provider.dart:808
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/buzz_provider.dart:58
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/cam_access_provider.dart:125
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/cam_view_request_provider.dart:182
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/host_provider.dart:24
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : return firestore.collection('rooms').doc(roomId).snapshots().map((doc) {
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/mic_access_provider.dart:340
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/participant_providers.dart:27
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/participant_providers.dart:147
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/room_policy_provider.dart:55
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : return policyRef.snapshots().map((snapshot) {
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/room_slot_provider.dart:25
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/providers/user_cam_permissions_provider.dart:55
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/room/repository/room_repository.dart:246
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : return _speakerCollection(roomId).snapshots().map((snapshot) {
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:144
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/speed_dating/services/speed_dating_service.dart:56
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/speed_dating/services/speed_dating_service.dart:223
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/speed_dating/services/speed_dating_service.dart:241
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/stories/providers/story_provider.dart:174
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/verification/providers/verification_provider.dart:34
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : return verificationRef.snapshots().asyncMap((snapshot) async {
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/features/verification/providers/verification_provider.dart:108
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/presentation/providers/presence_provider.dart:20
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : .snapshots()
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γòæ  ≡ƒö┤ CRITICAL VIOLATION
+Γòæ  Rule  : FSL-002
+Γòæ  File  : lib/presentation/providers/wallet_provider.dart:40
+Γòæ  Issue : Unbounded .snapshots() ΓÇö no .limit() within 10 lines. Unbounded queries cause runaway Firestore read costs at scale.
+Γòæ  Code  : final docStream = firestore.collection('wallets').doc(userId).snapshots();
+Γòæ  Fix   : Add .limit(N) before .snapshots(): feeds/messages/notifications ΓåÆ .limit(50), social graphs/friend lists ΓåÆ .limit(100). QUERY_BOUNDS_RULE: no unbounded .snapshots() permitted.
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/dev/firebase_emulator_bootstrap.dart:33
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : FirebaseFirestore.instance.useFirestoreEmulator(host, firestorePort);
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/dev/room_inspector_panel.dart:29
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/dev/room_inspector_panel.dart:31
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final modLogAsync = ref.watch(modLogStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/after_dark/screens/after_dark_create_lounge_screen.dart:104
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : await FirebaseFirestore.instance.collection('rooms').doc(roomId).update(
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/after_dark/screens/after_dark_create_lounge_screen.dart:104
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await FirebaseFirestore.instance.collection('rooms').doc(roomId).update(
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/after_dark/screens/after_dark_profile_screen.dart:41
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final doc = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/after_dark/screens/after_dark_profile_screen.dart:61
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : await FirebaseFirestore.instance.collection('users').doc(uid).set({
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/after_dark/screens/after_dark_profile_screen.dart:61
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await FirebaseFirestore.instance.collection('users').doc(uid).set({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/auth/controllers/auth_controller.dart:812
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : return FirebaseFirestore.instance;
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/auth/providers/admin_provider.dart:7
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final isAdminProvider = StreamProvider<bool>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/auth/providers/admin_provider.dart:19
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/auth/username_validator.dart:6
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final query = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/beta/beta_tester_provider.dart:13
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : return ref.watch(userDataStreamProvider(uid)).whenData((data) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/bookmarks/providers/bookmark_provider.dart:24
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/controllers/feed_controller.dart:83
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : _firestore = FirebaseFirestore.instance;
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/controllers/feed_controller.dart:95
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final userDoc = await _firestore.collection('users').doc(userId).get();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/controllers/paginated_following_feed_controller.dart:109
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/controllers/paginated_posts_controller.dart:100
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : return PaginatedPostsController(FirebaseFirestore.instance, ref);
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/providers/feed_providers.dart:31
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/providers/feed_providers.dart:57
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/providers/host_controls_providers.dart:16
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : return ref.watch(roomDocStreamProvider(roomId).stream).map((data) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/providers/user_providers.dart:10
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final doc = await firestore.collection('users').doc(userId).get();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/repository/reaction_repository.dart:17
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/repository/typing_repository.dart:33
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/feed/screens/discovery_feed_screen.dart:57
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final doc = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/follow/providers/follow_provider.dart:256
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : _firestore.collection('follows').doc('${currentUserId}_$targetUserId'),
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/follow/providers/follow_provider.dart:293
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : _firestore.collection('follows').doc('${currentUserId}_$targetUserId'),
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:7
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final groupsProvider = StreamProvider<List<Group>>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:12
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:21
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final groupDetailsProvider = StreamProvider.family<Group?, String>((
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:26
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : return firestore.collection('groups').doc(groupId).snapshots().map((
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:26
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : return firestore.collection('groups').doc(groupId).snapshots().map((
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:37
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final userGroupsProvider = StreamProvider.family<List<Group>, String>((
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:45
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:54
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final groupPostsProvider = StreamProvider.family<List<GroupPost>, String>((
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:64
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:84
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('groups').add({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:99
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('groups').doc(groupId).update({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:109
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('groups').doc(groupId).update({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:123
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('groups').doc(groupId).collection('posts').add({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/groups/providers/groups_provider.dart:137
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('groups').doc(groupId).delete();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/panes/messages_pane_view.dart:91
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : conversationsStreamProvider(widget.userId),
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/panes/messages_pane_view.dart:93
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final requestsAsync = ref.watch(requestsStreamProvider(widget.userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:69
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:137
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:164
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots(includeMetadataChanges: true)
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:445
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final convRef = _firestore.collection('conversations').doc(conversationId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:553
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final convRef = _firestore.collection('conversations').doc(deterministicId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:593
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final docRef = await _firestore.collection('conversations').add({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:783
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/providers/messaging_provider.dart:808
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/screens/create_group_chat_screen.dart:43
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final snapshot = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/screens/messages_screen.dart:21
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final requestsAsync = ref.watch(requestsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/messaging/screens/new_message_screen.dart:176
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final snapshot = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/onboarding/onboarding_screen.dart:158
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : await FirebaseFirestore.instance.collection('users').doc(uid).update(
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/onboarding/onboarding_screen.dart:158
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await FirebaseFirestore.instance.collection('users').doc(uid).update(
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/payments/admin_entitlement_providers.dart:10
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : return ref.watch(userDataStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/payments/admin_entitlement_providers.dart:23
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/payments/payment_recipient_provider.dart:20
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : }) : _firestore = firestore ?? FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/payments/payment_recipient_provider.dart:24
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : firestore: firestore ?? FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/payments/payments_screen.dart:354
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : coinTransactionStreamProvider(currentUserId ?? ''),
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/payments/premium_entitlement.dart:16
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : return ref.watch(userDataStreamProvider(uid)).whenData((userData) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/posts/providers/post_comments_providers.dart:67
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/posts/screens/create_post_screen.dart:74
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await FirebaseFirestore.instance.collection('posts').add({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/posts/screens/create_post_screen.dart:74
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : await FirebaseFirestore.instance.collection('posts').add({
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/profile/profile_controller.dart:220
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : ProfileService(firestore: firestore ?? FirebaseFirestore.instance);
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/profile/profile_screen.dart:908
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : userPostsStreamProvider(state.userId!),
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/profile/profile_view_providers.dart:22
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final userRef = firestore.collection('users').doc(profileUserId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/profile/user_profile_screen.dart:485
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : .watch(conversationsStreamProvider(viewerId))
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/profile/user_profile_screen.dart:888
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final postsAsync = ref.watch(userPostsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/buzz_provider.dart:58
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/cam_access_provider.dart:125
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/cam_view_request_provider.dart:182
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/host_provider.dart:19
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final hostProvider = StreamProvider.autoDispose.family<Host?, String>((
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/host_provider.dart:24
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : return firestore.collection('rooms').doc(roomId).snapshots().map((doc) {
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/host_provider.dart:24
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : return firestore.collection('rooms').doc(roomId).snapshots().map((doc) {
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/message_providers.dart:46
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/message_providers.dart:86
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/mic_access_provider.dart:340
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/participant_providers.dart:27
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/participant_providers.dart:45
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/participant_providers.dart:147
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/participant_providers.dart:201
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/participant_providers.dart:227
+Γöé  Rule     : FCI-005
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamController instantiated in feature/UI layer
+Γöé  Code     : final controller = StreamController<List<RoomParticipantModel>>();
+Γöé  Fix      : StreamControllers in widgets/controllers create leaked subscriptions. Use Riverpod StreamProvider instead.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/participant_providers.dart:296
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/presence_provider.dart:101
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : stream: ref.watch(participantsStreamProvider(roomId).stream).map((
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_activity_state_provider.dart:37
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : roomPresenceStreamProvider(roomId).stream,
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_activity_state_provider.dart:40
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final typingStream = ref.watch(typingStreamProvider(roomId).stream);
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_firestore_provider.dart:5
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : (ref) => FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_gift_provider.dart:22
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_gift_provider.dart:33
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final eventsAsync = ref.watch(roomGiftStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_meta_state_provider.dart:14
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : await for (final doc in ref.watch(roomDocStreamProvider(roomId).stream)) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_participants_state_provider.dart:16
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : participantsStreamProvider(roomId).stream,
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_policy_provider.dart:52
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final roomRef = firestore.collection('rooms').doc(roomId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_policy_provider.dart:55
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : return policyRef.snapshots().map((snapshot) {
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_render_selectors.dart:90
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(roomDocStreamProvider(roomId)).valueOrNull ?? {};
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_render_selectors.dart:92
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_render_selectors.dart:100
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(typingStreamProvider(roomId)).valueOrNull ?? const {};
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/room_slot_provider.dart:25
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/providers/user_cam_permissions_provider.dart:55
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/repository/room_repository.dart:81
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : return _firestore.collection('rooms').doc(roomId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/repository/room_repository.dart:246
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : return _speakerCollection(roomId).snapshots().map((snapshot) {
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/room_controller.dart:224
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final roomDoc = ref.watch(roomDocStreamProvider(roomId)).valueOrNull;
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/room_controller.dart:226
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(participantsStreamProvider(roomId)).valueOrNull ??
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/room_controller.dart:1075
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final roomSnapshot = await firestore.collection('rooms').doc(arg).get();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/screens/cam_popout_screen.dart:55
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final targetDoc = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/screens/cam_popout_screen.dart:72
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/screens/cam_popout_screen.dart:72
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/screens/cam_popout_screen.dart:80
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : firestore: FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/services/room_session_service.dart:129
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : action: () => _firestore.collection('rooms').doc(normalizedRoomId).get(),
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/services/room_session_service.dart:221
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : _firestore.collection('rooms').doc(normalizedRoomId),
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/services/room_session_service.dart:282
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : transaction.update(_firestore.collection('rooms').doc(normalizedRoomId), {
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/services/room_session_service.dart:322
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final roomRef = _firestore.collection('rooms').doc(normalizedRoomId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/services/room_session_service.dart:445
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : action: () => _firestore.collection('rooms').doc(roomId).update({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/widgets/live_stage_spotlight.dart:75
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : participantsStreamProvider(widget.roomId),
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/widgets/on_mic_panel.dart:39
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/widgets/room_host_control_panel.dart:265
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/widgets/room_host_control_panel.dart:830
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/widgets/room_host_control_panel.dart:1052
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final participantsAsync = ref.watch(participantsStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/room/widgets/room_host_control_panel.dart:1372
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final roomAsync = ref.watch(feedRoomStreamProvider(roomId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/core/schema_engine/schema_parity_monitor.dart:65
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final legacyAsync = ref.watch(conversationsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/core/schema_engine/schema_parity_monitor.dart:66
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final schemaAsync = ref.watch(conversationsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:144
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/friends/providers/schema_friend_links_providers.dart:160
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/friends/providers/schema_friend_presence_stability_provider.dart:119
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : StreamProvider.autoDispose<Map<String, SchemaFriendPresence>>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/friends/providers/schema_friend_roster_provider.dart:112
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : StreamProvider.autoDispose<SchemaGroupedFriendRoster>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/messages/messages_consistency_contract.dart:84
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final legacyAsync = ref.watch(conversationsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/schema_messenger/messages/messages_consistency_contract.dart:89
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final schemaAsync = ref.watch(conversationsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/social/providers/social_providers.dart:22
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : .watch(rawFollowGraphStreamProvider(userId))
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/social/providers/social_providers.dart:110
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final followingIdsAsync = ref.watch(rawFollowGraphStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/social/providers/social_providers.dart:144
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final doc = await firestore.collection('users').doc(userId).get();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:14
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : }) : _firestore = firestore ?? FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:18
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : firestore: firestore ?? FirebaseFirestore.instance,
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:38
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:56
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:79
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('speed_dating_actions').doc(actionId).set({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:95
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:99
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : _firestore.collection('speed_dating_actions').doc(reciprocalActionId),
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:124
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : txn.set(_firestore.collection('notifications').doc(), {
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:152
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final matchRef = _firestore.collection('speed_dating_matches').doc(matchId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:163
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final roomRef = _firestore.collection('rooms').doc();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:223
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/speed_dating/services/speed_dating_service.dart:241
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/stories/providers/story_provider.dart:154
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/stories/providers/story_provider.dart:174
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/stories/providers/story_provider.dart:206
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : await _firestore.collection('users').doc(userId).collection('stories').add({
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/verification/providers/verification_provider.dart:31
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final verificationRef = firestore.collection('verification').doc(userId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/verification/providers/verification_provider.dart:32
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final usersRef = firestore.collection('users').doc(userId);
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/verification/providers/verification_provider.dart:34
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : return verificationRef.snapshots().asyncMap((snapshot) async {
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/verification/providers/verification_provider.dart:60
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/features/verification/providers/verification_provider.dart:108
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/presence_provider.dart:20
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : .snapshots()
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/referral_provider.dart:12
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final referralCodeProvider = StreamProvider<String?>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/referral_provider.dart:21
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final referralEarningsProvider = StreamProvider<double>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/referral_provider.dart:31
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : StreamProvider<List<ReferralAttributionModel>>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/wallet_provider.dart:16
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : return FirebaseFirestore.instance;
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/wallet_provider.dart:23
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/wallet_provider.dart:40
+Γöé  Rule     : FCI-001
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : Direct Firestore .snapshots() call in feature layer
+Γöé  Code     : final docStream = firestore.collection('wallets').doc(userId).snapshots();
+Γöé  Fix      : Replace with a canonical StreamProvider from stream_registry.dart. Never open .snapshots() outside lib/services/ or lib/core/.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/wallet_provider.dart:40
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final docStream = firestore.collection('wallets').doc(userId).snapshots();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/wallet_provider.dart:51
+Γöé  Rule     : FCI-006
+Γöé  Severity : ≡ƒô¥ LOW
+Γöé  Issue    : Direct Firestore collection()/doc() access in feature layer
+Γöé  Code     : final userDoc = await firestore.collection('users').doc(userId).get();
+Γöé  Fix      : Firestore access must go through the service layer (lib/services/) or canonical stream providers.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/presentation/providers/wallet_provider.dart:67
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final walletProvider = StreamProvider<double>((ref) {
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/shared/widgets/desktop_messenger_shell.dart:207
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(conversationsStreamProvider(currentUser.id)).valueOrNull ??
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/shared/widgets/desktop_messenger_shell.dart:594
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(conversationsStreamProvider(currentUser.id)).valueOrNull ??
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/shared/widgets/desktop_messenger_shell.dart:598
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : ref.watch(requestsStreamProvider(currentUser.id)).valueOrNull?.length ??
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/shared/widgets/messenger_shell_route.dart:137
+Γöé  Rule     : FCI-004
+Γöé  Severity : ΓÜá∩╕Å  MEDIUM
+Γöé  Issue    : StreamProvider declared outside canonical provider files
+Γöé  Code     : final requestsAsync = ref.watch(requestsStreamProvider(userId));
+Γöé  Fix      : StreamProviders that open Firestore streams must be declared in a canonical file and registered in kCanonicalStreamProviderNames. Derived providers (no .snapshots()) are always permitted.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöîΓöÇΓöÇ STREAM ARCHITECTURE VIOLATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γöé  File     : lib/widgets/user_profile_popup.dart:92
+Γöé  Rule     : FCI-002
+Γöé  Severity : ≡ƒÜ¿ HIGH
+Γöé  Issue    : FirebaseFirestore.instance used directly
+Γöé  Code     : final doc = await FirebaseFirestore.instance
+Γöé  Fix      : Use ref.watch(firestoreProvider) from lib/core/providers/firebase_providers.dart. Direct .instance bypasses test overrides and makes deduplication impossible.
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  SCAN SUMMARY  [PRODUCTION CI HARD LOCK]
+  Files scanned  : 470
+  ≡ƒö┤ Critical    : 35  ΓåÉ ALWAYS FAILS CI (FSL)
+  ≡ƒÜ¿ Errors      : 163  ΓåÉ Fails on error-path files (FCI)
+  ΓÜá∩╕Å  Warnings    : 3  ΓåÉ Fails with --strict (FCI)
+
+  By rule:
+    FCI-001 ΓÇö 46 occurrence(s)
+    FCI-002 ΓÇö 25 occurrence(s)
+    FCI-004 ΓÇö 54 occurrence(s)
+    FCI-005 ΓÇö 1 occurrence(s)
+    FCI-006 ΓÇö 40 occurrence(s)
+    FSL-001 ΓÇö 4 occurrence(s)  ≡ƒö┤ CRITICAL
+    FSL-002 ΓÇö 28 occurrence(s)  ≡ƒö┤ CRITICAL
+    FSL-006 ΓÇö 3 occurrence(s)  ≡ƒö┤ CRITICAL
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+≡ƒö┤  35 CRITICAL violation(s) ΓÇö CI HARD FAIL.
+    CRITICAL violations cannot be suppressed. Fix before merging.
+

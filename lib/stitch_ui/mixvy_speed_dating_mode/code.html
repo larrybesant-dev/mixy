@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MixVy | Speed Dating</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&amp;family=Manrope:wght@400;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#353534",
+                    "on-tertiary-fixed": "#221b00",
+                    "on-error": "#690005",
+                    "inverse-surface": "#e5e2e1",
+                    "on-tertiary-container": "#514406",
+                    "on-secondary": "#462a00",
+                    "on-primary-container": "#554300",
+                    "primary": "#f2ca50",
+                    "inverse-on-surface": "#313030",
+                    "surface": "#131313",
+                    "surface-container-high": "#2a2a2a",
+                    "on-surface-variant": "#d0c5af",
+                    "on-background": "#e5e2e1",
+                    "primary-fixed": "#ffe088",
+                    "surface-variant": "#353534",
+                    "on-primary": "#3c2f00",
+                    "surface-dim": "#131313",
+                    "on-tertiary": "#3a3000",
+                    "inverse-primary": "#735c00",
+                    "outline-variant": "#4d4635",
+                    "secondary": "#fcba64",
+                    "surface-tint": "#e9c349",
+                    "surface-container": "#201f1f",
+                    "primary-container": "#d4af37",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#fcba64",
+                    "primary-fixed-dim": "#e9c349",
+                    "tertiary-fixed-dim": "#dac67d",
+                    "surface-container-lowest": "#0e0e0e",
+                    "secondary-container": "#845400",
+                    "on-surface": "#e5e2e1",
+                    "on-secondary-fixed-variant": "#643f00",
+                    "on-tertiary-fixed-variant": "#534608",
+                    "on-primary-fixed": "#241a00",
+                    "outline": "#99907c",
+                    "on-secondary-fixed": "#2a1800",
+                    "on-secondary-container": "#ffd199",
+                    "tertiary": "#e2ce84",
+                    "secondary-fixed": "#ffddb6",
+                    "on-primary-fixed-variant": "#574500",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#c5b26b",
+                    "surface-container-low": "#1c1b1b",
+                    "tertiary-fixed": "#f7e296",
+                    "surface-bright": "#3a3939",
+                    "error-container": "#93000a",
+                    "background": "#131313"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "stack-lg": "4rem",
+                    "margin": "32px",
+                    "stack-sm": "1rem",
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "container-max": "1280px",
+                    "stack-md": "2rem"
+            },
+            "fontFamily": {
+                    "headline-xl": ["Noto Serif"],
+                    "headline-md": ["Noto Serif"],
+                    "body-lg": ["Manrope"],
+                    "headline-lg": ["Noto Serif"],
+                    "body-md": ["Manrope"],
+                    "label-sm": ["Manrope"]
+            },
+            "fontSize": {
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(13, 13, 13, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(242, 202, 80, 0.2);
+            border-left: 1px solid rgba(242, 202, 80, 0.1);
+        }
+        .gold-metallic {
+            background: linear-gradient(135deg, #f2ca50 0%, #d4af37 50%, #ffe088 100%);
+        }
+        .kinetic-glow {
+            box-shadow: 0 0 40px rgba(242, 202, 80, 0.15);
+        }
+        .timer-glow {
+            text-shadow: 0 0 15px rgba(242, 202, 80, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary selection:text-on-primary min-h-screen overflow-hidden">
+<!-- TopAppBar Navigation -->
+<header class="fixed top-0 w-full border-b border-yellow-500/20 bg-black/80 backdrop-blur-xl flex justify-between items-center px-6 h-20 w-full z-50 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black italic text-yellow-500 uppercase tracking-widest font-headline-md">MixVy</span>
+</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Social</a>
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Live Rooms</a>
+<a class="text-yellow-500 border-b-2 border-yellow-500 pb-1 font-bold font-serif tracking-tight" href="#">Speed Dating</a>
+<a class="text-neutral-400 hover:text-yellow-200 transition-colors font-serif tracking-tight" href="#">Adult Lounge</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-yellow-500 hover:bg-yellow-500/10 transition-all duration-300 p-2 rounded-full">notifications</button>
+<button class="material-symbols-outlined text-yellow-500 hover:bg-yellow-500/10 transition-all duration-300 p-2 rounded-full">account_circle</button>
+</div>
+</header>
+<!-- Sidebar Navigation (Matching JSON Structure) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col z-40 h-screen w-64 border-r border-yellow-500/10 bg-[#0D0D0D]/90 backdrop-blur-2xl shadow-2xl shadow-black pt-24">
+<div class="px-6 mb-8">
+<h2 class="text-yellow-500 font-bold font-serif text-sm uppercase tracking-widest">MixVy Elite</h2>
+<p class="text-neutral-500 text-xs mt-1">Prestige Membership</p>
+</div>
+<nav class="flex-1">
+<a class="flex items-center gap-4 text-neutral-500 py-4 px-6 hover:text-neutral-200 hover:bg-white/5 transition-all duration-200 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">dynamic_feed</span>
+<span class="font-serif text-sm uppercase tracking-widest">Social Feed</span>
+</a>
+<a class="flex items-center gap-4 text-neutral-500 py-4 px-6 hover:text-neutral-200 hover:bg-white/5 transition-all duration-200 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span class="font-serif text-sm uppercase tracking-widest">Live Rooms</span>
+</a>
+<a class="flex items-center gap-4 bg-gradient-to-r from-yellow-500/20 to-transparent text-yellow-500 border-l-4 border-yellow-500 py-4 px-6" href="#">
+<span class="material-symbols-outlined">timer_3</span>
+<span class="font-serif text-sm uppercase tracking-widest">Speed Dating</span>
+</a>
+<a class="flex items-center gap-4 text-neutral-500 py-4 px-6 hover:text-neutral-200 hover:bg-white/5 transition-all duration-200 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">nightlife</span>
+<span class="font-serif text-sm uppercase tracking-widest">Adult Lounge</span>
+</a>
+</nav>
+<div class="p-6 border-t border-white/5">
+<button class="w-full gold-metallic text-on-primary py-3 font-bold uppercase tracking-tighter text-xs rounded-sm mb-6 active:scale-95 transition-transform">
+                Upgrade to Gold
+            </button>
+<div class="flex flex-col gap-4">
+<a class="flex items-center gap-3 text-neutral-500 text-xs hover:text-yellow-500 transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">settings</span> Settings
+                </a>
+<a class="flex items-center gap-3 text-neutral-500 text-xs hover:text-yellow-500 transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span> Support
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pl-64 pt-20 h-screen w-full flex flex-row overflow-hidden">
+<!-- Center Stage: Active Match -->
+<section class="flex-1 relative flex flex-col items-center justify-center p-gutter">
+<!-- Background Decoration -->
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-[100px]"></div>
+</div>
+<!-- Active Match Video Tile -->
+<div class="relative z-10 w-full max-w-4xl aspect-[16/9] glass-panel rounded-xl overflow-hidden border border-primary/20 kinetic-glow">
+<img alt="" class="w-full h-full object-cover grayscale-[20%]" data-alt="striking young woman with elegant makeup sitting in a dimly lit high-end lounge, cinematic lighting, warm golden highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcQc0LkI3H2TY29zGDv5OrDoCqPMC5AdXB8mXYdmAoJFDTtexLhqxxAmSHByuVyYGiq6z76JQIHCV14gS4nMiMUnTwF4yz8BOzjcTC6HkOKMrkVN3ciuxhn5vg8fWwcpxe-4rqXPN4QaBW_FGyoaROOQF5dp_VtrXGGCfb8CU7841PQHVn-4BDig9dKbzKxDM2wYp_F6QW4nz0v0R3V0P0o2xY8rS6v34X9R5QAUxiAccGBZcPkJG6kvbz8patRIs7-TCv1DKrmnK9"/>
+<!-- Overlay Elements -->
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<!-- Match Identity -->
+<div class="absolute bottom-8 left-8">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-3 py-1 bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest rounded-full border border-primary/30">Verified Elite</span>
+<span class="px-3 py-1 bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest rounded-full">New York, NY</span>
+</div>
+<h1 class="font-headline-lg text-white mb-1">Eleanor, 26</h1>
+<p class="text-on-surface-variant font-body-md max-w-md italic">"Art director by day, cocktail enthusiast by night. Looking for a spark that lasts more than 3 minutes."</p>
+</div>
+<!-- Live Indicator -->
+<div class="absolute top-8 right-8 flex items-center gap-2">
+<div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+<span class="text-white font-label-sm uppercase tracking-widest text-[10px]">Live Session</span>
+</div>
+</div>
+<!-- Kinetic Controls -->
+<div class="mt-stack-md flex items-center gap-gutter z-10">
+<button class="w-16 h-16 rounded-full border border-white/20 bg-black/40 flex items-center justify-center hover:bg-white/10 transition-all duration-300 group">
+<span class="material-symbols-outlined text-white text-3xl group-hover:scale-110 transition-transform">close</span>
+</button>
+<!-- Countdown Timer -->
+<div class="relative flex flex-col items-center">
+<div class="w-24 h-24 rounded-full border-4 border-primary/30 flex items-center justify-center glass-panel">
+<span class="font-headline-md text-primary timer-glow">02:14</span>
+</div>
+<span class="mt-2 text-[10px] text-primary/60 font-bold uppercase tracking-[0.3em]">Remaining</span>
+</div>
+<button class="w-20 h-20 rounded-full gold-metallic flex items-center justify-center shadow-lg shadow-primary/20 active:scale-95 transition-all group">
+<span class="material-symbols-outlined text-on-primary text-4xl group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+</section>
+<!-- Right Sidebar: Queue & Status -->
+<aside class="w-80 border-l border-yellow-500/10 bg-[#0D0D0D]/95 flex flex-col overflow-hidden">
+<div class="p-6 border-b border-white/5">
+<h3 class="font-headline-md text-lg text-on-surface mb-1">Queue Status</h3>
+<div class="flex items-center gap-2">
+<span class="text-xs text-primary font-bold">Priority Matching</span>
+<span class="text-xs text-neutral-500">• 12 in line</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<p class="text-[10px] uppercase tracking-widest text-neutral-500 px-2">Upcoming Matches</p>
+<!-- Match Card 1 -->
+<div class="group relative p-3 rounded-lg bg-surface-container-low border border-white/5 hover:border-primary/30 transition-all cursor-pointer">
+<div class="flex gap-4">
+<div class="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="portrait of a handsome man in a tailored tuxedo, high contrast luxury portrait, dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3pHL5ERJJGbr60AQzeC2v0vY8UuPNhEdVI6-wz7RtEpCFPy6W91ZPHtX7S7QLh76ZDMNYRJXw3os_PQtWO8jMM-msQTNpa6fNxX9M0asDf5t9DwqFXBNEtzqFfnh0bgEeBzCMLj3wQB1uWj2FfrdEitW8qKhD8vKQi1XZlOxs1zJBn8GwDEmQaQasZRb3uR2sqjY6Y-SLiE4BGakjNRVSCad0ySv_zU-Rcs-5eDZEkdPw1rQSVvquAI9enL_f2AHyCp2AkbrEwq6p"/>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">Julian, 29</h4>
+<p class="text-xs text-neutral-500">Venture Partner</p>
+<div class="flex gap-1 mt-1">
+<div class="h-1 w-full bg-primary/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-2/3"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 2 -->
+<div class="group relative p-3 rounded-lg bg-surface-container-low border border-white/5 hover:border-primary/30 transition-all cursor-pointer">
+<div class="flex gap-4">
+<div class="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="sophisticated woman in elegant evening attire, soft bokeh lighting, warm city lights in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA97TmxcdjugkUhrfEnTmpfVuCgzr8SoamxxmXaGCYmSNuKuzqCWKp8oCfhDqKYCa8rZhHuWeyjgDMgPHuOFhVLeiZIRFwoPW6XYmq_KkbHb-pDK95bStazXSdYaVDd6J2kKDTA9m38G7B1I7SpSf-MqA4mJBLnVmAuHklU1oQcB5KUi-_dOj5ZiReQpU-ZYu9fcVAN50HBvUFnUXygqBhvQwoj1wVs_qrWf_G4qj7U2K2uZ66ww7OC3XfkM6MlCW7NgHuUE-2v5jJD"/>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">Sophia, 27</h4>
+<p class="text-xs text-neutral-500">Fine Art Curator</p>
+<div class="flex gap-1 mt-1">
+<div class="h-1 w-full bg-primary/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-1/4"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 3 -->
+<div class="group relative p-3 rounded-lg bg-surface-container-low border border-white/5 hover:border-primary/30 transition-all cursor-pointer opacity-60">
+<div class="flex gap-4">
+<div class="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="" class="w-full h-full object-cover" data-alt="professional man in casual luxury wear, urban penthouse setting at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkkS93tm0Csc50WibMxp_HuWrp35okObJQbVgP-MeCYY1rJHqhgdvl7jIBvG_M1L5qEMJ915frTmpH9iG6osNCerMwO09zuedohVptk6eqWgTuWjf2KKj8BA1rC_0TZITyBZIsBwKK1Y_AUecNo6XQcGaytwJKDysTXEskkVIetkfNky0KiI02fBMgc5oXrT1UFgQ4SJXJ1i3L1IBFcmUEGsEUnOhucG9m6tDhDLvnSIPWAiDhN52RhJoa3wE9RWHyOyJZ8YFEEI5s"/>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface">Marcus, 31</h4>
+<p class="text-xs text-neutral-500">Architect</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Activity -->
+<div class="p-6 glass-panel border-t border-primary/10">
+<div class="bg-primary/5 rounded p-4 border border-primary/10">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-primary">Compatibility Tip</span>
+</div>
+<p class="text-[11px] text-neutral-400 leading-relaxed">Both you and Eleanor enjoy "Rooftop Lounges" and "Classical Jazz". Use that to break the ice!</p>
+</div>
+</div>
+</aside>
+</main>
+<!-- Bottom Navigation (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full glass-panel flex justify-around items-center h-20 z-50">
+<button class="flex flex-col items-center text-neutral-500">
+<span class="material-symbols-outlined">dynamic_feed</span>
+<span class="text-[10px] font-bold mt-1">Social</span>
+</button>
+<button class="flex flex-col items-center text-neutral-500">
+<span class="material-symbols-outlined">sensors</span>
+<span class="text-[10px] font-bold mt-1">Live</span>
+</button>
+<button class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">timer_3</span>
+<span class="text-[10px] font-bold mt-1">Dating</span>
+</button>
+<button class="flex flex-col items-center text-neutral-500">
+<span class="material-symbols-outlined">nightlife</span>
+<span class="text-[10px] font-bold mt-1">Lounge</span>
+</button>
+</nav>
+</body></html>

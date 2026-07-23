@@ -1,0 +1,197 @@
+﻿{
+    "generatedAtUtc":  "2026-04-16T00:29:41.7128401Z",
+    "validationMode":  "enforce",
+    "releaseGate":  "room_release_stress_gate_v1",
+    "verdict":  "PASS",
+    "totalRuns":  7,
+    "passedRuns":  7,
+    "failedRuns":  0,
+    "failedCaseIds":  [
+
+                      ],
+    "categorySummary":  [
+                            {
+                                "category":  "System Stability",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Infrastructure Health",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Authority Correctness",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Realtime Consistency",
+                                "total":  2,
+                                "passed":  2,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Observability",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            },
+                            {
+                                "category":  "Recovery Validation",
+                                "total":  1,
+                                "passed":  1,
+                                "failed":  0
+                            }
+                        ],
+    "cases":  [
+                  {
+                      "caseId":  "RS-1",
+                      "caseName":  "Reconnect Storm",
+                      "category":  "System Stability",
+                      "failureClass":  "ghost_leave|duplicate_join|reconnect_loop",
+                      "command":  "flutter test --no-pub test/room_session_stress_test.dart",
+                      "passCriteria":  "No reconnect chaos regression; stress suite must pass end-to-end.",
+                      "startedAtUtc":  "2026-04-16T00:27:54.0587085Z",
+                      "endedAtUtc":  "2026-04-16T00:27:59.2627845Z",
+                      "durationMs":  5204,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_session_stress_test.dart",
+                                              "stress simulates room churn without duplicates or presence drift"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-2",
+                      "caseName":  "Listener Leak Verification",
+                      "category":  "Infrastructure Health",
+                      "failureClass":  "listener_leak|duplicate_streams",
+                      "command":  "flutter test --no-pub test/room_chaos_master_test.dart",
+                      "passCriteria":  "No duplicate listener drift or leak regressions; chaos suite must pass.",
+                      "startedAtUtc":  "2026-04-16T00:27:59.2978156Z",
+                      "endedAtUtc":  "2026-04-16T00:28:04.6293104Z",
+                      "durationMs":  5331,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_chaos_master_test.dart",
+                                              "same user joining from two controllers remains deduped"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-3",
+                      "caseName":  "Host Authority Stress",
+                      "category":  "Authority Correctness",
+                      "failureClass":  "split_brain|host_missing",
+                      "command":  "flutter test --no-pub test/room_state_machine_test.dart",
+                      "passCriteria":  "Host count must converge deterministically and authority tests must pass.",
+                      "startedAtUtc":  "2026-04-16T00:28:04.6364308Z",
+                      "endedAtUtc":  "2026-04-16T00:28:08.6916066Z",
+                      "durationMs":  4055,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_state_machine_test.dart",
+                                              "ignores stale host claims after migration to a new host"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-4",
+                      "caseName":  "Mic Pressure Test",
+                      "category":  "Realtime Consistency",
+                      "failureClass":  "mic_desync|speaker_overflow",
+                      "command":  "flutter test --no-pub test/room_slot_service_test.dart test/room_host_control_panel_stage_tab_test.dart",
+                      "passCriteria":  "Mic grants, revokes, and slot limits stay aligned under pressure.",
+                      "startedAtUtc":  "2026-04-16T00:28:08.6938593Z",
+                      "endedAtUtc":  "2026-04-16T00:28:16.2427440Z",
+                      "durationMs":  7549,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "room_slot_service_test.dart",
+                                              "room_host_control_panel_stage_tab_test.dart"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-5",
+                      "caseName":  "Late Join Sync",
+                      "category":  "Realtime Consistency",
+                      "failureClass":  "late_join_sync|ui_desync",
+                      "command":  "flutter test --no-pub test/live_room_screen_test.dart test/room_state_test.dart",
+                      "passCriteria":  "Late-join hydration and UI authority sync must pass.",
+                      "startedAtUtc":  "2026-04-16T00:28:16.2634417Z",
+                      "endedAtUtc":  "2026-04-16T00:28:31.6854366Z",
+                      "durationMs":  15422,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "live_room_screen_test.dart"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-6",
+                      "caseName":  "Telemetry Truth Validation",
+                      "category":  "Observability",
+                      "failureClass":  "false_positive|silent_failure|bad_alerting",
+                      "command":  "flutter test --no-pub test/app_telemetry_test.dart",
+                      "passCriteria":  "Health alerts and suppression model must match deterministic telemetry tests.",
+                      "startedAtUtc":  "2026-04-16T00:28:31.7000428Z",
+                      "endedAtUtc":  "2026-04-16T00:28:36.1457327Z",
+                      "durationMs":  4446,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "app_telemetry_test.dart",
+                                              "All tests passed!"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  },
+                  {
+                      "caseId":  "RS-7",
+                      "caseName":  "Recovery Baseline Build",
+                      "category":  "Recovery Validation",
+                      "failureClass":  "build_regression|residual_state_contamination",
+                      "command":  "flutter build web --release --base-href /",
+                      "passCriteria":  "Fresh production web build succeeds after room gate execution.",
+                      "startedAtUtc":  "2026-04-16T00:28:36.1479869Z",
+                      "endedAtUtc":  "2026-04-16T00:29:41.6733421Z",
+                      "durationMs":  65525,
+                      "exitCode":  0,
+                      "signalPass":  true,
+                      "positiveMatches":  [
+                                              "Wasm dry run succeeded"
+                                          ],
+                      "negativeMatches":  [
+
+                                          ],
+                      "passed":  true
+                  }
+              ]
+}

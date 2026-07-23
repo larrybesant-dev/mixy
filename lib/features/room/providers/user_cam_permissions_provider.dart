@@ -17,6 +17,28 @@ class UserCamPermissionsController {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+
+  /// Atomically appends [viewerId] to [userId]'s allowedViewers list.
+  Future<void> addAllowedViewer({
+    required String userId,
+    required String viewerId,
+  }) async {
+    await _db.collection('userCamPermissions').doc(userId).set({
+      'allowedViewers': FieldValue.arrayUnion([viewerId]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Atomically removes [viewerId] from [userId]'s allowedViewers list.
+  Future<void> removeAllowedViewer({
+    required String userId,
+    required String viewerId,
+  }) async {
+    await _db.collection('userCamPermissions').doc(userId).set({
+      'allowedViewers': FieldValue.arrayRemove([viewerId]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
 }
 
 final userCamPermissionsControllerProvider =
@@ -29,7 +51,9 @@ final userCamAllowedViewersProvider = StreamProvider.autoDispose
       final firestore = ref.watch(roomFirestoreProvider);
       return firestore
           .collection('userCamPermissions')
-          .doc(userId)
+          .doc(
+            userId,
+          ) // Single-document read — .limit(1) not applicable for document snapshots.
           .snapshots()
           .map((doc) {
             final data = doc.data();
@@ -47,3 +71,7 @@ final userCamAllowedViewersProvider = StreamProvider.autoDispose
                 .toList(growable: false);
           });
     });
+
+
+
+

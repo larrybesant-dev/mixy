@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MixVy | Elite Live Beats</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@300;400;500;600;700;800;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#D4AF37",
+            "on-primary": "#131313",
+            "surface": "#131313",
+            "surface-dim": "#0e0e0e",
+            "surface-bright": "#1a1a1a",
+            "surface-container-lowest": "#050505",
+            "surface-container-low": "#0d0d0d",
+            "surface-container": "#131313",
+            "surface-container-high": "#1c1c1c",
+            "surface-container-highest": "#262626",
+            "outline": "#4d422a",
+            "outline-variant": "#332c1c",
+            "secondary-container": "#D4AF37",
+            "on-secondary-container": "#131313",
+          },
+          "borderRadius": {
+            "DEFAULT": "0px",
+            "lg": "4px",
+            "xl": "8px",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "serif": ["Noto Serif", "serif"],
+            "sans": ["Inter", "sans-serif"],
+            "headline-md": ["Noto Serif"],
+            "body-md": ["Inter"],
+            "display": ["Noto Serif"],
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    @keyframes pulse-gold {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px #D4AF37); }
+      50% { opacity: 0.7; filter: drop-shadow(0 0 10px #D4AF37); }
+    }
+    .pulse-live { animation: pulse-gold 3s ease-in-out infinite; }
+    .snap-y-mandatory { scroll-snap-type: y mandatory; }
+    .snap-start { scroll-snap-align: start; }
+    .glass-card {
+      background: rgba(19, 19, 19, 0.75);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+    }
+    .gold-gradient {
+      background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+    }
+    .gold-text {
+      background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0e0e0e; }
+    ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 2px; }
+    .logo-container {
+      filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.3));
+    }
+  </style>
+</head>
+<body class="bg-surface-dim text-white font-sans overflow-hidden antialiased">
+<!-- SideNavBar -->
+<aside class="hidden md:flex fixed left-0 top-0 h-full w-64 bg-[#0D0D0D]/95 backdrop-blur-2xl border-r border-yellow-900/20 flex-col pt-20 pb-8 z-50 shadow-[10px_0_30px_rgba(0,0,0,0.8)]">
+<div class="px-6 mb-10">
+<div class="flex items-center gap-3 mb-2">
+<img alt="MixVy Logo" class="w-8 h-8 object-contain logo-container" src="https://lh3.googleusercontent.com/aida/ADBb0uixFIk9fBbRF6zJNtkRUt-_cUmbXR7hdR9ddh2frLWhnfLTxj7NTt5M7Oqhyf90tFHTb28Gk5WZ_O59yBCSoowT44JqRDa9i2Wnk63nASAeEiTOHtihiWWHxnkyuICpVH6FtTQ9thcz97hLTiaWFXDrZ2-feGor0OlXCYGLYMJITSUsafSotezT7Ak_9pqcurHKtLzLNlHpxq1IFb6Zqmb2ooLgiEjsgF-yceLd-nWAJW-diwK0zz9sginbgY4qezF2IfBCr8MhzMs"/>
+<h1 class="text-xl font-serif font-black tracking-widest uppercase text-primary">MixVy</h1>
+</div>
+<p class="text-[10px] text-primary/60 uppercase tracking-[0.3em] font-medium">Kinetic Luxury</p>
+</div>
+<nav class="flex-1 space-y-1 px-2">
+<a class="flex items-center gap-4 bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-4 border-primary px-4 py-3 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-serif font-medium text-sm">Home</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-gray-500 hover:bg-primary/5 hover:text-primary transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="search">search</span>
+<span class="font-serif font-medium text-sm">Search</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-gray-500 hover:bg-primary/5 hover:text-primary transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-serif font-medium text-sm">messages</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-gray-500 hover:bg-primary/5 hover:text-primary transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="account_circle">account_circle</span>
+<span class="font-serif font-medium text-sm">Profile</span>
+</a>
+</nav>
+<div class="px-6 pt-6 border-t border-yellow-900/20">
+<button class="w-full py-4 gold-gradient text-on-primary font-bold tracking-widest text-xs uppercase rounded-lg active:scale-95 transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]">
+        Go Live
+      </button>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-black/90 backdrop-blur-xl border-b border-yellow-900/30 md:pl-[18rem] shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-serif font-black italic gold-text drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">MixVy</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden sm:flex items-center gap-2 px-4 py-1.5 bg-primary/5 rounded-full border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[16px] pulse-live" data-icon="diamond">diamond</span>
+<span class="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">12.4k Active Elite</span>
+</div>
+<div class="flex items-center gap-5">
+<span class="material-symbols-outlined text-gray-400 hover:text-primary transition-colors cursor-pointer" data-icon="notifications">notifications</span>
+<div class="relative group cursor-pointer">
+<img alt="Premium user profile avatar" class="w-9 h-9 rounded-full border-2 border-primary/40 p-0.5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsABY1XA_SEGof64eWq3hWQbkUPBI5HyHXc387oz_0uD2G-XVgu7gKtffKn_3RNo-zVu6QAE-_W-E3DL-RF8TATKOtFppZp-JtN5WnPtQebiK6DboBWgRUHMKi1SzzmmFgsIfPNdSmazzRtYAaz_kb3wnI8zFosISkAunRoW_ONztM3B00I5SuqL15-n0w60IEwQa4o1GuNJlyuGJZbPXd-73Gj8-fVb_2MMiSsOccam_-IqeGIf2Acs8ve-sZWGRIxyuNrweAnB2l"/>
+<div class="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-20"></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Feed Container -->
+<main class="md:ml-64 pt-16 h-screen overflow-y-scroll snap-y-mandatory bg-surface-dim">
+<!-- LIVE NOW Horizontal Section -->
+<section class="p-8 pb-4 md:px-12 max-w-5xl mx-auto">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 bg-primary rounded-full pulse-live"></span>
+<h2 class="font-serif text-primary text-sm font-bold tracking-[0.3em] uppercase">The Elite Room</h2>
+</div>
+<button class="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1">
+        Explore All <span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<div class="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+<!-- Live Story Item 1 -->
+<div class="flex-shrink-0 group cursor-pointer">
+<div class="w-16 h-16 rounded-full p-[1.5px] gold-gradient transition-transform group-hover:scale-110">
+<div class="w-full h-full rounded-full border-4 border-surface-dim overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="portrait of an expressive female dj with colorful hair and neon studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzuDHlZtXJ7FuMrjR7rL7zKYhsP3JAyd2fXdA9stzMl2guNLlml4hP6g1IriBVpSbMn7zKUBKon9yFTRU3xhA9S2-Nt7YcPoZG1bDbYdMvxLspO_P57-WhgurumkZiR2wpTAp5leTQN2GqegW8Sh9KhtDZPV7KKEOR3BTzFeuvVHzVIvMnAAzVCOPFwFQ4Lx8NSh7tjbd_KlqSmzO0l_J6Xj9ZX3Aw865vuc6Tzghl51DUauMzFNihAm5tnWsZDg9tYXLH80EuQ7ko"/>
+</div>
+</div>
+<p class="text-[10px] text-center mt-3 font-bold text-primary/80 tracking-tighter">CyberBeats</p>
+</div>
+<!-- Live Story Item 2 -->
+<div class="flex-shrink-0 group cursor-pointer">
+<div class="w-16 h-16 rounded-full p-[1.5px] gold-gradient transition-transform group-hover:scale-110">
+<div class="w-full h-full rounded-full border-4 border-surface-dim overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="profile photo of a smiling podcast host" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz7IorEmfIv8n-itx3V5MmYbjQI-fkzQUjD6eEdE0K0Vbl4-E3nJhATioKF0bfA1xnJ14E3ZWirKiiHXATZLdb3QP_LhfTr56vR2eIMLamwFlfRvRW-m3canRoauzzUXz2jXriNEr3pFOXR7shMuC32P7yPMhkju1jj2J3o1cCnmZRXdYNflK0YKpT2KitQ5G_502X7DmsxwHEJ3S7jb9-1DL3jsCHSrLMRBPYYysSZbQvg_04NdIY8lv5jFzFHGgxjBcEwMI6mxjL"/>
+</div>
+</div>
+<p class="text-[10px] text-center mt-3 font-bold text-gray-500 tracking-tighter">TechTalk</p>
+</div>
+<!-- Live Story Item 3 -->
+<div class="flex-shrink-0 group cursor-pointer">
+<div class="w-16 h-16 rounded-full p-[1.5px] gold-gradient transition-transform group-hover:scale-110">
+<div class="w-full h-full rounded-full border-4 border-surface-dim overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="gamer with headset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm5D_lgcEaLirTXPeu29QTLT5Pi9FYYNJBgUqa8sHoYCxyQZ81hWixCSQOvCWLFNP2x6sKlqn2NxmA4hgQeqyODNrfMwF6llPkAPITwrPEsofitbG71sW8JaQ1ojCjIYd4olAndeAfELL8K8bsZFrWUV2w8I0MZ8ck8k1tlu1LTlSiV0-B_lCPusFeFdx2NWzoE_RgH8YNZpzkxscXSfNkW-rGPslg83C-GjPpPgWhJRqcJse9u2g4-Bs3GxXxMn8LM-hJTOupYBhy"/>
+</div>
+</div>
+<p class="text-[10px] text-center mt-3 font-bold text-gray-500 tracking-tighter">GameZone</p>
+</div>
+<!-- Live Story Item 4 -->
+<div class="flex-shrink-0 group cursor-pointer">
+<div class="w-16 h-16 rounded-full p-[1.5px] gold-gradient transition-transform group-hover:scale-110">
+<div class="w-full h-full rounded-full border-4 border-surface-dim overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="jazz club" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIv7atHiVVg3pFe3oUwkQktTPZW8dzXRt3fGx8lSo87GDPBxRltAKgOeWfEw4e3S83O0Pl1pxgdvqAmOOLRkrz9mY7oeHPTI6kyc0TjPUgQcmZ8-IMG2oAOJsjKQT45dLKACUUysq9cgfXBFIOhMaRX9Smz5hXhSOurX3auzfI2maGChiExjQ3ZJL2v1e5wZe-qTqtmYX7yE9619-Y32z81tYxp_GzRO-dXZV651-fv3NmyQCj85kq627zGc6g_KXz7CY8FRgAcMxi"/>
+</div>
+</div>
+<p class="text-[10px] text-center mt-3 font-bold text-gray-500 tracking-tighter">JazzNight</p>
+</div>
+</div>
+</section>
+<!-- Vertical Cards Feed -->
+<section class="max-w-4xl mx-auto px-6 md:px-0 pb-24 space-y-12">
+<!-- Feed Card 1 -->
+<article class="snap-start relative group overflow-hidden rounded-[4px] h-[768px] md:h-[819px] border border-yellow-900/20 bg-surface shadow-2xl">
+<!-- Card Background Image -->
+<div class="absolute inset-0">
+<img class="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-[1500ms]" data-alt="nightclub with laser beams" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWi-e1TSa8wMz6qRT9V3TRsnRDiK9QajR6nATFX-vs38bvStiSxxeKsR9xbv1I4zVtdcNvshfVXGhj_963p_o1z0TluGnW8phb7GUejbTCfioOQiPmN0AMHhrq81u9TMFx5QKWB7gokpUXqBjV2IsXL1JTvv99tCCJ1op2EPTOgOjOr9zrJI73zj8hhE6uAZYTxhtlvJ6FySGflzwSYbtil3688w3G2ZGVuB-HVdI126dXzQ6JBIYcuKl5cSmeBnKUTcKFA1Vazgb5"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+</div>
+<!-- Floating UI Overlays -->
+<div class="absolute top-8 left-8 right-8 flex justify-between items-start">
+<div class="flex items-center gap-4">
+<div class="px-4 py-1.5 gold-gradient text-on-primary text-[10px] font-black rounded-sm flex items-center gap-2 uppercase tracking-widest pulse-live">
+<span class="material-symbols-outlined text-[10px] fill-current" data-icon="fiber_manual_record">fiber_manual_record</span>
+              LIVE
+            </div>
+<div class="glass-card px-4 py-1.5 rounded-sm text-primary text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest border-primary/30">
+<span class="material-symbols-outlined text-[14px]" data-icon="auto_awesome">auto_awesome</span>
+              2.4K Exclusive
+            </div>
+</div>
+<button class="w-12 h-12 rounded-sm glass-card flex items-center justify-center text-primary/80 hover:text-primary transition-all border-primary/20">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+<!-- Content Overlay -->
+<div class="absolute bottom-0 inset-x-0 p-10 flex flex-col gap-8">
+<div>
+<h3 class="font-serif text-white text-4xl mb-4 drop-shadow-2xl leading-tight font-light italic">
+              Gold Sessions: <span class="font-black not-italic text-primary">Midnight Odyssey</span>
+</h3>
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-14 h-14 rounded-full border-2 border-primary ring-4 ring-black/50" data-alt="dj profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2ojb3uJrk9Gf1gQYtkje_w8GgoExnRIfsHKiqxFw5tzfsaysU8lm471Rop7Xr_QnjZaqPB243-NnUmFkh1a6Y2ZaxHArOClX2L9QsF0fP6ib1pcLmGWxyAWXnAgmyR6DxIW9WrnA8QheKl3m2K1pqVLbqwAmsWR9esmmUpeNvBQuF0cj5fYcBGWEdCjd00UjhIB90oMzUmIZbnSL-yB8VEiA0NpTLQ85y5KFXOIxWAUjmoAIhO1y4Qjn09Ud7XmEbq0F4HPu3zZRC"/>
+<span class="absolute -bottom-1 -right-1 w-5 h-5 gold-gradient rounded-full flex items-center justify-center border-2 border-black">
+<span class="material-symbols-outlined text-[10px] text-black font-bold" data-icon="verified">verified</span>
+</span>
+</div>
+<div>
+<p class="text-white font-serif font-bold text-lg tracking-tight">DJ Luna Ray</p>
+<p class="text-primary/60 text-[10px] uppercase tracking-[0.2em] font-medium">Headlining Berlin Residency</p>
+</div>
+</div>
+</div>
+<!-- Active Speakers Tiles -->
+<div class="flex flex-wrap gap-3">
+<div class="glass-card p-1.5 pr-5 rounded-full flex items-center gap-3 border-primary/20 hover:bg-primary/10 transition-colors cursor-pointer group/tile">
+<img class="w-8 h-8 rounded-full grayscale group-hover/tile:grayscale-0 transition-all" data-alt="listener" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt7pAPRVZsk4fXuvEADf9w_vAz46orApRb1PiqGsLPo7Bkqt1qGlPxIPCrXUUPpmUohcPQcvCZlyhY2LQ54l_5lUiyh9y9pRprypPOUPjLKYJbRvS8GlFqMpC2R_OsoHrgA4fhX-_HU53zF203C7EMcuFktSMbJMvnAWo_faN4urhnvZ8NSu66ato7QP2Cj-yTBNYjBA6busqjzH7RdwBXB1JhC0plz4HpMQ9Zn3w5ipKm8O9cNfnfpJVDRnejkAnjGs3D1MOHV9iW"/>
+<span class="text-[11px] text-primary/90 font-bold uppercase tracking-widest">Alex V.</span>
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="mic">mic</span>
+</div>
+<div class="glass-card p-1.5 pr-5 rounded-full flex items-center gap-3 border-primary/20 hover:bg-primary/10 transition-colors">
+<img class="w-8 h-8 rounded-full grayscale" data-alt="listener" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTrpIv6G4SHMEzRGpcxxVI4HUFF9HAuPwSgjdGZRtlzCWXQdySzeG2Froij30YrRPrOiNt2NMZ5HjizlGaVWu1yEcUma2zUDeLfhyE49aTzRqly7jGFEEMt_S-izn9_oNrY9pan3LlhPtEojnrxe85LJzbmNDxGvdkMrgGidhRzLXwWFkwEoaOvgEvSjlalmLZ8vUEOxAloPOgjya_u5DQbENI6soS8zfWw9e_2vOPLnD2YXsdYmnJzWB932UWnOUjhhzQYIdA8ykV"/>
+<span class="text-[11px] text-primary/90 font-bold uppercase tracking-widest">Sarah_J</span>
+<div class="flex items-center gap-[2px]">
+<div class="w-1 h-3 bg-primary rounded-full shadow-[0_0_8px_rgba(212,175,55,0.5)]"></div>
+<div class="w-1 h-5 bg-primary rounded-full shadow-[0_0_12px_rgba(212,175,55,0.8)]"></div>
+<div class="w-1 h-2 bg-primary rounded-full shadow-[0_0_8px_rgba(212,175,55,0.5)]"></div>
+</div>
+</div>
+<div class="w-11 h-11 rounded-full glass-card flex items-center justify-center border-dashed border-primary/40 text-primary/40 hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex items-center gap-5">
+<button class="flex-1 py-5 bg-black/40 hover:bg-primary/10 backdrop-blur-3xl text-primary font-bold uppercase tracking-[0.3em] text-xs rounded-sm border border-primary/20 transition-all flex items-center justify-center gap-3 group">
+<span class="material-symbols-outlined transition-transform group-hover:scale-110" data-icon="headphones">headphones</span>
+              Enter Experience
+            </button>
+<button class="w-16 h-16 gold-gradient text-on-primary flex items-center justify-center rounded-sm shadow-[0_10px_30px_rgba(191,149,63,0.3)] active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl font-bold" data-icon="favorite">favorite</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Feed Card 2 -->
+<article class="snap-start relative group overflow-hidden rounded-[4px] h-[768px] md:h-[819px] border border-yellow-900/20 bg-surface shadow-2xl">
+<div class="absolute inset-0">
+<img class="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-[1500ms]" data-alt="minimalist studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhC-9CTkKF5do-yI0SIRV4tGI18DIa3A19rDWFrCEjp92k5B3FTlYJc-La1G4aY0zNWQTxsiJfsNsSTIjT5yvwhuT1GEb028LjHmep-xNh-5Me9RxlXT6UN6FfwT2rsizb5YKOJR5_soUfdy8yxUmFRYTrSnB1uuiJ3N9JSb36Cd7cyaiGRvt2eh1L2YazldS6WKU35eZtDDBaz9aP-Ks4nKezAOy5uiJ76mm1Q8nb74kdERv9fS7Ee6V-0BBpZUzSGQmDSzHmcek4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+</div>
+<div class="absolute top-8 left-8 flex items-center gap-4">
+<div class="px-4 py-1.5 gold-gradient text-on-primary text-[10px] font-black rounded-sm flex items-center gap-2 uppercase tracking-widest pulse-live">
+<span class="material-symbols-outlined text-[10px] fill-current" data-icon="fiber_manual_record">fiber_manual_record</span>
+            LIVE
+          </div>
+<div class="glass-card px-4 py-1.5 rounded-sm text-primary text-[10px] font-bold flex items-center gap-2 uppercase tracking-widest border-primary/30">
+<span class="material-symbols-outlined text-[14px]" data-icon="visibility">visibility</span>
+            842 Elite Members
+          </div>
+</div>
+<div class="absolute bottom-0 inset-x-0 p-10 flex flex-col gap-8">
+<div>
+<h3 class="font-serif text-white text-4xl mb-4 drop-shadow-2xl leading-tight font-light italic">
+            Kinetic: <span class="font-black not-italic text-primary">Lo-Fi Curations</span>
+</h3>
+<div class="flex items-center gap-4">
+<img class="w-14 h-14 rounded-full border-2 border-primary/50" data-alt="marcus k profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJlUgeF8r5mjNgvTKouRiCjAMO80yvEB7QaxziuQ0jSh7JGu62qGOHMUTuYpRvt023swAv-rO3Xz9rH9mJBwMNp2rPxrAcUn49CeCBAp3BBX654cJcap-KYxpOQKIELu1jA7H2q6RY4yr7FLxTxLG8K6lvBobudbPWNbD7psuwxGOEkj9yE_No9qajApA8bbA5ttKIsJVlBMfC5tB_d6xvcG2m6c-pIFGIidG5VpQI2GClogPutJaaXe47V_AIJLWBaLSzPpXdzumR"/>
+<div>
+<p class="text-white font-serif font-bold text-lg tracking-tight">Marcus K.</p>
+<p class="text-primary/60 text-[10px] uppercase tracking-[0.2em] font-medium">Atmospheric Designer</p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-5">
+<button class="flex-1 py-5 bg-black/40 hover:bg-primary/10 backdrop-blur-3xl text-primary font-bold uppercase tracking-[0.3em] text-xs rounded-sm border border-primary/20 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" data-icon="headphones">headphones</span>
+            Listen In
+          </button>
+<button class="w-16 h-16 gold-gradient text-on-primary flex items-center justify-center rounded-sm shadow-[0_10px_30px_rgba(191,149,63,0.3)] active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl" data-icon="favorite_border">favorite_border</span>
+</button>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/95 backdrop-blur-3xl border-t border-yellow-900/30 flex items-center justify-around px-4 z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[9px] font-bold uppercase tracking-widest">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="text-[9px] font-bold uppercase tracking-widest">Search</span>
+</a>
+<div class="-mt-14 gold-gradient w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(212,175,55,0.4)] ring-4 ring-surface-dim active:scale-90 transition-all">
+<span class="material-symbols-outlined text-on-primary text-3xl font-black" data-icon="add">add</span>
+</div>
+<a class="flex flex-col items-center gap-1 text-gray-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-[9px] font-bold uppercase tracking-widest">Chat</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="text-[9px] font-bold uppercase tracking-widest">Profile</span>
+</a>
+</nav>
+<!-- Contextual FAB (Desktop/Tablet Only) -->
+<button class="hidden md:flex fixed bottom-10 right-10 w-20 h-20 gold-gradient rounded-full items-center justify-center shadow-[0_15px_40px_rgba(191,149,63,0.4)] hover:scale-110 active:scale-95 transition-all z-40 group">
+<span class="material-symbols-outlined text-on-primary text-4xl font-black" data-icon="add">add</span>
+<span class="absolute right-24 bg-surface-container-high text-primary border border-primary/30 font-serif font-bold text-[10px] uppercase tracking-[0.2em] px-5 py-2.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-2xl">Create Session</span>
+</button>
+</body></html>

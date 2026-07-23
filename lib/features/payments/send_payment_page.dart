@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 // Unused import removed: 'package:firebase_auth/firebase_auth.dart';
 
+import '../../core/layout/app_layout.dart';
+import '../../shared/widgets/app_page_scaffold.dart';
+
 class SendPaymentPage extends ConsumerStatefulWidget {
   final String recipientId;
   final String recipientName;
@@ -44,8 +47,9 @@ class _SendPaymentPageState extends ConsumerState<SendPaymentPage> {
         });
         return;
       }
+      final paymentApi = ref.read(paymentApiProvider);
       // User is assumed to be logged in (null check handled in PaymentApi).
-      final intent = await PaymentApi.createIntent(
+      final intent = await paymentApi.createIntent(
         amount: amount,
         currency: 'usd',
         recipientId: widget.recipientId,
@@ -58,7 +62,7 @@ class _SendPaymentPageState extends ConsumerState<SendPaymentPage> {
       );
       await Stripe.instance.presentPaymentSheet();
       // Notify backend of successful payment (senderId is authenticated user)
-      await PaymentApi.notifySuccess(
+      await paymentApi.notifySuccess(
         recipientId: widget.recipientId,
         amount: amount,
         paymentIntentId: intent.paymentIntentId,
@@ -81,10 +85,10 @@ class _SendPaymentPageState extends ConsumerState<SendPaymentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(title: Text('Send to ${widget.recipientName}')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(context.pageHorizontalPadding),
         child: Column(
           children: [
             Semantics(
@@ -130,3 +134,6 @@ class _SendPaymentPageState extends ConsumerState<SendPaymentPage> {
     );
   }
 }
+
+
+

@@ -1,0 +1,66 @@
+{
+    "status":  "FAIL",
+    "reasonCode":  "schema_invalid",
+    "summary":  {
+                    "authority":  {
+                                      "runtime":  "flutter",
+                                      "ci":  "github-actions",
+                                      "resolvedBy":  "deployment_contract"
+                                  },
+                    "contractState":  "FINAL",
+                    "contractHash":  "0bd02d2913386883ed44cd026a653418bf42a41494a3f843c8d34a80f5d7b9db",
+                    "previousContractHash":  "3631a9317d37e858b5363065a9881142a36d8a7d5c15caac04403e8adc6a4ba0",
+                    "artifact":  {
+                                     "commitSha":  "15a47be9de9c278debd9426002430aa1d6e231a1",
+                                     "buildId":  "unknown",
+                                     "workflowRunId":  "unknown"
+                                 },
+                    "startup":  {
+                                    "contractVersion":  "unknown",
+                                    "ready":  false,
+                                    "checkpoints":  [
+
+                                                    ]
+                                },
+                    "environment":  {
+                                        "class":  "local",
+                                        "os":  "windows",
+                                        "contract":  {
+                                                         "status":  "present",
+                                                         "hash":  "sha256:4fd00c82ea44daa4a12b1eb774e2a0582d8fc69b18ba6e9469c6b102433f5c73",
+                                                         "summaryFlags":  {
+                                                                              "dartExtensionInstalled":  true,
+                                                                              "detectIndentationDisabled":  true,
+                                                                              "flutterExtensionInstalled":  true,
+                                                                              "powershellExtensionInstalled":  true,
+                                                                              "settingsHashPresent":  true,
+                                                                              "settingsPresent":  true,
+                                                                              "utf8NoBomPreferred":  true
+                                                                          }
+                                                     }
+                                    },
+                    "privilege":  {
+                                      "class":  "non-admin"
+                                  },
+                    "networking":  {
+                                       "port":  9090,
+                                       "portOwnership":  "user"
+                                   },
+                    "probeResults":  {
+                                         "startupProbe":  "fail",
+                                         "smokeProbe":  "fail"
+                                     },
+                    "governance":  {
+                                       "decision":  "deny",
+                                       "reasonCode":  "schema_invalid"
+                                   }
+                },
+    "observations":  [
+                         {
+                             "severity":  "warning",
+                             "reasonCode":  "environment_drift_detected",
+                             "localDevContractHash":  "sha256:77b1d08274c7d90a8039912b04f622e6aeb3c0766801c0a6b96b9a2aaa9eec32",
+                             "ciDevContractHash":  "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+                         }
+                     ]
+}

@@ -1,0 +1,23 @@
+{
+    "testName":  "contract_determinism",
+    "runs":  [
+                 {
+                     "resolvedHash":  "6550d279af5759bb3bd46b11e2bb972d0b4ce11f4dc255600f1a4c0a49e9d7d1",
+                     "evaluationHash":  "ff7725215ec68d1c6dbc86485963778d66a3938388f12e157a576246cc79070b",
+                     "contractHash":  "c4c2896d05a963c28256db31582f0069545637ad9e4f2c925a5c170f798a9cb2",
+                     "run":  1,
+                     "status":  "completed"
+                 },
+                 {
+                     "resolvedHash":  "6550d279af5759bb3bd46b11e2bb972d0b4ce11f4dc255600f1a4c0a49e9d7d1",
+                     "evaluationHash":  "ff7725215ec68d1c6dbc86485963778d66a3938388f12e157a576246cc79070b",
+                     "contractHash":  "c4c2896d05a963c28256db31582f0069545637ad9e4f2c925a5c170f798a9cb2",
+                     "run":  2,
+                     "status":  "completed"
+                 }
+             ],
+    "deterministic":  true,
+    "failures":  [
+
+                 ]
+}

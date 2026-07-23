@@ -14,28 +14,23 @@ Widget _buildApp() {
   final router = GoRouter(
     initialLocation: '/onboarding',
     routes: [
-      GoRoute(
-        path: '/onboarding',
-        builder: (_, _) => const OnboardingScreen(),
-      ),
+      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(
         path: '/legal/terms',
-        builder: (_, _) => const Scaffold(body: Text('Terms')),
+        builder: (_, __) => const Scaffold(body: Text('Terms')),
       ),
       GoRoute(
         path: '/legal/privacy',
-        builder: (_, _) => const Scaffold(body: Text('Privacy')),
+        builder: (_, __) => const Scaffold(body: Text('Privacy')),
       ),
       GoRoute(
         path: '/',
-        builder: (_, _) => const Scaffold(body: Text('Home')),
+        builder: (_, __) => const Scaffold(body: Text('Home')),
       ),
     ],
   );
 
-  return ProviderScope(
-    child: MaterialApp.router(routerConfig: router),
-  );
+  return ProviderScope(child: MaterialApp.router(routerConfig: router));
 }
 
 // ---------------------------------------------------------------------------
@@ -52,20 +47,23 @@ void main() {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('Step Into The Hottest Rooms'), findsOneWidget);
-      expect(find.text('KEEP THE VIBE'), findsOneWidget);
+      expect(find.text('Step into rooms with real chemistry.'), findsOneWidget);
+      expect(find.text('CONTINUE'), findsOneWidget);
       // Legal checkbox only appears on last page
       expect(find.byType(Checkbox), findsNothing);
     });
 
-    testWidgets('advances to second page via KEEP THE VIBE', (tester) async {
+    testWidgets('advances to second page via CONTINUE', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Find Your Night Crew Fast'), findsOneWidget);
+      expect(
+        find.text('Meet people who match your energy fast.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('advances through all pages to final page', (tester) async {
@@ -73,73 +71,95 @@ void main() {
       await tester.pumpAndSettle();
 
       // Page 0 → 1
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
       // Page 1 → 2
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
-      // Final page
-      expect(find.text('Launch Your Own Party'), findsOneWidget);
-      expect(find.text('JOIN THE PARTY'), findsOneWidget);
+      // Page 2 → 3 (interests/final page)
+      await tester.tap(find.text('CONTINUE'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choose the energy you want more of.'), findsOneWidget);
+      expect(find.text('ENTER MIXVY'), findsOneWidget);
     });
 
     testWidgets('final page shows legal checkbox', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
       expect(find.byType(Checkbox), findsOneWidget);
-      expect(find.text('I agree to the Terms of Service and Privacy Policy.'), findsOneWidget);
+      expect(
+        find.text('I agree to the Terms of Service and Privacy Policy.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('JOIN THE PARTY is disabled until legal checkbox is ticked',
-        (tester) async {
+    testWidgets('ENTER MIXVY is disabled until legal checkbox is ticked', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
-      // Navigate to final page
-      await tester.tap(find.text('KEEP THE VIBE'));
+      // Navigate to final page (interests page is page 3)
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
-      // Before accepting legal the InkWell that wraps the CTA label has null onTap.
       InkWell ctaInkWell() => tester.widget<InkWell>(
-            find
-                .ancestor(
-                  of: find.text('JOIN THE PARTY'),
-                  matching: find.byType(InkWell),
-                )
-                .first,
-          );
+        find
+            .ancestor(
+              of: find.text('ENTER MIXVY'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
 
-      expect(ctaInkWell().onTap, isNull,
-          reason: 'CTA should be disabled before legal accepted');
+      expect(
+        ctaInkWell().onTap,
+        isNull,
+        reason: 'CTA should be disabled before legal accepted',
+      );
 
       // Tick the legal checkbox
-      await tester.tap(find.byType(Checkbox));
-      await tester.pump();
+      await tester.ensureVisible(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Checkbox), warnIfMissed: false);
+      await tester.pumpAndSettle();
 
-      expect(ctaInkWell().onTap, isNotNull,
-          reason: 'CTA should be enabled after legal accepted');
+      expect(
+        ctaInkWell().onTap,
+        isNotNull,
+        reason: 'CTA should be enabled after legal accepted',
+      );
     });
 
     testWidgets('Terms link is tappable on final page', (tester) async {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('KEEP THE VIBE'));
+      await tester.tap(find.text('CONTINUE'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('CONTINUE'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Terms'));
+      await tester.ensureVisible(find.text('Terms'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Terms'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.text('Terms'), findsWidgets);
@@ -149,10 +169,10 @@ void main() {
       await tester.pumpWidget(_buildApp());
       await tester.pumpAndSettle();
 
-      // 3 pages → 3 dots; each dot is a small Container inside a Row.
-      // The simplest proxy: PageView has 3 children.
+      // 4 pages (3 scene pages + 1 interests page) → 4 dots.
+      // The simplest proxy: PageView has 4 children.
       final pageView = tester.widget<PageView>(find.byType(PageView).first);
-      expect(pageView.childrenDelegate.estimatedChildCount, 3);
+      expect(pageView.childrenDelegate.estimatedChildCount, 4);
     });
   });
 }

@@ -11,7 +11,10 @@ String? _asNullableString(dynamic value) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
+        .map(
+          (item) =>
+              item is String ? item.trim() : item?.toString().trim() ?? '',
+        )
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
@@ -33,12 +36,16 @@ class SpeedDateCandidate {
     this.interests = const [],
   });
 
-  factory SpeedDateCandidate.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SpeedDateCandidate.fromDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? <String, dynamic>{};
     final username = _asNullableString(data['username']);
     return SpeedDateCandidate(
       id: doc.id,
-      username: (username == null || username.isEmpty) ? 'MixVy User' : username,
+      username: (username == null || username.isEmpty)
+          ? 'MixVy User'
+          : username,
       avatarUrl: _asNullableString(data['avatarUrl']),
       bio: _asNullableString(data['bio']),
       interests: _asStringList(data['interests']),
@@ -60,7 +67,10 @@ class SpeedDatingMatch {
   });
 
   String otherUserId(String selfId) {
-    return participantIds.firstWhere((id) => id != selfId, orElse: () => selfId);
+    return participantIds.firstWhere(
+      (id) => id != selfId,
+      orElse: () => selfId,
+    );
   }
 
   factory SpeedDatingMatch.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -93,3 +103,7 @@ class SpeedDatingQueueResult {
     this.partnerId,
   });
 }
+
+
+
+

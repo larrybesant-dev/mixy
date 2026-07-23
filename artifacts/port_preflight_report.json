@@ -1,0 +1,12 @@
+{
+    "status":  "PASS",
+    "port":  9090,
+    "exitCode":  0,
+    "environmentClass":  "local",
+    "privilegeClass":  "non-admin",
+    "portOwnership":  "user",
+    "terminationAttempt":  {
+                               "status":  "success",
+                               "reasonCode":  "none"
+                           }
+}

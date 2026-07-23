@@ -4,17 +4,12 @@
 		{
 			"label": "Run Flutter app",
 			"type": "shell",
-			"command": "flutter run",
-			"args": [],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "build"
-		},
-		{
-			"label": "Run Flutter app",
-			"type": "shell",
-			"command": "flutter run",
-			"args": [],
+			"command": "flutter",
+			"args": [
+				"run",
+				"-d",
+				"chrome"
+			],
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
@@ -22,14 +17,28 @@
 		{
 			"label": "Build Flutter Web App",
 			"type": "shell",
-			"command": "flutter build web --release --web-renderer canvaskit --base-href \"/\"",
+			"command": "flutter",
+			"args": [
+				"build",
+				"web",
+				"--release",
+				"--base-href",
+				"/"
+			],
 			"isBackground": false,
 			"group": "build"
 		},
 		{
 			"label": "Build Flutter Web App (no renderer flag)",
 			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
+			"command": "flutter",
+			"args": [
+				"build",
+				"web",
+				"--release",
+				"--base-href",
+				"/"
+			],
 			"isBackground": false,
 			"group": "build"
 		},
@@ -45,63 +54,6 @@
 			"presentation": {
 				"reveal": "silent"
 			}
-		},
-		{
-			"label": "Run Flutter app",
-			"type": "shell",
-			"command": "flutter run",
-			"args": [
-				"-d",
-				"chrome"
-			],
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Run Flutter app",
-			"type": "shell",
-			"command": "flutter run",
-			"args": [
-				"-d",
-				"chrome"
-			],
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App",
-			"type": "shell",
-			"command": "flutter build web --release --web-renderer canvaskit --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
 		},
 		{
 			"label": "Patch Flutter Web Runtime",
@@ -119,115 +71,41 @@
 		{
 			"label": "Build Flutter Web App (patched)",
 			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"; powershell -ExecutionPolicy Bypass -File tools/patch_flutter_web_runtime.ps1",
-			"isBackground": false,
-			"group": "build"
-		}
-	]
-}{
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Run Flutter app",
-			"type": "shell",
-			"command": "flutter run",
-			"args": [],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "build"
-		},
-		{
-			"label": "Run Flutter app",
-			"type": "shell",
-			"command": "flutter run",
-			"args": [],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App",
-			"type": "shell",
-			"command": "flutter build web --release --web-renderer canvaskit --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Flutter Clean",
-			"type": "shell",
-			"command": "flutter",
+			"command": "powershell",
 			"args": [
-				"clean"
-			],
-			"group": "build",
-			"problemMatcher": [],
-			"presentation": {
-				"reveal": "silent"
-			}
-		},
-		{
-			"label": "Run Flutter app",
-			"type": "shell",
-			"command": "flutter run",
-			"args": [
-				"-d",
-				"chrome"
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"flutter build web --release --base-href '/' ; powershell -ExecutionPolicy Bypass -File tools/patch_flutter_web_runtime.ps1"
 			],
 			"isBackground": false,
 			"group": "build"
 		},
 		{
-			"label": "Run Flutter app",
+			"label": "Build Flutter Web App (versioned + patched)",
 			"type": "shell",
-			"command": "flutter run",
+			"command": "powershell",
 			"args": [
-				"-d",
-				"chrome"
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$ver = Get-Date -Format 'yyyy.MM.dd.HHmm'; flutter build web --release --base-href '/' --dart-define=APP_VERSION=$ver ; powershell -ExecutionPolicy Bypass -File tools/patch_flutter_web_runtime.ps1"
 			],
 			"isBackground": false,
 			"group": "build"
 		},
 		{
-			"label": "Build Flutter Web App",
+			"label": "Audit Dart File Integrity",
 			"type": "shell",
-			"command": "flutter build web --release --web-renderer canvaskit --base-href \"/\"",
+			"command": "powershell",
+			"args": [
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"tools/audit_dart_file_integrity.ps1"
+			],
 			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter Web App (no renderer flag)",
-			"type": "shell",
-			"command": "flutter build web --release --base-href \"/\"",
-			"isBackground": false,
-			"group": "build"
+			"problemMatcher": []
 		}
 	]
 }

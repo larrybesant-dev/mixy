@@ -1,0 +1,63 @@
+{
+    "generatedAtUtc":  "2026-04-13T20:52:26.7516848Z",
+    "breakdown":  {
+                      "formula":  "DriftScore = 100 * (1 - 1) + 25 * 0 + 15 * 0",
+                      "componentContribution":  {
+                                                    "total":  0,
+                                                    "temporalTerm":  0,
+                                                    "structuralTerm":  0,
+                                                    "boundaryTerm":  0
+                                                }
+                  },
+    "components":  {
+                       "temporalDrift":  {
+                                             "role":  "tertiary_modifier",
+                                             "interpretation":  "Relative change in history depth",
+                                             "rawValue":  0,
+                                             "metric":  "entryCountDelta_normalized",
+                                             "maxHistoryDepth":  1,
+                                             "normalizedValue":  0
+                                         },
+                       "structuralSimilarity":  {
+                                                    "metric":  "exitSetJaccard",
+                                                    "interpretation":  "Policy surface similarity [0..1]",
+                                                    "value":  1,
+                                                    "role":  "primary_axis"
+                                                },
+                       "boundaryFragmentation":  {
+                                                     "role":  "secondary_modifier",
+                                                     "sweepSize":  6,
+                                                     "interpretation":  "Fraction of thresholds with differing behavior",
+                                                     "rawValue":  0,
+                                                     "metric":  "differingThresholdCount_normalized",
+                                                     "normalizedValue":  0
+                                                 }
+                   },
+    "source":  {
+                   "policySurfaceDiffPath":  "tools/reports/policy_surface_diff.json",
+                   "boundaryDriftEntryCount":  1,
+                   "replayEntryCount":  1,
+                   "boundaryDriftPath":  "tools/reports/boundary_drift_analysis.json",
+                   "diffHistoryAEntryCount":  2,
+                   "diffHistoryBEntryCount":  2,
+                   "replayPath":  "tools/reports/replay_timeline.json"
+               },
+    "summary":  {
+                    "driftScore":  0,
+                    "recommendation":  {
+                                           "explanation":  "Policy surface stable and consistent. Gating conditions met.",
+                                           "action":  "proceed_with_observation"
+                                       },
+                    "hardFailReason":  null,
+                    "tier":  "pass",
+                    "softFailReason":  null
+                },
+    "scoreVersion":  "policy_drift_score_v1",
+    "schemaVersion":  "1.0.0",
+    "parameters":  {
+                       "formulaDescription":  "100 * (1 - S) + alpha*T + beta*E where S=Jaccard (primary), T=Fragmentation (secondary), E=Drift (tertiary)",
+                       "alphaWeight":  25,
+                       "driftScoreThreshold":  45,
+                       "betaWeight":  15
+                   }
+}

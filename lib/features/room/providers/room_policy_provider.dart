@@ -9,23 +9,24 @@ class RoomPolicyController {
 
   final FirebaseFirestore _firestore;
 
-  Future<void> updatePolicy(
-    String roomId,
-    Map<String, dynamic> values,
-  ) async {
+  Future<void> updatePolicy(String roomId, Map<String, dynamic> values) async {
     await _firestore
         .collection('rooms')
         .doc(roomId)
         .collection('policies')
         .doc('settings')
         .set({
-      ...values,
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, SetOptions(merge: true));
+          ...values,
+          'updatedAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> setMicLimit(String roomId, int limit) {
     return updatePolicy(roomId, {'micLimit': limit});
+  }
+
+  Future<void> setMicTimer(String roomId, int? seconds) {
+    return updatePolicy(roomId, {'micTimerSeconds': seconds});
   }
 
   Future<void> setCamLimit(String roomId, int limit) {
@@ -45,20 +46,23 @@ final roomPolicyControllerProvider = Provider<RoomPolicyController>((ref) {
   return RoomPolicyController(ref.watch(roomFirestoreProvider));
 });
 
-final roomPolicyProvider = StreamProvider.autoDispose.family<RoomPolicyModel, String>((ref, roomId) {
-  final firestore = ref.watch(roomFirestoreProvider);
-  final roomRef = firestore.collection('rooms').doc(roomId);
-  final policyRef = roomRef.collection('policies').doc('settings');
+final roomPolicyProvider = StreamProvider.autoDispose
+    .family<RoomPolicyModel, String>((ref, roomId) {
+      final firestore = ref.watch(roomFirestoreProvider);
+      final roomRef = firestore.collection('rooms').doc(roomId);
+      final policyRef = roomRef.collection('policies').doc('settings');
 
-  return policyRef.snapshots().map((snapshot) {
-    final data = snapshot.data() ?? <String, dynamic>{};
-    if (data.isEmpty) {
-      return RoomPolicyModel(roomId: roomId);
-    }
+      // Single-document read — .limit(1) not applicable for document snapshots.
+      return policyRef.snapshots().map((snapshot) {
+        final data = snapshot.data() ?? <String, dynamic>{};
+        if (data.isEmpty) {
+          return RoomPolicyModel(roomId: roomId);
+        }
 
-    return RoomPolicyModel.fromJson({
-      ...data,
-      'roomId': roomId,
+        return RoomPolicyModel.fromJson({...data, 'roomId': roomId});
+      });
     });
-  });
-});
+
+
+
+

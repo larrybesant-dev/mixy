@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../presentation/providers/user_provider.dart';
+import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
 import '../providers/messaging_provider.dart';
 import 'chat_screen.dart';
 
@@ -20,32 +23,60 @@ class WhisperPopoutScreen extends ConsumerStatefulWidget {
 
 class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
   String? _conversationId;
+  String? _currentUserId;
   String? _error;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _resolve();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _resolve();
+      }
+    });
   }
 
   Future<void> _resolve() async {
     try {
+      final allowed = await GuestAuthGate.requireConversationStart(
+        context,
+        ref,
+      );
+      if (!allowed) {
+        if (mounted) {
+          setState(() {
+            _error = 'Please sign in to start a whisper.';
+            _loading = false;
+          });
+        }
+        return;
+      }
+
       final currentUser = ref.read(userProvider);
       if (currentUser == null) throw Exception('Not signed in.');
+      final currentUserId = currentUser.id.trim();
+      final targetUserId = widget.targetUserId.trim();
+      if (currentUserId.isEmpty) throw Exception('Not signed in.');
+      if (targetUserId.isEmpty) throw Exception('Missing whisper target user.');
+      if (targetUserId == currentUserId) {
+        throw Exception('Cannot open a whisper to yourself.');
+      }
+
       final conversationId = await ref
           .read(messagingControllerProvider)
           .createDirectConversation(
-            userId1: currentUser.id,
+            userId1: currentUserId,
             user1Name: currentUser.username,
             user1AvatarUrl: currentUser.avatarUrl,
-            userId2: widget.targetUserId,
+            userId2: targetUserId,
             user2Name: '',
             user2AvatarUrl: null,
           );
       if (mounted) {
         setState(() {
           _conversationId = conversationId;
+          _currentUserId = currentUserId;
           _loading = false;
         });
       }
@@ -62,19 +93,25 @@ class _WhisperPopoutScreenState extends ConsumerState<WhisperPopoutScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppPageScaffold(
+        body: AppLoadingView(label: 'Opening whisper'),
+      );
     }
     if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Text(_error!, style: const TextStyle(color: Colors.red)),
+      return AppPageScaffold(
+        body: AppErrorView(
+          error: _error!,
+          fallbackContext: 'Unable to open whisper.',
         ),
       );
     }
     return ChatScreen(
       conversationId: _conversationId!,
-      userId: widget.targetUserId,
+      userId: _currentUserId ?? '',
       username: '',
     );
   }
 }
+
+
+

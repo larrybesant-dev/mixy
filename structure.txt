@@ -1,0 +1,680 @@
+Folder PATH listing for volume Windows
+Volume serial number is 6EE0-9563
+C:\MIXVY\LIB
+�   firebase_options.dart
+�   main.dart
+�   
++---app
+�       app.dart
+�       
++---config
+�       agora_constants.dart
+�       app_constants.dart
+�       environment.dart
+�       mixvy_economy_config.dart
+�       payment_constants.dart
+�       schema_migration_flags.dart
+�       
++---constants
++---core
+�   �   error_handler.dart
+�   �   logger.dart
+�   �   theme.dart
+�   �   validators.dart
+�   �   
+�   +---constants
+�   �       app_constants.dart
+�   �       
+�   +---contracts
+�   �       room_contract.dart
+�   �       
+�   +---events
+�   �       app_event.dart
+�   �       app_event_bus.dart
+�   �       event_inspector.dart
+�   �       event_pipeline.dart
+�   �       event_providers.dart
+�   �       
+�   +---firestore
+�   �       firestore_debug_tracing.dart
+�   �       firestore_error_utils.dart
+�   �       
+�   +---layout
+�   �       app_layout.dart
+�   �       
+�   +---providers
+�   �       firebase_providers.dart
+�   �       
+�   +---services
+�   �       app_settings_service.dart
+�   �       first_run_service.dart
+�   �       profile_gate_service.dart
+�   �       
+�   +---telemetry
+�   �       app_telemetry.dart
+�   �       feed_experiment_contract.dart
+�   �       feed_experiment_evaluator.dart
+�   �       
+�   +---theme
+�   +---utils
+�           helpers.dart
+�           network_image_url.dart
+�           
++---data
+�   +---datasources
+�   �       index.dart
+�   �       
+�   +---models
+�   �       README.txt
+�   �       
+�   +---repositories
+�           coin_transaction_repository.dart
+�           friend_repository.dart
+�           gift_repository.dart
+�           index.dart
+�         MessageModelge_repository.dart
+�           user_repository.dart
+�           
++---dev
+�       app_debug_flags.dart
+�       app_state_reasoning.dart
+�       firebase_emulator_bootstrap.dart
+�       load_simulator.dart
+�       room_inspector_panel.dart
+�       test_session_controller.dart
+�       
++---domain
+�   +---entities
+�   �       index.dart
+�   �       
+�   +---repositories
+�   �       index.dart
+�   �       
+�   +---usecases
+�           add_coin_transaction_usecase.dart
+�           add_friend_usecase.dart
+�           get_user_usecase.dart
+�           index.dart
+�           send_gift_usecase.dart
+�           senMessageModelge_usecase.dart
+�           
++---features
+�   +---ads
+�   �       ad_manager.dart
+�   �       ad_payment.dart
+�   �       promo_code_manager.dart
+�   �       
+�   +---after_dark
+�   �   +---providers
+�   �   �       after_dark_provider.dart
+�   �   �       
+�   �   +---screens
+�   �   �       after_dark_age_gate_screen.dart
+�   �   �       after_dark_create_lounge_screen.dart
+�   �   �       after_dark_home_screen.dart
+�   �   �       after_dark_lounges_screen.dart
+�   �   �       after_dark_pin_screen.dart
+�   �   �       after_dark_profile_screen.dart
+�   �   �       
+�   �   +---theme
+�   �   �       after_dark_theme.dart
+�   �   �       
+�   �   +---widgets
+�   �           after_dark_live_room_card.dart
+�   �           after_dark_shell.dart
+�   �           
+�   +---auth
+�   �   �   forgot_password.dart
+�   �   �   register_screen.dart
+�   �   �   username_validator.dart
+�   �   �   
+�   �   +---controllers
+�   �   �       auth_controller.dart
+�   �   �       
+�   �   +---providers
+�   �   �       admin_provider.dart
+�   �   �       
+�   �   +---repository
+�   �   �       auth_repository.dart
+�   �   �       
+�   �   +---screens
+�   �   �       forgot_password_screen.dart
+�   �   �       login_screen.dart
+�   �   �       
+�   �   +---state
+�   +---beta
+�   �       beta_feedback_screen.dart
+�   �       beta_tester_provider.dart
+�   �       
+�   +---bookmarks
+�   �   +---providers
+�   �   �       bookmark_provider.dart
+�   �   �       
+�   �   +---screens
+�   �           bookmarks_screen.dart
+�   �           
+�   +---dashboard
+�   �   �   daily_checkin_card.dart
+�   �   �   dashboard_screen.dart
+�   �   �   leaderboard_provider.dart
+�   �   �   leaderboard_strip.dart
+�   �   �   
+�   �   +---widgets
+�   �           social_pulse_section.dart
+�   �           
+�   +---feed
+�   �   +---controllers
+�   �   �       feed_controller.dart
+�   �   �       
+�   �   +---models
+�   �   �       event_model.dart
+�   �   �       home_feed_snapshot.dart
+�   �   �       post_model.dart
+�   �   �       
+�   �   +---providers
+�   �   �       chat_providers.dart
+�   �   �       feed_providers.dart
+�   �   �       following_feed_provider.dart
+�   �   �       host_controls_providers.dart
+�   �   �       reaction_providers.dart
+�   �   �       typing_providers.dart
+�   �   �       user_providers.dart
+�   �   �       
+�   �   +---repository
+�   �   �       chat_repository.dart
+�   �   �       feed_repository.dart
+�   �   �       host_controls_repository.dart
+�   �   �       reaction_repository.dart
+�   �   �       typing_repository.dart
+�   �   �       
+�   �   +---screens
+�   �   �       discovery_feed_screen.dart
+�   �   �       room_browser_screen.dart
+�   �   �       
+�   �   +---services
+�   �   �       home_feed_service.dart
+�   �   �       
+�   �   +---widgets
+�   �           feed_empty_state.dart
+�   �           feed_loading_shimmer.dart
+�   �           live_room_card.dart
+�   �           post_card.dart
+�   �           trending_user_card.dart
+�   �           
+�   +---follow
+�   �   +---providers
+�   �   �       follow_provider.dart
+�   �   �       
+�   �   +---screens
+�   �           follow_screens.dart
+�   �           
+�   +---friends
+�   �   +---models
+�   �   �       friendship_model.dart
+�   �   �       friend_roster_entry.dart
+�   �   �       
+�   �   +---panes
+�   �   �       friends_pane_view.dart
+�   �   �       
+�   �   +---providers
+�   �   �       friends_providers.dart
+�   �   �       
+�   �   +---screens
+�   �   �       friends_list_screen.dart
+�   �   �       
+�   �   +---widgets
+�   �           friend_tile.dart
+�   �           
+�   +---groups
+�   �   +---models
+�   �   �       group_model.dart
+�   �   �       
+�   �   +---providers
+�   �   �       groups_provider.dart
+�   �   �       
+�   �   +---screens
+�   �           create_group_screen.dart
+�   �           groups_screen.dart
+�   �           group_details_screen.dart
+�   �           
+�   +---home
+�   �       home_controller.dart
+�   �       
+�   +---messaging
+�   �   +---models
+�   �   �       conversation_model.dart
+�   �   � MessageModelessage_model.dart
+�   �   �       
+�   �   +---panes
+�   �   �       chat_pane_view.dart
+�   �   � MessageModelessages_pane_view.dart
+�   �   �       
+�   �   +---providers
+�   �   �       messaging_provider.dart
+�   �   �       
+�   �   +---screens
+�   �           chat_screen.dart
+�   �       messagesages_screen.dart
+�   �           messagesage_screen.dart
+�   �           whisper_popout_screen.dart
+�   �           
+�   +---onboarding
+�   �       onboarding_screen.dart
+�   �       
+�   +---payments
+�   �       buy_coins_sheet.dart
+�   �       payments_controller.dart
+�   �       payments_screen.dart
+�   �       payment_provider.dart
+�   �       payment_recipient_provider.dart
+�   �       payment_service.dart
+�   �       payment_widget.dart
+�   �       send_payment_page.dart
+�   �       stripe_web_payment_widget.dart
+�   �       vip_screen.dart
+�   �       
+�   +---posts
+�   �   +---screens
+�   �           create_post_screen.dart
+�   �           post_comments_screen.dart
+�   �           
+�   +---profile
+�   �   �   edit_profile_screen.dart
+�   �   �   profile_background.dart
+�   �   �   profile_completion.dart
+�   �   �   profile_controller.dart
+�   �   �   profile_music.dart
+�   �   �   profile_screen.dart
+�   �   �   user_profile_screen.dart
+�   �   �   
+�   �   +---models
+�   �   �       user_model.dart
+�   �   �       
+�   �   +---widgets
+�   �           device_settings_panel.dart
+�   �           profile_card.dart
+�   �           profile_music_player_stub.dart
+�   �           profile_music_player_web.dart
+�   �           social_user_card.dart
+�   �           
+�   +---providers
+�   +---room
+�   �   �   room_controller.dart
+�   �   �   room_permissions.dart
+�   �   �   room_render_state.dart
+�   �   �   room_state_contract.dart
+�   �   �   
+�   �   +---contracts
+�   �   �       room_activity_contract.dart
+�   �   �      MessageModelessage_preview_contract.dart
+�   �   �       room_meta_contract.dart
+�   �   �       room_participants_contract.dart
+�   �   �       
+�   �   +---controllers
+�   �   �       live_room_controller.dart
+�   �   �       live_room_media_controller.dart
+�   �   �       room_state.dart
+�   �   �       webrtc_controller.dart
+�   �   �       
+�   �   +---models
+�   �   �       room_gift_catalog.dart
+�   �   �       room_gift_event.dart
+�   �   �       room_theme_model.dart
+�   �   �       
+�   �   +---presentation
+�   �   �       live_room_screen.dart
+�   �   �       
+�   �   +---providers
+�   �   �       buzz_provider.dart
+�   �   �       camera_wall_provider.dart
+�   �   �       cam_access_provider.dart
+�   �   �       cam_view_request_provider.dart
+�   �   �       host_controls_provider.dart
+�   �   �       host_provider.dart
+�   �   � MessageModelessage_providers.dart
+�   �   �       mic_access_provider.dart
+�   �   �       participant_providers.dart
+�   �   �       presence_provider.dart
+�   �   �       room_activity_state_provider.dart
+�   �   �       room_firestore_provider.dart
+�   �   �       room_gift_provider.dart
+�   �   �       room_live_state_provider.dart
+�   �   �      MessageModelessage_preview_state_provider.dart
+�   �   �       room_meta_state_provider.dart
+�   �   �       room_participants_state_provider.dart
+�   �   �       room_policy_provider.dart
+�   �   �       room_slot_provider.dart
+�   �   �       user_cam_permissions_provider.dart
+�   �   �       
+�   �   +---repository
+�   �   �       room_repository.dart
+�   �   �       
+�   �   +---screens
+�   �   �       cam_popout_screen.dart
+�   �   �       create_room_screen.dart
+�   �   �       
+�   �   +---services
+�   �   �       room_session_service.dart
+�   �   �       
+�   �   +---widgets
+�   �           background_picker_sheet.dart
+�   �           buzz_overlay.dart
+�   �           camera_wall.dart
+�   �           cam_preview_sheet.dart
+�   �           chat_panel.dart
+�   �           dockable_panel.dart
+�   �           emoji_reaction_overlay.dart
+�   �           floating_cam_window.dart
+�   �           floating_gift_overlay.dart
+�   �           live_room_app_bar_actions.dart
+�   �           live_room_app_bar_status.dart
+�   �           live_room_media_action_strip.dart
+�   �           live_stage_spotlight.dart
+�   �       messagesage_bubble.dart
+�   �           mic_queue_panel.dart
+�   �           on_mic_panel.dart
+�   �           rich_text_toolbar.dart
+�   �           room_control_sheets.dart
+�   �           room_host_control_panel.dart
+�   �           room_panel_layout.dart
+�   �           room_user_tile.dart
+�   �           user_list_panel.dart
+�   �           
+�   +---schema_messenger
+�   �   +---consistency
+�   �   �       architecture_health_interpretation_contract.dart
+�   �   �       architecture_health_interpretation_provider.dart
+�   �   �       consistency_template.dart
+�   �   �       cross_module_equivalence_provider.dart
+�   �   �       
+�   �   +---core
+�   �   �   +---schema_engine
+�   �   �           schema_compliance_checker.dart
+�   �   �           schema_governance_contract.dart
+�   �   �           schema_module_health_provider.dart
+�   �   �           schema_parity_monitor.dart
+�   �   �           
+�   �   +---friends
+�   �   �   +---models
+�   �   �   �       schema_friend_identity.dart
+�   �   �   �       schema_friend_link.dart
+�   �   �   �       schema_friend_presence.dart
+�   �   �   �       
+�   �   �   +---parity
+�   �   �   �       friend_parity_validator.dart
+�   �   �   �       
+�   �   �   +---providers
+�   �   �   �       schema_boot_timeline_provider.dart
+�   �   �   �       schema_friend_focus_anchor_provider.dart
+�   �   �   �       schema_friend_links_providers.dart
+�   �   �   �       schema_friend_presence_stability_provider.dart
+�   �   �   �       schema_friend_render_mode_provider.dart
+�   �   �   �       schema_friend_roster_provider.dart
+�   �   �   �       schema_friend_selection_provider.dart
+�   �   �   �       
+�   �   �   +---views
+�   �   �   �       friends_schema_bridge_view.dart
+�   �   �   �       schema_friends_module_view.dart
+�   �   �   �       
+�   �   �   +---widgets
+�   �   �           schema_friend_tile.dart
+�   �   �           
+�   �   messagesages
+�   �       messagesages_consistency_contract.dart
+�   �       �   
+�   �       +---models
+�   �       �       schema_conversation.dart
+�   �       �       
+�   �       +---providers
+�   �       � MessageModelessages_render_mode_provider.dart
+�   �       �       schema_conversations_providers.dart
+�   �       �       
+�   �       +---views
+�   �           messagesages_schema_bridge_view.dart
+�   �               schmessagesages_module_view.dart
+�   �               
+�   +---search
+�   �   +---providers
+�   �   �       search_provider.dart
+�   �   �       
+�   �   +---screens
+�   �           search_screen.dart
+�   �           
+�   +---social
+�   �   +---providers
+�   �   �       social_providers.dart
+�   �   �       
+�   �   +---screens
+�   �   �       explore_screen.dart
+�   �   �       home_lobby_screen.dart
+�   �   �       live_floor_screen.dart
+�   �   �       social_circle_screen.dart
+�   �   �       
+�   �   +---widgets
+�   �           social_room_card.dart
+�   �           
+�   +---speed_dating
+�   �   +---models
+�   �   �       speed_dating_models.dart
+�   �   �       
+�   �   +---screens
+�   �   �       speed_dating_screen.dart
+�   �   �       
+�   �   +---services
+�   �           speed_dating_service.dart
+�   �           
+�   +---splash
+�   �       splash_screen.dart
+�   �       
+�   +---stories
+�   �   +---providers
+�   �   �       story_provider.dart
+�   �   �       
+�   �   +---screens
+�   �   �       create_story_screen.dart
+�   �   �       story_viewer_screen.dart
+�   �   �       
+�   �   +---widgets
+�   �           stories_row.dart
+�   �           
+�   +---trending
+�   �   +---providers
+�   �   �       trending_provider.dart
+�   �   �       
+�   �   +---screens
+�   �           trending_screen.dart
+�   �           
+�   +---verification
+�       +---providers
+�       �       verification_provider.dart
+�       �       
+�       +---screens
+�       �       verification_screen.dart
+�       �       
+�       +---widgets
+�               verification_badge.dart
+�               
++---generated
++---models
+�       adult_profile_model.dart
+�       cash_out_request_model.dart
+�       coin_transaction_model.dart
+�       event_model.dart
+�       friend_model.dart
+�       friend_request_model.dart
+�       gift_model.dart
+�       membership_model.dart
+�     MessageModelge_model.dart
+�     MessageModelge_model.freezed.dart
+�     MessageModelge_model.g.dart
+�       mic_access_request_model.dart
+�       models.dart
+�       moderation_model.dart
+�       notification_model.dart
+�       presence_model.dart
+�       profile_privacy_model.dart
+�       reaction_model.dart
+�       referral_model.dart
+�       room_model.dart
+�       room_participant_model.dart
+�       room_policy_model.dart
+�       room_slot_model.dart
+�       social_activity_model.dart
+�       test_freezed_model.dart
+�       transaction_model.dart
+�       transaction_model.freezed.dart
+�       transaction_model.g.dart
+�       user_model.dart
+�       wallet_model.dart
+�       
++---observability
+�       alert_scheduler.dart
+�       dashboard_screen.dart
+�       event_timeline.dart
+�       production_alerts.dart
+�       rebuild_tracker.dart
+�       runtime_telemetry.dart
+�       simulation_phase.dart
+�       tracked_stream.dart
+�       
++---presentation
+�   +---providers
+�   �       app_settings_provider.dart
+�   �       coin_transaction_provider.dart
+�   �       follow_provider.dart
+�   �       friend_provider.dart
+�   �       gift_provider.dart
+�   �       index.dart
+�   �   messagesage_provider.dart
+�   �       notification_provider.dart
+�   �       presence_provider.dart
+�   �       referral_provider.dart
+�   �       room_provider.dart
+�   �       user_provider.dart
+�   �       wallet_provider.dart
+�   �       
+�   +---screens
+�   �       account_center_screen.dart
+�   �       apple_sign_in_helper.dart
+�   �       apple_sign_in_helper_mobile.dart
+�   �       apple_sign_in_helper_stub.dart
+�   �       apple_sign_in_helper_web.dart
+�   �       app_info_screen.dart
+�   �       friend_list_screen.dart
+�   �       google_sign_in_helper.dart
+�   �       google_sign_in_helper_mobile.dart
+�   �       google_sign_in_helper_stub.dart
+�   �       google_sign_in_helper_web.dart
+�   �       index.dart
+�   �       legal_privacy_screen.dart
+�   �       legal_terms_screen.dart
+�   �       live_room_screen.dart
+�   �       mixvy_login_screen.dart
+�   �       moderation_dashboard_screen.dart
+�   �       notifications_screen.dart
+�   �       not_found_screen.dart
+�   �       settings_screen.dart
+�   �       
+�   +---widgets
+�           index.dart
+�           
++---router
+�       app_router.dart
+�       
++---services
+�       agora_service.dart
+�       analytics_service.dart
+�       cash_out_service.dart
+�       chat_service.dart
+�       daily_checkin_service.dart
+�       desktop_window_service.dart
+�       desktop_window_service_desktop.dart
+�       desktop_window_service_stub.dart
+�       device_prefs_service.dart
+�       firestore_service.dart
+�       follow_service.dart
+�       friend_service.dart
+�       moderation_service.dart
+�       notification_service.dart
+�       payment_api.dart
+�       payment_service.dart
+�       presence_controller.dart
+�       presence_repository.dart
+�       presence_service.dart
+�       profile_service.dart
+�       push_messaging_service.dart
+�       referral_service.dart
+�       room_audio_cues.dart
+�       room_audio_cues_stub.dart
+�       room_audio_cues_web.dart
+�       room_service.dart
+�       rtc_room_service.dart
+�       rtdb_presence_service.dart
+�       schema_mutation_service.dart
+�       social_activity_service.dart
+�       tenor_service.dart
+�       webrtc_room_service.dart
+�       webrtc_room_service_shim.dart
+�       webrtc_room_service_stub.dart
+�       web_device_enum_stub.dart
+�       web_device_enum_web.dart
+�       web_media_probe_stub.dart
+�       web_media_probe_web.dart
+�       web_popout_service.dart
+�       web_popout_service_stub.dart
+�       web_popout_service_web.dart
+�       
++---shared
+�   +---widgets
+�           app_debug_overlay.dart
+�           app_page_scaffold.dart
+�           app_shell.dart
+�           async_state_view.dart
+�           beta_feedback_overlay.dart
+�           bottom_nav_bar.dart
+�           desktop_messenger_shell.dart
+�           incoming_call_overlay.dart
+�           messenger_shell_route.dart
+�           top_app_bar.dart
+�           ui_stability_contract.dart
+�           
++---theme
+�       app_theme.dart
+�       font_fallbacks.dart
+�       
++---utils
+�       analytics.dart
+�       error_reporting.dart
+�       platform_args.dart
+�       platform_args_io.dart
+�       platform_args_stub.dart
+�       presence_classifier.dart
+�       
++---widgets
+    �   app_button.dart
+    �   app_text_field.dart
+    �   brand_ui_kit.dart
+    �   chat_input.dart
+    �   coin_balance_widget.dart
+    �   event_card.dart
+    �   floating_whisper_panel.dart
+    �   follow_button.dart
+    �   friends_panel_button.dart
+    �   gift_picker_sheet.dart
+    �   loading_indicator.dart
+    �   loading_overlay.dart
+    �   mixvy_drawer.dart
+    �   primary_button.dart
+    �   profile_avatar.dart
+    �   room_controls.dart
+    �   room_tile.dart
+    �   tile_card.dart
+    �   user_avatar.dart
+    �   user_profile_popup.dart
+    �   
+    +---emoji_pack
+            emoji_pack_catalog.dart
+            emoji_pack_item.dart
+            emoji_pack_picker.dart
+            tenor_gif_provider.dart
+            

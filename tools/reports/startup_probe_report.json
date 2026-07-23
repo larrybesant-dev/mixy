@@ -1,0 +1,12 @@
+{
+    "contractVersion":  "startup_probe_report_v1",
+    "status":  "FAIL",
+    "reason":  "probe_failure",
+    "finalContract":  {
+                          "contractVersion":  "unknown",
+                          "ready":  false,
+                          "checkpoints":  {
+
+                                          }
+                      }
+}

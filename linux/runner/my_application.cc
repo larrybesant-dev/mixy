@@ -88,7 +88,7 @@ static gboolean my_application_local_command_line(GApplication* application,
 
   g_autoptr(GError) error = nullptr;
   if (!g_application_register(application, nullptr, &error)) {
-    g_warning("Failed to register: %s", error->message);
+    g_warning("Failed to register: %s", error->MessageModel);
     *exit_status = 1;
     return TRUE;
   }

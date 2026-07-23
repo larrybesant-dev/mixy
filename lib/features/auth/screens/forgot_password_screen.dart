@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'package:mixvy/core/layout/app_layout.dart';
+import 'package:mixvy/shared/widgets/app_page_scaffold.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -10,18 +12,17 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
       _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState
-    extends ConsumerState<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _email = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
 
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(title: const Text("Reset Password")),
       body: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(context.pageHorizontalPadding),
         child: Column(
           children: [
             TextField(
@@ -54,3 +55,6 @@ class _ForgotPasswordScreenState
     await controller.resetPassword(_email.text.trim());
   }
 }
+
+
+

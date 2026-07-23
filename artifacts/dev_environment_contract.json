@@ -1,0 +1,37 @@
+{
+    "contractType":  "dev_environment",
+    "contractVersion":  "mixvy.dev_environment_contract.v1",
+    "generatedAtRunId":  "local",
+    "contentHash":  "sha256:57d04b0d8e8940c0322074c8902a4985c5201fec04d22c4efcdff7735f701c45",
+    "summaryFlags":  {
+                         "dartExtensionInstalled":  true,
+                         "detectIndentationDisabled":  true,
+                         "flutterExtensionInstalled":  true,
+                         "powershellExtensionInstalled":  true,
+                         "settingsHashPresent":  true,
+                         "settingsPresent":  true,
+                         "utf8NoBomPreferred":  true
+                     },
+    "environment":  {
+                        "class":  "local",
+                        "node":  "v22.22.2",
+                        "os":  "windows",
+                        "powershell":  "5.1.26100.8115",
+                        "shell":  "powershell"
+                    },
+    "editor":  {
+                   "detectIndentation":  false,
+                   "host":  "vscode",
+                   "settingsHash":  "sha256:8ee24373aae283d3ba43b651de1b3d9dcefb2e9c17bc36bd02a50cdc3ace40e3",
+                   "vscode":  "1.117.0"
+               },
+    "encoding":  {
+                     "autoGuessEncoding":  false,
+                     "utf8NoBomPreferred":  true
+                 },
+    "extensions":  {
+                       "dart":  "installed",
+                       "flutter":  "installed",
+                       "powershell":  "installed"
+                   }
+}

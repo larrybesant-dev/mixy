@@ -1,11 +1,14 @@
 class ProfilePrivacyModel {
   const ProfilePrivacyModel({
+    this.isPrivate = false,
     this.showAge = false,
     this.showGender = false,
     this.showLocation = false,
     this.showRelationshipStatus = false,
   });
 
+  /// When true, profile is only visible to followers.
+  final bool isPrivate;
   final bool showAge;
   final bool showGender;
   final bool showLocation;
@@ -13,6 +16,7 @@ class ProfilePrivacyModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'isPrivate': isPrivate,
       'showAge': showAge,
       'showGender': showGender,
       'showLocation': showLocation,
@@ -41,6 +45,7 @@ class ProfilePrivacyModel {
 
   factory ProfilePrivacyModel.fromJson(Map<String, dynamic>? json) {
     return ProfilePrivacyModel(
+      isPrivate: _asBool(json?['isPrivate']),
       showAge: _asBool(json?['showAge']),
       showGender: _asBool(json?['showGender']),
       showLocation: _asBool(json?['showLocation']),
@@ -49,16 +54,22 @@ class ProfilePrivacyModel {
   }
 
   ProfilePrivacyModel copyWith({
+    bool? isPrivate,
     bool? showAge,
     bool? showGender,
     bool? showLocation,
     bool? showRelationshipStatus,
   }) {
     return ProfilePrivacyModel(
+      isPrivate: isPrivate ?? this.isPrivate,
       showAge: showAge ?? this.showAge,
       showGender: showGender ?? this.showGender,
       showLocation: showLocation ?? this.showLocation,
-      showRelationshipStatus: showRelationshipStatus ?? this.showRelationshipStatus,
+      showRelationshipStatus:
+          showRelationshipStatus ?? this.showRelationshipStatus,
     );
   }
 }
+
+
+

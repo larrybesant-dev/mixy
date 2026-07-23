@@ -8,43 +8,51 @@ class FeedRepository {
 
   FeedRepository(this._db);
 
-  Stream<List<PostModel>> postsStream() {
-    return _db
-        .collection('posts')
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => PostModel.fromDoc(d.id, d.data()))
-            .toList())
-        .handleError((error, stackTrace) {
-          logFirestoreError(
-            context: 'dashboard.posts listener',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        });
+  Future<List<PostModel>> getPostsFeed() async {
+    try {
+      final snap = await _db
+          .collection('posts')
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .get();
+      return snap.docs
+          .map((d) => PostModel.fromDoc(d.id, d.data()))
+          .toList(growable: false);
+    } catch (error, stackTrace) {
+      logFirestoreError(
+        context: 'dashboard.posts fetch',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const <PostModel>[];
+    }
   }
 
-  Stream<List<EventModel>> eventsStream() {
-    return _db
-        .collection('events')
-        .orderBy('date')
-        .limit(50)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => EventModel.fromDoc(d.id, d.data()))
-            .toList())
-        .handleError((error, stackTrace) {
-          logFirestoreError(
-            context: 'dashboard.events listener',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        });
+  Future<List<EventModel>> getEventsFeed() async {
+    try {
+      final snap = await _db
+          .collection('events')
+          .orderBy('date')
+          .limit(50)
+          .get();
+      return snap.docs
+          .map((d) => EventModel.fromDoc(d.id, d.data()))
+          .toList(growable: false);
+    } catch (error, stackTrace) {
+      logFirestoreError(
+        context: 'dashboard.events fetch',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const <EventModel>[];
+    }
   }
 
-  Future<void> toggleLike(String postId, String userId, bool currentlyLiked) async {
+  Future<void> toggleLike(
+    String postId,
+    String userId,
+    bool currentlyLiked,
+  ) async {
     final ref = _db.collection('posts').doc(postId);
     if (currentlyLiked) {
       await ref.update({
@@ -59,3 +67,7 @@ class FeedRepository {
     }
   }
 }
+
+
+
+

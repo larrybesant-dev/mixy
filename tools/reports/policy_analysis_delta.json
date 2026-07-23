@@ -1,0 +1,34 @@
+﻿{
+    "generatedAtUtc":  "2026-04-14T11:34:37.2671750Z",
+    "deltaVersion":  "policy_analysis_delta_v1",
+    "schemaVersion":  "1.0.0",
+    "source":  {
+                   "snapshotIndexPath":  "tools/reports/history/policy_analysis_snapshot_index.json",
+                   "snapshotCount":  1,
+                   "currentSnapshotPath":  "tools\\reports\\history\\policy_analysis_snapshot_local_20260413T223447728Z.json",
+                   "previousSnapshotPath":  ""
+               },
+    "current":  {
+                    "generatedAtUtc":  "2026-04-13T22:34:47.7350650Z",
+                    "driftScore":  0,
+                    "jaccard":  1,
+                    "differingThresholdCount":  0,
+                    "boundaryBehavior":  "insufficient_history",
+                    "tier":  "pass",
+                    "action":  "proceed_with_observation"
+                },
+    "previous":  null,
+    "summary":  {
+                    "mode":  "baseline",
+                    "driftScoreDelta":  null,
+                    "jaccardDelta":  null,
+                    "differingThresholdCountDelta":  null,
+                    "entryCountDelta":  null,
+                    "boundaryBehaviorChanged":  null,
+                    "tierChanged":  null,
+                    "classification":  "baseline",
+                    "changeClassification":  "baseline",
+                    "confidence":  "low",
+                    "notes":  "Baseline run: no previous snapshot available for comparison."
+                }
+}

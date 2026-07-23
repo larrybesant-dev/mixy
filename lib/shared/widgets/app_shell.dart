@@ -1,98 +1,88 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../presentation/providers/notification_provider.dart';
-import '../../features/messaging/providers/messaging_provider.dart';
-import '../../widgets/mixvy_drawer.dart';
+import '../../observability/startup_timeline.dart';
+import '../providers/tab_navigation_provider.dart';
 
-/// Persistent shell that wraps every main app screen with a bottom
-/// NavigationBar (Home / Rooms / Messages / Notifications / Profile) and the
-/// slide-out MixVyDrawer. Injected via go_router's ShellRoute so every route
-/// inside the shell shares the same nav chrome without rebuilding it.
-class AppShell extends ConsumerWidget {
-  final Widget child;
-  const AppShell({required this.child, super.key});
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({
+    super.key,
+    required this.navigationShell,
+  });
 
-  // Maps a route location prefix to a bottom-nav index.
-  static int _indexForLocation(String location) {
-    if (location.startsWith('/rooms')) return 1;
-    if (location.startsWith('/messages')) return 2;
-    if (location.startsWith('/notifications')) return 3;
-    if (location.startsWith('/profile')) return 4;
-    return 0; // Home for everything else
-  }
-
-  static const List<String> _roots = [
-    '/',
-    '/rooms',
-    '/messages',
-    '/notifications',
-    '/profile',
-  ];
+  final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).uri.toString();
-    final selectedIndex = _indexForLocation(location);
-    final unreadNotifs = ref.watch(unreadNotificationCountProvider);
-    final unreadMsgs = ref.watch(unreadMessageCountProvider);
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
 
+class _AppShellState extends ConsumerState<AppShell> {
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync navigationShell's current index to provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(selectedTabIndexProvider.notifier).state = widget.navigationShell.currentIndex;
+    });
+  }
+
+  void _onDestinationSelected(int index) {
+    unawaited(HapticFeedback.selectionClick());
+    StartupProfiler.instance.markFirstUserAction(
+      context: 'bottom_nav_tab_$index',
+    );
+    
+    // Update provider first
+    ref.read(selectedTabIndexProvider.notifier).state = index;
+    
+    // Navigate using go() with explicit paths instead of goBranch()
+    final routes = ['/home', '/messages', '/rooms', '/speed-dating', '/profile'];
+    if (index >= 0 && index < routes.length) {
+      GoRouter.of(context).go(routes[index]);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = ref.watch(selectedTabIndexProvider);
+    
     return Scaffold(
-      drawer: const MixVyDrawer(),
-      body: child,
+      body: widget.navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
-        onDestinationSelected: (i) => context.go(_roots[i]),
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        destinations: [
-          const NavigationDestination(
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.meeting_room_outlined),
-            selectedIcon: Icon(Icons.meeting_room_rounded),
-            label: 'Rooms',
+            selectedIcon: Icon(Icons.home),
+            label: 'Feed',
           ),
           NavigationDestination(
-            icon: _badge(
-              unreadMsgs,
-              const Icon(Icons.chat_bubble_outline_rounded),
-            ),
-            selectedIcon: _badge(
-              unreadMsgs,
-              const Icon(Icons.chat_bubble_rounded),
-            ),
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
             label: 'Messages',
           ),
           NavigationDestination(
-            icon: _badge(
-              unreadNotifs,
-              const Icon(Icons.notifications_outlined),
-            ),
-            selectedIcon: _badge(
-              unreadNotifs,
-              const Icon(Icons.notifications_rounded),
-            ),
-            label: 'Alerts',
+            icon: Icon(Icons.mic_none),
+            selectedIcon: Icon(Icons.mic),
+            label: 'Live Rooms',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_border),
+            selectedIcon: Icon(Icons.favorite),
+            label: 'Dating',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
+        onDestinationSelected: _onDestinationSelected,
       ),
     );
   }
-
-  static Widget _badge(int count, Widget icon) {
-    if (count <= 0) return icon;
-    return Badge(
-      label: Text(count > 99 ? '99+' : '$count'),
-      child: icon,
-    );
-  }
 }
+

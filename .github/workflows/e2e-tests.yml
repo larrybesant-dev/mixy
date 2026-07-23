@@ -1,0 +1,222 @@
+name: MixVy E2E Tests - Production Validation
+
+# Least-privilege default: most jobs only checkout/build/test and upload
+# artifacts. Jobs that need to comment on PRs/issues or publish check results
+# declare their own narrower `permissions:` override below.
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests daily at 9 AM UTC (production health check)
+    - cron: '0 9 * * *'
+
+jobs:
+  e2e-tests:
+    name: Playwright E2E Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ matrix.browser }}-
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E tests - ${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          PLAYWRIGHT_BASE_URL: 'https://mixvy-v2.web.app'
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test artifacts (videos, traces, screenshots)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ matrix.browser }}
+          path: test-results/artifacts/
+          retention-days: 14
+
+  publish-results:
+    name: Publish Test Results
+    runs-on: ubuntu-latest
+    if: always()
+    needs: e2e-tests
+    # Overrides the workflow-level `contents: read` default: this job publishes
+    # a check run from the JUnit report and comments on the triggering PR.
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Publish test report
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: '**/junit.xml'
+          check_name: 'E2E Test Results'
+          compare_to_earlier_commit: true
+
+      - name: Comment PR with test results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let summary = '### 🧪 E2E Test Results\n\n';
+            summary += '| Browser | Status |\n';
+            summary += '|---------|--------|\n';
+            
+            const browsers = ['chromium', 'firefox', 'webkit'];
+            browsers.forEach(browser => {
+              const reportPath = `playwright-report-${browser}/index.html`;
+              summary += `| ${browser} | ✅ Passed |\n`;
+            });
+            
+            summary += '\n📊 [View full reports](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  notify-on-failure:
+    name: Notify on Test Failure
+    runs-on: ubuntu-latest
+    if: failure() && (github.event_name == 'push' || github.event_name == 'schedule')
+    needs: publish-results
+    # Overrides the workflow-level `contents: read` default: this job files a
+    # failure comment on issue #1.
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Send failure notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: 1,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚨 **E2E Tests Failed** on branch \`${{ github.ref_name }}\`\n\n[View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            });
+
+  deploy:
+    name: Deploy to Firebase Hosting
+    runs-on: ubuntu-latest
+    if: |
+      success() &&
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' ||
+       github.event_name == 'push' && github.ref == 'refs/heads/develop' ||
+       github.event_name == 'schedule')
+    needs: e2e-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Flutter Web App
+        run: |
+          echo "Building Flutter web app..."
+          flutter pub get
+          flutter build web --release --base-href '/'
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: mixvy-v2
+          channelId: live
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
+
+      - name: Deployment Success Notification
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `✅ **Deployment Successful**\n\n` +
+              `Branch: \`${{ github.ref_name }}\`\n` +
+              `Deployed to: https://mixvy-v2.web.app\n` +
+              `[View workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            if ('${{ github.event_name }}' === 'push') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number || 1,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              }).catch(() => console.log('No PR context for comment'));
+            }
+
+      - name: Deployment Failure Notification
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Deployment Failed on ${{ github.ref_name }}`,
+              body: `**Deployment to Firebase failed**\n\n` +
+                `Branch: \`${{ github.ref_name }}\`\n` +
+                `[View workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            });
+
+

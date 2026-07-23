@@ -1,23 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mixvy/core/providers/session_capabilities_provider.dart';
+import 'package:mixvy/shared/widgets/guest_auth_gate.dart';
 
 import '../providers/story_provider.dart';
-
-// Fetches the list of userIds the current user follows
-final _followingIdsProvider = StreamProvider.family<List<String>, String>((ref, uid) {
-  return FirebaseFirestore.instance
-      .collection('follows')
-      .where('followerUserId', isEqualTo: uid)
-      .snapshots()
-      .map((snap) => snap.docs
-          .map((d) => d.data()['followedUserId'] as String?)
-          .whereType<String>()
-          .toList());
-});
+import '../../../core/utils/network_image_url.dart';
+import '../../../presentation/providers/user_provider.dart';
 
 /// Horizontal scrolling row of story avatar bubbles shown at the top of feeds.
 ///
@@ -28,16 +18,18 @@ class StoriesRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const SizedBox.shrink();
+    final authUser = ref.watch(userProvider);
+    final uid = authUser?.id;
+    if (uid == null || uid.trim().isEmpty) return const SizedBox.shrink();
 
-    final followingIds = ref.watch(_followingIdsProvider(uid)).asData?.value ?? [];
+    final followingIds =
+        ref.watch(followingIdsProvider(uid)).asData?.value ?? const <String>[];
     final params = (userId: uid, followingIds: followingIds);
     final storiesAsync = ref.watch(followingStoriesProvider(params));
 
     return storiesAsync.when(
-      loading: () => _buildShimmer(context),
-      error: (_, _) => const SizedBox.shrink(),
+      loading: () => const SizedBox.shrink(),
+      error: (__, _) => const SizedBox.shrink(),
       data: (stories) {
         // Group stories by userId, preserving first occurrence order
         final seen = <String>{};
@@ -80,41 +72,6 @@ class StoriesRow extends ConsumerWidget {
       },
     );
   }
-
-  Widget _buildShimmer(BuildContext context) {
-    return SizedBox(
-      height: 90,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: 5,
-        itemBuilder: (_, _) => Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: Column(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                width: 44,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _StoryBubble extends StatelessWidget {
@@ -135,10 +92,16 @@ class _StoryBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final safeAvatarUrl = sanitizeNetworkImageUrl(avatarUrl);
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (isOwn && !hasStory) {
-          context.go('/create-story');
+          final allowed = await GuestAuthGate.requireCapabilityFromContext(
+            context,
+            SessionCapability.createStory,
+          );
+          if (!allowed || !context.mounted) return;
+          context.go('/home/create-story');
         } else {
           context.go('/stories/$userId');
         }
@@ -163,19 +126,21 @@ class _StoryBubble extends StatelessWidget {
                           end: Alignment.bottomRight,
                         )
                       : null,
-                  color: hasStory ? null : theme.colorScheme.surfaceContainerHighest,
+                  color: hasStory
+                      ? null
+                      : theme.colorScheme.surfaceContainerHighest,
                 ),
                 padding: const EdgeInsets.all(2.5),
                 child: CircleAvatar(
                   backgroundColor: theme.colorScheme.surface,
-                  child: avatarUrl != null
+                  child: safeAvatarUrl != null
                       ? ClipOval(
                           child: CachedNetworkImage(
-                            imageUrl: avatarUrl!,
+                            imageUrl: safeAvatarUrl,
                             width: 52,
                             height: 52,
                             fit: BoxFit.cover,
-                            errorWidget: (_, _, _) =>
+                            errorWidget: (___, __, _) =>
                                 const Icon(Icons.person, size: 26),
                           ),
                         )
@@ -192,7 +157,10 @@ class _StoryBubble extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary,
                       shape: BoxShape.circle,
-                      border: Border.all(color: theme.colorScheme.surface, width: 1.5),
+                      border: Border.all(
+                        color: theme.colorScheme.surface,
+                        width: 1.5,
+                      ),
                     ),
                     child: const Icon(Icons.add, size: 12, color: Colors.white),
                   ),
@@ -217,3 +185,6 @@ class _StoryBubble extends StatelessWidget {
     );
   }
 }
+
+
+

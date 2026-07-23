@@ -1,6 +1,27 @@
 {
-    "chat.tools.terminal.autoApprove": {
-        "flutter": true
-    },
-    "cmake.sourceDirectory": "C:/MixVy/linux"
+  "cmake.sourceDirectory": "C:/MixVy/linux",
+  "chat.tools.terminal.autoApprove": {
+    "/^flutter build web --release --base-href \"/\" 2>&1 \\| Select-Object -Last 30$/": {
+        "approve": true,
+        "matchCommandLine": true
+    }
+},
+  "files.associations": {
+    "*.ps1": "powershell",
+    "*.psm1": "powershell",
+    "*.psd1": "powershell",
+    "**/.bin/*.ps1": "powershell"
+  },
+  "editor.detectIndentation": false,
+  "files.autoGuessEncoding": false,
+  "powershell.powerShellDefaultVersion": "PowerShell (x64)",
+  "workbench.editorAssociations": {
+    "*.ps1": "default"
+},
+"flutterTools.displayGetxContextMenu": false,
+"flutterTools.displayMobxContextMenu": false,
+"flutterTools.displayRiverpodContextMenu": true,
+"flutterTools.displayModularContextMenu": false,
+"flutterTools.displaySignalsContextMenu": false,
+"dart.flutterSdkPath": "C:\\Users\\LARRY\\flutter"
 }

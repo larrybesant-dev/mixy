@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "980846719834",
+    "project_id": "mix-and-mingle-v2",
+    "storage_bucket": "mix-and-mingle-v2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:980846719834:android:c369e5b790a2945b077963",
+        "android_client_info": {
+          "package_name": "com.mixvy.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "980846719834-8dj4or0c8k9nsts3j1eiv3kuu3t1r27q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbS7zVY2o4S1-OOPkqFuUXz5B5hmmsS0U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "980846719834-8dj4or0c8k9nsts3j1eiv3kuu3t1r27q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "980846719834-33bplru454rf2bnr6e45tm5f0pdfnh69.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mixAndMingle"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:980846719834:android:3cc5c2309ab0291d077963",
+        "android_client_info": {
+          "package_name": "com.mycompany.mixvy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "980846719834-sgmkc849a19rjrh7umfl2sdicuhiubdp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mycompany.mixvy",
+            "certificate_hash": "9bbb3186b2189ef16d8f272bdab59362c395cbb4"
+          }
+        },
+        {
+          "client_id": "980846719834-8dj4or0c8k9nsts3j1eiv3kuu3t1r27q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbS7zVY2o4S1-OOPkqFuUXz5B5hmmsS0U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "980846719834-8dj4or0c8k9nsts3j1eiv3kuu3t1r27q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "980846719834-33bplru454rf2bnr6e45tm5f0pdfnh69.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mixAndMingle"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

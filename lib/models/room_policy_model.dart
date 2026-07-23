@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum MixVyRoomVisibility {
-  public,
-  private,
-  password,
-}
+enum MixVyRoomVisibility { public, private, password }
 
 DateTime? _parseFirestoreDateTime(dynamic value) {
   if (value == null) {
@@ -51,21 +47,9 @@ bool _asBool(dynamic value, {bool fallback = false}) {
   return fallback;
 }
 
-enum MixVyRoomRole {
-  owner,
-  admin,
-  moderator,
-  vip,
-  member,
-  banned,
-}
+enum MixVyRoomRole { owner, admin, moderator, vip, member, banned }
 
-enum CamViewPolicy {
-  everyone,
-  friendsOnly,
-  approvedOnly,
-  nobody,
-}
+enum CamViewPolicy { everyone, friendsOnly, approvedOnly, nobody }
 
 class RoomPolicyModel {
   const RoomPolicyModel({
@@ -73,7 +57,8 @@ class RoomPolicyModel {
     this.visibility = MixVyRoomVisibility.public,
     this.minimumAge = 18,
     this.camLimit = 6,
-    this.micLimit = 6,
+    this.micLimit = 4,
+    this.micTimerSeconds,
     this.allowChat = true,
     this.allowGifts = true,
     this.allowMicRequests = true,
@@ -87,6 +72,10 @@ class RoomPolicyModel {
   final int minimumAge;
   final int camLimit;
   final int micLimit;
+
+  /// Seconds a stage user may hold the mic before being auto-demoted.
+  /// null = unlimited.
+  final int? micTimerSeconds;
   final bool allowChat;
   final bool allowGifts;
   final bool allowMicRequests;
@@ -101,6 +90,7 @@ class RoomPolicyModel {
       'minimumAge': minimumAge,
       'camLimit': camLimit,
       'micLimit': micLimit,
+      'micTimerSeconds': micTimerSeconds,
       'allowChat': allowChat,
       'allowGifts': allowGifts,
       'allowMicRequests': allowMicRequests,
@@ -121,7 +111,8 @@ class RoomPolicyModel {
       ),
       minimumAge: (json['minimumAge'] as num?)?.toInt() ?? 18,
       camLimit: (json['camLimit'] as num?)?.toInt() ?? 6,
-      micLimit: (json['micLimit'] as num?)?.toInt() ?? 6,
+      micLimit: (json['micLimit'] as num?)?.toInt() ?? 4,
+      micTimerSeconds: (json['micTimerSeconds'] as num?)?.toInt(),
       allowChat: _asBool(json['allowChat'], fallback: true),
       allowGifts: _asBool(json['allowGifts'], fallback: true),
       allowMicRequests: _asBool(json['allowMicRequests'], fallback: true),
@@ -177,9 +168,15 @@ class CamAccessRequestModel {
       requesterId: _asString(json['requesterId']),
       broadcasterId: _asString(json['broadcasterId']),
       status: _asString(json['status'], fallback: 'pending'),
-      decisionScope: _asString(json['decisionScope'], fallback: 'single_session'),
+      decisionScope: _asString(
+        json['decisionScope'],
+        fallback: 'single_session',
+      ),
       createdAt: _parseFirestoreDateTime(json['createdAt']),
       updatedAt: _parseFirestoreDateTime(json['updatedAt']),
     );
   }
 }
+
+
+

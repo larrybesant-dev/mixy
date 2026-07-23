@@ -2,7 +2,7 @@
 
 ## Project Structure & Features
 - Modular Flutter app with features in `lib/features/` (auth, feed, home, room, payments, chat, events, onboarding, speed_dating, social, ads, etc.)
-- Data models in `lib/models/` and `lib/data/models/` (user, room, transaction, presence, message, etc.)
+- Data models in `lib/models/` and `lib/data/models/` (user, room, transaction, presence, MessageModel, etc.)
 - Business logic/services in `lib/services/` (auth, payments, analytics, agora, stripe, chat, moderation, notification, etc.)
 - State management via Riverpod providers in `lib/presentation/providers/` and `lib/features/providers/`
 - UI widgets in `lib/widgets/`

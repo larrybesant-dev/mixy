@@ -1,0 +1,90 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T19:37:14.2258125Z",
+    "replayVersion":  "governance_replay_v1",
+    "schemaVersion":  "1.0.0",
+    "mode":  "sweep",
+    "source":  {
+                   "indexPath":  "tools/reports/history/verdict_index.json",
+                   "entryCount":  1
+               },
+    "parameters":  {
+                       "sweepBurnInFrom":  1,
+                       "sweepBurnInTo":  6
+                   },
+    "invariants":  {
+                       "scannedThresholdCount":  6,
+                       "entryCount":  1,
+                       "thresholdsWhereBurnInExited":  [
+                                                           1
+                                                       ],
+                       "thresholdsWhereBurnInStayedFrozen":  [
+                                                                 2,
+                                                                 3,
+                                                                 4,
+                                                                 5,
+                                                                 6
+                                                             ],
+                       "exitThresholdRanges":  [
+                                                   {
+                                                       "from":  1,
+                                                       "to":  1
+                                                   }
+                                               ],
+                       "frozenThresholdRanges":  [
+                                                     {
+                                                         "from":  2,
+                                                         "to":  6
+                                                     }
+                                                 ],
+                       "firstExitThreshold":  1,
+                       "lastFrozenThreshold":  6,
+                       "transitionBoundary":  {
+                                                  "lastFrozenThreshold":  6,
+                                                  "firstExitThreshold":  1
+                                              }
+                   },
+    "sweep":  [
+                  {
+                      "burnInRcCount":  1,
+                      "firstBurnInExitRun":  1,
+                      "burnInExited":  true,
+                      "runsInBurnIn":  0,
+                      "runsPostBurnIn":  1
+                  },
+                  {
+                      "burnInRcCount":  2,
+                      "firstBurnInExitRun":  null,
+                      "burnInExited":  false,
+                      "runsInBurnIn":  1,
+                      "runsPostBurnIn":  0
+                  },
+                  {
+                      "burnInRcCount":  3,
+                      "firstBurnInExitRun":  null,
+                      "burnInExited":  false,
+                      "runsInBurnIn":  1,
+                      "runsPostBurnIn":  0
+                  },
+                  {
+                      "burnInRcCount":  4,
+                      "firstBurnInExitRun":  null,
+                      "burnInExited":  false,
+                      "runsInBurnIn":  1,
+                      "runsPostBurnIn":  0
+                  },
+                  {
+                      "burnInRcCount":  5,
+                      "firstBurnInExitRun":  null,
+                      "burnInExited":  false,
+                      "runsInBurnIn":  1,
+                      "runsPostBurnIn":  0
+                  },
+                  {
+                      "burnInRcCount":  6,
+                      "firstBurnInExitRun":  null,
+                      "burnInExited":  false,
+                      "runsInBurnIn":  1,
+                      "runsPostBurnIn":  0
+                  }
+              ]
+}

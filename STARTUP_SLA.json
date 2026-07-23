@@ -1,0 +1,7 @@
+{
+  "pipeline_version": "1.0.0",
+  "bindingReady": 200,
+  "firebaseReady": 700,
+  "bootstrapResolved": 800,
+  "firstFrameRendered": 1200
+}

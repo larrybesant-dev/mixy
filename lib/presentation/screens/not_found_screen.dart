@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/layout/app_layout.dart';
+import '../../shared/widgets/app_page_scaffold.dart';
+
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({super.key, required this.path});
 
@@ -8,11 +11,11 @@ class NotFoundScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(title: const Text('Page not found')),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(context.pageHorizontalPadding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -41,3 +44,6 @@ class NotFoundScreen extends StatelessWidget {
     );
   }
 }
+
+
+

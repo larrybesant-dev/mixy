@@ -2,52 +2,59 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/telemetry/app_telemetry.dart';
+import '../../../services/discovery_stream_service.dart';
 import '../../../services/moderation_service.dart';
+import '../../../services/speed_dating_gateway.dart';
 import '../models/speed_dating_models.dart';
 
 class SpeedDatingService {
   SpeedDatingService({
-    FirebaseFirestore? firestore,
+    required FirebaseFirestore firestore,
     ModerationService? moderationService,
     FirebaseFunctions? functions,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _moderationService = moderationService ??
-            ModerationService(
-                firestore: firestore ?? FirebaseFirestore.instance),
-        _functions = functions ?? FirebaseFunctions.instance;
+    DiscoveryStreamService? streamService,
+    SpeedDatingGateway? gateway,
+  }) : _moderationService =
+           moderationService ?? ModerationService(firestore: firestore),
+       _functions = functions ?? FirebaseFunctions.instance,
+       _streamService =
+         streamService ?? DiscoveryStreamService(firestore: firestore),
+       _gateway = gateway ?? SpeedDatingGateway(firestore);
 
-  final FirebaseFirestore _firestore;
   final ModerationService _moderationService;
   final FirebaseFunctions _functions;
+  final DiscoveryStreamService _streamService;
+  final SpeedDatingGateway _gateway;
   static const Uuid _uuid = Uuid();
 
-  Stream<List<SpeedDateCandidate>> candidatesStream({required String currentUserId}) {
+  Stream<List<SpeedDateCandidate>> candidatesStream({
+    required String currentUserId,
+  }) {
     // Query only users who have a non-empty username — avoids a full-collection
     // scan and filters out incomplete accounts server-side. Limit to 40 so the
     // Dart-side block filter still leaves a useful candidate set.
-    return _firestore
-        .collection('users')
-        .where('username', isGreaterThan: '')
-        .orderBy('username')
-        .limit(40)
-        .snapshots()
+    return _streamService
+        .watchSpeedDatingCandidates(limit: 40)
         .asyncMap((snapshot) async {
-      final blockedIds = await _moderationService.getExcludedUserIds(currentUserId);
-      return snapshot.docs
-          .where((doc) => doc.id != currentUserId)
-          .where((doc) => !blockedIds.contains(doc.id))
-          .map(SpeedDateCandidate.fromDoc)
-          .where((candidate) => candidate.username.trim().isNotEmpty)
-          .toList();
-    });
+          final blockedIds = await _moderationService.getExcludedUserIds(
+            currentUserId,
+          );
+          return snapshot.docs
+              .where((doc) => doc.id != currentUserId)
+              .where((doc) => !blockedIds.contains(doc.id))
+              .map(SpeedDateCandidate.fromDoc)
+              .where((candidate) => candidate.username.trim().isNotEmpty)
+              .toList();
+        });
   }
 
   Stream<List<SpeedDatingMatch>> matchesStream(String currentUserId) {
-    return _firestore
-        .collection('speed_dating_matches')
-        .where('participantIds', arrayContains: currentUserId)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList());
+    return _streamService
+        .watchSpeedDatingMatches(currentUserId, limit: 50)
+        .map(
+          (snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList(),
+        );
   }
 
   Future<SpeedDateDecisionResult> submitDecision({
@@ -56,14 +63,18 @@ class SpeedDatingService {
     required bool liked,
     required int sessionSeconds,
   }) async {
-    if (await _moderationService.hasBlockingRelationship(fromUserId, toUserId)) {
+    if (await _moderationService.hasBlockingRelationship(
+      fromUserId,
+      toUserId,
+    )) {
       throw Exception('Cannot interact with a blocked user.');
     }
 
     final actionId = '${fromUserId}_$toUserId';
     final reciprocalActionId = '${toUserId}_$fromUserId';
 
-    await _firestore.collection('speed_dating_actions').doc(actionId).set({
+    // 1. Record the decision
+    await _gateway.speedDatingActionRef(actionId).set({
       'fromUserId': fromUserId,
       'toUserId': toUserId,
       'decision': liked ? 'like' : 'pass',
@@ -76,65 +87,106 @@ class SpeedDatingService {
       return const SpeedDateDecisionResult(isMatch: false);
     }
 
-    final reciprocalDoc = await _firestore.collection('speed_dating_actions').doc(reciprocalActionId).get();
-    final reciprocalData = reciprocalDoc.data();
-    final reciprocalLiked = reciprocalData != null && reciprocalData['decision'] == 'like';
-
-    if (!reciprocalLiked) {
-      return const SpeedDateDecisionResult(isMatch: false);
-    }
-
+    // 2. Atomically check for reciprocal like and create match
     final sorted = [fromUserId, toUserId]..sort();
     final matchId = '${sorted.first}_${sorted.last}';
+    final matchRef = _gateway.speedDatingMatchRef(matchId);
 
-    await _firestore.collection('speed_dating_matches').doc(matchId).set({
-      'participantIds': sorted,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-      'lastActionBy': fromUserId,
-    }, SetOptions(merge: true));
+    return await _gateway.runTransaction((txn) async {
+      final reciprocalDoc = await txn.get(
+        _gateway.speedDatingActionRef(reciprocalActionId),
+      );
+      final reciprocalData = reciprocalDoc.data();
+      final reciprocalLiked =
+          reciprocalData != null && reciprocalData['decision'] == 'like';
 
-    final notificationsRef = _firestore.collection('notifications');
-    await notificationsRef.add({
-      'userId': toUserId,
-      'actorId': fromUserId,
-      'type': 'speed_dating_match',
-      'content': 'You have a new speed dating match.',
-      'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
+      if (!reciprocalLiked) {
+        return const SpeedDateDecisionResult(isMatch: false);
+      }
+
+      final matchSnap = await txn.get(matchRef);
+      if (matchSnap.exists) {
+        // Match already exists, just return it
+        return SpeedDateDecisionResult(isMatch: true, matchId: matchId);
+      }
+
+      // Create match document
+      txn.set(matchRef, {
+        'participantIds': sorted,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastActionBy': fromUserId,
+      });
+
+      // Add notification for the other user
+      txn.set(_gateway.notificationRef(), {
+        'userId': toUserId,
+        'actorId': fromUserId,
+        'type': 'speed_dating_match',
+        'content': 'You have a new speed dating match.',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      AppTelemetry.logAction(
+        domain: 'speed_dating',
+        action: 'match_success',
+        message: 'A new match was created.',
+        userId: fromUserId,
+        result: 'success',
+        metadata: {'matchId': matchId, 'targetUserId': toUserId},
+      );
+
+      return SpeedDateDecisionResult(isMatch: true, matchId: matchId);
     });
-
-    return SpeedDateDecisionResult(isMatch: true, matchId: matchId);
   }
 
   Future<String> startLiveDateRoom({
     required String hostUserId,
     required String targetUserId,
     required String matchId,
+    int durationSeconds = 300,
   }) async {
-    final roomRef = _firestore.collection('rooms').doc();
-    await roomRef.set({
-      'name': 'Speed Date',
-      'description': 'Private speed date session',
-      'hostId': hostUserId,
-      'isLive': true,
-      'isLocked': true,
-      'category': 'speed_dating',
-      'memberCount': 2,
-      'stageUserIds': [hostUserId, targetUserId],
-      'audienceUserIds': <String>[],
-      'coHosts': <String>[],
-      'tags': ['speed_dating', 'private'],
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+    final matchRef = _gateway.speedDatingMatchRef(matchId);
+
+    return await _gateway.runTransaction((txn) async {
+      final matchSnap = await txn.get(matchRef);
+      final data = matchSnap.data();
+
+      // If a room already exists for this match, reuse it instead of creating a duplicate.
+      if (data != null && data['latestRoomId'] != null) {
+        return data['latestRoomId'] as String;
+      }
+
+      final roomRef = _gateway.newRoomRef();
+      final expiresAt = DateTime.now().add(Duration(seconds: durationSeconds));
+
+      txn.set(roomRef, {
+        'name': 'Speed Date',
+        'meta': <String, dynamic>{'title': 'Speed Date'},
+        'description': 'Private speed date session',
+        'hostId': hostUserId,
+        'isLive': true,
+        'isAdult': false,
+        'isLocked': true,
+        'category': 'speed_dating',
+        'memberCount': 2,
+        'stageUserIds': [hostUserId, targetUserId],
+        'audienceUserIds': <String>[],
+        'coHosts': <String>[],
+        'tags': ['speed_dating', 'private'],
+        'expiresAt': Timestamp.fromDate(expiresAt),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      txn.set(matchRef, {
+        'latestRoomId': roomRef.id,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return roomRef.id;
     });
-
-    await _firestore.collection('speed_dating_matches').doc(matchId).set({
-      'latestRoomId': roomRef.id,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    return roomRef.id;
   }
 
   String randomSessionId() => _uuid.v4();
@@ -164,27 +216,28 @@ class SpeedDatingService {
   /// Watches the live queue entry for the current user so the UI can react
   /// when the server matches them to a partner.
   Stream<SpeedDatingQueueResult?> watchQueueEntry(String userId) {
-    return _firestore
-        .collection('speed_dating_queue')
-        .doc(userId)
-        .snapshots()
+    return _streamService
+        .watchQueueEntry(userId)
         .map((doc) {
-      if (!doc.exists) return null;
-      final data = doc.data()!;
-      return SpeedDatingQueueResult(
-        matched: data['matched'] as bool? ?? false,
-        sessionId: data['sessionId'] as String?,
-        partnerId: null,
-      );
-    });
+          if (!doc.exists) return null;
+          final data = doc.data();
+          if (data == null) return null;
+          return SpeedDatingQueueResult(
+            matched: data['matched'] as bool? ?? false,
+            sessionId: data['sessionId'] as String?,
+            partnerId: null,
+          );
+        });
   }
 
   /// Watches a specific speed dating session doc (active + expiresAt).
   Stream<Map<String, dynamic>?> watchSession(String sessionId) {
-    return _firestore
-        .collection('speed_dating_sessions')
-        .doc(sessionId)
-        .snapshots()
+    return _streamService
+        .watchSession(sessionId)
         .map((doc) => doc.exists ? doc.data() : null);
   }
 }
+
+
+
+

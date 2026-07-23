@@ -1,0 +1,148 @@
+{
+  "generatedAtUtc": "2026-04-25T12:35:57.5006291Z",
+  "harness": "launch_load_harness_v1",
+  "validationMode": "observe",
+  "cycles": 1,
+  "pressureRepeatsPerCycle": 0,
+  "includeRulesValidation": false,
+  "shuffle": false,
+  "verdict": "FAIL",
+  "totalRuns": 5,
+  "passedRuns": 2,
+  "failedRuns": 3,
+  "failedCaseIds": [
+    "LH-PY-1",
+    "LH-PY-2",
+    "LH-PY-3"
+  ],
+  "categorySummary": [
+    {
+      "category": "Payment Concurrency",
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "avgDurationMs": 1293.5,
+      "maxDurationMs": 1321.0
+    },
+    {
+      "category": "Room Concurrency",
+      "total": 3,
+      "passed": 2,
+      "failed": 1,
+      "avgDurationMs": 4947.0,
+      "maxDurationMs": 6746.0
+    }
+  ],
+  "runs": [
+    {
+      "cycle": 1,
+      "isPressure": false,
+      "caseId": "LH-RM-1",
+      "caseName": "Room Session Churn",
+      "category": "Room Concurrency",
+      "failureClass": "duplicate_join|presence_drift|participant_desync",
+      "command": "flutter test --no-pub test/room_session_stress_test.dart",
+      "passCriteria": "Room churn remains deduped with no presence drift.",
+      "startedAtUtc": "2026-04-25T12:35:39.9214333Z",
+      "endedAtUtc": "2026-04-25T12:35:46.6674673Z",
+      "durationMs": 6746,
+      "exitCode": 0,
+      "signalPass": true,
+      "positiveMatches": [
+        "stress simulates room churn without duplicates or presence drift",
+        "All tests passed!"
+      ],
+      "negativeMatches": [],
+      "passed": true
+    },
+    {
+      "cycle": 1,
+      "isPressure": false,
+      "caseId": "LH-RM-2",
+      "caseName": "Room Chaos Authority",
+      "category": "Room Concurrency",
+      "failureClass": "host_split_brain|duplicate_controller_state",
+      "command": "flutter test --no-pub test/room_chaos_master_test.dart",
+      "passCriteria": "Authority and dedupe invariants hold across chaos cases.",
+      "startedAtUtc": "2026-04-25T12:35:46.7110677Z",
+      "endedAtUtc": "2026-04-25T12:35:53.3772412Z",
+      "durationMs": 6666,
+      "exitCode": 0,
+      "signalPass": true,
+      "positiveMatches": [
+        "room chaos master",
+        "All tests passed!"
+      ],
+      "negativeMatches": [],
+      "passed": true
+    },
+    {
+      "cycle": 1,
+      "isPressure": false,
+      "caseId": "LH-PY-1",
+      "caseName": "Payment Replay Idempotency",
+      "category": "Payment Concurrency",
+      "failureClass": "double_debit|double_credit|idempotency_regression",
+      "command": "npm --prefix functions test -- --test-name-pattern \"sendCoinTransferHandler deduplicates repeated idempotent calls|stripeWebhookHandler credits checkout.session.completed only once during replay\"",
+      "passCriteria": "Replay and idempotent paths must remain one-write safe.",
+      "startedAtUtc": "2026-04-25T12:35:53.3857602Z",
+      "endedAtUtc": "2026-04-25T12:35:54.6520474Z",
+      "durationMs": 1266,
+      "exitCode": 0,
+      "signalPass": true,
+      "positiveMatches": [
+        "sendCoinTransferHandler deduplicates repeated idempotent calls",
+        "stripeWebhookHandler credits checkout.session.completed only once during replay"
+      ],
+      "negativeMatches": [
+        "fail"
+      ],
+      "passed": false
+    },
+    {
+      "cycle": 1,
+      "isPressure": false,
+      "caseId": "LH-PY-2",
+      "caseName": "Mic Callable Authority Under Pressure",
+      "category": "Room Concurrency",
+      "failureClass": "unauthorized_stage|mic_limit_regression|stale_stage_not_demoted",
+      "command": "npm --prefix functions test -- --test-name-pattern \"grabMicHandler|inviteToMicHandler\"",
+      "passCriteria": "Mic callable authority tests stay deterministic under repeated execution.",
+      "startedAtUtc": "2026-04-25T12:35:54.6596830Z",
+      "endedAtUtc": "2026-04-25T12:35:56.0889626Z",
+      "durationMs": 1429,
+      "exitCode": 0,
+      "signalPass": true,
+      "positiveMatches": [
+        "grabMicHandler",
+        "inviteToMicHandler"
+      ],
+      "negativeMatches": [
+        "fail"
+      ],
+      "passed": false
+    },
+    {
+      "cycle": 1,
+      "isPressure": false,
+      "caseId": "LH-PY-3",
+      "caseName": "Webhook Signature Rejection",
+      "category": "Payment Concurrency",
+      "failureClass": "bad_signature_accepted|missing_error_log",
+      "command": "npm --prefix functions test -- --test-name-pattern \"stripeWebhookHandler returns 400 and logs when signature verification fails\"",
+      "passCriteria": "Bad signature remains rejected and logged.",
+      "startedAtUtc": "2026-04-25T12:35:56.1305045Z",
+      "endedAtUtc": "2026-04-25T12:35:57.4513586Z",
+      "durationMs": 1321,
+      "exitCode": 0,
+      "signalPass": true,
+      "positiveMatches": [
+        "stripeWebhookHandler returns 400 and logs when signature verification fails"
+      ],
+      "negativeMatches": [
+        "fail"
+      ],
+      "passed": false
+    }
+  ]
+}

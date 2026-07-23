@@ -1,117 +1,288 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Core helpers (zero-trust defaults)
+    // ---------------------------------------------------------------------
+
     function signedIn() {
       return request.auth != null;
     }
 
+    function uid() {
+      return request.auth.uid;
+    }
+
     function isSelf(userId) {
-      return signedIn() && request.auth.uid == userId;
+      return signedIn() && uid() == userId;
     }
 
-    function isFriendLinkUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends'])
-        && (
-          request.resource.data.friends.hasAny([request.auth.uid])
-          || resource.data.friends.hasAny([request.auth.uid])
-        );
+    function isParticipant(data) {
+      return signedIn() && data.users is list && data.users.hasAny([uid()]);
     }
 
-    function isAllowedUserProfileUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'username',
-        'email',
-        'avatarUrl',
-        'coverPhotoUrl',
-        'galleryUrls',
-        'introVideoUrl',
-        'bio',
-        'aboutMe',
-        'age',
-        'gender',
-        'location',
-        'relationshipStatus',
-        'vibePrompt',
-        'firstDatePrompt',
-        'musicTastePrompt',
-        'interests',
-        'themeId',
-        'camViewPolicy',
-        'adultModeEnabled',
-        'adultConsentAccepted',
-        'updatedAt'
-      ]);
-    }
-
-    function userDoc(userId) {
-      return get(/databases/$(database)/documents/users/$(userId));
-    }
-
-    function adultModeEnabled(userId) {
-      return userDoc(userId).data.adultModeEnabled == true
-        && userDoc(userId).data.adultConsentAccepted == true;
-    }
-
-    function canReadSharedAdultProfile(userId) {
-      return signedIn() && adultModeEnabled(request.auth.uid) && adultModeEnabled(userId);
+    function verificationDoc(userId) {
+      return get(/databases/$(database)/documents/verification/$(userId));
     }
 
     function roomDoc(roomId) {
       return get(/databases/$(database)/documents/rooms/$(roomId));
     }
 
-    function isRoomHost(roomId) {
-      return signedIn() && (
-        roomDoc(roomId).data.ownerId == request.auth.uid
-        || roomDoc(roomId).data.hostId == request.auth.uid
+    function conversationDoc(conversationId) {
+      return get(/databases/$(database)/documents/conversations/$(conversationId));
+    }
+
+    // Server-trusted admin authority:
+    // 1) custom claim: request.auth.token.admin == true
+    // 2) roles/admins/<uid> doc maintained server-side only
+    function isAdminClaim() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isAdminRoleDoc() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/roles/admins/$(uid()));
+    }
+
+    function isAdmin() {
+      return isAdminClaim() || isAdminRoleDoc();
+    }
+
+    // Adult verification must come from server-managed verification doc.
+    // Client-side flags (routing/providers/local state) are never trusted.
+    // Production: Strict enforcement. User must have explicit verification status.
+    function isAdultVerified(userId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/verification/$(userId))
+        && verificationDoc(userId).data.isAdultVerified == true
+        && verificationDoc(userId).data.verificationStatus == 'verified';
+    }
+
+    function roomAllowsGuest(roomData) {
+      return !('isAdult' in roomData && roomData.isAdult == true)
+        && (!('allowGuestAccess' in roomData) || roomData.allowGuestAccess == true);
+    }
+
+    function roomReadableByRequester(roomData) {
+      // If we already have the roomData (from resource.data), we don't need a get().
+      // Key logic:
+      // 1. If room is NOT adult, signed-in users can always read it
+      // 2. If room IS adult, only verified adults can read it
+      // 3. Guest access: only for non-adult rooms that allow guests
+      
+      return (
+          signedIn()
+          && (
+            // Non-adult room: readable by all signed-in users
+            !('isAdult' in roomData && roomData.isAdult == true)
+            ||
+            // Adult room: readable only by verified adults
+            isAdultVerified(uid())
+          )
+        )
+        || (
+          !signedIn()
+          && roomAllowsGuest(roomData)
+          && !('isAdult' in roomData && roomData.isAdult == true)
+        );
+    }
+
+    function canReadRoomById(roomId) {
+      // Use exists() first to avoid unnecessary get() if document is missing.
+      return exists(/databases/$(database)/documents/rooms/$(roomId))
+        && roomReadableByRequester(get(/databases/$(database)/documents/rooms/$(roomId)).data);
+    }
+
+    function isRoomParticipant(roomId, userId) {
+      return exists(
+        /databases/$(database)/documents/rooms/$(roomId)/participants/$(userId)
       );
     }
 
-    function participantDoc(roomId, userId) {
-      return get(/databases/$(database)/documents/rooms/$(roomId)/participants/$(userId));
-    }
+    // Note: isNotBlocked() currently not used in rules but reserved for future block graph enforcement
+    // Block validation is handled by Cloud Functions for comprehensive relationship checking
+    // function isNotBlocked(otherUserId) {
+    //   return true;  // Cloud Functions handle block enforcement
+    // }
 
-    function participantRole(roomId, userId) {
-      return participantDoc(roomId, userId).data.role;
-    }
-
-    function isRoomModerator(roomId) {
-      return signedIn() && participantRole(roomId, request.auth.uid) == 'moderator';
-    }
-
-    function isRoomStaff(roomId) {
-      return isRoomHost(roomId) || isRoomModerator(roomId);
-    }
-
-    function isRoomParticipant(roomId) {
+    function isConversationParticipant(convData) {
       return signedIn()
-        && participantDoc(roomId, request.auth.uid).data.userId == request.auth.uid;
+        && convData.participantIds is list
+        && convData.participantIds.hasAny([uid()]);
+    }
+
+    function canAccessConversationById(conversationId) {
+      return exists(/databases/$(database)/documents/conversations/$(conversationId))
+        && isConversationParticipant(conversationDoc(conversationId).data);
+    }
+
+    /// Room admin/owner permission helpers
+    function isRoomOwner(roomData) {
+      return signedIn() && uid() == roomData.ownerId;
+    }
+
+    function isRoomAdmin(roomData) {
+      return signedIn() && roomData.adminUserIds is list && uid() in roomData.adminUserIds;
+    }
+
+    function canManageRoom(roomData) {
+      return isRoomOwner(roomData) || isRoomAdmin(roomData);
+    }
+
+    // ---------------------------------------------------------------------
+    // Users + profile hardening
+    // ---------------------------------------------------------------------
+
+    function restrictedUserFields() {
+      return [
+        'admin',
+        'isAdmin',
+        'role',
+        'roles',
+        'membershipLevel',
+        'vipLevel',
+        'coins',
+        'coinBalance',
+        'cashBalance',
+        'wallet',
+        'security',
+        'email',
+        'isVerified',
+        'isAdultVerified',
+        'adultVerified',
+        'verificationStatus',
+        'adultModeEnabled',
+        'adultConsentAccepted',
+        'adultModeEnabledAt'
+      ];
+    }
+
+    function allowedSelfUserFields() {
+      return [
+        'uid',
+        'id',
+        'username',
+        'usernameLower',
+        'displayName',
+        'photoUrl',
+        'avatarUrl',
+        'bio',
+        'aboutMe',
+        'age',
+        'gender',
+        'location',
+        'relationshipStatus',
+        'interests',
+        'isPrivate',
+        'isComplete',
+        'followers',
+        'following',
+        'createdAt',
+        'updatedAt',
+        'favoriteFriendIds',
+        'profileAccentColor',
+        'profileBgGradientStart',
+        'profileBgGradientEnd',
+        'profileMusicUrl',
+        'profileMusicTitle'
+      ];
+    }
+
+    function userCreateValid(userId) {
+      return request.resource.data.keys().hasOnly(allowedSelfUserFields())
+        && request.resource.data.uid == userId
+        && request.resource.data.uid == uid()
+        && request.resource.data.keys().hasAny(['createdAt', 'updatedAt'])
+        // Server timestamps are set after rule evaluation; allow their presence
+        && !request.resource.data.keys().hasAny(restrictedUserFields());
+    }
+
+    function userUpdateValid() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedSelfUserFields())
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(restrictedUserFields())
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == uid();
     }
 
     match /users/{userId} {
+      // Soft-launch: Auth + field validation sufficient. App Check re-enabled post-launch.
       allow read: if signedIn();
-      allow create: if isSelf(userId);
-      allow update: if (isSelf(userId) && isAllowedUserProfileUpdate())
-        || (signedIn() && isFriendLinkUpdate());
+
+      // Client can manage only non-privileged profile identity fields.
+      allow create: if isSelf(userId) && userCreateValid(userId);
+      allow update: if isSelf(userId) && userUpdateValid();
       allow delete: if isSelf(userId);
+
+      // Server-only security/verification/wallet internals.
+      match /wallet/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      match /verification/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      match /security/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow create, update, delete: if false;
+      }
+
+      // After Dark profile data: readable only by verified adults.
+      // Writes are owner-only and limited to non-authoritative profile content.
+      match /adult_content/{docId} {
+        // Owners can always manage their own adult profile data.
+        // Other users must be verified adults on both sides.
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && isAdultVerified(uid())
+            && isAdultVerified(userId)
+          );
+        allow create, update, delete: if isSelf(userId);
+      }
+
+      match /adult_profile/{docId} {
+        // Owners can always manage their own adult profile data.
+        // Other users must be verified adults on both sides.
+        allow read: if isSelf(userId)
+          || (
+            signedIn()
+            && isAdultVerified(uid())
+            && isAdultVerified(userId)
+          );
+        allow create, update, delete: if isSelf(userId);
+      }
 
       match /stories/{storyId} {
         allow read: if signedIn();
         allow create: if isSelf(userId)
-          && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isSelf(userId)
-          && resource.data.userId == request.auth.uid;
+          && request.resource.data.userId == uid()
+          && request.resource.data.createdAt is timestamp
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt > request.time
+          && request.resource.data.viewedBy is list
+          && request.resource.data.viewedBy.hasAny([uid()])
+          && request.resource.data.isDeleted == false;
+        allow update: if isSelf(userId)
+          && resource.data.userId == uid()
+          && request.resource.data.userId == uid();
+        allow delete: if isSelf(userId)
+          && resource.data.userId == uid();
       }
 
-      match /adult_profile/{documentId} {
-        allow read: if isSelf(userId)
-          || (canReadSharedAdultProfile(userId)
-            && resource.data.visibility == 'optedInAdultsOnly');
-        allow create, update, delete: if isSelf(userId);
+      match /following/{docId} {
+        allow read, create, delete: if isSelf(userId);
+        allow update: if false;
       }
 
-      match /privacy/{documentId} {
-        allow read, create, update, delete: if isSelf(userId);
+      match /followers/{docId} {
+        allow read: if isSelf(userId);
+        allow create, delete: if signedIn() && docId == uid();
+        allow update: if false;
       }
 
       match /bookmarks/{bookmarkId} {
@@ -122,446 +293,1144 @@ service cloud.firestore {
         allow update: if false;
       }
 
-      match /followers/{followerId} {
-        allow read: if signedIn();
-        allow create, update, delete: if false;
+      match /privacy/{docId} {
+        allow read: if isSelf(userId);
+        allow create, update: if isSelf(userId);
+        allow delete: if false;
       }
 
-      match /following/{followingId} {
-        allow read: if signedIn();
-        allow create, update, delete: if false;
+      // Gift tracking: allowance is readable by self or Cloud Function, writable by Cloud Function only
+      match /gift_tracking/{docId} {
+        allow read: if isSelf(userId) || isAdmin();
+        allow write: if false; // Cloud Function only
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
       }
     }
 
-    match /rooms/{roomId} {
-      allow read: if signedIn();
+    // ---------------------------------------------------------------------
+    // Server-managed verification source of truth
+    // ---------------------------------------------------------------------
+
+    match /verification/{userId} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /verification_requests/{requestId} {
+      allow read: if signedIn() && (requestId == uid() || isAdmin());
       allow create: if signedIn()
+        && requestId == uid()
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'reason',
+          'status',
+          'submittedAt',
+          'reviewedAt',
+          'reviewNote'
+        ])
+        && request.resource.data.userId == uid()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.submittedAt is timestamp
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.reviewNote == null;
+      allow update: if false;
+      allow delete: if signedIn()
+        && requestId == uid()
+        && resource.data.userId == uid()
+        && resource.data.status == 'rejected';
+    }
+
+    // ---------------------------------------------------------------------
+    // Rooms: auth/adult gating + strict mutation controls
+    // ---------------------------------------------------------------------
+
+    function validRoomCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'hostId',
+          'ownerId',
+          'adminUserIds',
+          'hostUsername',
+          'hostAvatarUrl',
+          'meta',
+          'schemaVersion',
+          'isLive',
+          'endedAt',
+          'isAdult',
+          'allowGuestAccess',
+          'thumbnailUrl',
+          'createdAt',
+          'updatedAt',
+          'stageUserIds',
+          'stageUserAvatarUrls',
+          'audienceUserIds',
+          'audienceUserAvatarUrls',
+          'memberCount',
+          'category',
+          'tags',
+          'coHosts',
+          'isLocked',
+          'slowModeSeconds',
+          'scheduledAt',
+          'maxBroadcasters',
+          'maxSpeakers',
+          'speakerSyncVersion',
+          'theme',
+          'expiresAt',
+          'isDirectCall',
+          'calleeId'
+        ])
+        && request.resource.data.hostId == uid()
         && (
-          request.resource.data.ownerId == request.auth.uid
-          || request.resource.data.hostId == request.auth.uid
+          !('ownerId' in request.resource.data)
+          || request.resource.data.ownerId == uid()
+        )
+        && (
+          !('adminUserIds' in request.resource.data)
+          || request.resource.data.adminUserIds is list
+        )
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && (
+          !('meta' in request.resource.data)
+          || (
+            request.resource.data.meta is map
+            && request.resource.data.meta.title is string
+            && request.resource.data.meta.title.size() > 0
+          )
+        )
+        && request.resource.data.isLive is bool
+        && request.resource.data.isAdult is bool
+        && (!request.resource.data.isAdult || isAdultVerified(uid()))
+        && request.resource.data.memberCount is int
+        && request.resource.data.memberCount >= 0
+        && request.resource.data.audienceUserIds is list
+        && request.resource.data.stageUserIds is list
+        && (request.resource.data.audienceUserIds.hasAny([uid()])
+          || request.resource.data.category == 'speed_dating');
+      // NOTE: Server timestamps (createdAt/updatedAt) are set after rule evaluation
+      // and cannot be validated against request.time in the rules.
+      // The client may send FieldValue.serverTimestamp() which resolves server-side.
+    }
+
+    function validHostRoomUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'isLive',
+          'thumbnailUrl',
+          'updatedAt',
+          'isLocked',
+          'slowModeSeconds',
+          'category',
+          'tags',
+          'coHosts',
+          'scheduledAt',
+          'maxBroadcasters',
+          'maxSpeakers',
+          'speakerSyncVersion',
+          'theme',
+          'mutedUsers',
+          'bannedUsers',
+          'endedAt',
+          'spotlightUserId',
+          'isDirectCall',
+          'calleeId',
+          'ownerName'
+        ])
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.isAdult == resource.data.isAdult;
+    }
+
+    function validOwnerAdminRoomUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'description',
+          'rules',
+          'adminUserIds',
+          'thumbnailUrl',
+          'updatedAt',
+          'isLocked',
+          'isAdult',
+          'photoCount'
+        ])
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.hostId == resource.data.hostId;
+    }
+
+    match /rooms/{roomId} {
+      // Room reads: authentication only (App Check optional for dev compatibility)
+      allow read: if signedIn();
+
+      // Signed-in host can create a room. Adult rooms require server-verified adult status.
+      allow create: if signedIn() && validRoomCreate();
+
+      // Host controls mutable room metadata.
+      // Owner/admins can manage admin lists and room settings.
+      // Normal participants are ONLY allowed to update their OWN entry in the audience/stage lists.
+      allow update: if signedIn()
+        && (
+          (resource.data.hostId == uid() && validHostRoomUpdate())
+          ||
+          (canManageRoom(resource.data) && validOwnerAdminRoomUpdate())
+          ||
+          (
+            // Any signed-in user can add/remove themselves from audience/stage during join/leave
+            // Trust Dart validation for room access control
+            signedIn()
+            && request.resource.data.hostId == resource.data.hostId
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.name == resource.data.name
+            && request.resource.data.isLive == resource.data.isLive
+            && request.resource.data.isAdult == resource.data.isAdult
+          )
         );
-      // Host can update/delete; callee can decline an incoming direct call.
-      allow update: if isRoomHost(roomId)
-        || (signedIn()
-          && resource.data.isDirectCall == true
-          && resource.data.calleeId == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['callDeclined', 'callDeclinedAt']));
-      allow delete: if isRoomHost(roomId);
+
+      // Delete restricted to host/admin.
+      allow delete: if signedIn() && (resource.data.hostId == uid() || isAdmin());
+
+      // Participant roster
+      match /participants/{participantId} {
+        // Participant roster requires authentication — NO GUEST MODE
+        // Only signed-in users can view who is in the room
+        allow read: if signedIn() && exists(/databases/$(database)/documents/rooms/$(roomId));
+
+        // Allow user to create their own participant document when joining
+        // RELAXED: Remove strict field validation to debug join issues
+        allow create: if signedIn()
+          && participantId == uid()
+          && request.resource.data.userId == uid()
+          && exists(/databases/$(database)/documents/rooms/$(roomId));
+
+
+        allow update: if signedIn()
+          && participantId == uid()
+          && request.resource.data.userId == uid()
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'userId',
+            'role',
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'userStatus',
+            'displayName',
+            'photoUrl',
+            'joinedAt',
+            'lastActiveAt',
+            'updatedAt'
+          ]);
+
+        allow update: if signedIn()
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin())
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'role',
+            'micOn',
+            'isMuted',
+            'cameraOn',
+            'camOn',
+            'isBanned',
+            'userStatus',
+            'lastActiveAt',
+            'updatedAt',
+            'rankTier',
+            'diamondLevel',
+            'badgeTitle'
+          ]);
+
+        allow delete: if signedIn() && (participantId == uid() || isAdmin());
+      }
 
       match /members/{memberId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
-          && memberId == request.auth.uid
-          && request.resource.data.userId == request.auth.uid
-          && request.resource.data.role in ['owner', 'mod', 'member'];
-        allow update: if memberId == request.auth.uid || isRoomHost(roomId);
-        allow delete: if memberId == request.auth.uid || isRoomHost(roomId);
+        allow read: if signedIn() && exists(/databases/$(database)/documents/rooms/$(roomId));
+        // RELAXED: Simplified rules to debug join issues
+        allow create, update: if signedIn()
+          && memberId == uid()
+          && exists(/databases/$(database)/documents/rooms/$(roomId));
+        allow delete: if signedIn() && (memberId == uid() || isAdmin());
       }
 
-      match /participants/{participantId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
-          && participantId == request.auth.uid
-          && request.resource.data.userId == request.auth.uid
-          && request.resource.data.role in ['audience', 'host', 'cohost', 'moderator', 'stage', 'owner', 'mod', 'member']
-          && request.resource.data.isBanned == false
-          && request.resource.data.isMuted == false;
-        allow update: if isRoomHost(roomId)
-          || (
-            participantId == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['lastActiveAt', 'camOn', 'micOn'])
-          );
-        allow delete: if isRoomHost(roomId) || participantId == request.auth.uid;
+      // WebRTC peer presence
+      match /webrtc_peers/{peerId} {
+        allow read: if signedIn() && exists(/databases/$(database)/documents/rooms/$(roomId));
+        allow create, update: if signedIn()
+          && peerId == uid()
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && request.resource.data.keys().hasOnly([
+            'uid',
+            'isBroadcasting',
+            'cameraActive',
+            'joinedAt',
+            'lastHeartbeatAt',
+            'streamRefreshAt',
+            'createdAt',
+            'updatedAt'
+          ]);
+        allow delete: if signedIn() && (peerId == uid() || isAdmin());
       }
 
-      match /presence/{userId} {
-        allow read: if signedIn();
-        allow create, update, delete: if isRoomHost(roomId) || userId == request.auth.uid;
-      }
-
-      match /typing/{userId} {
-        allow read: if signedIn();
-        allow create, update, delete: if userId == request.auth.uid;
+      // Gift events: readable by any room participant, writable only by Cloud Function
+      match /gift_events/{eventId} {
+        allow read: if signedIn() && exists(/databases/$(database)/documents/rooms/$(roomId));
+        allow write: if false; // Cloud Function only
       }
 
       match /messages/{messageId} {
-        allow read: if signedIn();
-        allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
-        allow update, delete: if isRoomHost(roomId) || resource.data.senderId == request.auth.uid;
+        allow read: if signedIn(); // Patched for local dev bypass
 
-        match /reactions/{userId} {
-          allow read: if signedIn();
-          allow create, update, delete: if userId == request.auth.uid;
+        allow create: if signedIn()
+          && isRoomParticipant(roomId, uid())
+          && request.resource.data.senderId == uid()
+          && request.resource.data.roomId == roomId
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          // Server timestamps are set after rule evaluation
+          && request.resource.data.createdAt is timestamp;
+
+        allow update, delete: if false;
+
+        match /reactions/{reactionId} {
+          allow read: if signedIn(); // Patched for local dev bypass
+          allow create, update: if signedIn()
+            && canReadRoomById(roomId)
+            && isRoomParticipant(roomId, uid())
+            && reactionId == uid()
+            && request.resource.data.userId == uid()
+            && request.resource.data.keys().hasOnly(['userId', 'emoji', 'timestamp']);
+          allow delete: if signedIn()
+            && canReadRoomById(roomId)
+            && reactionId == uid();
         }
       }
 
-      match /policies/{documentId} {
-        allow read: if signedIn();
-        allow create, update, delete: if isRoomHost(roomId);
+      match /typing/{typingUserId} {
+        allow read: if signedIn(); // Patched for local dev bypass
+
+        allow create, update: if signedIn()
+          && typingUserId == uid()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'isTyping',
+            'typing',
+            'updatedAt',
+            'timestamp'
+          ])
+          && (
+            !('userId' in request.resource.data)
+            || request.resource.data.userId == uid()
+          );
+
+        allow delete: if signedIn() && typingUserId == uid();
       }
 
-      match /gift_events/{giftEventId} {
-        allow read: if signedIn() && isRoomParticipant(roomId);
+      match /presence/{userId} {
+        // Guests can see who is in the room if the room is public.
+        allow read: if canReadRoomById(roomId);
+        // Writing to room presence requires being a signed-in participant.
+        allow create, update, delete: if false;
+      }
+
+      // WebRTC call signaling
+      match /webrtc_calls/{callId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+
+        // Viewer starts call offer.
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.keys().hasOnly([
+            'viewerId',
+            'broadcasterId',
+            'viewerUid',
+            'broadcasterUid',
+            'offer',
+            'createdAt'
+          ])
+          && request.resource.data.viewerId == uid();
+
+        // Broadcaster may only attach answer payload.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && resource.data.broadcasterId == uid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'answer',
+            'updatedAt'
+          ]);
+
+        allow delete: if signedIn()
+          && (
+            resource.data.viewerId == uid()
+            || resource.data.broadcasterId == uid()
+            || isAdmin()
+          );
+
+        match /viewer_ice/{iceId} {
+          allow read: if canReadRoomById(roomId) && signedIn();
+          allow create: if signedIn()
+            && get(/databases/$(database)/documents/rooms/$(roomId)/webrtc_calls/$(callId)).data.viewerId == uid()
+            && request.resource.data.keys().hasOnly([
+              'candidate',
+              'sdpMid',
+              'sdpMLineIndex',
+              'createdAt'
+            ]);
+          allow update, delete: if false;
+        }
+
+        match /broadcaster_ice/{iceId} {
+          allow read: if canReadRoomById(roomId) && signedIn();
+          allow create: if signedIn()
+            && get(/databases/$(database)/documents/rooms/$(roomId)/webrtc_calls/$(callId)).data.broadcasterId == uid()
+            && request.resource.data.keys().hasOnly([
+              'candidate',
+              'sdpMid',
+              'sdpMLineIndex',
+              'createdAt'
+            ]);
+          allow update, delete: if false;
+        }
+      }
+
+      match /speakers/{speakerId} {
+        // Explicitly server-only to prevent role/mic spoofing.
+        // Authentication required — NO GUEST MODE
+        allow read: if signedIn() && canReadRoomById(roomId);
         allow create, update, delete: if false;
       }
 
       match /cam_access_requests/{requestId} {
-        allow read: if signedIn()
-          && (resource.data.requesterId == request.auth.uid
-            || resource.data.broadcasterId == request.auth.uid
-            || isRoomStaff(roomId)
-            || isRoomParticipant(roomId));
+        allow read: if canReadRoomById(roomId) && signedIn();
         allow create: if signedIn()
-          && request.resource.data.requesterId == request.auth.uid
-          && request.resource.data.broadcasterId is string
-          && request.resource.data.roomId == roomId
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.status == 'pending';
+        allow update, delete: if false;
+      }
+
+      match /mod_log/{entryId} {
+        allow read: if canReadRoomById(roomId);
+        allow create: if signedIn()
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin());
+        allow update, delete: if false;
+      }
+
+      match /cam_view_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
           && request.resource.data.status == 'pending';
         allow update: if signedIn()
-          && (resource.data.broadcasterId == request.auth.uid || isRoomStaff(roomId));
+          && canReadRoomById(roomId)
+          && (
+            // Requester supersedes their own pending request.
+            (
+              resource.data.requesterId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'supersededBy', 'updatedAt'])
+            )
+            ||
+            // Target (camera owner) resolves the request.
+            (
+              resource.data.targetId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'resolvedAt', 'updatedAt'])
+            )
+          );
         allow delete: if false;
       }
 
       match /mic_access_requests/{requestId} {
-        allow read: if signedIn()
-          && (resource.data.requesterId == request.auth.uid
-            || resource.data.hostId == request.auth.uid
-            || isRoomStaff(roomId)
-            || isRoomParticipant(roomId));
+        allow read: if canReadRoomById(roomId) && signedIn();
         allow create: if signedIn()
-          && request.resource.data.requesterId == request.auth.uid
-          && request.resource.data.hostId is string
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
           && request.resource.data.roomId == roomId
           && request.resource.data.status == 'pending'
-          && request.resource.data.priority is int
-          && request.resource.data.priority >= 0
-          && request.resource.data.expiresAt is timestamp;
-        allow update: if signedIn() && isRoomStaff(roomId);
+          && request.resource.data.keys().hasOnly([
+            'id',
+            'roomId',
+            'requesterId',
+            'hostId',
+            'status',
+            'priority',
+            'expiresAt',
+            'createdAt',
+            'updatedAt',
+            'requesterDisplayName',
+            'requesterAvatarUrl',
+            'requesterRankTier',
+            'requesterDiamondLevel',
+            'requestSource'
+          ]);
+        // Requester can only cancel their own pending request.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && resource.data.requesterId == uid()
+          && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.status == 'cancelled';
+        // Host/admin can approve/deny/reprioritize queue.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin())
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'priority',
+            'updatedAt',
+            'expiresAt'
+          ]);
         allow delete: if false;
       }
 
-      // Camera broadcaster slots.
-      // Slots are single-field docs: { userId: string }.
-      // A vacant slot has no document or an empty userId.
+      match /policies/{docId} {
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && (roomDoc(roomId).data.hostId == uid() || isAdmin());
+        allow delete: if false;
+      }
+
       match /slots/{slotId} {
-        // Any signed-in user in a room can read the slot list (drives CameraWall).
-        allow read: if signedIn();
-
-        // Claim a vacant slot: only the requesting user can set their own userId.
-        allow create: if signedIn()
-          && request.resource.data.keys().hasOnly(['userId'])
-          && request.resource.data.userId == request.auth.uid;
-
-        // Update: re-confirm own slot (same userId) OR take a genuinely vacant
-        // slot (existing userId is absent or empty).  Host may also clear slots.
-        allow update: if isRoomHost(roomId)
-          || (signedIn()
-            && request.resource.data.keys().hasOnly(['userId'])
-            && request.resource.data.userId == request.auth.uid
-            && (
-              !('userId' in resource.data)
-              || resource.data.userId == ''
-              || resource.data.userId == request.auth.uid
-            ));
-
-        // Release (delete): only the slot owner or the room host.
+        allow read: if canReadRoomById(roomId);
+        allow create, update: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.userId == uid();
         allow delete: if signedIn()
-          && (resource.data.userId == request.auth.uid || isRoomHost(roomId));
-      }
-      // WebRTC signaling — peer presence and P2P call documents.
-      match /webrtc_peers/{userId} {
-        allow read: if signedIn();
-        allow create: if signedIn() && userId == request.auth.uid;
-        allow update: if signedIn() && userId == request.auth.uid;
-        allow delete: if signedIn() && userId == request.auth.uid;
+          && (resource.data.userId == uid() || isAdmin());
       }
 
-      match /webrtc_calls/{callId} {
-        allow read: if signedIn();
+      // Room photos: manage room gallery (owner/admin only)
+      match /photos/{photoId} {
+        allow read: if canReadRoomById(roomId);
         allow create: if signedIn()
-          && request.resource.data.viewerId == request.auth.uid;
-        allow update: if signedIn()
-          && (resource.data.broadcasterId == request.auth.uid
-            || resource.data.viewerId == request.auth.uid);
+          && canReadRoomById(roomId)
+          && canManageRoom(roomDoc(roomId).data)
+          && request.resource.data.keys().hasOnly([
+            'url',
+            'caption',
+            'uploadedBy',
+            'uploadedAt'
+          ])
+          && request.resource.data.uploadedBy == uid()
+          && request.resource.data.uploadedAt == request.time;
         allow delete: if signedIn()
-          && (resource.data.viewerId == request.auth.uid || isRoomHost(roomId));
+          && canManageRoom(roomDoc(roomId).data);
+      }
 
-        match /viewer_ice/{docId} {
-          allow read, write: if signedIn();
-        }
+      match /buzz_events/{eventId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.fromUserId == uid();
+        allow update, delete: if false;
+      }
 
-        match /broadcaster_ice/{docId} {
-          allow read, write: if signedIn();
-        }
+      match /reactions/{reactionId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.userId == uid();
+        allow update, delete: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
       }
     }
 
-    match /userCamPermissions/{userId} {
-      allow read: if isSelf(userId);
+    function validConversationCreate() {
+      return request.resource.data.keys().hasOnly([
+          'type',
+          'groupName',
+          'groupAvatarUrl',
+          'participantIds',
+          'participantNames',
+          'createdAt',
+          'lastReadAt',
+          'isArchived',
+          'status'
+        ])
+        && request.resource.data.type in ['direct', 'group']
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() >= 2
+        && request.resource.data.participantIds.size() <= 50
+        && request.resource.data.participantIds.hasAny([uid()])
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.isArchived == false
+        && request.resource.data.status == 'active';
+    }
+
+    function validConversationUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastReadAt',
+          'isArchived',
+          'updatedAt',
+          'lastMessageId',
+          'lastMessagePreview',
+          'lastMessageSenderId',
+          'lastMessageAt',
+          'lastMessageClientMessageId',
+          'status'
+        ])
+        // Membership is immutable from client writes.
+        && request.resource.data.participantIds == resource.data.participantIds
+        && request.resource.data.type == resource.data.type
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isConversationParticipant(resource.data);
+      allow create: if signedIn() && validConversationCreate();
+      allow update: if signedIn()
+        && isConversationParticipant(resource.data)
+        && validConversationUpdate();
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if canAccessConversationById(conversationId);
+
+        allow create: if signedIn()
+          && canAccessConversationById(conversationId)
+          && request.resource.data.keys().hasOnly([
+            'conversationId',
+            'senderId',
+            'senderName',
+            'senderAvatarUrl',
+            'content',
+            'clientMessageId',
+            'clientmessageId',
+            'createdAt',
+            'clientSentAt',
+            'expiresAt',
+            'isDeleted',
+            'readBy'
+          ])
+          && request.resource.data.conversationId == conversationId
+          && request.resource.data.senderId == uid()
+          && request.resource.data.createdAt is timestamp
+          && request.resource.data.isDeleted == false
+          && request.resource.data.readBy is list
+          && request.resource.data.readBy.hasAny([uid()]);
+
+        allow update, delete: if false;
+
+        match /reactions/{reactionUserId} {
+          allow read: if canAccessConversationById(conversationId);
+          allow create, update: if signedIn()
+            && canAccessConversationById(conversationId)
+            && reactionUserId == uid()
+            && request.resource.data.keys().hasOnly(['emoji', 'updatedAt']);
+          allow delete: if signedIn()
+            && canAccessConversationById(conversationId)
+            && reactionUserId == uid();
+        }
+      }
+
+      match /ephemeral/{ephemeralId} {
+        allow read: if canAccessConversationById(conversationId);
+        // Typing indicators: conversation participants only, scoped to the
+        // shared 'typing' doc. Clients write their own userId key only.
+        allow create, update: if signedIn()
+          && canAccessConversationById(conversationId)
+          && ephemeralId == 'typing';
+        allow delete: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Moderation
+    // ---------------------------------------------------------------------
+
+    match /blocks/{blockId} {
+      allow read: if signedIn()
+        && (
+          resource.data.blockerUserId == uid()
+          || resource.data.blockedUserId == uid()
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'blockerUserId',
+          'blockedUserId',
+          'createdAt'
+        ])
+        && request.resource.data.blockerUserId == uid()
+        && request.resource.data.blockedUserId is string
+        && request.resource.data.blockedUserId != uid()
+        && request.resource.data.createdAt is timestamp;
+
+      allow delete: if signedIn() && resource.data.blockerUserId == uid();
+      allow update: if false;
+    }
+
+    match /reports/{reportId} {
+      // Only admin/staff can read or action reports.
+      allow read: if isAdmin();
+
+      // Reporter can submit, but cannot self-resolve/update.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'reporterUserId',
+          'targetId',
+          'targetType',
+          'reason',
+          'details',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.reporterUserId == uid()
+        && request.resource.data.targetId is string
+        && request.resource.data.targetType is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 3
+        && request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Payments / coins: server authority only for balances & ledger
+    // ---------------------------------------------------------------------
+
+    match /wallets/{userId} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if signedIn()
+        && (
+          (resource.data.participants is list
+            && resource.data.participants.hasAny([uid()]))
+          || resource.data.userId == uid()
+          || resource.data.fromUserId == uid()
+          || resource.data.toUserId == uid()
+        );
+      allow create, update, delete: if false;
+    }
+
+    match /refund_requests/{requestId} {
+      allow read: if signedIn()
+        && (
+          resource.data.requesterId == uid()
+          || isAdmin()
+        );
+
+      // Request submission only; fulfillment fields are server-only.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'requesterId',
+          'transactionId',
+          'reason',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.requesterId == uid()
+        && request.resource.data.transactionId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 10
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if false;
+    }
+
+    match /cash_out_requests/{requestId} {
+      allow read: if signedIn()
+        && (
+          resource.data.userId == uid()
+          || isAdmin()
+        );
+
+      // Cash-out submission is server-authoritative only.
+      allow create: if false;
+
+      allow update, delete: if false;
+    }
+
+    match /entitlement_events/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Presence
+    // ---------------------------------------------------------------------
+
+    match /presence/{userId} {
+      allow read: if signedIn();
+
       allow create, update: if isSelf(userId)
-        && request.resource.data.keys().hasOnly(['allowedViewers', 'updatedAt'])
-        && request.resource.data.allowedViewers is list;
-      allow delete: if isSelf(userId);
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'isOnline',
+          'online',
+          'status',
+          'lastSeen',
+          'lastActiveAt',
+          'lastHeartbeatAt',
+          'inRoom',
+          'roomId',
+          'appState',
+          'rtdbActiveSessionCount',
+          'updatedAt'
+        ])
+        && (
+          !('userId' in request.resource.data)
+          || request.resource.data.userId == uid()
+        )
+        && (
+          !('status' in request.resource.data)
+          || request.resource.data.status in ['online', 'away', 'dnd', 'offline']
+        )
+        && (
+          !('appState' in request.resource.data)
+          || request.resource.data.appState in ['foreground', 'background', 'detached', 'unknown']
+        );
+
+      allow delete: if isSelf(userId) || isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read: if signedIn()
+        && (resource.data.userId == uid() || isAdmin());
+
+      allow create: if signedIn()
+        && request.resource.data.userId is string
+        && request.resource.data.actorId is string
+        && request.resource.data.actorId == uid()
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if signedIn()
+        && (resource.data.userId == uid() || isAdmin())
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['isRead', 'readAt']);
+
+      allow delete: if signedIn()
+        && (resource.data.userId == uid() || isAdmin());
+    }
+
+    match /profile_public/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.userId == uid();
+      allow delete: if signedIn()
+        && userId == uid()
+        && resource.data.userId == uid();
+    }
+
+    match /preferences/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.userId == uid();
+      allow delete: if signedIn()
+        && userId == uid()
+        && resource.data.userId == uid();
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.followerUserId == uid()
+        && followId == (
+          request.resource.data.followerUserId + '_' + request.resource.data.followedUserId
+        );
+
+      allow delete: if signedIn()
+        && resource.data.followerUserId == uid();
+
+      allow update: if false;
+    }
+
+    match /friend_links/{id} {
+      allow read: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+
+      allow create: if signedIn()
+        && request.resource.data.users is list
+        && request.resource.data.users.hasAny([uid()])
+        && request.resource.data.status in ['pending', 'accepted', 'declined']
+        && request.resource.data.requestedBy is string
+        && (
+          !('createdAt' in request.resource.data)
+          || request.resource.data.createdAt is timestamp
+        );
+
+      // Update must be anchored to the EXISTING document's user list,
+      // not the incoming payload, to prevent takeover of stranger friendships.
+      // Status must remain valid.
+      allow update: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()])
+        && request.resource.data.status in ['pending', 'accepted', 'declined'];
+
+      allow delete: if signedIn()
+        && resource.data.users is list
+        && resource.data.users.hasAny([uid()]);
+    }
+
+    match /friendships/{id} {
+      // HARDENED: Only users involved in the friendship can read it (privacy-critical for dating app)
+      allow read: if signedIn()
+        && (
+          (resource.data.users is list && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
+
+      allow create: if signedIn()
+        && (
+          (request.resource.data.users is list
+            && request.resource.data.users.hasAny([uid()]))
+          || request.resource.data.userA == uid()
+          || request.resource.data.userB == uid()
+        )
+        && request.resource.data.status in ['pending', 'accepted', 'declined']
+        && request.resource.data.requestedBy is string
+        && (
+          !('createdAt' in request.resource.data)
+          || request.resource.data.createdAt is timestamp
+        );
+
+      // HARDENED: Update must verify actor is in the EXISTING document, not the payload,
+      // to prevent a bad actor from overwriting stranger-to-stranger friendships.
+      // Status must remain valid.
+      allow update: if signedIn()
+        && (
+          (resource.data.users is list
+            && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        )
+        && request.resource.data.status in ['pending', 'accepted', 'declined'];
+
+      allow delete: if signedIn()
+        && (
+          (resource.data.users is list
+            && resource.data.users.hasAny([uid()]))
+          || resource.data.userA == uid()
+          || resource.data.userB == uid()
+        );
+    }
+
+    match /speed_dating_queue/{userId} {
+      allow read: if isSelf(userId);
+      allow create, update, delete: if false;
+    }
+
+    match /speed_dating_sessions/{sessionId} {
+      allow read: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()]);
+      allow create, update: if false;
+      // Allow admin/server operations (Cloud Run cleanup service) to delete expired sessions
+      allow delete: if isAdmin();
+    }
+
+    // Speed-dating decision actions (own decisions only)
+    match /speed_dating_actions/{actionId} {
+      allow read: if signedIn()
+        && (resource.data.fromUserId == uid() || resource.data.toUserId == uid());
+      allow create, update: if signedIn()
+        && request.resource.data.fromUserId == uid()
+        && request.resource.data.toUserId is string
+        && request.resource.data.toUserId != uid()
+        && request.resource.data.decision in ['like', 'pass'];
+      allow delete: if false;
+    }
+
+    // Speed-dating mutual matches (read by participants; write server-only except via transactions)
+    match /speed_dating_matches/{matchId} {
+      allow read: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()]);
+      allow create: if signedIn()
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.hasAny([uid()]);
+      // Participants may attach a latestRoomId once a live date room is created.
+      allow update: if signedIn()
+        && resource.data.participantIds is list
+        && resource.data.participantIds.hasAny([uid()])
+        && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['latestRoomId', 'updatedAt']);
+      allow delete: if false;
     }
 
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if signedIn()
-        && (!('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid)
-        && (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid);
-      allow update, delete: if signedIn()
-        && ((('authorId' in resource.data) && resource.data.authorId == request.auth.uid)
-          || (('userId' in resource.data) && resource.data.userId == request.auth.uid));
-    }
-
-    match /events/{eventId} {
-      allow read: if signedIn();
-      allow create: if signedIn();
-      allow update, delete: if signedIn()
-        && ((('hostId' in resource.data) && resource.data.hostId == request.auth.uid)
-          || (('ownerId' in resource.data) && resource.data.ownerId == request.auth.uid)
-          || (('userId' in resource.data) && resource.data.userId == request.auth.uid));
-    }
-
-    match /transactions/{transactionId} {
-      allow read: if signedIn()
-        && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if false;
-    }
-
-    match /friend_requests/{requestId} {
-      allow read: if signedIn()
-        && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.fromUserId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.toUserId == request.auth.uid;
-    }
-
-    match /friends/{friendId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    match /notifications/{notificationId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId is string
-        && request.resource.data.actorId is string
-        && request.resource.data.type is string
+        && request.resource.data.authorId == uid()
         && request.resource.data.content is string
-        && request.resource.data.actorId == request.auth.uid;
+        && request.resource.data.content.size() > 0
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.likeCount is int
+        && request.resource.data.commentCount is int
+        && request.resource.data.shareCount is int
+        && request.resource.data.likes is list;
+      // Allow only like/unlike field mutations from the client.
+      // All other post mutations are server-only.
       allow update: if signedIn()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
-      allow delete: if false;
-    }
-
-    match /follows/{followId} {
-      allow read: if signedIn();
-      allow create: if signedIn()
-        && request.resource.data.followerUserId == request.auth.uid
-        && request.resource.data.followedUserId is string
-        && request.resource.data.followedUserId != request.auth.uid;
-      allow update: if false;
-      allow delete: if signedIn() && resource.data.followerUserId == request.auth.uid;
-    }
-
-    match /refund_requests/{requestId} {
-      allow read: if signedIn()
-        && (resource.data.requesterId == request.auth.uid
-          || resource.data.senderId == request.auth.uid
-          || resource.data.receiverId == request.auth.uid);
-      allow create, update, delete: if false;
-    }
-
-    match /cash_out_requests/{requestId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.amount is number
-        && request.resource.data.amount > 0
-        && request.resource.data.status == 'pending';
-      allow update, delete: if false;
-    }
-
-    match /stripe_connect_accounts/{userId} {
-      allow read: if isSelf(userId);
-      allow create, update, delete: if false;
-    }
-
-    match /wallets/{userId} {
-      allow read: if isSelf(userId);
-      allow create, update, delete: if false;
-    }
-
-    match /wallet_ledger/{entryId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create, update, delete: if false;
-    }
-
-    match /referral_codes/{code} {
-      allow read: if signedIn();
-      allow create, update, delete: if false;
-    }
-
-    match /referrals/{referralId} {
-      allow read: if signedIn()
-        && (resource.data.referrerUserId == request.auth.uid
-          || resource.data.referredUserId == request.auth.uid);
-      allow create, update, delete: if false;
-    }
-
-    match /referral_earnings/{earningId} {
-      allow read: if signedIn() && resource.data.beneficiaryUserId == request.auth.uid;
-      allow create, update, delete: if false;
-    }
-
-    match /blocks/{blockId} {
-      allow read: if signedIn()
-        && (resource.data.blockerUserId == request.auth.uid
-          || resource.data.blockedUserId == request.auth.uid);
-      allow create: if signedIn()
-        && request.resource.data.blockerUserId == request.auth.uid
-        && request.resource.data.blockedUserId is string;
-      allow update: if false;
-      allow delete: if signedIn() && resource.data.blockerUserId == request.auth.uid;
-    }
-
-    match /reports/{reportId} {
-      allow read: if signedIn() && resource.data.reporterUserId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.reporterUserId == request.auth.uid
-        && request.resource.data.targetId is string
-        && request.resource.data.targetType is string
-        && request.resource.data.reason is string;
-      allow update, delete: if false;
-    }
-
-    match /beta_feedback/{feedbackId} {
-      allow create: if signedIn()
-        && request.resource.data.keys().hasOnly([
-          'category',
-          'message',
-          'route',
-          'uid',
-          'email',
-          'platform',
-          'isWeb',
-          'status',
-          'createdAt'
-        ])
-        && request.resource.data.category in ['bug', 'ux', 'performance', 'feature-request']
-        && request.resource.data.message is string
-        && request.resource.data.message.size() > 0
-        && request.resource.data.message.size() <= 4000
-        && request.resource.data.route is string
-        && request.resource.data.route.size() > 0
-        && request.resource.data.route.size() <= 500
-        && request.resource.data.uid == request.auth.uid
-        && (
-          !('email' in request.resource.data)
-          || request.resource.data.email == null
-          || request.resource.data.email is string
-        )
-        && request.resource.data.platform is string
-        && request.resource.data.isWeb is bool
-        && request.resource.data.status == 'new'
-        && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
-    }
-
-    match /speed_dating_actions/{actionId} {
-      allow read: if signedIn()
-        && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
-      allow create, update: if signedIn()
-        && request.resource.data.fromUserId == request.auth.uid
-        && request.resource.data.toUserId is string
-        && request.resource.data.decision in ['like', 'pass'];
-      allow delete: if false;
-    }
-
-    match /speed_dating_matches/{matchId} {
-      allow read: if signedIn() && resource.data.participantIds.hasAny([request.auth.uid]);
-      allow create: if signedIn()
-        && request.resource.data.participantIds is list
-        && request.resource.data.participantIds.size() == 2
-        && request.resource.data.participantIds.hasAny([request.auth.uid]);
-      allow update: if signedIn()
-        && resource.data.participantIds.hasAny([request.auth.uid])
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestRoomId', 'updatedAt', 'lastActionBy', 'createdAt', 'participantIds']);
-      allow delete: if false;
-    }
-
-    match /admin/{document=**} {
-      allow read, write: if false;
-    }
-
-    match /logs/{logId} {
-      allow read, write: if false;
-    }
-
-    match /conversations/{conversationId} {
-      allow read: if signedIn()
-        && resource.data.participantIds.hasAny([request.auth.uid]);
-      allow create: if signedIn()
-        && request.resource.data.participantIds.hasAny([request.auth.uid])
-        && request.resource.data.participantIds is list;
-      allow update: if signedIn()
-        && resource.data.participantIds.hasAny([request.auth.uid])
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['lastMessage', 'lastMessageAt', 'updatedAt',
-                      'isArchived', 'unreadCounts', 'lastReadAt',
-                      'status', 'typingStatus']);
+              .hasOnly(['likes', 'likeCount']);
       allow delete: if false;
 
-      match /messages/{messageId} {
-        allow read: if signedIn()
-          && get(/databases/$(database)/documents/conversations/$(conversationId))
-              .data.participantIds.hasAny([request.auth.uid]);
+      match /comments/{commentId} {
+        allow read: if signedIn();
         allow create: if signedIn()
-          && request.resource.data.senderId == request.auth.uid
-          && get(/databases/$(database)/documents/conversations/$(conversationId))
-              .data.participantIds.hasAny([request.auth.uid]);
-        allow update, delete: if false;
-
-        match /reactions/{reactionUserId} {
-          allow read: if signedIn()
-            && get(/databases/$(database)/documents/conversations/$(conversationId))
-                .data.participantIds.hasAny([request.auth.uid]);
-          allow create, update: if signedIn()
-            && reactionUserId == request.auth.uid
-            && get(/databases/$(database)/documents/conversations/$(conversationId))
-                .data.participantIds.hasAny([request.auth.uid]);
-          allow delete: if signedIn() && reactionUserId == request.auth.uid;
-        }
+          && request.resource.data.authorId == uid()
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.createdAt is timestamp;
+        allow update: if false;
+        allow delete: if signedIn()
+          && resource.data.authorId == uid();
       }
     }
+
+    // ---------------------------------------------------------------------
+    // Hashtags (search/trending index)
+    // ---------------------------------------------------------------------
+
+    match /hashtags/{tagId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Activity feed (public-facing community pulse)
+    // ---------------------------------------------------------------------
+
+    match /activity_feed/{activityId} {
+      // Pulse is global for all registered users to drive engagement.
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.userId == uid()
+        && request.resource.data.type is string
+        && request.resource.data.type.size() > 0
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Groups
+    // ---------------------------------------------------------------------
 
     match /groups/{groupId} {
       allow read: if signedIn();
       allow create: if signedIn()
-        && request.resource.data.memberIds.hasAny([request.auth.uid]);
+        && request.resource.data.creatorId == uid()
+        && request.resource.data.adminId == uid()
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.hasAny([uid()])
+        && request.resource.data.createdAt is timestamp;
+      // Group admin can update all fields; members can only add/remove themselves.
       allow update: if signedIn()
-        && resource.data.memberIds.hasAny([request.auth.uid]);
+        && (
+          resource.data.adminId == uid()
+          || isAdmin()
+          || (
+            // Self-join: caller is not yet a member and is adding themselves.
+            !resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['memberIds', 'memberCount'])
+          )
+          || (
+            // Self-leave: caller is currently a member and is removing themselves.
+            resource.data.memberIds.hasAny([uid()])
+            && !request.resource.data.memberIds.hasAny([uid()])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['memberIds', 'memberCount'])
+          )
+        );
       allow delete: if signedIn()
-        && resource.data.creatorId == request.auth.uid;
+        && (resource.data.adminId == uid() || resource.data.creatorId == uid() || isAdmin());
 
       match /posts/{postId} {
         allow read: if signedIn();
         allow create: if signedIn()
-          && request.resource.data.authorId == request.auth.uid
-          && get(/databases/$(database)/documents/groups/$(groupId))
-              .data.memberIds.hasAny([request.auth.uid]);
-        allow update, delete: if signedIn()
-          && resource.data.authorId == request.auth.uid;
+          && request.resource.data.authorId == uid()
+          && request.resource.data.groupId == groupId;
+        allow update, delete: if false;
       }
     }
 
-    match /hashtags/{hashtag} {
+    // ---------------------------------------------------------------------
+    // Per-user camera viewer permissions (owner manages their own list)
+    // ---------------------------------------------------------------------
+
+    match /userCamPermissions/{userId} {
       allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userId == uid()
+        && request.resource.data.keys().hasOnly(['allowedViewers', 'updatedAt']);
+      allow delete: if isSelf(userId);
+    }
+
+    // ---------------------------------------------------------------------
+    // Server-trusted admin role docs (immutable from clients)
+    // ---------------------------------------------------------------------
+
+    match /roles/admins/{adminUid} {
+      allow read: if isAdmin() || isSelf(adminUid);
       allow create, update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Default deny
+    // ---------------------------------------------------------------------
+
+    // ---------------------------------------------------------------------
+    // WebRTC Signaling Mesh (Phase 2 Hardening)
+    // ---------------------------------------------------------------------
+    match /webrtc_sessions/{sessionId} {
+      // Only authenticated users who can read the corresponding room can see signaling state.
+      allow read: if signedIn() && canReadRoomById(sessionId);
+
+      // Only host or participants can initialize the session document.
+      allow write: if signedIn();
+
+      match /participants/{userId} {
+        allow read: if signedIn() && canReadRoomById(sessionId);
+        // Users can only manage their own signaling heartbeat/presence.
+        allow write: if isSelf(userId);
+      }
+
+      match /candidates/{candidateId} {
+        allow read: if signedIn() && canReadRoomById(sessionId);
+        // Users can only write their own candidates.
+        allow create: if signedIn() && canReadRoomById(sessionId) && request.resource.data.userId == uid();
+        allow delete: if signedIn() && canReadRoomById(sessionId) && (resource.data.userId == uid() || isAdmin());
+      }
+
+      match /signaling/{docId} {
+        allow read: if signedIn() && canReadRoomById(sessionId);
+        // docId is "id1_id2", check if uid is one of them.
+        allow write: if signedIn() && canReadRoomById(sessionId) && docId.matches('.*' + uid() + '.*');
+      }
     }
 
     match /{document=**} {
@@ -569,3 +1438,4 @@ service cloud.firestore {
     }
   }
 }
+

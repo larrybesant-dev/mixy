@@ -1,0 +1,195 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T18:37:07.8732167Z",
+    "gitRef":  null,
+    "gitSha":  null,
+    "runId":  null,
+    "runNumber":  null,
+    "releaseCandidateVerdict":  "PASS",
+    "releaseConfidenceScore":  100,
+    "releaseConfidenceBand":  "very_high",
+    "scoringModel":  {
+                         "modelVersion":  "rc_confidence_v1",
+                         "tierWeight":  {
+                                            "tier0":  0.5,
+                                            "tier1":  0.5
+                                        },
+                         "gateScoreFormula":  "gateScore = 0.75*passRate + 0.25*driftScore - failurePenalty(40 when failedRuns\u003e0)",
+                         "driftFormula":  "driftScore = 100 - min(100, avg((max-min)/avg)*100)"
+                     },
+    "gateScores":  [
+                       {
+                           "gate":  "tier0",
+                           "score":  100,
+                           "passRate":  100,
+                           "drift":  {
+                                         "averageVariabilityRatio":  0,
+                                         "maxVariabilityRatio":  0,
+                                         "driftScore":  100,
+                                         "topCases":  [
+                                                          {
+                                                              "caseId":  "PS-2",
+                                                              "minDurationMs":  4600,
+                                                              "avgDurationMs":  4600,
+                                                              "maxDurationMs":  4600,
+                                                              "variabilityRatio":  0
+                                                          },
+                                                          {
+                                                              "caseId":  "MC-2",
+                                                              "minDurationMs":  7914,
+                                                              "avgDurationMs":  7914,
+                                                              "maxDurationMs":  7914,
+                                                              "variabilityRatio":  0
+                                                          },
+                                                          {
+                                                              "caseId":  "MC-4",
+                                                              "minDurationMs":  6488,
+                                                              "avgDurationMs":  6488,
+                                                              "maxDurationMs":  6488,
+                                                              "variabilityRatio":  0
+                                                          }
+                                                      ]
+                                     }
+                       },
+                       {
+                           "gate":  "tier1",
+                           "score":  100,
+                           "passRate":  100,
+                           "drift":  {
+                                         "averageVariabilityRatio":  0,
+                                         "maxVariabilityRatio":  0,
+                                         "driftScore":  100,
+                                         "topCases":  [
+                                                          {
+                                                              "caseId":  "NR-4",
+                                                              "minDurationMs":  6249,
+                                                              "avgDurationMs":  6249,
+                                                              "maxDurationMs":  6249,
+                                                              "variabilityRatio":  0
+                                                          },
+                                                          {
+                                                              "caseId":  "NR-1",
+                                                              "minDurationMs":  6066,
+                                                              "avgDurationMs":  6066,
+                                                              "maxDurationMs":  6066,
+                                                              "variabilityRatio":  0
+                                                          },
+                                                          {
+                                                              "caseId":  "NR-2",
+                                                              "minDurationMs":  9971,
+                                                              "avgDurationMs":  9971,
+                                                              "maxDurationMs":  9971,
+                                                              "variabilityRatio":  0
+                                                          }
+                                                      ]
+                                     }
+                       }
+                   ],
+    "gates":  [
+                  {
+                      "gate":  "tier0",
+                      "pass":  true,
+                      "totalRuns":  60,
+                      "passedRuns":  60,
+                      "failedRuns":  0,
+                      "cycles":  5,
+                      "sourceReport":  "tier0_burn_in_20260413_070720.json",
+                      "caseSummary":  [
+                                          {
+                                              "CaseId":  "PS-4",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  12881
+                                          },
+                                          {
+                                              "CaseId":  "MC-3",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  4794
+                                          },
+                                          {
+                                              "CaseId":  "PS-3",
+                                              "Runs":  15,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  4862
+                                          },
+                                          {
+                                              "CaseId":  "MC-1",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  7203
+                                          },
+                                          {
+                                              "CaseId":  "MC-2",
+                                              "Runs":  15,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  7914
+                                          },
+                                          {
+                                              "CaseId":  "PS-2",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  4600
+                                          },
+                                          {
+                                              "CaseId":  "PS-1",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  4501
+                                          },
+                                          {
+                                              "CaseId":  "MC-4",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  6488
+                                          }
+                                      ]
+                  },
+                  {
+                      "gate":  "tier1",
+                      "pass":  true,
+                      "totalRuns":  50,
+                      "passedRuns":  50,
+                      "failedRuns":  0,
+                      "cycles":  5,
+                      "sourceReport":  "tier1_burn_in_20260413_073955.json",
+                      "caseSummary":  [
+                                          {
+                                              "CaseId":  "NR-2",
+                                              "Runs":  15,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  9971
+                                          },
+                                          {
+                                              "CaseId":  "NR-3",
+                                              "Runs":  15,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  7313
+                                          },
+                                          {
+                                              "CaseId":  "NR-4",
+                                              "Runs":  15,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  6249
+                                          },
+                                          {
+                                              "CaseId":  "NR-1",
+                                              "Runs":  5,
+                                              "Fails":  0,
+                                              "PassRate":  100,
+                                              "MaxDurationMs":  6066
+                                          }
+                                      ]
+                  }
+              ]
+}

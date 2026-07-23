@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "error": "#ffb4ab",
+                  "secondary-container": "#2ff801",
+                  "surface-container-highest": "#353534",
+                  "surface-container-high": "#2a2a2a",
+                  "on-error-container": "#ffdad6",
+                  "on-secondary-fixed-variant": "#095300",
+                  "surface-tint": "#d1bcff",
+                  "on-surface-variant": "#ccc3da",
+                  "secondary-fixed": "#79ff5b",
+                  "surface-dim": "#131313",
+                  "primary": "#d1bcff",
+                  "on-tertiary": "#003543",
+                  "inverse-primary": "#7212ff",
+                  "primary-container": "#7000ff",
+                  "on-secondary-container": "#0f6d00",
+                  "surface-variant": "#353534",
+                  "surface": "#131313",
+                  "on-error": "#690005",
+                  "secondary-fixed-dim": "#2ae500",
+                  "on-tertiary-container": "#89e0ff",
+                  "surface-bright": "#3a3939",
+                  "primary-fixed-dim": "#d1bcff",
+                  "on-tertiary-fixed-variant": "#004e60",
+                  "on-primary-container": "#ddcdff",
+                  "tertiary-fixed": "#b7eaff",
+                  "tertiary-fixed-dim": "#4cd6ff",
+                  "error-container": "#93000a",
+                  "outline": "#958da3",
+                  "secondary": "#d7ffc5",
+                  "on-primary-fixed": "#23005b",
+                  "on-surface": "#e5e2e1",
+                  "on-primary-fixed-variant": "#5700c9",
+                  "surface-container-low": "#1c1b1b",
+                  "background": "#131313",
+                  "surface-container": "#201f1f",
+                  "on-secondary-fixed": "#022100",
+                  "inverse-on-surface": "#313030",
+                  "tertiary-container": "#00647c",
+                  "inverse-surface": "#e5e2e1",
+                  "tertiary": "#4cd6ff",
+                  "outline-variant": "#4a4457",
+                  "on-background": "#e5e2e1",
+                  "on-tertiary-fixed": "#001f28",
+                  "surface-container-lowest": "#0e0e0e",
+                  "on-secondary": "#053900",
+                  "primary-fixed": "#e9ddff",
+                  "on-primary": "#3c0090"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "xs": "4px",
+                  "unit": "4px",
+                  "md": "16px",
+                  "lg": "24px",
+                  "xl": "40px",
+                  "margin": "24px",
+                  "sm": "8px",
+                  "gutter": "20px"
+          },
+          "fontFamily": {
+                  "body-md": ["Inter"],
+                  "body-lg": ["Inter"],
+                  "headline-lg": ["Space Grotesk"],
+                  "display": ["Space Grotesk"],
+                  "headline-md": ["Space Grotesk"],
+                  "label-sm": ["Inter"],
+                  "label-bold": ["Inter"]
+          },
+          "fontSize": {
+                  "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                  "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                  "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-20">
+<!-- Top App Bar -->
+<header class="bg-[#0D0D0D] dark:bg-[#0D0D0D] docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-purple-500/10 flex justify-between items-center w-full px-6 h-16 fixed">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 font-['Space_Grotesk']">MixVy</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-white/60 hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 duration-200">notifications</button>
+<button class="material-symbols-outlined text-white/60 hover:bg-white/5 transition-colors p-2 rounded-full active:scale-95 duration-200">sensors</button>
+<img alt="Creator profile avatar" class="w-8 h-8 rounded-full border border-white/20" data-alt="Close up portrait of a stylish young creator with neon lighting highlights on their face against a dark tech background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVUv3KZVZcLI6esZ8A5k4GDIWKpff9azuKsLARWgg0cDQLVP5swMYqd5QL0RgQmTiDdC1CQ7SEPR8_jPjcnFk7ZbsJqaAPcqHeiqiPM4PG52hc0WBYIq8ypsbLV5WmZEoqGvnMlPhkWmh-Ea0-1Atmm3Mgujc5iKGGYd_ZqhZbULvpxoPEdHJOcrJlgjSpAdJ4_-Ngp_8KLKqQ6GC65dwNmqxKAcyiDgHXMyKM43T9M5ZlDVuukkONzJAr8XEYB2LcYr6tFdfa67z0"/>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="pt-20 px-4">
+<!-- Section Header -->
+<div class="mb-6">
+<div class="flex items-center justify-between">
+<h1 class="font-headline-lg text-headline-lg text-white">Live Rooms</h1>
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-bold text-label-sm flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-on-secondary-container animate-pulse"></span>
+          LIVE
+        </span>
+</div>
+<p class="font-body-md text-white/40 mt-1">Happening right now on MixVy</p>
+</div>
+<!-- Live Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Live Card 1 (Large Featured) -->
+<div class="col-span-2 relative aspect-video rounded-xl overflow-hidden border border-white/10 group cursor-pointer">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="High-energy DJ performing at a cyberpunk nightclub with intense purple and blue laser beams and smoke effects" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwsGlrsozDLeohTRttqgVzkZZNyImVyoW_OXP-0hxlPCgMKyvkb8KHuEpHqQUD7-svLOJXszc68Bu8HERXa5cH3mugmER49usVv_5wlEv4lGavKPZQmSXTVckcVR6n2xQmfcngnCfOQLi4y1BC2LJpuD4PorE2PN0erAdh5GkBdbMotP5oYhb0-BDqbTHTCQAcFnbpGFYxbwroRFxcxuLjO2ZdIXJjnbb7oQs2l3q0QBabGccZflUoLu-6LfK6Twrqx2LkeuK-rVAm"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-error px-2 py-1 rounded text-[10px] font-bold text-on-error uppercase">1.2k watching</span>
+</div>
+<div class="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full border-2 border-primary" data-alt="Circular avatar of a musician with neon glasses and a vibrant purple aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV_AK0HzFtA3ywpHJlKlY6VK0Dq7DWP8OX56BNCxaMW72H3-Mmq24i6Z4z2HEyIK7G_IRcWWzmIrS5Fg2Unq49nEP5pRdCpZcQ-t_jCEhJ-w6XEOLddWIBCEtGUdyHM5mk9e1rkAG7-AC6jI5w2ClN1lcnGJ5mjvbkEP7pk1fTXWFJeTLHBmVs0-fnUeR4n0Se1ySzm3po2HJ2_8e6VLXyeuTZz4OI_Ft_o0brZARgDgDa1hPRjS83bqwH9IOYUqqW1WaXEfNYRkIm"/>
+<div>
+<h3 class="font-headline-md text-white text-base">Late Night Beats Session</h3>
+<p class="text-white/60 text-xs font-body-md">@neon_flow</p>
+</div>
+</div>
+<button class="bg-gradient-to-r from-purple-600 to-blue-500 text-white font-label-bold text-label-sm px-4 py-2 rounded-lg active:scale-95 transition-all shadow-lg shadow-purple-500/20">Join</button>
+</div>
+</div>
+<!-- Live Card 2 -->
+<div class="relative aspect-square rounded-xl overflow-hidden border border-white/10 glass-card">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="Retro gaming setup with glowing RGB keyboards and dual monitors displaying vibrant digital art in a dark room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACB1L_A77oUusTNPNUtY6RcjdbSyTXAXjGJ9BI_OuSxuKN_J2t1UOHKbuM6yNAX6dcaG8AKV6Z8oimXAtixpdSRGP7yCXK01MrGJuu7mD8b3m-J-YNd3UeeNkgp5vGrdGRQSspoUXylCTWdpnHkqggBvIW6EleV3csXarWmcfhFFi89aGOpiyAys9Kz9qYkTnJWTe6EgjQH8KSmKS9BOJsPiyoAFnKYZk6h08aNlYJSC1SNQkx6o_c26f9JrZpV-FXeLjLqWw9EBQb"/>
+<div class="absolute inset-0 bg-black/40"></div>
+<div class="absolute top-3 right-3">
+<span class="material-symbols-outlined text-white text-sm">more_vert</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-3 bg-black/60 backdrop-blur-md">
+<h4 class="text-white font-label-bold text-sm truncate">Retro Speedrun</h4>
+<p class="text-white/60 text-[10px] truncate">@pixel_master</p>
+<div class="mt-2 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWZyZ4nMzYDfb_zXCdxow7FBiecwcyos2MH_Rk73LIy7IAloDFxoh8IAcOQokmBuAgO1gD4MUOXxa6nHKH39Z07wrx-63E7Ydl7SltUGDc76s5QgwfsfgsMsSZp8zHqni6Z0uZ7sRyADhJmz1tVB43lmArxa86SKE4dAiZ6eRBBxrqACkzvYkkVxkm_NpnltMjG25RXgJyLDllFbsh6E4pabMxDcZYR_SQFoFFuXYNKrfTNWaA9-lKb_kJhmABBfDVi1uyiRmiSuT3"/>
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF01Ecl1EGnwYRgBQEMX700B1vxq9luXtmvkq9YMExw3X9qTaG0bfRwS-xN2kA3s5Iznly-75J6Bi2WDig-ftocA4SHxlpCpGRO9yX1uolzDoI5hvb2qwZzBoMudMYnE7FTpnTosTwaVleg_d-3QXGKm690G1sTKyvjvKtUvreoEI7mVFw4SYicsTN5eD-R6rTh9M2zIzEk-6QI1GquAOJ8uvPuBYpDSj2zQK1VrElnbfuQBpplEsUF-rJ0IeEH8A6RR9SyCcwoQWq"/>
+<div class="w-5 h-5 rounded-full border border-white/20 bg-surface-container flex items-center justify-center text-[8px] text-white">+12</div>
+</div>
+<button class="text-primary font-label-bold text-[10px] border border-primary/30 px-2 py-1 rounded">JOIN</button>
+</div>
+</div>
+</div>
+<!-- Live Card 3 -->
+<div class="relative aspect-square rounded-xl overflow-hidden border border-white/10 glass-card">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="Atmospheric concert stage with blue spotlight flares and a silhouetted crowd in the foreground" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDWE2md_KDkX7u6fxbDigNQsmE01KEMkW-dM3dWY2qVB3cTb1V2R5Cup_9bZLIrSSRNjXs9qW1Cn66xcxMTIn1SQbIBxFI9ql64Yz-UwPuT6hQzsPNAewZRtZbzg7-cBAKpYWASQFI-yWz2VesuzgCR24Aja9h3oUEzZIDFXM-qewREezXG6WmaGruWIm225o_76lYRjPaNLYV-YxjQPZ5933MtyQxvRo4pyuOo1T22jeyVHD_U8achPoulPG_YYv1l1_dUyODbXSZ"/>
+<div class="absolute inset-0 bg-black/40"></div>
+<div class="absolute top-3 right-3">
+<span class="material-symbols-outlined text-white text-sm">more_vert</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-3 bg-black/60 backdrop-blur-md">
+<h4 class="text-white font-label-bold text-sm truncate">Live Acoustic</h4>
+<p class="text-white/60 text-[10px] truncate">@melody_vibes</p>
+<div class="mt-2 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmIYA46oahMbRWElQVU3OV8KSoC8L3cWB3qlwcKnagclYinFWjWuyCczq18SEsvvjDvETiCqfR0nqxO9mSaqHqQIxej8est0CfbhpemoIkJ3Nn_FnvdJEIg8DpCtXTWXL52OWFkZXEFMhMPb2maFLwC-IJubSlNT23ptBQsXBGpYUzbFxFv-RHKS8b9z6OiJkCSe_1h0MHdYtx8hGYJhoLzOsFeuQHvC6R2YKmGVbCDFeH_JxXazlAw2wb-QY2om4tuCcSLbciOL_a"/>
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcFhchSELbVp4j3afgeL9Q__0O2MedGf0qSbPLCG_G-eJ7Yud0_51iwL28cRzmSb8jOjm3Hv3sXtLXxB6AlCEdy90MHojSyN05QxF2A6OvBTW6ppiW_BddkvR6FKQUqHVOFqJag7go6WKFkgWghwErX6w5NX8iJSGI0yXfc4PKBN--cwCo6EcNsyr18SEREGu7cE4k8gNCS9JQuZRepPG7GWx8GhmZPEGvfNbyihhfSWKXjnlOz8u5ut6N7ykiAa-7AQYcRIkNph6i"/>
+</div>
+<button class="text-primary font-label-bold text-[10px] border border-primary/30 px-2 py-1 rounded">JOIN</button>
+</div>
+</div>
+</div>
+<!-- Live Card 4 -->
+<div class="relative aspect-square rounded-xl overflow-hidden border border-white/10 glass-card">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="Dynamic close-up of a digital artist painting on a glowing tablet with vibrant neon colors and creative desk clutter" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl-w3iyq21Jf5iacOtLYj-GqCo1PhbK3ioYmBI5qWWiAbWiYlel_TiFK8SuxZCObaEv4Pfkc98l0z84ZJ9DhuvvjqCLHDukV7T3fNBaVhfEPe4dRGzS8ylIiRylp1ZeBQOaPWgEMgQMWkzxOB--pqHWu4zuUeRU-V6L_ZCPusZg1Uym7AA3W7ONCl6-EdAJEzNoj5LnlZR4Cbl9k8yRLpSy_7sssQeCVHnZr_JtpBLDcJfoLKzg4Iem_W9OPNIZESllFm8dlgc6OlE"/>
+<div class="absolute inset-0 bg-black/40"></div>
+<div class="absolute top-3 right-3">
+<span class="material-symbols-outlined text-white text-sm">more_vert</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-3 bg-black/60 backdrop-blur-md">
+<h4 class="text-white font-label-bold text-sm truncate">Digital Painting Q&amp;A</h4>
+<p class="text-white/60 text-[10px] truncate">@art_sphere</p>
+<div class="mt-2 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFXThSZS4vdp9Ws8vAF4-C1kNpWO_ss0HXQBNXPjI6yYvxx7QaVoHHKAQ4YPfRwfRhyiDVoQghQd-yj4pLR6JIWWuLtduGHDJQBpFXWWsbrGlOb9B0TJ87EndmLjt9vkhD0xIoUKV61wRe6jqGo5CBZMJQtybNSgSzYOxS95p-Gh_Fh9QofmdMnvJJGYnyqnSDB4i1aBLOaO-a0l86ZOv_gTscmf0jT4k-tRAaW-vFvHRFfGcfQnCLRvajCDa_NbpdkbNK8r_ZgH45"/>
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFDDt7tQdhwdkmjRhVmB9_gcQX8uoiHLUXQvrnyv5NW2rp7kNIaqSZ6-H-MZri2g2Ggy-MeLod7q_AVOMKVQHf6DoEAkKlcvGqME0nuBaU0jfNGLnRGJcK84Bio7jxvIsm6tQjyjfx1r8tzIRQBzeXZfQ2wsHLCL7BLYviugAsUBPN9306Jgg8R7wzBkl6SGJ85jt9cgaM7OaOiwPWwTv7rxM3yVUhZ1QivhcAbmzw6HLoEVvgM2AgdcHCf9XaGK4ozuP0MAKIds_P"/>
+</div>
+<button class="text-primary font-label-bold text-[10px] border border-primary/30 px-2 py-1 rounded">JOIN</button>
+</div>
+</div>
+</div>
+<!-- Live Card 5 -->
+<div class="relative aspect-square rounded-xl overflow-hidden border border-white/10 glass-card">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="Cinematic shot of professional esports arena with competitors in glowing seats and massive digital screens in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIAtEy4CM57TRqawP9qxYwzJOFfrunTlmXGDii79k41NLQeX_ydArCkK-VHFABZM-AehuHsx7tRcIKK8-Gm_EsuZOMQcedvSsE5-lcNYbRF5XtLAqM33WVPSljbH5uQqTlAEFEe-sNySPtgj4nh1Y8i2uEa7u1b4oOY_7giK0l7y8QAKdyCZxjE54OtRqzS0QnzcSsI9dQiC2Xhqj4NV1HMM3yO6vw91aSPpkjuSjZaPAisjNLE384Qr5Yz_4_kgv73mgJ8VegPcP_"/>
+<div class="absolute inset-0 bg-black/40"></div>
+<div class="absolute top-3 right-3">
+<span class="material-symbols-outlined text-white text-sm">more_vert</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 p-3 bg-black/60 backdrop-blur-md">
+<h4 class="text-white font-label-bold text-sm truncate">Championship Final</h4>
+<p class="text-white/60 text-[10px] truncate">@esports_hub</p>
+<div class="mt-2 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt4PN87iB0wHYaiVUQvhRMUqF89dBflPTVEW5NNx8cuEj7WsHIzH_h3swOJZeXRH6CLDm2WgOMd3Pa2rJ7M9xLToJ0H0YsmsnRUTiK_jeTl74EumKLLkme69FAM6JWDdrEMH08u4GDFEF1c_1QWomHjrY_0M9NKSliggrrwZQVNYM0ohjTjqsq-v-XXWS15oPmSu1Wqfy-US0nE9wtUcna2Nu3FWXpOiqFU559HmjH2IgGSOSVQp6Y65Jsyad0AQMpAP8mS3yp80S6"/>
+<img class="w-5 h-5 rounded-full border border-white/20" data-alt="Small user avatar circular photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpZ7aCXyn2hhthUjprSfuMQM6GvkLJOVyPNIjlMJOzuo-gjRmJGevdzODb4MnccfmCrmXUqRiVNSuUcBWReHMV8aDqZyXPyaZ42ori91lyE1EWfrDtwKZKWqQ4D2qc7UTUiFq1D4suAgcAkbMSJXLmYIvrlvBuSy3nBdcvVza6bLLJGyqSXeJa0-IGQdWE81BIUtPZgSJJcTBYcIUmrMKVGGTYbt43__79579AouvDSJpTt35f5fbGPNB-FAaDXs2fZFYIZ29Pp6_5"/>
+</div>
+<button class="text-primary font-label-bold text-[10px] border border-primary/30 px-2 py-1 rounded">JOIN</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 h-16 bg-[#1A1A1A]/80 backdrop-blur-2xl flex justify-around items-center px-4 border-t border-white/5 z-50">
+<div class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-all duration-300">
+<span class="material-symbols-outlined">home_max</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px]">Home</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-all duration-300">
+<span class="material-symbols-outlined">search</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px]">Search</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-white font-bold relative">
+<div class="absolute -top-1 w-6 h-0.5 bg-purple-500 rounded-full"></div>
+<span class="material-symbols-outlined text-purple-500" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px]">Live</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-all duration-300">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px]">messages</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-white/40 hover:text-white/80 transition-all duration-300">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-['Space_Grotesk'] font-medium text-[10px]">Profile</span>
+</div>
+</nav>
+<!-- Floating Action Button -->
+<div class="fixed bottom-20 right-6 z-40">
+<button class="w-14 h-14 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-purple-500/40 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-white text-3xl">add</span>
+</button>
+</div>
+<style>
+    .glass-card {
+      background: rgba(26, 26, 26, 0.4);
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</body></html>

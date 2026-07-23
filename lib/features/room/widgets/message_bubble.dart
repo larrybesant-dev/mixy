@@ -1,18 +1,33 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/message_model.dart';
+import 'package:mixvy/features/messaging/models/message_model.dart';
+import 'rich_text_toolbar.dart';
 
 /// Live-room chat row styled like Paltalk – avatar on the left, then a column
 /// containing a header row (username + timestamp) and the message body below.
-/// All messages are left-aligned and full-width regardless of sender.
+/// All message are left-aligned and full-width regardless of sender.
+///
+/// System message (type == 'system') render as a centered italic separator row.
+/// Announcement message (type == 'announcement') render as a highlighted banner.
 class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
   final String? senderLabel;
+
   /// VIP level for the sender. Level ≥1 shows a bronze/silver/gold name colour.
   final int senderVipLevel;
+
   /// Optional avatar URL for the sender's profile picture.
   final String? senderAvatarUrl;
+
+  /// Whether the sender currently has cam enabled in the room.
+  final bool senderCamOn;
+
+  /// Called when the user taps the avatar or sender name. Receives the senderId.
+  final void Function(String senderId)? onTapSender;
+
+  /// Called when the user taps the sender cam indicator.
+  final void Function(String senderId)? onTapCam;
 
   const MessageBubble({
     super.key,
@@ -21,6 +36,9 @@ class MessageBubble extends StatelessWidget {
     this.senderLabel,
     this.senderVipLevel = 0,
     this.senderAvatarUrl,
+    this.senderCamOn = false,
+    this.onTapSender,
+    this.onTapCam,
   });
 
   String _formatClock(DateTime value) {
@@ -38,7 +56,120 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedSenderLabel = senderLabel?.trim().isNotEmpty == true
+    // --- System event row (join/leave/cam-on/off) ---
+    if (message.type == 'system') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        child: Row(
+          children: [
+            Expanded(
+              child: Divider(
+                color: Colors.white.withValues(alpha: 0.10),
+                height: 1,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              message.content,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.45),
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Divider(
+                color: Colors.white.withValues(alpha: 0.10),
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // --- Announcement banner ---
+    if (message.type == 'announcement') {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0x22D4A853),
+          border: Border.all(color: const Color(0x55D4A853)),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.campaign_outlined,
+              color: Color(0xFFD4A853),
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message.content,
+                style: const TextStyle(
+                  color: Color(0xFFF2EBE0),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (message.type == 'private') {
+      final String safeSenderLabel = senderLabel?.trim().isNotEmpty == true
+          ? senderLabel!.trim()
+          : message.senderId;
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0x223A2B10),
+          border: Border.all(color: const Color(0x55D4A853)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.lock_outline, size: 14, color: Color(0xFFD4A853)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    safeSenderLabel,
+                    style: const TextStyle(
+                      color: Color(0xFFD4A853),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  _buildMessageBody(message.content),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _formatClock(message.sentAt),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.45),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final String resolvedSenderLabel = (senderLabel != null && senderLabel!.trim().isNotEmpty)
         ? senderLabel!.trim()
         : (isMe ? 'You' : message.senderId);
 
@@ -46,13 +177,17 @@ class MessageBubble extends StatelessWidget {
     final Color nameColor = (senderVipLevel > 0 && vipC != Colors.transparent)
         ? vipC
         : (isMe
-            ? const Color(0xFF9B8FFF) // soft purple for own messages
-            : Colors.white.withValues(alpha: 0.90));
+              ? const Color(0xFF9B8FFF) // soft purple for own message
+              : Colors.white.withValues(alpha: 0.90));
 
-    // Subtle left-border tint for own messages, none for others.
+    // Subtle left-border tint for own message, none for others.
     final Color? rowTint = isMe
         ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.10)
         : null;
+
+    final String firstLetter = resolvedSenderLabel.isNotEmpty
+        ? resolvedSenderLabel[0].toUpperCase()
+        : '?';
 
     return Container(
       color: rowTint,
@@ -60,26 +195,29 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: Colors.grey.shade800,
-            backgroundImage: (senderAvatarUrl != null &&
-                    senderAvatarUrl!.isNotEmpty)
-                ? NetworkImage(senderAvatarUrl!)
+          // Avatar — tappable to view profile
+          GestureDetector(
+            onTap: onTapSender != null
+                ? () => onTapSender!(message.senderId)
                 : null,
-            child: (senderAvatarUrl == null || senderAvatarUrl!.isEmpty)
-                ? Text(
-                    resolvedSenderLabel.isNotEmpty
-                        ? resolvedSenderLabel[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : null,
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey.shade800,
+              backgroundImage:
+                  (senderAvatarUrl != null && senderAvatarUrl!.isNotEmpty)
+                  ? NetworkImage(senderAvatarUrl!)
+                  : null,
+              child: (senderAvatarUrl == null || senderAvatarUrl!.isEmpty)
+                  ? Text(
+                      firstLetter,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(width: 8),
           // Content column
@@ -92,17 +230,41 @@ class MessageBubble extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(
-                        resolvedSenderLabel,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: nameColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                          height: 1.4,
+                      child: GestureDetector(
+                        onTap: onTapSender != null
+                            ? () => onTapSender!(message.senderId)
+                            : null,
+                        child: Text(
+                          resolvedSenderLabel,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: nameColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ),
+                    if (senderCamOn) ...[
+                      const SizedBox(width: 6),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: onTapCam != null
+                            ? () => onTapCam!(message.senderId)
+                            : (onTapSender != null
+                                  ? () => onTapSender!(message.senderId)
+                                  : null),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.videocam,
+                            size: 14,
+                            color: Color(0xFFC45E7A),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 6),
                     Text(
                       _formatClock(message.sentAt),
@@ -114,15 +276,8 @@ class MessageBubble extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Message body
-                Text(
-                  message.content,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
+                // message body — parse markup when tags present
+                _buildMessageBody(message.content),
               ],
             ),
           ),
@@ -130,5 +285,26 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildMessageBody(String content) {
+    const baseStyle = TextStyle(
+      color: Color(0xEBFFFFFF),
+      fontSize: 13,
+      height: 1.4,
+    );
+    // Quick check: markup tags present?
+    if (content.contains('[b]') ||
+        content.contains('[i]') ||
+        content.contains('[u]') ||
+        content.contains('[s]') ||
+        content.contains('[color=')) {
+      return RichText(
+        text: RichTextParser.parse(content, baseStyle: baseStyle),
+      );
+    }
+    return Text(content, style: baseStyle);
+  }
 }
+
+
 

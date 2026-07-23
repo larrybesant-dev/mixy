@@ -10,3 +10,6 @@ class MixVyEconomyConfig {
   static const int defaultCoinPackageSize = 1000;
   static const String defaultCurrency = 'usd';
 }
+
+
+

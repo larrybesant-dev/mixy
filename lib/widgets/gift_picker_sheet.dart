@@ -55,7 +55,7 @@ class _GiftPickerSheetContentState
     extends ConsumerState<_GiftPickerSheetContent> {
   RoomGiftItem? _selected;
   bool _sending = false;
-  String? _errorMessage;
+  String? _errormessage;
 
   Future<void> _send() async {
     final gift = _selected;
@@ -66,12 +66,13 @@ class _GiftPickerSheetContentState
 
     setState(() {
       _sending = true;
-      _errorMessage = null;
+      _errormessage = null;
     });
 
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('sendDirectGift');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'sendDirectGift',
+      );
       await callable.call<Map<String, dynamic>>({
         'receiverId': widget.recipientId,
         'giftId': gift.id,
@@ -80,9 +81,9 @@ class _GiftPickerSheetContentState
       });
       if (mounted) Navigator.of(context).pop();
     } on FirebaseFunctionsException catch (e) {
-      if (mounted) setState(() => _errorMessage = e.message ?? e.code);
+      if (mounted) setState(() => _errormessage = e.message ?? e.code);
     } catch (e) {
-      if (mounted) setState(() => _errorMessage = 'Failed to send gift.');
+      if (mounted) setState(() => _errormessage = 'Failed to send gift.');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -110,7 +111,9 @@ class _GiftPickerSheetContentState
           ),
           Text(
             'Send a gift to ${widget.recipientName}',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           // Gift grid
@@ -167,10 +170,10 @@ class _GiftPickerSheetContentState
               },
             ),
           ),
-          if (_errorMessage != null) ...[
+          if (_errormessage != null) ...[
             const SizedBox(height: 8),
             Text(
-              _errorMessage!,
+              _errormessage!,
               style: TextStyle(color: theme.colorScheme.error),
               textAlign: TextAlign.center,
             ),
@@ -187,9 +190,11 @@ class _GiftPickerSheetContentState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.card_giftcard),
-              label: Text(_selected == null
-                  ? 'Pick a gift'
-                  : 'Send ${_selected!.displayName} for ${_selected!.coinCost} coins'),
+              label: Text(
+                _selected == null
+                    ? 'Pick a gift'
+                    : 'Send ${_selected!.displayName} for ${_selected!.coinCost} coins',
+              ),
             ),
           ),
         ],
@@ -197,3 +202,6 @@ class _GiftPickerSheetContentState
     );
   }
 }
+
+
+

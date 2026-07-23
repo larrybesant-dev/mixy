@@ -1,0 +1,28 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T22:34:47.7350650Z",
+    "snapshotVersion":  "policy_analysis_snapshot_v1",
+    "schemaVersion":  "1.0.0",
+    "source":  {
+                   "runId":  null,
+                   "runNumber":  null,
+                   "gitRef":  null,
+                   "gitSha":  null
+               },
+    "metrics":  {
+                    "driftScore":  0,
+                    "tier":  "pass",
+                    "action":  "proceed_with_observation",
+                    "jaccard":  1,
+                    "differingThresholdCount":  0,
+                    "boundaryBehavior":  "insufficient_history",
+                    "entryCount":  1,
+                    "structuralSimilarity":  1,
+                    "boundaryFragmentation":  0,
+                    "temporalDrift":  0
+                },
+    "artifactPaths":  {
+                          "policyDriftScore":  "tools/reports/policy_drift_score.json",
+                          "policySurfaceDiff":  "tools/reports/policy_surface_diff.json",
+                          "boundaryDrift":  "tools/reports/boundary_drift_analysis.json"
+                      }
+}

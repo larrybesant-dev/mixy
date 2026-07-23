@@ -3,3 +3,6 @@ class WebPopoutService {
   void openWhisperWindow(String userId, String username) {}
   void openCamWindow(String userId) {}
 }
+
+
+

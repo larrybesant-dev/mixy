@@ -1,0 +1,10 @@
+{
+  "generatedAtUtc": "2026-04-13T13:48:14.6605047Z",
+  "requestVersion": "policy_approval_request_v1",
+  "status": "pending_manual_approval",
+  "mode": "recommend-only",
+  "proposedThresholdsPath": "tools/reports/proposed_thresholds.local.json",
+  "snapshotPath": "tools/reports/rc_policy_snapshot_v1.local.json",
+  "approvalRequired": true,
+  "approvalNotes": "Review delta and justification signals; approve promotion in a separate manual process."
+}

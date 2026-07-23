@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MixVy - Search (Elite)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "gold": "#D4AF37",
+                        "gold-light": "#F9E6A1",
+                        "gold-dim": "#8C7326",
+                        "obsidian": "#0D0D0D",
+                        "surface": "#131313",
+                        "surface-container": "#1A1A1A",
+                        "primary": "#D4AF37",
+                        "on-surface": "#E5E2E1",
+                        "outline": "#4D4D4D"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "margin": "24px",
+                        "xl": "40px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "serif": ["Playfair Display", "serif"],
+                        "headline-md": ["Playfair Display", "serif"],
+                        "label-bold": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "display": ["Playfair Display", "serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "headline-lg": ["Playfair Display", "serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .gold-glow:focus-within {
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            border-color: #D4AF37;
+        }
+        .gold-gradient-text {
+            background: linear-gradient(to right, #D4AF37, #F9E6A1, #D4AF37);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .live-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(1.1); }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-obsidian text-on-surface font-body-md overflow-x-hidden antialiased">
+<!-- TopAppBar (from COMPONENTS_12) -->
+<header class="bg-black/90 backdrop-blur-xl fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 border-b border-yellow-900/30 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-black italic text-yellow-500 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)] font-serif tracking-tight">MixVy</span>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search Bar (on_right mandate) -->
+<div class="hidden md:flex items-center bg-black/40 rounded px-4 py-2 w-80 border border-yellow-900/30 gold-glow transition-all">
+<span class="material-symbols-outlined text-yellow-500/50 mr-2 text-xl">search</span>
+<input class="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-gray-600 focus:ring-0" placeholder="Search the collection..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-gray-400 hover:text-yellow-200 hover:bg-yellow-900/20 p-2 rounded transition-all duration-300 active:opacity-80 scale-95">notifications</button>
+<button class="material-symbols-outlined text-gray-400 hover:text-yellow-200 hover:bg-yellow-900/20 p-2 rounded transition-all duration-300 active:opacity-80 scale-95">diamond</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-yellow-500/30 ml-2">
+<img alt="Premium user profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIekrWCYbu9i_dSAmkeXh-8AdoPslf1oLqsGG6p9SbKSqD7wocTitO9ZrfM6HtToI1_8ua0XToXnfOpDBetb0kalzDtTAg5UyNClhLuWcc45huk_jVhVN1Auvz0IGkDsAzkW95-BV5gwqDpyNjiqcH7kHbPKOx6x_vlQLGJj2gTxH6lcybmS2BXodU4b4g7tg6b_JAnArQu5aHnepORL8ljjeSMc2VlC-ljnft5UrN03oddfe9DSX_vK8ofjeaKdWZatJ0poEnmNGi"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar (from COMPONENTS_12) -->
+<nav class="hidden md:flex bg-[#0D0D0D]/95 backdrop-blur-2xl fixed left-0 top-0 h-full border-r border-yellow-900/20 w-64 shadow-[10px_0_30px_rgba(0,0,0,0.8)] flex flex-col pt-20 pb-8 z-40 font-serif">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded border border-yellow-500/30 flex items-center justify-center bg-yellow-500/5">
+<span class="material-symbols-outlined text-yellow-500" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<div>
+<p class="text-sm font-bold text-yellow-500 uppercase tracking-widest">MixVy Elite</p>
+<p class="text-[10px] text-gray-500 tracking-wider">Kinetic Luxury</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-4 text-gray-500 px-6 py-3 hover:bg-yellow-500/5 hover:text-yellow-400 transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-sm tracking-wide">Home</span>
+</a>
+<a class="flex items-center gap-4 bg-gradient-to-r from-yellow-500/10 to-transparent text-yellow-500 border-l-4 border-yellow-500 px-6 py-3 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="text-sm tracking-wide">Search</span>
+</a>
+<a class="flex items-center gap-4 text-gray-500 px-6 py-3 hover:bg-yellow-500/5 hover:text-yellow-400 transition-colors" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="text-sm tracking-wide">messages</span>
+</a>
+<a class="flex items-center gap-4 text-gray-500 px-6 py-3 hover:bg-yellow-500/5 hover:text-yellow-400 transition-colors" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="text-sm tracking-wide">Profile</span>
+</a>
+</div>
+<div class="mt-auto px-6 space-y-4">
+<div class="pt-4 border-t border-yellow-900/10 space-y-1">
+<a class="flex items-center gap-4 text-gray-600 px-2 py-2 hover:text-yellow-400 transition-colors text-xs" href="#">
+<span class="material-symbols-outlined text-sm">settings</span> Settings
+            </a>
+<a class="flex items-center gap-4 text-gray-600 px-2 py-2 hover:text-yellow-400 transition-colors text-xs" href="#">
+<span class="material-symbols-outlined text-sm">help</span> Support
+            </a>
+</div>
+<button class="w-full bg-yellow-500 text-black py-3 rounded text-xs font-bold uppercase tracking-widest active:scale-95 transition-all shadow-[0_4px_15px_rgba(212,175,55,0.2)]">
+            Go Live
+        </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 pt-24 pb-12 px-6 lg:px-margin">
+<!-- Premium Live Rooms Section -->
+<section class="mb-16">
+<div class="flex justify-between items-end mb-8 border-b border-yellow-900/20 pb-4">
+<div>
+<h2 class="font-headline-lg text-4xl text-white font-serif mb-1 italic">Live Salons</h2>
+<p class="text-gray-500 text-xs uppercase tracking-[0.2em]">Exclusive real-time broadcasts</p>
+</div>
+<button class="text-yellow-500 text-xs font-bold tracking-widest uppercase flex items-center gap-2 hover:text-yellow-300 transition-colors">
+                Explore All <span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Featured Premium Live -->
+<div class="md:col-span-2 relative group overflow-hidden glass-card aspect-video lg:aspect-[21/9]">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI74B2VseZeOpLTO0wlnD6cmzyDO6nektaUOQcEEwU6c6VgvElAK3kgugpbVTUsRFCcBTJLpB8hJx_A8aUirCBlqzdOEyzyFHGmChrXif7fZ8k9FDdpb-sUJydAMecDVc6-4pRbxNg6QXpMGg_Bn5Qhc9djA9UZKD09AA2Qef9cRhjERGclIHu0Yh9h5kAyz3gcPAL1Cc0ghQ8n5djHhdK3Cw8BJ-whY5yZ0Hr7kzjRBxfPXv3CkaW0QopojZpGP_RjB6Htpq3-Jvx"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+<div class="absolute top-6 left-6">
+<span class="bg-yellow-500 text-black px-4 py-1 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-yellow-500/20">
+<span class="w-1.5 h-1.5 bg-black rounded-full live-pulse"></span>
+                        Live Now
+                    </span>
+</div>
+<div class="absolute bottom-8 left-8 right-8">
+<h3 class="text-white font-serif text-3xl mb-3 leading-tight tracking-tight">The Gilded Symphony: Underground Sessions</h3>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full border border-yellow-500/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeTZn9xS_B1eBlnip_sIi9owenKhv42I5iUP8QlCKP06BeisxQ-XSAIFpljUaGbGVh_d1II9m5W7XSFCNuTqkFW9vTDQXA7OGDSS7yktjO3EbmCMS4ohwSSh0uimsAV9lL3HoHCl_QzLUjQUvuC8hvTf-o18-eTikfN5HoIS_xgoIKTnQGs1OcehDs7UOS4URG56mxSGGS3aTbEBvMhiBKHJ6x5-bPT9jzhsUTGXW8e1r6NL02j7Dkw34c4A96fiW8VoUs-5wjkvBE"/>
+<span class="text-yellow-500/80 text-xs font-bold tracking-widest">@DJKINESIS</span>
+</div>
+<div class="flex items-center gap-2 text-gray-400 text-xs tracking-widest">
+<span class="material-symbols-outlined text-sm">group</span>
+                            12.4K
+                        </div>
+</div>
+</div>
+</div>
+<!-- Secondary Directory Cards -->
+<div class="flex flex-col gap-gutter">
+<div class="flex-1 glass-card p-6 flex flex-col justify-between border-t-2 border-t-yellow-500/40">
+<div>
+<span class="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-4 inline-block">Architecture</span>
+<h4 class="text-white font-serif text-xl leading-tight mb-2 italic">Minimalist Luxury: V0 Masterclass</h4>
+<p class="text-gray-500 text-xs leading-relaxed line-clamp-2">Exploring high-end interface design through the lens of kinetic typography.</p>
+</div>
+<div class="flex justify-between items-center pt-6">
+<div class="flex -space-x-3">
+<img class="w-8 h-8 rounded-full border-2 border-obsidian" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZLRV3WzKa2YbJQIMlzxdpUq5uQsMMcF7piOqOnA-zDOHrXEv4juWMSB-7HzwfTBRCXrj0zviK2VLQmXwYfVFG0JvOiUUSxH7GSqVnzEWTpZzO8LC8GwmGkjott2kOuDzwbgmdTCLmSZ5M6F2f-ssiGhHV91SyhBkVMIEQD8T7RbBKCT7bTk1IsdxCTvCcaRKlLyLTKvQUtkmGrdQtRx9fBaO409PN-heKj5eSPZE-wciDuE1thsyKvnDRqhnVrsUvTXpWVAhXJdVc"/>
+<img class="w-8 h-8 rounded-full border-2 border-obsidian" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnSrmrwAVPHslwe5JpOenWivz_R9JHCsuE6eVxfaXiPPtmYg06w_jkaqNjiM7DtL_elM8Xkse8nbOfg-IEOvtgzyRwikOXwH_03whddC6rZsmFeD7EbM4V3XkoXc-N6TPQbYkkMldUi-kEKfHhFBWnBjsMuUf6sv_vVVB3HaHUUQyItsR6zTjICWJab1Ed7GLJRn7FSWX9cudmwL2qJKbZRkG6_otL3beLgEqYc3M-5bxI0dCHD8lu9rM-7VRVtywpkEo4vnjYHyap"/>
+</div>
+<span class="text-yellow-500 text-[10px] font-bold tracking-[0.2em] border-b border-yellow-500/30 pb-0.5">ENTER ROOM</span>
+</div>
+</div>
+<div class="flex-1 glass-card overflow-hidden group relative">
+<img class="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-40 transition-opacity duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzTVi03C-OzRT3by-yNrsWkna-toZWE6Y6VkDp3wsENsMZ2sHTLkWTCEEFF55spa2-3qFFW77zgYNfnxKFf2s5qKqiOaYL2fGCNed1rstW-4Lc7lQ0kWZICvgWLYODOasaUAy8TGUMo9yyxwG8_PU-jc5QCOpatBbW4RLTNxITVNtO6AjlmMNk49_oPaC0hBhpw93P5kp_mglwKaPr-tEyAP7i4RUbwvGHZPmqoQdYWM6-rtF7kup3Edqn1Re_wVrkJvQLx8oC-owO"/>
+<div class="relative p-6 h-full flex flex-col justify-end">
+<h4 class="text-white font-serif text-lg leading-tight mb-2">Cyber-Chateau Tournament</h4>
+<p class="text-yellow-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+<span class="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
+                            842 observers
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Curated Directory Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<!-- Elite People -->
+<section class="lg:col-span-2">
+<div class="flex justify-between items-center mb-8 border-b border-yellow-900/10 pb-4">
+<h2 class="font-serif text-2xl text-white italic">Curated Members</h2>
+<button class="text-gray-600 text-[10px] font-bold uppercase tracking-widest hover:text-yellow-500 transition-colors">Refresh Directory</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Member 1 -->
+<div class="glass-card p-5 rounded hover:bg-yellow-500/5 transition-all group cursor-pointer border border-yellow-900/20">
+<div class="flex items-center gap-5">
+<div class="relative">
+<div class="w-16 h-16 rounded-full border-2 border-yellow-500 overflow-hidden shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbNi954rirkZ79kLNqIf3Nx3y91gdXHgvZWmmgyZcSpN18H_PA-MbnTvaPqGuxcBkcPmM7-_tAgQ9zcCFnBSkAvnxk-HAs501CyQeRpqd6GXD-oCjwSmPNzY83sascMFMuporAIFOgsQ66mrybTJyW51MI4ndEWb750jxRDr0ZMqruKu-YaDwkwzvBeC57FyhuCidV7JBOsI1KmMeelWngF5I2nJaSoWv3kO_2Ujh2Rnxjo3KDyhuVZ00STUCFDkzPiTzWxl3GfLCt"/>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-yellow-500 rounded-full border-2 border-obsidian"></div>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-serif text-lg leading-none mb-1">Luna X</h5>
+<p class="text-yellow-500/40 text-[10px] font-bold uppercase tracking-tighter">@LUNAX_DIGITAL</p>
+</div>
+<button class="px-5 py-2 bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest rounded active:scale-95 transition-transform">Invite</button>
+</div>
+</div>
+<!-- Member 2 -->
+<div class="glass-card p-5 rounded hover:bg-yellow-500/5 transition-all group cursor-pointer border border-yellow-900/20">
+<div class="flex items-center gap-5">
+<div class="relative">
+<div class="w-16 h-16 rounded-full border-2 border-gray-800 overflow-hidden">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvC6Z33Vsij5Tx397Kha7T91PH3kkSZl3_WUnApvO01ggRaKdVXsgVLH-_94GzTxPsJUJH2ft7ZnyAZHZARimgPPTLv1qvnC8VkYGPyEu9v7CPLZnHNBxb_P6xIkXhbsFwMxwbfQOSTXlpmHcRT1cFHSLoFfzGq4mNtEUq6lQJD7iG-fv7ZGmh1Gwg9ackRhlVksGRgOkOZ1ioIT8m0lkBxmpYrxeSRmkb035jSm8g9U0cvZ_FZL2stz8MB8sPLO_mouvrUZeGtSF_"/>
+</div>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-serif text-lg leading-none mb-1">Vector Core</h5>
+<p class="text-yellow-500/40 text-[10px] font-bold uppercase tracking-tighter">@VCORE_LIVE</p>
+</div>
+<button class="px-5 py-2 border border-yellow-500/30 text-yellow-500 text-[10px] font-black uppercase tracking-widest rounded hover:bg-yellow-500/10 transition-colors active:scale-95">Follow</button>
+</div>
+</div>
+<!-- Member 3 -->
+<div class="glass-card p-5 rounded hover:bg-yellow-500/5 transition-all group cursor-pointer border border-yellow-900/20">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-full border border-yellow-900/40 overflow-hidden">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIc2lx0XQwY_TjnirJJ6JEYiRvPr5Ng6kx6gsDEh8FVNsqTelpdea00F0363tZ5ZGKkA0qE08HYsWqcPAN2QTuAD6oZKln_naWs3QzoAnn2cM-sV9H812bGB6W-K5B4KEYdxGqv34GdQ9EoMojjJQPneavmCp6YisREKl130QxqjTMc_TpUxUkTC-wqnSC2KgIgOjNeCbQVKQk90dM9COUDuFckxpoCaK6iCJwEFOe5gnb9etYcuZqQVwF0qhU-DdB9iOwL9Yitfnn"/>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-serif text-lg leading-none mb-1">Azura</h5>
+<p class="text-yellow-500/40 text-[10px] font-bold uppercase tracking-tighter">@AZURA_WAVES</p>
+</div>
+<button class="px-5 py-2 border border-yellow-500/30 text-yellow-500 text-[10px] font-black uppercase tracking-widest rounded hover:bg-yellow-500/10 transition-colors active:scale-95">Follow</button>
+</div>
+</div>
+<!-- Member 4 -->
+<div class="glass-card p-5 rounded hover:bg-yellow-500/5 transition-all group cursor-pointer border border-yellow-900/20">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-full border border-yellow-900/40 overflow-hidden">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTgwPamw3hKPSWDbMlRUaFqyvWMqQmAdtYJBFh4kkRwle-W9Op27SgBPSY5hWucDjfMpM8__Ol4MokZMJcnM54YMNy1mh3Iy7_hUfQJWxz0h8kFeirGQ0SUhuY74vMwBgOPSNoh6FOfd4UbtRXOGil8xXhTJyicZqYYlyeX2YAvekNP2zCq3ByeN0_7YYOqdb0cILY6ohUlckFSa3NH7p7GsvewQ0V1uxq689eZZuHlnRQhhlaYnlyS6Am_Dx_Do8xocpOVQ1L5htO"/>
+</div>
+<div class="flex-1">
+<h5 class="text-white font-serif text-lg leading-none mb-1">Moro</h5>
+<p class="text-yellow-500/40 text-[10px] font-bold uppercase tracking-tighter">@MORO_BEATS</p>
+</div>
+<button class="px-5 py-2 border border-yellow-500/30 text-yellow-500 text-[10px] font-black uppercase tracking-widest rounded hover:bg-yellow-500/10 transition-colors active:scale-95">Follow</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Prestige Trending -->
+<aside>
+<div class="glass-card rounded overflow-hidden flex flex-col h-full border-l-4 border-l-yellow-500">
+<div class="p-8 border-b border-yellow-900/10">
+<h2 class="font-serif text-2xl text-white italic">Trending Rare</h2>
+<p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">High-value interactions</p>
+</div>
+<div class="p-0">
+<div class="group flex flex-col p-8 hover:bg-yellow-500/5 transition-colors border-b border-yellow-900/5 cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Technology</span>
+<span class="material-symbols-outlined text-gray-700 text-sm">more_vert</span>
+</div>
+<p class="text-white font-serif text-lg mb-1 italic">#EliteCreators2024</p>
+<p class="text-gray-600 text-[10px] font-bold uppercase tracking-widest">154.2k active salons</p>
+</div>
+<div class="group flex flex-col p-8 hover:bg-yellow-500/5 transition-colors border-b border-yellow-900/5 cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Culture</span>
+<span class="material-symbols-outlined text-gray-700 text-sm">more_vert</span>
+</div>
+<p class="text-white font-serif text-lg mb-1 italic">Obsidian Aesthetic</p>
+<p class="text-gray-600 text-[10px] font-bold uppercase tracking-widest">92k prestige posts</p>
+</div>
+<div class="group flex flex-col p-8 hover:bg-yellow-500/5 transition-colors border-b border-yellow-900/5 cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Music</span>
+<span class="material-symbols-outlined text-gray-700 text-sm">more_vert</span>
+</div>
+<p class="text-white font-serif text-lg mb-1 italic">Orchestral Minimalism</p>
+<p class="text-gray-600 text-[10px] font-bold uppercase tracking-widest">42.5k refined listeners</p>
+</div>
+</div>
+<div class="mt-auto p-8 bg-yellow-500/5">
+<button class="w-full text-center text-[10px] font-black uppercase tracking-widest text-yellow-500 hover:text-white transition-colors">Show more archive</button>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Mobile Bottom Navigation Shell -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/95 backdrop-blur-xl border-t border-yellow-900/30 z-50 flex justify-around items-center">
+<a class="flex flex-col items-center gap-1 text-gray-600" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[8px] uppercase font-bold tracking-widest">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-yellow-500" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="text-[8px] uppercase font-bold tracking-widest">Search</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-600" href="#">
+<div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center -mt-8 shadow-lg shadow-yellow-500/40">
+<span class="material-symbols-outlined text-black font-bold">add</span>
+</div>
+<span class="text-[8px] uppercase font-bold tracking-widest mt-1">Live</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-600" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="text-[8px] uppercase font-bold tracking-widest">Inbox</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-600" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="text-[8px] uppercase font-bold tracking-widest">Elite</span>
+</a>
+</div>
+</body></html>

@@ -1,0 +1,15 @@
+﻿{
+    "contract_version":  "1.0.0",
+    "artifact_mode":  "primary",
+    "generatedAtUtc":  "2026-04-13T15:40:22.1582123Z",
+    "requestVersion":  "policy_approval_request_v1",
+    "status":  "pending_manual_approval",
+    "mode":  "recommend-only",
+    "recommendationType":  "hold",
+    "recommendationState":  "burn_in",
+    "policy_stability_score":  1,
+    "proposedThresholdsPath":  "tools/reports/proposed_thresholds.json",
+    "snapshotPath":  "tools/reports/rc_policy_snapshot_v1.json",
+    "approvalRequired":  true,
+    "approvalNotes":  "Review delta and justification signals; approve promotion in a separate manual process."
+}

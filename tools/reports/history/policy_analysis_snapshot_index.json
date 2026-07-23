@@ -1,0 +1,12 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T22:34:47.7350650Z",
+    "file":  "policy_analysis_snapshot_local_20260413T223447728Z.json",
+    "runId":  null,
+    "runNumber":  null,
+    "gitRef":  null,
+    "gitSha":  null,
+    "driftScore":  0,
+    "tier":  "pass",
+    "jaccard":  1,
+    "boundaryBehavior":  "insufficient_history"
+}

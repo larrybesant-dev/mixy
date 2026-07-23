@@ -1,0 +1,483 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GLOBAL HELPERS (HARDENED)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function noExtraFields(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function adultModeEnabled(userId) {
+      return userDoc(userId).data.adultModeEnabled == true
+        && userDoc(userId).data.adultConsentAccepted == true;
+    }
+
+    function canReadSharedAdultProfile(userId) {
+      return signedIn() && adultModeEnabled(request.auth.uid) && adultModeEnabled(userId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 1: CORE IDENTITY (users/<uid>)
+    // Identity only — NO social logic, NO friend fields
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+
+      allow read: if signedIn();
+
+      allow create: if isSelf(userId)
+        && noExtraFields([
+          'username',
+          'usernameLower',
+          'email',
+          'bio',
+          'isPrivate',
+          'createdAt',
+          'updatedAt'
+        ]);
+
+      allow update: if isSelf(userId)
+        && noExtraFields([
+          'username',
+          'usernameLower',
+          'email',
+          'bio',
+          'isPrivate',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 2: Profile Public (users/<uid>/profile_public)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /profile_public/{docId} {
+        allow read: if signedIn();
+
+        allow create: if isSelf(userId)
+          && noExtraFields([
+            'age',
+            'gender',
+            'location',
+            'relationshipStatus',
+            'vibePrompt',
+            'firstDatePrompt',
+            'musicTastePrompt',
+            'interests',
+            'profileAccentColor',
+            'galleryUrls',
+            'introVideoUrl',
+            'updatedAt'
+          ]);
+
+        allow update: if isSelf(userId)
+          && noExtraFields([
+            'age',
+            'gender',
+            'location',
+            'relationshipStatus',
+            'vibePrompt',
+            'firstDatePrompt',
+            'musicTastePrompt',
+            'interests',
+            'profileAccentColor',
+            'galleryUrls',
+            'introVideoUrl',
+            'updatedAt'
+          ]);
+
+        allow delete: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 3: Preferences (users/<uid>/preferences)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /preferences/{docId} {
+        allow read: if isSelf(userId);
+
+        allow create: if isSelf(userId)
+          && noExtraFields([
+            'themeId',
+            'backgroundColor',
+            'profileMusicUrl',
+            'profileMusicTitle',
+            'profileBgGradientStart',
+            'profileBgGradientEnd',
+            'camViewPolicy',
+            'updatedAt'
+          ]);
+
+        allow update: if isSelf(userId)
+          && noExtraFields([
+            'themeId',
+            'backgroundColor',
+            'profileMusicUrl',
+            'profileMusicTitle',
+            'profileBgGradientStart',
+            'profileBgGradientEnd',
+            'camViewPolicy',
+            'updatedAt'
+          ]);
+
+        allow delete: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 4: Wallet (users/<uid>/wallet) — SERVER ONLY
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /wallet/{docId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 5: Verification (users/<uid>/verification) — SERVER ONLY
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /verification/{docId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 6: Security (users/<uid>/security) — SERVER ONLY
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /security/{docId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // DOMAIN 7: Adult Content (users/<uid>/adult_content)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /adult_content/{docId} {
+        allow read: if isSelf(userId)
+          || (canReadSharedAdultProfile(userId)
+            && resource.data.get('visibility', '') == 'optedInAdultsOnly');
+
+        allow create: if isSelf(userId)
+          && noExtraFields([
+            'visibility',
+            'createdAt',
+            'updatedAt'
+          ]);
+
+        allow update: if isSelf(userId)
+          && noExtraFields([
+            'visibility',
+            'updatedAt'
+          ]);
+
+        allow delete: if false;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // Independent Subcollections (Unchanged security model)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /stories/{storyId} {
+        allow read: if signedIn();
+        allow create: if isSelf(userId)
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isSelf(userId)
+          && resource.data.userId == request.auth.uid;
+      }
+
+      match /privacy/{documentId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      match /bookmarks/{bookmarkId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.postId is string;
+        allow delete: if isSelf(userId);
+        allow update: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 8: FRIEND LINKS (social graph + blocking)
+    // Single source of truth for relationships
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /friend_links/{docId} {
+
+      function isFriendParticipant() {
+        return signedIn()
+          && request.auth.uid in resource.data.users;
+      }
+
+      allow read: if isFriendParticipant();
+
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.users
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == "pending"
+        && noExtraFields([
+          'users',
+          'status',
+          'requestedBy',
+          'createdAt'
+        ]);
+
+      allow update: if isFriendParticipant()
+        && noExtraFields([
+          'status',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 9: CONVERSATIONS (messaging metadata)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /conversations/{conversationId} {
+
+      function isParticipant() {
+        return signedIn()
+          && request.auth.uid in resource.data.participants;
+      }
+
+      allow read: if isParticipant();
+
+      allow create: if signedIn()
+        && request.resource.data.participants.hasAny([request.auth.uid])
+        && request.resource.data.participants.size() == 2
+        && noExtraFields([
+          'participants',
+          'createdAt',
+          'updatedAt',
+          'lastMessage'
+        ]);
+
+      allow update: if isParticipant()
+        && noExtraFields([
+          'lastMessage',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+
+      // ───────────────────────────────────────────────────────────────────────
+      // messages (append-only, immutable)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /messages/{messageId} {
+
+        function isConversationParticipant() {
+          return signedIn()
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+
+        allow read: if isConversationParticipant();
+
+        allow create: if isConversationParticipant()
+          && request.resource.data.senderId == request.auth.uid
+          && noExtraFields([
+            'senderId',
+            'text',
+            'createdAt',
+            'type'
+          ]);
+
+        allow update: if false;
+
+        allow delete: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 10: ROOMS (realtime sessions only)
+    // No role mutation from client, strict field access
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /rooms/{roomId} {
+
+      function isRoomHost() {
+        return signedIn() && (
+          resource.data.ownerId == request.auth.uid
+          || resource.data.hostId == request.auth.uid
+        );
+      }
+
+      allow read: if signedIn()
+        && (
+          !resource.data.get('isAdult', false)
+          || adultModeEnabled(request.auth.uid)
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && noExtraFields([
+          'ownerId',
+          'hostId',
+          'title',
+          'isAdult',
+          'createdAt',
+          'updatedAt',
+          'isDirectCall'
+        ])
+        && (
+          !request.resource.data.get('isAdult', false)
+          || adultModeEnabled(request.auth.uid)
+        );
+
+      allow update: if isRoomHost()
+        && noExtraFields([
+          'title',
+          'updatedAt',
+          'isDirectCall',
+          'callDeclined',
+          'callDeclinedAt'
+        ]);
+
+      allow delete: if isRoomHost();
+
+      // ───────────────────────────────────────────────────────────────────────
+      // PARTICIPANTS (client can only modify self, host can kick)
+      // NO ROLE MUTATIONS FROM CLIENT
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /participants/{participantId} {
+
+        allow read: if signedIn();
+
+        allow create: if signedIn()
+          && participantId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid
+          && noExtraFields([
+            'userId',
+            'role',
+            'camOn',
+            'micOn',
+            'customStatus',
+            'userStatus',
+            'lastActiveAt'
+          ]);
+
+        allow update: if signedIn()
+          && participantId == request.auth.uid
+          && noExtraFields([
+            'camOn',
+            'micOn',
+            'customStatus',
+            'userStatus',
+            'lastActiveAt'
+          ]);
+
+        allow delete: if isRoomHost() || participantId == request.auth.uid;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // PRESENCE (ephemeral state)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /presence/{userId} {
+        allow read: if signedIn();
+        allow create, update, delete: if isRoomHost() || userId == request.auth.uid;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // TYPING (ephemeral state)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /typing/{userId} {
+        allow read: if signedIn();
+        allow create, update, delete: if userId == request.auth.uid;
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // messages (immutable chat log)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /messages/{messageId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.senderId == request.auth.uid
+          && noExtraFields([
+            'senderId',
+            'text',
+            'createdAt',
+            'type'
+          ]);
+        allow update, delete: if isRoomHost() || resource.data.senderId == request.auth.uid;
+
+        // message reactions
+        match /reactions/{userId} {
+          allow read: if signedIn();
+          allow create, update, delete: if userId == request.auth.uid;
+        }
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // POLICIES (host only)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /policies/{documentId} {
+        allow read: if signedIn();
+        allow create, update, delete: if isRoomHost();
+      }
+
+      // ───────────────────────────────────────────────────────────────────────
+      // GIFT EVENTS (read-only for participants, server-only writes)
+      // ───────────────────────────────────────────────────────────────────────
+
+      match /gift_events/{giftEventId} {
+        allow read: if signedIn()
+          && exists(/databases/$(database)/documents/rooms/$(roomId)/participants/$(request.auth.uid));
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 11: FOLLOWERS (server-only writes via Cloud Functions)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /followers/{userId}/list/{followerId} {
+      allow read: if signedIn()
+        && (request.auth.uid == userId || request.auth.uid == followerId);
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DOMAIN 12: FOLLOWING (server-only writes via Cloud Functions)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /following/{userId}/list/{followingId} {
+      allow read: if signedIn()
+        && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GLOBAL FALLBACK (DENY ALL)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

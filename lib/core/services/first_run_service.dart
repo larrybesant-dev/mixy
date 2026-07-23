@@ -5,12 +5,12 @@ class FirstRunService {
   static bool? _cachedIsFirstRun;
 
   static Future<bool> isFirstRun() async {
-    if (_cachedIsFirstRun != null) return _cachedIsFirstRun!;
+    if (_cachedIsFirstRun != null) return _cachedIsFirstRun ?? true;
 
     final prefs = await SharedPreferences.getInstance();
     final hasSeenOnboarding = prefs.getBool(_seenOnboardingKey) ?? false;
     _cachedIsFirstRun = !hasSeenOnboarding;
-    return _cachedIsFirstRun!;
+    return _cachedIsFirstRun ?? true;
   }
 
   static Future<void> markOnboardingSeen() async {
@@ -19,3 +19,6 @@ class FirstRunService {
     _cachedIsFirstRun = false;
   }
 }
+
+
+

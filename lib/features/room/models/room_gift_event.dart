@@ -5,8 +5,10 @@ class RoomGiftEvent {
   final String senderId;
   final String senderName;
   final String receiverId;
+  final String? receiverName;
   final String roomId;
   final String giftId;
+  final String emoji;
   final int coinCost;
   final DateTime sentAt;
 
@@ -15,8 +17,10 @@ class RoomGiftEvent {
     required this.senderId,
     required this.senderName,
     required this.receiverId,
+    this.receiverName,
     required this.roomId,
     required this.giftId,
+    required this.emoji,
     required this.coinCost,
     required this.sentAt,
   });
@@ -46,8 +50,10 @@ class RoomGiftEvent {
       senderId: _asString(data['senderId']),
       senderName: _asString(data['senderName']),
       receiverId: _asString(data['receiverId']),
+      receiverName: _asString(data['receiverName']),
       roomId: _asString(data['roomId']),
       giftId: _asString(data['giftId']),
+      emoji: _asString(data['emoji'], fallback: '🎁'),
       coinCost: (data['coinCost'] as num?)?.toInt() ?? 0,
       sentAt: sentAt,
     );
@@ -65,3 +71,7 @@ class RoomTopGifter {
     required this.totalCoins,
   });
 }
+
+
+
+

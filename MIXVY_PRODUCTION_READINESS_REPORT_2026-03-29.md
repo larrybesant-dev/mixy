@@ -25,7 +25,7 @@ This codebase is now in a production-ready state for staged rollout (internal + 
 
 3. Client push integration
 - Added Firebase Messaging dependency and startup initialization.
-- Added foreground/background/opened message hooks.
+- Added foreground/background/opened MessageModel hooks.
 - Added token registration and refresh handling.
 - Added logout token unregistration path for privacy-safe sign-out behavior.
 - Added Android 13+ `POST_NOTIFICATIONS` permission.

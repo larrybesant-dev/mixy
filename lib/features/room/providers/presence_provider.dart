@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'room_firestore_provider.dart';
+import '../../../models/room_participant_model.dart';
+import '../controllers/room_state.dart';
+import 'participant_providers.dart';
 
 class RoomPresenceModel {
   const RoomPresenceModel({
@@ -9,12 +11,20 @@ class RoomPresenceModel {
     required this.isOnline,
     required this.lastHeartbeatAt,
     required this.lastSeenAt,
+    this.customStatus,
+    this.userStatus,
   });
 
   final String userId;
   final bool isOnline;
   final DateTime? lastHeartbeatAt;
   final DateTime? lastSeenAt;
+
+  /// Optional free-text status/away message set by the user.
+  final String? customStatus;
+
+  /// Enum status: 'online' | 'away' | 'dnd' | 'offline'
+  final String? userStatus;
 
   factory RoomPresenceModel.fromMap(String userId, Map<String, dynamic> data) {
     DateTime? toDate(dynamic value) {
@@ -48,67 +58,80 @@ class RoomPresenceModel {
       isOnline: toBool(data['isOnline']),
       lastHeartbeatAt: toDate(data['lastHeartbeatAt']),
       lastSeenAt: toDate(data['lastSeenAt']),
+      customStatus: data['customStatus'] as String?,
+      userStatus: data['userStatus'] as String?,
     );
   }
 }
 
-class RoomPresenceController {
-  RoomPresenceController(this._db);
+const Duration _kRoomPresenceFreshnessWindow = Duration(seconds: 90);
 
-  final FirebaseFirestore _db;
-
-  DocumentReference<Map<String, dynamic>> _presenceRef(String roomId, String userId) {
-    return _db.collection('rooms').doc(roomId).collection('presence').doc(userId);
+bool _isRoomParticipantActive(
+  RoomParticipantModel participant, {
+  DateTime? now,
+}) {
+  final normalizedRole = normalizeRoomRole(participant.role, fallbackRole: '');
+  final hasActiveSeat =
+      canManageStageRole(normalizedRole) ||
+      normalizedRole == roomRoleStage ||
+      participant.camOn ||
+      participant.micOn;
+  if (hasActiveSeat) {
+    return true;
   }
 
-  Future<void> setOnline({
-    required String roomId,
-    required String userId,
-  }) {
-    return _presenceRef(roomId, userId).set({
-      'userId': userId,
-      'isOnline': true,
-      'lastHeartbeatAt': FieldValue.serverTimestamp(),
-      'lastSeenAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+  final normalizedStatus = participant.userStatus?.trim().toLowerCase() ?? '';
+  if (normalizedStatus == 'offline') {
+    return false;
   }
 
-  Future<void> heartbeat({
-    required String roomId,
-    required String userId,
-  }) {
-    return _presenceRef(roomId, userId).set({
-      'userId': userId,
-      'isOnline': true,
-      'lastHeartbeatAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-  }
-
-  Future<void> setOffline({
-    required String roomId,
-    required String userId,
-  }) {
-    return _presenceRef(roomId, userId).set({
-      'userId': userId,
-      'isOnline': false,
-      'lastSeenAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-  }
+  final currentTime = now ?? DateTime.now();
+  return currentTime.difference(participant.lastActiveAt) <=
+      _kRoomPresenceFreshnessWindow;
 }
 
-final roomPresenceControllerProvider = Provider<RoomPresenceController>((ref) {
-  return RoomPresenceController(ref.watch(roomFirestoreProvider));
-});
+final roomPresenceStreamProvider = StreamProvider.autoDispose
+    .family<List<RoomPresenceModel>, String>((ref, roomId) {
+      return Stream.multi((controller) {
+        final subscription = ref.listen(participantsStreamProvider(roomId), (
+          _,
+          next,
+        ) {
+          if (controller.isClosed) return;
+          next.whenData((participants) {
+            final now = DateTime.now();
+            controller.add(
+              participants
+                  .map((participant) {
+                    final userId = participant.userId.trim();
+                    final participantRoomMatch = _isRoomParticipantActive(
+                      participant,
+                      now: now,
+                    );
+                    return RoomPresenceModel(
+                      userId: userId,
+                      isOnline: participantRoomMatch,
+                      lastHeartbeatAt: participant.lastActiveAt,
+                      lastSeenAt: participant.lastActiveAt,
+                      customStatus: participant.customStatus,
+                      userStatus:
+                          participant.userStatus ??
+                          (participantRoomMatch ? 'online' : 'offline'),
+                    );
+                  })
+                  .where((presence) => presence.userId.isNotEmpty)
+                  .toList(growable: false),
+            );
+          });
+        });
+        controller.onCancel = subscription.close;
+      });
+    });
 
-final roomPresenceStreamProvider =
-    StreamProvider.autoDispose.family<List<RoomPresenceModel>, String>((ref, roomId) {
-  final firestore = ref.watch(roomFirestoreProvider);
-  return firestore
-      .collection('rooms')
-      .doc(roomId)
-      .collection('presence')
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => RoomPresenceModel.fromMap(doc.id, doc.data()))
-          .toList(growable: false));
-});
+/// Alias for non-canonical consumers to avoid direct `*StreamProvider`
+/// identifier references while still deriving from the canonical stream.
+final roomPresenceLiveProvider = roomPresenceStreamProvider;
+
+
+
+

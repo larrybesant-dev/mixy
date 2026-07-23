@@ -5,3 +5,6 @@ abstract class FriendRepository {
   Future<void> addFriend(FriendModel friend);
   Future<void> removeFriend(String friendId);
 }
+
+
+

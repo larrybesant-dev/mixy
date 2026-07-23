@@ -11,7 +11,12 @@ class EventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           Text(description, style: Theme.of(context).textTheme.bodyMedium),
         ],
@@ -19,3 +24,6 @@ class EventCard extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -44,7 +44,10 @@ class RoomAudioCues {
       final now = ctx.currentTime;
       osc.start(now);
       // Exponential ramp to silence avoids a click artefact.
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + durationMs / 1000);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        now + durationMs / 1000,
+      );
       osc.stop(now + durationMs / 1000 + 0.05);
     } catch (_) {
       // AudioContext unavailable — degrade gracefully.
@@ -70,7 +73,10 @@ class RoomAudioCues {
   void _hapticDouble() {
     if (kIsWeb) return;
     HapticFeedback.lightImpact();
-    Future.delayed(const Duration(milliseconds: 120), HapticFeedback.lightImpact);
+    Future.delayed(
+      const Duration(milliseconds: 120),
+      HapticFeedback.lightImpact,
+    );
   }
 
   /// Plays a double-tone chord for a richer sound.
@@ -138,6 +144,49 @@ class RoomAudioCues {
     }
   }
 
+  /// Soft ping for incoming chat message.
+  void playNewmessage() {
+    if (kIsWeb) {
+      _playTone(frequency: 660.0, durationMs: 100, gain: 0.10);
+    } else {
+      _hapticLight();
+    }
+  }
+
+  /// Distinctive two-tone ping for incoming private message.
+  void playPrivatemessage() {
+    if (kIsWeb) {
+      _playTone(frequency: 880.0, durationMs: 80, gain: 0.16);
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _playTone(frequency: 1100.0, durationMs: 120, gain: 0.16);
+      });
+    } else {
+      _hapticDouble();
+    }
+  }
+
+  /// Buzz/nudge: a low-frequency vibrato burst.
+  void playBuzz() {
+    if (kIsWeb) {
+      _playTone(
+        frequency: 120.0,
+        durationMs: 300,
+        type: 'sawtooth',
+        gain: 0.22,
+      );
+    } else {
+      HapticFeedback.heavyImpact();
+      Future.delayed(
+        const Duration(milliseconds: 120),
+        HapticFeedback.heavyImpact,
+      );
+      Future.delayed(
+        const Duration(milliseconds: 240),
+        HapticFeedback.heavyImpact,
+      );
+    }
+  }
+
   void dispose() {
     try {
       _ctx?.close();
@@ -145,3 +194,6 @@ class RoomAudioCues {
     _ctx = null;
   }
 }
+
+
+

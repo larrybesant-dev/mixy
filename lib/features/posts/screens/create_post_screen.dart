@@ -1,12 +1,16 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../widgets/safe_network_avatar.dart';
+
+import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
+import '../../../shared/widgets/app_page_scaffold.dart';
 
 class CreatePostScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -52,9 +56,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   Future<void> _publishPost() async {
     final content = _contentController.text.trim();
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post cannot be empty')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Post cannot be empty')));
       return;
     }
 
@@ -63,9 +67,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     try {
       final tags = _tagsController.text.isEmpty
           ? <String>[]
-          : _tagsController.text.split(',').map((tag) => tag.trim().toLowerCase()).toList();
+          : _tagsController.text
+                .split(',')
+                .map((tag) => tag.trim().toLowerCase())
+                .toList();
 
-      await FirebaseFirestore.instance.collection('posts').add({
+      await ref.read(firestoreProvider).collection('posts').add({
         'authorId': widget.userId,
         'authorName': widget.username,
         'authorAvatarUrl': widget.avatarUrl,
@@ -74,7 +81,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         'videoUrl': _videoUrl,
         'tags': tags,
         'hashtags': tags,
-        'createdAt': Timestamp.fromDate(DateTime.now()),
+        'createdAt': FieldValue.serverTimestamp(),
         'likeCount': 0,
         'commentCount': 0,
         'shareCount': 0,
@@ -82,15 +89,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post published!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Post published!')));
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error publishing post: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error publishing post: $e')));
     } finally {
       if (mounted) {
         setState(() => _isPosting = false);
@@ -199,7 +206,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(
         title: const Text('Create Post'),
         actions: [
@@ -221,19 +228,18 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(context.pageHorizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundImage: widget.avatarUrl != null
-                      ? CachedNetworkImageProvider(widget.avatarUrl!)
-                      : null,
-                  child: widget.avatarUrl == null
-                      ? Text(widget.username[0].toUpperCase())
-                      : null,
+                SafeNetworkAvatar(
+                  radius: 20,
+                  avatarUrl: widget.avatarUrl,
+                  fallbackText: widget.username.isNotEmpty
+                      ? widget.username[0].toUpperCase()
+                      : '?',
                 ),
                 const SizedBox(width: 12),
                 Column(
@@ -323,11 +329,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       ? null
                       : _pickVideo,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.emoji_emotions),
-                  tooltip: 'Emoji picker not enabled in beta',
-                  onPressed: null,
-                ),
+                // Emoji picker intentionally hidden until implemented.
+                // IconButton(
+                //   icon: const Icon(Icons.emoji_emotions),
+                //   onPressed: null,
+                // ),
               ],
             ),
           ],
@@ -336,3 +342,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     );
   }
 }
+
+
+

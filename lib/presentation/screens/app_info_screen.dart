@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../config/environment.dart';
+import '../../core/layout/app_layout.dart';
+import '../../shared/widgets/app_page_scaffold.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 class AppInfoScreen extends StatelessWidget {
   const AppInfoScreen({super.key});
@@ -26,15 +29,19 @@ class AppInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(title: const Text('App Info & Diagnostics')),
       body: FutureBuilder<PackageInfo>(
         future: PackageInfo.fromPlatform(),
         builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const AppLoadingView(label: 'Loading app details');
+          }
+
           final info = snapshot.data;
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(context.pageHorizontalPadding),
             children: [
               Card(
                 child: ListTile(
@@ -103,3 +110,6 @@ class AppInfoScreen extends StatelessWidget {
     );
   }
 }
+
+
+

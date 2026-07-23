@@ -1,22 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/models/room_model.dart';
 
-RoomModel _room({required String id, required String name, String? description}) =>
-    RoomModel(
-      id: id,
-      hostId: 'host-1',
-      name: name,
-      description: description,
-      isLive: true,
-    );
+RoomModel _room({
+  required String id,
+  required String name,
+  String? description,
+}) => RoomModel(
+  id: id,
+  hostId: 'host-1',
+  name: name,
+  description: description,
+  isLive: true,
+);
 
 List<RoomModel> _applySearch(List<RoomModel> rooms, String query) {
   final q = query.trim().toLowerCase();
   if (q.isEmpty) return rooms;
   return rooms
-      .where((r) =>
-          r.name.toLowerCase().contains(q) ||
-          (r.description?.toLowerCase().contains(q) ?? false))
+      .where(
+        (r) =>
+            r.name.toLowerCase().contains(q) ||
+            (r.description?.toLowerCase().contains(q) ?? false),
+      )
       .toList();
 }
 
@@ -26,7 +31,11 @@ void main() {
       _room(id: '1', name: 'Chill Music Lounge', description: 'Relaxing beats'),
       _room(id: '2', name: 'Gaming Zone', description: 'FPS talk'),
       _room(id: '3', name: 'Late Night Talk', description: null),
-      _room(id: '4', name: 'Dance Floor Remix', description: 'House music vibes'),
+      _room(
+        id: '4',
+        name: 'Dance Floor Remix',
+        description: 'House music vibes',
+      ),
     ];
 
     test('empty query returns all rooms', () {
@@ -63,10 +72,7 @@ void main() {
     });
 
     test('null description does not cause error', () {
-      expect(
-        () => _applySearch(rooms, 'anything'),
-        returnsNormally,
-      );
+      expect(() => _applySearch(rooms, 'anything'), returnsNormally);
     });
   });
 }

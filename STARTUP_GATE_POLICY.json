@@ -1,0 +1,5 @@
+{
+  "pipeline_version": "1.0.0",
+  "blockOnWarn": false,
+  "policyMode": "governance_v1"
+}

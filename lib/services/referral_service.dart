@@ -1,15 +1,15 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../models/referral_model.dart';
 
 class ReferralService {
-  ReferralService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ReferralService({FirebaseFirestore? firestore, FirebaseFunctions? functions})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFirestore _firestore;
-  static const _alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  final FirebaseFunctions _functions;
 
   String _asString(dynamic value, {String fallback = ''}) {
     if (value is String) {
@@ -45,37 +45,15 @@ class ReferralService {
       throw ArgumentError('userId is required');
     }
 
-    final existing = await _firestore
-        .collection('referral_codes')
-        .where('ownerUserId', isEqualTo: userId)
-        .where('isActive', isEqualTo: true)
-        .limit(1)
-        .get();
-    if (existing.docs.isNotEmpty) {
-      return existing.docs.first.id;
+    final result = await _functions
+        .httpsCallable('generateReferralCode')
+        .call<Map<String, dynamic>>(<String, dynamic>{'userId': userId});
+    final data = Map<String, dynamic>.from(result.data);
+    final code = _asString(data['code']);
+    if (code.isEmpty) {
+      throw Exception('Could not generate referral code. Please retry.');
     }
-
-    final random = Random();
-    for (var attempt = 0; attempt < 8; attempt++) {
-      final suffix = List.generate(6, (_) => _alphabet[random.nextInt(_alphabet.length)]).join();
-      final candidate = 'MXVY-$suffix';
-      final codeRef = _firestore.collection('referral_codes').doc(candidate);
-      final snapshot = await codeRef.get();
-      if (snapshot.exists) {
-        continue;
-      }
-
-      final model = ReferralCodeModel(
-        code: candidate,
-        ownerUserId: userId,
-        isActive: true,
-        createdAt: DateTime.now().toUtc(),
-      );
-      await codeRef.set(model.toJson(), SetOptions(merge: true));
-      return candidate;
-    }
-
-    throw Exception('Could not generate referral code. Please retry.');
+    return code;
   }
 
   Future<bool> redeemReferral(String code, String userId) async {
@@ -84,41 +62,14 @@ class ReferralService {
       return false;
     }
 
-    final codeRef = _firestore.collection('referral_codes').doc(normalizedCode);
-    final codeSnapshot = await codeRef.get();
-    if (!codeSnapshot.exists) {
-      return false;
-    }
-
-    final codeData = codeSnapshot.data() ?? <String, dynamic>{};
-    final ownerUserId = _asString(codeData['ownerUserId']);
-    final isActive = _asBool(codeData['isActive']);
-    if (!isActive || ownerUserId.isEmpty || ownerUserId == userId) {
-      return false;
-    }
-
-    final existing = await _firestore
-        .collection('referrals')
-        .where('referredUserId', isEqualTo: userId)
-        .limit(1)
-        .get();
-    if (existing.docs.isNotEmpty) {
-      return false;
-    }
-
-    final referralRef = _firestore.collection('referrals').doc();
-    final attribution = ReferralAttributionModel(
-      id: referralRef.id,
-      referrerUserId: ownerUserId,
-      referredUserId: userId,
-      referralCode: normalizedCode,
-      subscriptionStatus: 'pending',
-      rewardStatus: 'pending',
-      createdAt: DateTime.now().toUtc(),
-    );
-
-    await referralRef.set(attribution.toJson());
-    return true;
+    final result = await _functions
+        .httpsCallable('redeemReferralCode')
+        .call<Map<String, dynamic>>(<String, dynamic>{
+          'code': normalizedCode,
+          'userId': userId,
+        });
+    final data = Map<String, dynamic>.from(result.data);
+    return _asBool(data['redeemed'], fallback: false);
   }
 
   Stream<String?> referralCodeStream(String userId) {
@@ -132,7 +83,9 @@ class ReferralService {
         .where('isActive', isEqualTo: true)
         .limit(1)
         .snapshots()
-        .map((snapshot) => snapshot.docs.isEmpty ? null : snapshot.docs.first.id);
+        .map(
+          (snapshot) => snapshot.docs.isEmpty ? null : snapshot.docs.first.id,
+        );
   }
 
   Stream<double> referralEarningsTotalStream(String userId) {
@@ -145,18 +98,20 @@ class ReferralService {
         .where('beneficiaryUserId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-      var total = 0.0;
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        total += (data['amount'] as num?)?.toDouble() ?? 0;
-      }
-      return total;
-    });
+          var total = 0.0;
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            total += (data['amount'] as num?)?.toDouble() ?? 0;
+          }
+          return total;
+        });
   }
 
   Stream<List<ReferralAttributionModel>> referralsForUserStream(String userId) {
     if (userId.trim().isEmpty) {
-      return Stream<List<ReferralAttributionModel>>.value(<ReferralAttributionModel>[]);
+      return Stream<List<ReferralAttributionModel>>.value(
+        <ReferralAttributionModel>[],
+      );
     }
 
     return _firestore
@@ -164,8 +119,18 @@ class ReferralService {
         .where('referrerUserId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReferralAttributionModel.fromJson({'id': doc.id, ...doc.data()}))
-            .toList(growable: false));
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => ReferralAttributionModel.fromJson({
+                  'id': doc.id,
+                  ...doc.data(),
+                }),
+              )
+              .toList(growable: false),
+        );
   }
 }
+
+
+

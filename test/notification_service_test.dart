@@ -24,15 +24,24 @@ void main() {
     test('markRead updates only matching user notification', () async {
       await service.markRead('user-1', 'n1');
 
-      final updated = await firestore.collection('notifications').doc('n1').get();
+      final updated = await firestore
+          .collection('notifications')
+          .doc('n1')
+          .get();
       expect(updated.data()?['isRead'], isTrue);
     });
 
-    test('markRead does not update notification owned by another user', () async {
-      await service.markRead('user-3', 'n1');
+    test(
+      'markRead does not update notification owned by another user',
+      () async {
+        await service.markRead('user-3', 'n1');
 
-      final unchanged = await firestore.collection('notifications').doc('n1').get();
-      expect(unchanged.data()?['isRead'], isFalse);
-    });
+        final unchanged = await firestore
+            .collection('notifications')
+            .doc('n1')
+            .get();
+        expect(unchanged.data()?['isRead'], isFalse);
+      },
+    );
   });
 }

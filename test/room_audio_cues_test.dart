@@ -19,8 +19,11 @@ void main() {
     group('non-web no-op (test environment is non-web)', () {
       setUp(() {
         // kIsWeb is false in all unit test environments.
-        expect(kIsWeb, isFalse,
-            reason: 'These tests assume a non-web environment');
+        expect(
+          kIsWeb,
+          isFalse,
+          reason: 'These tests assume a non-web environment',
+        );
       });
 
       test('playUserJoined does not throw', () {

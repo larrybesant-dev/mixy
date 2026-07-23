@@ -3,18 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/layout/app_layout.dart';
+import '../../../core/providers/firebase_providers.dart';
+import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../providers/verification_provider.dart';
-
-// Provider that streams the verification request doc for the current user
-final _verificationRequestProvider = StreamProvider<Map<String, dynamic>?>((ref) {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) return Stream.value(null);
-  return FirebaseFirestore.instance
-      .collection('verification_requests')
-      .doc(uid)
-      .snapshots()
-      .map((doc) => doc.exists ? doc.data() : null);
-});
 
 /// Screen where a user can submit a verification request and see its status.
 ///
@@ -42,23 +35,26 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please explain why you should be verified.')),
+        const SnackBar(
+          content: Text('Please explain why you should be verified.'),
+        ),
       );
       return;
     }
     setState(() => _submitting = true);
     try {
-      await FirebaseFirestore.instance
+      await ref
+          .read(firestoreProvider)
           .collection('verification_requests')
           .doc(uid)
           .set({
-        'userId': uid,
-        'reason': reason,
-        'status': 'pending',
-        'submittedAt': FieldValue.serverTimestamp(),
-        'reviewedAt': null,
-        'reviewNote': null,
-      });
+            'userId': uid,
+            'reason': reason,
+            'status': 'pending',
+            'submittedAt': FieldValue.serverTimestamp(),
+            'reviewedAt': null,
+            'reviewNote': null,
+          });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Verification request submitted!')),
@@ -66,9 +62,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       _reasonController.clear();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -78,25 +74,25 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isVerifiedAsync = ref.watch(userVerificationProvider(uid));
-    final requestAsync = ref.watch(_verificationRequestProvider);
+    final requestAsync = ref.watch(verificationRequestProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(title: const Text('Verification')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(context.pageHorizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status banner
             isVerifiedAsync.when(
               loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
+              error: (__, _) => const SizedBox.shrink(),
               data: (isVerified) {
                 if (isVerified) {
                   return _StatusBanner(
                     icon: Icons.verified,
-                    color: Colors.blue,
+                    color: const Color(0xFFC45E7A),
                     title: 'You are verified!',
                     subtitle: 'Your account has the verified badge.',
                   );
@@ -107,7 +103,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
             Text(
               'Get Verified',
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -117,44 +115,60 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             const SizedBox(height: 24),
 
             // Requirements list
-            Text('Requirements', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Requirements',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
             ...[
               'Real name or brand name on your profile',
               'Profile photo that clearly shows your face',
               'At least 10 followers',
               'Account at least 30 days old',
-            ].map((r) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 18, color: theme.colorScheme.primary),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(r)),
-                    ],
-                  ),
-                )),
+            ].map(
+              (r) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(r)),
+                  ],
+                ),
+              ),
+            ),
 
             const SizedBox(height: 28),
             const Divider(),
             const SizedBox(height: 20),
 
             // Request form / existing request status
-            requestAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+            AppAsyncValueView<Map<String, dynamic>?>(
+              value: requestAsync,
+              fallbackContext: 'verification requests',
               data: (request) {
                 if (request != null) {
                   final status = request['status'] as String? ?? 'pending';
                   final note = request['reviewNote'] as String?;
-                  return _ExistingRequestView(status: status, reviewNote: note,
-                    onResubmit: status == 'rejected' ? () async {
-                      await FirebaseFirestore.instance
-                          .collection('verification_requests')
-                          .doc(uid)
-                          .delete();
-                      setState(() {});
-                    } : null,
+                  return _ExistingRequestView(
+                    status: status,
+                    reviewNote: note,
+                    onResubmit: status == 'rejected'
+                        ? () async {
+                            await ref
+                                .read(firestoreProvider)
+                                .collection('verification_requests')
+                                .doc(uid)
+                                .delete();
+                            setState(() {});
+                          }
+                        : null,
                   );
                 }
 
@@ -162,8 +176,12 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Submit a Request',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      'Submit a Request',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _reasonController,
@@ -171,7 +189,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                       maxLength: 500,
                       decoration: const InputDecoration(
                         labelText: 'Why should your account be verified?',
-                        hintText: 'Describe your account, content, or public presence…',
+                        hintText:
+                            'Describe your account, content, or public presence…',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -184,7 +203,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Icon(Icons.verified_user_outlined),
                         label: const Text('Submit Verification Request'),
@@ -232,10 +254,11 @@ class _StatusBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(fontWeight: FontWeight.w700, color: color)),
-                Text(subtitle,
-                    style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.w700, color: color),
+                ),
+                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -261,28 +284,34 @@ class _ExistingRequestView extends StatelessWidget {
     final theme = Theme.of(context);
     final (icon, color, title, subtitle) = switch (status) {
       'approved' => (
-          Icons.verified,
-          Colors.blue,
-          'Request approved',
-          'You have been granted verified status.',
-        ),
+        Icons.verified,
+        const Color(0xFFC45E7A),
+        'Request approved',
+        'You have been granted verified status.',
+      ),
       'rejected' => (
-          Icons.cancel_outlined,
-          theme.colorScheme.error,
-          'Request rejected',
-          reviewNote ?? 'Your request did not meet our requirements. You may submit again.',
-        ),
+        Icons.cancel_outlined,
+        theme.colorScheme.error,
+        'Request rejected',
+        reviewNote ??
+            'Your request did not meet our requirements. You may submit again.',
+      ),
       _ => (
-          Icons.hourglass_top_outlined,
-          Colors.orange,
-          'Request pending',
-          'Your request is under review. This usually takes 3–5 business days.',
-        ),
+        Icons.hourglass_top_outlined,
+        const Color(0xFFFFB74D),
+        'Request pending',
+        'Your request is under review. This usually takes 3–5 business days.',
+      ),
     };
 
     return Column(
       children: [
-        _StatusBanner(icon: icon, color: color, title: title, subtitle: subtitle),
+        _StatusBanner(
+          icon: icon,
+          color: color,
+          title: title,
+          subtitle: subtitle,
+        ),
         if (status == 'rejected' && onResubmit != null) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -298,3 +327,6 @@ class _ExistingRequestView extends StatelessWidget {
     );
   }
 }
+
+
+

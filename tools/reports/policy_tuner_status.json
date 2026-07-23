@@ -1,0 +1,22 @@
+﻿{
+    "contract_version":  "1.0.0",
+    "artifact_mode":  "primary",
+    "generatedAtUtc":  "2026-04-13T15:40:22.1582123Z",
+    "statusVersion":  "policy_tuner_status_v1",
+    "status":  "ok",
+    "policyAction":  "hold",
+    "mode":  "recommend-only",
+    "recommendationType":  "hold",
+    "recommendationState":  "burn_in",
+    "policy_divergence_score":  0,
+    "divergence_classification":  "transient",
+    "policy_stability_score":  1,
+    "inBurnInFreeze":  true,
+    "runCount":  1,
+    "burnInRcCount":  6,
+    "outputs":  {
+                    "proposedThresholdsPath":  "tools/reports/proposed_thresholds.json",
+                    "snapshotPath":  "tools/reports/rc_policy_snapshot_v1.json",
+                    "approvalRequestPath":  "tools/reports/policy_approval_request.json"
+                }
+}

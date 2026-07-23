@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mixvy/policy_drift_contract.schema.json",
+  "title": "Policy Drift Contract",
+  "description": "Contract for policy tuning artifacts emitted during RC governance evaluation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "allowedRecommendationStates",
+    "artifacts"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "allowedRecommendationStates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "stable",
+          "drifting",
+          "unstable",
+          "burn_in",
+          "hold"
+        ]
+      },
+      "minItems": 5,
+      "uniqueItems": true
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposedThresholds",
+        "snapshot",
+        "approvalRequest",
+        "status"
+      ],
+      "properties": {
+        "proposedThresholds": {
+          "type": "object",
+          "required": [
+            "requiredFields"
+          ],
+          "properties": {
+            "requiredFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "snapshot": {
+          "type": "object",
+          "required": [
+            "requiredFields"
+          ],
+          "properties": {
+            "requiredFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "approvalRequest": {
+          "type": "object",
+          "required": [
+            "requiredFields"
+          ],
+          "properties": {
+            "requiredFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "status": {
+          "type": "object",
+          "required": [
+            "requiredFields"
+          ],
+          "properties": {
+            "requiredFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "contract_version": "1.0.0",
+      "allowedRecommendationStates": [
+        "stable",
+        "drifting",
+        "unstable",
+        "burn_in",
+        "hold"
+      ],
+      "artifacts": {
+        "proposedThresholds": {
+          "requiredFields": [
+            "contract_version",
+            "artifact_mode",
+            "generatedAtUtc",
+            "modelVersion",
+            "mode",
+            "recommendationType",
+            "recommendationState",
+            "policy_divergence_score",
+            "divergence_classification",
+            "policy_stability_score",
+            "currentThresholds",
+            "recommendedThresholds",
+            "delta",
+            "justificationSignals"
+          ]
+        },
+        "snapshot": {
+          "requiredFields": [
+            "contract_version",
+            "artifact_mode",
+            "generatedAtUtc",
+            "snapshotVersion",
+            "mode",
+            "currentPolicy",
+            "proposedPolicy"
+          ]
+        },
+        "approvalRequest": {
+          "requiredFields": [
+            "contract_version",
+            "artifact_mode",
+            "generatedAtUtc",
+            "requestVersion",
+            "status",
+            "mode",
+            "recommendationType",
+            "recommendationState",
+            "policy_stability_score",
+            "approvalRequired"
+          ]
+        },
+        "status": {
+          "requiredFields": [
+            "contract_version",
+            "artifact_mode",
+            "generatedAtUtc",
+            "statusVersion",
+            "status",
+            "policyAction",
+            "mode",
+            "recommendationType",
+            "recommendationState",
+            "policy_divergence_score",
+            "divergence_classification",
+            "policy_stability_score",
+            "outputs"
+          ]
+        }
+      }
+    }
+  ]
+}

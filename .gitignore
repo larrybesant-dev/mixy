@@ -48,5 +48,81 @@ app.*.map.json
 functions/.env
 functions/.env.*
 .env
+
+# AI and Audit Reports - CRITICAL: These are temporary diagnostic files
+*.txt
+analysis_report_*.txt
+analyze_*.txt
+AGORA_*.txt
+ACTION_ITEMS_TODAY.md
+ADVANCED_*.md
+AI_AUTOFIX_*.md
+
+# Build and Cache Folders
+build/
+.dart_tool/
+.pub-cache/
+.packages
+.flutter-plugins
+.flutter-plugin-dependencies
+ephemeral/
+Generated.xcconfig
+flutter_export_environment.sh
 .env.*
 !.env.example
+assets/.env
+assets/env/app_env
+!assets/env/app_env.example
+
+# Android signing - never commit keystores or key.properties
+android/key.properties
+*.jks
+*.keystore
+
+# Local deployment and audit artifacts
+.firebase/
+code-scan.txt
+*.bak
+
+# Test-related artifacts - CRITICAL: Exclude all test directories and generated files
+test-results/
+.playwright-artifacts*/
+e2e-artifacts/
+runtime-artifacts/
+runtime-validation-*/
+payment-Payment-Flow-*/
+live_production_suite-*/
+live_site_final_check.png
+smoke-MixVy-Navigation-*/
+smoke-test-screenshot.png
+
+# Playwright and E2E testing
+playwright_tests/node_modules/
+playwright_tests/test-results/
+playwright-report/
+playwright/.cache/
+.playwright/
+playwright_tests/test-results/
+playwright_tests/.playwright/
+playwright_tests/dist/
+
+# Node.js dependencies and build artifacts
+node_modules/
+dist/
+build/
+*.tgz
+package-lock.json.bak
+
+# QA and Testing Documentation (auto-generated)
+QA_EXECUTION_GUIDE.md
+QA_PROTOCOL_PHASE2.md
+QA_QUICK_REFERENCE.md
+EXECUTION_GUIDE.md
+
+# OS-specific files
+Thumbs.db
+.DS_Store
+*.swp
+*~
+
+.vscode/templates

@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../widgets/safe_network_avatar.dart';
 import '../providers/story_provider.dart';
 
 /// Full-screen story viewer for a single user's stories.
@@ -33,14 +36,13 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   @override
   void initState() {
     super.initState();
-    _progressController = AnimationController(
-      vsync: this,
-      duration: _storyDuration,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _advance();
-        }
-      });
+    _progressController =
+        AnimationController(vsync: this, duration: _storyDuration)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _advance();
+            }
+          });
     _startProgress();
   }
 
@@ -78,7 +80,9 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     final viewerId = FirebaseAuth.instance.currentUser?.uid;
     if (viewerId == null) return;
     if (story.viewedBy.contains(viewerId)) return;
-    ref.read(storyControllerProvider).markStoryAsViewed(
+    ref
+        .read(storyControllerProvider)
+        .markStoryAsViewed(
           userId: widget.userId,
           storyId: story.id,
           viewerId: viewerId,
@@ -89,21 +93,21 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   Widget build(BuildContext context) {
     final storiesAsync = ref.watch(myStoriesProvider(widget.userId));
 
-    return Scaffold(
+    return AppPageScaffold(
       backgroundColor: Colors.black,
+      safeArea: false,
       body: storiesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('Error: $e', style: const TextStyle(color: Colors.white)),
-        ),
+        loading: () => const AppLoadingView(label: 'Loading stories'),
+        error: (e, _) =>
+            AppErrorView(error: e, fallbackContext: 'Unable to load stories.'),
         data: (stories) {
-          final active = stories.where((s) => !s.isDeleted && !s.isExpired).toList();
+          final active = stories
+              .where((s) => !s.isDeleted && !s.isExpired)
+              .toList();
           if (active.isEmpty) {
-            return const Center(
-              child: Text(
-                'No stories to show.',
-                style: TextStyle(color: Colors.white70),
-              ),
+            return const AppEmptyView(
+              title: 'No stories to show',
+              icon: Icons.auto_stories_outlined,
             );
           }
 
@@ -129,7 +133,9 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
               _StoryBackground(story: story),
 
               // Text content overlay (when no image/video)
-              if (story.imageUrl == null && story.videoUrl == null && story.content != null)
+              if (story.imageUrl == null &&
+                  story.videoUrl == null &&
+                  story.content != null)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -189,12 +195,17 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                   children: [
                     // Progress bars
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: Row(
                         children: List.generate(active.length, (i) {
                           return Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
                               child: _ProgressBar(
                                 filled: i < _index,
                                 active: i == _index,
@@ -207,18 +218,19 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                     ),
                     // Author row
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       child: Row(
                         children: [
-                          CircleAvatar(
+                          SafeNetworkAvatar(
                             radius: 18,
+                            avatarUrl: story.userAvatarUrl,
                             backgroundColor: Colors.white24,
-                            backgroundImage: story.userAvatarUrl != null
-                                ? CachedNetworkImageProvider(story.userAvatarUrl!)
-                                : null,
-                            child: story.userAvatarUrl == null
-                                ? const Icon(Icons.person, color: Colors.white, size: 18)
-                                : null,
+                            fallbackTextStyle: const TextStyle(
+                              color: Colors.white,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -233,7 +245,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                           ),
                           Text(
                             _formatAge(story.createdAt),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
@@ -273,8 +288,8 @@ class _StoryBackground extends StatelessWidget {
       return CachedNetworkImage(
         imageUrl: story.imageUrl!,
         fit: BoxFit.cover,
-        placeholder: (_, _) => const ColoredBox(color: Colors.black),
-        errorWidget: (_, _, _) => const ColoredBox(color: Colors.black),
+        placeholder: (__, _) => const ColoredBox(color: Colors.black),
+        errorWidget: (___, __, _) => const ColoredBox(color: Colors.black),
       );
     }
     return Container(
@@ -317,12 +332,12 @@ class _ProgressBar extends StatelessWidget {
           widthFactor: filled
               ? 1.0
               : active
-                  ? null
-                  : 0.0,
+              ? null
+              : 0.0,
           child: active
               ? AnimatedBuilder(
                   animation: animation,
-                  builder: (_, _) => FractionallySizedBox(
+                  builder: (__, _) => FractionallySizedBox(
                     widthFactor: animation.value,
                     child: Container(
                       height: 2.5,
@@ -342,3 +357,6 @@ class _ProgressBar extends StatelessWidget {
     );
   }
 }
+
+
+

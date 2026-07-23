@@ -1,1 +1,0 @@
-// Removed: No longer using Freezed for GiftModel.

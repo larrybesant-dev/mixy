@@ -1,16 +1,23 @@
 // Handles promo codes for free ad spots
 class PromoCodeManager {
-  // Validate promo code and grant 30 days free ad
+  static const bool _promoCodesEnabled = false;
+
+  // Feature-flagged off until backend validation is wired.
   static Future<bool> validatePromoCode(String code) async {
-    // Example: Call backend to validate promo code
-    // Replace with actual validation logic
-    return Future.delayed(Duration(milliseconds: 300), () => code == 'SPECIAL30');
+    if (!_promoCodesEnabled) {
+      return false;
+    }
+    return false;
   }
 
-  // Grant free ad spot for 30 days
+  // Feature-flagged off until backend write and server-side validation are wired.
   static Future<void> grantFreeAd(String businessId) async {
-    // Example: Call backend to grant free ad
-    await Future.delayed(Duration(milliseconds: 300));
-    // Replace with actual backend update
+    if (!_promoCodesEnabled) {
+      return;
+    }
   }
 }
+
+
+
+

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#0f6d00",
+                        "on-tertiary": "#003543",
+                        "on-primary-fixed-variant": "#5700c9",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#022100",
+                        "outline": "#958da3",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary": "#053900",
+                        "surface-dim": "#131313",
+                        "secondary-fixed-dim": "#2ae500",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container": "#201f1f",
+                        "surface": "#131313",
+                        "on-surface-variant": "#ccc3da",
+                        "inverse-on-surface": "#313030",
+                        "surface-container-high": "#2a2a2a",
+                        "on-tertiary-fixed": "#001f28",
+                        "on-primary": "#3c0090",
+                        "tertiary-fixed-dim": "#4cd6ff",
+                        "surface-tint": "#d1bcff",
+                        "primary-container": "#7000ff",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353534",
+                        "surface-bright": "#3a3939",
+                        "on-background": "#e5e2e1",
+                        "secondary": "#d7ffc5",
+                        "on-surface": "#e5e2e1",
+                        "inverse-surface": "#e5e2e1",
+                        "inverse-primary": "#7212ff",
+                        "on-secondary-fixed-variant": "#095300",
+                        "outline-variant": "#4a4457",
+                        "background": "#131313",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#353534",
+                        "secondary-fixed": "#79ff5b",
+                        "on-primary-fixed": "#23005b",
+                        "on-primary-container": "#ddcdff",
+                        "primary-fixed": "#e9ddff",
+                        "tertiary-container": "#00647c",
+                        "primary": "#d1bcff",
+                        "on-tertiary-fixed-variant": "#004e60",
+                        "secondary-container": "#2ff801",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#89e0ff",
+                        "tertiary": "#4cd6ff",
+                        "primary-fixed-dim": "#d1bcff",
+                        "tertiary-fixed": "#b7eaff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "margin": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Space Grotesk"],
+                        "label-sm": ["Inter"],
+                        "label-bold": ["Inter"],
+                        "headline-md": ["Space Grotesk"],
+                        "display": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .kinetic-blur {
+            backdrop-filter: blur(20px) saturate(180%);
+            background-color: rgba(13, 13, 13, 0.85);
+        }
+        .pulse-live {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(.8); opacity: 0.8; }
+            50% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(.8); opacity: 0.8; }
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #353534; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#0D0D0D] text-on-surface selection:bg-primary-container selection:text-white font-body-md overflow-hidden h-screen">
+<!-- Main App Container -->
+<div class="flex h-full w-full">
+<!-- Sidebar Navigation (From JSON) -->
+<aside class="h-screen sticky left-0 w-64 border-r border-white/10 bg-[#0D0D0D] flex flex-col gap-8 py-8 px-4 h-full z-50">
+<div class="px-2">
+<h1 class="text-xl font-black text-white font-headline-md tracking-tight">MixVy</h1>
+<p class="font-['Space_Grotesk'] uppercase tracking-widest text-[10px] text-zinc-500 mt-1">The Pulse of Now</p>
+</div>
+<nav class="flex flex-col gap-1">
+<!-- Home -->
+<a class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="home">home</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Home</span>
+</a>
+<!-- Live -->
+<a class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="sensors">sensors</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Live</span>
+</a>
+<!-- Dating -->
+<a class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="favorite">favorite</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Dating</span>
+</a>
+<!-- messages (ACTIVE) -->
+<a class="flex items-center gap-4 py-3 px-4 text-[#7000FF] font-bold border-r-4 border-[#7000FF] bg-gradient-to-l from-[#7000FF]/10 to-transparent group" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="mail" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">messages</span>
+</a>
+<!-- Profile -->
+<a class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="person">person</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">Profile</span>
+</a>
+<!-- After Dark -->
+<a class="flex items-center gap-4 py-3 px-4 text-zinc-500 font-medium hover:text-zinc-200 hover:bg-zinc-900/50 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="nights_stay">nights_stay</span>
+<span class="font-['Space_Grotesk'] uppercase tracking-widest text-xs">After Dark</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<button class="w-full py-4 bg-primary-container text-white font-headline-md text-sm tracking-widest uppercase italic hover:brightness-125 transition-all active:scale-95">
+                    GO LIVE
+                </button>
+</div>
+</aside>
+<!-- Inbox List (Center-Left) -->
+<main class="w-[400px] border-r border-white/10 flex flex-col h-screen bg-surface-container-lowest">
+<div class="p-lg flex flex-col gap-md">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-white">Inbox</h2>
+<span class="material-symbols-outlined text-zinc-400 cursor-pointer hover:text-white" data-icon="edit_square">edit_square</span>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm" data-icon="search">search</span>
+<input class="w-full bg-surface-container-high border-none rounded-lg py-2 pl-10 pr-4 text-sm text-on-surface focus:ring-1 focus:ring-[#7000FF] transition-all" placeholder="Search conversations..." type="text"/>
+</div>
+</div>
+<!-- Conversation Tabs -->
+<div class="flex px-lg gap-lg border-b border-white/5">
+<button class="pb-3 text-xs font-label-bold text-white border-b-2 border-[#7000FF] uppercase tracking-wider">Primary</button>
+<button class="pb-3 text-xs font-label-bold text-zinc-500 hover:text-zinc-300 uppercase tracking-wider">Requests (3)</button>
+</div>
+<!-- List -->
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Chat Item Active -->
+<div class="p-lg flex gap-md bg-[#7000FF]/5 border-r-2 border-[#7000FF] cursor-pointer group">
+<div class="relative flex-shrink-0">
+<img class="w-12 h-12 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="close up portrait of a young woman with neon lighting reflecting on her face, cyberpunk aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBtFekqRW6q8fTHdRdoFxaERYiQdYxsIp4Rmtq5QaHAVGsdF6jp19cv--8eAB5beEy3bOfDkFS_OUc-yHWL4mv7m3Ob1HUk0675S4vTJ0fYjP256UPpUnyK0pi8ovunTzfGcmVdTv8IvilXJ-yhj57o3F0moqhGbMjp7dkMTB5DxpdmyFne5-eFIz8S5NE1vEsFnxvtDiJCnsCdv8WD1C6AE3pKOcu3BYFusIJWyVKWrL8Wk6YKW38ujWMrvNa6RdH1VrgUAdEhMdU"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-secondary-container rounded-full border-2 border-[#0D0D0D] pulse-live"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<span class="text-white font-label-bold truncate">Zoe_Vibe</span>
+<span class="text-[10px] text-zinc-500">2m</span>
+</div>
+<p class="text-xs text-on-surface-variant truncate font-medium">Wait, did you see the live set yet? It was insane...</p>
+</div>
+</div>
+<!-- Chat Item -->
+<div class="p-lg flex gap-md hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative flex-shrink-0">
+<img class="w-12 h-12 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="modern portrait of a man in a dark turtleneck sweater with moody cinematic side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGVzOLp7oDTZle0BqVZB66JU2jF6MyrGQ4_DNq9qH05EVi3JVcnIAQeE8FRLPpV0G1MMyapbs6N9IabZUabGHqevhGOAKd716BTrjikfbGB7XhgUndye2Uo8Xwy7OMfgTRy8TGV3Ukjt0WzlnLhhirGd-_BwT3OQQPmPbLW2vPYSvwva2UkDb9H7Pb5cRU-zRm4X6ollkvBUuznzWxlyH27dAE9XC14ccXBe-GZmKKgLzqS3jf6GIfNIL5bEFJT8LNf3IqYYBHGaTQ"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-zinc-600 rounded-full border-2 border-[#0D0D0D]"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<span class="text-white font-label-bold truncate">Marcus.Pulse</span>
+<span class="text-[10px] text-zinc-500">1h</span>
+</div>
+<p class="text-xs text-zinc-500 truncate">Check the link I sent for the afterparty.</p>
+</div>
+</div>
+<!-- Chat Item -->
+<div class="p-lg flex gap-md hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative flex-shrink-0">
+<img class="w-12 h-12 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" data-alt="dynamic shot of a woman laughing with city lights blurring in the background at night" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADsX3WSVd3MQc1Q8q4QF0_5IWInI57FnZb2usucN0OOHX0_soowhMTxaBhfjjaL8KPt8hvPdawBTdlDR0UhRW6IOQVtFwBRgdzkd9L6aJeSuPZKZ8kdB1YzC7y8Qe9h4BHiQSAtmQyseyJdb8vbUkg_uR7v7UeXN0RWl7y-6xd2JqY5rbbWwr7X81sm82xElp4xsV8bcuxTcEH3mbrhFJwpHjRKNYKKp40Ci7OCLUxxR6EQhwxJs9VTYBw8lKxE-ZBZd9YODfam3dD"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<span class="text-white font-label-bold truncate">Elena_Techno</span>
+<span class="text-[10px] text-zinc-500">3h</span>
+</div>
+<p class="text-xs text-zinc-500 truncate font-semibold text-[#7000FF]">Elena liked your MessageModel</p>
+</div>
+</div>
+<!-- Chat Item -->
+<div class="p-lg flex gap-md hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#7000FF] to-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="groups">groups</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<span class="text-white font-label-bold truncate">Berlin Squad [4]</span>
+<span class="text-[10px] text-zinc-500">Yesterday</span>
+</div>
+<p class="text-xs text-zinc-500 truncate">Alex: See you all at the gate at 11.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Active Chat Window (Center-Right) -->
+<section class="flex-1 flex flex-col bg-surface relative">
+<!-- Chat Header -->
+<header class="h-20 border-b border-white/10 px-xl flex items-center justify-between kinetic-blur sticky top-0 z-10">
+<div class="flex items-center gap-md">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover border-2 border-[#7000FF]" data-alt="zoomed in profile of a woman with neon pink lighting and high contrast shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCetOLlk2eQrbziQSNS-x8edAnXp4_nYwNSxhSDo0UXvg-Qs_vsgfwjVHUPzm9MTT-Kpr1komBRHQRQlHoMvXGRQEDx9vVd_Zd-RhRjsLuAmJBhNAf6A7Q_B-sqvfvXkEKo3iaiRiAlB9fJGIzKICRC2HL-qz9pHi7Nt9tnCbXxAcK7gimfjmmIqT-2e6d764zDmvOL-61TSsbalLSr--9UUFJMBtP_76o14ShRYoP3aTqc5XMzQBKMKzElmNtbhvZstarL6B8enK2r"/>
+</div>
+<div>
+<h3 class="text-white font-headline-md text-base">Zoe_Vibe</h3>
+<p class="text-[10px] text-secondary-container font-label-bold uppercase tracking-widest flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-secondary-container rounded-full pulse-live"></span> Active Now
+                        </p>
+</div>
+</div>
+<div class="flex items-center gap-xl text-zinc-400">
+<span class="material-symbols-outlined cursor-pointer hover:text-white" data-icon="videocam">videocam</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white" data-icon="call">call</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white" data-icon="info">info</span>
+</div>
+</header>
+<!-- messages Area -->
+<div class="flex-1 overflow-y-auto p-xl flex flex-col gap-lg custom-scrollbar">
+<!-- System MessageModel -->
+<div class="flex justify-center my-md">
+<span class="bg-surface-container-high px-3 py-1 rounded-full text-[10px] font-label-bold text-zinc-400 uppercase tracking-tighter">Tuesday, 11:24 PM</span>
+</div>
+<!-- Recipient MessageModel -->
+<div class="flex gap-md max-w-[70%]">
+<img class="w-8 h-8 rounded-full object-cover mt-auto grayscale" data-alt="small avatar portrait of a woman in low light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0HxHe3LxJUY8t15PR_TiqCHH8xHK9Dal2Ab_1F2bcjGLdvFw0zocU4i8_U1XsT5VO5AbZSBayiCqJTLOpmxfv0YL1ng0aIqKlLLhAoHOvJDdk0fRtCtdBB71J0FzPi_-fGqrYTgVc2oD-fGLGaUXTF-z1kx1F_xYcEHshHQt3TmyW5VrgGveAK3hNq4g8Yplq0fjwmRBW9lqGJ1nbwcWeEIRcySZbBIaFn33lx4wL7Ja_QEy-5EqoQ8jiNwJCfHn4JOzBkTJaGy9h"/>
+<div class="bg-surface-container-high p-md rounded-2xl rounded-bl-none text-sm text-white">
+                        Hey! Are you heading to the MixVy rooftop session tonight? I heard some secret lineup rumors. ⚡️
+                    </div>
+</div>
+<!-- User MessageModel -->
+<div class="flex flex-row-reverse gap-md max-w-[70%] self-end">
+<div class="bg-[#7000FF] p-md rounded-2xl rounded-br-none text-sm text-white shadow-[0_0_15px_rgba(112,0,255,0.3)]">
+                        Wouldn't miss it. I'm actually finishing some work now. Who did you hear is playing?
+                    </div>
+</div>
+<!-- Recipient MessageModel with Image -->
+<div class="flex gap-md max-w-[70%]">
+<img class="w-8 h-8 rounded-full object-cover mt-auto grayscale" data-alt="avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvLePcJGF-tW3mQMoaNdPuvCx45VhpynjW7cZVCYkNL5_Sfwr2lADtLZ5VD-LcatZM2llEPpTMIpI0bi91n7LpBZeSjBqELduBXoi49JqFi8HHr-LMRKAhfayCASrpTb_Wq_taFCOVYr32mw-hmhGaz8FMv2CwRrZ-IWeE2cJ_WUMvYeela6GqDTETrEOZ2aYiNK6gx-LhIFi0eOWsnaU7p5LWJVGb-9QsxM8nP5YiYz1RP-heaNuzehc8PHsKFjf3IgWc_0fmcxrY"/>
+<div class="flex flex-col gap-sm">
+<div class="bg-surface-container-high p-md rounded-2xl rounded-bl-none text-sm text-white">
+                            Supposedly X-Pulse is doing a surprise pop-up set. Check the flyer they just dropped on the 'After Dark' tab!
+                        </div>
+<div class="rounded-xl overflow-hidden border border-white/10 w-64 shadow-2xl">
+<img class="w-full h-40 object-cover" data-alt="vibrant concert flyer with neon typography and abstract light streaks against a dark city background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPmKloRfwf3nAvToexLOpKiFRVGy-VzxUI9vQreQP_cygj5g9xpULbAbrjJIktivvGLFp42EvsLMOhW63JbTmZtQdZOJWJUs6oGlsBGzFQz8IXxDihvFLshX4AQglIDocDRx0Bm5oErI4geIPl4OEjMHvJu9ow-7IwO9_o426m70UhdT2bzknAhZ2bUXUXZSyjZ8KXIHsY7xyxRcDqvu1zbqwn5F76EanLORp_sjapFO8VOc7asBbcR-qA2n7sG-U5vhwG6mvwyDaL"/>
+</div>
+</div>
+</div>
+<!-- User MessageModel -->
+<div class="flex flex-row-reverse gap-md max-w-[70%] self-end">
+<div class="bg-[#7000FF] p-md rounded-2xl rounded-br-none text-sm text-white shadow-[0_0_15px_rgba(112,0,255,0.3)]">
+                        Oh wow, that’s huge. I’ll meet you there at 12?
+                    </div>
+</div>
+<!-- Recipient is Typing -->
+<div class="flex gap-md items-center animate-pulse">
+<div class="bg-surface-container-high px-4 py-2 rounded-full flex gap-1">
+<div class="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+<div class="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- MessageModel Input -->
+<footer class="p-lg bg-surface border-t border-white/5">
+<div class="flex items-center gap-md bg-surface-container-high rounded-xl p-sm px-md border border-white/5 focus-within:border-[#7000FF]/50 transition-all">
+<span class="material-symbols-outlined text-zinc-400 cursor-pointer hover:text-white" data-icon="add_circle">add_circle</span>
+<span class="material-symbols-outlined text-zinc-400 cursor-pointer hover:text-white" data-icon="image">image</span>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white" placeholder="MessageModel Zoe_Vibe..." type="text"/>
+<span class="material-symbols-outlined text-zinc-400 cursor-pointer hover:text-white" data-icon="sentiment_satisfied">sentiment_satisfied</span>
+<button class="bg-[#7000FF] text-white p-2 rounded-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="send" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</footer>
+<!-- Whisper Pop-out Mini Chat (Overlay) -->
+<div class="absolute bottom-lg right-lg w-72 bg-[#1A1A1A] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20 flex flex-col ring-1 ring-white/10">
+<div class="p-3 bg-gradient-to-r from-zinc-900 to-[#1A1A1A] border-b border-white/5 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-[#7000FF] rounded-full shadow-[0_0_5px_#7000FF]"></div>
+<span class="text-[10px] font-headline-md tracking-widest text-white uppercase italic">Whisper Mode</span>
+</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-xs text-zinc-500 cursor-pointer" data-icon="remove">remove</span>
+<span class="material-symbols-outlined text-xs text-zinc-500 cursor-pointer" data-icon="close">close</span>
+</div>
+</div>
+<div class="p-md h-48 overflow-y-auto custom-scrollbar flex flex-col gap-sm">
+<div class="bg-[#262626] p-2 rounded-lg text-[11px] text-zinc-300 self-start max-w-[85%] border-l-2 border-[#7000FF]">
+                        Anon-99: "The rooftop code is 4421."
+                    </div>
+<div class="bg-[#3c0090] p-2 rounded-lg text-[11px] text-white self-end max-w-[85%]">
+                        Me: "Got it, cheers."
+                    </div>
+</div>
+<div class="p-2 border-t border-white/5 flex gap-2">
+<input class="flex-1 bg-black/40 border-none rounded p-2 text-[10px] text-on-surface focus:ring-0" placeholder="Whisper anonymously..." type="text"/>
+</div>
+</div>
+</section>
+</div>
+</body></html>

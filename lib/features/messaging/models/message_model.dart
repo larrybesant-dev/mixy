@@ -1,12 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 DateTime _parseDateTime(dynamic value) {
-  if (value is Timestamp) {
-    return value.toDate();
-  }
-  if (value is DateTime) {
-    return value;
-  }
+  if (value is Timestamp) return value.toDate();
+  if (value is DateTime) return value;
   if (value is String) {
     return DateTime.tryParse(value) ?? DateTime.now();
   }
@@ -16,9 +12,7 @@ DateTime _parseDateTime(dynamic value) {
 String _asString(dynamic value, {String fallback = ''}) {
   if (value is String) {
     final trimmed = value.trim();
-    if (trimmed.isNotEmpty) {
-      return trimmed;
-    }
+    if (trimmed.isNotEmpty) return trimmed;
   }
   return fallback;
 }
@@ -32,20 +26,13 @@ String? _asNullableString(dynamic value) {
 }
 
 bool _asBool(dynamic value, {bool fallback = false}) {
-  if (value is bool) {
-    return value;
-  }
-  if (value is num) {
-    return value != 0;
-  }
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+
   if (value is String) {
     final normalized = value.trim().toLowerCase();
-    if (normalized == 'true' || normalized == '1') {
-      return true;
-    }
-    if (normalized == 'false' || normalized == '0') {
-      return false;
-    }
+    if (normalized == 'true' || normalized == '1') return true;
+    if (normalized == 'false' || normalized == '0') return false;
   }
   return fallback;
 }
@@ -53,63 +40,94 @@ bool _asBool(dynamic value, {bool fallback = false}) {
 List<String> _asStringList(dynamic value) {
   if (value is List) {
     return value
-        .map((item) => item is String ? item.trim() : item?.toString().trim() ?? '')
-        .where((item) => item.isNotEmpty)
+        .where((e) => e != null)
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
         .toList(growable: false);
   }
   return const <String>[];
 }
 
-class Message {
+class MessageModel {
   final String id;
+  final String? clientMessageId;
+
   final String conversationId;
+
   final String senderId;
   final String senderName;
   final String? senderAvatarUrl;
-  final String content;
-  final DateTime createdAt;
-  final DateTime? editedAt;
-  final bool isDeleted;
-  final List<String> readBy; // UIDs of users who read this message
 
-  const Message({
+  final String content;
+
+  final DateTime createdAt;
+  final DateTime? expiresAt;
+  final DateTime? editedAt;
+
+  final bool isDeleted;
+  final List<String> readBy;
+
+  /// Message type: 'normal' | 'system' | 'announcement' | 'private'.
+  /// Defaults to 'normal' for DM messages.
+  final String type;
+
+  MessageModel({
     required this.id,
-    required this.conversationId,
+    this.clientMessageId,
     required this.senderId,
-    required this.senderName,
+    String? conversationId,
+    String? roomId,
+    String? senderName,
     this.senderAvatarUrl,
     required this.content,
-    required this.createdAt,
+    DateTime? createdAt,
+    DateTime? sentAt,
+    this.expiresAt,
     this.editedAt,
     this.isDeleted = false,
     this.readBy = const [],
-  });
+    this.type = 'normal',
+  }) : conversationId = conversationId ?? roomId ?? '',
+       senderName = senderName ?? 'Unknown',
+       createdAt = createdAt ?? sentAt ?? DateTime.now();
 
-  factory Message.fromJson(Map<String, dynamic> json, String docId) {
-    return Message(
+  factory MessageModel.fromJson(Map<String, dynamic> json, String docId) {
+    return MessageModel(
       id: docId,
+      clientMessageId: _asNullableString(json['clientMessageId']) ??
+          _asNullableString(json['clientmessageId']),
       conversationId: _asString(json['conversationId']),
+      roomId: _asString(json['roomId']),
       senderId: _asString(json['senderId']),
       senderName: _asString(json['senderName'], fallback: 'Unknown'),
       senderAvatarUrl: _asNullableString(json['senderAvatarUrl']),
       content: _asString(json['content']),
-      createdAt: _parseDateTime(json['createdAt']),
+      createdAt: json['createdAt'] != null
+          ? _parseDateTime(json['createdAt'])
+          : _parseDateTime(json['sentAt']),
+      expiresAt: json['expiresAt'] == null
+          ? null
+          : _parseDateTime(json['expiresAt']),
       editedAt: json['editedAt'] == null
           ? null
           : _parseDateTime(json['editedAt']),
       isDeleted: _asBool(json['isDeleted']),
       readBy: _asStringList(json['readBy']),
+      type: _asString(json['type'], fallback: 'normal'),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'conversationId': conversationId,
+      'clientMessageId': clientMessageId,
       'senderId': senderId,
       'senderName': senderName,
       'senderAvatarUrl': senderAvatarUrl,
       'content': content,
+      'type': type,
       'createdAt': Timestamp.fromDate(createdAt),
+      'expiresAt': expiresAt != null ? Timestamp.fromDate(expiresAt!) : null,
       'editedAt': editedAt != null ? Timestamp.fromDate(editedAt!) : null,
       'isDeleted': isDeleted,
       'readBy': readBy,
@@ -117,4 +135,46 @@ class Message {
   }
 
   bool isRead(String userId) => readBy.contains(userId);
+
+  MessageModel copyWith({
+    String? id,
+    String? clientMessageId,
+    String? conversationId,
+    String? senderId,
+    String? senderName,
+    String? senderAvatarUrl,
+    String? content,
+    DateTime? createdAt,
+    DateTime? expiresAt,
+    DateTime? editedAt,
+    bool? isDeleted,
+    List<String>? readBy,
+    String? type,
+  }) {
+    return MessageModel(
+      id: id ?? this.id,
+      clientMessageId: clientMessageId ?? this.clientMessageId,
+      conversationId: conversationId ?? this.conversationId,
+      senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
+      senderAvatarUrl: senderAvatarUrl ?? this.senderAvatarUrl,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      editedAt: editedAt ?? this.editedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      readBy: readBy ?? this.readBy,
+      type: type ?? this.type,
+    );
+  }
+
+  String get roomId => conversationId;
+
+  DateTime get sentAt => createdAt;
+
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 }
+
+
+
+

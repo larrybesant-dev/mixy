@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#4cd6ff",
+                      "surface-dim": "#131313",
+                      "primary-fixed": "#e9ddff",
+                      "on-secondary-fixed-variant": "#095300",
+                      "on-error": "#690005",
+                      "on-tertiary": "#003543",
+                      "inverse-primary": "#7212ff",
+                      "on-surface": "#e5e2e1",
+                      "inverse-on-surface": "#313030",
+                      "surface-variant": "#353534",
+                      "tertiary-fixed-dim": "#4cd6ff",
+                      "on-error-container": "#ffdad6",
+                      "error-container": "#93000a",
+                      "on-surface-variant": "#ccc3da",
+                      "inverse-surface": "#e5e2e1",
+                      "outline-variant": "#4a4457",
+                      "on-primary-container": "#ddcdff",
+                      "surface-tint": "#d1bcff",
+                      "secondary-fixed-dim": "#2ae500",
+                      "on-secondary-fixed": "#022100",
+                      "surface-container-low": "#1c1b1b",
+                      "surface": "#131313",
+                      "surface-container-high": "#2a2a2a",
+                      "on-secondary": "#053900",
+                      "on-tertiary-container": "#89e0ff",
+                      "primary-fixed-dim": "#d1bcff",
+                      "secondary": "#d7ffc5",
+                      "tertiary-fixed": "#b7eaff",
+                      "secondary-container": "#2ff801",
+                      "on-primary-fixed-variant": "#5700c9",
+                      "error": "#ffb4ab",
+                      "on-tertiary-fixed-variant": "#004e60",
+                      "on-background": "#e5e2e1",
+                      "secondary-fixed": "#79ff5b",
+                      "on-secondary-container": "#0f6d00",
+                      "outline": "#958da3",
+                      "tertiary-container": "#00647c",
+                      "primary": "#d1bcff",
+                      "surface-container-highest": "#353534",
+                      "surface-bright": "#3a3939",
+                      "on-primary": "#3c0090",
+                      "surface-container": "#201f1f",
+                      "primary-container": "#7000ff",
+                      "on-tertiary-fixed": "#001f28",
+                      "on-primary-fixed": "#23005b",
+                      "background": "#131313",
+                      "surface-container-lowest": "#0e0e0e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "margin": "24px",
+                      "xl": "40px",
+                      "unit": "4px",
+                      "md": "16px",
+                      "xs": "4px",
+                      "lg": "24px",
+                      "gutter": "20px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Space Grotesk"],
+                      "label-bold": ["Inter"],
+                      "body-md": ["Inter"],
+                      "display": ["Space Grotesk"],
+                      "body-lg": ["Inter"],
+                      "headline-lg": ["Space Grotesk"],
+                      "label-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "label-bold": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .MessageModel-bubble-user {
+            background: linear-gradient(135deg, #7000ff 0%, #00647c 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-[#0D0D0D] text-on-surface selection:bg-primary/30 overflow-hidden font-body-md">
+<!-- TopAppBar Shared Component -->
+<header class="bg-[#0D0D0D] dark:bg-[#0D0D0D] docked full-width top-0 z-50 border-b border-white/10 shadow-2xl shadow-purple-500/10 flex justify-between items-center w-full px-6 h-16">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500 font-['Space_Grotesk'] tracking-tight">MixVy</span>
+<div class="hidden md:flex gap-6">
+<a class="text-white font-bold font-['Space_Grotesk'] text-sm tracking-tight hover:bg-white/5 transition-colors px-3 py-1 rounded-lg" href="#">Feed</a>
+<a class="text-white/60 font-['Space_Grotesk'] text-sm tracking-tight hover:bg-white/5 transition-colors px-3 py-1 rounded-lg" href="#">Explore</a>
+<a class="text-white font-bold font-['Space_Grotesk'] text-sm tracking-tight hover:bg-white/5 transition-colors px-3 py-1 rounded-lg" href="#">messages</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-lg">search</span>
+<input class="bg-surface-container-high border-none rounded-full pl-10 pr-4 py-1.5 text-sm w-64 focus:ring-1 focus:ring-purple-500 transition-all placeholder:text-white/20" placeholder="Search conversations..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-white/60 hover:text-white transition-colors active:scale-95 duration-200">notifications</button>
+<button class="material-symbols-outlined text-white/60 hover:text-white transition-colors active:scale-95 duration-200">sensors</button>
+<img alt="Creator profile avatar" class="w-8 h-8 rounded-full border border-white/10 object-cover" data-alt="close-up portrait of a stylish young creator with neon lighting highlights on their face and purple background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZJBgTdKNUdrZFH4mgwCJ02HKmaecwEUGiUw32Yb09IsXRHJx--_ZHs7fv5WxvnzfHBW45Dsmk0fugfIncNc__td5bRiD71wbMJ2KI3MPa7gpwMmz_3W1pTemAAyOOF5f6V_KW0-CnwV6IaMtofKSiDDIYgE_FMBODie_5QZ8-U-kYATWJI6GORdGW8_5u1RRNd5rXI9vRtDMvP90gEGnT5hqrNjv_LtbblfjpjIqAfo5_IQUxvMs40qm8_ZllDXJ6jOtSZUG5aNeT"/>
+</div>
+</header>
+<main class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- SideNavBar Shared Component (Modified for DM Layout) -->
+<nav class="hidden lg:flex flex-col h-full py-8 gap-4 bg-[#1A1A1A]/80 backdrop-blur-2xl h-screen w-64 fixed left-0 top-16 border-r border-white/10 shadow-none z-40">
+<div class="px-6 mb-4">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="MixVy User" class="w-10 h-10 rounded-xl" data-alt="digital avatar of a person wearing sleek futuristic glasses with reflections of blue and purple neon lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHiBT1vOTghwmf3H1yWAAWOp0eEf3cWhH87lt5OL-_vZ2CktbxmK4q8-b7FBtOzZOFbfLKIAnncWTFpeji3pUHwG5GC4GNrWowSztHhWMZmxiHtNdTsoZAyDCpzA2s2ZUl6-yd4vQ5BeldpTVw2XbzC0SjWqcPc5Xp2ndrIg1V9b7qvEP8OQnizxgq-kThs_9ypclQkeI3KwTGt2NlajjEnWcoVPN0HlkBxrpctjhgYpbSV4i1f2gyHIPptWGFuxqH5yeoZV9XNAK8"/>
+<span class="absolute -bottom-1 -right-1 w-3 h-3 bg-secondary-container rounded-full border-2 border-[#1A1A1A]"></span>
+</div>
+<div>
+<p class="text-white font-['Space_Grotesk'] font-medium text-sm">MixVy</p>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="text-white/40 text-xs font-['Space_Grotesk']">Live Now</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 px-3">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">home_max</span>
+<span>Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">search</span>
+<span>Search</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600/20 to-blue-500/20 border-r-2 border-purple-500 text-white font-['Space_Grotesk'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined text-purple-500 group-hover:translate-x-1 transition-transform">forum</span>
+<span>messages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-300 font-['Space_Grotesk'] font-medium text-sm group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">account_circle</span>
+<span>Profile</span>
+</a>
+</div>
+<div class="mt-auto px-6 pb-20">
+<button class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white font-bold text-sm tracking-tight active:scale-95 transition-all shadow-lg shadow-purple-600/20">
+                    Go Live
+                </button>
+</div>
+</nav>
+<!-- Main Content Area: Chat System -->
+<div class="flex-1 lg:ml-64 flex overflow-hidden">
+<!-- Chat List Panel -->
+<aside class="w-full md:w-80 border-r border-white/10 flex flex-col bg-surface-container-lowest">
+<div class="p-4 border-b border-white/5 flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-white font-['Space_Grotesk']">Directs</h2>
+<button class="material-symbols-outlined text-white/40 hover:text-white transition-colors">add_comment</button>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+<!-- Active Chat Item -->
+<div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 relative cursor-pointer">
+<div class="relative flex-shrink-0">
+<img alt="Chat partner" class="w-12 h-12 rounded-xl object-cover" data-alt="Portrait of a young woman with neon pink hair and stylish cyber-punk accessories in a dimly lit setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB5rbmpnTjwO0bBA0AIhpZIEbCiW8IvQ5YiNI30R5CaGYMgPF-fOHFrdlAOSrD70KRwX3R0ND0oiHHVZPqK4OZT3WQ0WxLNCjxKgR4h-NB7AcaBYb5r_fw3lpLY2V4rurv_9z3kxUzf0LjEOnWbaue-xf04p7Xb8-oXyXeSk2zWfQb2gQA3RVnkmGCASlsOiANZgdbThHQ6nAmHlcIm9-exD1qjBCbnAYpeA6M5iwGiq6Gl1r4geCyBKO1mFspxylToJfV9gi6m0ux"/>
+<div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-secondary-container rounded-full border-2 border-surface-container-lowest"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="text-white font-semibold text-sm truncate">Elena Vance</span>
+<span class="text-white/30 text-[10px]">12:45 PM</span>
+</div>
+<p class="text-white/60 text-xs truncate">The render looks absolutely insane! 🚀</p>
+</div>
+<div class="w-2 h-2 rounded-full bg-purple-500"></div>
+</div>
+<!-- Other Chats -->
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative flex-shrink-0">
+<img alt="Chat partner" class="w-12 h-12 rounded-xl object-cover" data-alt="Cool male gamer with headphones and soft blue lighting on his face, cinematic depth of field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnzMgbA4vjXyb7XFDzKBHxFd-qBlcv78UgacOc1RWbl-tPovgTIXWZBxTI66iS-w3IsKPYqICJdXioAGeReYZI7cqHAE7rDClrW9dZwYpmMm2kBNsVD8oNmptTaoSZ5YBNBPY-nAeXfiH3k9BtfRtilJi22ljMUVXGvXe8eKdR74CzNbrr03rpI9R6qugsKzqiqhU35qhVXSojWu314R1x2ZHUbXRBJ246HjlVBeLz16TKAlPOaX8XDZG_lzW9RL9cCo7Rz4IXj3df"/>
+<div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-white/10 rounded-full border-2 border-surface-container-lowest"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="text-white/80 font-medium text-sm truncate">Marcus 'Pixel'</span>
+<span class="text-white/30 text-[10px]">Yesterday</span>
+</div>
+<p class="text-white/40 text-xs truncate">Sent a photo</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative flex-shrink-0">
+<img alt="Chat partner" class="w-12 h-12 rounded-xl object-cover" data-alt="Expressive female artist in a studio with blurred colorful paintings in the background, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUoiNKsq7-CmOyLxATU__Vt7qgWa54f_7xMNqZdUgP7vOO8pYURG9OsXje0PPzGRfAjS5X6DtSH6WBShyctIOlbBbYh_-b8XkR7YOiuWl3nE2grOOp4Dj1feS27p9p44wggVlMPkluCnX-XWUzQG2wI9PB8CXPUO0iEw2vMI_zaFgu2Hikym6wDYAiau_81AwS6Hc1Lqe3R8iRmolYoF8qK5C5gS75if4kBnLyDNJn-7V1HDX2cqcdhqxdjeTymP3D61-aOsfX2U0h"/>
+<div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-secondary-container rounded-full border-2 border-surface-container-lowest"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="text-white/80 font-medium text-sm truncate">Aria S.</span>
+<span class="text-white/30 text-[10px]">Mon</span>
+</div>
+<p class="text-white/40 text-xs truncate">Did you see the new stream?</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative flex-shrink-0">
+<img alt="Chat partner" class="w-12 h-12 rounded-xl object-cover" data-alt="Friendly male developer with spectacles sitting in a high-tech office with glowing screens behind him" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5oCH1aAOUpyBcMKeGzqaVBVQg78RVOjFcVsW5yBhSoBNhcCdBVF-5byoxlPRSuhnclbe4zhtnphKkxBu1nZ02zBbESL-_Tdj18gn-wmJMrGqcu04s-S19NXFqGFzeGFllJu6BHAe7ge1WV1jKnAWeXvjc258GfcnmTrF5fzx-m0fQ39G5q2z9HtQdvyKQlHxQGIQb79Cr5gR8x1ezbU3k2YlsG79noyWyS-oqKm8V6DVMP2MdE750BQ_pFF5d0HJYJ1jbolk8wPZE"/>
+<div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-white/10 rounded-full border-2 border-surface-container-lowest"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<span class="text-white/80 font-medium text-sm truncate">Dev Team Alpha</span>
+<span class="text-white/30 text-[10px]">Oct 24</span>
+</div>
+<p class="text-white/40 text-xs truncate">API update pushed to main branch.</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Chat Content (The Thread) -->
+<section class="flex-1 flex flex-col bg-[#0D0D0D]">
+<!-- Chat Header -->
+<div class="h-16 px-6 border-b border-white/5 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Elena Vance" class="w-10 h-10 rounded-xl" data-alt="Portrait of a young woman with neon pink hair and stylish cyber-punk accessories in a dimly lit setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcEn3g5sj1Ntc0CohMNfzahp_E383odv3oRzVBIMtg8sbU4JwUsxE4qxFo04djQIVqFKzhktZHNt8vWHDvRjoRHReXOVK40ST_sqFUZ93Bdv2Xk1zucoo-EmuxovBq81u-G4ZEzq0Pvs632Iq60N3lX64yr6bfVGKg59MMYG77P_wqm4zaSphY1Xd-RHT9HDGl3vzq3EgtmvybnPLuNqjq_-hB2S_eIOmZeqX-gg_1WEdImKFTuSK9eYmCrF_EO4LyQAX5kckkXEXy"/>
+<div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-secondary-container rounded-full border-2 border-[#0D0D0D]"></div>
+</div>
+<div>
+<h3 class="text-white font-bold text-sm">Elena Vance</h3>
+<p class="text-secondary-container text-[10px] font-semibold flex items-center gap-1 uppercase tracking-widest">
+<span class="w-1 h-1 rounded-full bg-secondary-container"></span> online
+                            </p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-white/40 hover:text-white transition-colors">videocam</button>
+<button class="material-symbols-outlined text-white/40 hover:text-white transition-colors">call</button>
+<div class="w-[1px] h-6 bg-white/10 mx-2"></div>
+<button class="material-symbols-outlined text-white/40 hover:text-white transition-colors">info</button>
+</div>
+</div>
+<!-- Chat Feed -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+<div class="flex justify-center">
+<span class="bg-white/5 px-4 py-1 rounded-full text-[10px] text-white/30 font-bold uppercase tracking-widest">Today</span>
+</div>
+<!-- MessageModel Received -->
+<div class="flex gap-4 max-w-[80%]">
+<img alt="Elena" class="w-8 h-8 rounded-lg mt-1" data-alt="Small thumbnail of pink-haired character" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-lyY_vOCnLSo-mE5p-whI6D9LxBcQo6UfN2EGI9c1pLVgM3x2DlojByGrtq5jAHfPekHpPYeXxVBeVSzgPLedZcg31AqG2H3FQOa53Jf5USKwR7L6jTc-ivYq1PWZWM9ppWTYLgs0YW5M0MPlfhj0VF9vaezD_3QGPyeIc_o6Gyut54D0ZkuCjs9CR6prG8n0kBcJk9KKIjFZaKHCZzYEJugMxZ6rp1AGwFVctt4b6OIBJ0ZzKE9fO6nyOjpqBXqv5NwiB4x0i4S6"/>
+<div class="space-y-1">
+<div class="flex items-baseline gap-2">
+<span class="text-white text-xs font-bold">Elena Vance</span>
+<span class="text-white/20 text-[10px]">12:40 PM</span>
+</div>
+<div class="bg-surface-container-high text-white/90 p-4 rounded-2xl rounded-tl-none border border-white/5 shadow-sm">
+<p class="text-sm leading-relaxed font-body-md">Hey! Just finished the final sequence for the Kinetic Noir clip. Check out the lighting transition here.</p>
+</div>
+</div>
+</div>
+<!-- Media Share (Received) -->
+<div class="ml-12 max-w-[60%]">
+<div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group">
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+<span class="material-symbols-outlined text-white">play_arrow</span>
+</button>
+</div>
+<img class="w-full aspect-video object-cover" data-alt="Futuristic glowing city lights at night with abstract motion blur of purple and cyan streaks, high-energy cinematic visual" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-qyAy_lSWizG1fUcuXIygYh7UhmktnJXwDosDRy2jCH4tEsu7VTPE0PlcaUU1Sy4gxKK3MiP3Buv9-KRbs9c1TrRqpqqA7IYUw4rrjznJ2c3THO7zKk_sHTO9O5N9XRUv6ncmnTnNHaVhqo41aftbM_KVPYoWkrDG8bcTVNzVH42BBy9S5Sr1cgJdcXExkvPNHAnthJlxmHYvuKLGz8mue0fGfzeKHr76rQn3W2NCjTjfgnMhdJ3DRibLeIym1ab8YDd0KCxhxhwM"/>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<span class="bg-purple-500/10 text-purple-400 text-[10px] px-2 py-0.5 rounded border border-purple-500/20 font-bold">MP4</span>
+<span class="text-white/30 text-[10px]">Kinetic_Sequence_V1.mp4 (42MB)</span>
+</div>
+</div>
+<!-- MessageModel Sent -->
+<div class="flex flex-row-reverse gap-4 max-w-[80%] ml-auto">
+<div class="space-y-1 flex flex-col items-end">
+<div class="flex items-baseline gap-2">
+<span class="text-white/20 text-[10px]">12:45 PM</span>
+<span class="text-white text-xs font-bold">You</span>
+</div>
+<div class="MessageModel-bubble-user text-white p-4 rounded-2xl rounded-tr-none shadow-lg shadow-purple-900/20">
+<p class="text-sm leading-relaxed font-body-md">The render looks absolutely insane! 🚀 The way the neon pulses with the bass line is perfect.</p>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-purple-500 text-[12px]" style="font-variation-settings: 'FILL' 1;">done_all</span>
+<span class="text-white/20 text-[10px]">Seen</span>
+</div>
+</div>
+</div>
+<!-- MessageModel Received (Typing state) -->
+<div class="flex gap-4 max-w-[80%]">
+<img alt="Elena" class="w-8 h-8 rounded-lg" data-alt="Small thumbnail of pink-haired character" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAD3Az05GFvzAWDzqcKSs_Ih73tJ1IIVkLN3sC7Q4PocYnt03V-CyMwFBeP6fFQ-Yj49tpK8WE_WiQl-7El31k1ce8NTXjYGgGiGderY57S7_D8LIKvlH2WcUrZqQ8S0TGfblRR1DA9HlyNtmJg4_JOaCfKjC3Ox5rY3qRIjvsriDpDvWcTLdUZJqOySCunngUGjVjrtLsTarWL5I3ZzmhgoHtDJlQOhwhwHVnKlxmwxA0ocj3Vmau-rgcC1CV4bRO62J1XghsOa95"/>
+<div class="bg-surface-container-high/50 p-3 rounded-2xl flex gap-1 items-center px-4">
+<span class="w-1.5 h-1.5 rounded-full bg-white/20 animate-bounce"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-white/20 animate-bounce [animation-delay:0.2s]"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-white/20 animate-bounce [animation-delay:0.4s]"></span>
+</div>
+</div>
+</div>
+<!-- Chat Input -->
+<div class="p-6">
+<div class="bg-surface-container-high rounded-2xl p-2 border border-white/5 focus-within:border-purple-500/50 transition-all shadow-xl">
+<div class="flex items-end gap-2">
+<div class="flex gap-1 p-1">
+<button class="w-10 h-10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+<span class="material-symbols-outlined">gif_box</span>
+</button>
+</div>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder:text-white/20 py-3 resize-none custom-scrollbar max-h-32" placeholder="MessageModel Elena Vance..." rows="1"></textarea>
+<div class="flex gap-1 p-1">
+<button class="w-10 h-10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-purple-500/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-2">
+<span class="text-[10px] text-white/20 font-bold uppercase tracking-widest">Alt + Enter to line break</span>
+<div class="w-1 h-1 rounded-full bg-white/10"></div>
+<span class="text-[10px] text-white/20 font-bold uppercase tracking-widest">Privacy encrypted</span>
+</div>
+</div>
+</section>
+<!-- Right Detail Panel (Collapsible/Hidden on small desk) -->
+<aside class="hidden xl:flex w-72 border-l border-white/10 flex-col bg-surface-container-lowest overflow-y-auto custom-scrollbar">
+<div class="p-8 flex flex-col items-center text-center border-b border-white/5">
+<div class="relative mb-4">
+<img alt="Elena Vance" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-purple-500/20" data-alt="Portrait of a young woman with neon pink hair and stylish cyber-punk accessories in a dimly lit setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBA-4yDYVsFi6HFTrezmp78TR0t7Jc7sENsi2OPTX0XbnxyUrnPosas5W2yT1BYWrNUVwVHxAzVFDVMBGcEpEHhvQmvadpKPrbhhQQsGNffobuUt7lt79OlQ42SbrktIhfJNs-8QPmGSqENeiB5sifTdjAU-XHwy46aWFSxRIM1UbzCorWvkPEG1aYu2McpOlhix3Qo_Aqfy0Jp481ug1MMncJkz_BlJVfTvM_UxHBpqwV29PEZfcDTdIPwCP-cXPi--CdNZrmoI7eY"/>
+<div class="absolute bottom-2 right-0 w-6 h-6 bg-secondary-container rounded-full border-4 border-surface-container-lowest"></div>
+</div>
+<h4 class="text-white font-headline-md text-xl font-['Space_Grotesk'] mb-1">Elena Vance</h4>
+<p class="text-white/40 text-xs mb-6">Visual Artist • Digital Weaver</p>
+<div class="flex gap-2 w-full">
+<button class="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-all border border-white/5">Profile</button>
+<button class="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-all border border-white/5">Mute</button>
+</div>
+</div>
+<div class="p-6 space-y-6">
+<div>
+<h5 class="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-4">Shared Media</h5>
+<div class="grid grid-cols-3 gap-2">
+<div class="aspect-square rounded-lg bg-white/5 overflow-hidden border border-white/5">
+<img class="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" data-alt="Abstract dark aesthetic image with minimal light play" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVn2-9wXdwVDhWLSIEaYpAKQQCW4f5v_J5BPc0RKpxQF7ZC82xmruHuyqW-zPCCq9TXQ6TTLYg5R26aLZKJLkQoELgdl34xfotDbeGJc_uJkTx6VcFoUbZQD0BjMdKSGWsZODwvfmp3lstPFZkEV6CltjO3e9NYpVdv2GE9au6xiK7xk2eMU6QqumkhNTqdIPngdF12ZBUV0GiA7F3JuTszxxHyBRaqP5-drZn4pvJHUAglYdLM3gz9Pu6nWGT4CWa_zHowJYWscID"/>
+</div>
+<div class="aspect-square rounded-lg bg-white/5 overflow-hidden border border-white/5">
+<img class="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" data-alt="Blue and purple silk-like fluid digital render" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDj0QpTnv5H1I4_ef57A92Lg6FZISkReQoO7Mf9T1qY1BcwxJUfRDGv1BDNsKuwO4WYKzW9Z0CaC0lWZCE7l2iN7E8VjMWszcjdlOENpzkaqDdl1Rw9w5jtmg24dwwCTqhl4uupg6-Sdw4Bw6-E6GIeUrHFXJhlFJouIHrpIwDx7RIRvCB-93nwQGNFyP4279uwM7Fw5glZ596gv4y1GXxzCpwjLL1tLEE25WsrJNbi3rm7ld-rg2BLVN8-8hkYJVH6x8Yt0a2VDS-P"/>
+</div>
+<div class="aspect-square rounded-lg bg-white/5 overflow-hidden border border-white/5">
+<img class="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" data-alt="Neon grid lines on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWHcZ0tLlf8TYngukNIbG005mak6_42iBFEO4_k6WzjYLvAtW1bUywxiIXZjfj0NiVRc8WL9Hl1kEGpqyRf2JOL0keBHTZJbeIsoJtqNkSmCy-_AygI4DQOElJ0ZvEQ9cd9vNAEb0iKkZ_qgZVR4SHjOkXMhzXrqFGxs4zvwBeW0XRT73gd207IC5pCgIAuWBC_eaS5GBr2BTf6IIRcoeQb5ws_F88mCH_g_jMIbtK6krlfzXzM0uJMc47gqWK0OfKOXLLAB42DyNn"/>
+</div>
+<div class="aspect-square rounded-lg bg-white/5 overflow-hidden border border-white/5 flex items-center justify-center group cursor-pointer">
+<span class="text-white/20 text-xs font-bold group-hover:text-white transition-colors">+12</span>
+</div>
+</div>
+</div>
+<div>
+<h5 class="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-4">Common Groups</h5>
+<div class="space-y-3">
+<div class="flex items-center gap-3 group cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-900 to-black border border-white/10 flex items-center justify-center font-bold text-[10px] text-purple-400">KV</div>
+<span class="text-white/60 text-xs group-hover:text-white transition-colors">Kinetic Vanguard</span>
+</div>
+<div class="flex items-center gap-3 group cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-900 to-black border border-white/10 flex items-center justify-center font-bold text-[10px] text-blue-400">RT</div>
+<span class="text-white/60 text-xs group-hover:text-white transition-colors">Render Technicians</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- FAB Suppression Logic: Not rendered on messaging detail view -->
+</body></html>

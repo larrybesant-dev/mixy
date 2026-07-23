@@ -1,0 +1,24 @@
+﻿{
+    "contract_version":  "1.0.0",
+    "artifact_mode":  "primary",
+    "indexVersion":  "policy_history_index_v1",
+    "entries":  [
+                    {
+                        "timestampUtc":  "2026-04-13T15:40:22.1618021Z",
+                        "eventType":  "proposal",
+                        "policyVersion":  "release_governor_policy_v1",
+                        "changeMagnitude":  0,
+                        "recommendationType":  "hold",
+                        "recommendationState":  "burn_in",
+                        "divergenceScore":  0,
+                        "divergenceClassification":  "transient",
+                        "policyStabilityScore":  1,
+                        "rcContext":  {
+                                          "runCount":  1,
+                                          "latestVerdict":  "PASS",
+                                          "latestGovernanceDecision":  "ALLOW",
+                                          "inBurnInFreeze":  true
+                                      }
+                    }
+                ]
+}

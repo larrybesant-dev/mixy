@@ -1,0 +1,79 @@
+{
+  "generatedAtUtc": "2026-04-13T13:22:34.5700693Z",
+  "policyVersion": "release_governor_policy_v1",
+  "dashboardSource": "tools/reports/confidence_drift_dashboard.json",
+  "governanceDecision": "ALLOW",
+  "runCount": 1,
+  "recentWindowSize": 3,
+  "recentTrend": {
+    "slope": 0,
+    "stdDev": 0,
+    "volatilityBand": "stable",
+    "previousWindowStdDev": 0,
+    "previousWindowVolatilityBand": "unknown",
+    "varianceIncreasePercent": 0.0
+  },
+  "latest": {
+    "generatedAtUtc": "2026-04-13T13:09:45.4486018Z",
+    "releaseVerdict": "PASS",
+    "releaseConfidenceScore": 100.0,
+    "releaseConfidenceBand": "very_high",
+    "tier0Pass": true,
+    "tier1Pass": true
+  },
+  "counts": {
+    "hardTriggered": 0,
+    "warningTriggered": 0
+  },
+  "decisions": [
+    {
+      "id": "GV-H1",
+      "severity": "hard",
+      "triggered": false,
+      "metric": "latestVerdict=PASS",
+      "MessageModel": "Block when latest release verdict is FAIL."
+    },
+    {
+      "id": "GV-H2",
+      "severity": "hard",
+      "triggered": false,
+      "metric": "recentSlope=0 threshold=-2",
+      "MessageModel": "Block on sustained negative confidence slope in recent window."
+    },
+    {
+      "id": "GV-H3",
+      "severity": "hard",
+      "triggered": false,
+      "metric": "previousBand=unknown recentBand=stable",
+      "MessageModel": "Block on volatility escalation from stable to moderate/volatile."
+    },
+    {
+      "id": "GV-H4",
+      "severity": "hard",
+      "triggered": false,
+      "metric": "consecutiveLow=0 threshold=2 limitScore=75",
+      "MessageModel": "Block on consecutive low-confidence runs."
+    },
+    {
+      "id": "GV-W1",
+      "severity": "warning",
+      "triggered": false,
+      "metric": "varianceIncreasePct=0 threshold=30",
+      "MessageModel": "Warn when confidence variance increases significantly vs baseline window."
+    },
+    {
+      "id": "GV-W2",
+      "severity": "warning",
+      "triggered": false,
+      "metric": "delta=0 threshold=-10 latestTierPass=True",
+      "MessageModel": "Warn when confidence drops despite Tier 0 and Tier 1 passing."
+    },
+    {
+      "id": "GV-I1",
+      "severity": "info",
+      "triggered": true,
+      "metric": "runCount=1 minRequired=5",
+      "MessageModel": "Trend hard-rules are observation-only until minimum sample size is reached."
+    }
+  ]
+}

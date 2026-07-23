@@ -2,6 +2,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/widgets/app_page_scaffold.dart';
+
 // ---------------------------------------------------------------------------
 // Data model
 // ---------------------------------------------------------------------------
@@ -41,9 +43,7 @@ class _CheckItem {
   BetaItemStatus status;
   String note;
 
-  _CheckItem(this.label)
-      : status = BetaItemStatus.untested,
-        note = '';
+  _CheckItem(this.label) : status = BetaItemStatus.untested, note = '';
 }
 
 class _Section {
@@ -51,7 +51,7 @@ class _Section {
   final List<_CheckItem> items;
 
   _Section(this.title, List<String> labels)
-      : items = labels.map(_CheckItem.new).toList();
+    : items = labels.map(_CheckItem.new).toList();
 }
 
 // ---------------------------------------------------------------------------
@@ -172,9 +172,9 @@ class _BetaFeedbackScreenState extends ConsumerState<BetaFeedbackScreen> {
         };
       }).toList();
 
-      await FirebaseFunctions.instance
-          .httpsCallable('submitBetaFeedback')
-          .call({'sections': payload});
+      await FirebaseFunctions.instance.httpsCallable('submitBetaFeedback').call(
+        {'sections': payload},
+      );
 
       if (mounted) setState(() => _submitted = true);
     } on FirebaseFunctionsException catch (e) {
@@ -192,7 +192,7 @@ class _BetaFeedbackScreenState extends ConsumerState<BetaFeedbackScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (_submitted) {
-      return Scaffold(
+      return AppPageScaffold(
         appBar: AppBar(title: const Text('Beta Feedback')),
         body: const Center(
           child: Column(
@@ -212,7 +212,7 @@ class _BetaFeedbackScreenState extends ConsumerState<BetaFeedbackScreen> {
       );
     }
 
-    return Scaffold(
+    return AppPageScaffold(
       appBar: AppBar(title: const Text('Beta Feedback')),
       body: Column(
         children: [
@@ -231,7 +231,7 @@ class _BetaFeedbackScreenState extends ConsumerState<BetaFeedbackScreen> {
           ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 120),
+              padding: const EdgeInsets.only(bottom: 16),
               itemCount: _sections.length,
               itemBuilder: (context, si) {
                 final section = _sections[si];
@@ -259,36 +259,37 @@ class _BetaFeedbackScreenState extends ConsumerState<BetaFeedbackScreen> {
               },
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_submitError != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    _submitError!,
-                    style: TextStyle(color: theme.colorScheme.error),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_submitError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        _submitError!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ),
+                  FilledButton(
+                    onPressed: _submitting ? null : _submit,
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Submit feedback'),
                   ),
-                ),
-              FilledButton(
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Submit feedback'),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -447,7 +448,9 @@ class _StatusButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: active ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: active
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -455,3 +458,6 @@ class _StatusButton extends StatelessWidget {
     );
   }
 }
+
+
+

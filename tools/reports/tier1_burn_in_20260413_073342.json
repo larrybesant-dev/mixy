@@ -1,0 +1,210 @@
+{
+    "generatedAtUtc":  "2026-04-13T12:33:42.4214318Z",
+    "cycles":  2,
+    "shuffle":  true,
+    "reverse":  true,
+    "pressureRepeatsPerCycle":  1,
+    "totalRuns":  14,
+    "passedRuns":  14,
+    "failedRuns":  0,
+    "caseSummary":  [
+                        {
+                            "CaseId":  "NR-3",
+                            "Runs":  4,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MaxDurationMs":  6386
+                        },
+                        {
+                            "CaseId":  "NR-4",
+                            "Runs":  4,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MaxDurationMs":  5748
+                        },
+                        {
+                            "CaseId":  "NR-1",
+                            "Runs":  2,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MaxDurationMs":  4641
+                        },
+                        {
+                            "CaseId":  "NR-2",
+                            "Runs":  4,
+                            "Fails":  0,
+                            "PassRate":  100,
+                            "MaxDurationMs":  19386
+                        }
+                    ],
+    "runs":  [
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-3",
+                     "caseName":  "No Double Navigation",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/messages_screen_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:08.9241222Z",
+                     "endedAtUtc":  "2026-04-13T12:32:14.6797403Z",
+                     "durationMs":  5756,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-4",
+                     "caseName":  "Auth-Aware Routing",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/login_signup_navigation_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:14.6993163Z",
+                     "endedAtUtc":  "2026-04-13T12:32:19.6104283Z",
+                     "durationMs":  4911,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-1",
+                     "caseName":  "Push to Correct Route",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/notification_service_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:19.6104283Z",
+                     "endedAtUtc":  "2026-04-13T12:32:23.7120158Z",
+                     "durationMs":  4102,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-2",
+                     "caseName":  "Deep Link Correctness",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/app_router_redirect_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:23.7127622Z",
+                     "endedAtUtc":  "2026-04-13T12:32:43.0989503Z",
+                     "durationMs":  19386,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-2",
+                     "caseName":  "Deep Link Correctness",
+                     "isPressure":  true,
+                     "command":  "flutter test --no-pub test/app_router_redirect_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:43.1042151Z",
+                     "endedAtUtc":  "2026-04-13T12:32:47.4265846Z",
+                     "durationMs":  4322,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-3",
+                     "caseName":  "No Double Navigation",
+                     "isPressure":  true,
+                     "command":  "flutter test --no-pub test/messages_screen_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:47.4273357Z",
+                     "endedAtUtc":  "2026-04-13T12:32:53.5417945Z",
+                     "durationMs":  6114,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  1,
+                     "caseId":  "NR-4",
+                     "caseName":  "Auth-Aware Routing",
+                     "isPressure":  true,
+                     "command":  "flutter test --no-pub test/login_signup_navigation_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:53.5425408Z",
+                     "endedAtUtc":  "2026-04-13T12:32:59.0167725Z",
+                     "durationMs":  5474,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-2",
+                     "caseName":  "Deep Link Correctness",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/app_router_redirect_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:32:59.0202767Z",
+                     "endedAtUtc":  "2026-04-13T12:33:03.4373515Z",
+                     "durationMs":  4417,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-3",
+                     "caseName":  "No Double Navigation",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/messages_screen_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:33:03.4383563Z",
+                     "endedAtUtc":  "2026-04-13T12:33:09.8247875Z",
+                     "durationMs":  6386,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-4",
+                     "caseName":  "Auth-Aware Routing",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/login_signup_navigation_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:33:09.8255453Z",
+                     "endedAtUtc":  "2026-04-13T12:33:15.4657335Z",
+                     "durationMs":  5640,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-1",
+                     "caseName":  "Push to Correct Route",
+                     "isPressure":  false,
+                     "command":  "flutter test --no-pub test/notification_service_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:33:15.4664836Z",
+                     "endedAtUtc":  "2026-04-13T12:33:20.1075801Z",
+                     "durationMs":  4641,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-2",
+                     "caseName":  "Deep Link Correctness",
+                     "isPressure":  true,
+                     "command":  "flutter test --no-pub test/app_router_redirect_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:33:20.1080858Z",
+                     "endedAtUtc":  "2026-04-13T12:33:30.1761052Z",
+                     "durationMs":  10068,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-3",
+                     "caseName":  "No Double Navigation",
+                     "isPressure":  true,
+                     "command":  "flutter test --no-pub test/messages_screen_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:33:30.1768563Z",
+                     "endedAtUtc":  "2026-04-13T12:33:36.5412120Z",
+                     "durationMs":  6364,
+                     "passed":  true
+                 },
+                 {
+                     "cycle":  2,
+                     "caseId":  "NR-4",
+                     "caseName":  "Auth-Aware Routing",
+                     "isPressure":  true,
+                     "command":  "flutter test --no-pub test/login_signup_navigation_test.dart",
+                     "exitCode":  0,
+                     "startedAtUtc":  "2026-04-13T12:33:36.5419592Z",
+                     "endedAtUtc":  "2026-04-13T12:33:42.2900230Z",
+                     "durationMs":  5748,
+                     "passed":  true
+                 }
+             ]
+}

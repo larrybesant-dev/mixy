@@ -1,0 +1,164 @@
+name: Stream Architecture Enforcement
+
+# Enforces the ONE-STREAM-PER-DOMAIN production architecture rule.
+#
+# 3-layer enforcement system:
+#   Layer 1 — Runtime debug visibility  (lib/dev_tools/firestore_stream_linter.dart)
+#   Layer 2 — Pre-commit hook           (tooling/pre_commit_stream_check.dart)
+#   Layer 3 — CI hard gate              (THIS FILE)
+#
+# CRITICAL rules (FSL) — hard fail, no suppression possible:
+#   FSL-001  StreamProvider.family without autoDispose       [CRITICAL]
+#   FSL-002  Unbounded .snapshots() without .limit()        [CRITICAL]
+#   FSL-003  Friend domain snapshot outside canonical file   [CRITICAL]
+#   FSL-004  Room domain snapshot outside canonical file     [CRITICAL]
+#   FSL-005  Messaging domain snapshot outside canonical     [CRITICAL]
+#   FSL-006  Duplicate Firestore collection subscription     [CRITICAL]
+#   FSL-007  Top-level rooms query/read outside RoomService  [CRITICAL]
+#
+# Inspection rules (FCI) — fail based on path / --strict:
+#   FCI-001  Direct .snapshots() in feature layer           [HIGH]
+#   FCI-002  FirebaseFirestore.instance in feature layer    [HIGH]
+#   FCI-003  Raw .listen() on Firestore stream              [MEDIUM]
+#   FCI-004  StreamProvider outside canonical files         [MEDIUM]
+#   FCI-005  StreamController in feature/UI layer           [MEDIUM]
+#   FCI-006  Direct collection()/doc() in feature layer     [LOW]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# Least-privilege default: this workflow only checks out code and runs the
+# local Dart linter, writing results to the job summary - no repo/PR/issue writes.
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'tool/firestore_stream_ci_linter.dart'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'tool/firestore_stream_ci_linter.dart'
+  workflow_dispatch:
+
+jobs:
+  stream-architecture-check:
+    name: Firestore Stream Architecture Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Dart / Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── Primary check — fail on HIGH + MEDIUM violations ──────────────────
+
+      # CRITICAL (FSL) violations always fail regardless of flags.
+      # HIGH violations fail in _errorPaths (lib/features/, lib/presentation/, etc.
+      # MEDIUM violations only reported (not blocking) — canonical providers exempt
+      - name: Run stream architecture hard-lock linter
+        id: linter
+        run: dart run tool/firestore_stream_ci_linter.dart
+        # Exit 1 = FSL critical OR FCI errors/warnings → job fails → PR blocked.
+        # Exit 0 = clean.
+
+      # ── On failure: add a summary to the GitHub Actions summary panel ─────
+
+      - name: Write violation summary
+        if: failure() && steps.linter.outcome == 'failure'
+        run: |
+          {
+            echo "## 🔴 Stream Architecture Hard-Lock Failure"
+            echo ""
+            echo "The production CI hard-lock linter found violations. CRITICAL violations (FSL) cannot be suppressed."
+            echo ""
+            echo "### CRITICAL Rules (FSL) — always fail CI"
+            echo "| Rule | What it catches |"
+            echo "|------|----------------|"
+            echo "| FSL-001 | \`StreamProvider.family\` without \`autoDispose\` — stale listener accumulation |"
+            echo "| FSL-002 | \`.snapshots()\` without \`.limit()\` — unbounded cost |"
+            echo "| FSL-003 | Friend domain snapshot outside \`friends_providers.dart\` |"
+            echo "| FSL-004 | Room domain snapshot outside \`participant_providers.dart\` |"
+            echo "| FSL-005 | Messaging domain snapshot outside \`messaging_provider.dart\` |"
+            echo "| FSL-006 | Duplicate \`.snapshots()\` on the same Firestore collection |"
+            echo "| FSL-007 | Top-level \`rooms\` collection query/read outside \`lib/services/room_service.dart\` |"
+            echo ""
+            echo "### Inspection Rules (FCI) — fail by path"
+            echo "| Rule | Severity | Description |"
+            echo "|------|----------|-------------|"
+            echo "| FCI-001 | 🚨 HIGH | Direct .snapshots() in feature layer |"
+            echo "| FCI-002 | 🚨 HIGH | FirebaseFirestore.instance bypass |"
+            echo "| FCI-003 | ⚠️ MEDIUM | Raw .listen() on Firestore stream |"
+            echo "| FCI-004 | ⚠️ MEDIUM | StreamProvider outside canonical files |"
+            echo "| FCI-005 | ⚠️ MEDIUM | StreamController in UI layer |"
+            echo ""
+            echo "### How to fix"
+            echo "1. For FSL-001: add \`.autoDispose\` — \`StreamProvider.autoDispose.family\`"
+            echo "2. For FSL-002: add \`.limit(50)\` before \`.snapshots()\`"
+            echo "3. For FSL-003/004/005: delete the .snapshots() and derive from the canonical StreamProvider"
+            echo "4. For FSL-006: pick one canonical provider and remove all others; wire consumers to it"
+            echo "5. For FSL-007: move the rooms query into \`lib/services/room_service.dart\` and expose a RoomService-owned helper"
+            echo "6. For FCI rules: see \`lib/core/architecture/stream_registry.dart\`"
+            echo ""
+            echo "Run locally: \`dart run tool/firestore_stream_ci_linter.dart\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── Compact output for PR annotations (always run, non-blocking) ──────
+
+      - name: Compact violation list (for annotations)
+        if: always()
+        run: |
+          dart run tool/firestore_stream_ci_linter.dart --compact || true
+
+  # ── Architecture test gate (runs existing test suite) ─────────────────────
+
+  stream-registry-tests:
+    name: Stream Registry Test Suite
+    runs-on: ubuntu-latest
+    needs: stream-architecture-check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run stream registry architecture tests
+        run: flutter test test/architecture/stream_registry_test.dart --reporter=expanded
+
+      - name: Run friend provider tests
+        run: flutter test test/friend_provider_test.dart --reporter=expanded
+

@@ -1,0 +1,115 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T19:54:09.0549416Z",
+    "diffVersion":  "policy_surface_diff_v1",
+    "schemaVersion":  "1.0.0",
+    "source":  {
+                   "historyA":  {
+                                    "label":  "current",
+                                    "indexPath":  "tools/reports/history/verdict_index.json",
+                                    "entryCount":  2
+                                },
+                   "historyB":  {
+                                    "label":  "current",
+                                    "indexPath":  "tools/reports/history/verdict_index.json",
+                                    "entryCount":  2
+                                }
+               },
+    "parameters":  {
+                       "sweepBurnInFrom":  1,
+                       "sweepBurnInTo":  6
+                   },
+    "summary":  {
+                    "entryCountDelta":  0,
+                    "firstExitThresholdDelta":  0,
+                    "lastFrozenThresholdDelta":  0,
+                    "exitSetJaccard":  1,
+                    "differingThresholds":  [
+
+                                            ],
+                    "differingThresholdCount":  0
+                },
+    "surfaces":  {
+                     "historyA":  {
+                                      "entryCount":  2,
+                                      "firstExitThreshold":  1,
+                                      "lastFrozenThreshold":  6,
+                                      "thresholdsWhereBurnInExited":  [
+                                                                          1,
+                                                                          2
+                                                                      ],
+                                      "thresholdsWhereBurnInStayedFrozen":  [
+                                                                                3,
+                                                                                4,
+                                                                                5,
+                                                                                6
+                                                                            ],
+                                      "points":  [
+                                                     {
+                                                         "burnInRcCount":  1,
+                                                         "burnInExited":  true
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  2,
+                                                         "burnInExited":  true
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  3,
+                                                         "burnInExited":  false
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  4,
+                                                         "burnInExited":  false
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  5,
+                                                         "burnInExited":  false
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  6,
+                                                         "burnInExited":  false
+                                                     }
+                                                 ]
+                                  },
+                     "historyB":  {
+                                      "entryCount":  2,
+                                      "firstExitThreshold":  1,
+                                      "lastFrozenThreshold":  6,
+                                      "thresholdsWhereBurnInExited":  [
+                                                                          1,
+                                                                          2
+                                                                      ],
+                                      "thresholdsWhereBurnInStayedFrozen":  [
+                                                                                3,
+                                                                                4,
+                                                                                5,
+                                                                                6
+                                                                            ],
+                                      "points":  [
+                                                     {
+                                                         "burnInRcCount":  1,
+                                                         "burnInExited":  true
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  2,
+                                                         "burnInExited":  true
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  3,
+                                                         "burnInExited":  false
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  4,
+                                                         "burnInExited":  false
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  5,
+                                                         "burnInExited":  false
+                                                     },
+                                                     {
+                                                         "burnInRcCount":  6,
+                                                         "burnInExited":  false
+                                                     }
+                                                 ]
+                                  }
+                 }
+}

@@ -33,9 +33,10 @@ class _FloatingGiftParticleState extends State<FloatingGiftParticle>
       duration: const Duration(milliseconds: 2200),
     );
 
-    _y = Tween<double>(begin: 0, end: -220).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
+    _y = Tween<double>(
+      begin: 0,
+      end: -220,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
     _opacity = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 8),
@@ -73,10 +74,7 @@ class _FloatingGiftParticleState extends State<FloatingGiftParticle>
               left: leftPx,
               child: Opacity(
                 opacity: _opacity.value.clamp(0.0, 1.0),
-                child: Transform.scale(
-                  scale: _scale.value,
-                  child: child,
-                ),
+                child: Transform.scale(scale: _scale.value, child: child),
               ),
             );
           },
@@ -104,7 +102,9 @@ class FloatingGiftOverlayState extends State<FloatingGiftOverlay> {
     final id = _nextId++;
     final fraction = 0.1 + (id % 5) * 0.18;
     setState(() {
-      _particles.add(_ParticleEntry(id: id, emoji: emoji, leftFraction: fraction.toDouble()));
+      _particles.add(
+        _ParticleEntry(id: id, emoji: emoji, leftFraction: fraction.toDouble()),
+      );
     });
   }
 
@@ -146,3 +146,6 @@ class _ParticleEntry {
     required this.leftFraction,
   });
 }
+
+
+

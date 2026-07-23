@@ -1,0 +1,372 @@
+name: Startup Release Governance
+
+# DISABLED: Push and pull_request triggers removed to reduce CI noise
+# (this job runs on windows-latest with a full release web build + Playwright
+# probes and many continue-on-error stages - expensive and flaky per-run).
+on:
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  workflow_dispatch:  # Can still be triggered manually
+
+permissions:
+  contents: read
+  actions: read
+
+# Re-enable by uncommenting the push/pull_request triggers above once the
+# probe stages are confirmed stable enough to run on every commit.
+
+jobs:
+  startup-gate:
+    name: Startup Gate (Governance)
+    runs-on: windows-latest
+    env:
+      PRECHECK_PORT: "9090"
+      STARTUP_LOG_PATH: tools/reports/startup_timeline.log
+      STARTUP_PROBE_REPORT_PATH: tools/reports/startup_probe_report.json
+      STARTUP_APP_URL: http://127.0.0.1:9090/
+      WEB_SMOKE_REPORT_PATH: tools/reports/web_failure_smoke_report.json
+      PREFLIGHT_CONTRACT_PATH: artifacts/preflight_contract.json
+      DEV_ENVIRONMENT_CONTRACT_PATH: artifacts/dev_environment_contract.json
+      LOCAL_DEV_CONTRACT_HASH_PATH: artifacts/dev_environment_contract.hash.local.txt
+      CI_DEV_CONTRACT_HASH_PATH: artifacts/dev_environment_contract.hash.ci.txt
+      MIXVY_LOCAL_DEV_CONTRACT_HASH: ${{ vars.MIXVY_LOCAL_DEV_CONTRACT_HASH }}
+      DEPLOYMENT_CONTRACT_PATH: artifacts/deployment_contract.json
+      DEPLOYMENT_CONTRACT_EVALUATION_PATH: artifacts/deployment_contract_evaluation.json
+      DEPLOYMENT_CONTRACT_RESOLVED_PATH: artifacts/deployment_contract.resolved.json
+      PREVIOUS_CONTRACT_HASH_PATH: artifacts/hash_chain/previous_contract_hash.txt
+      CURRENT_CONTRACT_HASH_PATH: artifacts/hash_chain/current_contract_hash.txt
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter (for Dart SDK)
+        continue-on-error: true
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Setup Node (for web runtime probes)
+        continue-on-error: true
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install Playwright runtime probes
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          npm install --no-save playwright@1.53.0
+          npm install --no-save http-server@14.1.1
+          npx playwright install chromium
+
+      - name: Restore previous contract hash
+        id: restore_contract_hash
+        uses: actions/cache/restore@v4
+        with:
+          path: artifacts/hash_chain
+          key: deployment-contract-hash-main
+          restore-keys: |
+            deployment-contract-hash-main-
+
+      - name: Prepare hash chain inputs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts/hash_chain -Force | Out-Null
+          if (Test-Path $env:CURRENT_CONTRACT_HASH_PATH) {
+            $previous = (Get-Content -Path $env:CURRENT_CONTRACT_HASH_PATH -Raw).Trim()
+            if (-not [string]::IsNullOrWhiteSpace($previous)) {
+              Set-Content -Path $env:PREVIOUS_CONTRACT_HASH_PATH -Value $previous -Encoding utf8
+            }
+          }
+
+      - name: Build release web bundle
+        continue-on-error: true
+        run: flutter build web --release --base-href "/"
+
+      - name: Port preflight (stage 2)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+
+          $mode = if ($env:GITHUB_ACTIONS -eq 'true' -or $env:CI -eq 'true') { 'Force' } else { 'Safe' }
+          & powershell -ExecutionPolicy Bypass -File tools/port_preflight_guard.ps1 -Port ([int]$env:PRECHECK_PORT) -Mode $mode -ExecutionEnvironment auto -TimeoutSeconds 45 -StabilizationSeconds 3 -OutputPath $env:PREFLIGHT_CONTRACT_PATH
+          if ($LASTEXITCODE -ne 0) {
+            throw "preflight execution failed (exit=$LASTEXITCODE)"
+          }
+
+      - name: Produce startup timeline from real web runtime
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/run_startup_probe.ps1 -Mode startup -SkipPreflight -Port 9090 -BuildPath build/web -AppUrl $env:STARTUP_APP_URL -StartupLogPath $env:STARTUP_LOG_PATH -StartupReportPath $env:STARTUP_PROBE_REPORT_PATH -WebSmokeReportPath $env:WEB_SMOKE_REPORT_PATH
+
+      - name: Run deterministic web failure-mode smoke suite
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/run_startup_probe.ps1 -Mode smoke -SkipPreflight -Port 9090 -BuildPath build/web -AppUrl $env:STARTUP_APP_URL -StartupLogPath $env:STARTUP_LOG_PATH -StartupReportPath $env:STARTUP_PROBE_REPORT_PATH -WebSmokeReportPath $env:WEB_SMOKE_REPORT_PATH
+
+      - name: Build deployment contract (stage 5)
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/build_deployment_contract.ps1 -Port ([int]$env:PRECHECK_PORT) -StartupProbeReportPath $env:STARTUP_PROBE_REPORT_PATH -SmokeProbeReportPath $env:WEB_SMOKE_REPORT_PATH -PreflightContractPath $env:PREFLIGHT_CONTRACT_PATH -PreviousHashPath $env:PREVIOUS_CONTRACT_HASH_PATH -OutputPath $env:DEPLOYMENT_CONTRACT_PATH
+
+      - name: Build developer environment contract
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/build_dev_environment_contract.ps1 -OutputPath $env:DEV_ENVIRONMENT_CONTRACT_PATH -SettingsPath .vscode/settings.json -RunId $env:GITHUB_RUN_ID
+          if (Test-Path $env:DEV_ENVIRONMENT_CONTRACT_PATH) {
+            $ciHash = (Get-FileHash -Path $env:DEV_ENVIRONMENT_CONTRACT_PATH -Algorithm SHA256).Hash.ToLowerInvariant()
+            Set-Content -Path $env:CI_DEV_CONTRACT_HASH_PATH -Value ("sha256:" + $ciHash) -Encoding utf8
+          }
+          if (-not [string]::IsNullOrWhiteSpace($env:MIXVY_LOCAL_DEV_CONTRACT_HASH)) {
+            Set-Content -Path $env:LOCAL_DEV_CONTRACT_HASH_PATH -Value $env:MIXVY_LOCAL_DEV_CONTRACT_HASH -Encoding utf8
+          }
+
+      - name: Evaluate deployment contract (stage 6)
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools/evaluate_deployment_contract.ps1 -ContractPath $env:DEPLOYMENT_CONTRACT_PATH -SchemaPath tools/deployment_contract.schema.json -OutputPath $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH -ResolvedContractPath $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH -CurrentHashPath $env:CURRENT_CONTRACT_HASH_PATH -DevEnvironmentContractPath $env:DEV_ENVIRONMENT_CONTRACT_PATH -LocalDevContractHashPath $env:LOCAL_DEV_CONTRACT_HASH_PATH -CiDevContractHashPath $env:CI_DEV_CONTRACT_HASH_PATH
+
+      - name: Governance decision (stage 7)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH)) {
+            throw 'policy_rejection'
+          }
+
+          $contract = Get-Content -Path $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH -Raw | ConvertFrom-Json
+          if ($contract.governance.decision -ne 'allow') {
+            throw 'policy_rejection'
+          }
+
+      - name: Save current contract hash
+        if: always() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: artifacts/hash_chain
+          key: deployment-contract-hash-main-${{ github.run_id }}
+
+      - name: Build startup certification bundle
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path tools/reports/startup_cert_bundle -Force | Out-Null
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+
+          if (-not (Test-Path $env:STARTUP_PROBE_REPORT_PATH)) {
+            @{
+              contractVersion = 'startup_probe_report_v1'
+              status = 'FAIL'
+              reason = 'probe_failure'
+            } | ConvertTo-Json -Depth 10 | Set-Content -Path $env:STARTUP_PROBE_REPORT_PATH -Encoding utf8
+          }
+
+          if (-not (Test-Path $env:WEB_SMOKE_REPORT_PATH)) {
+            @{
+              contractVersion = 'web_smoke_report_v1'
+              status = 'FAIL'
+              reason = 'probe_failure'
+              scenarios = @()
+            } | ConvertTo-Json -Depth 10 | Set-Content -Path $env:WEB_SMOKE_REPORT_PATH -Encoding utf8
+          }
+
+          if (-not (Test-Path $env:DEPLOYMENT_CONTRACT_PATH)) {
+            @{
+              authority = @{ runtime = 'flutter'; ci = 'github-actions'; resolvedBy = 'deployment_contract' }
+              contractState = 'BOOTSTRAP'
+              contractHash = 'missing'
+              previousContractHash = $null
+              artifact = @{ commitSha = 'unknown'; buildId = 'unknown'; workflowRunId = 'unknown' }
+              startup = @{ contractVersion = 'unknown'; ready = $false; checkpoints = @() }
+              environment = @{ class = 'unknown'; os = 'windows' }
+              privilege = @{ class = 'restricted' }
+              networking = @{ port = [int]$env:PRECHECK_PORT; portOwnership = 'unknown' }
+              probeResults = @{ startupProbe = 'fail'; smokeProbe = 'fail' }
+              governance = @{ decision = 'deny'; reasonCode = 'schema_invalid' }
+            } | ConvertTo-Json -Depth 20 | Set-Content -Path $env:DEPLOYMENT_CONTRACT_PATH -Encoding utf8
+          }
+
+          if (-not (Test-Path $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH)) {
+            @{
+              status = 'FAIL'
+              reasonCode = 'schema_invalid'
+              summary = @{ error = 'schema_invalid' }
+            } | ConvertTo-Json -Depth 20 | Set-Content -Path $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH -Encoding utf8
+          }
+
+          if (-not (Test-Path $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH)) {
+            Copy-Item $env:DEPLOYMENT_CONTRACT_PATH $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH -Force
+          }
+
+          Copy-Item $env:STARTUP_PROBE_REPORT_PATH tools/reports/startup_cert_bundle/startup_probe_report.json -Force
+          Copy-Item $env:WEB_SMOKE_REPORT_PATH tools/reports/startup_cert_bundle/web_failure_smoke_report.json -Force
+          Copy-Item $env:STARTUP_LOG_PATH tools/reports/startup_cert_bundle/startup_timeline.log -ErrorAction SilentlyContinue
+          Copy-Item $env:PREFLIGHT_CONTRACT_PATH tools/reports/startup_cert_bundle/preflight_contract.json -ErrorAction SilentlyContinue
+          Copy-Item $env:DEV_ENVIRONMENT_CONTRACT_PATH tools/reports/startup_cert_bundle/dev_environment_contract.json -ErrorAction SilentlyContinue
+          Copy-Item $env:LOCAL_DEV_CONTRACT_HASH_PATH tools/reports/startup_cert_bundle/dev_environment_contract.hash.local.txt -ErrorAction SilentlyContinue
+          Copy-Item $env:CI_DEV_CONTRACT_HASH_PATH tools/reports/startup_cert_bundle/dev_environment_contract.hash.ci.txt -ErrorAction SilentlyContinue
+          Copy-Item $env:DEPLOYMENT_CONTRACT_PATH tools/reports/startup_cert_bundle/deployment_contract.json -Force
+          Copy-Item $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH tools/reports/startup_cert_bundle/deployment_contract_evaluation.json -Force
+          Copy-Item $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH tools/reports/startup_cert_bundle/deployment_contract_resolved.json -Force
+
+      - name: Write step summary
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '## Startup Release Governance'
+
+          # Projection-only invariant: footer values are read from evaluator output and do not compute policy decisions.
+          $decision = 'unknown'
+          $contractHash = 'unknown'
+          $previousHash = 'unknown'
+          $devContractHash = 'unknown'
+          $driftDetected = $false
+          $observationCount = 0
+          $evaluationState = 'unknown'
+
+          if (Test-Path $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH) {
+            $evaluation = Get-Content -Path $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH -Raw | ConvertFrom-Json
+            if ($null -ne $evaluation.summary) {
+              if ($null -ne $evaluation.summary.governance -and -not [string]::IsNullOrWhiteSpace([string]$evaluation.summary.governance.decision)) {
+                $decision = [string]$evaluation.summary.governance.decision
+              }
+              if (-not [string]::IsNullOrWhiteSpace([string]$evaluation.summary.contractHash)) {
+                $contractHash = [string]$evaluation.summary.contractHash
+              }
+              if (-not [string]::IsNullOrWhiteSpace([string]$evaluation.summary.previousContractHash)) {
+                $previousHash = [string]$evaluation.summary.previousContractHash
+              }
+              if ($null -ne $evaluation.summary.environment -and $null -ne $evaluation.summary.environment.contract -and -not [string]::IsNullOrWhiteSpace([string]$evaluation.summary.environment.contract.hash)) {
+                $devContractHash = [string]$evaluation.summary.environment.contract.hash
+              }
+              if (-not [string]::IsNullOrWhiteSpace([string]$evaluation.summary.contractState)) {
+                $evaluationState = [string]$evaluation.summary.contractState
+              }
+            }
+
+            if ($null -ne $evaluation.observations) {
+              $observationCount = @($evaluation.observations).Count
+              foreach ($obs in @($evaluation.observations)) {
+                if ($null -ne $obs -and [string]$obs.reasonCode -eq 'environment_drift_detected') {
+                  $driftDetected = $true
+                  break
+                }
+              }
+            }
+          }
+
+          if (Test-Path $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH) {
+            $contract = Get-Content -Path $env:DEPLOYMENT_CONTRACT_RESOLVED_PATH -Raw | ConvertFrom-Json
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contract decision: $($contract.governance.decision)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contract reason: $($contract.governance.reasonCode)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contract hash: $($contract.contractHash)"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Previous hash: $($contract.previousContractHash)"
+          }
+
+          if (Test-Path $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH) {
+            $evaluation = Get-Content -Path $env:DEPLOYMENT_CONTRACT_EVALUATION_PATH -Raw | ConvertFrom-Json
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Contract evaluation: $($evaluation.status) ($($evaluation.reasonCode))"
+          }
+
+          if (Test-Path $env:STARTUP_PROBE_REPORT_PATH) {
+            $probe = Get-Content -Path $env:STARTUP_PROBE_REPORT_PATH -Raw | ConvertFrom-Json
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Startup probe: $($probe.status) ($($probe.reason))"
+          }
+
+          if (Test-Path $env:WEB_SMOKE_REPORT_PATH) {
+            $smoke = Get-Content -Path $env:WEB_SMOKE_REPORT_PATH -Raw | ConvertFrom-Json
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Web smoke: $($smoke.status) ($($smoke.reason))"
+          }
+
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ''
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '### MIXVY RELEASE SUMMARY'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```text'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '=== MIXVY RELEASE SUMMARY ==='
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "decision: $decision"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "contractHash: $contractHash"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "previousHash: $previousHash"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "devContractHash: $devContractHash"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "driftDetected: $driftDetected"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "observationCount: $observationCount"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "evaluationState: $evaluationState"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '============================='
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
+
+          Write-Host '=== MIXVY RELEASE SUMMARY ==='
+          Write-Host "decision: $decision"
+          Write-Host "contractHash: $contractHash"
+          Write-Host "previousHash: $previousHash"
+          Write-Host "devContractHash: $devContractHash"
+          Write-Host "driftDetected: $driftDetected"
+          Write-Host "observationCount: $observationCount"
+          Write-Host "evaluationState: $evaluationState"
+          Write-Host '============================='
+
+      - name: Upload deployment contract artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-contract-${{ github.run_id }}
+          path: artifacts/deployment_contract.json
+          if-no-files-found: error
+
+      - name: Upload deployment contract evaluation artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-contract-evaluation-${{ github.run_id }}
+          path: artifacts/deployment_contract_evaluation.json
+          if-no-files-found: error
+
+      - name: Upload resolved deployment contract artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-contract-resolved-${{ github.run_id }}
+          path: artifacts/deployment_contract.resolved.json
+          if-no-files-found: error
+
+      - name: Upload startup probe report artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-probe-report-${{ github.run_id }}
+          path: tools/reports/startup_probe_report.json
+          if-no-files-found: error
+
+      - name: Upload web smoke report artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke-report-${{ github.run_id }}
+          path: tools/reports/web_failure_smoke_report.json
+          if-no-files-found: error
+
+      - name: Upload startup certification bundle artifact
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-certification-bundle-${{ github.run_id }}
+          path: tools/reports/startup_cert_bundle
+          if-no-files-found: error
+

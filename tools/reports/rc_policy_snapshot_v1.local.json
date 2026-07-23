@@ -1,0 +1,63 @@
+{
+  "generatedAtUtc": "2026-04-13T13:48:14.6603612Z",
+  "snapshotVersion": "rc_policy_snapshot_v1",
+  "mode": "recommend-only",
+  "activePolicyPath": "tools/release_governor_policy.json",
+  "safetyFloorsPath": "tools/release_governor_safety_floors.json",
+  "dashboardPath": "tools/reports/confidence_drift_dashboard.json",
+  "governorDecisionPath": "tools/reports/release_governor_decision.local.json",
+  "currentPolicy": {
+    "modelVersion": "release_governor_policy_v1",
+    "minimumSamplesForTrendRules": 5,
+    "recentWindowSize": 3,
+    "slopeBlockThreshold": -2.0,
+    "confidenceThreshold": 75,
+    "consecutiveLowConfidenceToBlock": 2,
+    "volatilityEscalationBlock": {
+      "from": "stable",
+      "to": [
+        "moderate",
+        "volatile"
+      ]
+    },
+    "varianceIncreaseWarningPercent": 30,
+    "confidenceDropWarningThreshold": 10
+  },
+  "proposedPolicy": {
+    "generatedAtUtc": "2026-04-13T13:48:14.6600654Z",
+    "modelVersion": "policy_tuner_v1",
+    "mode": "recommend-only",
+    "currentThresholds": {
+      "confidenceThreshold": 75.0,
+      "slopeBlockThreshold": -2.0,
+      "varianceIncreaseWarningPercent": 30.0
+    },
+    "recommendedThresholds": {
+      "confidenceThreshold": 75.0,
+      "slopeBlockThreshold": -2.0,
+      "varianceIncreaseWarningPercent": 30.0
+    },
+    "delta": {
+      "confidenceThreshold": 0.0,
+      "slopeBlockThreshold": 0.0,
+      "varianceIncreaseWarningPercent": 0.0
+    },
+    "safetyFloors": {
+      "modelVersion": "release_governor_safety_floors_v1",
+      "minConfidenceThreshold": 70,
+      "maxRegressionTolerance": "fixed",
+      "criticalFailAlwaysBlock": true,
+      "notes": "Safety floors are immutable guardrails for tuner recommendations and must not be auto-lowered."
+    },
+    "justificationSignals": {
+      "runCount": 1,
+      "windowSize": 10,
+      "scoreAverage": 100.0,
+      "scoreStdDev": 0,
+      "scoreSlope": 0,
+      "latestVolatilityBand": "stable",
+      "latestGovernanceDecision": "ALLOW",
+      "sampleAwareMode": true
+    }
+  }
+}

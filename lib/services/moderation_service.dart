@@ -1,15 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:meta/meta.dart';
 
 import '../models/moderation_model.dart';
 
 class ModerationService {
   ModerationService({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth? _auth;
+
+  // In-memory cache: userId → (result, fetchedAt). Blocks rarely change so
+  // caching for 5 minutes eliminates repeated Firestore reads on every
+  // conversations snapshot event.
+  @visibleForTesting
+  static final Map<String, ({Set<String> ids, DateTime fetchedAt})>
+  excludedCache = {};
+
+  static void clearCache() => excludedCache.clear();
 
   String _asString(dynamic value, {String fallback = ''}) {
     if (value is String) {
@@ -43,7 +53,10 @@ class ModerationService {
       createdAt: DateTime.now().toUtc(),
     );
 
-    await _firestore.collection('blocks').doc(docId).set(block.toJson(), SetOptions(merge: true));
+    await _firestore
+        .collection('blocks')
+        .doc(docId)
+        .set(block.toJson(), SetOptions(merge: true));
   }
 
   Future<void> unblockUser(String blockedUserId) async {
@@ -115,15 +128,29 @@ class ModerationService {
       return const <String>{};
     }
 
+    final cached = excludedCache[userId];
+    if (cached != null &&
+        DateTime.now().difference(cached.fetchedAt).inMinutes < 5) {
+      return cached.ids;
+    }
+
     final results = await Future.wait([
-      _firestore.collection('blocks').where('blockerUserId', isEqualTo: userId).get(),
-      _firestore.collection('blocks').where('blockedUserId', isEqualTo: userId).get(),
+      _firestore
+          .collection('blocks')
+          .where('blockerUserId', isEqualTo: userId)
+          .limit(500)
+          .get(),
+      _firestore
+          .collection('blocks')
+          .where('blockedUserId', isEqualTo: userId)
+          .limit(500)
+          .get(),
     ]);
 
     final blockedByCurrent = results[0];
     final blockingCurrent = results[1];
 
-    return {
+    final ids = <String>{
       ...blockedByCurrent.docs
           .map((doc) => _asString(doc.data()['blockedUserId']))
           .where((id) => id.isNotEmpty),
@@ -131,10 +158,18 @@ class ModerationService {
           .map((doc) => _asString(doc.data()['blockerUserId']))
           .where((id) => id.isNotEmpty),
     };
+    excludedCache[userId] = (ids: ids, fetchedAt: DateTime.now());
+    return ids;
   }
 
-  Future<bool> hasBlockingRelationship(String firstUserId, String secondUserId) async {
+  Future<bool> hasBlockingRelationship(
+    String firstUserId,
+    String secondUserId,
+  ) async {
     final excludedUserIds = await getExcludedUserIds(firstUserId);
     return excludedUserIds.contains(secondUserId);
   }
 }
+
+
+

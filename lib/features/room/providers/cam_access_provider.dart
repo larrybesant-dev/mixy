@@ -19,7 +19,10 @@ class CamAccessController {
   }
 
   CollectionReference<Map<String, dynamic>> _requestCollection(String roomId) {
-    return _db.collection('rooms').doc(roomId).collection('cam_access_requests');
+    return _db
+        .collection('rooms')
+        .doc(roomId)
+        .collection('cam_access_requests');
   }
 
   String _requestDocId(String requesterId, String broadcasterId) {
@@ -35,7 +38,8 @@ class CamAccessController {
     final requestRef = _requestCollection(roomId).doc(requestId);
     final existingSnapshot = await requestRef.get();
     final existingData = existingSnapshot.data();
-    if (existingData != null && _asNullableString(existingData['status']) == 'pending') {
+    if (existingData != null &&
+        _asNullableString(existingData['status']) == 'pending') {
       return;
     }
 
@@ -57,14 +61,21 @@ class CamAccessController {
     );
   }
 
-  Future<void> approveRequest(String roomId, CamAccessRequestModel request) async {
+  Future<void> approveRequest(
+    String roomId,
+    CamAccessRequestModel request,
+  ) async {
     final batch = _db.batch();
     batch.update(_requestCollection(roomId).doc(request.id), {
       'status': 'approved',
       'updatedAt': FieldValue.serverTimestamp(),
     });
     batch.set(
-      _db.collection('rooms').doc(roomId).collection('participants').doc(request.requesterId),
+      _db
+          .collection('rooms')
+          .doc(roomId)
+          .collection('participants')
+          .doc(request.requesterId),
       {
         'userId': request.requesterId,
         'role': 'cohost',
@@ -80,8 +91,12 @@ class CamAccessController {
   }
 
   Future<void> denyRequest(String roomId, String requestId) async {
-    final requestSnapshot = await _requestCollection(roomId).doc(requestId).get();
-    final requesterId = _asNullableString(requestSnapshot.data()?['requesterId']);
+    final requestSnapshot = await _requestCollection(
+      roomId,
+    ).doc(requestId).get();
+    final requesterId = _asNullableString(
+      requestSnapshot.data()?['requesterId'],
+    );
     await _requestCollection(roomId).doc(requestId).update({
       'status': 'denied',
       'updatedAt': FieldValue.serverTimestamp(),
@@ -99,41 +114,54 @@ final camAccessControllerProvider = Provider<CamAccessController>((ref) {
   return CamAccessController(ref.watch(roomFirestoreProvider));
 });
 
-final roomCamAccessRequestsProvider = StreamProvider.autoDispose.family<List<CamAccessRequestModel>, String>((ref, roomId) {
-  final firestore = ref.watch(roomFirestoreProvider);
-  return firestore
-      .collection('rooms')
-      .doc(roomId)
-      .collection('cam_access_requests')
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map(
-        (snapshot) => snapshot.docs
-            .map((doc) => CamAccessRequestModel.fromJson({'id': doc.id, ...doc.data()}))
-            .toList(growable: false),
-      );
-});
+final roomCamAccessRequestsProvider = StreamProvider.autoDispose
+    .family<List<CamAccessRequestModel>, String>((ref, roomId) {
+      final firestore = ref.watch(roomFirestoreProvider);
+      return firestore
+          .collection('rooms')
+          .doc(roomId)
+          .collection('cam_access_requests')
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map(
+                  (doc) => CamAccessRequestModel.fromJson({
+                    'id': doc.id,
+                    ...doc.data(),
+                  }),
+                )
+                .toList(growable: false),
+          );
+    });
 
-final myCamAccessRequestProvider = StreamProvider.autoDispose.family<CamAccessRequestModel?, ({String roomId, String requesterId})>((ref, params) {
-  final firestore = ref.watch(roomFirestoreProvider);
-  return firestore
-      .collection('rooms')
-      .doc(params.roomId)
-      .collection('cam_access_requests')
-      .where('requesterId', isEqualTo: params.requesterId)
-      .snapshots()
-      .map((snapshot) {
-        if (snapshot.docs.isEmpty) {
-          return null;
-        }
-        final requests = snapshot.docs
-            .map((doc) => CamAccessRequestModel.fromJson({'id': doc.id, ...doc.data()}))
-            .toList(growable: false)
-          ..sort((a, b) {
-            final aCreated = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bCreated = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bCreated.compareTo(aCreated);
-          });
-        return requests.first;
+final myCamAccessRequestProvider = StreamProvider.autoDispose
+    .family<CamAccessRequestModel?, ({String roomId, String requesterId})>((
+      ref,
+      params,
+    ) {
+      return Stream.multi((controller) {
+        final subscription = ref.listen(
+          roomCamAccessRequestsProvider(params.roomId),
+          (_, next) {
+            if (controller.isClosed) return;
+            next.whenData((requests) {
+              final myRequests = requests
+                  .where((request) => request.requesterId == params.requesterId)
+                  .toList();
+              if (myRequests.isEmpty) {
+                controller.add(null);
+              } else {
+                controller.add(myRequests.first);
+              }
+            });
+          },
+        );
+        controller.onCancel = subscription.close;
       });
-});
+    });
+
+
+
+

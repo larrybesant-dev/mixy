@@ -1,0 +1,7 @@
+
+lib\router\app_router.dart:41:import '../features/messaging/screens/whisper_popout_screen.dart';
+lib\widgets\floating_whisper_panel.dart:7:import '../features/messaging/models/MessageModel_model.dart';
+lib\widgets\floating_whisper_panel.dart:8:import '../features/messaging/providers/messaging_provider.dart';
+lib\widgets\friends_panel_button.dart:9:import '../features/messaging/providers/messaging_provider.dart';
+lib\widgets\user_profile_popup.dart:11:import '../features/messaging/providers/messaging_provider.dart';
+

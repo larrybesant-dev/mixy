@@ -1,0 +1,57 @@
+﻿{
+    "generatedAtUtc":  "2026-04-13T18:40:43.9444221Z",
+    "modelVersion":  "confidence_drift_dashboard_v1",
+    "source":  {
+                   "reportsDirectory":  "tools/reports",
+                   "historyDirectory":  "tools/reports/history",
+                   "preferHistory":  true,
+                   "verdictPattern":  "release_candidate_verdict*.json",
+                   "verdictCount":  2
+               },
+    "summary":  {
+                    "latestScore":  100,
+                    "latestBand":  "very_high",
+                    "latestVerdict":  "PASS",
+                    "scoreDeltaFromPrevious":  0,
+                    "averageScore":  100,
+                    "minScore":  100,
+                    "maxScore":  100,
+                    "scoreStdDev":  0,
+                    "trendSlopePerRun":  0,
+                    "volatilityBand":  "stable"
+                },
+    "gateStability":  {
+                          "failedTier0Runs":  0,
+                          "failedTier1Runs":  0
+                      },
+    "confidenceBandDistribution":  {
+                                       "very_high":  2,
+                                       "high":  0,
+                                       "moderate":  0,
+                                       "low":  0
+                                   },
+    "runs":  [
+                 {
+                     "file":  "release_candidate_verdict_local_20260413T183707897Z.json",
+                     "generatedAtUtc":  "2026-04-13T18:37:07.8732167Z",
+                     "releaseVerdict":  "PASS",
+                     "releaseConfidenceScore":  100,
+                     "releaseConfidenceBand":  "very_high",
+                     "tier0Pass":  true,
+                     "tier1Pass":  true,
+                     "tier0AvgVariability":  0,
+                     "tier1AvgVariability":  0
+                 },
+                 {
+                     "file":  "release_candidate_verdict_local_20260413T184043338Z.json",
+                     "generatedAtUtc":  "2026-04-13T18:40:43.3184601Z",
+                     "releaseVerdict":  "PASS",
+                     "releaseConfidenceScore":  100,
+                     "releaseConfidenceBand":  "very_high",
+                     "tier0Pass":  true,
+                     "tier1Pass":  true,
+                     "tier0AvgVariability":  0,
+                     "tier1AvgVariability":  0
+                 }
+             ]
+}

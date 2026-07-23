@@ -1,0 +1,25 @@
+{
+  "generatedAtUtc": "2026-04-13T13:56:42.0883013Z",
+  "receiptVersion": "policy_promotion_receipt_v1",
+  "status": "preview_only",
+  "proposalPath": "tools/reports/proposed_thresholds.json",
+  "activePolicyPath": "tools/release_governor_policy.json",
+  "policy_delta_summary": {
+    "confidenceThreshold": {
+      "current": 75.0,
+      "proposed": 75.0,
+      "delta": 0.0
+    },
+    "slopeBlockThreshold": {
+      "current": -2.0,
+      "proposed": -2.0,
+      "delta": 0.0
+    },
+    "varianceIncreaseWarningPercent": {
+      "current": 30.0,
+      "proposed": 30.0,
+      "delta": 0.0
+    }
+  },
+  "applyRequested": false
+}

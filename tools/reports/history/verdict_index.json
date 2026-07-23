@@ -1,0 +1,42 @@
+[
+  {
+    "generatedAtUtc": "2026-04-13T18:37:07.8732167Z",
+    "file": "release_candidate_verdict_local_20260413T183707897Z.json",
+    "gitRef": null,
+    "gitSha": null,
+    "runId": null,
+    "runNumber": null,
+    "releaseCandidateVerdict": "PASS",
+    "releaseConfidenceScore": 100
+  },
+  {
+    "generatedAtUtc": "2026-04-13T18:40:43.3184601Z",
+    "file": "release_candidate_verdict_local_20260413T184043338Z.json",
+    "gitRef": null,
+    "gitSha": null,
+    "runId": null,
+    "runNumber": null,
+    "releaseCandidateVerdict": "PASS",
+    "releaseConfidenceScore": 100
+  },
+  {
+    "generatedAtUtc": "2026-04-16T00:40:10.9292232Z",
+    "file": "release_candidate_verdict_local_20260416T004010964Z.json",
+    "gitRef": null,
+    "gitSha": null,
+    "runId": null,
+    "runNumber": null,
+    "releaseCandidateVerdict": "PASS",
+    "releaseConfidenceScore": 100
+  },
+  {
+    "generatedAtUtc": "2026-04-25T13:55:53.3153700Z",
+    "file": "release_candidate_verdict_local_20260425T135553364Z.json",
+    "gitRef": null,
+    "gitSha": null,
+    "runId": null,
+    "runNumber": null,
+    "releaseCandidateVerdict": "PASS",
+    "releaseConfidenceScore": 100.0
+  }
+]

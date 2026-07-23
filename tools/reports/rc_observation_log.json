@@ -1,0 +1,80 @@
+[
+  {
+    "rc_id": "rc-1.0.0-001",
+    "timestamp": "2026-04-13T11:25:55.6555841-05:00",
+    "governance_lock": "governance-v1-lock",
+    "identity_eligible": true,
+    "hash_mismatches": [],
+    "contract_valid": true,
+    "contract_status": "passed",
+    "tuner_state": "ok",
+    "artifact_mode": "primary",
+    "inBurnInFreeze": true,
+    "notes": ""
+  },
+  {
+    "rc_id": "rc-1.0.0-002",
+    "timestamp": "2026-04-13T11:26:40.0680709-05:00",
+    "governance_lock": "governance-v1-lock",
+    "identity_eligible": true,
+    "hash_mismatches": [],
+    "contract_valid": true,
+    "contract_status": "passed",
+    "tuner_state": "ok",
+    "artifact_mode": "primary",
+    "inBurnInFreeze": true,
+    "notes": ""
+  },
+  {
+    "rc_id": "rc-1.0.0-003",
+    "timestamp": "2026-04-13T11:27:39.1136171-05:00",
+    "governance_lock": "governance-v1-lock",
+    "identity_eligible": true,
+    "hash_mismatches": [],
+    "contract_valid": true,
+    "contract_status": "passed",
+    "tuner_state": "ok",
+    "artifact_mode": "primary",
+    "inBurnInFreeze": true,
+    "notes": ""
+  },
+  {
+    "rc_id": "rc-1.0.0-004",
+    "timestamp": "2026-04-13T11:31:40.4885297-05:00",
+    "governance_lock": "governance-v1-lock",
+    "identity_eligible": true,
+    "hash_mismatches": [],
+    "contract_valid": true,
+    "contract_status": "passed",
+    "tuner_state": "ok",
+    "artifact_mode": "primary",
+    "inBurnInFreeze": true,
+    "notes": ""
+  },
+  {
+    "rc_id": "rc-1.0.0-005",
+    "timestamp": "2026-04-13T11:32:36.9414802-05:00",
+    "governance_lock": "governance-v1-lock",
+    "identity_eligible": true,
+    "hash_mismatches": [],
+    "contract_valid": true,
+    "contract_status": "passed",
+    "tuner_state": "ok",
+    "artifact_mode": "primary",
+    "inBurnInFreeze": true,
+    "notes": ""
+  },
+  {
+    "rc_id": "rc-1.0.0-006",
+    "timestamp": "2026-04-13T13:28:06.3488915-05:00",
+    "governance_lock": "governance-v1-lock",
+    "identity_eligible": true,
+    "hash_mismatches": [],
+    "contract_valid": true,
+    "contract_status": "passed",
+    "tuner_state": "ok",
+    "artifact_mode": "primary",
+    "inBurnInFreeze": true,
+    "notes": ""
+  }
+]

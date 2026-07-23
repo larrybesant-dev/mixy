@@ -1,13 +1,18 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/mixvy_economy_config.dart';
+import '../../core/layout/app_layout.dart';
 import '../../models/cash_out_request_model.dart';
 import '../../models/user_model.dart';
 import '../../models/wallet_model.dart';
+import '../../shared/widgets/app_page_scaffold.dart';
+import '../../shared/widgets/async_state_view.dart';
 import '../../services/cash_out_service.dart';
 import '../../services/payment_api.dart';
 import 'stripe_web_payment_widget.dart';
@@ -28,14 +33,16 @@ class PaymentsScreen extends ConsumerStatefulWidget {
 class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   final _recipientController = TextEditingController();
   final _amountController = TextEditingController(text: '10');
-  final CashOutService _cashOutService = CashOutService();
+  late CashOutService _cashOutService;
   UserModel? _selectedRecipient;
   late Future<StripeConnectStatus> _connectStatusFuture;
 
   @override
   void initState() {
     super.initState();
-    _connectStatusFuture = PaymentApi.getStripeConnectStatus();
+    _cashOutService = ref.read(cashOutServiceProvider);
+    final paymentApi = ref.read(paymentApiProvider);
+    _connectStatusFuture = paymentApi.getStripeConnectStatus();
   }
 
   @override
@@ -49,9 +56,16 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     final recipientId = _selectedRecipient?.id;
     final amount = double.tryParse(_amountController.text.trim());
 
-    if (recipientId == null || amount == null || amount <= 0 || amount > 100000) {
+    if (recipientId == null ||
+        amount == null ||
+        amount <= 0 ||
+        amount > 100000) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a recipient and enter a valid amount (max 100000).')),
+        const SnackBar(
+          content: Text(
+            'Select a recipient and enter a valid amount (max 100000).',
+          ),
+        ),
       );
       return;
     }
@@ -68,14 +82,18 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     final state = ref.read(paymentControllerProvider);
-    final message = state.error ?? state.successMessage;
+    final message = state.error ?? state.successmessage;
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
   void _selectRecipient(UserModel recipient) {
-    final safeName = recipient.username.isNotEmpty ? recipient.username : 'MixVy user';
+    final safeName = recipient.username.isNotEmpty
+        ? recipient.username
+        : 'MixVy user';
     setState(() {
       _selectedRecipient = recipient;
       _recipientController.text = safeName;
@@ -94,8 +112,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
   void _setQuickAmount(double amount) {
     setState(() {
-      _amountController.text = amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
-      _amountController.selection = TextSelection.collapsed(offset: _amountController.text.length);
+      _amountController.text = amount.toStringAsFixed(
+        amount.truncateToDouble() == amount ? 0 : 2,
+      );
+      _amountController.selection = TextSelection.collapsed(
+        offset: _amountController.text.length,
+      );
     });
   }
 
@@ -106,13 +128,16 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     try {
-      final code = await ref.read(referralServiceProvider).generateReferralCode(user.uid);
+      final code = await ref
+          .read(referralServiceProvider)
+          .generateReferralCode(user.uid);
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Referral code ready: $code')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Referral code ready: $code')));
+      await _shareReferralCode(code);
     } catch (e) {
       if (!mounted) {
         return;
@@ -123,7 +148,27 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
   }
 
-  Future<void> _requestCashOut(WalletModel wallet, double pendingCashOut) async {
+  Future<void> _copyReferralCode(String code) async {
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Referral code copied.')));
+  }
+
+  Future<void> _shareReferralCode(String code) async {
+    await Share.share(
+      'Join me on MixVy and use my referral code: $code\nhttps://mixvy.app',
+      subject: 'Join me on MixVy',
+    );
+  }
+
+  Future<void> _requestCashOut(
+    WalletModel wallet,
+    double pendingCashOut,
+  ) async {
     final amountController = TextEditingController();
     final submitted = await showDialog<bool>(
       context: context,
@@ -139,7 +184,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
@@ -184,22 +231,27 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not request cash-out: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not request cash-out: $e')));
     }
   }
 
   Future<void> _refreshConnectStatus() async {
+    final paymentApi = ref.read(paymentApiProvider);
     setState(() {
-      _connectStatusFuture = PaymentApi.getStripeConnectStatus();
+      _connectStatusFuture = paymentApi.getStripeConnectStatus();
     });
   }
 
   Future<void> _launchPayoutSetup() async {
     try {
-      final url = await PaymentApi.createStripeConnectOnboardingLink();
-      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      final paymentApi = ref.read(paymentApiProvider);
+      final url = await paymentApi.createStripeConnectOnboardingLink();
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         throw Exception('Could not open Stripe onboarding.');
       }
@@ -214,8 +266,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
   Future<void> _openStripeDashboard() async {
     try {
-      final url = await PaymentApi.createStripeConnectDashboardLink();
-      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      final paymentApi = ref.read(paymentApiProvider);
+      final url = await paymentApi.createStripeConnectDashboardLink();
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         throw Exception('Could not open Stripe dashboard.');
       }
@@ -271,7 +327,8 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     try {
-      await PaymentApi.requestRefund(
+      final paymentApi = ref.read(paymentApiProvider);
+      await paymentApi.requestRefund(
         transactionId: tx.id,
         reason: reasonController.text,
       );
@@ -287,28 +344,75 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
   }
 
+  Widget _statusChip(String label, bool enabled) {
+    return Chip(
+      avatar: Icon(
+        enabled ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+        size: 18,
+        color: enabled ? const Color(0xFFD4AF37) : const Color(0xFFAD9585),
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: enabled ? const Color(0xFFD4AF37) : const Color(0xFFAD9585),
+          fontWeight: enabled ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      backgroundColor: const Color(0xFF1A1416),
+      side: BorderSide(
+        color: enabled
+            ? const Color(0xFFD4AF37).withValues(alpha: 0.40)
+            : const Color(0xFFAD9585).withValues(alpha: 0.25),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final currentUserId = ref.watch(currentPaymentUserIdProvider);
     final paymentState = ref.watch(paymentControllerProvider);
     final walletDetailsAsync = ref.watch(walletDetailsProvider);
     final referralCodeAsync = ref.watch(referralCodeProvider);
     final referralEarningsAsync = ref.watch(referralEarningsProvider);
     final cashOutRequestsAsync = _cashOutService.requestsForCurrentUser();
     final transactionsAsync = ref.watch(
-      coinTransactionStreamProvider(user?.uid ?? ''),
+      coinTransactionStreamProvider(currentUserId ?? ''),
     );
-    final refundRequestsAsync = PaymentApi.getMyRefundRequests(user?.uid ?? '');
+    final paymentApi = ref.watch(paymentApiProvider);
+    final refundRequestsAsync = paymentApi.getMyRefundRequests(
+      currentUserId ?? '',
+    );
     final recipientsAsync = ref.watch(
       paymentRecipientSearchProvider(
         _selectedRecipient == null ? _recipientController.text : '',
       ),
     );
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Payments')),
+    return AppPageScaffold(
+      backgroundColor: const Color(0xFF0D0A0C),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF110D0F),
+        foregroundColor: const Color(0xFFF7EDE2),
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.20),
+          ),
+        ),
+        title: Text(
+          'Payments',
+          style: GoogleFonts.playfairDisplay(
+            color: const Color(0xFFD4AF37),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(context.pageHorizontalPadding),
         children: [
           if (kIsWeb) ...[
             const StripeWebPaymentWidget(),
@@ -318,7 +422,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             future: _connectStatusFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const LinearProgressIndicator();
+                return const AppLoadingView(label: 'Loading payout setup');
               }
 
               if (snapshot.hasError) {
@@ -346,13 +450,14 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                 );
               }
 
-              final status = snapshot.data ?? const StripeConnectStatus(
-                hasAccount: false,
-                chargesEnabled: false,
-                payoutsEnabled: false,
-                detailsSubmitted: false,
-                onboardingComplete: false,
-              );
+              final status = snapshot.data ??
+                  const StripeConnectStatus(
+                    hasAccount: false,
+                    chargesEnabled: false,
+                    payoutsEnabled: false,
+                    detailsSubmitted: false,
+                    onboardingComplete: false,
+                  );
 
               return Card(
                 child: Padding(
@@ -389,7 +494,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                           FilledButton.icon(
                             onPressed: _launchPayoutSetup,
                             icon: const Icon(Icons.account_balance_outlined),
-                            label: Text(status.onboardingComplete ? 'Update Payout Setup' : 'Start Payout Setup'),
+                            label: Text(
+                              status.onboardingComplete
+                                  ? 'Update Payout Setup'
+                                  : 'Start Payout Setup',
+                            ),
                           ),
                           if (status.hasAccount)
                             OutlinedButton.icon(
@@ -418,7 +527,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                 children: const [
                   Icon(Icons.shield_outlined),
                   SizedBox(width: 10),
-                  Expanded(child: Text('Send or request coins with trusted members only. Double-check recipient before confirming.')),
+                  Expanded(
+                    child: Text(
+                      'Send or request coins with trusted members only. Double-check recipient before confirming.',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -426,7 +539,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
           const SizedBox(height: 12),
           Text(
             'Wallet',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: GoogleFonts.playfairDisplay(
+              color: const Color(0xFFD4AF37),
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
           ),
           const SizedBox(height: 8),
           walletDetailsAsync.when(
@@ -434,10 +551,18 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               return StreamBuilder<List<CashOutRequestModel>>(
                 stream: cashOutRequestsAsync,
                 builder: (context, snapshot) {
-                  final requests = snapshot.data ?? const <CashOutRequestModel>[];
+                  final requests =
+                      snapshot.data ?? const <CashOutRequestModel>[];
                   final pendingCashOut = requests
-                      .where((request) => request.status == 'pending' || request.status == 'processing')
-                      .fold<double>(0, (runningTotal, request) => runningTotal + request.amount);
+                      .where(
+                        (request) =>
+                            request.status == 'pending' ||
+                            request.status == 'processing',
+                      )
+                      .fold<double>(
+                        0,
+                        (runningTotal, request) => runningTotal + request.amount,
+                      );
 
                   return Card(
                     child: Padding(
@@ -445,23 +570,38 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Coin balance: ${wallet.coinBalance.toStringAsFixed(0)}'),
+                          Text(
+                            'Coin balance: ${wallet.coinBalance.toStringAsFixed(0)}',
+                          ),
                           const SizedBox(height: 6),
-                          Text('Cash balance: ${wallet.cashBalance.toStringAsFixed(2)}'),
+                          Text(
+                            'Cash balance: ${wallet.cashBalance.toStringAsFixed(2)}',
+                          ),
                           const SizedBox(height: 6),
-                          Text('Referral earnings: ${wallet.referralEarnings.toStringAsFixed(2)}'),
+                          Text(
+                            'Referral earnings: ${wallet.referralEarnings.toStringAsFixed(2)}',
+                          ),
                           const SizedBox(height: 6),
-                          Text('Room earnings: ${wallet.roomEarnings.toStringAsFixed(2)}'),
+                          Text(
+                            'Room earnings: ${wallet.roomEarnings.toStringAsFixed(2)}',
+                          ),
                           const SizedBox(height: 6),
-                          Text('Gift earnings: ${wallet.giftEarnings.toStringAsFixed(2)}'),
+                          Text(
+                            'Gift earnings: ${wallet.giftEarnings.toStringAsFixed(2)}',
+                          ),
                           const SizedBox(height: 6),
-                          Text('Pending cash-out: ${pendingCashOut.toStringAsFixed(2)}'),
+                          Text(
+                            'Pending cash-out: ${pendingCashOut.toStringAsFixed(2)}',
+                          ),
                           const SizedBox(height: 12),
                           FilledButton.icon(
-                            onPressed: (wallet.cashBalance - pendingCashOut) >= MixVyEconomyConfig.creatorPayoutMinimumCash
+                            onPressed: (wallet.cashBalance - pendingCashOut) >=
+                                    MixVyEconomyConfig.creatorPayoutMinimumCash
                                 ? () => _requestCashOut(wallet, pendingCashOut)
                                 : null,
-                            icon: const Icon(Icons.account_balance_wallet_outlined),
+                            icon: const Icon(
+                              Icons.account_balance_wallet_outlined,
+                            ),
                             label: Text(
                               'Request Cash Out (${MixVyEconomyConfig.creatorPayoutMinimumCash.toStringAsFixed(0)} min)',
                             ),
@@ -474,19 +614,23 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                             ),
                             const SizedBox(height: 8),
                             ...requests.take(3).map(
-                              (request) => ListTile(
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.payments_outlined),
-                                title: Text(request.amount.toStringAsFixed(2)),
-                                subtitle: Text(request.status),
-                                trailing: Text(
-                                  request.createdAt == null
-                                      ? 'Pending'
-                                      : '${request.createdAt!.month}/${request.createdAt!.day}',
+                                  (request) => ListTile(
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: const Icon(
+                                      Icons.payments_outlined,
+                                    ),
+                                    title: Text(
+                                      request.amount.toStringAsFixed(2),
+                                    ),
+                                    subtitle: Text(request.status),
+                                    trailing: Text(
+                                      request.createdAt == null
+                                          ? 'Pending'
+                                          : '${request.createdAt!.month}/${request.createdAt!.day}',
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                           ],
                         ],
                       ),
@@ -495,8 +639,9 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                 },
               );
             },
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('Wallet unavailable: $e'),
+            loading: () => const AppLoadingView(label: 'Loading wallet'),
+            error: (e, _) => AppErrorView(
+                error: e, fallbackContext: 'Wallet unavailable.'),
           ),
           const SizedBox(height: 14),
           Card(
@@ -511,17 +656,48 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                   ),
                   const SizedBox(height: 8),
                   referralCodeAsync.when(
-                    data: (code) => Text(
-                      code == null ? 'No active referral code yet.' : 'Code: $code',
+                    data: (code) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          code == null
+                              ? 'No active referral code yet.'
+                              : 'Code: $code',
+                        ),
+                        if (code != null) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => _copyReferralCode(code),
+                                icon: const Icon(Icons.copy_rounded),
+                                label: const Text('Copy Code'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () => _shareReferralCode(code),
+                                icon: const Icon(Icons.share_outlined),
+                                label: const Text('Share Code'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('Referral code unavailable: $e'),
+                    loading: () => const AppLoadingView(
+                        label: 'Loading referral code'),
+                    error: (e, _) => AppErrorView(
+                      error: e,
+                      fallbackContext: 'Referral code unavailable.',
+                    ),
                   ),
                   const SizedBox(height: 8),
                   referralEarningsAsync.when(
-                    data: (total) => Text('Referral earnings: ${total.toStringAsFixed(2)}'),
+                    data: (total) =>
+                        Text('Referral earnings: ${total.toStringAsFixed(2)}'),
                     loading: () => const SizedBox.shrink(),
-                    error: (e, _) => Text('Referral earnings unavailable: $e'),
+                    error: (e, _) => Text('Referral earnings unavailable.'),
                   ),
                   const SizedBox(height: 8),
                   Align(
@@ -541,7 +717,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             stream: refundRequestsAsync,
             builder: (context, snapshot) {
               final requests = snapshot.data ?? const <RefundRequest>[];
-              final openRequests = requests.where((r) => r.status == 'pending' || r.status == 'under_review').length;
+              final openRequests = requests
+                  .where(
+                    (r) => r.status == 'pending' || r.status == 'under_review',
+                  )
+                  .length;
 
               return Card(
                 child: Padding(
@@ -554,25 +734,31 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      Text(openRequests == 0
-                          ? 'No open refund requests.'
-                          : '$openRequests refund request(s) are currently in review.'),
+                      Text(
+                        openRequests == 0
+                            ? 'No open refund requests.'
+                            : '$openRequests refund request(s) are currently in review.',
+                      ),
                       if (requests.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         ...requests.take(3).map(
-                          (request) => ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.support_agent_outlined),
-                            title: Text('Refund ${request.amount.toStringAsFixed(2)}'),
-                            subtitle: Text('Status: ${request.status}'),
-                            trailing: Text(
-                              request.createdAt == null
-                                  ? 'Pending'
-                                  : '${request.createdAt!.month}/${request.createdAt!.day}',
+                              (request) => ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(
+                                  Icons.support_agent_outlined,
+                                ),
+                                title: Text(
+                                  'Refund ${request.amount.toStringAsFixed(2)}',
+                                ),
+                                subtitle: Text('Status: ${request.status}'),
+                                trailing: Text(
+                                  request.createdAt == null
+                                      ? 'Pending'
+                                      : '${request.createdAt!.month}/${request.createdAt!.day}',
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
                       ],
                     ],
                   ),
@@ -649,30 +835,33 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                     ),
                     const SizedBox(height: 8),
                     ...recipients.take(6).map(
-                      (recipient) => Card(
-                        child: ListTile(
-                          onTap: () => _selectRecipient(recipient),
-                          leading: CircleAvatar(
-                            child: Text(
-                              recipient.username.isNotEmpty
-                                  ? recipient.username[0].toUpperCase()
-                                  : 'M',
+                          (recipient) => Card(
+                            child: ListTile(
+                              onTap: () => _selectRecipient(recipient),
+                              leading: CircleAvatar(
+                                child: Text(
+                                  recipient.username.isNotEmpty
+                                      ? recipient.username[0].toUpperCase()
+                                      : 'M',
+                                ),
+                              ),
+                              title: Text(
+                                recipient.username.isNotEmpty
+                                    ? recipient.username
+                                    : 'MixVy user',
+                              ),
+                              subtitle: const Text('Community member'),
                             ),
                           ),
-                          title: Text(
-                            recipient.username.isNotEmpty
-                                ? recipient.username
-                                : 'MixVy user',
-                          ),
-                          subtitle: const Text('Community member'),
                         ),
-                      ),
-                    ),
                   ],
                 );
               },
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Unable to load recipients: $e'),
+              loading: () => const AppLoadingView(label: 'Loading recipients'),
+              error: (e, _) => AppErrorView(
+                error: e,
+                fallbackContext: 'Unable to load recipients.',
+              ),
             ),
           const SizedBox(height: 16),
           TextField(
@@ -691,10 +880,54 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              ActionChip(label: const Text('10'), onPressed: () => _setQuickAmount(10)),
-              ActionChip(label: const Text('25'), onPressed: () => _setQuickAmount(25)),
-              ActionChip(label: const Text('50'), onPressed: () => _setQuickAmount(50)),
-              ActionChip(label: const Text('100'), onPressed: () => _setQuickAmount(100)),
+              ActionChip(
+                label: const Text(
+                  '10',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                backgroundColor: const Color(0xFF1A1416),
+                side: const BorderSide(color: Color(0xFFD4AF37), width: 1.0),
+                onPressed: () => _setQuickAmount(10),
+              ),
+              ActionChip(
+                label: const Text(
+                  '25',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                backgroundColor: const Color(0xFF1A1416),
+                side: const BorderSide(color: Color(0xFFD4AF37), width: 1.0),
+                onPressed: () => _setQuickAmount(25),
+              ),
+              ActionChip(
+                label: const Text(
+                  '50',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                backgroundColor: const Color(0xFF1A1416),
+                side: const BorderSide(color: Color(0xFFD4AF37), width: 1.0),
+                onPressed: () => _setQuickAmount(50),
+              ),
+              ActionChip(
+                label: const Text(
+                  '100',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                backgroundColor: const Color(0xFF1A1416),
+                side: const BorderSide(color: Color(0xFFD4AF37), width: 1.0),
+                onPressed: () => _setQuickAmount(100),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -702,102 +935,155 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: paymentState.isLoading ? null : () => _submit(requestOnly: false),
+                  onPressed: paymentState.isLoading
+                      ? null
+                      : () => _submit(requestOnly: false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: const Color(0xFF0D0A0C),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                   child: paymentState.isLoading
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF0D0A0C),
+                          ),
                         )
-                      : const Text('Send Coins'),
+                      : const Text(
+                          'Send Coins',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton(
-                  onPressed: paymentState.isLoading ? null : () => _submit(requestOnly: true),
-                  child: const Text('Request Coins'),
+                  onPressed: paymentState.isLoading
+                      ? null
+                      : () => _submit(requestOnly: true),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFD4AF37),
+                    side: const BorderSide(
+                      color: Color(0xFFD4AF37),
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'Request Coins',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
           if (paymentState.error != null) ...[
             const SizedBox(height: 12),
-            Text(paymentState.error!, style: const TextStyle(color: Colors.red)),
+            Text(
+              paymentState.error!,
+              style: const TextStyle(color: Colors.red),
+            ),
           ],
           const SizedBox(height: 32),
           Text(
             'Recent Transactions',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: GoogleFonts.playfairDisplay(
+              color: const Color(0xFFD4AF37),
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
           ),
           const SizedBox(height: 12),
           transactionsAsync.when(
             data: (transactions) {
               if (transactions.isEmpty) {
-                return const Text('No transactions yet.');
+                return const AppEmptyView(
+                  title: 'No transactions yet',
+                  icon: Icons.receipt_long_outlined,
+                );
               }
 
               return Column(
-                children: transactions.map((tx) {
-                  final isSent = tx.senderId == user?.uid;
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(
-                        isSent ? Icons.call_made : Icons.call_received,
-                        color: isSent ? Colors.red : Colors.green,
-                      ),
-                      title: Text('${isSent ? '-' : '+'}${tx.amount.toStringAsFixed(2)}'),
-                      subtitle: Text('To: ${tx.receiverId}\nStatus: ${tx.status}'),
-                      trailing: PopupMenuButton<String>(
-                        tooltip: 'Transaction actions',
-                        onSelected: (value) {
-                          if (value == 'refund') {
-                            _requestRefundForTransaction(tx);
-                          }
-                        },
-                        itemBuilder: (context) {
-                          final canRequestRefund = isSent &&
-                              (tx.status == 'completed' || tx.status == 'sent');
-                          final items = <PopupMenuEntry<String>>[
-                            PopupMenuItem<String>(
-                              enabled: false,
-                              value: 'timestamp',
-                              child: Text(
-                                '${tx.timestamp.month}/${tx.timestamp.day} '
-                                '${tx.timestamp.hour.toString().padLeft(2, '0')}:'
-                                '${tx.timestamp.minute.toString().padLeft(2, '0')}',
-                              ),
-                            ),
-                          ];
-                          if (canRequestRefund) {
-                            items.add(
-                              const PopupMenuItem<String>(
-                                value: 'refund',
-                                child: Text('Request refund'),
-                              ),
-                            );
-                          }
-                          return items;
-                        },
-                        child: const Icon(Icons.more_vert),
-                      ),
-                    ),
-                  );
-                }).toList(growable: false),
+                children: transactions
+                    .map((tx) {
+                      final isSent = tx.senderId == currentUserId;
+                      return Card(
+                        child: ListTile(
+                          leading: Icon(
+                            isSent ? Icons.call_made : Icons.call_received,
+                            color: isSent
+                                ? const Color(0xFF9B2535)
+                                : const Color(0xFFD4AF37),
+                          ),
+                          title: Text(
+                            '${isSent ? '-' : '+'}${tx.amount.toStringAsFixed(2)}',
+                          ),
+                          subtitle: Text(
+                            'To: ${tx.receiverId}\nStatus: ${tx.status}',
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            tooltip: 'Transaction actions',
+                            onSelected: (value) {
+                              if (value == 'refund') {
+                                _requestRefundForTransaction(tx);
+                              }
+                            },
+                            itemBuilder: (context) {
+                              final canRequestRefund = isSent &&
+                                  (tx.status == 'completed' ||
+                                      tx.status == 'sent');
+                              final items = <PopupMenuEntry<String>>[
+                                PopupMenuItem<String>(
+                                  enabled: false,
+                                  value: 'timestamp',
+                                  child: Text(
+                                    '${tx.timestamp.month}/${tx.timestamp.day} '
+                                    '${tx.timestamp.hour.toString().padLeft(2, '0')}:'
+                                    '${tx.timestamp.minute.toString().padLeft(2, '0')}',
+                                  ),
+                                ),
+                              ];
+                              if (canRequestRefund) {
+                                items.add(
+                                  const PopupMenuItem<String>(
+                                    value: 'refund',
+                                    child: Text('Request refund'),
+                                  ),
+                                );
+                              }
+                              return items;
+                            },
+                            child: const Icon(Icons.more_vert),
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(growable: false),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('Unable to load transactions: $e'),
+            loading: () => const AppLoadingView(label: 'Loading transactions'),
+            error: (e, _) => AppErrorView(
+              error: e,
+              fallbackContext: 'Unable to load transactions.',
+            ),
           ),
         ],
       ),
     );
   }
-}
-
-Widget _statusChip(String label, bool enabled) {
-  return Chip(
-    avatar: Icon(enabled ? Icons.check_circle_outline : Icons.radio_button_unchecked, size: 18),
-    label: Text(label),
-  );
 }
