@@ -20,8 +20,12 @@ class MicQueuePanel extends ConsumerStatefulWidget {
     this.rankTierById = const <String, int>{},
     this.diamondLevelById = const <String, int>{},
     this.onJoinQueue,
+    this.onLeaveQueue,
     this.onApprove,
     this.onDeny,
+    this.onPromote,
+    this.onDemote,
+    this.onDismiss,
     this.onWithdraw,
   });
 
@@ -39,11 +43,23 @@ class MicQueuePanel extends ConsumerStatefulWidget {
   /// Called when the user taps "Join Queue to Talk".
   final VoidCallback? onJoinQueue;
 
+  /// Called when the user taps "Leave Queue".
+  final VoidCallback? onLeaveQueue;
+
   /// Called when the host taps Approve on a request.
   final void Function(MicAccessRequestModel request)? onApprove;
 
   /// Called when the host taps Deny on a request.
   final void Function(MicAccessRequestModel request)? onDeny;
+
+  /// Called when the host promotes a requester in queue.
+  final void Function(MicAccessRequestModel request)? onPromote;
+
+  /// Called when the host demotes a requester in queue.
+  final void Function(MicAccessRequestModel request)? onDemote;
+
+  /// Called when the host dismisses a requester from queue.
+  final void Function(MicAccessRequestModel request)? onDismiss;
 
   /// Called when the requester lowers their own hand.
   final void Function(MicAccessRequestModel request)? onWithdraw;
@@ -175,17 +191,24 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: hasMyPending ? null : widget.onJoinQueue,
-                      icon: Icon(hasMyPending ? Icons.hourglass_top : Icons.campaign_outlined),
+                      onPressed: hasMyPending ? widget.onLeaveQueue : widget.onJoinQueue,
+                      icon: Icon(
+                        hasMyPending
+                            ? Icons.exit_to_app_rounded
+                            : Icons.record_voice_over_rounded,
+                      ),
                       label: Text(
                         hasMyPending
-                            ? 'In Queue (#${pending.indexWhere((r) => r.requesterId == widget.currentUserId) + 1})'
+                            ? 'Leave Queue (#${pending.indexWhere((r) => r.requesterId == widget.currentUserId) + 1})'
                             : 'Join Queue to Talk',
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: npPrimary,
-                        foregroundColor: Colors.black,
-                        disabledBackgroundColor: npPrimary.withValues(alpha: 0.45),
+                        backgroundColor: hasMyPending
+                            ? const Color(0xFF8C2E3B)
+                            : npPrimary,
+                        foregroundColor: hasMyPending
+                            ? Colors.white
+                            : Colors.black,
                       ),
                     ),
                   ),
@@ -293,6 +316,20 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                             ] else if (widget.isHost) ...[
                               const SizedBox(width: 8),
                               _IconBtn(
+                                icon: Icons.keyboard_arrow_up_rounded,
+                                color: const Color(0xFFD4A853),
+                                tooltip: 'Promote in queue',
+                                onTap: () => widget.onPromote?.call(req),
+                              ),
+                              const SizedBox(width: 2),
+                              _IconBtn(
+                                icon: Icons.keyboard_arrow_down_rounded,
+                                color: const Color(0xFFB09080),
+                                tooltip: 'Demote in queue',
+                                onTap: () => widget.onDemote?.call(req),
+                              ),
+                              const SizedBox(width: 2),
+                              _IconBtn(
                                 icon: Icons.check,
                                 color: const Color(0xFF4CAF50),
                                 tooltip: 'Approve',
@@ -304,6 +341,13 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                                 color: const Color(0xFFFF6E84),
                                 tooltip: 'Deny',
                                 onTap: () => widget.onDeny?.call(req),
+                              ),
+                              const SizedBox(width: 2),
+                              _IconBtn(
+                                icon: Icons.delete_outline,
+                                color: const Color(0xFF7D6D63),
+                                tooltip: 'Dismiss',
+                                onTap: () => widget.onDismiss?.call(req),
                               ),
                             ],
                           ],

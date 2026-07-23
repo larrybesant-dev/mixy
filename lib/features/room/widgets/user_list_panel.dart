@@ -6,10 +6,10 @@ import '../../../models/room_participant_model.dart';
 import 'room_user_tile.dart';
 
 /// Sidebar roster grouped into three distinct buckets:
-/// - On Cam
+/// - On Cam / Talking Now
 /// - Mic Queue
 /// - Chatting
-class UserListPanel extends StatelessWidget {
+class UserListPanel extends StatefulWidget {
   const UserListPanel({
     super.key,
     required this.participants,
@@ -30,23 +30,32 @@ class UserListPanel extends StatelessWidget {
   final void Function(RoomParticipantModel participant)? onTapUser;
 
   @override
+  State<UserListPanel> createState() => _UserListPanelState();
+}
+
+class _UserListPanelState extends State<UserListPanel> {
+  bool _onCamExpanded = true;
+  bool _queueExpanded = true;
+  bool _audienceExpanded = true;
+
+  @override
   Widget build(BuildContext context) {
     const surface = Color(0xFF161A21);
 
     final onlineIds = {
-      for (final p in presenceList)
+      for (final p in widget.presenceList)
         if (p.isOnline &&
             (p.lastHeartbeatAt == null ||
                 DateTime.now().difference(p.lastHeartbeatAt!).inSeconds < 60))
           p.userId,
     };
 
-    final normalizedQueueIds = micQueueUserIds
+    final normalizedQueueIds = widget.micQueueUserIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    final sortedParticipants = [...participants]
+    final sortedParticipants = [...widget.participants]
       ..sort((left, right) {
         final leftRole = _roleRank(left.role);
         final rightRole = _roleRank(right.role);
@@ -61,7 +70,7 @@ class UserListPanel extends StatelessWidget {
     final onCamIds = <String>{};
 
     for (final p in sortedParticipants) {
-      if (p.camOn) {
+      if (p.camOn || p.micOn) {
         onCam.add(p);
         onCamIds.add(p.userId);
       }
@@ -84,58 +93,99 @@ class UserListPanel extends StatelessWidget {
       color: surface,
       child: CustomScrollView(
         slivers: [
-          _sectionHeader('ON CAM', onCam.length, const Color(0xFF9B2535)),
-          _sectionList(onCam, onlineIds),
-          _sectionHeader('MIC QUEUE', micQueue.length, const Color(0xFFD4AF37)),
-          _sectionList(micQueue, onlineIds),
-          _sectionHeader('CHATTING', chatting.length, const Color(0xFFB09080)),
-          _sectionList(chatting, onlineIds),
+          _sectionHeader(
+            label: 'ON CAM / TALKING NOW',
+            count: onCam.length,
+            color: const Color(0xFF9B2535),
+            icon: Icons.graphic_eq_rounded,
+            expanded: _onCamExpanded,
+            onToggle: () => setState(() => _onCamExpanded = !_onCamExpanded),
+          ),
+          if (_onCamExpanded) _sectionList(onCam, onlineIds),
+          _sectionHeader(
+            label: 'MIC QUEUE',
+            count: micQueue.length,
+            color: const Color(0xFFD4AF37),
+            icon: Icons.queue_rounded,
+            expanded: _queueExpanded,
+            onToggle: () => setState(() => _queueExpanded = !_queueExpanded),
+          ),
+          if (_queueExpanded) _sectionList(micQueue, onlineIds),
+          _sectionHeader(
+            label: 'CHATTING / AUDIENCE',
+            count: chatting.length,
+            color: const Color(0xFFB09080),
+            icon: Icons.groups_2_outlined,
+            expanded: _audienceExpanded,
+            onToggle: () => setState(() => _audienceExpanded = !_audienceExpanded),
+          ),
+          if (_audienceExpanded) _sectionList(chatting, onlineIds),
           const SliverToBoxAdapter(child: SizedBox(height: 10)),
         ],
       ),
     );
   }
 
-  SliverToBoxAdapter _sectionHeader(String label, int count, Color color) {
+  SliverToBoxAdapter _sectionHeader({
+    required String label,
+    required int count,
+    required Color color,
+    required IconData icon,
+    required bool expanded,
+    required VoidCallback onToggle,
+  }) {
     return SliverToBoxAdapter(
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF111519),
-          border: Border(
-            top: BorderSide(color: color.withValues(alpha: 0.18)),
-            bottom: BorderSide(color: color.withValues(alpha: 0.10)),
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
+      child: InkWell(
+        onTap: onToggle,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF111519),
+            border: Border(
+              top: BorderSide(color: color.withValues(alpha: 0.18)),
+              bottom: BorderSide(color: color.withValues(alpha: 0.10)),
             ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$count',
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 13),
+              const SizedBox(width: 6),
+              Text(
+                label,
                 style: TextStyle(
                   color: color,
                   fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                expanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                color: color,
+                size: 16,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -161,12 +211,12 @@ class UserListPanel extends StatelessWidget {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final p = entries[index];
-        final displayName = displayNameById[p.userId] ??
+        final displayName = widget.displayNameById[p.userId] ??
           (p.displayName?.trim().isNotEmpty == true
             ? p.displayName!.trim()
             : p.userId);
-        final avatarUrl = avatarUrlById[p.userId] ?? p.photoUrl;
-        final isMe = p.userId == currentUserId;
+        final avatarUrl = widget.avatarUrlById[p.userId] ?? p.photoUrl;
+        final isMe = p.userId == widget.currentUserId;
         final isOnline = onlineIds.contains(p.userId);
 
         return Stack(
@@ -181,7 +231,7 @@ class UserListPanel extends StatelessWidget {
               rankTier: p.rankTier,
               diamondLevel: p.diamondLevel,
               layout: RoomUserTileLayout.list,
-              onTap: onTapUser == null ? null : () => onTapUser!(p),
+              onTap: widget.onTapUser == null ? null : () => widget.onTapUser!(p),
             ),
             Positioned(
               left: 34,

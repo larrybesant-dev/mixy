@@ -51,7 +51,7 @@ class MicAccessController {
     return _db
         .collection('rooms')
         .doc(roomId)
-        .collection('mic_access_requests');
+      .collection('micQueue');
   }
 
   String _requestDocId(String requesterId, String hostId) {
@@ -362,7 +362,7 @@ final roomMicAccessRequestsProvider = StreamProvider.autoDispose
       return firestore
           .collection('rooms')
           .doc(roomId)
-          .collection('mic_access_requests')
+          .collection('micQueue')
           .orderBy('createdAt', descending: true)
           .limit(50)
           .snapshots()

@@ -26,6 +26,7 @@ import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
 import '../widgets/mic_queue_panel.dart';
 import '../widgets/user_list_panel.dart';
+import '../widgets/room_rank_diamond_badge_row.dart';
 import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
@@ -42,11 +43,88 @@ class LiveRoomScreen extends ConsumerStatefulWidget {
   ConsumerState<LiveRoomScreen> createState() => _LiveRoomScreenState();
 }
 
+class _RoomAnnouncementMarquee extends StatefulWidget {
+  const _RoomAnnouncementMarquee({
+    required this.text,
+    required this.textStyle,
+  });
+
+  final String text;
+  final TextStyle textStyle;
+
+  @override
+  State<_RoomAnnouncementMarquee> createState() => _RoomAnnouncementMarqueeState();
+}
+
+class _RoomAnnouncementMarqueeState extends State<_RoomAnnouncementMarquee>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 16),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final safeText = widget.text.trim().isEmpty
+        ? 'Welcome to MixVy Live'
+        : widget.text.trim();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 28,
+        color: const Color(0x220B0B0B),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final progress = _controller.value;
+                final start = width;
+                final end = -width;
+                final dx = start + (end - start) * progress;
+                return Transform.translate(
+                  offset: Offset(dx, 0),
+                  child: child,
+                );
+              },
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '  📣 $safeText  ',
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  style: widget.textStyle,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     with WidgetsBindingObserver, DiagnosticLogger {
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
+  int _gridSlotCount = 8;
+  bool _isFollowActionBusy = false;
   final Map<String, String> _resolvedUserNameCache = <String, String>{};
 
   static final RegExp _generatedHandlePattern = RegExp(
@@ -603,6 +681,52 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
+  String _roomAnnouncement(RoomModel room) {
+    final rules = room.rules?.trim() ?? '';
+    if (rules.isNotEmpty) {
+      return rules;
+    }
+    final description = room.description?.trim() ?? '';
+    if (description.isNotEmpty) {
+      return description;
+    }
+    return 'Be respectful. Wait your turn in the mic queue. Support creators with gifts.';
+  }
+
+  Future<void> _toggleFollowRoom({
+    required String roomId,
+    required String userId,
+    required bool isFollowing,
+  }) async {
+    if (_isFollowActionBusy) return;
+    setState(() => _isFollowActionBusy = true);
+    try {
+      final firestore = ref.read(firestoreProvider);
+      final docRef = firestore
+          .collection('rooms')
+          .doc(roomId)
+          .collection('followers')
+          .doc(userId);
+      if (isFollowing) {
+        await docRef.delete();
+      } else {
+        await docRef.set({
+          'userId': userId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Follow action failed: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isFollowActionBusy = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -683,6 +807,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }
 
   Widget _buildMobileLayout(RoomModel room, User? currentUser, RoomSessionState sessionState) {
+    final currentUserId = currentUser?.uid ?? '';
+    final isHostLike = currentUserId.isNotEmpty &&
+        (room.hostId == currentUserId ||
+            room.ownerId == currentUserId ||
+            room.adminUserIds.contains(currentUserId));
+
     return Column(
       children: [
         // Video Grid Area
@@ -696,6 +826,87 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           child: Column(
             children: [
               _buildRoomHeader(room, ref),
+              Consumer(
+                builder: (context, sideRef, _) {
+                  final participants =
+                      sideRef.watch(roomParticipantsLiveProvider(widget.roomId)).valueOrNull ??
+                      const [];
+                  final displayNameById = {
+                    for (final participant in participants)
+                      participant.userId: ((participant.displayName?.trim().isNotEmpty ?? false)
+                          ? participant.displayName!.trim()
+                          : participant.userId),
+                  };
+                  final rankTierById = {
+                    for (final participant in participants)
+                      participant.userId: participant.rankTier,
+                  };
+                  final diamondById = {
+                    for (final participant in participants)
+                      participant.userId: participant.diamondLevel,
+                  };
+
+                  return MicQueuePanel(
+                    roomId: widget.roomId,
+                    currentUserId: currentUserId,
+                    isHost: isHostLike,
+                    displayNameById: displayNameById,
+                    rankTierById: rankTierById,
+                    diamondLevelById: diamondById,
+                    onJoinQueue: () {
+                      if (currentUserId.isEmpty) return;
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .requestMic(userId: currentUserId);
+                    },
+                    onLeaveQueue: () {
+                      if (currentUserId.isEmpty) return;
+                      final myRequest = sideRef
+                          .read(
+                            myMicAccessRequestProvider((
+                              roomId: widget.roomId,
+                              requesterId: currentUserId,
+                            )),
+                          )
+                          .valueOrNull;
+                      if (myRequest == null) return;
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .cancelMicRequest(myRequest.id);
+                    },
+                    onWithdraw: (request) {
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .cancelMicRequest(request.id);
+                    },
+                    onApprove: (request) {
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .approveMicRequest(request);
+                    },
+                    onDeny: (request) {
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .denyMicRequest(request.id);
+                    },
+                    onPromote: (request) {
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .promoteMicQueueRequest(request.id);
+                    },
+                    onDemote: (request) {
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .demoteMicQueueRequest(request.id);
+                    },
+                    onDismiss: (request) {
+                      sideRef
+                          .read(roomControllerProvider(widget.roomId).notifier)
+                          .dismissMicQueueRequest(request.id);
+                    },
+                  );
+                },
+              ),
               Expanded(
                 child: _buildChatArea(sessionState),
               ),
@@ -771,6 +982,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       if (currentUserId.isEmpty) return;
                       sideRef.read(roomControllerProvider(widget.roomId).notifier).requestMic(userId: currentUserId);
                     },
+                    onLeaveQueue: () {
+                      if (currentUserId.isEmpty) return;
+                      final myRequest = sideRef
+                          .read(
+                            myMicAccessRequestProvider((
+                              roomId: widget.roomId,
+                              requesterId: currentUserId,
+                            )),
+                          )
+                          .valueOrNull;
+                      if (myRequest == null) return;
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).cancelMicRequest(myRequest.id);
+                    },
                     onWithdraw: (request) {
                       sideRef.read(roomControllerProvider(widget.roomId).notifier).cancelMicRequest(request.id);
                     },
@@ -779,6 +1003,15 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     },
                     onDeny: (request) {
                       sideRef.read(roomControllerProvider(widget.roomId).notifier).denyMicRequest(request.id);
+                    },
+                    onPromote: (request) {
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).promoteMicQueueRequest(request.id);
+                    },
+                    onDemote: (request) {
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).demoteMicQueueRequest(request.id);
+                    },
+                    onDismiss: (request) {
+                      sideRef.read(roomControllerProvider(widget.roomId).notifier).dismissMicQueueRequest(request.id);
                     },
                   );
                 },
@@ -855,12 +1088,195 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           );
         }
 
+        final service = webrtcState!.service!;
+        final remoteUids = service.remoteUids;
+
+        final gridEntries = <({String key, String label, Widget view, bool isLocal})>[];
+        if (sessionState.isVideoEnabled) {
+          gridEntries.add((
+            key: 'local',
+            label: 'You',
+            view: service.getLocalView(),
+            isLocal: true,
+          ));
+        }
+
+        for (final uid in remoteUids) {
+          final mappedUserId = service.userIdForUid(uid);
+          final mappedLabel = mappedUserId != null
+              ? (sessionState.userDisplayNames[mappedUserId]?.trim() ?? '')
+              : '';
+          gridEntries.add((
+            key: 'remote_$uid',
+            label: mappedLabel.isNotEmpty ? mappedLabel : 'Guest $uid',
+            view: service.getRemoteView(uid, widget.roomId),
+            isLocal: false,
+          ));
+        }
+
+        final visibleCount = gridEntries.length > _gridSlotCount
+            ? _gridSlotCount
+            : gridEntries.length;
+        final visibleEntries = gridEntries.take(visibleCount).toList(growable: false);
+        final placeholders = _gridSlotCount - visibleEntries.length;
+
         return Stack(
           children: [
-            // Local video
             Container(
               color: VelvetNoir.surfaceHigh,
-              child: webrtcState!.service!.getLocalView(),
+              padding: const EdgeInsets.fromLTRB(10, 56, 10, 10),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final crossAxisCount = width >= 1300
+                      ? 4
+                      : width >= 900
+                      ? 3
+                      : width >= 520
+                      ? 2
+                      : 1;
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 4 / 3,
+                    ),
+                    itemCount: visibleEntries.length + placeholders,
+                    itemBuilder: (context, index) {
+                      if (index < visibleEntries.length) {
+                        final entry = visibleEntries[index];
+                        return DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: VelvetNoir.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: entry.isLocal
+                                  ? VelvetNoir.primary.withValues(alpha: 0.75)
+                                  : VelvetNoir.secondary.withValues(alpha: 0.55),
+                              width: 1.4,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                entry.view,
+                                Positioned(
+                                  left: 8,
+                                  right: 8,
+                                  bottom: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.58),
+                                      borderRadius: BorderRadius.circular(7),
+                                    ),
+                                    child: Text(
+                                      entry.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.raleway(
+                                        color: VelvetNoir.onSurface,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF121212),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: VelvetNoir.onSurfaceVariant.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.videocam_off_outlined,
+                              color: VelvetNoir.onSurfaceVariant.withValues(alpha: 0.8),
+                              size: 26,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Open slot',
+                              style: GoogleFonts.raleway(
+                                color: VelvetNoir.onSurfaceVariant,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: VelvetNoir.primary.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Cams',
+                      style: GoogleFonts.raleway(
+                        color: VelvetNoir.onSurface,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    for (final count in const [4, 8, 12]) ...[
+                      GestureDetector(
+                        onTap: () => setState(() => _gridSlotCount = count),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _gridSlotCount == count
+                                ? VelvetNoir.primary
+                                : VelvetNoir.surfaceHigh,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: GoogleFonts.raleway(
+                              color: _gridSlotCount == count
+                                  ? VelvetNoir.surface
+                                  : VelvetNoir.onSurface,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
             
             // Reconnecting Banner (prominent top notification)
@@ -1026,43 +1442,6 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 ],
               ),
             ),
-
-            // Remote Users Grid (if any)
-            if (sessionState.remoteUsers.isNotEmpty)
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: SizedBox(
-                  width: 120,
-                  height: 150,
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 1,
-                      childAspectRatio: 0.75,
-                    ),
-                    itemCount: sessionState.remoteUsers.length,
-                    itemBuilder: (context, index) {
-                      return DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: VelvetNoir.primary, width: 2),
-                          borderRadius: BorderRadius.circular(8),
-                          color: VelvetNoir.surfaceHigh,
-                        ),
-                        child: Center(
-                          child: Text(
-                            sessionState.userDisplayNames[sessionState.remoteUsers[index]] ?? 'User ${index + 1}',
-                            style: GoogleFonts.raleway(
-                              color: VelvetNoir.onSurface,
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
 
             // Connection Failed Overlay: Shows after max retries exhausted
             if (webrtcState.connectionState == RtcConnectionState.failed)
@@ -1284,6 +1663,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   Widget _buildRoomHeader(RoomModel room, WidgetRef ref) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final sessionState = ref.watch(roomSessionProvider(widget.roomId));
+    final participants =
+        ref.watch(roomParticipantsLiveProvider(widget.roomId)).valueOrNull ??
+        const [];
+    final totalDiamonds = participants.fold<int>(
+      0,
+      (sum, participant) => sum + participant.diamondLevel,
+    );
+    final liveBroadcasters = participants
+        .where((participant) => participant.camOn || participant.micOn)
+        .length;
     final selfResolvedName = currentUser != null
         ? (sessionState.userDisplayNames[currentUser.uid]?.trim() ?? '')
         : '';
@@ -1293,7 +1682,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       selfResolvedName: selfResolvedName,
     );
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceHigh,
         border: Border(bottom: BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
@@ -1313,22 +1702,44 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   ),
                 ),
               ),
-              if (room.isLive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: VelvetNoir.liveGlow,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    'LIVE',
-                    style: GoogleFonts.raleway(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+              Wrap(
+                spacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (room.isLive)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: VelvetNoir.liveGlow,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        'LIVE',
+                        style: GoogleFonts.raleway(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x2239B6FF),
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(color: const Color(0x664AC6FF)),
+                    ),
+                    child: Text(
+                      'DIAMONDS $totalDiamonds',
+                      style: GoogleFonts.raleway(
+                        color: const Color(0xFF4AC6FF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -1353,6 +1764,23 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 },
               ),
               const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0x22781E2B),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: const Color(0x66781E2B)),
+                ),
+                child: Text(
+                  '$liveBroadcasters broadcasting',
+                  style: GoogleFonts.raleway(
+                    color: const Color(0xFFD9B8BE),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Consumer(
                 builder: (context, consumerRef, _) {
                   final participantCount = consumerRef.watch(participantCountProvider(room.id));
@@ -1380,6 +1808,79 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (currentUser != null)
+                StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: ref
+                      .watch(firestoreProvider)
+                      .collection('rooms')
+                      .doc(room.id)
+                      .collection('followers')
+                      .doc(currentUser.uid)
+                      .snapshots(),
+                  builder: (context, followSnapshot) {
+                    final isFollowing = followSnapshot.data?.exists ?? false;
+                    return FilledButton.tonalIcon(
+                      onPressed: _isFollowActionBusy
+                          ? null
+                          : () => _toggleFollowRoom(
+                                roomId: room.id,
+                                userId: currentUser.uid,
+                                isFollowing: isFollowing,
+                              ),
+                      icon: Icon(
+                        isFollowing ? Icons.favorite : Icons.favorite_border,
+                        size: 16,
+                      ),
+                      label: Text(isFollowing ? 'Following' : 'Follow Room'),
+                      style: FilledButton.styleFrom(
+                        foregroundColor: VelvetNoir.primary,
+                        backgroundColor: VelvetNoir.surface,
+                        textStyle: GoogleFonts.raleway(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                    );
+                  },
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: ref
+                      .watch(firestoreProvider)
+                      .collection('rooms')
+                      .doc(room.id)
+                      .collection('followers')
+                      .limit(2000)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    final followerCount = snapshot.data?.docs.length ?? 0;
+                    return Text(
+                      '$followerCount followers',
+                      style: GoogleFonts.raleway(
+                        fontSize: 11,
+                        color: VelvetNoir.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _RoomAnnouncementMarquee(
+            text: _roomAnnouncement(room),
+            textStyle: GoogleFonts.raleway(
+              color: VelvetNoir.onSurface,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -1400,6 +1901,20 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
 
     final firestore = ref.watch(firestoreProvider);
+    final participants =
+        ref.watch(roomParticipantsLiveProvider(widget.roomId)).valueOrNull ??
+        const [];
+    final rankTierById = {
+      for (final participant in participants) participant.userId: participant.rankTier,
+    };
+    final diamondLevelById = {
+      for (final participant in participants) participant.userId: participant.diamondLevel,
+    };
+    final badgeTitleById = {
+      for (final participant in participants)
+        if ((participant.badgeTitle ?? '').trim().isNotEmpty)
+          participant.userId: participant.badgeTitle!.trim(),
+    };
 
     return Column(
       children: [
@@ -1480,14 +1995,43 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    effectiveSenderName,
-                                    style: GoogleFonts.raleway(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: VelvetNoir.primary,
-                                    ),
+                                  Wrap(
+                                    spacing: 5,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        effectiveSenderName,
+                                        style: GoogleFonts.raleway(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: VelvetNoir.primary,
+                                        ),
+                                      ),
+                                      RoomRankDiamondBadgeRow(
+                                        rankTier: rankTierById[senderId] ?? 0,
+                                        diamondLevel: diamondLevelById[senderId] ?? 0,
+                                        compact: true,
+                                      ),
+                                      if (badgeTitleById.containsKey(senderId))
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0x33781E2B),
+                                            borderRadius: BorderRadius.circular(999),
+                                            border: Border.all(color: const Color(0x55781E2B)),
+                                          ),
+                                          child: Text(
+                                            badgeTitleById[senderId]!,
+                                            style: GoogleFonts.raleway(
+                                              fontSize: 9,
+                                              color: VelvetNoir.onSurface,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
+                                  const SizedBox(height: 2),
                                   Text(
                                     content,
                                     style: GoogleFonts.raleway(
@@ -1708,19 +2252,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     isOnMic
                         ? Icons.mic_off_rounded
                         : hasPendingMicRequest
-                        ? Icons.pan_tool_alt_outlined
+                    ? Icons.exit_to_app_rounded
                         : isMicFree
-                        ? Icons.record_voice_over_rounded
+                    ? Icons.record_voice_over_rounded
                         : Icons.queue_rounded,
                   ),
                   label: Text(
                     isOnMic
                         ? 'Release Mic'
                         : hasPendingMicRequest
-                        ? 'Lower Hand'
+                    ? 'Leave Queue'
                         : isMicFree
-                        ? 'Grab Mic'
-                        : 'Raise Hand',
+                    ? 'Join Queue to Talk'
+                    : 'Join Queue to Talk',
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: isOnMic

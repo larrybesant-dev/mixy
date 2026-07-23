@@ -30,7 +30,7 @@ class RoomRankDiamondBadgeRow extends StatelessWidget {
         if (rankTier > 0)
           _BadgePill(
             icon: Icons.workspace_premium_rounded,
-            text: 'R$rankTier',
+            text: 'CROWN $rankTier',
             bg: const Color(0x22D4AF37),
             fg: const Color(0xFFD4AF37),
             fontSize: fontSize,
@@ -40,7 +40,7 @@ class RoomRankDiamondBadgeRow extends StatelessWidget {
         if (diamondLevel > 0)
           _BadgePill(
             icon: Icons.diamond_rounded,
-            text: 'D$diamondLevel',
+            text: 'DIAMOND $diamondLevel',
             bg: const Color(0x224AC6FF),
             fg: const Color(0xFF4AC6FF),
             fontSize: fontSize,

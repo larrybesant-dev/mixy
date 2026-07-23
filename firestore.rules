@@ -131,6 +131,23 @@ service cloud.firestore {
       return isRoomOwner(roomData) || isRoomAdmin(roomData);
     }
 
+    function roomRoleForCurrentUser(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId)/participants/$(uid()))
+        ? get(/databases/$(database)/documents/rooms/$(roomId)/participants/$(uid())).data.role
+        : '';
+    }
+
+    function canManageMicQueue(roomId) {
+      return signedIn()
+        && (
+          isAdmin()
+          || roomDoc(roomId).data.ownerId == uid()
+          || roomDoc(roomId).data.hostId == uid()
+          || roomRoleForCurrentUser(roomId) == 'cohost'
+          || roomRoleForCurrentUser(roomId) == 'moderator'
+        );
+    }
+
     // ---------------------------------------------------------------------
     // Users + profile hardening
     // ---------------------------------------------------------------------
@@ -562,6 +579,16 @@ service cloud.firestore {
         allow delete: if signedIn() && (memberId == uid() || isAdmin());
       }
 
+      match /followers/{followerId} {
+        allow read: if signedIn() && canReadRoomById(roomId);
+        allow create: if signedIn()
+          && followerId == uid()
+          && request.resource.data.keys().hasOnly(['userId', 'createdAt'])
+          && request.resource.data.userId == uid();
+        allow delete: if signedIn() && followerId == uid();
+        allow update: if false;
+      }
+
       // WebRTC peer presence
       match /webrtc_peers/{peerId} {
         allow read: if signedIn() && exists(/databases/$(database)/documents/rooms/$(roomId));
@@ -753,6 +780,52 @@ service cloud.firestore {
       }
 
       match /mic_access_requests/{requestId} {
+        allow read: if canReadRoomById(roomId) && signedIn();
+        allow create: if signedIn()
+          && canReadRoomById(roomId)
+          && request.resource.data.requesterId == uid()
+          && request.resource.data.roomId == roomId
+          && request.resource.data.status == 'pending'
+          && request.resource.data.keys().hasOnly([
+            'id',
+            'roomId',
+            'requesterId',
+            'hostId',
+            'status',
+            'priority',
+            'expiresAt',
+            'createdAt',
+            'updatedAt',
+            'requesterDisplayName',
+            'requesterAvatarUrl',
+            'requesterRankTier',
+            'requesterDiamondLevel',
+            'requestSource'
+          ]);
+        // Requester can only cancel their own pending request.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && resource.data.requesterId == uid()
+          && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.status == 'cancelled';
+        // Host/admin can approve/deny/reprioritize queue.
+        allow update: if signedIn()
+          && canReadRoomById(roomId)
+          && canManageMicQueue(roomId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'priority',
+            'updatedAt',
+            'expiresAt'
+          ]);
+        allow delete: if false;
+      }
+
+      match /micQueue/{requestId} {
         allow read: if canReadRoomById(roomId) && signedIn();
         allow create: if signedIn()
           && canReadRoomById(roomId)

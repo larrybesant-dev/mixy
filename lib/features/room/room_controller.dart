@@ -1770,6 +1770,21 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
     return _micAccess.denyRequest(arg, requestId);
   }
 
+  Future<void> promoteMicQueueRequest(String requestId) async {
+    await _requireStageAuthority();
+    return _micAccess.bumpPriority(arg, requestId);
+  }
+
+  Future<void> demoteMicQueueRequest(String requestId) async {
+    await _requireStageAuthority();
+    return _micAccess.lowerPriority(arg, requestId);
+  }
+
+  Future<void> dismissMicQueueRequest(String requestId) async {
+    await _requireStageAuthority();
+    return _micAccess.expireNow(arg, requestId);
+  }
+
   Future<void> cancelMicRequest(String requestId) {
     final actorUserId = _actorUserId;
     if (!state.canExecute(RoomAction.requestMic, userId: actorUserId)) {
