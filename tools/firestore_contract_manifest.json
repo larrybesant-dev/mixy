@@ -315,7 +315,7 @@
       "path": "rooms/{roomId}/mic_access_requests/{id}",
       "codeSignals": {
         "includeAll": [
-          "collection('mic_access_requests')"
+          "collection('micQueue')"
         ]
       },
       "tests": {

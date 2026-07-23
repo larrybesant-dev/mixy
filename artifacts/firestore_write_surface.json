@@ -1945,7 +1945,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 217,
+      "line": 295,
       "operation": "delete",
       "collections": [
         "rooms",
@@ -1955,7 +1955,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 220,
+      "line": 298,
       "operation": "update",
       "collections": [
         "rooms",
@@ -1965,13 +1965,47 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 287,
+      "line": 365,
       "operation": "set",
       "collections": [
         "rooms",
         "messages"
       ],
       "inferredPath": "rooms/{id}/messages/{id}"
+    },
+    {
+      "file": "lib/features/room/presentation/live_room_screen.dart",
+      "line": 711,
+      "operation": "delete",
+      "collections": [
+        "rooms",
+        "followers"
+      ],
+      "inferredPath": "rooms/{id}/followers/{id}"
+    },
+    {
+      "file": "lib/features/room/presentation/live_room_screen.dart",
+      "line": 713,
+      "operation": "set",
+      "collections": [
+        "rooms",
+        "followers"
+      ],
+      "inferredPath": "rooms/{id}/followers/{id}"
+    },
+    {
+      "file": "lib/features/room/presentation/live_room_screen.dart",
+      "line": 1096,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/room/presentation/live_room_screen.dart",
+      "line": 1109,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/providers/buzz_provider.dart",
@@ -2398,9 +2432,9 @@
       "operation": "update",
       "collections": [
         "rooms",
-        "mic_access_requests"
+        "micQueue"
       ],
-      "inferredPath": "rooms/{id}/mic_access_requests/{id}"
+      "inferredPath": "rooms/{id}/micQueue/{id}"
     },
     {
       "file": "lib/features/room/providers/mic_access_provider.dart",
@@ -2892,28 +2926,28 @@
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 65,
+      "line": 74,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 66,
+      "line": 75,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 73,
+      "line": 82,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 80,
+      "line": 89,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
