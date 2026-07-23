@@ -17,14 +17,15 @@ on:
 
 jobs:
   e2e-tests:
-    name: Playwright E2E Tests (${{ matrix.browser }})
+    name: Playwright E2E Tests (${{ matrix.browser }}, shard ${{ matrix.shard_index }}/2)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+        shard_index: [1, 2]
 
     steps:
       - name: Checkout code
@@ -33,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -52,25 +53,38 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run E2E tests - ${{ matrix.browser }}
-        run: npx playwright test --project=${{ matrix.browser }}
+        run: |
+          npx playwright test \
+            --project=${{ matrix.browser }} \
+            --shard=${{ matrix.shard_index }}/2 \
+            --reporter=line,junit,html
         env:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
           PLAYWRIGHT_BASE_URL: 'https://mixvy-v2.web.app'
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: junit.xml
 
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.browser }}
+          name: playwright-report-${{ matrix.browser }}-shard${{ matrix.shard_index }}of2
           path: playwright-report/
+          retention-days: 30
+
+      - name: Upload junit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.browser }}-shard${{ matrix.shard_index }}of2
+          path: junit.xml
           retention-days: 30
 
       - name: Upload test artifacts (videos, traces, screenshots)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-artifacts-${{ matrix.browser }}
+          name: test-artifacts-${{ matrix.browser }}-shard${{ matrix.shard_index }}of2
           path: test-results/artifacts/
           retention-days: 14
 
@@ -164,7 +178,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
