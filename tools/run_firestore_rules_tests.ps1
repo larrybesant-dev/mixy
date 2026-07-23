@@ -2,10 +2,9 @@ $ErrorActionPreference = 'Stop'
 
 function Get-JavaMajorVersion {
   try {
-    # java -version writes to stderr on many distributions, and with
-    # ErrorActionPreference=Stop that can throw in PowerShell. Use cmd.exe
-    # to capture output robustly as plain text.
-    $output = (& cmd /c "java -version 2>&1" | Out-String)
+    # java -version writes to stderr on many distributions.
+    # Merge stderr into stdout so parsing works cross-platform.
+    $output = (& java -version 2>&1 | Out-String)
   } catch {
     return $null
   }
