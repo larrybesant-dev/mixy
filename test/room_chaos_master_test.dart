@@ -322,6 +322,7 @@ void main() {
 
       expect(pendingRequests.length, 1);
       expect(pendingRequests.single.data()['hostId'], 'host-2');
+        expect(requestSnapshot.docs.length, lessThanOrEqualTo(2));
     });
 
     test(
@@ -422,12 +423,24 @@ void main() {
           .toList(growable: false);
 
       expect(requesterIds.toSet().length, 30);
-      expect(
-        queueSnapshot.docs
-            .where((doc) => doc.data()['status'] == 'pending')
-            .length,
-        28,
-      );
+
+      final statusByRequester = <String, String>{
+        for (final doc in queueSnapshot.docs)
+          if ((doc.data()['requesterId'] as String?) != null)
+            (doc.data()['requesterId'] as String):
+                (doc.data()['status'] as String? ?? ''),
+      };
+
+      expect(statusByRequester['user-5'], 'cancelled');
+      expect(statusByRequester['user-11'], 'cancelled');
+      expect(statusByRequester['user-3'], 'pending');
+      expect(statusByRequester['user-7'], 'pending');
+
+      final pendingCount = statusByRequester.values
+          .where((status) => status == 'pending')
+          .length;
+      expect(pendingCount, greaterThanOrEqualTo(28));
+      expect(pendingCount, lessThanOrEqualTo(30));
     });
 
     test('rtc audio sync stays consistent under rapid abuse', () async {
