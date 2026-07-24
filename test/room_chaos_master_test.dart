@@ -312,7 +312,7 @@ void main() {
       final requestSnapshot = await firestore
           .collection('rooms')
           .doc(roomId)
-          .collection('micQueue')
+          .collection('mic_access_requests')
           .where('requesterId', isEqualTo: 'user-1')
           .get();
 
@@ -413,7 +413,7 @@ void main() {
       final queueSnapshot = await firestore
           .collection('rooms')
           .doc(roomId)
-          .collection('micQueue')
+          .collection('mic_access_requests')
           .get();
 
       final requesterIds = queueSnapshot.docs
