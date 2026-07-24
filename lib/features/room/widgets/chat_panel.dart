@@ -29,6 +29,9 @@ class ChatPanel extends ConsumerStatefulWidget {
     required this.senderLabelResolver,
     required this.senderVipLevelResolver,
     required this.senderAvatarResolver,
+    this.senderRankTierResolver,
+    this.senderDiamondLevelResolver,
+    this.senderBadgeTitleResolver,
     this.onTapSender,
     this.typingNames = const [],
     this.extraHeader,
@@ -53,6 +56,9 @@ class ChatPanel extends ConsumerStatefulWidget {
   final String Function(String senderId) senderLabelResolver;
   final int Function(String senderId) senderVipLevelResolver;
   final String? Function(String senderId) senderAvatarResolver;
+  final int Function(String senderId)? senderRankTierResolver;
+  final int Function(String senderId)? senderDiamondLevelResolver;
+  final String? Function(String senderId)? senderBadgeTitleResolver;
 
   /// Called when the user taps the avatar or name of a message sender.
   final void Function(String senderId)? onTapSender;
@@ -196,6 +202,16 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                         senderAvatarUrl: widget.senderAvatarResolver(
                           msg.senderId,
                         ),
+                        senderRankTier:
+                            widget.senderRankTierResolver?.call(msg.senderId) ??
+                            0,
+                        senderDiamondLevel:
+                            widget.senderDiamondLevelResolver?.call(
+                              msg.senderId,
+                            ) ??
+                            0,
+                        senderBadgeTitle:
+                            widget.senderBadgeTitleResolver?.call(msg.senderId),
                         onTapSender: widget.onTapSender,
                       );
                     },

@@ -861,7 +861,7 @@ service cloud.firestore {
         // Host/admin can approve/deny/reprioritize queue.
         allow update: if signedIn()
           && canReadRoomById(roomId)
-          && (roomDoc(roomId).data.hostId == uid() || isAdmin())
+          && canManageMicQueue(roomId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'status',
             'priority',
