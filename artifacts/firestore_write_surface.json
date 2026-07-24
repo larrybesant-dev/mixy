@@ -2432,9 +2432,9 @@
       "operation": "update",
       "collections": [
         "rooms",
-        "micQueue"
+        "mic_access_requests"
       ],
-      "inferredPath": "rooms/{id}/micQueue/{id}"
+      "inferredPath": "rooms/{id}/mic_access_requests/{id}"
     },
     {
       "file": "lib/features/room/providers/mic_access_provider.dart",

@@ -51,7 +51,7 @@ class MicAccessController {
     return _db
         .collection('rooms')
         .doc(roomId)
-      .collection('micQueue');
+      .collection('mic_access_requests');
   }
 
   String _requestDocId(String requesterId, String hostId) {
@@ -362,7 +362,7 @@ final roomMicAccessRequestsProvider = StreamProvider.autoDispose
       return firestore
           .collection('rooms')
           .doc(roomId)
-          .collection('micQueue')
+          .collection('mic_access_requests')
           .orderBy('createdAt', descending: true)
           .limit(50)
           .snapshots()
@@ -421,7 +421,6 @@ final myMicAccessRequestProvider = StreamProvider.autoDispose
         controller.onCancel = subscription.close;
       });
     });
-
 
 
 
