@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/layout/app_layout.dart';
 import '../../core/theme.dart';
+import '../../presentation/providers/user_provider.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import 'profile_completion.dart';
 import 'profile_controller.dart';
@@ -45,6 +46,9 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isSeedingControllers = false;
+  bool _didEditName = false;
+  bool _didEditEmail = false;
 
   // Tab 0 – Basics
   final _nameController = TextEditingController();
@@ -88,6 +92,58 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     _musicTitleController.text = s.profileMusicTitle ?? '';
     _profileAccentColor = s.profileAccentColor;
     _interests = List<String>.from(s.interests);
+
+    _nameController.addListener(() {
+      if (_isSeedingControllers) return;
+      _didEditName = true;
+    });
+    _emailController.addListener(() {
+      if (_isSeedingControllers) return;
+      _didEditEmail = true;
+    });
+
+    // Ensure the latest profile data is fetched when entering this screen,
+    // then hydrate controllers once async data arrives.
+    Future.microtask(
+      () => ref.read(profileControllerProvider.notifier).loadCurrentProfile(),
+    );
+  }
+
+  void _hydrateBasicsFromState(ProfileState state) {
+    final sessionUser = ref.read(userProvider);
+    final authEmail = FirebaseAuth.instance.currentUser?.email?.trim() ?? '';
+
+    final nextName = (state.username?.trim().isNotEmpty == true)
+        ? state.username!.trim()
+        : (sessionUser?.username.trim() ?? '');
+    final nextEmail = (state.email?.trim().isNotEmpty == true)
+        ? state.email!.trim()
+        : (sessionUser?.email.trim().isNotEmpty == true)
+            ? sessionUser!.email.trim()
+            : authEmail;
+
+    var updated = false;
+    _isSeedingControllers = true;
+    try {
+      if (!_didEditName &&
+          _nameController.text.trim().isEmpty &&
+          nextName.isNotEmpty) {
+        _nameController.text = nextName;
+        updated = true;
+      }
+      if (!_didEditEmail &&
+          _emailController.text.trim().isEmpty &&
+          nextEmail.isNotEmpty) {
+        _emailController.text = nextEmail;
+        updated = true;
+      }
+    } finally {
+      _isSeedingControllers = false;
+    }
+
+    if (updated && mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -153,9 +209,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   Future<void> _saveProfile() async {
     final current = ref.read(profileControllerProvider);
-    await ref
-        .read(profileControllerProvider.notifier)
-        .updateProfile(
+    await ref.read(profileControllerProvider.notifier).updateProfile(
           current.copyWith(
             username: _nameController.text.trim(),
             email: _emailController.text.trim(),
@@ -258,11 +312,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
               onTap: _isUploadingCover
                   ? null
                   : () => _pickAndUpload(
-                      storagePath:
-                          'users/${FirebaseAuth.instance.currentUser?.uid}/cover',
-                      onSuccess: (url) => setState(() => _coverPhotoUrl = url),
-                      setLoading: (v) => setState(() => _isUploadingCover = v),
-                    ),
+                        storagePath:
+                            'users/${FirebaseAuth.instance.currentUser?.uid}/cover',
+                        onSuccess: (url) =>
+                            setState(() => _coverPhotoUrl = url),
+                        setLoading: (v) =>
+                            setState(() => _isUploadingCover = v),
+                      ),
               child: Container(
                 height: 120,
                 decoration: BoxDecoration(
@@ -278,26 +334,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 child: Center(
                   child: _isUploadingCover
                       ? const CircularProgressIndicator()
-                      : (_coverPhotoUrl == null || (_coverPhotoUrl ?? '').isEmpty)
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.add_photo_alternate_outlined,
-                              color: Colors.white38,
-                              size: 32,
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Add cover photo',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        )
-                      : const SizedBox.shrink(),
+                      : (_coverPhotoUrl == null ||
+                              (_coverPhotoUrl ?? '').isEmpty)
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  color: Colors.white38,
+                                  size: 32,
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Add cover photo',
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -309,12 +366,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 onTap: _isUploadingAvatar
                     ? null
                     : () => _pickAndUpload(
-                        storagePath:
-                            'users/${FirebaseAuth.instance.currentUser?.uid}/avatar',
-                        onSuccess: (url) => setState(() => _avatarUrl = url),
-                        setLoading: (v) =>
-                            setState(() => _isUploadingAvatar = v),
-                      ),
+                          storagePath:
+                              'users/${FirebaseAuth.instance.currentUser?.uid}/avatar',
+                          onSuccess: (url) => setState(() => _avatarUrl = url),
+                          setLoading: (v) =>
+                              setState(() => _isUploadingAvatar = v),
+                        ),
                 child: Stack(
                   alignment: Alignment.bottomRight,
                   children: [
@@ -328,21 +385,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                          ? ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: _avatarUrl ?? '',
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                                errorWidget: (___, __, _) =>
-                                    const Icon(Icons.person, size: 32),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.person,
-                              size: 32,
-                              color: Colors.white54,
-                            ),
+                              ? ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: _avatarUrl ?? '',
+                                    width: 72,
+                                    height: 72,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (___, __, _) =>
+                                        const Icon(Icons.person, size: 32),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  size: 32,
+                                  color: Colors.white54,
+                                ),
                     ),
                     CircleAvatar(
                       radius: 12,
@@ -393,11 +450,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 : 'Anyone can view your profile',
           ),
           value: s.privacy.isPrivate,
-          onChanged: (val) => ref
-              .read(profileControllerProvider.notifier)
-              .updateDraft(
-                s.copyWith(privacy: s.privacy.copyWith(isPrivate: val)),
-              ),
+          onChanged: (val) =>
+              ref.read(profileControllerProvider.notifier).updateDraft(
+                    s.copyWith(privacy: s.privacy.copyWith(isPrivate: val)),
+                  ),
         ),
       ],
     );
@@ -545,6 +601,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileControllerProvider);
+    ref.listen<ProfileState>(profileControllerProvider, (previous, next) {
+      _hydrateBasicsFromState(next);
+    });
 
     return AppPageScaffold(
       backgroundColor: VelvetNoir.surface,
@@ -684,9 +743,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: isSelected
-                  ? Border.all(color: Colors.white, width: 3)
-                  : null,
+              border:
+                  isSelected ? Border.all(color: Colors.white, width: 3) : null,
               boxShadow: isSelected
                   ? [
                       BoxShadow(
@@ -710,6 +768,3 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     );
   }
 }
-
-
-
