@@ -7,11 +7,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../models/room_model.dart';
+import '../../../models/user_model.dart';
 import '../../../core/theme.dart';
 import '../../../services/diagnostic_logger.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../services/connection_recovery_handler.dart';
 import '../../../services/connection_health_check.dart';
+import '../../../services/notification_service.dart';
+import '../../../shared/widgets/guest_auth_gate.dart';
+import '../../../presentation/providers/user_provider.dart';
 import 'room_management_modal.dart';
 import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
@@ -21,6 +25,7 @@ import '../providers/room_gift_provider.dart';
 import '../widgets/network_health_widget.dart';
 import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
+import '../widgets/yahoo_buddy_sidebar.dart';
 import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
@@ -39,6 +44,7 @@ class LiveRoomScreen extends ConsumerStatefulWidget {
 
 class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     with WidgetsBindingObserver, DiagnosticLogger {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
@@ -76,7 +82,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     try {
       final firestore = ref.read(firestoreProvider);
       final roomRef = firestore.collection('rooms').doc(widget.roomId);
-      
+
       // Fetch user's avatar URL
       String? avatarUrl;
       try {
@@ -85,7 +91,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       } catch (_) {
         // Continue without avatar if fetch fails
       }
-      
+
       // Create participant doc (required for chat permissions)
       await roomRef.collection('participants').doc(uid).set({
         'userId': uid,
@@ -111,11 +117,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       });
 
       // Initialize WebRTC
-      final notifier = ref.read(activeRoomWebRTCProvider(widget.roomId).notifier);
+      final notifier =
+          ref.read(activeRoomWebRTCProvider(widget.roomId).notifier);
       await notifier.joinAsAudience();
 
       // Update Riverpod session state
-      final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+      final sessionNotifier =
+          ref.read(roomSessionProvider(widget.roomId).notifier);
       sessionNotifier.setJoined(true);
       sessionNotifier.updateDisplayName(uid, username);
 
@@ -149,26 +157,28 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
       final firestore = ref.read(firestoreProvider);
       final roomRef = firestore.collection('rooms').doc(widget.roomId);
-      
+
       // Get current room state to remove matching avatar URL
       final roomDoc = await roomRef.get();
       final roomData = roomDoc.data();
       String? avatarUrlToRemove;
-      
+
       if (roomData != null) {
-        final audienceIds = List<String>.from(roomData['audienceUserIds'] ?? []);
-        final avatarUrls = List<String>.from(roomData['audienceUserAvatarUrls'] ?? []);
-        
+        final audienceIds =
+            List<String>.from(roomData['audienceUserIds'] ?? []);
+        final avatarUrls =
+            List<String>.from(roomData['audienceUserAvatarUrls'] ?? []);
+
         // Find the index of current user and get matching avatar URL
         final userIndex = audienceIds.indexOf(currentUser.uid);
         if (userIndex >= 0 && userIndex < avatarUrls.length) {
           avatarUrlToRemove = avatarUrls[userIndex];
         }
       }
-      
+
       // Delete participant doc
       await roomRef.collection('participants').doc(currentUser.uid).delete();
-      
+
       // Update room
       await roomRef.update({
         'audienceUserIds': FieldValue.arrayRemove([currentUser.uid]),
@@ -178,7 +188,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      await ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).disconnect();
+      await ref
+          .read(activeRoomWebRTCProvider(widget.roomId).notifier)
+          .disconnect();
       ref.read(roomSessionProvider(widget.roomId).notifier).reset();
 
       if (mounted) {
@@ -196,21 +208,36 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }
 
   void _toggleVideo(bool enabled) {
-    ref.read(roomSessionProvider(widget.roomId).notifier).setVideoEnabled(enabled);
-    ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleVideo(enabled);
+    ref
+        .read(roomSessionProvider(widget.roomId).notifier)
+        .setVideoEnabled(enabled);
+    ref
+        .read(activeRoomWebRTCProvider(widget.roomId).notifier)
+        .toggleVideo(enabled);
   }
 
   void _toggleAudio(bool enabled) {
-    ref.read(roomSessionProvider(widget.roomId).notifier).setAudioEnabled(enabled);
-    ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleAudio(enabled);
+    ref
+        .read(roomSessionProvider(widget.roomId).notifier)
+        .setAudioEnabled(enabled);
+    ref
+        .read(activeRoomWebRTCProvider(widget.roomId).notifier)
+        .toggleAudio(enabled);
   }
 
   void _toggleAudioSharing(bool enabled) {
-    ref.read(roomSessionProvider(widget.roomId).notifier).setAudioSharingEnabled(enabled);
-    ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleSystemAudioSharing(enabled).catchError((e) {
+    ref
+        .read(roomSessionProvider(widget.roomId).notifier)
+        .setAudioSharingEnabled(enabled);
+    ref
+        .read(activeRoomWebRTCProvider(widget.roomId).notifier)
+        .toggleSystemAudioSharing(enabled)
+        .catchError((e) {
       // Revert UI state on error
       if (mounted) {
-        ref.read(roomSessionProvider(widget.roomId).notifier).setAudioSharingEnabled(!enabled);
+        ref
+            .read(roomSessionProvider(widget.roomId).notifier)
+            .setAudioSharingEnabled(!enabled);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to share audio: $e')),
         );
@@ -237,7 +264,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       await messageRef.set({
         'id': messageRef.id,
         'senderId': currentUser.uid,
-        'senderName': sessionState.userDisplayNames[currentUser.uid] ?? 'Anonymous',
+        'senderName':
+            sessionState.userDisplayNames[currentUser.uid] ?? 'Anonymous',
         'roomId': widget.roomId,
         'content': text,
         'createdAt': FieldValue.serverTimestamp(),
@@ -246,7 +274,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       });
 
       messageController.clear();
-      
+
       // Auto-scroll to bottom
       unawaited(Future.delayed(const Duration(milliseconds: 100), () {
         if (scrollController.hasClients) {
@@ -267,6 +295,40 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       'Join me in "$roomName" on MIXVY!\nhttps://mixvy-v2.web.app/rooms/room/${widget.roomId}',
       subject: '$roomName – MIXVY live room',
     );
+  }
+
+  Future<void> _inviteFriendToRoom(UserModel friend) async {
+    final allowed = await GuestAuthGate.requireRoomInvite(context, ref);
+    if (!allowed || !mounted) return;
+
+    final inviter = ref.read(userProvider);
+    if (inviter == null) return;
+
+    try {
+      await NotificationService().sendRoomInviteToFriends(
+        friendIds: [friend.id],
+        inviterId: inviter.id,
+        inviterName: inviter.username,
+        roomId: widget.roomId,
+        roomName: "${inviter.username}'s room",
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invite sent to ${friend.username}.'),
+          backgroundColor: VelvetNoir.primary,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not send invite: $error'),
+          backgroundColor: VelvetNoir.secondary,
+        ),
+      );
+    }
   }
 
   void _showManagementModal(BuildContext context, RoomModel room) {
@@ -349,9 +411,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       final participantData =
                           participants[index].data() as Map<String, dynamic>;
                       final userId = participantData['userId'] as String? ?? '';
-                      final displayName = participantData['displayName'] as String? ?? 'Anonymous';
-                      final role = participantData['role'] as String? ?? 'audience';
-                      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                      final displayName =
+                          participantData['displayName'] as String? ??
+                              'Anonymous';
+                      final role =
+                          participantData['role'] as String? ?? 'audience';
+                      final currentUserId =
+                          FirebaseAuth.instance.currentUser?.uid;
                       final isYou = userId == currentUserId;
 
                       return Container(
@@ -396,7 +462,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                                       ),
                                       if (isYou)
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 8),
+                                          padding:
+                                              const EdgeInsets.only(left: 8),
                                           child: Chip(
                                             label: Text(
                                               'You',
@@ -405,8 +472,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            backgroundColor: VelvetNoir.liveGlow,
-                                            labelPadding: const EdgeInsets.symmetric(
+                                            backgroundColor:
+                                                VelvetNoir.liveGlow,
+                                            labelPadding:
+                                                const EdgeInsets.symmetric(
                                               horizontal: 6,
                                             ),
                                             padding: EdgeInsets.zero,
@@ -422,8 +491,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                                     ),
                                     decoration: BoxDecoration(
                                       color: role == 'host'
-                                          ? VelvetNoir.primary.withValues(alpha: 0.2)
-                                          : VelvetNoir.secondary.withValues(alpha: 0.2),
+                                          ? VelvetNoir.primary
+                                              .withValues(alpha: 0.2)
+                                          : VelvetNoir.secondary
+                                              .withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -465,13 +536,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   }) {
     // Threshold: after 2+ attempts, we've waited 2s + 4s = 6s
     const audioOnlyThreshold = 2;
-    
+
     if (recoveryState.isRecovering &&
         recoveryState.attemptNumber >= audioOnlyThreshold &&
         isVideoEnabled) {
       // Degrade to audio-only
       sessionNotifier.setVideoEnabled(false);
-      
+
       if (context.mounted) {
         // Notify user of degradation
         ScaffoldMessenger.of(context).showSnackBar(
@@ -492,7 +563,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         );
       }
     }
-    
+
     // When recovery succeeds after audio-only degradation, notify user
     if (recoveryState.isConnected &&
         !recoveryState.isRecovering &&
@@ -500,7 +571,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Connection recovered! Camera is available again.'),
+            content:
+                const Text('Connection recovered! Camera is available again.'),
             duration: const Duration(seconds: 3),
             backgroundColor: Colors.green.shade700,
           ),
@@ -517,11 +589,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
 
     final latestGift = gifts.first;
-    
+
     // Only trigger animation for new gifts (first time seeing this ID)
     if (_lastSeenGiftId == null || _lastSeenGiftId != latestGift.id) {
       _lastSeenGiftId = latestGift.id;
-      
+
       // Show floating emoji animation
       FloatingGiftAnimation.show(
         context,
@@ -552,7 +624,21 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     final sessionState = ref.watch(roomSessionProvider(widget.roomId));
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: VelvetNoir.surface,
+      endDrawer: isDesktop
+          ? null
+          : Drawer(
+              backgroundColor: VelvetNoir.surface,
+              width: MediaQuery.of(context).size.width * 0.86,
+              child: SafeArea(
+                child: YahooBuddySidebar(
+                  roomId: widget.roomId,
+                  showAsDrawer: true,
+                  onInviteFriend: _inviteFriendToRoom,
+                ),
+              ),
+            ),
       appBar: AppBar(
         backgroundColor: VelvetNoir.surface,
         elevation: 0,
@@ -561,8 +647,17 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          if (!isDesktop)
+            IconButton(
+              icon: const Icon(Icons.people_alt_outlined),
+              tooltip: 'Buddy list',
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            ),
           StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('rooms')
+                .doc(widget.roomId)
+                .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.hasData && snapshot.data!.exists) {
                 final room = RoomModel.fromJson(
@@ -600,7 +695,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('rooms').doc(widget.roomId).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('rooms')
+            .doc(widget.roomId)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -629,13 +727,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             widget.roomId,
           );
 
-          return isDesktop ? _buildDesktopLayout(room, currentUser, sessionState) : _buildMobileLayout(room, currentUser, sessionState);
+          return isDesktop
+              ? _buildDesktopLayout(room, currentUser, sessionState)
+              : _buildMobileLayout(room, currentUser, sessionState);
         },
       ),
     );
   }
 
-  Widget _buildMobileLayout(RoomModel room, User? currentUser, RoomSessionState sessionState) {
+  Widget _buildMobileLayout(
+      RoomModel room, User? currentUser, RoomSessionState sessionState) {
     return Column(
       children: [
         // Video Grid Area
@@ -643,7 +744,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           _buildVideoArea(sessionState)
         else
           _buildRoomPreview(room),
-        
+
         // Room Info & Controls
         Expanded(
           child: Column(
@@ -660,9 +761,15 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 
-  Widget _buildDesktopLayout(RoomModel room, User? currentUser, RoomSessionState sessionState) {
+  Widget _buildDesktopLayout(
+      RoomModel room, User? currentUser, RoomSessionState sessionState) {
     return Row(
       children: [
+        YahooBuddySidebar(
+          roomId: widget.roomId,
+          onInviteFriend: _inviteFriendToRoom,
+        ),
+        VerticalDivider(color: VelvetNoir.surfaceHigh, width: 1),
         // Left: Video Grid
         Expanded(
           flex: 3,
@@ -698,13 +805,14 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         final healthState = ref.watch(connectionHealthProvider);
         final recoveryState = ref.watch(connectionRecoveryProvider);
         final giftsAsync = ref.watch(roomGiftStreamProvider(widget.roomId));
-        final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
-        
+        final sessionNotifier =
+            ref.read(roomSessionProvider(widget.roomId).notifier);
+
         // Trigger animations for new gifts
         giftsAsync.whenData((gifts) {
           _checkForNewGift(gifts);
         });
-        
+
         // Trigger audio-only fallback if recovery takes >5 seconds
         _handleRecoveryTimeout(
           recoveryState: recoveryState,
@@ -712,7 +820,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           context: context,
           isVideoEnabled: sessionState.isVideoEnabled,
         );
-        
+
         if (webrtcState?.service == null) {
           return Center(
             child: Text(
@@ -732,7 +840,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               color: VelvetNoir.surfaceHigh,
               child: webrtcState!.service!.getLocalView(),
             ),
-            
+
             // Reconnecting Banner (prominent top notification)
             if (recoveryState.isRecovering)
               Positioned(
@@ -741,7 +849,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 right: 0,
                 child: Container(
                   color: Colors.orange.withValues(alpha: 0.9),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -749,7 +858,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                           strokeWidth: 2,
                         ),
                       ),
@@ -785,7 +895,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   ),
                 ),
               ),
-            
+
             // Connection Failed Banner
             if (recoveryState.isFailed)
               Positioned(
@@ -794,11 +904,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 right: 0,
                 child: Container(
                   color: Colors.red.withValues(alpha: 0.9),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                      const Icon(Icons.error_outline,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -816,7 +928,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   ),
                 ),
               ),
-            
+
             // Audio/Video Status Overlays + Recovery Badge
             Positioned(
               top: 16,
@@ -830,29 +942,39 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     children: [
                       _buildStatusBadge(
                         sessionState.isVideoEnabled ? 'Video ON' : 'Video OFF',
-                        sessionState.isVideoEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
+                        sessionState.isVideoEnabled
+                            ? VelvetNoir.liveGlow
+                            : Colors.grey.shade700,
                       ),
                       _buildStatusBadge(
                         sessionState.isAudioEnabled ? 'Mic ON' : 'Mic OFF',
-                        sessionState.isAudioEnabled ? VelvetNoir.liveGlow : Colors.grey.shade700,
+                        sessionState.isAudioEnabled
+                            ? VelvetNoir.liveGlow
+                            : Colors.grey.shade700,
                       ),
                       NetworkHealthWidget(
                         showLabel: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 0),
                       ),
                     ],
                   ),
-                  
+
                   // Health Badge: Shows when connection is degrading or worse
                   if (healthState.isAtRisk)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: switch (healthState.health) {
-                          ConnectionHealth.healthy => Colors.green.withValues(alpha: 0.8),
-                          ConnectionHealth.degrading => Colors.orange.withValues(alpha: 0.8),
-                          ConnectionHealth.degraded => Colors.red.withValues(alpha: 0.8),
-                          ConnectionHealth.unavailable => Colors.grey.withValues(alpha: 0.8),
+                          ConnectionHealth.healthy =>
+                            Colors.green.withValues(alpha: 0.8),
+                          ConnectionHealth.degrading =>
+                            Colors.orange.withValues(alpha: 0.8),
+                          ConnectionHealth.degraded =>
+                            Colors.red.withValues(alpha: 0.8),
+                          ConnectionHealth.unavailable =>
+                            Colors.grey.withValues(alpha: 0.8),
                         },
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
@@ -869,7 +991,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                               ConnectionHealth.healthy => Icons.cloud_done,
                               ConnectionHealth.degrading => Icons.cloud_queue,
                               ConnectionHealth.degraded => Icons.cloud_off,
-                              ConnectionHealth.unavailable => Icons.cloud_off_rounded,
+                              ConnectionHealth.unavailable =>
+                                Icons.cloud_off_rounded,
                             },
                             color: Colors.white,
                             size: 14,
@@ -885,10 +1008,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                         ],
                       ),
                     ),
-                  
+
                   // Recovery Badge: Shows during degraded/reconnecting states
-                  if (webrtcState.connectionState == RtcConnectionState.degraded ||
-                      webrtcState.connectionState == RtcConnectionState.reconnecting)
+                  if (webrtcState.connectionState ==
+                          RtcConnectionState.degraded ||
+                      webrtcState.connectionState ==
+                          RtcConnectionState.reconnecting)
                     RecoveryBadge(
                       attemptNumber: webrtcState.reconnectAttemptCount,
                       maxAttempts: 3,
@@ -906,7 +1031,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   width: 120,
                   height: 150,
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 1,
                       childAspectRatio: 0.75,
                     ),
@@ -914,13 +1040,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     itemBuilder: (context, index) {
                       return DecoratedBox(
                         decoration: BoxDecoration(
-                          border: Border.all(color: VelvetNoir.primary, width: 2),
+                          border:
+                              Border.all(color: VelvetNoir.primary, width: 2),
                           borderRadius: BorderRadius.circular(8),
                           color: VelvetNoir.surfaceHigh,
                         ),
                         child: Center(
                           child: Text(
-                            sessionState.userDisplayNames[sessionState.remoteUsers[index]] ?? 'User ${index + 1}',
+                            sessionState.userDisplayNames[
+                                    sessionState.remoteUsers[index]] ??
+                                'User ${index + 1}',
                             style: GoogleFonts.raleway(
                               color: VelvetNoir.onSurface,
                               fontSize: 12,
@@ -941,7 +1070,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 onRetry: () {
                   // Attempt to recover by calling reconnect on the service
                   // ignore: use_build_context_synchronously
-                  ref.read(activeRoomWebRTCProvider(widget.roomId).notifier)
+                  ref
+                      .read(activeRoomWebRTCProvider(widget.roomId).notifier)
                       .disconnect()
                       .then((_) {
                     // Service will auto-reinitialize on next join
@@ -957,7 +1087,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 },
                 onLeave: () => Navigator.of(context).pop(),
               ),
-            
+
             // TEMPORARY TEST BUTTONS - DELETE BEFORE COMMIT
             if (kDebugMode)
               Positioned(
@@ -983,7 +1113,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('✓ WARNING logged to Crashlytics (check in 2 min)'),
+                            content: Text(
+                                '✓ WARNING logged to Crashlytics (check in 2 min)'),
                             duration: Duration(seconds: 3),
                           ),
                         );
@@ -1008,7 +1139,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('✓ ERROR logged to Crashlytics (check in 2 min)'),
+                            content: Text(
+                                '✓ ERROR logged to Crashlytics (check in 2 min)'),
                             duration: Duration(seconds: 3),
                           ),
                         );
@@ -1033,7 +1165,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('✓ CRITICAL logged to Crashlytics (check in 2 min)'),
+                            content: Text(
+                                '✓ CRITICAL logged to Crashlytics (check in 2 min)'),
                             duration: Duration(seconds: 3),
                           ),
                         );
@@ -1042,7 +1175,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   ],
                 ),
               ),
-            
+
             // Gift Ticker: Shows recent gifts at bottom
             GiftTickerWidget(
               roomId: widget.roomId,
@@ -1119,7 +1252,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               children: [
                 if (room.isLive)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: VelvetNoir.liveGlow,
@@ -1156,7 +1290,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceHigh,
-        border: Border(bottom: BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
+        border: Border(
+            bottom:
+                BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1175,7 +1311,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               ),
               if (room.isLive)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: VelvetNoir.liveGlow,
                     borderRadius: BorderRadius.circular(3),
@@ -1195,12 +1332,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           Row(
             children: [
               StreamBuilder<DocumentSnapshot>(
-                stream: ref.read(firestoreProvider).collection('users').doc(room.hostId).snapshots(),
+                stream: ref
+                    .read(firestoreProvider)
+                    .collection('users')
+                    .doc(room.hostId)
+                    .snapshots(),
                 builder: (context, snapshot) {
                   String hostDisplayName = room.hostUsername ?? 'Anonymous';
                   if (snapshot.hasData && snapshot.data != null) {
-                    final hostData = snapshot.data!.data() as Map<String, dynamic>?;
-                    hostDisplayName = hostData?['displayName'] ?? room.hostUsername ?? 'Anonymous';
+                    final hostData =
+                        snapshot.data!.data() as Map<String, dynamic>?;
+                    hostDisplayName = hostData?['displayName'] ??
+                        room.hostUsername ??
+                        'Anonymous';
                   }
                   return Text(
                     'Hosted by $hostDisplayName',
@@ -1214,14 +1358,16 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               const Spacer(),
               Consumer(
                 builder: (context, consumerRef, _) {
-                  final participantCount = consumerRef.watch(participantCountProvider(room.id));
+                  final participantCount =
+                      consumerRef.watch(participantCountProvider(room.id));
                   return GestureDetector(
                     onTap: () => _showParticipantsPanel(room.id),
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
                       child: Row(
                         children: [
-                          const Icon(Icons.people, size: 14, color: VelvetNoir.primary),
+                          const Icon(Icons.people,
+                              size: 14, color: VelvetNoir.primary),
                           const SizedBox(width: 4),
                           Text(
                             '$participantCount listeners',
@@ -1274,7 +1420,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 return Center(
                   child: Text(
                     'Loading messages...',
-                    style: GoogleFonts.raleway(color: VelvetNoir.onSurfaceVariant),
+                    style:
+                        GoogleFonts.raleway(color: VelvetNoir.onSurfaceVariant),
                   ),
                 );
               }
@@ -1297,11 +1444,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 itemBuilder: (context, index) {
                   final msg = messages[index];
                   final data = msg.data() as Map<String, dynamic>;
-                  final senderName = data['senderName'] as String? ?? 'Anonymous';
+                  final senderName =
+                      data['senderName'] as String? ?? 'Anonymous';
                   final content = data['content'] as String? ?? '';
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1361,7 +1510,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       hintStyle: GoogleFonts.raleway(
                         color: VelvetNoir.onSurfaceVariant,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       filled: true,
                       fillColor: VelvetNoir.surfaceHigh,
                       border: OutlineInputBorder(
@@ -1386,12 +1536,14 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 
-  Widget _buildControlBar(RoomModel room, User? currentUser, RoomSessionState sessionState) {
+  Widget _buildControlBar(
+      RoomModel room, User? currentUser, RoomSessionState sessionState) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VelvetNoir.surfaceHigh,
-        border: Border(top: BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
+        border: Border(
+            top: BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1401,7 +1553,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               FilledButton.icon(
                 onPressed: currentUser != null
                     ? () async {
-                        final displayName = await _getUserDisplayName(currentUser.uid);
+                        final displayName =
+                            await _getUserDisplayName(currentUser.uid);
                         if (mounted) {
                           await _joinRoom(currentUser.uid, displayName);
                         }
@@ -1416,33 +1569,49 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             else ...[
               FilledButton.icon(
                 onPressed: () => _toggleVideo(!sessionState.isVideoEnabled),
-                icon: Icon(sessionState.isVideoEnabled ? Icons.videocam : Icons.videocam_off),
-                label: Text(sessionState.isVideoEnabled ? 'Camera' : 'Camera Off'),
+                icon: Icon(sessionState.isVideoEnabled
+                    ? Icons.videocam
+                    : Icons.videocam_off),
+                label:
+                    Text(sessionState.isVideoEnabled ? 'Camera' : 'Camera Off'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: sessionState.isVideoEnabled ? VelvetNoir.primary : Colors.grey.shade700,
+                  backgroundColor: sessionState.isVideoEnabled
+                      ? VelvetNoir.primary
+                      : Colors.grey.shade700,
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: () => _toggleAudio(!sessionState.isAudioEnabled),
-                icon: Icon(sessionState.isAudioEnabled ? Icons.mic : Icons.mic_off),
+                icon: Icon(
+                    sessionState.isAudioEnabled ? Icons.mic : Icons.mic_off),
                 label: Text(sessionState.isAudioEnabled ? 'Mic' : 'Mic Off'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: sessionState.isAudioEnabled ? VelvetNoir.primary : Colors.grey.shade700,
+                  backgroundColor: sessionState.isAudioEnabled
+                      ? VelvetNoir.primary
+                      : Colors.grey.shade700,
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                onPressed: () => _toggleAudioSharing(!sessionState.isAudioSharingEnabled),
-                icon: Icon(sessionState.isAudioSharingEnabled ? Icons.volume_up : Icons.volume_mute),
-                label: Text(sessionState.isAudioSharingEnabled ? 'Share Audio' : 'No Audio Share'),
+                onPressed: () =>
+                    _toggleAudioSharing(!sessionState.isAudioSharingEnabled),
+                icon: Icon(sessionState.isAudioSharingEnabled
+                    ? Icons.volume_up
+                    : Icons.volume_mute),
+                label: Text(sessionState.isAudioSharingEnabled
+                    ? 'Share Audio'
+                    : 'No Audio Share'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: sessionState.isAudioSharingEnabled ? VelvetNoir.secondary : Colors.grey.shade700,
+                  backgroundColor: sessionState.isAudioSharingEnabled
+                      ? VelvetNoir.secondary
+                      : Colors.grey.shade700,
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                onPressed: () => RoomGiftPickerSheet.show(context, ref, roomId: room.id),
+                onPressed: () =>
+                    RoomGiftPickerSheet.show(context, ref, roomId: room.id),
                 icon: const Icon(Icons.card_giftcard),
                 label: const Text('Gift'),
                 style: FilledButton.styleFrom(
@@ -1466,8 +1635,3 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 }
-
-
-
-
-
