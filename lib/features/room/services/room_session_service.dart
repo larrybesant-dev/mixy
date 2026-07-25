@@ -90,6 +90,21 @@ class RoomSessionService {
     return fallback;
   }
 
+  String _participantRoleFromMemberRole(String memberRole) {
+    switch (memberRole.trim().toLowerCase()) {
+      case 'owner':
+      case 'host':
+        return 'host';
+      case 'cohost':
+      case 'moderator':
+      case 'trusted_speaker':
+      case 'stage':
+        return memberRole.trim().toLowerCase();
+      default:
+        return 'audience';
+    }
+  }
+
   Future<RoomJoinResult> joinRoom({
     required String roomId,
     required String userId,
@@ -529,18 +544,71 @@ class RoomSessionService {
       return lastParticipantSyncAt;
     }
 
-    await traceFirestoreWrite<void>(
-      path: 'rooms/$roomId/participants/$userId',
-      operation: 'room_heartbeat',
-      roomId: roomId,
-      userId: userId,
-      action: () => _firestore
+    try {
+      await traceFirestoreWrite<void>(
+        path: 'rooms/$roomId/participants/$userId',
+        operation: 'room_heartbeat',
+        roomId: roomId,
+        userId: userId,
+        action: () => _firestore
+            .collection('rooms')
+            .doc(roomId)
+            .collection('participants')
+            .doc(userId)
+            .update({'lastActiveAt': now, 'userStatus': 'online'}),
+      );
+    } on FirebaseException catch (e) {
+      if (e.code != 'not-found') {
+        rethrow;
+      }
+
+      final memberRef = _firestore
           .collection('rooms')
           .doc(roomId)
-          .collection('participants')
-          .doc(userId)
-          .update({'lastActiveAt': now}),
-    );
+          .collection('members')
+          .doc(userId);
+      final memberSnapshot = await traceFirestoreRead(
+        path: 'rooms/$roomId/members/$userId',
+        operation: 'recover_member_for_heartbeat',
+        roomId: roomId,
+        userId: userId,
+        action: memberRef.get,
+      );
+      if (!memberSnapshot.exists) {
+        rethrow;
+      }
+
+      final memberData = memberSnapshot.data() ?? const <String, dynamic>{};
+      final memberRole = _asString(memberData['role'], fallback: 'member');
+      final participantRole = _participantRoleFromMemberRole(memberRole);
+      final displayName = _asString(memberData['displayName']);
+      final photoUrl = _asString(memberData['photoUrl']);
+
+      await traceFirestoreWrite<void>(
+        path: 'rooms/$roomId/participants/$userId',
+        operation: 'recover_participant_from_member_heartbeat',
+        roomId: roomId,
+        userId: userId,
+        action: () => _firestore
+            .collection('rooms')
+            .doc(roomId)
+            .collection('participants')
+            .doc(userId)
+            .set({
+              'userId': userId,
+              'role': participantRole,
+              'isBanned': false,
+              'isMuted': false,
+              'camOn': false,
+              'userStatus': 'online',
+              if (displayName.isNotEmpty) 'displayName': displayName,
+              if (photoUrl.isNotEmpty) 'photoUrl': photoUrl,
+              'joinedAt': memberData['joinedAt'] ?? FieldValue.serverTimestamp(),
+              'lastActiveAt': now,
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true)),
+      );
+    }
 
     return now;
   }
