@@ -3472,6 +3472,10 @@ async function grabMicHandler(request, deps = {}) {
     .collection("rooms")
     .doc(roomId)
     .collection("participants");
+  const membersCol = firestore
+    .collection("rooms")
+    .doc(roomId)
+    .collection("members");
   const policyRef = firestore
     .collection("rooms")
     .doc(roomId)
@@ -3480,17 +3484,63 @@ async function grabMicHandler(request, deps = {}) {
 
   await firestore.runTransaction(async (tx) => {
     // ── Verify caller is a live, non-banned participant ──────────────────
-    const callerSnap = await tx.get(participantsCol.doc(userId));
-    if (!callerSnap.exists) {
-      throw new HttpsError("permission-denied", "You are not in this room.");
+    const callerRef = participantsCol.doc(userId);
+    const callerSnap = await tx.get(callerRef);
+    let callerData = callerSnap.exists ? (callerSnap.data() || {}) : null;
+    let membershipSource = "participants";
+
+    // Backward-compat: some clients only wrote rooms/{roomId}/members.
+    // If participant doc is missing but membership exists, self-heal now.
+    if (!callerData) {
+      const memberSnap = await tx.get(membersCol.doc(userId));
+      if (!memberSnap.exists) {
+        throw new HttpsError("permission-denied", "You are not in this room.");
+      }
+      const memberData = memberSnap.data() || {};
+      membershipSource = "members";
+      callerData = {
+        userId,
+        role: memberData.role || "audience",
+        isBanned: memberData.isBanned === true,
+      };
+
+      tx.set(
+        callerRef,
+        {
+          userId,
+          role: callerData.role,
+          isBanned: callerData.isBanned,
+          lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true},
+      );
+
+      logger.info("grabMic participant self-healed from member", {
+        roomId,
+        userId,
+        membershipSource,
+      });
     }
-    const callerData = callerSnap.data();
+
+    logger.info("grabMic caller membership resolved", {
+      roomId,
+      userId,
+      membershipSource,
+      callerRole: callerData.role || null,
+      isBanned: callerData.isBanned === true,
+    });
+
     if (callerData.isBanned === true) {
       throw new HttpsError("permission-denied", "You are banned from this room.");
     }
     // Hosts and co-hosts already have a permanent mic — nothing to do.
     const callerRole = callerData.role || "";
     if (["host", "owner", "cohost"].includes(callerRole)) {
+      logger.info("grabMic skipped for host-like caller", {
+        roomId,
+        userId,
+        callerRole,
+      });
       return;
     }
 
@@ -3568,6 +3618,15 @@ async function grabMicHandler(request, deps = {}) {
       promotionPayload,
       {merge: true},
     );
+
+    logger.info("grabMic promoted caller", {
+      roomId,
+      userId,
+      callerRole,
+      micLimit,
+      micTimerSeconds,
+      activeStageCount: activeStageDocs.length,
+    });
   });
 
   return {success: true};

@@ -355,6 +355,33 @@ class RoomRepository {
     try {
       final callable = functions.httpsCallable('grabMic');
       await callable.call<Map<String, dynamic>>({'roomId': roomId});
+    } on FirebaseFunctionsException catch (e) {
+      final code = e.code.trim().toLowerCase();
+      final backendMessage = (e.message ?? '').trim();
+      debugPrint(
+        '[RoomRepository][requestMic] grabMic failed '
+        'roomId=$roomId userId=$normalizedUserId code=$code message=$backendMessage',
+      );
+
+      if (code == 'permission-denied') {
+        final resolvedMessage = backendMessage.isNotEmpty
+            ? backendMessage
+            : 'Mic request denied. Please leave and rejoin, then try again.';
+        throw StateError('Mic request denied: $resolvedMessage');
+      }
+
+      if (code == 'unauthenticated') {
+        throw StateError('You need to sign in again before taking the mic.');
+      }
+
+      if (code == 'resource-exhausted') {
+        throw StateError('Mic action is rate-limited. Please wait a moment.');
+      }
+
+      throw StateError(
+        'Failed to take the mic ($code): '
+        '${backendMessage.isNotEmpty ? backendMessage : 'Unknown backend error.'}',
+      );
     } catch (e) {
       throw StateError('Failed to take the mic: ${e.toString()}');
     }
