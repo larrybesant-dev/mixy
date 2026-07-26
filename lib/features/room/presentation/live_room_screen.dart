@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../models/room_model.dart';
+import '../../../models/room_participant_model.dart';
 import '../../../core/theme.dart';
 import '../../../services/diagnostic_logger.dart';
 import '../../../core/providers/firebase_providers.dart';
@@ -130,6 +131,63 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   static final RegExp _generatedHandlePattern = RegExp(
     r'^(User|Guest|Member)\s+[A-Z0-9]{1,6}$',
   );
+
+  List<RoomParticipantModel> _projectParticipantsForRoster({
+    required List<RoomParticipantModel> participants,
+    required RoomSessionState sessionState,
+    required User? currentUser,
+    required RoomModel room,
+  }) {
+    final user = currentUser;
+    final currentUserId = user?.uid ?? '';
+    if (currentUserId.isEmpty) return participants;
+    if (user == null) return participants;
+
+    final now = DateTime.now();
+    final projectedMicOn = sessionState.hasJoined && sessionState.isAudioEnabled;
+    final projectedCamOn = sessionState.hasJoined && sessionState.isVideoEnabled;
+
+    String resolvedRole = 'audience';
+    if (room.hostId == currentUserId) {
+      resolvedRole = 'host';
+    } else if (room.ownerId == currentUserId) {
+      resolvedRole = 'owner';
+    } else if (room.adminUserIds.contains(currentUserId)) {
+      resolvedRole = 'cohost';
+    }
+
+    final index = participants.indexWhere((p) => p.userId == currentUserId);
+    if (index >= 0) {
+      final current = participants[index];
+      final updated = current.copyWith(
+        role: current.role.trim().isNotEmpty ? current.role : resolvedRole,
+        displayName: _displayNameFromAuthUser(user),
+        photoUrl: user.photoURL,
+        micOn: projectedMicOn,
+        camOn: projectedCamOn,
+        lastActiveAt: now,
+      );
+      return [
+        ...participants.take(index),
+        updated,
+        ...participants.skip(index + 1),
+      ];
+    }
+
+    return [
+      ...participants,
+      RoomParticipantModel(
+        userId: currentUserId,
+        role: resolvedRole,
+        displayName: _displayNameFromAuthUser(user),
+        photoUrl: user.photoURL,
+        micOn: projectedMicOn,
+        camOn: projectedCamOn,
+        joinedAt: now,
+        lastActiveAt: now,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -1023,21 +1081,28 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     final presence = sideRef.watch(roomPresenceLiveProvider(widget.roomId)).valueOrNull ?? const [];
                     final queue = sideRef.watch(roomMicAccessRequestsProvider(widget.roomId)).valueOrNull ?? const [];
 
+                    final rosterParticipants = _projectParticipantsForRoster(
+                      participants: participants,
+                      sessionState: sessionState,
+                      currentUser: currentUser,
+                      room: room,
+                    );
+
                     final pendingQueueUserIds = queue
                         .where((q) => q.status == 'pending' && !q.isExpired)
                         .map((q) => q.requesterId)
                         .toSet();
 
                     final displayNameById = {
-                      for (final p in participants)
+                      for (final p in rosterParticipants)
                         p.userId: ((p.displayName?.trim().isNotEmpty ?? false) ? p.displayName!.trim() : p.userId),
                     };
                     final avatarById = {
-                      for (final p in participants) p.userId: p.photoUrl,
+                      for (final p in rosterParticipants) p.userId: p.photoUrl,
                     };
 
                     return UserListPanel(
-                      participants: participants,
+                      participants: rosterParticipants,
                       currentUserId: currentUserId,
                       presenceList: presence,
                       displayNameById: displayNameById,
