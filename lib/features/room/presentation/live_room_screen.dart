@@ -127,6 +127,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   String? _lastSeenGiftId;
   int _gridSlotCount = 12;
   bool _isFollowActionBusy = false;
+  bool _isJoiningRoom = false;
+  bool _hasAttemptedAutoJoin = false;
   final Map<String, String> _resolvedUserNameCache = <String, String>{};
 
   static final RegExp _generatedHandlePattern = RegExp(
@@ -288,6 +290,68 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       }
     }
     return _memberFallback(user.uid);
+  }
+
+  Future<void> _joinCurrentUserToRoom(User currentUser) async {
+    if (_isJoiningRoom) return;
+    setState(() => _isJoiningRoom = true);
+    try {
+      final displayName = await _getUserDisplayName(currentUser.uid);
+      if (!mounted) return;
+
+      final controller = ref.read(roomControllerProvider(widget.roomId).notifier);
+      final result = await controller.joinRoom(
+        currentUser.uid,
+        displayName: displayName,
+        avatarUrl: currentUser.photoURL,
+      );
+
+      if (!mounted) return;
+      if (result.isSuccess) {
+        final resolvedName = displayName.trim().isNotEmpty
+            ? displayName.trim()
+            : _displayNameFromAuthUser(currentUser);
+        final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+        sessionNotifier.updateDisplayName(currentUser.uid, resolvedName);
+        sessionNotifier.setJoined(true);
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.errormessage ?? 'Could not enter room. Please try again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error entering room: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isJoiningRoom = false);
+      }
+    }
+  }
+
+  void _ensureAutoJoined({
+    required User? currentUser,
+    required RoomSessionState sessionState,
+  }) {
+    if (_hasAttemptedAutoJoin || sessionState.hasJoined || currentUser == null) {
+      return;
+    }
+    _hasAttemptedAutoJoin = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_joinCurrentUserToRoom(currentUser));
+    });
   }
 
   String _resolveHostLabel(
@@ -880,6 +944,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           }
 
           final room = RoomModel.fromJson(roomMap, widget.roomId);
+          _ensureAutoJoined(currentUser: currentUser, sessionState: sessionState);
           return isDesktop
               ? _buildDesktopLayout(room, currentUser, sessionState)
               : _buildMobileLayout(room, currentUser, sessionState);
@@ -2212,52 +2277,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           children: [
             if (!sessionState.hasJoined)
               FilledButton.icon(
-                onPressed: currentUser != null
-                    ? () async {
-                        final displayName = await _getUserDisplayName(currentUser.uid);
-                        if (mounted) {
-                          try {
-                            final controller = ref.read(roomControllerProvider(widget.roomId).notifier);
-                            final result = await controller.joinRoom(
-                              currentUser.uid,
-                              displayName: displayName,
-                              avatarUrl: currentUser.photoURL,
-                            );
-                            if (mounted && result.isSuccess) {
-                              final resolvedName = displayName.trim().isNotEmpty
-                                  ? displayName.trim()
-                                  : _displayNameFromAuthUser(currentUser);
-                              final sessionNotifier = ref.read(
-                                roomSessionProvider(widget.roomId).notifier,
-                              );
-                              sessionNotifier.updateDisplayName(
-                                currentUser.uid,
-                                resolvedName,
-                              );
-                              sessionNotifier.setJoined(true);
-                            } else if (mounted && !result.isSuccess) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(result.errormessage ?? 'Could not join room. Please try again.'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error joining room: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      }
+                onPressed: (currentUser != null && !_isJoiningRoom)
+                    ? () => _joinCurrentUserToRoom(currentUser)
                     : null,
                 icon: const Icon(Icons.call_outlined),
-                label: const Text('JOIN'),
+                label: Text(_isJoiningRoom ? 'ENTERING…' : 'RETRY ENTRY'),
                 style: FilledButton.styleFrom(
                   backgroundColor: VelvetNoir.primary,
                 ),
