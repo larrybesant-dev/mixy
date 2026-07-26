@@ -48,6 +48,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
+  bool _isJoiningRoom = false;
+  bool _hasAttemptedAutoJoin = false;
 
   @override
   void initState() {
@@ -149,6 +151,41 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
+  Future<void> _joinCurrentUserToRoom(User currentUser) async {
+    if (_isJoiningRoom) return;
+    setState(() => _isJoiningRoom = true);
+    try {
+      final displayName = await _getUserDisplayName(currentUser.uid);
+      if (!mounted) return;
+      await _joinRoom(currentUser.uid, displayName);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error entering room: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isJoiningRoom = false);
+      }
+    }
+  }
+
+  void _ensureAutoJoined({
+    required User? currentUser,
+    required RoomSessionState sessionState,
+  }) {
+    if (_hasAttemptedAutoJoin || sessionState.hasJoined || currentUser == null) {
+      return;
+    }
+    _hasAttemptedAutoJoin = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_joinCurrentUserToRoom(currentUser));
+    });
+  }
   Future<void> _leaveRoom() async {
     try {
       final auth = ref.read(firebaseAuthProvider);
@@ -726,7 +763,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             snapshot.data!.data() as Map<String, dynamic>,
             widget.roomId,
           );
-
+          _ensureAutoJoined(currentUser: currentUser, sessionState: sessionState);
           return isDesktop
               ? _buildDesktopLayout(room, currentUser, sessionState)
               : _buildMobileLayout(room, currentUser, sessionState);
@@ -1551,17 +1588,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           children: [
             if (!sessionState.hasJoined)
               FilledButton.icon(
-                onPressed: currentUser != null
-                    ? () async {
-                        final displayName =
-                            await _getUserDisplayName(currentUser.uid);
-                        if (mounted) {
-                          await _joinRoom(currentUser.uid, displayName);
-                        }
-                      }
+                onPressed: (currentUser != null && !_isJoiningRoom)
+                    ? () => _joinCurrentUserToRoom(currentUser)
                     : null,
                 icon: const Icon(Icons.call_outlined),
-                label: const Text('JOIN'),
+                label: Text(_isJoiningRoom ? 'ENTERING…' : 'RETRY ENTRY'),
                 style: FilledButton.styleFrom(
                   backgroundColor: VelvetNoir.primary,
                 ),

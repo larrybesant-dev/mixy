@@ -1282,7 +1282,7 @@ class _BentoHeroCard extends ConsumerWidget {
                               ),
                             )
                           : Text(
-                              'JOIN',
+                              'ENTER',
                               style: GoogleFonts.raleway(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
@@ -1509,7 +1509,7 @@ class _RoomGridCard extends ConsumerWidget {
                           ),
                         )
                       : Text(
-                          'JOIN',
+                          'ENTER',
                           style: GoogleFonts.raleway(
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
@@ -2646,7 +2646,7 @@ class _HeroJoinCard extends StatelessWidget {
                   hasLiveRoom ? Icons.meeting_room_rounded : Icons.mic_rounded,
                 ),
                 label: Text(
-                  hasLiveRoom ? 'Join a Room' : 'Start the Night',
+                  hasLiveRoom ? 'Enter Room' : 'Start the Night',
                   style: GoogleFonts.raleway(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
