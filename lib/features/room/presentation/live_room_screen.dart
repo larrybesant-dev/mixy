@@ -146,6 +146,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     final now = DateTime.now();
     final projectedMicOn = sessionState.hasJoined && sessionState.isAudioEnabled;
     final projectedCamOn = sessionState.hasJoined && sessionState.isVideoEnabled;
+    final cachedResolvedName = _resolvedUserNameCache[currentUserId]?.trim() ?? '';
+    final authDisplayName = _displayNameFromAuthUser(user).trim();
+
+    String resolveRosterDisplayName(String? existingDisplayName) {
+      final existing = existingDisplayName?.trim() ?? '';
+      if (existing.isNotEmpty && !_isPlaceholderIdentity(existing)) {
+        return existing;
+      }
+      if (cachedResolvedName.isNotEmpty && !_isPlaceholderIdentity(cachedResolvedName)) {
+        return cachedResolvedName;
+      }
+      return authDisplayName;
+    }
 
     String resolvedRole = 'audience';
     if (room.hostId == currentUserId) {
@@ -161,7 +174,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       final current = participants[index];
       final updated = current.copyWith(
         role: current.role.trim().isNotEmpty ? current.role : resolvedRole,
-        displayName: _displayNameFromAuthUser(user),
+        displayName: resolveRosterDisplayName(current.displayName),
         photoUrl: user.photoURL,
         micOn: projectedMicOn,
         camOn: projectedCamOn,
@@ -179,7 +192,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       RoomParticipantModel(
         userId: currentUserId,
         role: resolvedRole,
-        displayName: _displayNameFromAuthUser(user),
+        displayName: resolveRosterDisplayName(null),
         photoUrl: user.photoURL,
         micOn: projectedMicOn,
         camOn: projectedCamOn,
