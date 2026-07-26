@@ -94,6 +94,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   // Active Peer Connections and Subscriptions
   final Map<String, RTCPeerConnection> _pcs = {};
   final Map<String, List<StreamSubscription>> _roomSubscriptions = {};
+  final Map<String, List<StreamSubscription>> _peerSubscriptions = {};
   
   MediaStream? _localStream;
   MediaStream? _systemAudioStream;
@@ -129,6 +130,9 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   String? _currentChannelId;
   /* Unused: int? _localUid; */
   Timer? _signalingHeartbeatTimer;
+  int _signalingHeartbeatFailures = 0;
+  RtcConnectionState _connectionState = RtcConnectionState.idle;
+  int _reconnectAttemptCount = 0;
 
   /// Production Initializer: Fetches TURN credentials via Cloud Function (security: prevents secret key exposure).
   /// Sprint 2 C-2 Fix: Moved from client-side HTTP to Cloud Function
@@ -195,6 +199,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     required String subcollection,
     required RTCIceCandidate candidate,
     required String scopeKey,
+    required String targetUserId,
   }) async {
     final rawCandidate = candidate.candidate;
     if (rawCandidate == null || rawCandidate.isEmpty) return;
@@ -210,6 +215,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           .set({
             ...candidate.toMap(),
             'userId': _localUserId,
+            'targetUserId': targetUserId,
             'timestamp': FieldValue.serverTimestamp(),
           });
     } catch (error) {
@@ -220,6 +226,52 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   void _log(String message) {
     debugPrint('[WebRtcRoomService] $message');
+  }
+
+  void _setConnectionState(RtcConnectionState next) {
+    if (_connectionState == next) return;
+    _connectionState = next;
+    onConnectionStateChanged?.call(next);
+  }
+
+  Exception _mediaAccessException(
+    Object error, {
+    required bool video,
+    required bool audio,
+  }) {
+    final raw = error.toString().toLowerCase();
+    final target = video && audio
+        ? 'camera and microphone'
+        : (video ? 'camera' : 'microphone');
+
+    if (raw.contains('notallowederror') ||
+        raw.contains('permission') ||
+        raw.contains('denied')) {
+      return Exception(
+        '$target permission was denied. Please allow access in browser/OS settings and retry.',
+      );
+    }
+    if (raw.contains('notfounderror') ||
+        raw.contains('devicesnotfounderror') ||
+        raw.contains('requested device not found')) {
+      return Exception('No $target device was found on this system.');
+    }
+    if (raw.contains('notreadableerror') || raw.contains('trackstarterror')) {
+      return Exception(
+        'The $target is currently in use by another app or tab. Close it and try again.',
+      );
+    }
+    if (raw.contains('securityerror') || raw.contains('https')) {
+      return Exception(
+        '$target access requires a secure origin (HTTPS or localhost).',
+      );
+    }
+    if (raw.contains('overconstrainederror')) {
+      return Exception(
+        'Selected $target constraints are not supported by this device. Try default device settings.',
+      );
+    }
+    return Exception('Unable to access $target: $error');
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -259,10 +311,10 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   bool get isSharingSystemAudio => _systemAudioStream != null;
 
   @override
-  RtcConnectionState get connectionState => RtcConnectionState.idle;
+  RtcConnectionState get connectionState => _connectionState;
 
   @override
-  int get reconnectAttemptCount => 0;
+  int get reconnectAttemptCount => _reconnectAttemptCount;
 
   @override
   Future<void> shareSystemAudio(bool enabled) async {
@@ -412,6 +464,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _currentChannelId = channelName;
 /* Unused: /* Deprecated/Unused:     _localUid = uid; */ */
     _isJoinedChannel = true;
+    _setConnectionState(RtcConnectionState.connecting);
     
     // Register participant in the signaling session
     final sessionRef = _firestore.collection('webrtc_sessions').doc(channelName);
@@ -463,6 +516,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _startSignalingHeartbeat();
     _startAudioLevelMonitoring();
     _subscribeToParticipants(channelName);
+    _setConnectionState(RtcConnectionState.connected);
 
     if (publishCameraTrackOnJoin || publishMicrophoneTrackOnJoin) {
       await enableVideo(publishCameraTrackOnJoin, publishMicrophoneTrack: publishMicrophoneTrackOnJoin);
@@ -526,10 +580,44 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         await sessionRef.update({
           'updatedAt': FieldValue.serverTimestamp(),
         });
+        _signalingHeartbeatFailures = 0;
       } catch (e) {
         _log('Signaling heartbeat failed: $e');
+        _signalingHeartbeatFailures++;
+        if (_signalingHeartbeatFailures >= 3) {
+          _attemptSignalingRecovery().ignore();
+        }
       }
     });
+  }
+
+  Future<void> _attemptSignalingRecovery() async {
+    if (!_isJoinedChannel || _currentChannelId == null) return;
+    if (_connectionState == RtcConnectionState.reconnecting) return;
+    _signalingHeartbeatFailures = 0;
+    _reconnectAttemptCount++;
+    _setConnectionState(RtcConnectionState.reconnecting);
+
+    try {
+      final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+      await sessionRef.set({
+        'updatedAt': FieldValue.serverTimestamp(),
+        'active': true,
+      }, SetOptions(merge: true));
+
+      await sessionRef.collection('participants').doc(_localUserId).set({
+        'uid': _stableUid(_localUserId),
+        'lastSeen': FieldValue.serverTimestamp(),
+        'isBroadcasting': _localVideoCapturing,
+      }, SetOptions(merge: true));
+
+      _reconnectAttemptCount = 0;
+      _setConnectionState(RtcConnectionState.connected);
+    } catch (e) {
+      _log('Signaling recovery failed: $e');
+      _setConnectionState(RtcConnectionState.failed);
+      onConnectionLost?.call();
+    }
   }
 
   void _subscribeToParticipants(String roomId) {
@@ -550,17 +638,28 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           _setupPC(userId, roomId, isOfferer).ignore();
         } else if (change.type == DocumentChangeType.removed) {
           _log('Peer left: $userId. Cleaning up.');
-          _cleanupPeer(userId);
+          _cleanupPeer(userId).ignore();
         }
       }
     }));
   }
 
-  void _cleanupPeer(String userId) {
+  Future<void> _cleanupPeer(String userId) async {
     final uid = _stableUid(userId);
+
+    final peerSubs = _peerSubscriptions.remove(userId);
+    if (peerSubs != null) {
+      for (final sub in peerSubs) {
+        await sub.cancel();
+      }
+    }
     
     // 1. Remove peer connection first
-    _pcs.remove(userId)?.dispose();
+    final pc = _pcs.remove(userId);
+    if (pc != null) {
+      await pc.close();
+      await pc.dispose();
+    }
     
     // 2. Snapshot the renderer before disposal (prevents deactivated widget exceptions)
     final renderer = _remoteRenderers.remove(uid);
@@ -579,7 +678,10 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     onRemoteUserLeft?.call();
     
     // 6. Finally, dispose renderer after callback completes
-    renderer?.dispose();
+    if (renderer != null) {
+      renderer.srcObject = null;
+      await renderer.dispose();
+    }
   }
 
   Future<void> _setupPC(String peerId, String roomId, bool isOfferer) async {
@@ -608,6 +710,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         subcollection: 'candidates',
         candidate: candidate,
         scopeKey: '$roomId:$peerId',
+        targetUserId: peerId,
       ).ignore();
     };
 
@@ -615,6 +718,12 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       if (event.streams.isNotEmpty) {
         final stream = event.streams[0];
         final uid = _stableUid(peerId);
+
+        final oldRenderer = _remoteRenderers.remove(uid);
+        if (oldRenderer != null) {
+          oldRenderer.srcObject = null;
+          await oldRenderer.dispose();
+        }
         
         final renderer = RTCVideoRenderer();
         await renderer.initialize();
@@ -631,8 +740,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         .doc(_signalingDocId(_localUserId, peerId));
 
     // Listen for remote signals
-    final subs = _roomSubscriptions[roomId]!;
-    subs.add(signalRef.snapshots().listen((snap) async {
+    final peerSubs = _peerSubscriptions.putIfAbsent(peerId, () => []);
+    peerSubs.add(signalRef.snapshots().listen((snap) async {
       if (!snap.exists) return;
       final data = snap.data()!;
       final senderId = data['senderId'] as String;
@@ -677,7 +786,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     }));
 
     // Listen for ICE candidates
-    subs.add(_firestore
+    peerSubs.add(_firestore
         .collection('webrtc_sessions')
         .doc(roomId)
         .collection('candidates')
@@ -692,6 +801,13 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
           if (data != null) {
+            final targetUserId = data['targetUserId']?.toString();
+            if (targetUserId != null &&
+                targetUserId.isNotEmpty &&
+                targetUserId != _localUserId) {
+              continue;
+            }
+
             // Check candidate age: skip stale candidates older than 20 seconds
             final createdAt = (data['timestamp'] as Timestamp?)?.toDate();
             if (createdAt != null && now.difference(createdAt) > maxCandidateAge) {
@@ -767,10 +883,18 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           _log('Successfully acquired local stream.');
         } catch (e) {
           _log('Failed to get user media with constraints, trying fallback: $e');
-          _localStream = await navigator.mediaDevices.getUserMedia({
-            'audio': publishMicrophoneTrack,
-            'video': true,
-          });
+          try {
+            _localStream = await navigator.mediaDevices.getUserMedia({
+              'audio': publishMicrophoneTrack,
+              'video': true,
+            });
+          } catch (fallbackError) {
+            throw _mediaAccessException(
+              fallbackError,
+              video: true,
+              audio: publishMicrophoneTrack,
+            );
+          }
         }
       } else {
         final videoTracks = _localStream!.getVideoTracks();
@@ -1042,7 +1166,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       }
     } catch (e) {
       _log('Device access denied: $e');
-      rethrow;
+      throw _mediaAccessException(e, video: video, audio: audio);
     }
   }
 
@@ -1053,6 +1177,9 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   Future<void> disposeAll() async {
     _log('Disposing WebRtcRoomService');
+    _setConnectionState(RtcConnectionState.idle);
+    _reconnectAttemptCount = 0;
+    _signalingHeartbeatFailures = 0;
     WidgetsBinding.instance.removeObserver(this);
     _signalingHeartbeatTimer?.cancel();
     _signalingHeartbeatTimer = null;
@@ -1083,7 +1210,15 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     }
     _roomSubscriptions.clear();
 
+    for (var subs in _peerSubscriptions.values) {
+      for (var sub in subs) {
+        await sub.cancel();
+      }
+    }
+    _peerSubscriptions.clear();
+
     for (var pc in _pcs.values) {
+      await pc.close();
       await pc.dispose();
     }
     _pcs.clear();
@@ -1128,18 +1263,25 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
           // Record when peer connection is established
           _latencyTracker.recordPeerConnectionEstablished(peerId);
+          _setConnectionState(RtcConnectionState.connected);
+          _reconnectAttemptCount = 0;
           break;
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
           _log('⚠️ Connection for $peerId disconnected. Waiting for recovery...');
+          _setConnectionState(RtcConnectionState.degraded);
           break;
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
           _log('❌ Connection for $peerId failed.');
           _latencyTracker.recordPeerConnectionClosed(peerId);
+          _setConnectionState(RtcConnectionState.failed);
           onConnectionLost?.call();
           break;
         case RTCIceConnectionState.RTCIceConnectionStateClosed:
           _log('Connection for $peerId closed.');
           _latencyTracker.recordPeerConnectionClosed(peerId);
+          if (_pcs.isEmpty) {
+            _setConnectionState(RtcConnectionState.idle);
+          }
           break;
         default:
           break;

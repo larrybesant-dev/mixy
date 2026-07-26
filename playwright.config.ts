@@ -10,8 +10,14 @@ const baseURL =
 export default defineConfig({
   testDir: './e2e',
   timeout: 90_000,
+  expect: {
+    timeout: 15_000,
+  },
+  retries: process.env.CI ? 2 : 0,
+  forbidOnly: !!process.env.CI,
+  maxFailures: process.env.CI ? 10 : undefined,
   fullyParallel: false,
-  workers: 1,
+  workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -19,7 +25,7 @@ export default defineConfig({
   ],
   outputDir: 'test-results/artifacts',
   use: {
-    baseURL: "https://mixvy-v2.web.app",
+    baseURL,
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     trace: 'retain-on-failure',
