@@ -50,6 +50,29 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   String? _lastSeenGiftId;
   bool _isJoiningRoom = false;
   bool _hasAttemptedAutoJoin = false;
+  static const int _kAutoJoinMaxAttempts = 3;
+
+  bool _isTransientJoinError(Object error) {
+    if (error is FirebaseException) {
+      switch (error.code) {
+        case 'aborted':
+        case 'cancelled':
+        case 'deadline-exceeded':
+        case 'internal':
+        case 'resource-exhausted':
+        case 'unavailable':
+          return true;
+      }
+    }
+
+    final raw = error.toString().toLowerCase();
+    return raw.contains('err_connection_closed') ||
+        raw.contains('err_aborted') ||
+        raw.contains('timeout') ||
+        raw.contains('network') ||
+        raw.contains('unavailable') ||
+        raw.contains('connection closed');
+  }
 
   @override
   void initState() {
@@ -80,7 +103,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
-  Future<void> _joinRoom(String uid, String username) async {
+  Future<bool> _joinRoom(
+    String uid,
+    String username, {
+    bool showErrorSnackbars = true,
+  }) async {
     try {
       final firestore = ref.read(firestoreProvider);
       final roomRef = firestore.collection('rooms').doc(widget.roomId);
@@ -138,9 +165,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           ),
         );
       }
+      return true;
     } catch (e) {
       debugPrint('Error joining room: $e');
-      if (mounted) {
+      if (mounted && showErrorSnackbars) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error joining room: $e'),
@@ -148,22 +176,53 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           ),
         );
       }
+      return false;
     }
   }
 
-  Future<void> _joinCurrentUserToRoom(User currentUser) async {
+  Future<void> _joinCurrentUserToRoom(
+    User currentUser, {
+    bool autoTriggered = false,
+  }) async {
     if (_isJoiningRoom) return;
     setState(() => _isJoiningRoom = true);
     try {
       final displayName = await _getUserDisplayName(currentUser.uid);
       if (!mounted) return;
-      await _joinRoom(currentUser.uid, displayName);
+
+      final maxAttempts = autoTriggered ? _kAutoJoinMaxAttempts : 1;
+      for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+        final joined = await _joinRoom(
+          currentUser.uid,
+          displayName,
+          showErrorSnackbars: !autoTriggered,
+        );
+        if (!mounted || joined) return;
+
+        if (attempt < maxAttempts) {
+          final delayMs = 600 * attempt;
+          await Future<void>.delayed(Duration(milliseconds: delayMs));
+        }
+      }
+
+      if (mounted && autoTriggered) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection hiccup. Tap RETRY ENTRY to join now.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
+      final transient = _isTransientJoinError(e);
+      final message = transient
+          ? 'Network issue while entering room. Please retry.'
+          : 'Error entering room: $e';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error entering room: $e'),
-          backgroundColor: Colors.red,
+          content: Text(message),
+          backgroundColor: transient ? Colors.orange : Colors.red,
         ),
       );
     } finally {
@@ -183,7 +242,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     _hasAttemptedAutoJoin = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(_joinCurrentUserToRoom(currentUser));
+      unawaited(_joinCurrentUserToRoom(currentUser, autoTriggered: true));
     });
   }
   Future<void> _leaveRoom() async {
