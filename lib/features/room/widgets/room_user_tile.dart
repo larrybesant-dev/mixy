@@ -24,6 +24,7 @@ class RoomUserTile extends StatefulWidget {
     required this.role,
     required this.isMe,
     this.avatarUrl,
+    this.isCamOn = false,
     this.isMicOn = false,
     this.isMuted = false,
     this.micExpiresAt,
@@ -38,6 +39,7 @@ class RoomUserTile extends StatefulWidget {
   final String? avatarUrl;
   final String role;
   final bool isMe;
+  final bool isCamOn;
   final bool isMicOn;
   final bool isMuted;
   final DateTime? micExpiresAt;
@@ -250,6 +252,14 @@ class _RoomUserTileState extends State<RoomUserTile>
               const SizedBox(width: 6),
               _buildAudioMeter(),
             ],
+            const SizedBox(width: 6),
+            Icon(
+              widget.isCamOn ? Icons.videocam : Icons.videocam_off,
+              size: 13,
+              color: widget.isCamOn
+                  ? _kGreen.withValues(alpha: 0.7)
+                  : _kRed.withValues(alpha: 0.55),
+            ),
             const SizedBox(width: 6),
             Icon(
               widget.isMuted || !widget.isMicOn ? Icons.mic_off : Icons.mic,

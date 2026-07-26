@@ -28,6 +28,7 @@ import '../widgets/connection_failed_overlay.dart';
 import '../widgets/mic_queue_panel.dart';
 import '../widgets/user_list_panel.dart';
 import '../widgets/room_rank_diamond_badge_row.dart';
+import '../../../presentation/providers/user_provider.dart';
 import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
@@ -124,7 +125,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
-  int _gridSlotCount = 8;
+  int _gridSlotCount = 12;
   bool _isFollowActionBusy = false;
   final Map<String, String> _resolvedUserNameCache = <String, String>{};
 
@@ -146,10 +147,20 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     final now = DateTime.now();
     final projectedMicOn = sessionState.hasJoined && sessionState.isAudioEnabled;
     final projectedCamOn = sessionState.hasJoined && sessionState.isVideoEnabled;
+    final profileName = (ref.read(userProvider)?.username ?? '').trim();
+    final cachedSessionName =
+        (sessionState.userDisplayNames[currentUserId] ?? '').trim();
     final cachedResolvedName = _resolvedUserNameCache[currentUserId]?.trim() ?? '';
     final authDisplayName = _displayNameFromAuthUser(user).trim();
 
     String resolveRosterDisplayName(String? existingDisplayName) {
+      if (profileName.isNotEmpty && !_isPlaceholderIdentity(profileName)) {
+        return profileName;
+      }
+      if (cachedSessionName.isNotEmpty &&
+          !_isPlaceholderIdentity(cachedSessionName)) {
+        return cachedSessionName;
+      }
       final existing = existingDisplayName?.trim() ?? '';
       if (existing.isNotEmpty && !_isPlaceholderIdentity(existing)) {
         return existing;
@@ -1207,7 +1218,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   final crossAxisCount = width >= 1300
-                      ? 4
+                      ? (width >= 1700 ? 5 : 4)
                       : width >= 900
                       ? 3
                       : width >= 520
@@ -1327,7 +1338,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    for (final count in const [4, 8, 12]) ...[
+                    for (final count in const [4, 8, 12, 16, 20]) ...[
                       GestureDetector(
                         onTap: () => setState(() => _gridSlotCount = count),
                         child: Container(
