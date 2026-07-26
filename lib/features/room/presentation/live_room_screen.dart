@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -51,6 +52,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   bool _isJoiningRoom = false;
   bool _hasAttemptedAutoJoin = false;
   static const int _kAutoJoinMaxAttempts = 3;
+
+  bool _isProfileSetupRequiredError(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('user profile not found') ||
+        normalized.contains('complete your profile');
+  }
 
   bool _isTransientJoinError(Object error) {
     if (error is FirebaseException) {
@@ -103,7 +110,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
-  Future<bool> _joinRoom(
+  Future<({bool success, bool requiresProfileSetup})> _joinRoom(
     String uid,
     String username, {
     bool showErrorSnackbars = true,
@@ -165,18 +172,39 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           ),
         );
       }
-      return true;
+      return (success: true, requiresProfileSetup: false);
     } catch (e) {
       debugPrint('Error joining room: $e');
-      if (mounted && showErrorSnackbars) {
+      final errorMessage = e.toString();
+      final requiresProfileSetup =
+          _isProfileSetupRequiredError(errorMessage);
+
+      if (mounted && requiresProfileSetup) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error joining room: $e'),
+            content: const Text(
+              'Profile setup required before joining a room.',
+            ),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'SET UP',
+              onPressed: () => context.go('/profile/edit'),
+            ),
+          ),
+        );
+        context.go('/profile/edit');
+      } else if (mounted && showErrorSnackbars) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error joining room: $errorMessage'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      return false;
+      return (
+        success: false,
+        requiresProfileSetup: requiresProfileSetup,
+      );
     }
   }
 
@@ -192,12 +220,14 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
       final maxAttempts = autoTriggered ? _kAutoJoinMaxAttempts : 1;
       for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-        final joined = await _joinRoom(
+        final joinResult = await _joinRoom(
           currentUser.uid,
           displayName,
           showErrorSnackbars: !autoTriggered,
         );
-        if (!mounted || joined) return;
+        if (!mounted || joinResult.success || joinResult.requiresProfileSetup) {
+          return;
+        }
 
         if (attempt < maxAttempts) {
           final delayMs = 600 * attempt;
