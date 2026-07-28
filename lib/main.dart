@@ -16,6 +16,12 @@ import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
 import 'services/diagnostic_logger.dart';
 
+bool get _crashlyticsSupported =>
+  !kIsWeb &&
+  (defaultTargetPlatform == TargetPlatform.android ||
+    defaultTargetPlatform == TargetPlatform.iOS ||
+    defaultTargetPlatform == TargetPlatform.macOS);
+
 // ignore: unused_element
 const String _appVersion = String.fromEnvironment(
   'APP_VERSION',
@@ -52,32 +58,40 @@ Future<void> main() async {
     debugPrint('[Firebase] Firestore settings delegated to firestoreProvider (single source of truth)');
     
     // Setup production logging: Route [MIXVY_DEBUG] logs to Firebase Crashlytics
-    if (!kDebugMode) {
+    // only on platforms where the plugin is available.
+    if (!kDebugMode && _crashlyticsSupported) {
       DiagnosticLogger.setProductionHandler((log) {
-        // Route all diagnostic logs to Crashlytics
-        FirebaseCrashlytics.instance.recordError(
-          log.message,
-          StackTrace.current,
-          reason: '${log.category} [${log.severity}]',
-          printDetails: true,
-          fatal: log.severity == 'CRIT', // Mark CRITICAL logs as fatal
-        );
-        
-        // Also add to custom keys for dashboard filtering
-        FirebaseCrashlytics.instance.setCustomKey('diagnostic_severity', log.severity);
-        FirebaseCrashlytics.instance.setCustomKey('diagnostic_category', log.category);
-        
-        // Log structured metadata if present
-        if (log.metadata != null && log.metadata!.isNotEmpty) {
-          FirebaseCrashlytics.instance.setCustomKey(
-            'diagnostic_metadata',
-            log.metadata.toString(),
+        try {
+          // Route all diagnostic logs to Crashlytics
+          FirebaseCrashlytics.instance.recordError(
+            log.message,
+            StackTrace.current,
+            reason: '${log.category} [${log.severity}]',
+            printDetails: true,
+            fatal: log.severity == 'CRIT', // Mark CRITICAL logs as fatal
           );
+
+          // Also add to custom keys for dashboard filtering
+          FirebaseCrashlytics.instance.setCustomKey('diagnostic_severity', log.severity);
+          FirebaseCrashlytics.instance.setCustomKey('diagnostic_category', log.category);
+
+          // Log structured metadata if present
+          if (log.metadata != null && log.metadata!.isNotEmpty) {
+            FirebaseCrashlytics.instance.setCustomKey(
+              'diagnostic_metadata',
+              log.metadata.toString(),
+            );
+          }
+        } catch (_) {
+          // Never let diagnostics transport failures impact runtime.
         }
       });
       debugPrint('[Logging] Production handler configured for Firebase Crashlytics');
     } else {
-      debugPrint('[Logging] Development mode: DiagnosticLogger will output to console');
+      debugPrint(
+        '[Logging] DiagnosticLogger will output to console '
+        '(debug build or Crashlytics unsupported platform).',
+      );
     }
   } catch (e) {
     debugPrint('[Firebase] Firebase initialization failed: $e');

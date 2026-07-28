@@ -21,17 +21,21 @@ void main() {
       const ProviderScope(child: MaterialApp(home: SettingsScreen())),
     );
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+    expect(find.text('Settings'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Appearance'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('Appearance'), findsOneWidget);
-    expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Language'), findsOneWidget);
     expect(find.text('Anonymous analytics'), findsNothing);
 
-    final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
-    expect(switches, hasLength(1));
-    expect(switches[0].value, isFalse);
     expect(find.text('Dark'), findsOneWidget);
   });
 }

@@ -54,11 +54,14 @@ class ProfileService {
     required bool privacy, 
     required bool adultProfile
   }) async {
-    // Ensure username is set (required for profile completion)
-    final username = userData['username'] as String? ?? '';
-    if (username.trim().isEmpty) {
-      throw Exception('Username is required to save profile');
-    }
+    // Ensure username is always persisted for first-time profile bootstrap.
+    final rawUsername = (userData['username'] as String? ?? '').trim();
+    final safeFallbackUsername = 'user_${userId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase().padRight(6, '0').substring(0, 6)}';
+    final resolvedUsername = rawUsername.isNotEmpty ? rawUsername : safeFallbackUsername;
+    userData['username'] = resolvedUsername;
+    userData['displayName'] = (userData['displayName'] as String? ?? '').trim().isNotEmpty
+        ? userData['displayName']
+        : resolvedUsername;
     
     // Phase 1: Try Function endpoint with auth token
     try {
@@ -104,33 +107,25 @@ class ProfileService {
       // Function endpoint unavailable, fall through to Phase 2
     }
 
-    // Phase 2: Fall back to SchemaMutationService / direct Firestore
-    if (schemaMutationService != null) {
-      // Create ProfilePrivacyModel from bool
-      final privacyModel = ProfilePrivacyModel(isPrivate: privacy);
-      
-      // Create AdultProfileModel from bool
-      final adultModel = AdultProfileModel(
-        userId: userId,
-        enabled: adultProfile,
-        adultConsentAccepted: userData['adultConsentAccepted'] as bool? ?? false,
-      );
-      
-      await schemaMutationService!.updateProfilePublic(
-        userId: userId,
-        userData: userData,
-        privacy: privacyModel,
-        adultProfile: adultModel,
-      );
-    } else {
-      // Fallback for backward compatibility
-      final updateData = {
-        ...userData,
-        'privacy': privacy,
-        'adultProfile': adultProfile,
-        'updatedAt': DateTime.now().toIso8601String(),
-      };
-      await firestore.collection('users').doc(userId).set(updateData, SetOptions(merge: true));
-    }
+    // Phase 2: Always write through SchemaMutationService boundary.
+    final mutationService =
+        schemaMutationService ?? SchemaMutationService(firestore: firestore);
+
+    // Create ProfilePrivacyModel from bool
+    final privacyModel = ProfilePrivacyModel(isPrivate: privacy);
+
+    // Create AdultProfileModel from bool
+    final adultModel = AdultProfileModel(
+      userId: userId,
+      enabled: adultProfile,
+      adultConsentAccepted: userData['adultConsentAccepted'] as bool? ?? false,
+    );
+
+    await mutationService.updateProfilePublic(
+      userId: userId,
+      userData: userData,
+      privacy: privacyModel,
+      adultProfile: adultModel,
+    );
   }
 }

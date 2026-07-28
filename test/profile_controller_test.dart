@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,30 +5,26 @@ import 'package:mixvy/features/profile/profile_controller.dart';
 import 'package:mixvy/features/profile/models/user_model.dart' as profile_model;
 import 'package:mixvy/models/profile_privacy_model.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'test_helpers.dart';
 
-class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+class _StubAuthController extends AuthController {
+  final AuthState _state;
+  _StubAuthController(this._state);
 
-class MockUser extends Mock implements User {}
+  @override
+  AuthState build() => _state;
+}
 
 void main() {
   late FakeFirebaseFirestore firestore;
-  late MockFirebaseAuth auth;
-  late MockUser user;
+
+  setUpAll(() async {
+    await testSetup();
+  });
 
   setUp(() {
     firestore = FakeFirebaseFirestore();
-    auth = MockFirebaseAuth();
-    user = MockUser();
-
-    when(() => auth.currentUser).thenReturn(user);
-    when(() => user.uid).thenReturn('user123');
-    when(() => user.email).thenReturn('user@example.com');
-    when(() => user.displayName).thenReturn('username');
-    when(() => user.photoURL).thenReturn('');
-    when(() => user.reload()).thenAnswer((_) async {});
-    when(() => user.updateDisplayName(any())).thenAnswer((_) async {});
-    when(() => user.updatePhotoURL(any())).thenAnswer((_) async {});
   });
 
   group('ProfileController', () {
@@ -61,6 +56,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           firestoreProvider.overrideWithValue(firestore),
+          authControllerProvider.overrideWith(
+            () => _StubAuthController(
+              const AuthState(
+                uid: 'user123',
+                hasResolvedSession: true,
+                phase: AuthBootstrapPhase.authenticatedStable,
+              ),
+            ),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -72,13 +76,22 @@ void main() {
       expect(state.userId, 'user123');
       expect(state.username, 'username');
       expect(state.email, 'user@example.com');
-      expect(state.membershipLevel, 'Premium');
+      expect(state.membershipLevel, isNull);
     });
 
     test('updateProfile saves against the authenticated uid', () async {
       final container = ProviderContainer(
         overrides: [
           firestoreProvider.overrideWithValue(firestore),
+          authControllerProvider.overrideWith(
+            () => _StubAuthController(
+              const AuthState(
+                uid: 'user123',
+                hasResolvedSession: true,
+                phase: AuthBootstrapPhase.authenticatedStable,
+              ),
+            ),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -111,6 +124,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           firestoreProvider.overrideWithValue(firestore),
+          authControllerProvider.overrideWith(
+            () => _StubAuthController(
+              const AuthState(
+                uid: 'user123',
+                hasResolvedSession: true,
+                phase: AuthBootstrapPhase.authenticatedStable,
+              ),
+            ),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -140,6 +162,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           firestoreProvider.overrideWithValue(firestore),
+          authControllerProvider.overrideWith(
+            () => _StubAuthController(
+              const AuthState(
+                uid: 'user123',
+                hasResolvedSession: true,
+                phase: AuthBootstrapPhase.authenticatedStable,
+              ),
+            ),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -169,6 +200,15 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             firestoreProvider.overrideWithValue(firestore),
+            authControllerProvider.overrideWith(
+              () => _StubAuthController(
+                const AuthState(
+                  uid: 'user123',
+                  hasResolvedSession: true,
+                  phase: AuthBootstrapPhase.authenticatedStable,
+                ),
+              ),
+            ),
           ],
         );
         addTearDown(container.dispose);

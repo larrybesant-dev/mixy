@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -451,18 +452,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
       await ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).disconnect();
       ref.read(roomSessionProvider(widget.roomId).notifier).reset();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Left the room'),
-            backgroundColor: VelvetNoir.secondary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
     } catch (e) {
       debugPrint('Error leaving room: $e');
+    } finally {
+      if (mounted) {
+        context.go('/rooms');
+      }
     }
   }
 
@@ -497,7 +492,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       final currentUser = auth.currentUser;
       if (currentUser == null) return;
 
-      final sessionState = ref.watch(roomSessionProvider(widget.roomId));
+      final sessionState = ref.read(roomSessionProvider(widget.roomId));
       final firestore = ref.read(firestoreProvider);
       final fallbackName = _displayNameFromAuthUser(currentUser);
       final cachedName = sessionState.userDisplayNames[currentUser.uid]?.trim() ?? '';
@@ -1822,7 +1817,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         const [];
     final totalDiamonds = participants.fold<int>(
       0,
-      (sum, participant) => sum + participant.diamondLevel,
+      (total, participant) => total + participant.diamondLevel,
     );
     final liveBroadcasters = participants
         .where((participant) => participant.camOn || participant.micOn)

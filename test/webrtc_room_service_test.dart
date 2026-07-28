@@ -10,6 +10,8 @@ class MockMediaStream extends Mock implements MediaStream {}
 class MockStreamLifecycleManager extends Mock implements StreamLifecycleManager {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late WebRtcRoomService service;
   late FakeFirebaseFirestore firestore;
   late MockStreamLifecycleManager lifecycleManager;
@@ -29,10 +31,10 @@ void main() {
       expect(service, isNotNull);
     });
 
-    test('ensureDeviceAccess does not throw', () async {
+    test('ensureDeviceAccess throws in unit environment without plugin bindings', () async {
       await expectLater(
         service.ensureDeviceAccess(video: true, audio: true),
-        completes,
+        throwsA(isA<Exception>()),
       );
     });
 

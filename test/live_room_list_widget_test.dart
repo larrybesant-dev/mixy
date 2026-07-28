@@ -5,10 +5,19 @@ import 'package:mixvy/features/feed/providers/feed_providers.dart';
 import 'package:mixvy/features/social/widgets/live_room_list.dart';
 import 'package:mixvy/features/social/widgets/social_room_card.dart';
 import 'package:mixvy/models/room_model.dart';
+import 'package:mixvy/models/user_model.dart';
+import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/widgets/brand_ui_kit.dart';
 import 'test_helpers.dart';
 
 void main() {
+  final testUser = UserModel(
+    id: 'feed-test-user',
+    email: 'feed@test.mixvy.com',
+    username: 'Feed Tester',
+    createdAt: DateTime(2026, 1, 1),
+  );
+
   group('LiveRoomList Widget and State Binding Tests', () {
     setUpAll(() async {
       await testSetup();
@@ -36,10 +45,14 @@ void main() {
     }
 
     testWidgets('1. Loading State - Verifies that the pulsing shimmer column is shown', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             roomsStreamProvider.overrideWithValue(const AsyncValue.loading()),
+            userProvider.overrideWithValue(testUser),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -66,12 +79,16 @@ void main() {
     });
 
     testWidgets('2. Empty State - Verifies "The Lounge is Quiet" UI and CTA button', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       bool isStartRoomCalled = false;
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             roomsStreamProvider.overrideWithValue(const AsyncValue.data([])),
+            userProvider.overrideWithValue(testUser),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -107,12 +124,15 @@ void main() {
 
       // Tap on the "Start the First Room" CTA and verify trigger logic
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(isStartRoomCalled, isTrue);
     });
 
     testWidgets('3. Data State - Verifies dynamic SocialRoomCards render when data flows', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       final mockRooms = [
         createMockRoom(id: 'room-abc', name: 'Ambient Techno Beats', category: 'music'),
         createMockRoom(id: 'room-xyz', name: 'Speed Dating Lounge', category: 'dating'),
@@ -124,6 +144,7 @@ void main() {
         ProviderScope(
           overrides: [
             roomsStreamProvider.overrideWithValue(AsyncValue.data(mockRooms)),
+            userProvider.overrideWithValue(testUser),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -148,7 +169,7 @@ void main() {
 
       // Verify action trigger on tapping a real card
       await tester.tap(find.text('Ambient Techno Beats'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tappedRoom, isNotNull);
       expect(tappedRoom!.id, 'room-abc');
@@ -156,12 +177,16 @@ void main() {
     });
 
     testWidgets('4. Error State - Verifies "Connection Interrupted" UI and retry handler', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             roomsStreamProvider.overrideWithValue(
               AsyncValue.error(Exception('Network timeout'), StackTrace.empty),
             ),
+            userProvider.overrideWithValue(testUser),
           ],
           child: MaterialApp(
             home: Scaffold(

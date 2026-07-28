@@ -315,7 +315,7 @@ void main() {
         await firestore
             .collection('rooms')
             .doc('room-a')
-            .collection('mic_access_requests')
+            .collection('micQueue')
             .doc('user-1_host-1')
             .set({
               'id': 'user-1_host-1',
@@ -366,7 +366,7 @@ void main() {
       final requestSnapshot = await firestore
           .collection('rooms')
           .doc('room-a')
-          .collection('mic_access_requests')
+          .collection('micQueue')
           .doc('user-2_host-1')
           .get();
 

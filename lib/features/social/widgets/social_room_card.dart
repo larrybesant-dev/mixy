@@ -169,59 +169,40 @@ class SocialRoomCard extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Row(
-              children: [
-                // Left accent bar
-                Container(
-                  width: featured ? 5 : 4,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [accentColor, accentColor.withValues(alpha: 0.4)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tight = constraints.maxWidth < 320;
+                final thumbSize = tight ? 56.0 : 72.0;
+                final accentHeight = tight ? 72.0 : 90.0;
 
-                // Thumbnail
-                _Thumbnail(url: thumb, category: room.category, size: 72),
-
-                const SizedBox(width: 12),
-
-                // Info column
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                Widget infoColumn({required bool compact}) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: compact ? 8 : 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Category tag + LIVE badge
-                        Row(
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             _CategoryTag(
                               label:
                                   '${_categoryEmoji(room.category)} ${_capitalize(room.category ?? 'Room')}',
                               color: accentColor,
                             ),
-                            const SizedBox(width: 6),
                             _LiveDot(),
-                            if (featured) ...[
-                              const SizedBox(width: 6),
-                              const _FocusChip(label: 'Start here'),
-                            ],
+                            if (featured) const _FocusChip(label: 'Start here'),
                           ],
                         ),
                         const SizedBox(height: 4),
-
-                        // Room title
                         Text(
                           room.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.playfairDisplay(
-                            fontSize: 14,
+                            fontSize: compact ? 13 : 14,
                             fontWeight: FontWeight.w700,
                             color: VelvetNoir.onSurface,
                           ),
@@ -234,6 +215,8 @@ class SocialRoomCard extends StatelessWidget {
                             key: ValueKey<String>(
                               'activity-${room.id}-$activityLabel',
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.raleway(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -244,15 +227,15 @@ class SocialRoomCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 6),
-
-                        // Stats row
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             _StatChip(
                               icon: Icons.people_alt_rounded,
                               label: _formatCount(totalCount),
                             ),
-                            const SizedBox(width: 10),
                             _StatChip(
                               icon: Icons.mic_rounded,
                               label: '$speakerCount',
@@ -260,27 +243,79 @@ class SocialRoomCard extends StatelessWidget {
                                   ? VelvetNoir.secondaryBright
                                   : VelvetNoir.onSurfaceVariant,
                             ),
-                            if (showWaveform && hasActiveSpeakers) ...[
-                              const SizedBox(width: 8),
+                            if (showWaveform && hasActiveSpeakers)
                               _WaveformBars(color: accentColor),
-                            ],
                           ],
                         ),
                       ],
                     ),
-                  ),
-                ),
+                  );
+                }
 
-                // Join button
-                Padding(
-                  padding: const EdgeInsets.only(right: 14),
-                  child: _JoinButton(
-                    onTap: onTap,
-                    label: featured ? 'Jump in' : 'Join',
-                    featured: featured,
-                  ),
-                ),
-              ],
+                final joinButton = _JoinButton(
+                  onTap: onTap,
+                  label: featured ? 'Jump in' : 'Join',
+                  featured: featured,
+                );
+
+                if (tight) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 4, 8, 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: featured ? 5 : 4,
+                          height: accentHeight,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                accentColor,
+                                accentColor.withValues(alpha: 0.4),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                        _Thumbnail(
+                          url: thumb,
+                          category: room.category,
+                          size: thumbSize,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: infoColumn(compact: true)),
+                      ],
+                    ),
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Container(
+                      width: featured ? 5 : 4,
+                      height: accentHeight,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            accentColor,
+                            accentColor.withValues(alpha: 0.4),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                    _Thumbnail(url: thumb, category: room.category, size: thumbSize),
+                    const SizedBox(width: 12),
+                    Expanded(child: infoColumn(compact: false)),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 14),
+                      child: joinButton,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

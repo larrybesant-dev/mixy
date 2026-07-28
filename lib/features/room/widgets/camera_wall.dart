@@ -143,8 +143,8 @@ class _CameraWallState extends ConsumerState<CameraWall> {
   @override
   Widget build(BuildContext context) {
     final npSurfaceLow = VelvetNoir.surfaceLow;
-    const double maxTileH = 280.0;
-    const double mobileH = 160.0;
+    const double maxTileH = 220.0;
+    const double mobileH = 150.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -253,17 +253,19 @@ class _CameraWallState extends ConsumerState<CameraWall> {
         ];
 
         // Ensure negative numbers can't cause layout overflow
-        const double spacing = 8;
-        const double headerH = 24;
+          const double spacing = 6;
+          const double headerH = 20;
         final int estimatedTileCount = (widget.showLocalTile ? 1 : 0) + mainGridRemoteTiles.length;
         final int estimatedCrossAxisCount = (isDesktop
             ? (estimatedTileCount <= 1
                   ? 1
-                  : estimatedTileCount <= 4
-                  ? 2
-                  : estimatedTileCount <= 9
-                  ? 3
-                  : 4)
+            : estimatedTileCount <= 2
+            ? 1
+            : estimatedTileCount <= 4
+            ? 3
+            : estimatedTileCount <= 9
+            ? 4
+            : 5)
             : (estimatedTileCount <= 2
                   ? 1
                   : estimatedTileCount <= 4
@@ -274,7 +276,7 @@ class _CameraWallState extends ConsumerState<CameraWall> {
             ? (estimatedWidth / estimatedCrossAxisCount - (spacing * (estimatedCrossAxisCount - 1) / estimatedCrossAxisCount)).clamp(40.0, 1200.0)
             : 120.0;
         final double tileHeight = (effectiveTileW.isFinite && effectiveTileW > 0)
-            ? (effectiveTileW * (3 / 4) + headerH).clamp(100.0, maxTileH)
+          ? (effectiveTileW * 0.62 + headerH).clamp(92.0, maxTileH)
             : 120.0;
 
         final mainGridTiles = <Widget>[
@@ -337,11 +339,13 @@ class _CameraWallState extends ConsumerState<CameraWall> {
         final crossAxisCount = (isDesktop
             ? (tileCount <= 1
                   ? 1
-                  : tileCount <= 4
-                  ? 2
-                  : tileCount <= 9
-                  ? 3
-                  : 4)
+            : tileCount <= 2
+            ? 1
+            : tileCount <= 4
+            ? 3
+            : tileCount <= 9
+            ? 4
+            : 5)
             : (tileCount <= 2
                   ? 1
                   : tileCount <= 4
@@ -472,7 +476,7 @@ class _CameraWallState extends ConsumerState<CameraWall> {
                                     crossAxisCount)
                           : 80.0;
                       final desktopTileHeight = (desktopEffectiveTileW.isFinite && desktopEffectiveTileW > 0)
-                          ? (desktopEffectiveTileW * (3 / 4) + headerH).clamp(100.0, maxTileH)
+                          ? (desktopEffectiveTileW * 0.62 + headerH).clamp(92.0, maxTileH)
                           : 120.0;
                       final mainGridHeight =
                           (rows * (desktopTileHeight + spacing) - spacing).clamp(0.0, double.infinity);
@@ -621,16 +625,16 @@ class _CameraWallState extends ConsumerState<CameraWall> {
                   const SizedBox(height: 8),
                   if (overflowTiles.isNotEmpty)
                     SizedBox(
-                      height: 92,
+                      height: 82,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: visibleOverflowTiles.length,
                         separatorBuilder: (context, index) =>
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                         itemBuilder: (context, index) {
                           final tile = visibleOverflowTiles[index];
                           return SizedBox(
-                            width: 132,
+                            width: 118,
                             child: _CameraWallTileFrame(
                               roomId: widget.roomId,
                               label: tile.label,
@@ -840,29 +844,29 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with TickerP
           child: LayoutBuilder(
             builder: (context, constraints) {
               final bool showHeader = constraints.maxHeight > 40;
-              final double effectiveHeaderH = widget.compact ? 20 : 24;
+              final double effectiveHeaderH = widget.compact ? 16 : 22;
 
               return DecoratedBox(
                 decoration: BoxDecoration(
                   color: npSurfaceContainer,
-                  borderRadius: BorderRadius.circular(radius),
+                  borderRadius: BorderRadius.circular(widget.compact ? 6 : radius),
                   border: Border.all(color: borderColor, width: borderWidth),
                   boxShadow: glowShadow,
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(radius),
+                  borderRadius: BorderRadius.circular(widget.compact ? 6 : radius),
                   child: Column(
                     children: [
                       if (showHeader)
                         Container(
                           height: effectiveHeaderH,
                           color: npSurfaceHigh,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: EdgeInsets.symmetric(horizontal: widget.compact ? 6 : 8),
                           child: Row(
                             children: [
                               Container(
-                                width: 6,
-                                height: 6,
+                                width: widget.compact ? 5 : 6,
+                                height: widget.compact ? 5 : 6,
                                 decoration: BoxDecoration(
                                   color: widget.isPinned
                                       ? VelvetNoir.primary
@@ -878,19 +882,19 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with TickerP
                               if (widget.isPinned) ...[
                                 const Icon(
                                   Icons.push_pin_rounded,
-                                  size: 10,
+                                  size: 9,
                                   color: VelvetNoir.primary,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 3),
                               ],
                               Expanded(
                                 child: Text(
                                   widget.label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11,
+                                    fontSize: widget.compact ? 10 : 11,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -954,7 +958,7 @@ class _CameraWallTileFrameState extends State<_CameraWallTileFrame> with TickerP
                                   }
                                 ),
                               ),
-                            if (widget.viewerCount != null && widget.viewerCount! > 0)
+                            if (!widget.compact && widget.viewerCount != null && widget.viewerCount! > 0)
                               Positioned(
                                 right: widget.speaking ? 36 : 6,
                                 bottom: 6,

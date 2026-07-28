@@ -101,7 +101,15 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
   RoomPolicyController get _roomPolicy => _cachedRoomPolicy!;
   UserCamPermissionsController get _camPermissions => _cachedCamPermissions!;
   FirebaseFirestore get _firestore => _cachedFirestore!;
-  _RoomSessionState get _session => _cachedSession!;
+  _RoomSessionState get _session {
+    final cached = _cachedSession;
+    if (cached != null) {
+      return cached;
+    }
+    final restored = ref.read(_roomSessionStateProvider(arg));
+    _cachedSession = restored;
+    return restored;
+  }
 
   RoomSessionService? _cachedSessionService;
   HostControls? _cachedHostControls;
@@ -1582,7 +1590,7 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
           transaction: transaction,
         );
       });
-      unawaited(SessionPersistence.saveLastRoom(null));
+      unawaited(_clearPersistedLastRoom());
     }
 
     AppEventBus.instance.emit(
@@ -1596,6 +1604,14 @@ class RoomController extends AutoDisposeFamilyNotifier<RoomState, String> {
       ),
     );
     _resetLocalSessionState();
+  }
+
+  Future<void> _clearPersistedLastRoom() async {
+    try {
+      await SessionPersistence.saveLastRoom(null);
+    } catch (_) {
+      // Best effort only. Persistence transport failures should not break leave.
+    }
   }
 
   Future<void> pausePresence() async {

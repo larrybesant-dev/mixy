@@ -14,6 +14,9 @@ class _StubProfileController extends ProfileController {
 
   @override
   ProfileState build() => _initial;
+
+  @override
+  Future<void> loadCurrentProfile() async {}
 }
 
 Widget _buildScreen(List<Override> overrides) {
@@ -28,6 +31,17 @@ Widget _buildScreen(List<Override> overrides) {
       ),
     ),
   );
+}
+
+Future<void> _scrollToPrivateAccount(WidgetTester tester) async {
+  final tileFinder = find.widgetWithText(SwitchListTile, 'Private account');
+  for (var i = 0; i < 8; i++) {
+    if (tileFinder.evaluate().isNotEmpty) {
+      return;
+    }
+    await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+    await tester.pump();
+  }
 }
 
 void main() {
@@ -48,6 +62,8 @@ void main() {
         ]),
       );
       await tester.pump();
+
+      await _scrollToPrivateAccount(tester);
 
       expect(find.text('Private account'), findsOneWidget);
       expect(find.text('Anyone can view your profile'), findsOneWidget);
@@ -70,6 +86,8 @@ void main() {
           ]),
         );
         await tester.pump();
+
+        await _scrollToPrivateAccount(tester);
 
         expect(
           find.text('Only followers can view your profile'),
@@ -95,6 +113,8 @@ void main() {
         ]),
       );
       await tester.pump();
+
+      await _scrollToPrivateAccount(tester);
 
       // Precondition: public subtitle visible.
       expect(find.text('Anyone can view your profile'), findsOneWidget);

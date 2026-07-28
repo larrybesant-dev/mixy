@@ -108,11 +108,15 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
           children: [
             Icon(Icons.devices_outlined, color: scheme.primary, size: 20),
             const SizedBox(width: 8),
-            Text(
-              'Camera & Microphone',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            Expanded(
+              child: Text(
+                'Camera & Microphone',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
         ),

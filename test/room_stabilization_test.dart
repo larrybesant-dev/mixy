@@ -3,8 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/room/room_controller.dart';
 import 'package:mixvy/features/room/providers/room_firestore_provider.dart';
+import 'test_helpers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await testSetup();
+  });
+
   group('Room stabilization logic', () {
     test('User moves from pending to stable after delay', () async {
       final firestore = FakeFirebaseFirestore();
