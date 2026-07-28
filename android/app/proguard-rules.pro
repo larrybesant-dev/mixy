@@ -23,6 +23,14 @@
 -keep class io.agora.** { *; }
 -dontwarn io.agora.**
 
+# Play Core deferred components/integrity optional classes referenced by
+# transitive libraries and Flutter embedding; silence missing optional APIs.
+-dontwarn com.google.android.play.core.common.PlayCoreDialogWrapperActivity
+-dontwarn com.google.android.play.core.listener.StateUpdatedListener
+-dontwarn com.google.android.play.core.tasks.OnFailureListener
+-dontwarn com.google.android.play.core.tasks.OnSuccessListener
+-dontwarn com.google.android.play.core.tasks.Task
+
 # General reflection & serialization safety
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,Exceptions
 -dontwarn javax.annotation.**
