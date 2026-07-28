@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'dart:html' as html;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/room_model.dart';
 import '../../../models/user_model.dart';
 import '../../../services/moderation_service.dart';
@@ -38,7 +38,7 @@ class FeedState {
   final DateTime? cachedAt;
 
   const FeedState({
-    this.isLoading = false,
+    this.isLoading = true,
     this.error,
     this.liveRooms = const [],
     this.upcomingRooms = const [],
@@ -127,7 +127,7 @@ class FeedController extends Notifier<FeedState> {
   }
 
   /// Save feed data to browser localStorage for offline/fallback access
-  void _saveFeedToCache(FeedState feedData) {
+  Future<void> _saveFeedToCache(FeedState feedData) async {
     try {
       final cacheData = {
         'liveRooms': feedData.liveRooms.map((r) => r.toJson()).toList(),
@@ -136,7 +136,8 @@ class FeedController extends Notifier<FeedState> {
         'friendIds': feedData.friendIds.toList(),
         'cachedAt': DateTime.now().toIso8601String(),
       };
-      html.window.localStorage['feed_cache'] = jsonEncode(cacheData);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('feed_cache', jsonEncode(cacheData));
       if (kDebugMode) {
         debugPrint('[FeedCache] Saved ${feedData.liveRooms.length} rooms to cache');
       }
@@ -148,9 +149,10 @@ class FeedController extends Notifier<FeedState> {
   }
 
   /// Load feed data from browser localStorage
-  FeedState? _loadFeedFromCache() {
+  Future<FeedState?> _loadFeedFromCache() async {
     try {
-      final cached = html.window.localStorage['feed_cache'];
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('feed_cache');
       if (cached == null) return null;
 
       final data = jsonDecode(cached) as Map<String, dynamic>;
@@ -313,7 +315,7 @@ class FeedController extends Notifier<FeedState> {
       if (functionFeed != null && functionFeed.liveRooms.isNotEmpty) {
         state = functionFeed;
         // Save to cache for offline fallback
-        _saveFeedToCache(functionFeed);
+        await _saveFeedToCache(functionFeed);
         if (kDebugMode) {
           debugPrint('[FeedController] Successfully loaded feed from Function endpoint');
         }
@@ -345,7 +347,7 @@ class FeedController extends Notifier<FeedState> {
     }
 
     // Fallback 2: Try cache
-    final cachedFeed = _loadFeedFromCache();
+    final cachedFeed = await _loadFeedFromCache();
     if (cachedFeed != null && cachedFeed.liveRooms.isNotEmpty) {
       state = cachedFeed;
       if (kDebugMode) {
@@ -439,7 +441,7 @@ class FeedController extends Notifier<FeedState> {
       );
       
       // Cache successful feed data for offline/fallback access
-      _saveFeedToCache(state);
+      await _saveFeedToCache(state);
     } on FirebaseException catch (e, stackTrace) {
       logFirestoreError(
         context: 'discovery feed query',

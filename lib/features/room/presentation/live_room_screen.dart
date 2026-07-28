@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../models/room_model.dart';
+import '../../../models/room_participant_model.dart';
 import '../../../core/theme.dart';
 import '../../../services/diagnostic_logger.dart';
 import '../../../core/providers/firebase_providers.dart';
@@ -27,6 +29,7 @@ import '../widgets/connection_failed_overlay.dart';
 import '../widgets/mic_queue_panel.dart';
 import '../widgets/user_list_panel.dart';
 import '../widgets/room_rank_diamond_badge_row.dart';
+import '../../../presentation/providers/user_provider.dart';
 import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
@@ -123,13 +126,95 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
-  int _gridSlotCount = 8;
+  int _gridSlotCount = 12;
   bool _isFollowActionBusy = false;
+  bool _isJoiningRoom = false;
+  bool _hasAttemptedAutoJoin = false;
   final Map<String, String> _resolvedUserNameCache = <String, String>{};
 
   static final RegExp _generatedHandlePattern = RegExp(
     r'^(User|Guest|Member)\s+[A-Z0-9]{1,6}$',
   );
+
+  List<RoomParticipantModel> _projectParticipantsForRoster({
+    required List<RoomParticipantModel> participants,
+    required RoomSessionState sessionState,
+    required User? currentUser,
+    required RoomModel room,
+  }) {
+    final user = currentUser;
+    final currentUserId = user?.uid ?? '';
+    if (currentUserId.isEmpty) return participants;
+    if (user == null) return participants;
+
+    final now = DateTime.now();
+    final projectedMicOn = sessionState.hasJoined && sessionState.isAudioEnabled;
+    final projectedCamOn = sessionState.hasJoined && sessionState.isVideoEnabled;
+    final profileName = (ref.read(userProvider)?.username ?? '').trim();
+    final cachedSessionName =
+        (sessionState.userDisplayNames[currentUserId] ?? '').trim();
+    final cachedResolvedName = _resolvedUserNameCache[currentUserId]?.trim() ?? '';
+    final authDisplayName = _displayNameFromAuthUser(user).trim();
+
+    String resolveRosterDisplayName(String? existingDisplayName) {
+      if (profileName.isNotEmpty && !_isPlaceholderIdentity(profileName)) {
+        return profileName;
+      }
+      if (cachedSessionName.isNotEmpty &&
+          !_isPlaceholderIdentity(cachedSessionName)) {
+        return cachedSessionName;
+      }
+      final existing = existingDisplayName?.trim() ?? '';
+      if (existing.isNotEmpty && !_isPlaceholderIdentity(existing)) {
+        return existing;
+      }
+      if (cachedResolvedName.isNotEmpty && !_isPlaceholderIdentity(cachedResolvedName)) {
+        return cachedResolvedName;
+      }
+      return authDisplayName;
+    }
+
+    String resolvedRole = 'audience';
+    if (room.hostId == currentUserId) {
+      resolvedRole = 'host';
+    } else if (room.ownerId == currentUserId) {
+      resolvedRole = 'owner';
+    } else if (room.adminUserIds.contains(currentUserId)) {
+      resolvedRole = 'cohost';
+    }
+
+    final index = participants.indexWhere((p) => p.userId == currentUserId);
+    if (index >= 0) {
+      final current = participants[index];
+      final updated = current.copyWith(
+        role: current.role.trim().isNotEmpty ? current.role : resolvedRole,
+        displayName: resolveRosterDisplayName(current.displayName),
+        photoUrl: user.photoURL,
+        micOn: projectedMicOn,
+        camOn: projectedCamOn,
+        lastActiveAt: now,
+      );
+      return [
+        ...participants.take(index),
+        updated,
+        ...participants.skip(index + 1),
+      ];
+    }
+
+    return [
+      ...participants,
+      RoomParticipantModel(
+        userId: currentUserId,
+        role: resolvedRole,
+        displayName: resolveRosterDisplayName(null),
+        photoUrl: user.photoURL,
+        micOn: projectedMicOn,
+        camOn: projectedCamOn,
+        joinedAt: now,
+        lastActiveAt: now,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -206,6 +291,68 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       }
     }
     return _memberFallback(user.uid);
+  }
+
+  Future<void> _joinCurrentUserToRoom(User currentUser) async {
+    if (_isJoiningRoom) return;
+    setState(() => _isJoiningRoom = true);
+    try {
+      final displayName = await _getUserDisplayName(currentUser.uid);
+      if (!mounted) return;
+
+      final controller = ref.read(roomControllerProvider(widget.roomId).notifier);
+      final result = await controller.joinRoom(
+        currentUser.uid,
+        displayName: displayName,
+        avatarUrl: currentUser.photoURL,
+      );
+
+      if (!mounted) return;
+      if (result.isSuccess) {
+        final resolvedName = displayName.trim().isNotEmpty
+            ? displayName.trim()
+            : _displayNameFromAuthUser(currentUser);
+        final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+        sessionNotifier.updateDisplayName(currentUser.uid, resolvedName);
+        sessionNotifier.setJoined(true);
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.errormessage ?? 'Could not enter room. Please try again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error entering room: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isJoiningRoom = false);
+      }
+    }
+  }
+
+  void _ensureAutoJoined({
+    required User? currentUser,
+    required RoomSessionState sessionState,
+  }) {
+    if (_hasAttemptedAutoJoin || sessionState.hasJoined || currentUser == null) {
+      return;
+    }
+    _hasAttemptedAutoJoin = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_joinCurrentUserToRoom(currentUser));
+    });
   }
 
   String _resolveHostLabel(
@@ -305,18 +452,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
       await ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).disconnect();
       ref.read(roomSessionProvider(widget.roomId).notifier).reset();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Left the room'),
-            backgroundColor: VelvetNoir.secondary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
     } catch (e) {
       debugPrint('Error leaving room: $e');
+    } finally {
+      if (mounted) {
+        context.go('/rooms');
+      }
     }
   }
 
@@ -351,7 +492,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       final currentUser = auth.currentUser;
       if (currentUser == null) return;
 
-      final sessionState = ref.watch(roomSessionProvider(widget.roomId));
+      final sessionState = ref.read(roomSessionProvider(widget.roomId));
       final firestore = ref.read(firestoreProvider);
       final fallbackName = _displayNameFromAuthUser(currentUser);
       final cachedName = sessionState.userDisplayNames[currentUser.uid]?.trim() ?? '';
@@ -798,6 +939,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           }
 
           final room = RoomModel.fromJson(roomMap, widget.roomId);
+          _ensureAutoJoined(currentUser: currentUser, sessionState: sessionState);
           return isDesktop
               ? _buildDesktopLayout(room, currentUser, sessionState)
               : _buildMobileLayout(room, currentUser, sessionState);
@@ -1023,21 +1165,28 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     final presence = sideRef.watch(roomPresenceLiveProvider(widget.roomId)).valueOrNull ?? const [];
                     final queue = sideRef.watch(roomMicAccessRequestsProvider(widget.roomId)).valueOrNull ?? const [];
 
+                    final rosterParticipants = _projectParticipantsForRoster(
+                      participants: participants,
+                      sessionState: sessionState,
+                      currentUser: currentUser,
+                      room: room,
+                    );
+
                     final pendingQueueUserIds = queue
                         .where((q) => q.status == 'pending' && !q.isExpired)
                         .map((q) => q.requesterId)
                         .toSet();
 
                     final displayNameById = {
-                      for (final p in participants)
+                      for (final p in rosterParticipants)
                         p.userId: ((p.displayName?.trim().isNotEmpty ?? false) ? p.displayName!.trim() : p.userId),
                     };
                     final avatarById = {
-                      for (final p in participants) p.userId: p.photoUrl,
+                      for (final p in rosterParticipants) p.userId: p.photoUrl,
                     };
 
                     return UserListPanel(
-                      participants: participants,
+                      participants: rosterParticipants,
                       currentUserId: currentUserId,
                       presenceList: presence,
                       displayNameById: displayNameById,
@@ -1129,7 +1278,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   final crossAxisCount = width >= 1300
-                      ? 4
+                      ? (width >= 1700 ? 5 : 4)
                       : width >= 900
                       ? 3
                       : width >= 520
@@ -1249,7 +1398,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    for (final count in const [4, 8, 12]) ...[
+                    for (final count in const [4, 8, 12, 16, 20]) ...[
                       GestureDetector(
                         onTap: () => setState(() => _gridSlotCount = count),
                         child: Container(
@@ -1668,7 +1817,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         const [];
     final totalDiamonds = participants.fold<int>(
       0,
-      (sum, participant) => sum + participant.diamondLevel,
+      (total, participant) => total + participant.diamondLevel,
     );
     final liveBroadcasters = participants
         .where((participant) => participant.camOn || participant.micOn)
@@ -2123,52 +2272,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           children: [
             if (!sessionState.hasJoined)
               FilledButton.icon(
-                onPressed: currentUser != null
-                    ? () async {
-                        final displayName = await _getUserDisplayName(currentUser.uid);
-                        if (mounted) {
-                          try {
-                            final controller = ref.read(roomControllerProvider(widget.roomId).notifier);
-                            final result = await controller.joinRoom(
-                              currentUser.uid,
-                              displayName: displayName,
-                              avatarUrl: currentUser.photoURL,
-                            );
-                            if (mounted && result.isSuccess) {
-                              final resolvedName = displayName.trim().isNotEmpty
-                                  ? displayName.trim()
-                                  : _displayNameFromAuthUser(currentUser);
-                              final sessionNotifier = ref.read(
-                                roomSessionProvider(widget.roomId).notifier,
-                              );
-                              sessionNotifier.updateDisplayName(
-                                currentUser.uid,
-                                resolvedName,
-                              );
-                              sessionNotifier.setJoined(true);
-                            } else if (mounted && !result.isSuccess) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(result.errormessage ?? 'Could not join room. Please try again.'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error joining room: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      }
+                onPressed: (currentUser != null && !_isJoiningRoom)
+                    ? () => _joinCurrentUserToRoom(currentUser)
                     : null,
                 icon: const Icon(Icons.call_outlined),
-                label: const Text('JOIN'),
+                label: Text(_isJoiningRoom ? 'ENTERING…' : 'RETRY ENTRY'),
                 style: FilledButton.styleFrom(
                   backgroundColor: VelvetNoir.primary,
                 ),

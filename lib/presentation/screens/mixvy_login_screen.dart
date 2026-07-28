@@ -37,9 +37,12 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+  ProviderSubscription<AuthState>? _authStateSub;
 
   @override
   void initState() {
@@ -50,20 +53,38 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _animController.forward();
+    _authStateSub = ref.listenManual<AuthState>(
+      authControllerProvider,
+      (previous, next) async {
+        if (!mounted) return;
+
+        if (previous?.uid == null && next.uid != null) {
+          await AnalyticsService().logLogin(method: 'email_password');
+        }
+
+        final hasNewError = next.error != null && previous?.error != next.error;
+        if (hasNewError) {
+          await _showMessage(next.error!, isError: true);
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _authStateSub?.close();
     _animController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
   void _togglePassword() =>
       setState(() => _obscurePassword = !_obscurePassword);
 
-  Future<void> _showmessage(String message, {bool isError = false}) async {
+  Future<void> _showMessage(String message, {bool isError = false}) async {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -76,20 +97,37 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   }
 
   Future<void> _login() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
     if (_formKey.currentState?.validate() != true) return;
+
+    FocusScope.of(context).unfocus();
     final authController = ref.read(authControllerProvider.notifier);
     await authController.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
-    if (!mounted) return;
-    final authState = ref.read(authControllerProvider);
-    if (authState.error != null) {
-      await _showmessage(authState.error ?? '', isError: true);
+  }
+
+  String? _validateEmail(String? value) {
+    final input = value?.trim() ?? '';
+    if (input.isEmpty) {
+      return 'Enter your email';
     }
-    if (authState.uid != null) {
-      await AnalyticsService().logLogin(method: 'email_password');
+
+    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    if (!emailRegex.hasMatch(input)) {
+      return 'Enter a valid email address';
     }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    final input = value ?? '';
+    if (input.isEmpty) {
+      return 'Enter your password';
+    }
+    return null;
   }
 
   // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
@@ -99,6 +137,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final bottomSafePadding = MediaQuery.paddingOf(context).bottom;
 
     return AppPageScaffold(
       backgroundColor: _surface,
@@ -131,9 +171,15 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
             ),
             // System live indicator — bottom-left
             Positioned(
-              bottom: 20,
+              bottom: 20 + bottomSafePadding,
               left: context.pageHorizontalPadding,
-              child: _systemLiveIndicator(),
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 180),
+                  opacity: keyboardOpen ? 0 : 1,
+                  child: _systemLiveIndicator(),
+                ),
+              ),
             ),
           ],
         ),
@@ -194,7 +240,7 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   }
 
   // ── wide two-column layout ────────────────────────────────────────────────
-  Widget _wideLayout(dynamic authState) {
+  Widget _wideLayout(AuthState authState) {
     return Row(
       children: [
         // Left panel – branding
@@ -243,15 +289,19 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
             horizontal: context.isExpandedLayout ? 40 : 24,
             vertical: context.isExpandedLayout ? 56 : 32,
           ),
-          child: Center(child: _authCard(authState)),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Center(child: _authCard(authState)),
+          ),
         ),
       ],
     );
   }
 
   // ── narrow single-column layout ───────────────────────────────────────────
-  Widget _narrowLayout(dynamic authState) {
+  Widget _narrowLayout(AuthState authState) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.fromLTRB(
         context.pageHorizontalPadding,
         40,
@@ -274,7 +324,10 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
             ),
           ),
           const SizedBox(height: 36),
-          _authCard(authState),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: _authCard(authState),
+          ),
           const SizedBox(height: 60),
         ],
       ),
@@ -343,6 +396,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
 
   // ── glassmorphic auth card ────────────────────────────────────────────────
   Widget _authCard(AuthState authState) {
+    final isLoading = authState.isLoading;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -356,124 +411,124 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
           ),
           child: Form(
             key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Welcome back',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: _onSurface,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Welcome back',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: _onSurface,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Sign in to continue your experience.',
+                  style: GoogleFonts.raleway(fontSize: 13, color: _onVariant),
+                ),
+                const SizedBox(height: 24),
+
+                // Email
+                _brandInput(
+                  controller: _emailController,
+                  focusNode: _emailFocusNode,
+                  enabled: !isLoading,
+                  hint: 'Email address',
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: Icons.mail_outline_rounded,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.username, AutofillHints.email],
+                  validator: _validateEmail,
+                  onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                ),
+                const SizedBox(height: 12),
+
+                // Password
+                TextFormField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  enabled: !isLoading,
+                  obscureText: _obscurePassword,
+                  style: GoogleFonts.raleway(color: _onSurface, fontSize: 14),
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  onFieldSubmitted: (_) => _login(),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    filled: true,
+                    fillColor: _surfaceHigh,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      borderSide: BorderSide.none,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Sign in to continue your experience.',
-                    style: GoogleFonts.raleway(fontSize: 13, color: _onVariant),
-                  ),
-                  const SizedBox(height: 24),
-
-                  const SizedBox(height: 20),
-                  _orDivider(),
-                  const SizedBox(height: 20),
-
-                  // Email
-                  _brandInput(
-                    controller: _emailController,
-                    hint: 'Email address',
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.mail_outline_rounded,
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Enter your email' : null,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Password
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    style: GoogleFonts.raleway(color: _onSurface, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      filled: true,
-                      fillColor: _surfaceHigh,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
-                        borderSide: const BorderSide(
-                          color: _primary,
-                          width: 1.5,
-                        ),
-                      ),
-                      hintStyle: GoogleFonts.raleway(
-                        color: _onVariant,
-                        fontSize: 14,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.lock_outline_rounded,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      borderSide: const BorderSide(color: _primary, width: 1.5),
+                    ),
+                    hintStyle: GoogleFonts.raleway(color: _onVariant, fontSize: 14),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 18,
+                      color: _onVariant,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         size: 18,
                         color: _onVariant,
                       ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 18,
-                          color: _onVariant,
-                        ),
-                        onPressed: _togglePassword,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
+                      onPressed: isLoading ? null : _togglePassword,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                  ),
+                  validator: _validatePassword,
+                ),
+
+                // Forgot password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed:
+                        isLoading ? null : () => context.push('/forgot-password'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 0,
+                        vertical: 4,
                       ),
                     ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Enter your password' : null,
-                  ),
-
-                  // Forgot password
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: authState.isLoading
-                          ? null
-                          : () => context.push('/forgot-password'),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 0,
-                          vertical: 4,
-                        ),
-                      ),
-                      child: Text(
-                        'Forgot password?',
-                        style: GoogleFonts.raleway(
-                          fontSize: 12,
-                          color: _primary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    child: Text(
+                      'Forgot password?',
+                      style: GoogleFonts.raleway(
+                        fontSize: 12,
+                        color: _primary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                  // ── SIGN IN — gold solid button ───────────────────
-                  _goldSolidButton(
-                    onPressed: authState.isLoading ? null : _login,
-                    child: authState.isLoading
+                // ── SIGN IN — gold solid button ───────────────────
+                _goldSolidButton(
+                  onPressed: isLoading ? null : _login,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 160),
+                    child: isLoading
                         ? const SizedBox(
+                            key: ValueKey('signin_loading'),
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
@@ -482,6 +537,7 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                             ),
                           )
                         : Text(
+                            key: const ValueKey('signin_label'),
                             'SIGN IN',
                             style: GoogleFonts.raleway(
                               fontWeight: FontWeight.w700,
@@ -491,44 +547,39 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                             ),
                           ),
                   ),
+                ),
 
-                  const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-                  // ── SIGN UP — gold outline button ─────────────────
-                  _goldOutlineButton(
-                    onPressed: authState.isLoading
-                        ? null
-                        : () => context.go('/register'),
-                    label: 'SIGN UP',
-                  ),
+                // ── SIGN UP — gold outline button ─────────────────
+                _goldOutlineButton(
+                  onPressed: isLoading ? null : () => context.go('/register'),
+                  label: 'SIGN UP',
+                ),
 
-                  const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                  // Footer
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _footerLink('Terms'),
-                      Text(
-                        ' · ',
-                        style: GoogleFonts.raleway(
-                          fontSize: 11,
-                          color: _onVariant,
-                        ),
-                      ),
-                      _footerLink('Privacy'),
-                      Text(
-                        ' · ',
-                        style: GoogleFonts.raleway(
-                          fontSize: 11,
-                          color: _onVariant,
-                        ),
-                      ),
-                      _footerLink('Support'),
-                    ],
-                  ),
-                ],
-              ),
+                // Footer
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    _footerLink('Terms'),
+                    Text(
+                      '·',
+                      style: GoogleFonts.raleway(fontSize: 11, color: _onVariant),
+                    ),
+                    _footerLink('Privacy'),
+                    Text(
+                      '·',
+                      style: GoogleFonts.raleway(fontSize: 11, color: _onVariant),
+                    ),
+                    _footerLink('Support'),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -539,14 +590,24 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   // ── brand text input ───────────────────────────────────────────────────────
   Widget _brandInput({
     required TextEditingController controller,
+    required FocusNode focusNode,
+    required bool enabled,
     required String hint,
     required IconData prefixIcon,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction textInputAction = TextInputAction.next,
+    Iterable<String>? autofillHints,
     String? Function(String?)? validator,
+    void Function(String)? onFieldSubmitted,
   }) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
+      enabled: enabled,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      autofillHints: autofillHints,
+      onFieldSubmitted: onFieldSubmitted,
       style: GoogleFonts.raleway(color: _onSurface, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
@@ -646,28 +707,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
           ),
         ),
       ),
-    );
-  }
-
-  // ── or divider ────────────────────────────────────────────────────────────
-  Widget _orDivider() {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 1, color: _goldBorder)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            'OR EMAIL',
-            style: GoogleFonts.raleway(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: _onVariant,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-        Expanded(child: Container(height: 1, color: _goldBorder)),
-      ],
     );
   }
 

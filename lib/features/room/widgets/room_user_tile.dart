@@ -24,6 +24,7 @@ class RoomUserTile extends StatefulWidget {
     required this.role,
     required this.isMe,
     this.avatarUrl,
+    this.isCamOn = false,
     this.isMicOn = false,
     this.isMuted = false,
     this.micExpiresAt,
@@ -38,6 +39,7 @@ class RoomUserTile extends StatefulWidget {
   final String? avatarUrl;
   final String role;
   final bool isMe;
+  final bool isCamOn;
   final bool isMicOn;
   final bool isMuted;
   final DateTime? micExpiresAt;
@@ -246,6 +248,19 @@ class _RoomUserTileState extends State<RoomUserTile>
                 ],
               ),
             ),
+            if (_isSpeaking) ...[
+              const SizedBox(width: 6),
+              _buildAudioMeter(),
+            ],
+            const SizedBox(width: 6),
+            Icon(
+              widget.isCamOn ? Icons.videocam : Icons.videocam_off,
+              size: 13,
+              color: widget.isCamOn
+                  ? _kGreen.withValues(alpha: 0.7)
+                  : _kRed.withValues(alpha: 0.55),
+            ),
+            const SizedBox(width: 6),
             Icon(
               widget.isMuted || !widget.isMicOn ? Icons.mic_off : Icons.mic,
               size: 13,
@@ -256,6 +271,39 @@ class _RoomUserTileState extends State<RoomUserTile>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAudioMeter() {
+    return AnimatedBuilder(
+      animation: _pulseCtrl,
+      builder: (context, _) {
+        final pulse = _pulseCtrl.value;
+        final h1 = 4.0 + (pulse * 8.0);
+        final h2 = 6.0 + ((1.0 - pulse) * 7.0);
+        final h3 = 5.0 + ((pulse < 0.5 ? pulse : 1.0 - pulse) * 10.0);
+
+        Widget bar(double height) {
+          return Container(
+            width: 2.5,
+            height: height,
+            decoration: BoxDecoration(
+              color: _kWineRedBright.withValues(alpha: 0.90),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          );
+        }
+
+        return SizedBox(
+          width: 14,
+          height: 14,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [bar(h1), bar(h2), bar(h3)],
+          ),
+        );
+      },
     );
   }
 

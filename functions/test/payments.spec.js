@@ -268,6 +268,23 @@ function createFirestoreDouble(initialUsers = {}) {
         },
       };
     },
+    async runTransaction(worker) {
+      const tx = {
+        async get(ref) {
+          return ref.get();
+        },
+        set(ref, data, options) {
+          return ref.set(data, options);
+        },
+        update(ref, data) {
+          return ref.update(data);
+        },
+        delete(ref) {
+          return ref.delete();
+        },
+      };
+      return worker(tx);
+    },
   };
 
   return firestore;
@@ -293,4 +310,62 @@ function createResponseDouble() {
   };
 }
 
-/* --- REST OF YOUR TESTS UNCHANGED --- */
+describe("grabMicHandler", () => {
+  it("allows member-only callers and backfills participant doc", async () => {
+    const firestore = createFirestoreDouble();
+
+    await firestore.collection("rooms").doc("room-member-fallback").set({
+      isLive: true,
+    });
+    await firestore
+        .collection("rooms")
+        .doc("room-member-fallback")
+        .collection("members")
+        .doc("user-1")
+        .set({
+          role: "member",
+          isBanned: false,
+        });
+
+    const result = await grabMicHandler(makeRequest({
+      roomId: "room-member-fallback",
+    }, "user-1"), {firestore});
+
+    assert.equal(result.success, true);
+
+    const participantSnap = await firestore
+        .collection("rooms")
+        .doc("room-member-fallback")
+        .collection("participants")
+        .doc("user-1")
+        .get();
+
+    assert.equal(participantSnap.exists, true);
+    assert.equal(participantSnap.data().userId, "user-1");
+    assert.equal(participantSnap.data().role, "stage");
+  });
+
+  it("rejects banned member-only callers", async () => {
+    const firestore = createFirestoreDouble();
+
+    await firestore.collection("rooms").doc("room-banned-member").set({
+      isLive: true,
+    });
+    await firestore
+        .collection("rooms")
+        .doc("room-banned-member")
+        .collection("members")
+        .doc("user-1")
+        .set({
+          role: "member",
+          isBanned: true,
+        });
+
+    await assert.rejects(
+        () => grabMicHandler(makeRequest({
+          roomId: "room-banned-member",
+        }, "user-1"), {firestore}),
+        (error) => error && error.code === "permission-denied",
+    );
+  });
+});

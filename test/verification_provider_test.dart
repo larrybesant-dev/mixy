@@ -83,8 +83,8 @@ void main() {
     });
 
     test('returns true when isVerified is true', () async {
-      await firestore.collection('users').doc('user-1').set({
-        'username': 'jazzfan',
+      await firestore.collection('verification').doc('user-1').set({
+        'userId': 'user-1',
         'isVerified': true,
       });
 
@@ -95,8 +95,8 @@ void main() {
     });
 
     test('reflects updated isVerified value in a fresh read', () async {
-      await firestore.collection('users').doc('user-1').set({
-        'username': 'jazzfan',
+      await firestore.collection('verification').doc('user-1').set({
+        'userId': 'user-1',
         'isVerified': false,
       });
 
@@ -107,7 +107,7 @@ void main() {
       expect(before, isFalse);
 
       // Update the document, then read via a fresh container
-      await firestore.collection('users').doc('user-1').update({
+      await firestore.collection('verification').doc('user-1').update({
         'isVerified': true,
       });
 

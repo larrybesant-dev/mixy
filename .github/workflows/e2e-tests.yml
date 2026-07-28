@@ -11,9 +11,18 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
   schedule:
     # Run tests daily at 9 AM UTC (production health check)
     - cron: '0 9 * * *'
+
+concurrency:
+  group: e2e-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  PLAYWRIGHT_BASE_URL: https://mixvy-v2.web.app
 
 jobs:
   e2e-tests:
@@ -63,6 +72,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -84,12 +94,10 @@ jobs:
           npx playwright test \
             --project=${{ matrix.browser }} \
             --shard=${{ matrix.shard }} \
-            --grep-invert="MixVy Performance & Accessibility" \
-            --reporter=line,junit,html
+            --grep-invert="MixVy Performance & Accessibility"
         env:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
-          PLAYWRIGHT_BASE_URL: 'https://mixvy-v2.web.app'
 
       - name: Upload test report
         if: always()
@@ -132,6 +140,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -142,12 +151,10 @@ jobs:
       - name: Run performance/accessibility suite (advisory)
         run: |
           npx playwright test e2e/05-performance-accessibility.spec.ts \
-            --project=chromium \
-            --reporter=line,junit,html
+            --project=chromium
         env:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
-          PLAYWRIGHT_BASE_URL: 'https://mixvy-v2.web.app'
 
       - name: Upload advisory report
         if: always()
@@ -262,11 +269,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Validate deployment secrets
+        run: |
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "Missing required secret: FIREBASE_SERVICE_ACCOUNT"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci

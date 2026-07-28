@@ -1039,6 +1039,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: _selectedGender,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Gender',
                               ),
@@ -1046,7 +1047,11 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                                   .map(
                                     (value) => DropdownMenuItem<String>(
                                       value: value,
-                                      child: Text(value),
+                                      child: Text(
+                                        value,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   )
                                   .toList(growable: false),
@@ -1066,6 +1071,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedRelationshipStatus,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Relationship status',
                         ),
@@ -1073,7 +1079,11 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             .map(
                               (value) => DropdownMenuItem<String>(
                                 value: value,
-                                child: Text(value),
+                                child: Text(
+                                  value,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
                             .toList(growable: false),
@@ -1116,6 +1126,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       const SizedBox(height: 8),
                       DropdownButtonFormField<CamViewPolicy>(
                         initialValue: _selectedCamViewPolicy,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Who can view my cam',
                         ),
@@ -1123,7 +1134,11 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                             .map(
                               (value) => DropdownMenuItem<CamViewPolicy>(
                                 value: value,
-                                child: Text(_camPolicyLabel(value)),
+                                child: Text(
+                                  _camPolicyLabel(value),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
                             .toList(growable: false),

@@ -23,5 +23,7 @@
 "flutterTools.displayRiverpodContextMenu": true,
 "flutterTools.displayModularContextMenu": false,
 "flutterTools.displaySignalsContextMenu": false,
-"dart.flutterSdkPath": "C:\\Users\\LARRY\\flutter"
+"dart.flutterSdkPath": "C:\\Users\\LARRY\\flutter",
+"editor.linkedEditing": true,
+"todo-tree.ripgrep": "C:\\Users\\LARRY\\scoop\\shims\\rg.exe"
 }

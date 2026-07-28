@@ -8,8 +8,28 @@ import 'package:mixvy/features/room/providers/room_policy_provider.dart';
 import 'package:mixvy/features/room/widgets/room_host_control_panel.dart';
 import 'package:mixvy/models/mic_access_request_model.dart';
 import 'package:mixvy/models/room_policy_model.dart';
+import 'test_helpers.dart';
 
 void main() {
+  setUpAll(() async {
+    await testSetup();
+  });
+
+  Future<void> seedHostRoom(FakeFirebaseFirestore firestore) async {
+    await firestore.collection('rooms').doc('room-1').set({
+      'id': 'room-1',
+      'hostId': 'host-1',
+      'isLive': true,
+      'members': ['host-1'],
+    });
+    await firestore
+        .collection('rooms')
+        .doc('room-1')
+        .collection('participants')
+        .doc('host-1')
+        .set({'userId': 'host-1', 'role': 'host'});
+  }
+
   Future<void> configureViewport(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -19,12 +39,17 @@ void main() {
     });
   }
 
+  Future<void> drainBackgroundTimers(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 6));
+  }
+
   group('RoomHostControlPanel — Stage tab', () {
     testWidgets('renders 30s / 60s / Unlimited SegmentedButton segments', (
       WidgetTester tester,
     ) async {
       await configureViewport(tester);
       final controllerFirestore = FakeFirebaseFirestore();
+      await seedHostRoom(controllerFirestore);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -66,6 +91,8 @@ void main() {
       expect(find.text('30s'), findsOneWidget);
       expect(find.text('60s'), findsOneWidget);
       expect(find.text('Unlimited'), findsOneWidget);
+
+      await drainBackgroundTimers(tester);
     });
 
     testWidgets('displays policy label reflecting current micTimerSeconds', (
@@ -73,6 +100,7 @@ void main() {
     ) async {
       await configureViewport(tester);
       final controllerFirestore = FakeFirebaseFirestore();
+      await seedHostRoom(controllerFirestore);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -112,6 +140,8 @@ void main() {
 
       // Label should reflect 60s timer.
       expect(find.text('60s per turn'), findsOneWidget);
+
+      await drainBackgroundTimers(tester);
     });
 
     testWidgets('displays "Unlimited mic time" when micTimerSeconds is null', (
@@ -119,6 +149,7 @@ void main() {
     ) async {
       await configureViewport(tester);
       final controllerFirestore = FakeFirebaseFirestore();
+      await seedHostRoom(controllerFirestore);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -157,6 +188,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Unlimited mic time'), findsOneWidget);
+
+      await drainBackgroundTimers(tester);
     });
 
     testWidgets('tapping a segment writes micTimerSeconds to Firestore', (
@@ -164,6 +197,7 @@ void main() {
     ) async {
       await configureViewport(tester);
       final controllerFirestore = FakeFirebaseFirestore();
+      await seedHostRoom(controllerFirestore);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -203,7 +237,7 @@ void main() {
 
       // Tap the 60s segment.
       await tester.tap(find.text('60s'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Verify the controller wrote micTimerSeconds: 60 to Firestore.
       final policySnap = await controllerFirestore
@@ -213,6 +247,8 @@ void main() {
           .doc('settings')
           .get();
       expect(policySnap.data()?['micTimerSeconds'], 60);
+
+      await drainBackgroundTimers(tester);
     });
   });
 }

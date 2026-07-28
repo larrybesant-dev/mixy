@@ -46,7 +46,7 @@ class RoomJoinResult {
 final roomSessionServiceProvider = Provider<RoomSessionService>((ref) {
   return RoomSessionService(
     firestore: ref.watch(roomFirestoreProvider),
-    roomSessionGateway: ref.read(roomSessionGatewayProvider),
+    roomSessionGateway: RoomSessionGateway(ref.watch(roomFirestoreProvider)),
     presenceController: ref.read(presenceControllerProvider.notifier),
   );
 });
@@ -93,6 +93,39 @@ class RoomSessionService {
       }
     }
     return fallback;
+  }
+
+  bool _hasCompleteProfileData(Map<String, dynamic> data) {
+    final username = _asString(data['username']);
+    final age = (data['age'] as num?)?.toInt() ?? 0;
+    final location = _asString(data['location']);
+    final relationshipStatus = _asString(data['relationshipStatus']);
+    final avatarUrl = _asString(data['avatarUrl'], fallback: _asString(data['photoUrl']));
+    final coverPhotoUrl = _asString(data['coverPhotoUrl']);
+    final galleryUrls = data['galleryUrls'];
+    return username.isNotEmpty &&
+        age >= 18 &&
+        location.isNotEmpty &&
+        relationshipStatus.isNotEmpty &&
+        avatarUrl.isNotEmpty &&
+        coverPhotoUrl.isNotEmpty &&
+        galleryUrls is List &&
+        galleryUrls.isNotEmpty;
+  }
+
+  String _participantRoleFromMemberRole(String memberRole) {
+    switch (memberRole.trim().toLowerCase()) {
+      case 'owner':
+      case 'host':
+        return 'host';
+      case 'cohost':
+      case 'moderator':
+      case 'trusted_speaker':
+      case 'stage':
+        return memberRole.trim().toLowerCase();
+      default:
+        return 'audience';
+    }
   }
 
   Future<RoomJoinResult> joinRoom({
@@ -192,36 +225,29 @@ class RoomSessionService {
     );
     
     if (!userDoc.exists) {
-      AppTelemetry.updateRoomState(
+      // Do not block room entry when profile bootstrap is delayed.
+      AppTelemetry.logAction(
+        domain: 'room',
+        action: 'join_profile_missing_non_blocking',
+        message: 'Profile document missing; continuing join with fallback identity.',
         roomId: normalizedRoomId,
-        joinedUserId: null,
-        roomPhase: 'error',
-        roomError: 'User profile not found. Please complete your profile setup first.',
-      );
-      return const RoomJoinResult.failure(
-        'User profile not found. Please complete your profile setup first.',
+        userId: normalizedUserId,
+        result: 'warn',
       );
     }
 
-    final isProfileComplete = _asBool(
-      userDoc.data()?['isComplete'],
-      fallback: false,
-    );
-    final firebaseUsername = _asString(userDoc.data()?['username']);
-    final firebaseDisplayName = _asString(userDoc.data()?['displayName']);
-    
-    // Profile is complete if isComplete flag is true OR both username and displayName are set
-    final hasBasicProfile = firebaseUsername.isNotEmpty && firebaseDisplayName.isNotEmpty;
-    
-    if (!isProfileComplete && !hasBasicProfile) {
-      AppTelemetry.updateRoomState(
+    final userData = userDoc.data() ?? const <String, dynamic>{};
+    final isProfileComplete = _asBool(userData['isComplete'], fallback: false) ||
+        _hasCompleteProfileData(userData);
+
+    if (!isProfileComplete) {
+      AppTelemetry.logAction(
+        domain: 'room',
+        action: 'join_profile_incomplete_non_blocking',
+        message: 'Profile is incomplete; continuing join.',
         roomId: normalizedRoomId,
-        joinedUserId: null,
-        roomPhase: 'error',
-        roomError: 'Please complete your profile before joining rooms.',
-      );
-      return const RoomJoinResult.failure(
-        'Please complete your profile before joining rooms.',
+        userId: normalizedUserId,
+        result: 'warn',
       );
     }
 
@@ -532,15 +558,59 @@ class RoomSessionService {
       return lastParticipantSyncAt;
     }
 
-    await traceFirestoreWrite<void>(
-      path: 'rooms/$roomId/participants/$userId',
-      operation: 'room_heartbeat',
-      roomId: roomId,
-      userId: userId,
+    try {
+      await traceFirestoreWrite<void>(
+        path: 'rooms/$roomId/participants/$userId',
+        operation: 'room_heartbeat',
+        roomId: roomId,
+        userId: userId,
         action: () => _roomSessionGateway
-          .participantRef(roomId, userId)
-          .update({'lastActiveAt': now}),
-    );
+            .participantRef(roomId, userId)
+            .update({'lastActiveAt': now, 'userStatus': 'online'}),
+      );
+    } on FirebaseException catch (e) {
+      if (e.code != 'not-found') {
+        rethrow;
+      }
+
+      final memberRef = _roomSessionGateway.memberRef(roomId, userId);
+      final memberSnapshot = await traceFirestoreRead(
+        path: 'rooms/$roomId/members/$userId',
+        operation: 'recover_member_for_heartbeat',
+        roomId: roomId,
+        userId: userId,
+        action: memberRef.get,
+      );
+      if (!memberSnapshot.exists) {
+        rethrow;
+      }
+
+      final memberData = memberSnapshot.data() ?? const <String, dynamic>{};
+      final memberRole = _asString(memberData['role'], fallback: 'member');
+      final participantRole = _participantRoleFromMemberRole(memberRole);
+      final displayName = _asString(memberData['displayName']);
+      final photoUrl = _asString(memberData['photoUrl']);
+
+      await traceFirestoreWrite<void>(
+        path: 'rooms/$roomId/participants/$userId',
+        operation: 'recover_participant_from_member_heartbeat',
+        roomId: roomId,
+        userId: userId,
+        action: () => _roomSessionGateway.participantRef(roomId, userId).set({
+          'userId': userId,
+          'role': participantRole,
+          'isBanned': false,
+          'isMuted': false,
+          'camOn': false,
+          'userStatus': 'online',
+          if (displayName.isNotEmpty) 'displayName': displayName,
+          if (photoUrl.isNotEmpty) 'photoUrl': photoUrl,
+          'joinedAt': memberData['joinedAt'] ?? FieldValue.serverTimestamp(),
+          'lastActiveAt': now,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)),
+      );
+    }
 
     return now;
   }

@@ -58,6 +58,12 @@ android {
             if (keyProperties.getProperty("storeFile").isNullOrBlank().not()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 
@@ -86,4 +92,16 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Flutter embedding references Play Core splitinstall APIs for deferred components.
+    // Use the current feature delivery artifacts to ensure those classes are present for R8.
+    implementation("com.google.android.play:feature-delivery:2.1.0")
+    implementation("com.google.android.play:feature-delivery-ktx:2.1.0")
+    implementation("com.google.android.play:core-common:2.0.4")
+}
+
+configurations.all {
+    exclude(group = "com.google.android.play", module = "core-common")
 }

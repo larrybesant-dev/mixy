@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:mixvy/features/messaging/models/message_model.dart';
+import 'room_rank_diamond_badge_row.dart';
 import 'rich_text_toolbar.dart';
 
 /// Live-room chat row styled like Paltalk – avatar on the left, then a column
@@ -20,6 +21,15 @@ class MessageBubble extends StatelessWidget {
   /// Optional avatar URL for the sender's profile picture.
   final String? senderAvatarUrl;
 
+  /// Profile rank shown as crown level (e.g., 👑 89).
+  final int senderRankTier;
+
+  /// Gift progression shown as diamond counter.
+  final int senderDiamondLevel;
+
+  /// Optional achievement/VIP title chip.
+  final String? senderBadgeTitle;
+
   /// Whether the sender currently has cam enabled in the room.
   final bool senderCamOn;
 
@@ -36,6 +46,9 @@ class MessageBubble extends StatelessWidget {
     this.senderLabel,
     this.senderVipLevel = 0,
     this.senderAvatarUrl,
+    this.senderRankTier = 0,
+    this.senderDiamondLevel = 0,
+    this.senderBadgeTitle,
     this.senderCamOn = false,
     this.onTapSender,
     this.onTapCam,
@@ -276,6 +289,45 @@ class MessageBubble extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (senderRankTier > 0 ||
+                    senderDiamondLevel > 0 ||
+                    (senderBadgeTitle?.trim().isNotEmpty ?? false)) ...[
+                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      RoomRankDiamondBadgeRow(
+                        rankTier: senderRankTier,
+                        diamondLevel: senderDiamondLevel,
+                        compact: true,
+                      ),
+                      if (senderBadgeTitle?.trim().isNotEmpty ?? false)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0x33781E2B),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(0x55781E2B),
+                            ),
+                          ),
+                          child: Text(
+                            senderBadgeTitle!.trim(),
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: Color(0xFFF7EDE2),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
                 // message body — parse markup when tags present
                 _buildMessageBody(message.content),
               ],

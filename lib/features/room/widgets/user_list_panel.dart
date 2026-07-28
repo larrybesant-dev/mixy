@@ -225,6 +225,7 @@ class _UserListPanelState extends State<UserListPanel> {
               displayName: displayName,
               avatarUrl: avatarUrl,
               role: p.role,
+              isCamOn: p.camOn,
               isMicOn: p.micOn,
               isMuted: p.isMuted,
               isMe: isMe,

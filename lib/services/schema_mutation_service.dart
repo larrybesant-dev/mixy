@@ -66,6 +66,30 @@ class SchemaMutationService {
     ..._verificationFields,
   };
 
+  bool _hasRequiredProfileData(Map<String, dynamic> data) {
+    final username = _normalizeUsername(data['username'] as String?);
+    final age = (data['age'] as num?)?.toInt() ?? 0;
+    final location = _normalizeUsername(data['location'] as String?);
+    final relationshipStatus = _normalizeUsername(
+      data['relationshipStatus'] as String?,
+    );
+    final avatarUrl = _normalizeUsername(
+      (data['avatarUrl'] as String?) ?? (data['photoUrl'] as String?),
+    );
+    final coverPhotoUrl = _normalizeUsername(
+      data['coverPhotoUrl'] as String?,
+    );
+    final galleryUrls = data['galleryUrls'];
+    return username.isNotEmpty &&
+        age >= 18 &&
+        location.isNotEmpty &&
+        relationshipStatus.isNotEmpty &&
+        avatarUrl.isNotEmpty &&
+        coverPhotoUrl.isNotEmpty &&
+        galleryUrls is List &&
+        galleryUrls.isNotEmpty;
+  }
+
   Future<void> createUserProfile({
     required User user,
     String? preferredUsername,
@@ -107,9 +131,7 @@ class SchemaMutationService {
     final publicDisplayName = existingDisplayName.isNotEmpty
         ? existingDisplayName
         : (authDisplayName.isNotEmpty ? authDisplayName : publicUsername);
-    final isComplete =
-        existingData['isComplete'] == true ||
-        normalizedPreferredUsername.isNotEmpty;
+    final isComplete = existingData['isComplete'] == true;
 
     final identityPayload = <String, dynamic>{
       'uid': user.uid,
@@ -168,7 +190,10 @@ class SchemaMutationService {
     final identityPayload = _pickAllowedFields(
       userData: userData,
       allowedFields: _identityFields,
-    )..['updatedAt'] = now;
+    )..addAll(<String, dynamic>{
+      'isComplete': _hasRequiredProfileData(userData),
+      'updatedAt': now,
+    });
 
     final profilePublicPayload = _pickAllowedFields(
       userData: userData,
@@ -191,7 +216,9 @@ class SchemaMutationService {
 
     final batch = _firestore.batch();
 
-    batch.set(usersRef, identityPayload, SetOptions(merge: true));
+    if (SchemaMigrationFlags.enableUsersShadowMerge) {
+      batch.set(usersRef, identityPayload, SetOptions(merge: true));
+    }
     batch.set(profilePublicRef, profilePublicPayload, SetOptions(merge: true));
     batch.set(preferencesRef, preferencesPayload, SetOptions(merge: true));
 

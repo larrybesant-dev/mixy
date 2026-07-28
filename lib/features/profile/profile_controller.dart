@@ -4,6 +4,7 @@ import 'package:mixvy/models/room_policy_model.dart';
 import 'package:mixvy/services/profile_service.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'profile_completion.dart';
 
 class ProfileState {
   final bool isLoading;
@@ -85,14 +86,20 @@ class ProfileController extends Notifier<ProfileState> {
     
     state = state.copyWith(isLoading: true, error: null);
     try {
-      // Build complete userData map from profile state
+      // Build only user fields allowed by Firestore rules for /users/{uid}.
       final userData = {
+        'uid': userId,
         'username': profile.username ?? '',
+        'displayName': profile.username ?? '',
         'email': profile.email ?? '',
+        'photoUrl': profile.avatarUrl,
         'avatarUrl': profile.avatarUrl,
         'coverPhotoUrl': profile.coverPhotoUrl,
+        'galleryUrls': profile.galleryUrls,
+        'introVideoUrl': profile.introVideoUrl,
         'bio': profile.bio,
         'aboutMe': profile.aboutMe,
+        'isPrivate': profile.privacy.isPrivate,
         'age': profile.age,
         'gender': profile.gender,
         'location': profile.location,
@@ -102,23 +109,14 @@ class ProfileController extends Notifier<ProfileState> {
         'musicTastePrompt': profile.musicTastePrompt,
         'interests': profile.interests,
         'themeId': profile.themeId,
-        'camViewPolicy': profile.camViewPolicy.toString(),
-        'galleryUrls': profile.galleryUrls,
-        'introVideoUrl': profile.introVideoUrl,
-        'membershipLevel': profile.membershipLevel,
-        'coinBalance': profile.coinBalance,
-        'adultConsentAccepted': profile.adultConsentAccepted,
-        'adultKinks': profile.adultKinks,
-        'adultPreferences': profile.adultPreferences,
-        'adultBoundaries': profile.adultBoundaries,
-        'adultLookingFor': profile.adultLookingFor,
+        'camViewPolicy': profile.camViewPolicy.name,
         'profileAccentColor': profile.profileAccentColor,
         'profileBgGradientStart': profile.profileBgGradientStart,
         'profileBgGradientEnd': profile.profileBgGradientEnd,
         'profileMusicUrl': profile.profileMusicUrl,
         'profileMusicTitle': profile.profileMusicTitle,
         // Mark profile as complete when username is set
-        'isComplete': (profile.username ?? '').trim().isNotEmpty,
+        'isComplete': ProfileCompletion.isProfileComplete(profile),
       };
       
       await _profileService.saveProfile(

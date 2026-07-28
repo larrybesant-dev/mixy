@@ -45,49 +45,78 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String? _hydratedUserId;
 
-  // Tab 0 – Basics
+  // Identity
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _showPassword = false;
-  bool _isUploadingAvatar = false;
-  bool _isUploadingCover = false;
-  String? _avatarUrl;
-  String? _coverPhotoUrl;
-
-  // Tab 1 – About
   final _bioController = TextEditingController();
   final _aboutMeController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _genderController = TextEditingController();
+  final _relationshipController = TextEditingController();
 
-  // Tab 2 – Personalization
+  // Media
+  bool _isUploadingAvatar = false;
+  bool _isUploadingCover = false;
+  bool _isUploadingGallery = false;
+  String? _avatarUrl;
+  String? _coverPhotoUrl;
+  List<String> _galleryUrls = <String>[];
+
+  // Vibe and prompts
+  final _vibePromptController = TextEditingController();
+  final _firstDatePromptController = TextEditingController();
+  final _musicTastePromptController = TextEditingController();
+  final _introVideoController = TextEditingController();
   final _musicUrlController = TextEditingController();
   final _musicTitleController = TextEditingController();
   String? _profileAccentColor;
 
-  // Tab 3 – Interests
+  // Interests
   final _interestInputController = TextEditingController();
   List<String> _interests = [];
+
+  static const int _maxGalleryPhotos = 6;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4,
+      length: 3,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 3),
+      initialIndex: widget.initialTab.clamp(0, 2),
     );
-    final s = ref.read(profileControllerProvider);
-    _nameController.text = s.username ?? '';
-    _emailController.text = s.email ?? '';
-    _avatarUrl = s.avatarUrl;
-    _coverPhotoUrl = s.coverPhotoUrl;
-    _bioController.text = s.bio ?? '';
-    _aboutMeController.text = s.aboutMe ?? '';
-    _musicUrlController.text = s.profileMusicUrl ?? '';
-    _musicTitleController.text = s.profileMusicTitle ?? '';
-    _profileAccentColor = s.profileAccentColor;
-    _interests = List<String>.from(s.interests);
+    _hydrateFromState(ref.read(profileControllerProvider));
+    Future.microtask(
+      () => ref.read(profileControllerProvider.notifier).loadCurrentProfile(),
+    );
+  }
+
+  void _hydrateFromState(ProfileState state) {
+    final userId = state.userId;
+    if (userId == null || userId.isEmpty || _hydratedUserId == userId) {
+      return;
+    }
+    _hydratedUserId = userId;
+    _nameController.text = state.username ?? '';
+    _emailController.text = state.email ?? '';
+    _avatarUrl = state.avatarUrl;
+    _coverPhotoUrl = state.coverPhotoUrl;
+    _galleryUrls = List<String>.from(state.galleryUrls);
+    _bioController.text = state.bio ?? '';
+    _aboutMeController.text = state.aboutMe ?? '';
+    _locationController.text = state.location ?? '';
+    _genderController.text = state.gender ?? '';
+    _relationshipController.text = state.relationshipStatus ?? '';
+    _vibePromptController.text = state.vibePrompt ?? '';
+    _firstDatePromptController.text = state.firstDatePrompt ?? '';
+    _musicTastePromptController.text = state.musicTastePrompt ?? '';
+    _introVideoController.text = state.introVideoUrl ?? '';
+    _musicUrlController.text = state.profileMusicUrl ?? '';
+    _musicTitleController.text = state.profileMusicTitle ?? '';
+    _profileAccentColor = state.profileAccentColor;
+    _interests = List<String>.from(state.interests);
   }
 
   @override
@@ -95,9 +124,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     _tabController.dispose();
     _nameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
     _bioController.dispose();
     _aboutMeController.dispose();
+    _locationController.dispose();
+    _genderController.dispose();
+    _relationshipController.dispose();
+    _vibePromptController.dispose();
+    _firstDatePromptController.dispose();
+    _musicTastePromptController.dispose();
+    _introVideoController.dispose();
     _musicUrlController.dispose();
     _musicTitleController.dispose();
     _interestInputController.dispose();
@@ -149,6 +184,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     }
   }
 
+  Future<void> _addGalleryPhoto() async {
+    if (_galleryUrls.length >= _maxGalleryPhotos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can add up to 6 gallery photos.')),
+      );
+      return;
+    }
+    await _pickAndUpload(
+      storagePath:
+          'users/${FirebaseAuth.instance.currentUser?.uid}/gallery/${DateTime.now().millisecondsSinceEpoch}',
+      onSuccess: (url) => setState(() => _galleryUrls = [..._galleryUrls, url]),
+      setLoading: (v) => setState(() => _isUploadingGallery = v),
+    );
+  }
+
   // ── Save ──────────────────────────────────────────────────────────────────
 
   Future<void> _saveProfile() async {
@@ -162,8 +212,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
               email: _emailController.text.trim(),
               avatarUrl: _avatarUrl ?? '',
               coverPhotoUrl: _coverPhotoUrl ?? '',
+              galleryUrls: List<String>.from(_galleryUrls),
               bio: _bioController.text.trim(),
               aboutMe: _aboutMeController.text.trim(),
+              location: _locationController.text.trim(),
+              gender: _genderController.text.trim(),
+              relationshipStatus: _relationshipController.text.trim(),
+              vibePrompt: _vibePromptController.text.trim(),
+              firstDatePrompt: _firstDatePromptController.text.trim(),
+              musicTastePrompt: _musicTastePromptController.text.trim(),
+              introVideoUrl: _introVideoController.text.trim(),
               profileMusicUrl: _musicUrlController.text.trim(),
               profileMusicTitle: _musicTitleController.text.trim(),
               profileAccentColor: _profileAccentColor,
@@ -270,15 +328,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   // ── Tab 0: Basics ─────────────────────────────────────────────────────────
 
-  Widget _buildBasicsTab(ProfileState s) {
+  Widget _buildPhotosTab(ProfileState s) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Avatar + Cover row
+        Text(
+          'Social profile media',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Lead with visuals first: cover, avatar, and a six-photo gallery.',
+          style: TextStyle(color: Colors.white60, height: 1.4),
+        ),
+        const SizedBox(height: 18),
         Stack(
           clipBehavior: Clip.none,
           children: [
-            // Cover photo
             GestureDetector(
               onTap: _isUploadingCover
                   ? null
@@ -289,10 +358,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                       setLoading: (v) => setState(() => _isUploadingCover = v),
                     ),
               child: Container(
-                height: 120,
+                height: 180,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1C1F2C),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   image: (_coverPhotoUrl != null && _coverPhotoUrl!.isNotEmpty)
                       ? DecorationImage(
                           image: NetworkImage(_coverPhotoUrl ?? ''),
@@ -304,32 +373,48 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   child: _isUploadingCover
                       ? const CircularProgressIndicator()
                       : (_coverPhotoUrl == null || (_coverPhotoUrl ?? '').isEmpty)
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.add_photo_alternate_outlined,
-                              color: Colors.white38,
-                              size: 32,
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Add cover photo',
-                              style: TextStyle(
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(
+                                Icons.add_photo_alternate_outlined,
                                 color: Colors.white38,
-                                fontSize: 12,
+                                size: 36,
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Add cover photo',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Align(
+                            alignment: Alignment.bottomLeft,
+                            child: Container(
+                              margin: const EdgeInsets.all(14),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Text(
+                                'Tap to replace cover',
+                                style: TextStyle(color: Colors.white70),
                               ),
                             ),
-                          ],
-                        )
-                      : const SizedBox.shrink(),
+                          ),
                 ),
               ),
             ),
-            // Avatar overlapping cover
             Positioned(
-              bottom: -28,
-              left: 16,
+              bottom: -34,
+              left: 18,
               child: GestureDetector(
                 onTap: _isUploadingAvatar
                     ? null
@@ -344,7 +429,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   alignment: Alignment.bottomRight,
                   children: [
                     CircleAvatar(
-                      radius: 36,
+                      radius: 42,
                       backgroundColor: const Color(0xFF23253A),
                       child: _isUploadingAvatar
                           ? const SizedBox(
@@ -356,8 +441,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                           ? ClipOval(
                               child: CachedNetworkImage(
                                 imageUrl: _avatarUrl ?? '',
-                                width: 72,
-                                height: 72,
+                                width: 84,
+                                height: 84,
                                 fit: BoxFit.cover,
                                 errorWidget: (___, __, _) =>
                                     const Icon(Icons.person, size: 32),
@@ -370,11 +455,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                             ),
                     ),
                     CircleAvatar(
-                      radius: 12,
+                      radius: 14,
                       backgroundColor: VelvetNoir.primary,
                       child: const Icon(
                         Icons.camera_alt,
-                        size: 12,
+                        size: 14,
                         color: Colors.white,
                       ),
                     ),
@@ -384,29 +469,80 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             ),
           ],
         ),
-        const SizedBox(height: 40),
-        _field(
-          _nameController,
-          'Display name',
-          Icons.person_outline,
-          next: true,
+        const SizedBox(height: 52),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Gallery',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              '${_galleryUrls.length}/$_maxGalleryPhotos',
+              style: const TextStyle(color: Colors.white54),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'This is the part your profile is missing today. Add a gallery so the page feels like a real social profile instead of a settings form.',
+          style: TextStyle(color: Colors.white60, height: 1.4),
         ),
         const SizedBox(height: 14),
-        _field(_emailController, 'Email', Icons.email_outlined, next: true),
-        const SizedBox(height: 14),
-        TextFormField(
-          controller: _passwordController,
-          obscureText: !_showPassword,
-          decoration: InputDecoration(
-            labelText: 'New password (leave blank to keep)',
-            prefixIcon: const Icon(Icons.lock_outline),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _showPassword ? Icons.visibility : Icons.visibility_off,
-              ),
-              onPressed: () => setState(() => _showPassword = !_showPassword),
-            ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _maxGalleryPhotos,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.82,
           ),
+          itemBuilder: (context, index) {
+            final hasPhoto = index < _galleryUrls.length;
+            return _GallerySlot(
+              imageUrl: hasPhoto ? _galleryUrls[index] : null,
+              loading: _isUploadingGallery && !hasPhoto,
+              onTap: hasPhoto ? null : _addGalleryPhoto,
+              onRemove: hasPhoto
+                  ? () => setState(() => _galleryUrls.removeAt(index))
+                  : null,
+            );
+          },
+        ),
+        const SizedBox(height: 18),
+        OutlinedButton.icon(
+          onPressed: (_isUploadingGallery || _galleryUrls.length >= _maxGalleryPhotos)
+              ? null
+              : _addGalleryPhoto,
+          icon: const Icon(Icons.add_photo_alternate_outlined),
+          label: const Text('Add gallery photo'),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          'Intro video',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _introVideoController,
+          decoration: const InputDecoration(
+            labelText: 'Intro video URL',
+            prefixIcon: Icon(Icons.play_circle_outline_rounded),
+            hintText: 'https://...',
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Use a direct intro link so visitors get movement and personality on first view.',
+          style: TextStyle(color: Colors.white54, fontSize: 11),
         ),
         const SizedBox(height: 14),
         SwitchListTile.adaptive(
@@ -428,52 +564,119 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     );
   }
 
-  // ── Tab 1: About ──────────────────────────────────────────────────────────
-
-  Widget _buildAboutTab() {
+  Widget _buildIdentityTab(ProfileState s) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Short bio',
-          style: TextStyle(color: Colors.white70, fontSize: 13),
+        _field(
+          _nameController,
+          'Display name',
+          Icons.person_outline,
+          next: true,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 14),
         TextFormField(
           controller: _bioController,
           maxLines: 3,
           maxLength: 160,
           decoration: const InputDecoration(
-            hintText: 'One sentence that describes you…',
+            labelText: 'Bio / status',
+            hintText: 'The one-liner people see first',
             prefixIcon: Icon(Icons.short_text),
           ),
         ),
         const SizedBox(height: 14),
-        const Text(
-          'About me',
-          style: TextStyle(color: Colors.white70, fontSize: 13),
-        ),
-        const SizedBox(height: 6),
         TextFormField(
           controller: _aboutMeController,
-          maxLines: 6,
+          maxLines: 5,
           maxLength: 500,
-          decoration: const InputDecoration(
-            hintText: 'Tell people more about yourself…',
-            prefixIcon: Icon(Icons.article_outlined),
+          decoration: InputDecoration(
+            labelText: 'About me',
+            hintText: 'Give your profile some personality beyond a single line.',
+            prefixIcon: const Icon(Icons.article_outlined),
             alignLabelWithHint: true,
           ),
+        ),
+        const SizedBox(height: 14),
+        _field(_locationController, 'Location', Icons.place_outlined, next: true),
+        const SizedBox(height: 14),
+        _field(_genderController, 'Gender', Icons.person_pin_outlined, next: true),
+        const SizedBox(height: 14),
+        _field(
+          _relationshipController,
+          'Relationship status',
+          Icons.favorite_border,
+          next: true,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Account contact',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _field(_emailController, 'Email', Icons.email_outlined, next: true),
+        const SizedBox(height: 6),
+        const Text(
+          'Public identity belongs here. Password changes should live in account settings, not inside the social profile builder.',
+          style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
         ),
       ],
     );
   }
 
-  // ── Tab 2: Interests ──────────────────────────────────────────────────────
-
-  Widget _buildInterestsTab() {
+  Widget _buildVibeTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Text(
+          'Prompts that start conversations',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Most social apps feel alive because the profile gives people hooks to respond to. Build those hooks here.',
+          style: TextStyle(color: Colors.white60, height: 1.4),
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: _vibePromptController,
+          maxLines: 3,
+          maxLength: 120,
+          decoration: const InputDecoration(
+            labelText: 'Tonight vibe',
+            hintText: 'What energy are you on right now?',
+            prefixIcon: Icon(Icons.local_fire_department_outlined),
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: _firstDatePromptController,
+          maxLines: 3,
+          maxLength: 120,
+          decoration: const InputDecoration(
+            labelText: 'First date move',
+            hintText: 'What is your ideal first link-up?',
+            prefixIcon: Icon(Icons.date_range_outlined),
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: _musicTastePromptController,
+          maxLines: 3,
+          maxLength: 120,
+          decoration: const InputDecoration(
+            labelText: 'Music in rotation',
+            hintText: 'What are you playing right now?',
+            prefixIcon: Icon(Icons.queue_music_outlined),
+          ),
+        ),
+        const SizedBox(height: 24),
         Row(
           children: [
             Expanded(
@@ -516,8 +719,55 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 )
                 .toList(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
+        const Text(
+          'Profile Music',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _field(
+          _musicTitleController,
+          'Song title',
+          Icons.music_note_outlined,
+          next: true,
+        ),
+        const SizedBox(height: 14),
+        _field(_musicUrlController, 'Direct MP3 URL', Icons.link, next: true),
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text(
+            'Enter a direct https link to an MP3 file.',
+            style: TextStyle(color: Colors.white54, fontSize: 11),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Accent Color',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _colorOption(null, 'Default'),
+            _colorOption('#D4A853', 'Gold'),
+            _colorOption('#FF6EB4', 'Pink'),
+            _colorOption('#4A90E2', 'Blue'),
+            _colorOption('#50E3C2', 'Teal'),
+            _colorOption('#B8E986', 'Green'),
+          ],
+        ),
+        const SizedBox(height: 20),
         const Text(
           'Suggestions',
           style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -570,12 +820,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileControllerProvider);
+    _hydrateFromState(state);
 
     return AppPageScaffold(
       backgroundColor: VelvetNoir.surface,
       appBar: AppBar(
         backgroundColor: VelvetNoir.surface,
-        title: const Text('Edit Profile'),
+        title: const Text('Edit Social Profile'),
         actions: [
           TextButton(
             onPressed: state.isLoading ? null : _saveProfile,
@@ -601,10 +852,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           unselectedLabelColor: Colors.white54,
           isScrollable: true,
           tabs: const [
-            Tab(text: 'Basics'),
-            Tab(text: 'About'),
-            Tab(text: 'Personalization'),
-            Tab(text: 'Interests'),
+            Tab(text: 'Photos & Media'),
+            Tab(text: 'Identity'),
+            Tab(text: 'Vibe & Prompts'),
           ],
         ),
       ),
@@ -628,69 +878,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildBasicsTab(state),
-                _buildAboutTab(),
-                _buildPersonalizationTab(),
-                _buildInterestsTab(),
+                _buildPhotosTab(state),
+                _buildIdentityTab(state),
+                _buildVibeTab(),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPersonalizationTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text(
-          'Profile Music',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _field(
-          _musicTitleController,
-          'Song Title',
-          Icons.music_note_outlined,
-          next: true,
-        ),
-        const SizedBox(height: 14),
-        _field(_musicUrlController, 'Direct MP3 URL', Icons.link, next: true),
-        const Padding(
-          padding: EdgeInsets.only(top: 6),
-          child: Text(
-            'Enter a direct https link to an MP3 file.',
-            style: TextStyle(color: Colors.white54, fontSize: 11),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Accent Color',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _colorOption(null, 'Default'),
-            _colorOption('#D4A853', 'Gold'),
-            _colorOption('#FF6EB4', 'Pink'),
-            _colorOption('#4A90E2', 'Blue'),
-            _colorOption('#50E3C2', 'Teal'),
-            _colorOption('#B8E986', 'Green'),
-          ],
-        ),
-      ],
     );
   }
 
@@ -731,6 +926,98 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GallerySlot extends StatelessWidget {
+  const _GallerySlot({
+    required this.imageUrl,
+    required this.loading,
+    this.onTap,
+    this.onRemove,
+  });
+
+  final String? imageUrl;
+  final bool loading;
+  final VoidCallback? onTap;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = (imageUrl ?? '').isNotEmpty;
+    return Material(
+      color: const Color(0xFF1E1E24),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (hasImage)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl!,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white38,
+                    ),
+                  ),
+                )
+              else
+                Center(
+                  child: loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_a_photo_outlined,
+                              color: Colors.white54,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Add photo',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              if (hasImage && onRemove != null)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

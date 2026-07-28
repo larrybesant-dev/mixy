@@ -465,18 +465,42 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
           FutureBuilder<Map<String, dynamic>>(
             future: _profileFuture,
             builder: (context, snapshot) {
+              final viewerId = FirebaseAuth.instance.currentUser?.uid;
+              final isOwnProfile = viewerId == widget.userId;
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const AppLoadingView(label: 'Loading profile');
               }
               final payload = snapshot.data;
               if (payload == null) {
-                return const AppEmptyView(title: 'User not found');
+                return AppEmptyView(
+                  title: isOwnProfile ? 'Complete your profile' : 'User not found',
+                  message: isOwnProfile
+                      ? 'Your profile record has not been created yet. Open profile setup to finish your account.'
+                      : null,
+                  action: isOwnProfile
+                      ? FilledButton(
+                          onPressed: () => context.push('/profile/edit'),
+                          child: const Text('Open profile setup'),
+                        )
+                      : null,
+                );
               }
 
               final userSnapshot =
                   payload['user'] as DocumentSnapshot<Map<String, dynamic>>;
               if (!userSnapshot.exists) {
-                return const AppEmptyView(title: 'User not found');
+                return AppEmptyView(
+                  title: isOwnProfile ? 'Complete your profile' : 'User not found',
+                  message: isOwnProfile
+                      ? 'Your profile is missing required data. Open profile setup to finish it now.'
+                      : null,
+                  action: isOwnProfile
+                      ? FilledButton(
+                          onPressed: () => context.push('/profile/edit'),
+                          child: const Text('Open profile setup'),
+                        )
+                      : null,
+                );
               }
 
               final data = userSnapshot.data() ?? const <String, dynamic>{};
@@ -489,8 +513,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 payload['isFollowing'],
                 fallback: false,
               );
-              final viewerId = FirebaseAuth.instance.currentUser?.uid;
-              final isOwnProfile = viewerId == widget.userId;
               final presence = isOwnProfile
                   ? ref.watch(currentUserPresenceProvider).valueOrNull
                   : ref

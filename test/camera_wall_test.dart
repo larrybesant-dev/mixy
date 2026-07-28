@@ -4,11 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mixvy/features/room/widgets/camera_wall.dart';
 import 'package:mixvy/services/rtc_room_service.dart';
+import 'package:mixvy/models/user_model.dart';
+import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'test_helpers.dart';
 
 class MockRtcRoomService extends Mock implements RtcRoomService {}
 
 void main() {
+  final testUser = UserModel(
+    id: 'camera-test-user',
+    email: 'camera@test.mixvy.com',
+    username: 'Camera Tester',
+    createdAt: DateTime(2026, 1, 1),
+  );
+
   group('CameraWall Widget Tests', () {
     setUpAll(() async {
       await testSetup();
@@ -16,6 +25,9 @@ void main() {
     testWidgets('renders local tile when showLocalTile is true', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            userProvider.overrideWithValue(testUser),
+          ],
           child: MaterialApp(
             home: Scaffold(
               body: CameraWall(
@@ -42,6 +54,9 @@ void main() {
       // Test zero width/height
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            userProvider.overrideWithValue(testUser),
+          ],
           child: MaterialApp(
             home: Scaffold(
               body: SizedBox(
@@ -76,6 +91,9 @@ void main() {
     testWidgets('calculates grid correctly for many users', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            userProvider.overrideWithValue(testUser),
+          ],
           child: MaterialApp(
             home: Scaffold(
               body: SizedBox(
