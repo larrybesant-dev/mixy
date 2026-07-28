@@ -62,6 +62,18 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
   bool _isSaving = false;
   bool _hydrated = false;
 
+  String? get _resolvedUserId {
+    final widgetUserId = widget.userId.trim();
+    if (widgetUserId.isNotEmpty) {
+      return widgetUserId;
+    }
+    final authUserId = FirebaseAuth.instance.currentUser?.uid.trim();
+    if (authUserId == null || authUserId.isEmpty) {
+      return null;
+    }
+    return authUserId;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -69,8 +81,20 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
     _hydrateFromState(current);
   }
 
+  bool _hasHydratableData(ProfileState state) {
+    return (widget.initialUsername ?? '').trim().isNotEmpty ||
+        (state.username ?? '').trim().isNotEmpty ||
+        state.age > 0 ||
+        (state.location ?? '').trim().isNotEmpty ||
+        (state.bio ?? '').trim().isNotEmpty ||
+        (state.avatarUrl ?? '').trim().isNotEmpty ||
+        (state.coverPhotoUrl ?? '').trim().isNotEmpty ||
+        state.galleryUrls.isNotEmpty ||
+        (state.relationshipStatus ?? '').trim().isNotEmpty;
+  }
+
   void _hydrateFromState(ProfileState state) {
-    if (_hydrated) return;
+    if (_hydrated || !_hasHydratableData(state)) return;
     _hydrated = true;
 
     _displayNameController.text = (widget.initialUsername ?? state.username ?? '').trim();
@@ -134,9 +158,7 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
       return;
     }
 
-    final uid = widget.userId.isNotEmpty
-        ? widget.userId
-        : FirebaseAuth.instance.currentUser?.uid;
+    final uid = _resolvedUserId;
     if (uid == null || uid.isEmpty) return;
 
     setLoading(true);
@@ -169,16 +191,20 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
   }
 
   Future<void> _uploadAvatar() async {
+    final uid = _resolvedUserId;
+    if (uid == null) return;
     await _pickAndUploadImage(
-      storagePath: 'users/${widget.userId}/profile/avatar',
+      storagePath: 'users/$uid/profile/avatar',
       onSuccess: (url) => setState(() => _avatarUrl = url),
       setLoading: (loading) => setState(() => _isUploadingAvatar = loading),
     );
   }
 
   Future<void> _uploadCover() async {
+    final uid = _resolvedUserId;
+    if (uid == null) return;
     await _pickAndUploadImage(
-      storagePath: 'users/${widget.userId}/profile/cover',
+      storagePath: 'users/$uid/profile/cover',
       onSuccess: (url) => setState(() => _coverPhotoUrl = url),
       setLoading: (loading) => setState(() => _isUploadingCover = loading),
     );
@@ -192,9 +218,12 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
       return;
     }
 
+    final uid = _resolvedUserId;
+    if (uid == null) return;
+
     await _pickAndUploadImage(
       storagePath:
-          'users/${widget.userId}/profile/gallery/${DateTime.now().millisecondsSinceEpoch}',
+          'users/$uid/profile/gallery/${DateTime.now().millisecondsSinceEpoch}',
       onSuccess: (url) => setState(() => _galleryUrls.add(url)),
       setLoading: (loading) => setState(() => _isUploadingGallery = loading),
     );
@@ -213,10 +242,14 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
 
     setState(() => _isSaving = true);
     try {
+      final userId = _resolvedUserId;
+      if (userId == null) {
+        throw StateError('User ID is required. Please sign in again.');
+      }
       final age = int.parse(_ageController.text.trim());
       final currentState = ref.read(profileControllerProvider);
       final updatedProfile = currentState.copyWith(
-        userId: widget.userId,
+        userId: userId,
         username: _displayNameController.text.trim(),
         age: age,
         location: _locationController.text.trim(),
@@ -451,9 +484,10 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
   @override
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileControllerProvider);
+    _hydrateFromState(profileState);
     final completionPct = ProfileCompletion.completeness(
       profileState.copyWith(
-        userId: widget.userId,
+        userId: _resolvedUserId ?? widget.userId,
         username: _displayNameController.text.trim().isNotEmpty
             ? _displayNameController.text.trim()
             : profileState.username,
