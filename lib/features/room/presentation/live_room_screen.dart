@@ -28,6 +28,7 @@ import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
 import '../widgets/mic_queue_panel.dart';
 import '../widgets/user_list_panel.dart';
+import '../widgets/room_text_utils.dart';
 import '../widgets/room_rank_diamond_badge_row.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../widgets/floating_gift_animation.dart';
@@ -315,6 +316,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
         sessionNotifier.updateDisplayName(currentUser.uid, resolvedName);
         sessionNotifier.setJoined(true);
+        await ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).joinAsAudience();
         return;
       }
 
@@ -461,14 +463,59 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     }
   }
 
-  void _toggleVideo(bool enabled) {
-    ref.read(roomSessionProvider(widget.roomId).notifier).setVideoEnabled(enabled);
-    ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleVideo(enabled);
+  Future<void> _syncParticipantMediaFlags({bool? camOn, bool? micOn}) async {
+    final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
+    if (userId == null || userId.isEmpty) return;
+
+    final payload = <String, Object?>{
+      'lastActiveAt': FieldValue.serverTimestamp(),
+      if (camOn != null) 'camOn': camOn,
+      if (micOn != null) 'micOn': micOn,
+    };
+
+    await ref
+        .read(firestoreProvider)
+        .collection('rooms')
+        .doc(widget.roomId)
+        .collection('participants')
+        .doc(userId)
+        .set(payload, SetOptions(merge: true));
   }
 
-  void _toggleAudio(bool enabled) {
-    ref.read(roomSessionProvider(widget.roomId).notifier).setAudioEnabled(enabled);
-    ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleAudio(enabled);
+  Future<void> _toggleVideo(bool enabled) async {
+    final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+    final previous = ref.read(roomSessionProvider(widget.roomId)).isVideoEnabled;
+    sessionNotifier.setVideoEnabled(enabled);
+
+    try {
+      await ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleVideo(enabled);
+      await _syncParticipantMediaFlags(camOn: enabled);
+    } catch (e) {
+      sessionNotifier.setVideoEnabled(previous);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Camera toggle failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleAudio(bool enabled) async {
+    final sessionNotifier = ref.read(roomSessionProvider(widget.roomId).notifier);
+    final previous = ref.read(roomSessionProvider(widget.roomId)).isAudioEnabled;
+    sessionNotifier.setAudioEnabled(enabled);
+
+    try {
+      await ref.read(activeRoomWebRTCProvider(widget.roomId).notifier).toggleAudio(enabled);
+      await _syncParticipantMediaFlags(micOn: enabled);
+    } catch (e) {
+      sessionNotifier.setAudioEnabled(previous);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Mic toggle failed: $e')),
+        );
+      }
+    }
   }
 
   void _toggleAudioSharing(bool enabled) {
@@ -2131,7 +2178,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                               radius: 12,
                               backgroundColor: VelvetNoir.primary,
                               child: Text(
-                                effectiveSenderName[0].toUpperCase(),
+                                roomAvatarInitials(effectiveSenderName),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,

@@ -175,20 +175,54 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     };
   }
 
+  int _stableUidFromUserId(String userId) {
+    var uid = 0;
+    for (final c in userId.codeUnits) {
+      uid = (uid * 31 + c) & 0x7FFFFFFF;
+    }
+    if (uid == 0) uid = 1;
+    return uid;
+  }
+
+  Future<void> _ensureJoinedChannel() async {
+    if (state?.service == null) return;
+    final service = state!.service!;
+    if (service.isJoinedChannel) {
+      if (state?.isConnected != true) {
+        state = state?.copyWith(isConnected: true);
+      }
+      return;
+    }
+
+    final uid = _stableUidFromUserId(state!.userId);
+    await service.joinRoom(
+      '',
+      roomId,
+      uid,
+      publishCameraTrackOnJoin: false,
+      publishMicrophoneTrackOnJoin: false,
+    );
+
+    state = state?.copyWith(
+      isConnected: true,
+      connectionState: service.connectionState,
+      reconnectAttemptCount: service.reconnectAttemptCount,
+      remoteUserUids: service.remoteUids,
+      isLocalVideoCapturing: service.isLocalVideoCapturing,
+      isLocalAudioMuted: service.isLocalAudioMuted,
+    );
+  }
+
   Future<void> joinAsAudience() async {
     if (state?.service == null) return;
 
     try {
+      await _ensureJoinedChannel();
       final service = state!.service!;
-
-      // Enable video/audio
-      await service.enableVideo(true, publishMicrophoneTrack: true);
-      await service.mute(false);
-
       state = state?.copyWith(
         isConnected: true,
         isLocalVideoCapturing: service.isLocalVideoCapturing,
-        isLocalAudioMuted: false,
+        isLocalAudioMuted: service.isLocalAudioMuted,
       );
     } catch (e) {
       state = state?.copyWith(error: 'Failed to join: $e');
@@ -199,10 +233,20 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     if (state?.service == null) return;
 
     try {
-      await state!.service!.enableVideo(enabled);
-      state = state?.copyWith(isLocalVideoCapturing: enabled);
+      await _ensureJoinedChannel();
+      final service = state!.service!;
+      await service.enableVideo(
+        enabled,
+        publishMicrophoneTrack: !service.isLocalAudioMuted,
+      );
+      state = state?.copyWith(
+        isConnected: true,
+        isLocalVideoCapturing: service.isLocalVideoCapturing,
+        connectionState: service.connectionState,
+      );
     } catch (e) {
       state = state?.copyWith(error: 'Failed to toggle video: $e');
+      rethrow;
     }
   }
 
@@ -210,10 +254,17 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     if (state?.service == null) return;
 
     try {
-      await state!.service!.mute(!enabled);
-      state = state?.copyWith(isLocalAudioMuted: !enabled);
+      await _ensureJoinedChannel();
+      final service = state!.service!;
+      await service.mute(!enabled);
+      state = state?.copyWith(
+        isConnected: true,
+        isLocalAudioMuted: service.isLocalAudioMuted,
+        connectionState: service.connectionState,
+      );
     } catch (e) {
       state = state?.copyWith(error: 'Failed to toggle audio: $e');
+      rethrow;
     }
   }
 
