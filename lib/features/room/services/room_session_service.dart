@@ -60,7 +60,9 @@ class RoomSessionService {
        _roomSessionGateway = roomSessionGateway,
        _presenceController = presenceController;
 
-  static const Duration participantSyncInterval = Duration(seconds: 30);
+  // Keep sync interval below the controller heartbeat period (20s) so each
+  // heartbeat can refresh lastActiveAt instead of being throttled out.
+  static const Duration participantSyncInterval = Duration(seconds: 15);
 
   final FirebaseFirestore _firestore;
   final RoomSessionGateway _roomSessionGateway;

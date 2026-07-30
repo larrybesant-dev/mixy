@@ -231,7 +231,9 @@ final currentParticipantWithCacheFallbackProvider = Provider.autoDispose
       return streamValue.valueOrNull;
     });
 
-const Duration _kParticipantFreshnessWindow = Duration(seconds: 30);
+// Must exceed heartbeat jitter + reconnect pauses to avoid ghost "No users"
+// flashes while valid participants are still active.
+const Duration _kParticipantFreshnessWindow = Duration(seconds: 90);
 
 bool _isParticipantFresh(RoomParticipantModel participant, {DateTime? now}) {
   // If the user drops connection, they should be evicted even if they are host/stage/camOn.

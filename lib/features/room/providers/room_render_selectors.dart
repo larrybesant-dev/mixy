@@ -105,7 +105,7 @@ final roomCoachMetricsProvider = Provider.autoDispose
         (p) =>
             (p.role == 'host' || p.role == 'cohost') &&
             (p.micOn ||
-                DateTime.now().difference(p.lastActiveAt).inSeconds <= 25),
+                DateTime.now().difference(p.lastActiveAt).inSeconds <= 70),
       );
 
       final onMicCount = participants
