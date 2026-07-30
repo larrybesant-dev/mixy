@@ -89,6 +89,16 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
+      - name: Validate auth test secrets
+        env:
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+        run: |
+          if [ -z "$TEST_EMAIL" ] || [ -z "$TEST_PASSWORD" ]; then
+            echo "Missing required secrets: TEST_EMAIL and/or TEST_PASSWORD"
+            exit 1
+          fi
+
       - name: Run E2E tests - ${{ matrix.browser }}
         run: |
           npx playwright test \
@@ -98,6 +108,7 @@ jobs:
         env:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          AUTH_REQUIRED: '1'
 
       - name: Upload test report
         if: always()
@@ -148,6 +159,16 @@ jobs:
       - name: Install Playwright browsers (chromium)
         run: npx playwright install --with-deps chromium
 
+      - name: Validate auth test secrets
+        env:
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+        run: |
+          if [ -z "$TEST_EMAIL" ] || [ -z "$TEST_PASSWORD" ]; then
+            echo "Missing required secrets: TEST_EMAIL and/or TEST_PASSWORD"
+            exit 1
+          fi
+
       - name: Run performance/accessibility suite (advisory)
         run: |
           npx playwright test e2e/05-performance-accessibility.spec.ts \
@@ -155,6 +176,7 @@ jobs:
         env:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          AUTH_REQUIRED: '1'
 
       - name: Upload advisory report
         if: always()
@@ -235,6 +257,7 @@ jobs:
   notify-on-failure:
     name: Notify on Test Failure
     runs-on: ubuntu-latest
+    continue-on-error: true
     if: failure() && (github.event_name == 'push' || github.event_name == 'schedule')
     needs: publish-results
     # Overrides the workflow-level `contents: read` default: this job files a
@@ -246,14 +269,19 @@ jobs:
     steps:
       - name: Send failure notification
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: 1,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚨 **E2E Tests Failed** on branch \`${{ github.ref_name }}\`\n\n[View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
-            });
+            try {
+              await github.rest.issues.createComment({
+                issue_number: 1,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `🚨 **E2E Tests Failed** on branch \`${{ github.ref_name }}\`\n\n[View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+              });
+            } catch (error) {
+              core.warning(`Failed to post failure notification comment: ${error.message}`);
+            }
 
   deploy:
     name: Deploy to Firebase Hosting

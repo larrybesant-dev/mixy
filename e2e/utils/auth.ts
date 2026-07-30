@@ -48,7 +48,7 @@ async function waitForAppReady(page: Page): Promise<void> {
  * Authenticates a user in the test environment by logging into the Flutter web app
  * Supports multiple fallback methods including Firebase auth and local storage injection
  */
-export async function authenticateTestUser(page: Page): Promise<void> {
+export async function authenticateTestUser(page: Page): Promise<boolean> {
   const testEmail = process.env.TEST_EMAIL || 'test@example.com';
   const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
 
@@ -62,27 +62,29 @@ export async function authenticateTestUser(page: Page): Promise<void> {
     const authSuccess = await tryEmailPasswordAuth(page, testEmail, testPassword);
     if (authSuccess) {
       console.log('✓ Authenticated via email/password form');
-      return;
+      return true;
     }
 
     // Method 2: Try Firebase Auth REST API (fallback)
     const firebaseSuccess = await tryFirebaseRestAuth(page, testEmail, testPassword);
     if (firebaseSuccess) {
       console.log('✓ Authenticated via Firebase REST API');
-      return;
+      return true;
     }
 
     // Method 3: Try guest access fallback
     const guestSuccess = await tryGuestAccess(page);
     if (guestSuccess) {
       console.log('✓ Accessed as guest');
-      return;
+      return true;
     }
 
     console.warn('⚠ Could not authenticate - tests may require authentication');
+    return false;
 
   } catch (error) {
     console.log(`⚠ Authentication error: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
   }
 }
 

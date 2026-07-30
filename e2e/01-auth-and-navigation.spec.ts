@@ -1,12 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { authenticateTestUser } from './utils/auth';
 
 test.describe('MixVy - Auth Page Smoke Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    // Authenticate before running tests
-    await authenticateTestUser(page);
-  });
-
   test('should load auth page', async ({ page }) => {
     // Simple smoke test - page should load without crashing
     await page.goto('/auth', { waitUntil: 'domcontentloaded' });
