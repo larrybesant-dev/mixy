@@ -52,17 +52,28 @@ test.describe('MixVy Stripe Payment Integration', () => {
       
       if (await coinPackage.isVisible().catch(() => false)) {
         await coinPackage.click();
-        await page.waitForTimeout(1000); // Wait for Stripe sheet to load
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => undefined);
 
-        // Verify payment sheet appears
-        const stripeFrame = page.frameLocator('[src*="stripe"]').first();
-        const paymentSheet = page.locator('text=Card number, text=Payment, [class*="payment"]').first();
+        // Firefox can attach Stripe UI a few seconds later; poll for either an iframe
+        // or visible payment-sheet text instead of relying on a fixed sleep.
+        await expect
+          .poll(
+            async () => {
+              const stripeIframe = page.locator('iframe[src*="stripe" i], iframe[name*="stripe" i]').first();
+              const paymentSheet = page
+                .locator('text=Card number, text=Payment, text=Pay, [class*="payment" i], [class*="stripe" i]')
+                .first();
 
-        const sheetVisible =
-          (await stripeFrame.isVisible().catch(() => false)) ||
-          (await paymentSheet.isVisible().catch(() => false));
-
-        expect(sheetVisible).toBeTruthy();
+              const iframeVisible = await stripeIframe.isVisible().catch(() => false);
+              const paymentVisible = await paymentSheet.isVisible().catch(() => false);
+              return iframeVisible || paymentVisible;
+            },
+            {
+              timeout: 15000,
+              message: 'Expected Stripe payment UI to become visible after selecting a coin package',
+            }
+          )
+          .toBeTruthy();
       }
     }
   });
