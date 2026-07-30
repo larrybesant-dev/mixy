@@ -115,7 +115,18 @@ Future<void> main() async {
   //   incident where App Check activation blocked real users from rooms.
   try {
     const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
-    if (kIsWeb && recaptchaSiteKey.isEmpty) {
+    const disableWebAppCheck = String.fromEnvironment(
+      'DISABLE_WEB_APPCHECK',
+      defaultValue: 'false',
+    );
+    final webAppCheckDisabled =
+        disableWebAppCheck.toLowerCase().trim() == 'true';
+
+    if (kIsWeb && webAppCheckDisabled) {
+      debugPrint(
+        '[Firebase] App Check disabled on web via DISABLE_WEB_APPCHECK=true',
+      );
+    } else if (kIsWeb && recaptchaSiteKey.isEmpty) {
       debugPrint(
         '[Firebase] App Check skipped on web: no RECAPTCHA_SITE_KEY provided',
       );
@@ -136,6 +147,18 @@ Future<void> main() async {
   } catch (e) {
     // Never let App Check activation failures block startup or requests.
     debugPrint('[Firebase] App Check activation failed (non-fatal): $e');
+    Logger.warning(
+      'App Check activation failed (non-fatal)',
+      error: e,
+    );
+
+    if (kIsWeb) {
+      debugPrint(
+        '[Firebase] Web App Check troubleshooting: verify RECAPTCHA_SITE_KEY, '
+        'authorized domain, and App Check web app registration. '
+        'Use --dart-define=DISABLE_WEB_APPCHECK=true for temporary local bypass.',
+      );
+    }
   }
 
   FlutterError.onError = (details) {

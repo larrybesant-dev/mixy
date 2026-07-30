@@ -140,6 +140,25 @@ class _CameraWallState extends ConsumerState<CameraWall> {
     }
   }
 
+  double _finiteOr(
+    double value, {
+    required double fallback,
+    double? min,
+    double? max,
+  }) {
+    var v = value;
+    if (!v.isFinite || v.isNaN) {
+      v = fallback;
+    }
+    if (min != null && v < min) {
+      v = min;
+    }
+    if (max != null && v > max) {
+      v = max;
+    }
+    return v;
+  }
+
   @override
   Widget build(BuildContext context) {
     final npSurfaceLow = VelvetNoir.surfaceLow;
@@ -149,7 +168,11 @@ class _CameraWallState extends ConsumerState<CameraWall> {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Strict clamps on constraints to avoid infinite or zero/negative dimensions throwing rendering exceptions
-        final double safeMaxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 600.0;
+        final double safeMaxWidth = _finiteOr(
+          constraints.maxWidth,
+          fallback: 600.0,
+          min: 160.0,
+        );
         final isDesktop = safeMaxWidth >= 600;
 
         final mainGridRemoteLimit = isDesktop
@@ -271,12 +294,28 @@ class _CameraWallState extends ConsumerState<CameraWall> {
                   : estimatedTileCount <= 4
                   ? 2
                   : 3)).clamp(1, 10);
-        final double estimatedWidth = (safeMaxWidth - 20).clamp(10.0, double.infinity);
+        final double estimatedWidth = _finiteOr(
+          safeMaxWidth - 20,
+          fallback: 320.0,
+          min: 10.0,
+        );
         final double effectiveTileW = (estimatedCrossAxisCount > 0)
-            ? (estimatedWidth / estimatedCrossAxisCount - (spacing * (estimatedCrossAxisCount - 1) / estimatedCrossAxisCount)).clamp(40.0, 1200.0)
+            ? _finiteOr(
+                estimatedWidth / estimatedCrossAxisCount -
+                    (spacing * (estimatedCrossAxisCount - 1) /
+                        estimatedCrossAxisCount),
+                fallback: 120.0,
+                min: 40.0,
+                max: 1200.0,
+              )
             : 120.0;
         final double tileHeight = (effectiveTileW.isFinite && effectiveTileW > 0)
-          ? (effectiveTileW * 0.62 + headerH).clamp(92.0, maxTileH)
+          ? _finiteOr(
+              effectiveTileW * 0.62 + headerH,
+              fallback: 120.0,
+              min: 92.0,
+              max: maxTileH,
+            )
             : 120.0;
 
         final mainGridTiles = <Widget>[
@@ -465,21 +504,36 @@ class _CameraWallState extends ConsumerState<CameraWall> {
                   LayoutBuilder(
                     builder: (context, lbConstraints) {
                       final sideW = overflowTiles.isNotEmpty ? 218.0 : 0.0;
-                      final gridW = (lbConstraints.maxWidth - sideW).clamp(
-                        80.0,
-                        double.infinity,
+                      final gridW = _finiteOr(
+                        lbConstraints.maxWidth - sideW,
+                        fallback: 320.0,
+                        min: 80.0,
                       );
                       final double desktopEffectiveTileW = (crossAxisCount > 0)
-                          ? (tileCount <= 1
-                              ? (gridW / crossAxisCount).clamp(80.0, 800.0)
-                              : (gridW - spacing * (crossAxisCount - 1)) /
-                                    crossAxisCount)
+                          ? _finiteOr(
+                              tileCount <= 1
+                                  ? (gridW / crossAxisCount)
+                                  : (gridW - spacing * (crossAxisCount - 1)) /
+                                        crossAxisCount,
+                              fallback: 160.0,
+                              min: 80.0,
+                              max: 800.0,
+                            )
                           : 80.0;
                       final desktopTileHeight = (desktopEffectiveTileW.isFinite && desktopEffectiveTileW > 0)
-                          ? (desktopEffectiveTileW * 0.62 + headerH).clamp(92.0, maxTileH)
+                          ? _finiteOr(
+                              desktopEffectiveTileW * 0.62 + headerH,
+                              fallback: 120.0,
+                              min: 92.0,
+                              max: maxTileH,
+                            )
                           : 120.0;
                       final mainGridHeight =
-                          (rows * (desktopTileHeight + spacing) - spacing).clamp(0.0, double.infinity);
+                          _finiteOr(
+                            rows * (desktopTileHeight + spacing) - spacing,
+                            fallback: 200.0,
+                            min: 0.0,
+                          );
 
                       Widget grid = Wrap(
                         spacing: spacing,
@@ -562,9 +616,11 @@ class _CameraWallState extends ConsumerState<CameraWall> {
                                       ),
                                       const SizedBox(height: 8),
                                       SizedBox(
-                                        height: (mainGridHeight - 24).clamp(
-                                          100.0,
-                                          1200.0,
+                                        height: _finiteOr(
+                                          mainGridHeight - 24,
+                                          fallback: 180.0,
+                                          min: 100.0,
+                                          max: 1200.0,
                                         ),
                                         child: GridView.builder(
                                           shrinkWrap: true,
@@ -608,7 +664,11 @@ class _CameraWallState extends ConsumerState<CameraWall> {
                   )
                 else ...[
                   SizedBox(
-                    height: (rows * (mobileH + spacing) - spacing).clamp(0.0, double.infinity),
+                    height: _finiteOr(
+                      rows * (mobileH + spacing) - spacing,
+                      fallback: 160.0,
+                      min: 0.0,
+                    ),
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
