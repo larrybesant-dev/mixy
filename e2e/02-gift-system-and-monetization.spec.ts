@@ -1,5 +1,22 @@
-import { test, expect } from '@playwright/test';
-import { authenticateTestUser } from './utils/auth';
+import { test, expect, type Page } from '@playwright/test';
+import { authenticateTestUser, safeNavigate } from './utils/auth';
+
+async function waitForAppReady(page: Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
+          .count(),
+      {
+        timeout: 30000,
+        message: 'Expected app readiness markers (Flutter semantics/canvas or interactive controls) to be present'
+      }
+    )
+    .toBeGreaterThan(0);
+}
 
 test.describe('MixVy Gift System & Monetization Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,10 +25,10 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
     // Navigate to home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
-    // Wait for navigation to be ready
-    await page.waitForTimeout(1000);
+    // Wait for any interactive element before test actions.
+    await expect(page.locator('button, [role="button"], input').first()).toBeVisible({ timeout: 30000 });
   });
 
   test('should display home screen with navigation cards', async ({ page }) => {
@@ -30,7 +47,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     
     if (await loungeLink.isVisible()) {
       await loungeLink.click();
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Verify we're in a room view
       const roomContent = page.locator('[class*="room"], [class*="live"], text=Send Gift').first();
@@ -43,8 +60,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should display gift button in room', async ({ page }) => {
     // Navigate to room if needed
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     // Flutter web renders on canvas - verify page loaded and is interactive
     const pageContent = await page.content();
@@ -60,8 +76,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should open gift picker sheet when gift button clicked', async ({ page }) => {
     // Open room
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     // Click gift button
     const giftButton = page.locator('button:has-text("Gift"), [class*="gift-button"], [class*="send-gift"]').first();
@@ -80,8 +95,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should display recipient selection options', async ({ page }) => {
     // Open gift picker
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     const giftButton = page.locator('button:has-text("Gift")').first();
     if (await giftButton.isVisible()) {
@@ -102,8 +116,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should display gift items selection', async ({ page }) => {
     // Open gift picker
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     const giftButton = page.locator('button:has-text("Gift")').first();
     if (await giftButton.isVisible()) {
@@ -121,8 +134,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should display free gift allowance counter', async ({ page }) => {
     // Open gift picker
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     const giftButton = page.locator('button:has-text("Gift")').first();
     if (await giftButton.isVisible()) {
@@ -143,8 +155,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should show "Buy Coins Now" button when free gifts exhausted', async ({ page }) => {
     // This test checks that the UI is ready to show the coin purchase prompt
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     // Simulate exhausted allowance by setting a flag
     await page.evaluate(() => {
@@ -173,8 +184,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should open coin purchase modal when "Buy Coins Now" clicked', async ({ page }) => {
     // Look for any coin purchase UI element
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     const buyCoinsButton = page.locator('button:has-text("Buy Coins"), button:has-text("Purchase Coins"), text=Buy Coins').first();
 
@@ -214,8 +224,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should handle gift animation display', async ({ page }) => {
     // After a gift is sent, verify animation container exists
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     // Look for floating gift animation container
     const animationContainer = page.locator('[class*="gift-animation"], [class*="floating"], [class*="overlay"]').first();
@@ -227,8 +236,7 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
 
   test('should display gift ticker widget', async ({ page }) => {
     // Look for gift ticker showing recent gifts
-    await page.goto('/?room=lounge');
-    await page.waitForLoadState('networkidle');
+    await safeNavigate(page, '/?room=lounge');
 
     const ticker = page.locator('text=/sent.*gift|gift.*received/', '[class*="ticker"], [class*="feed"]').first();
 

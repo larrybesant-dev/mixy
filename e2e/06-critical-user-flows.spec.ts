@@ -269,8 +269,7 @@ test.describe('MixVy - Critical User Flows', () => {
 
       // Restore network
       await page.context().setOffline(false);
-      await page.reload();
-      await waitForAppReady(page);
+      await safeGoto(page, '/');
 
       // Should recover
       const recoveredTitle = await page.title();

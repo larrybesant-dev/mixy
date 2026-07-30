@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { authenticateTestUser } from './utils/auth';
+import { authenticateTestUser, safeNavigate } from './utils/auth';
 
 async function waitForAppReady(page: import('@playwright/test').Page) {
   await page.waitForLoadState('domcontentloaded');
@@ -30,8 +30,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
 
   test('should display Stripe payment sheet when coin purchase initiated', async ({ page }) => {
     // Navigate to room with coin purchase UI
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     // Try to open coin purchase modal
     const buyCoinsButton = page.locator('button:has-text("Buy Coins"), button:has-text("Purchase")').first();
@@ -62,8 +61,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
 
   test('should display card input fields in payment sheet', async ({ page }) => {
     // Navigate and attempt to open payment sheet
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     // Look for card-related fields
     const cardFields = page.locator('input[placeholder*="card" i], input[placeholder*="number"], input[aria-label*="card"]');
@@ -77,8 +75,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
 
   test('should show error when invalid card used', async ({ page }) => {
     // This test verifies error handling - not actually submitting payment
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     // Look for any error message container
     const errorContainer = page.locator('[class*="error"], [role="alert"], text=/error|invalid|failed/i').first();
@@ -111,8 +108,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
 
   test('should disable button while payment processing', async ({ page }) => {
     // Verify loading state during payment
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     // Simulate button state
     const button = page.locator('button:has-text("Send"), button[type="submit"]').first();
@@ -168,8 +164,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
       }
     });
 
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     // Try to initiate payment
     const buyButton = page.locator('button:has-text("Buy Coins")').first();
@@ -185,8 +180,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
 
   test('should validate Cloud Function integration', async ({ page }) => {
     // Test that Cloud Functions endpoints exist
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     let createPaymentIntentCalled = false;
     let recordPaymentCalled = false;
@@ -219,8 +213,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
       await route.continue();
     });
 
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
 
     // App should handle the timeout gracefully
     const pageTitle = await page.title();
@@ -249,8 +242,7 @@ test.describe('MixVy Stripe Payment Integration', () => {
       await route.continue();
     });
 
-    await page.goto('/?room=lounge');
-    await waitForAppReady(page);
+    await safeNavigate(page, '/?room=lounge');
     await page.waitForTimeout(500);
 
     // App should send analytics events
