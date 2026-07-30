@@ -1,6 +1,23 @@
 import { test, expect, devices } from '@playwright/test';
 import { authenticateTestUser } from './utils/auth';
 
+async function waitForAppReady(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
+          .count(),
+      {
+        timeout: 30000,
+        message: 'Expected app readiness markers to be present'
+      }
+    )
+    .toBeGreaterThan(0);
+}
+
 test.describe('MixVy Responsive Design & Mobile UX', () => {
   test.describe('Desktop View', () => {
     test.beforeEach(async ({ page }) => {
@@ -8,7 +25,7 @@ test.describe('MixVy Responsive Design & Mobile UX', () => {
       await authenticateTestUser(page);
 
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
     });
 
     test('should display full navigation at desktop breakpoint', async ({ page }) => {
@@ -38,7 +55,7 @@ test.describe('MixVy Responsive Design & Mobile UX', () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
     });
 
     test('should be usable at tablet breakpoint', async ({ page }) => {
@@ -89,7 +106,7 @@ test.describe('MixVy Responsive Design & Mobile UX', () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
     });
 
     test('should display mobile-optimized navigation', async ({ page }) => {
@@ -127,7 +144,7 @@ test.describe('MixVy Responsive Design & Mobile UX', () => {
 
     test('should stack form fields vertically on mobile', async ({ page }) => {
       await page.goto('/auth');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       const inputs = page.locator('input');
       const inputCount = await inputs.count();
@@ -242,7 +259,7 @@ test.describe('MixVy Responsive Design & Mobile UX', () => {
     test('should handle very small viewport', async ({ page }) => {
       await page.setViewportSize({ width: 280, height: 600 });
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Page should still be functional
       const buttons = page.locator('button');

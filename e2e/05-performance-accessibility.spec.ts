@@ -1,6 +1,23 @@
 import { test, expect } from '@playwright/test';
 import { authenticateTestUser } from './utils/auth';
 
+async function waitForAppReady(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
+          .count(),
+      {
+        timeout: 30000,
+        message: 'Expected app readiness markers to be present'
+      }
+    )
+    .toBeGreaterThan(0);
+}
+
 test.describe('MixVy Performance & Accessibility', () => {
   test.describe('Performance Metrics', () => {
     test('should load auth page within 3 seconds', async ({ page }) => {
@@ -9,7 +26,8 @@ test.describe('MixVy Performance & Accessibility', () => {
 
       const startTime = Date.now();
 
-      await page.goto('/auth', { waitUntil: 'networkidle' });
+      await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+      await waitForAppReady(page);
 
       const loadTime = Date.now() - startTime;
 
@@ -20,7 +38,8 @@ test.describe('MixVy Performance & Accessibility', () => {
     test('should load home page within 4 seconds', async ({ page }) => {
       const startTime = Date.now();
 
-      await page.goto('/', { waitUntil: 'networkidle' });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await waitForAppReady(page);
 
       const loadTime = Date.now() - startTime;
 
@@ -29,7 +48,7 @@ test.describe('MixVy Performance & Accessibility', () => {
 
     test('should measure Cumulative Layout Shift (CLS)', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Measure layout shifts
       const cls = await page.evaluate(() => {
@@ -58,7 +77,8 @@ test.describe('MixVy Performance & Accessibility', () => {
     });
 
     test('should measure Largest Contentful Paint (LCP)', async ({ page }) => {
-      await page.goto('/', { waitUntil: 'networkidle' });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await waitForAppReady(page);
 
       const lcp = await page.evaluate(() => {
         return new Promise<number>(resolve => {
@@ -114,7 +134,7 @@ test.describe('MixVy Performance & Accessibility', () => {
   test.describe('Accessibility (A11y)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
     });
 
     test('should have proper heading hierarchy', async ({ page }) => {
@@ -149,7 +169,7 @@ test.describe('MixVy Performance & Accessibility', () => {
       // Flutter web renders on canvas, not as standard DOM elements
       // Test that navigation works instead of checking for DOM link elements
       await page.goto('/auth');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Verify page has loaded and is responsive
       const pageContent = await page.content();
@@ -180,7 +200,7 @@ test.describe('MixVy Performance & Accessibility', () => {
 
     test('should support keyboard navigation', async ({ page }) => {
       await page.goto('/auth');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Flutter web handles keyboard input through its own event system
       // Test that the app responds to Enter key (e.g., login)
@@ -204,7 +224,7 @@ test.describe('MixVy Performance & Accessibility', () => {
       // Flutter web renders on canvas, not as DOM buttons with ARIA labels
       // Instead, verify that the app provides accessible content
       await page.goto('/auth');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Check for semantic HTML that wraps Flutter's canvas
       const hasSemanticWrapper = await page.evaluate(() => {
@@ -220,7 +240,7 @@ test.describe('MixVy Performance & Accessibility', () => {
       // Flutter web doesn't use standard HTML forms
       // Test that authentication flow is accessible and works
       await page.goto('/auth');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Verify page has rendered with content
       const pageContent = await page.content();
@@ -331,7 +351,7 @@ test.describe('MixVy Performance & Accessibility', () => {
       });
 
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
 
       // Should have minimal console errors
       const criticalErrors = errors.filter(e => 

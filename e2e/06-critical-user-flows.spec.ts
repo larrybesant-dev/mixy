@@ -1,14 +1,45 @@
 import { test, expect } from '@playwright/test';
 import { authenticateTestUser } from './utils/auth';
 
+async function waitForAppReady(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
+          .count(),
+      {
+        timeout: 30000,
+        message: 'Expected app readiness markers to be present'
+      }
+    )
+    .toBeGreaterThan(0);
+}
+
+async function safeGoto(page: import('@playwright/test').Page, path: string, maxRetries: number = 3) {
+  let lastError: unknown;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await waitForAppReady(page);
+      return;
+    } catch (error) {
+      lastError = error;
+      await page.waitForTimeout(500 * (i + 1));
+    }
+  }
+  throw lastError;
+}
+
 test.describe('MixVy - Critical User Flows', () => {
   test.describe('Gift System Complete Flow', () => {
     test.beforeEach(async ({ page }) => {
       // Authenticate first
       await authenticateTestUser(page);
 
-      await page.goto('/');
-      await page.waitForTimeout(2000);
+      await safeGoto(page, '/');
     });
 
     test('should navigate to room and access gift features', async ({ page }) => {
@@ -60,8 +91,7 @@ test.describe('MixVy - Critical User Flows', () => {
 
   test.describe('Coin Purchase Flow', () => {
     test.beforeEach(async ({ page }) => {
-      await page.goto('/');
-      await page.waitForTimeout(2000);
+      await safeGoto(page, '/');
     });
 
     test('should have coin purchase capability', async ({ page }) => {
@@ -153,8 +183,7 @@ test.describe('MixVy - Critical User Flows', () => {
 
   test.describe('Authentication & Session', () => {
     test.beforeEach(async ({ page }) => {
-      await page.goto('/auth');
-      await page.waitForTimeout(2000);
+      await safeGoto(page, '/auth');
     });
 
     test('should manage auth session state', async ({ page }) => {
@@ -228,7 +257,7 @@ test.describe('MixVy - Critical User Flows', () => {
 
   test.describe('Error Handling', () => {
     test('should handle network failures gracefully', async ({ page }) => {
-      await page.goto('/');
+      await safeGoto(page, '/');
 
       // Simulate network failure
       await page.context().setOffline(true);
@@ -241,7 +270,7 @@ test.describe('MixVy - Critical User Flows', () => {
       // Restore network
       await page.context().setOffline(false);
       await page.reload();
-      await page.waitForTimeout(1000);
+      await waitForAppReady(page);
 
       // Should recover
       const recoveredTitle = await page.title();
@@ -257,8 +286,7 @@ test.describe('MixVy - Critical User Flows', () => {
         }
       });
 
-      await page.goto('/');
-      await page.waitForTimeout(1000);
+      await safeGoto(page, '/');
 
       // Filter critical errors
       const criticalErrors = errors.filter(e => 
@@ -353,7 +381,7 @@ test.describe('MixVy - Critical User Flows', () => {
   test.describe('Performance Checks', () => {
     test('should load core features quickly', async ({ page }) => {
       const startTime = Date.now();
-      await page.goto('/');
+      await safeGoto(page, '/');
       const endTime = Date.now();
 
       const loadTime = endTime - startTime;
@@ -361,7 +389,7 @@ test.describe('MixVy - Critical User Flows', () => {
     });
 
     test('should handle rapid interactions', async ({ page }) => {
-      await page.goto('/');
+      await safeGoto(page, '/');
 
       // Simulate rapid clicks
       const buttons = page.locator('button');

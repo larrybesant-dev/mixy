@@ -27,6 +27,23 @@ async function enableFlutterSemantics(page: Page): Promise<void> {
   }
 }
 
+async function waitForAppReady(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
+          .count(),
+      {
+        timeout: 30000,
+        message: 'Expected app readiness markers to be present'
+      }
+    )
+    .toBeGreaterThan(0);
+}
+
 /**
  * Authenticates a user in the test environment by logging into the Flutter web app
  * Supports multiple fallback methods including Firebase auth and local storage injection
@@ -186,8 +203,7 @@ async function tryGuestAccess(page: Page): Promise<boolean> {
     
     if (await guestButton.isVisible().catch(() => false)) {
       await guestButton.click();
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1000);
+      await waitForAppReady(page);
       return true;
     }
 
@@ -205,8 +221,8 @@ export async function safeNavigate(page: Page, path: string, maxRetries: number 
   
   for (let i = 0; i < maxRetries; i++) {
     try {
-      await page.goto(path, { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForTimeout(1000);
+      await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await waitForAppReady(page);
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
