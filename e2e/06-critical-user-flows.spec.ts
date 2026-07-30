@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
 import { safeNavigate } from './utils/auth';
 
+const DEFAULT_CORE_FEATURE_LOAD_BUDGET_MS = 12000;
+// Firefox on shared CI runners can show materially higher cold-load variance.
+const FIREFOX_CORE_FEATURE_LOAD_BUDGET_MS = 35000;
+
+function getCoreFeatureLoadBudgetMs(browserName: string): number {
+  return browserName === 'firefox'
+    ? FIREFOX_CORE_FEATURE_LOAD_BUDGET_MS
+    : DEFAULT_CORE_FEATURE_LOAD_BUDGET_MS;
+}
+
 async function waitForAppReady(page: import('@playwright/test').Page) {
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
@@ -383,7 +393,7 @@ test.describe('MixVy - Critical User Flows', () => {
       const endTime = Date.now();
 
       const loadTime = endTime - startTime;
-      const maxLoadTimeMs = browserName === 'firefox' ? 35000 : 12000;
+      const maxLoadTimeMs = getCoreFeatureLoadBudgetMs(browserName);
       expect(loadTime).toBeLessThan(maxLoadTimeMs);
     });
 
