@@ -83,7 +83,8 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
     final totalWidth = constraints.maxWidth;
 
     // Clamp widths so panels don't overflow
-    final double safeTotalWidth = totalWidth.isFinite ? totalWidth : 1000.0;
+    final double safeTotalWidth =
+      (totalWidth.isFinite && totalWidth > 0) ? totalWidth : 1000.0;
     
     final effectiveCamWidth = _camMinimized
         ? 0.0
@@ -134,7 +135,7 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
               _ResizeDivider(
                 onDelta: (delta) {
                   setState(() {
-                    final maxPossible = (totalWidth -
+                    final maxPossible = (safeTotalWidth -
                             widget.minChatWidth -
                             effectiveUsersWidth -
                             dividerWidth * 2)
@@ -161,7 +162,7 @@ class _RoomPanelLayoutState extends ConsumerState<RoomPanelLayout> {
               _ResizeDivider(
                 onDelta: (delta) {
                   setState(() {
-                    final maxPossible = (totalWidth -
+                    final maxPossible = (safeTotalWidth -
                             effectiveCamWidth -
                             widget.minChatWidth -
                             dividerWidth * 2)

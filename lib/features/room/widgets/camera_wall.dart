@@ -175,12 +175,16 @@ class _CameraWallState extends ConsumerState<CameraWall> {
         );
         final isDesktop = safeMaxWidth >= 600;
 
-        final mainGridRemoteLimit = isDesktop
+        final mainGridRemoteLimitRaw = isDesktop
             ? widget.maxMainGridRemoteTiles + 4
             : widget.maxMainGridRemoteTiles;
-        final effectiveOverflowPageSize = isDesktop
+        final mainGridRemoteLimit =
+          mainGridRemoteLimitRaw <= 0 ? 0 : mainGridRemoteLimitRaw;
+        final effectiveOverflowPageSizeRaw = isDesktop
             ? widget.overflowPageSize * 2
             : widget.overflowPageSize;
+        final effectiveOverflowPageSize =
+          effectiveOverflowPageSizeRaw <= 0 ? 1 : effectiveOverflowPageSizeRaw;
 
         final viewableRemoteTiles = widget.remoteTiles
             .where((tile) => tile.canView)
