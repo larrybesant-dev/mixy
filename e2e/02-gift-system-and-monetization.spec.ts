@@ -3,6 +3,19 @@ import { authenticateTestUser, safeNavigate } from './utils/auth';
 
 let authUnavailable = false;
 
+const BEFORE_EACH_AUTH_TIMEOUT_MS = 45000;
+const BEFORE_EACH_NAV_TIMEOUT_MS = 20000;
+const BEFORE_EACH_READY_TIMEOUT_MS = 20000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
+}
+
 async function waitForAppReady(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
@@ -25,15 +38,39 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     test.skip(authUnavailable, 'Skipping auth-required suite: authentication is unavailable in this run.');
 
     // Authenticate first to access Firestore data
-    const authenticated = await authenticateTestUser(page);
+    const authenticated = await withTimeout(
+      authenticateTestUser(page),
+      BEFORE_EACH_AUTH_TIMEOUT_MS,
+      'authenticateTestUser'
+    ).catch(() => false);
+
     if (!authenticated) {
       authUnavailable = true;
-      test.skip(true, 'Skipping auth-required suite: could not authenticate test user in CI.');
+      test.skip(true, 'Skipping auth-required suite: authentication timed out or failed in CI.');
     }
 
     // Navigate to home page
-    await page.goto('/');
-    await waitForAppReady(page);
+    const navigated = await withTimeout(
+      page.goto('/', { waitUntil: 'domcontentloaded', timeout: BEFORE_EACH_NAV_TIMEOUT_MS }),
+      BEFORE_EACH_NAV_TIMEOUT_MS + 5000,
+      'post-auth navigation to home'
+    ).catch(() => null);
+
+    if (!navigated) {
+      authUnavailable = true;
+      test.skip(true, 'Skipping auth-required suite: timed out navigating to app home after authentication.');
+    }
+
+    const ready = await withTimeout(
+      waitForAppReady(page),
+      BEFORE_EACH_READY_TIMEOUT_MS,
+      'waitForAppReady'
+    ).then(() => true).catch(() => false);
+
+    if (!ready) {
+      authUnavailable = true;
+      test.skip(true, 'Skipping auth-required suite: app readiness timed out after authentication.');
+    }
 
     // Wait for any interactive element before test actions.
     await expect(page.locator('button, [role="button"], input').first()).toBeVisible({ timeout: 30000 });

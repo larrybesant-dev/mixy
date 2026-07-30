@@ -1,5 +1,16 @@
 import { Page, expect } from '@playwright/test';
 
+const AUTH_STEP_TIMEOUT_MS = 45000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
+}
+
 /**
  * Flutter Web (CanvasKit) renders the UI to a <canvas> and does not expose real
  * interactive DOM elements until its semantics/accessibility tree is activated.
@@ -51,6 +62,7 @@ async function waitForAppReady(page: Page): Promise<void> {
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   const testEmail = process.env.TEST_EMAIL || 'test@example.com';
   const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
+  const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';
 
   try {
 
@@ -59,21 +71,38 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     await page.waitForTimeout(2000);
 
     // Method 1: Try standard email/password form
-    const authSuccess = await tryEmailPasswordAuth(page, testEmail, testPassword);
+    const authSuccess = await withTimeout(
+      tryEmailPasswordAuth(page, testEmail, testPassword),
+      AUTH_STEP_TIMEOUT_MS,
+      'email/password authentication'
+    ).catch(() => false);
     if (authSuccess) {
       console.log('✓ Authenticated via email/password form');
       return true;
     }
 
     // Method 2: Try Firebase Auth REST API (fallback)
-    const firebaseSuccess = await tryFirebaseRestAuth(page, testEmail, testPassword);
+    const firebaseSuccess = await withTimeout(
+      tryFirebaseRestAuth(page, testEmail, testPassword),
+      AUTH_STEP_TIMEOUT_MS,
+      'firebase REST authentication'
+    ).catch(() => false);
     if (firebaseSuccess) {
       console.log('✓ Authenticated via Firebase REST API');
       return true;
     }
 
+    if (authRequired) {
+      console.warn('⚠ Could not authenticate with credentials and guest fallback is disabled (AUTH_REQUIRED=1).');
+      return false;
+    }
+
     // Method 3: Try guest access fallback
-    const guestSuccess = await tryGuestAccess(page);
+    const guestSuccess = await withTimeout(
+      tryGuestAccess(page),
+      AUTH_STEP_TIMEOUT_MS,
+      'guest access fallback'
+    ).catch(() => false);
     if (guestSuccess) {
       console.log('✓ Accessed as guest');
       return true;
