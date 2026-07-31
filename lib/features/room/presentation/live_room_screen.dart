@@ -20,6 +20,7 @@ import '../providers/room_webrtc_provider.dart';
 import '../providers/room_session_provider.dart';
 import '../providers/participant_providers.dart';
 import '../providers/mic_access_provider.dart';
+import '../providers/cam_view_request_provider.dart';
 import '../providers/presence_provider.dart';
 import '../providers/connection_recovery_provider.dart';
 import '../providers/room_gift_provider.dart';
@@ -529,6 +530,117 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         );
       }
     });
+  }
+
+  Future<void> _handleRosterUserTap({
+    required RoomParticipantModel participant,
+    required String currentUserId,
+    required String currentUserLabel,
+  }) async {
+    final normalizedCurrentUserId = currentUserId.trim();
+    final targetUserId = participant.userId.trim();
+    if (normalizedCurrentUserId.isEmpty || targetUserId.isEmpty) {
+      return;
+    }
+
+    final displayName =
+        (participant.displayName?.trim().isNotEmpty ?? false)
+            ? participant.displayName!.trim()
+            : targetUserId;
+
+    if (targetUserId == normalizedCurrentUserId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This is your camera tile.')),
+        );
+      }
+      return;
+    }
+
+    if (!participant.camOn) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$displayName camera is currently off.')),
+        );
+      }
+      return;
+    }
+
+    final roomState = ref.read(roomControllerProvider(widget.roomId));
+    final alreadyAllowed = roomState.canViewCamera(
+      targetUserId: targetUserId,
+      viewerUserId: normalizedCurrentUserId,
+    );
+    if (alreadyAllowed) {
+      if (mounted) {
+        final audioHint = participant.micOn && !participant.isMuted
+            ? ''
+            : ' They are not broadcasting mic audio right now.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Camera access already allowed for $displayName.$audioHint',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final canApproveDirectly =
+          roomState.canManageStage(normalizedCurrentUserId) ||
+          normalizedCurrentUserId == targetUserId;
+
+      if (canApproveDirectly) {
+        await ref
+            .read(roomControllerProvider(widget.roomId).notifier)
+            .approveCameraViewer(
+              ownerUserId: targetUserId,
+              viewerUserId: normalizedCurrentUserId,
+              approved: true,
+            );
+        if (mounted) {
+          final audioHint = participant.micOn && !participant.isMuted
+              ? ''
+              : ' They are not broadcasting mic audio right now.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Camera access granted for $displayName.$audioHint',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      await ref.read(camViewRequestControllerProvider).sendRequest(
+        roomId: widget.roomId,
+        requesterId: normalizedCurrentUserId,
+        targetId: targetUserId,
+        requesterName: currentUserLabel,
+      );
+
+      if (mounted) {
+        final audioHint = participant.micOn && !participant.isMuted
+            ? ''
+            : ' They are not broadcasting mic audio right now.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Camera view request sent to $displayName.$audioHint',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to open camera for $displayName: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _sendMessage(String text) async {
@@ -1231,6 +1343,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     final avatarById = {
                       for (final p in rosterParticipants) p.userId: p.photoUrl,
                     };
+                    final currentUserLabel = currentUser == null
+                        ? currentUserId
+                        : _displayNameFromAuthUser(currentUser);
 
                     return UserListPanel(
                       participants: rosterParticipants,
@@ -1239,6 +1354,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       displayNameById: displayNameById,
                       avatarUrlById: avatarById,
                       micQueueUserIds: pendingQueueUserIds,
+                      onTapUser: (participant) => _handleRosterUserTap(
+                        participant: participant,
+                        currentUserId: currentUserId,
+                        currentUserLabel: currentUserLabel,
+                      ),
                     );
                   },
                 ),
