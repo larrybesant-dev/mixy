@@ -33,7 +33,6 @@ import 'package:mixvy/features/social/screens/explore_screen.dart';
 import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
 import 'package:mixvy/features/discovery/index.dart';
 import 'package:mixvy/features/room/screens/create_room_screen.dart';
-import 'package:mixvy/features/search/screens/search_screen.dart';
 import 'package:mixvy/features/stories/screens/create_story_screen.dart';
 import 'package:mixvy/features/stories/screens/story_viewer_screen.dart';
 import 'package:mixvy/features/trending/screens/trending_screen.dart';
@@ -282,7 +281,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => _CustomShell(initialIndex: 0),
         routes: [
           GoRoute(path: 'notifications', name: 'notifications', builder: (context, state) => const NotificationsScreen()),
-          GoRoute(path: 'search', name: 'search', builder: (context, state) => const SearchScreen()),
+          GoRoute(path: 'search', name: 'search', builder: (context, state) => const ExploreScreen()),
           GoRoute(path: 'explore', name: 'explore', builder: (context, state) => const ExploreScreen()),
           GoRoute(path: 'trending', name: 'trending', builder: (context, state) => const TrendingScreen()),
           GoRoute(
@@ -587,6 +586,7 @@ class _CustomShell extends ConsumerWidget {
     final displayIndex = initialIndex;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0B),
       body: IndexedStack(
         index: displayIndex,
         children: [
@@ -597,22 +597,130 @@ class _CustomShell extends ConsumerWidget {
           UserProfileScreen(userId: uid),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: displayIndex,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Feed'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Messages'),
-          NavigationDestination(icon: Icon(Icons.mic_none), selectedIcon: Icon(Icons.mic), label: 'Live Rooms'),
-          NavigationDestination(icon: Icon(Icons.favorite_border), selectedIcon: Icon(Icons.favorite), label: 'Dating'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
-        ],
-        onDestinationSelected: (index) {
-          // Navigate to the corresponding route
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _StartRoomFab(
+        onPressed: () => context.go('/rooms/create'),
+      ),
+      bottomNavigationBar: _VelvetBottomNav(
+        currentIndex: displayIndex,
+        onSelected: (index) {
           final routes = ['/home', '/messages', '/rooms', '/speed-dating', '/profile'];
           if (index >= 0 && index < routes.length) {
             context.go(routes[index]);
           }
         },
+      ),
+    );
+  }
+}
+
+class _StartRoomFab extends StatelessWidget {
+  const _StartRoomFab({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
+      child: FloatingActionButton.extended(
+        heroTag: 'shell_start_room_fab',
+        onPressed: onPressed,
+        backgroundColor: const Color(0xFFD4AF37),
+        foregroundColor: const Color(0xFF0B0B0B),
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        icon: const Icon(Icons.mic, size: 20),
+        label: const Text(
+          'Start Room',
+          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        ),
+      ),
+    );
+  }
+}
+
+class _VelvetBottomNav extends StatelessWidget {
+  const _VelvetBottomNav({required this.currentIndex, required this.onSelected});
+
+  final int currentIndex;
+  final ValueChanged<int> onSelected;
+
+  static const _items = <({IconData icon, String label})>[
+    (icon: Icons.home_rounded, label: 'Feed'),
+    (icon: Icons.forum_rounded, label: 'Messages'),
+    (icon: Icons.groups_rounded, label: 'Rooms'),
+    (icon: Icons.favorite_rounded, label: 'Dating'),
+    (icon: Icons.account_circle_rounded, label: 'Profile'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Color(0xFF0B0B0B),
+        border: Border(top: BorderSide(color: Color(0x33781E2B))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 74,
+          child: Row(
+            children: [
+              for (var i = 0; i < _items.length; i++)
+                Expanded(
+                  child: _VelvetNavItem(
+                    icon: _items[i].icon,
+                    label: _items[i].label,
+                    selected: i == currentIndex,
+                    onTap: () => onSelected(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VelvetNavItem extends StatelessWidget {
+  const _VelvetNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = const Color(0xFFD4AF37);
+    final inactiveColor = const Color(0xFFF7EDE2).withValues(alpha: 0.74);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: selected ? 24 : 22, color: selected ? activeColor : inactiveColor),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? activeColor : inactiveColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

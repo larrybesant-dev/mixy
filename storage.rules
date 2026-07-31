@@ -14,6 +14,20 @@ service firebase.storage {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function metadataOwnerMatchesRequest() {
+      return request.resource != null
+        && request.resource.metadata != null
+        && request.resource.metadata.ownerUid is string
+        && request.resource.metadata.ownerUid == request.auth.uid;
+    }
+
+    function metadataOwnerMatchesExisting() {
+      return resource != null
+        && resource.metadata != null
+        && resource.metadata.ownerUid is string
+        && resource.metadata.ownerUid == request.auth.uid;
+    }
+
     // 5MB limit for images. Strictly allow only common web formats.
     function isImageUpload() {
       return request.resource != null
@@ -89,13 +103,19 @@ service firebase.storage {
     // Rooms
     // ---------------------------------------------------------------------
 
-    match /rooms/{roomId}/{fileName} {
+    match /rooms/{roomId}/{allPaths=**} {
       // Room content is readable by any signed-in user.
       allow read: if signedIn();
-      // Only the host (who typically uploads room assets) can write here.
-      // This assumes roomId matches the host's UID or the app validates it.
-      allow create, update: if signedIn() && isImageUpload();
-      allow delete: if signedIn();
+      // Room assets are owner-bound using immutable metadata ownerUid.
+      // Upload clients must set SettableMetadata(customMetadata: {'ownerUid': uid}).
+      allow create: if signedIn()
+        && isImageUpload()
+        && metadataOwnerMatchesRequest();
+      allow update: if signedIn()
+        && isImageUpload()
+        && metadataOwnerMatchesExisting()
+        && metadataOwnerMatchesRequest();
+      allow delete: if signedIn() && metadataOwnerMatchesExisting();
     }
 
     // ---------------------------------------------------------------------

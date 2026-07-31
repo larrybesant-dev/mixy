@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mixvy/core/theme.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/room/controllers/room_management_controller.dart';
@@ -55,6 +56,19 @@ class _RoomManagementModalState extends ConsumerState<RoomManagementModal>
 
   Future<void> _pickAndUploadImages() async {
     try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || uid.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You need to be signed in to upload photos.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       final picker = ImagePicker();
       final images = await picker.pickMultiImage(
         imageQuality: 85,
@@ -81,7 +95,10 @@ class _RoomManagementModalState extends ConsumerState<RoomManagementModal>
             bytes,
             SettableMetadata(
               contentType: 'image/jpeg',
-              customMetadata: {'uploadedAt': DateTime.now().toIso8601String()},
+              customMetadata: {
+                'uploadedAt': DateTime.now().toIso8601String(),
+                'ownerUid': uid,
+              },
             ),
           );
 

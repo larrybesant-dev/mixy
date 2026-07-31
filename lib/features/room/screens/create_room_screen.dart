@@ -192,7 +192,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       );
       final snap = await ref.putData(
         bytes,
-        SettableMetadata(contentType: 'image/$ext'),
+        SettableMetadata(
+          contentType: 'image/$ext',
+          customMetadata: {'ownerUid': uid},
+        ),
       );
       final url = await snap.ref.getDownloadURL();
       if (!mounted) return;

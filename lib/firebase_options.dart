@@ -35,7 +35,6 @@ class DefaultFirebaseOptions {
     projectId: 'mixvy-v2',
     authDomain: 'mixvy-v2.firebaseapp.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
-    measurementId: 'G-DRXWK1PPEK',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
