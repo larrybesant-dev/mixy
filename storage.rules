@@ -103,7 +103,7 @@ service firebase.storage {
     // Rooms
     // ---------------------------------------------------------------------
 
-    match /rooms/{roomId}/{fileName} {
+    match /rooms/{roomId}/{allPaths=**} {
       // Room content is readable by any signed-in user.
       allow read: if signedIn();
       // Room assets are owner-bound using immutable metadata ownerUid.
