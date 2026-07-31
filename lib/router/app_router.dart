@@ -63,6 +63,13 @@ import 'package:mixvy/features/room/presentation/live_room_screen.dart';
 import 'package:mixvy/features/dashboard/dashboard_screen.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
 
+const _vnJetBlack = Color(0xFF0B0B0B);
+const _vnSurfaceHigh = Color(0xFF181113);
+const _vnGold = Color(0xFFD4AF37);
+const _vnWine = Color(0xFF781E2B);
+const _vnWineBright = Color(0xFF9B2535);
+const _vnCream = Color(0xFFF7EDE2);
+
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'mixvy-root-navigator',
 );
@@ -586,25 +593,53 @@ class _CustomShell extends ConsumerWidget {
     final displayIndex = initialIndex;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
-      body: IndexedStack(
-        index: displayIndex,
-        children: [
-          const DashboardScreen(),
-          MessagesScreen(userId: uid, username: username),
-          const RoomBrowserScreen(),
-          const SpeedDatingScreen(),
-          UserProfileScreen(userId: uid),
-        ],
+      backgroundColor: _vnJetBlack,
+      extendBody: true,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_vnSurfaceHigh, _vnJetBlack],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _VelvetTopRail(
+                selectedIndex: displayIndex,
+                onSelect: (index) {
+                  const routes = ['/home', '/messages', '/speed-dating'];
+                  if (index >= 0 && index < routes.length) {
+                    context.go(routes[index]);
+                  }
+                },
+              ),
+              Expanded(
+                child: IndexedStack(
+                  index: displayIndex,
+                  children: [
+                    const DashboardScreen(),
+                    MessagesScreen(userId: uid, username: username),
+                    const RoomBrowserScreen(),
+                    const SpeedDatingScreen(),
+                    UserProfileScreen(userId: uid),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: _StartRoomFab(
-        onPressed: () => context.go('/rooms/create'),
+        onTap: () => context.go('/rooms/create'),
       ),
       bottomNavigationBar: _VelvetBottomNav(
-        currentIndex: displayIndex,
-        onSelected: (index) {
-          final routes = ['/home', '/messages', '/rooms', '/speed-dating', '/profile'];
+        selectedIndex: displayIndex,
+        onTap: (index) {
+          const routes = ['/home', '/messages', '/rooms', '/speed-dating', '/profile'];
           if (index >= 0 && index < routes.length) {
             context.go(routes[index]);
           }
@@ -614,26 +649,93 @@ class _CustomShell extends ConsumerWidget {
   }
 }
 
-class _StartRoomFab extends StatelessWidget {
-  const _StartRoomFab({required this.onPressed});
+class _VelvetTopRail extends StatelessWidget {
+  const _VelvetTopRail({
+    required this.selectedIndex,
+    required this.onSelect,
+  });
 
-  final VoidCallback onPressed;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 58,
-      child: FloatingActionButton.extended(
-        heroTag: 'shell_start_room_fab',
-        onPressed: onPressed,
-        backgroundColor: const Color(0xFFD4AF37),
-        foregroundColor: const Color(0xFF0B0B0B),
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        icon: const Icon(Icons.mic, size: 20),
-        label: const Text(
-          'Start Room',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+    final entries = <({String label, int index})>[
+      (label: 'MIX', index: 0),
+      (label: 'CONNECT', index: 1),
+      (label: 'INDULGE', index: 3),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      child: Row(
+        children: entries.map((entry) {
+          final active = selectedIndex == entry.index;
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => onSelect(entries.indexOf(entry)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: active ? _vnGold : const Color(0x33FFFFFF)),
+                    color: active ? const Color(0x1FD4AF37) : const Color(0x141E1A1A),
+                  ),
+                  child: Text(
+                    entry.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: active ? _vnGold : _vnCream,
+                      fontSize: 12,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _StartRoomFab extends StatelessWidget {
+  const _StartRoomFab({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 62,
+      width: 62,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_vnGold, Color(0xFF9A7B1A)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _vnWineBright.withAlpha(90),
+            blurRadius: 18,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const Icon(Icons.mic, color: Colors.black, size: 30),
         ),
       ),
     );
@@ -641,41 +743,82 @@ class _StartRoomFab extends StatelessWidget {
 }
 
 class _VelvetBottomNav extends StatelessWidget {
-  const _VelvetBottomNav({required this.currentIndex, required this.onSelected});
+  const _VelvetBottomNav({
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
-  final int currentIndex;
-  final ValueChanged<int> onSelected;
-
-  static const _items = <({IconData icon, String label})>[
-    (icon: Icons.home_rounded, label: 'Feed'),
-    (icon: Icons.forum_rounded, label: 'Messages'),
-    (icon: Icons.groups_rounded, label: 'Rooms'),
-    (icon: Icons.favorite_rounded, label: 'Dating'),
-    (icon: Icons.account_circle_rounded, label: 'Profile'),
-  ];
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0B0B0B),
-        border: Border(top: BorderSide(color: Color(0x33781E2B))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 74,
-          child: Row(
-            children: [
-              for (var i = 0; i < _items.length; i++)
-                Expanded(
-                  child: _VelvetNavItem(
-                    icon: _items[i].icon,
-                    label: _items[i].label,
-                    selected: i == currentIndex,
-                    onTap: () => onSelected(i),
+    const items = <({IconData icon, String label})>[
+      (icon: Icons.home_filled, label: 'Feed'),
+      (icon: Icons.chat_bubble, label: 'Messages'),
+      (icon: Icons.mic, label: 'Live'),
+      (icon: Icons.favorite, label: 'Dating'),
+      (icon: Icons.person, label: 'Profile'),
+    ];
+
+    Widget navItem(int index) {
+      final item = items[index];
+      final selected = selectedIndex == index;
+      return Expanded(
+        child: InkWell(
+          onTap: () => onTap(index),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  item.icon,
+                  size: 20,
+                  color: selected ? _vnGold : _vnCream.withAlpha(180),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    color: selected ? _vnGold : _vnCream.withAlpha(170),
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xF5121011),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0x47D4AF37)),
+            boxShadow: [
+              BoxShadow(
+                color: _vnWine.withAlpha(48),
+                blurRadius: 20,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              navItem(0),
+              navItem(1),
+              const SizedBox(width: 66),
+              navItem(3),
+              navItem(4),
             ],
           ),
         ),
@@ -683,47 +826,4 @@ class _VelvetBottomNav extends StatelessWidget {
     );
   }
 }
-
-class _VelvetNavItem extends StatelessWidget {
-  const _VelvetNavItem({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final activeColor = const Color(0xFFD4AF37);
-    final inactiveColor = const Color(0xFFF7EDE2).withValues(alpha: 0.74);
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 4),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: selected ? 24 : 22, color: selected ? activeColor : inactiveColor),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? activeColor : inactiveColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 
