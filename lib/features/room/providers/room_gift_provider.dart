@@ -71,6 +71,7 @@ class RoomGiftController {
     required String senderName,
     required String receiverName,
     required RoomGiftItem gift,
+    bool makeItRainOnCam = false,
   }) async {
     if (roomId.isEmpty || receiverId.isEmpty) {
       throw Exception('Invalid room or receiver.');
@@ -84,6 +85,7 @@ class RoomGiftController {
       'coinCost': gift.coinCost,
       'senderName': senderName,
       'emoji': gift.emoji,
+      'makeItRainOnCam': makeItRainOnCam,
     });
   }
 }

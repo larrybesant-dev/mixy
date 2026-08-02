@@ -128,6 +128,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
+  String? _activeRainUserId;
+  Timer? _activeRainTimer;
   int _gridSlotCount = 12;
   bool _isFollowActionBusy = false;
   bool _isJoiningRoom = false;
@@ -231,8 +233,23 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     WidgetsBinding.instance.removeObserver(this);
     messageController.dispose();
     scrollController.dispose();
+    _activeRainTimer?.cancel();
     // Note: sessionState will be automatically cleaned up when room is left
     super.dispose();
+  }
+
+  void _triggerCamMoneyRain(String targetUserId) {
+    if (targetUserId.trim().isEmpty) return;
+    _activeRainTimer?.cancel();
+    setState(() {
+      _activeRainUserId = targetUserId;
+    });
+    _activeRainTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      setState(() {
+        _activeRainUserId = null;
+      });
+    });
   }
 
   /// Fetch the user's display name from Firestore profile.
@@ -957,6 +974,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     // Only trigger animation for new gifts (first time seeing this ID)
     if (_lastSeenGiftId == null || _lastSeenGiftId != latestGift.id) {
       _lastSeenGiftId = latestGift.id;
+
+      if (latestGift.makeItRainOnCam) {
+        _triggerCamMoneyRain(latestGift.receiverId);
+      }
       
       // Show floating emoji animation
       FloatingGiftAnimation.show(
@@ -970,7 +991,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${latestGift.senderName} sent ${latestGift.emoji} to ${latestGift.receiverName ?? 'a guest'}!',
+              latestGift.makeItRainOnCam
+                  ? '${latestGift.senderName} sent ${latestGift.emoji} and made it rain on ${latestGift.receiverName ?? 'a guest'}!'
+                  : '${latestGift.senderName} sent ${latestGift.emoji} to ${latestGift.receiverName ?? 'a guest'}!',
               style: const TextStyle(color: VelvetNoir.onSurface),
             ),
             duration: const Duration(seconds: 3),
@@ -1406,12 +1429,21 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
         final service = webrtcState!.service!;
         final remoteUids = service.remoteUids;
+        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+        final rainTargetUserId = _activeRainUserId;
 
-        final gridEntries = <({String key, String label, Widget view, bool isLocal})>[];
+        final gridEntries = <({
+          String key,
+          String label,
+          String? userId,
+          Widget view,
+          bool isLocal,
+        })>[];
         if (sessionState.isVideoEnabled) {
           gridEntries.add((
             key: 'local',
             label: 'You',
+            userId: currentUserId,
             view: service.getLocalView(),
             isLocal: true,
           ));
@@ -1424,7 +1456,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               : '';
           gridEntries.add((
             key: 'remote_$uid',
-            label: mappedLabel.isNotEmpty ? mappedLabel : 'Guest $uid',
+            label: mappedLabel.isNotEmpty ? mappedLabel : 'Participant',
+            userId: mappedUserId,
             view: service.getRemoteView(uid, widget.roomId),
             isLocal: false,
           ));
@@ -1434,7 +1467,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             ? _gridSlotCount
             : gridEntries.length;
         final visibleEntries = gridEntries.take(visibleCount).toList(growable: false);
-        final placeholders = _gridSlotCount - visibleEntries.length;
+
+        if (visibleEntries.isEmpty) {
+          return Center(
+            child: Text(
+              'No active camera feeds yet',
+              style: GoogleFonts.raleway(
+                color: VelvetNoir.onSurfaceVariant,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          );
+        }
 
         return Stack(
           children: [
@@ -1459,82 +1504,53 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                       mainAxisSpacing: 10,
                       childAspectRatio: 4 / 3,
                     ),
-                    itemCount: visibleEntries.length + placeholders,
+                    itemCount: visibleEntries.length,
                     itemBuilder: (context, index) {
-                      if (index < visibleEntries.length) {
-                        final entry = visibleEntries[index];
-                        return DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: VelvetNoir.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: entry.isLocal
-                                  ? VelvetNoir.primary.withValues(alpha: 0.75)
-                                  : VelvetNoir.secondary.withValues(alpha: 0.55),
-                              width: 1.4,
-                            ),
+                      final entry = visibleEntries[index];
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: VelvetNoir.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: entry.isLocal
+                                ? VelvetNoir.primary.withValues(alpha: 0.75)
+                                : VelvetNoir.secondary.withValues(alpha: 0.55),
+                            width: 1.4,
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                entry.view,
-                                Positioned(
-                                  left: 8,
-                                  right: 8,
-                                  bottom: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.58),
-                                      borderRadius: BorderRadius.circular(7),
-                                    ),
-                                    child: Text(
-                                      entry.label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.raleway(
-                                        color: VelvetNoir.onSurface,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              entry.view,
+                              Positioned(
+                                left: 8,
+                                right: 8,
+                                bottom: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.58),
+                                    borderRadius: BorderRadius.circular(7),
+                                  ),
+                                  child: Text(
+                                    entry.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.raleway(
+                                      color: VelvetNoir.onSurface,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      return DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF121212),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: VelvetNoir.onSurfaceVariant.withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.videocam_off_outlined,
-                              color: VelvetNoir.onSurfaceVariant.withValues(alpha: 0.8),
-                              size: 26,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Open slot',
-                              style: GoogleFonts.raleway(
-                                color: VelvetNoir.onSurfaceVariant,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                          ],
+                              if (rainTargetUserId != null &&
+                                  rainTargetUserId == entry.userId)
+                                const _MoneyRainOnCamOverlay(),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -2573,6 +2589,108 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MoneyRainOnCamOverlay extends StatefulWidget {
+  const _MoneyRainOnCamOverlay();
+
+  @override
+  State<_MoneyRainOnCamOverlay> createState() => _MoneyRainOnCamOverlayState();
+}
+
+class _MoneyRainOnCamOverlayState extends State<_MoneyRainOnCamOverlay>
+    with SingleTickerProviderStateMixin {
+  static const List<String> _symbols = ['💸', '💵', '🪙'];
+  static const List<double> _xFractions = [
+    0.05,
+    0.14,
+    0.22,
+    0.31,
+    0.40,
+    0.49,
+    0.58,
+    0.67,
+    0.76,
+    0.85,
+    0.10,
+    0.28,
+    0.54,
+    0.80,
+  ];
+
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.amber.withValues(alpha: 0.08),
+              Colors.transparent,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                final progress = _controller.value;
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    for (var i = 0; i < _xFractions.length; i++)
+                      Builder(
+                        builder: (context) {
+                          final laneOffset = (i % 6) * 0.11;
+                          final t = (progress + laneOffset) % 1.0;
+                          final y = -20 + (constraints.maxHeight + 40) * t;
+                          final x =
+                              _xFractions[i] * (constraints.maxWidth - 24);
+                          final symbol = _symbols[i % _symbols.length];
+                          final opacity = (1.0 - t * 0.45).clamp(0.25, 1.0);
+
+                          return Positioned(
+                            left: x,
+                            top: y,
+                            child: Opacity(
+                              opacity: opacity,
+                              child: Text(
+                                symbol,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       ),
     );

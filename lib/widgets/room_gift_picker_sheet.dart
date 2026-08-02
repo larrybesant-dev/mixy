@@ -55,6 +55,7 @@ class _RoomGiftPickerSheetContentState
   RoomGiftItem? _selectedGift;
   String? _selectedRecipientId;
   String? _selectedRecipientName;
+  bool _makeItRainOnCam = false;
   bool _sending = false;
   String? _errorMessage;
 
@@ -90,6 +91,7 @@ class _RoomGiftPickerSheetContentState
         receiverName: _selectedRecipientName ?? '',
         senderName: currentUser.username,
         gift: gift,
+        makeItRainOnCam: _makeItRainOnCam,
       );
 
       // Decrement allowance (invalidate forces a fresh read; fires in background)
@@ -254,6 +256,36 @@ class _RoomGiftPickerSheetContentState
                     ),
                   );
                 },
+              ),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                value: _makeItRainOnCam,
+                onChanged: _sending
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _makeItRainOnCam = value ?? false;
+                        });
+                      },
+                contentPadding: EdgeInsets.zero,
+                activeColor: VelvetNoir.primary,
+                checkColor: VelvetNoir.surface,
+                title: const Text(
+                  'Make it rain on their cam',
+                  style: TextStyle(
+                    color: VelvetNoir.onSurface,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Add a money-rain effect on the receiver\'s camera tile.',
+                  style: TextStyle(
+                    color: VelvetNoir.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
               ),
               const SizedBox(height: 20),
 

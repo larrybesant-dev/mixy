@@ -10,6 +10,7 @@ class RoomGiftEvent {
   final String giftId;
   final String emoji;
   final int coinCost;
+  final bool makeItRainOnCam;
   final DateTime sentAt;
 
   const RoomGiftEvent({
@@ -22,6 +23,7 @@ class RoomGiftEvent {
     required this.giftId,
     required this.emoji,
     required this.coinCost,
+    required this.makeItRainOnCam,
     required this.sentAt,
   });
 
@@ -45,6 +47,11 @@ class RoomGiftEvent {
     } else {
       sentAt = DateTime.now();
     }
+    final rainRaw = data['makeItRainOnCam'];
+    final makeItRainOnCam = rainRaw == true ||
+      rainRaw == 1 ||
+      (rainRaw is String && rainRaw.toLowerCase() == 'true');
+
     return RoomGiftEvent(
       id: docId,
       senderId: _asString(data['senderId']),
@@ -55,6 +62,7 @@ class RoomGiftEvent {
       giftId: _asString(data['giftId']),
       emoji: _asString(data['emoji'], fallback: '🎁'),
       coinCost: (data['coinCost'] as num?)?.toInt() ?? 0,
+      makeItRainOnCam: makeItRainOnCam,
       sentAt: sentAt,
     );
   }
