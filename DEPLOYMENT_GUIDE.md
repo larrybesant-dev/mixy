@@ -1,5 +1,32 @@
 # MixVy Deployment Guide
 
+## Canonical Production Deploy (Current)
+
+Use this as the single source of truth for production hosting deploys.
+The script reads `firebase.json` and runs the matching build pipeline based on
+`hosting.public`, then deploys and verifies the live auth route.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/deploy_hosting_release.ps1
+```
+
+Optional flags:
+
+```powershell
+# Skip lint step
+powershell -ExecutionPolicy Bypass -File tools/deploy_hosting_release.ps1 -SkipLint
+
+# Skip post-deploy HTTP verification
+powershell -ExecutionPolicy Bypass -File tools/deploy_hosting_release.ps1 -SkipVerify
+```
+
+Current hosting artifact path is controlled by `firebase.json`:
+
+- `apps/mixvy_ai_web/dist` -> runs `npm --prefix apps/mixvy_ai_web run lint` and `run build`
+- `build/web` -> runs `flutter build web --release`
+
+This prevents deploy drift between AI web and legacy Flutter-only workflows.
+
 **Status:** ✅ Production Build Ready  
 **Build Date:** 2026-06-30  
 **Version:** 1.0.0 (production)  
