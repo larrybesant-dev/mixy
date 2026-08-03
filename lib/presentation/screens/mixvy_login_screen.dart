@@ -40,9 +40,19 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
+  bool _ageConsentChecked = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   ProviderSubscription<AuthState>? _authStateSub;
+
+  static const String _demoEmail = String.fromEnvironment(
+    'DEMO_LOGIN_EMAIL',
+    defaultValue: 'test_a_prod@example.com',
+  );
+  static const String _demoPassword = String.fromEnvironment(
+    'DEMO_LOGIN_PASSWORD',
+    defaultValue: 'ProdTest@2026!',
+  );
 
   @override
   void initState() {
@@ -99,6 +109,13 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   Future<void> _login() async {
     final authState = ref.read(authControllerProvider);
     if (authState.isLoading) return;
+    if (!_ageConsentChecked) {
+      await _showMessage(
+        'Please confirm 18+ age verification and community guidelines.',
+        isError: true,
+      );
+      return;
+    }
     if (_formKey.currentState?.validate() != true) return;
 
     FocusScope.of(context).unfocus();
@@ -106,6 +123,37 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     await authController.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
+    );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+    if (!_ageConsentChecked) {
+      await _showMessage(
+        'Please confirm 18+ age verification and community guidelines.',
+        isError: true,
+      );
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    await ref.read(authControllerProvider.notifier).signInWithGoogle();
+  }
+
+  Future<void> _instantDemoLogin() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+    if (!_ageConsentChecked) {
+      await _showMessage(
+        'Please confirm 18+ age verification and community guidelines.',
+        isError: true,
+      );
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    await ref.read(authControllerProvider.notifier).login(
+      _demoEmail,
+      _demoPassword,
     );
   }
 
@@ -129,9 +177,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     }
     return null;
   }
-
-  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
-  // These methods were for social sign-in which is no longer displayed
 
   // ── build ─────────────────────────────────────────────────────────────────
   @override
@@ -431,6 +476,44 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                 ),
                 const SizedBox(height: 24),
 
+                // OAuth
+                _oauthGoogleButton(
+                  onPressed: isLoading ? null : _signInWithGoogle,
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: _onVariant.withAlpha(60),
+                        thickness: 0.8,
+                        height: 1,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'OR CONTINUE WITH EMAIL',
+                        style: GoogleFonts.raleway(
+                          fontSize: 10,
+                          color: _onVariant,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: _onVariant.withAlpha(60),
+                        thickness: 0.8,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
                 // Email
                 _brandInput(
                   controller: _emailController,
@@ -551,10 +634,29 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
 
                 const SizedBox(height: 12),
 
+                // 18+ consent
+                _consentGate(
+                  checked: _ageConsentChecked,
+                  onChanged: isLoading
+                      ? null
+                      : (value) => setState(
+                            () => _ageConsentChecked = value ?? false,
+                          ),
+                ),
+
+                const SizedBox(height: 10),
+
                 // ── SIGN UP — gold outline button ─────────────────
                 _goldOutlineButton(
                   onPressed: isLoading ? null : () => context.go('/register'),
                   label: 'SIGN UP',
+                ),
+
+                const SizedBox(height: 10),
+
+                // Demo utility login (developer testing)
+                _demoUtilityButton(
+                  onPressed: isLoading ? null : _instantDemoLogin,
                 ),
 
                 const SizedBox(height: 8),
@@ -581,6 +683,104 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _oauthGoogleButton({required VoidCallback? onPressed}) {
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _onSurface,
+          side: BorderSide(color: _onVariant.withAlpha(80)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          backgroundColor: const Color(0xFFFFFFFF),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+        ),
+        icon: const _GoogleGlyph(size: 18),
+        label: Text(
+          'Continue with Google Sign-In',
+          style: GoogleFonts.raleway(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            color: const Color(0xFF111318),
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _demoUtilityButton({required VoidCallback? onPressed}) {
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _secondaryBright,
+          side: BorderSide(color: _secondaryBright.withAlpha(150)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          backgroundColor: _secondary.withAlpha(25),
+        ),
+        icon: const Icon(Icons.flash_on_rounded, size: 16, color: _secondaryBright),
+        label: Text(
+          'Instant One-Click Demo Login',
+          style: GoogleFonts.raleway(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: _secondaryBright,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _consentGate({
+    required bool checked,
+    required ValueChanged<bool?>? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _goldBorder),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: CheckboxListTile(
+        value: checked,
+        onChanged: onChanged,
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        controlAffinity: ListTileControlAffinity.leading,
+        activeColor: _primary,
+        checkColor: _surface,
+        title: RichText(
+          text: TextSpan(
+            style: GoogleFonts.raleway(
+              color: _onVariant,
+              fontSize: 11,
+              height: 1.35,
+            ),
+            children: [
+              const TextSpan(text: 'I confirm I am 18+ and agree to the '),
+              TextSpan(
+                text: 'Community Guidelines',
+                style: GoogleFonts.raleway(
+                  color: _primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                  decorationColor: _primary,
+                ),
+              ),
+              const TextSpan(text: ' and terms.'),
+            ],
           ),
         ),
       ),
@@ -728,6 +928,34 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
           color: _onVariant,
           decoration: TextDecoration.underline,
           decorationColor: _onVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleGlyph extends StatelessWidget {
+  const _GoogleGlyph({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF3FF),
+        borderRadius: BorderRadius.circular(size * 0.25),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'G',
+        style: GoogleFonts.raleway(
+          color: const Color(0xFF4285F4),
+          fontWeight: FontWeight.w800,
+          fontSize: size * 0.75,
+          height: 1,
         ),
       ),
     );

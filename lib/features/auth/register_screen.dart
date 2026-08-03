@@ -36,9 +36,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _ageConsentChecked = false;
   String? _localError;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+
+  static const String _demoEmail = String.fromEnvironment(
+    'DEMO_LOGIN_EMAIL',
+    defaultValue: 'test_a_prod@example.com',
+  );
+  static const String _demoPassword = String.fromEnvironment(
+    'DEMO_LOGIN_PASSWORD',
+    defaultValue: 'ProdTest@2026!',
+  );
 
   @override
   void initState() {
@@ -65,6 +75,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     if (_formKey.currentState?.validate() != true) return;
+    if (!_ageConsentChecked) {
+      setState(
+        () => _localError =
+            'Please confirm 18+ age verification and community guidelines.',
+      );
+      return;
+    }
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
       setState(
         () => _localError = 'Username, email, and password are required.',
@@ -91,8 +108,55 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     }
   }
 
-  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
-  // These methods were for social sign-in which is no longer displayed
+  Future<void> _continueWithGoogle() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+    if (!_ageConsentChecked) {
+      setState(
+        () => _localError =
+            'Please confirm 18+ age verification and community guidelines.',
+      );
+      return;
+    }
+
+    setState(() => _localError = null);
+    await ref.read(authControllerProvider.notifier).signInWithGoogle();
+    if (!mounted) return;
+    final nextState = ref.read(authControllerProvider);
+    setState(() => _localError = nextState.error);
+    if (nextState.error == null && nextState.uid != null) {
+      await AnalyticsService().logLogin(method: 'google');
+      if (mounted) {
+        showProfileCompletionDialog(context, nextState.uid!);
+      }
+    }
+  }
+
+  Future<void> _instantDemoLogin() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+    if (!_ageConsentChecked) {
+      setState(
+        () => _localError =
+            'Please confirm 18+ age verification and community guidelines.',
+      );
+      return;
+    }
+
+    setState(() => _localError = null);
+    await ref
+        .read(authControllerProvider.notifier)
+        .login(_demoEmail, _demoPassword);
+    if (!mounted) return;
+    final nextState = ref.read(authControllerProvider);
+    setState(() => _localError = nextState.error);
+    if (nextState.error == null && nextState.uid != null) {
+      await AnalyticsService().logLogin(method: 'demo_login');
+      if (mounted) {
+        showProfileCompletionDialog(context, nextState.uid!);
+      }
+    }
+  }
 
   // ── build ─────────────────────────────────────────────────────────────────
   @override
@@ -375,6 +439,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   ),
                   const SizedBox(height: 24),
 
+                  _oauthGoogleButton(
+                    onPressed: isLoading ? null : _continueWithGoogle,
+                  ),
+
                   const SizedBox(height: 20),
                   _orDivider(),
                   const SizedBox(height: 20),
@@ -493,6 +561,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     ),
                   ],
 
+                  const SizedBox(height: 12),
+
+                  _consentGate(
+                    checked: _ageConsentChecked,
+                    onChanged: isLoading
+                        ? null
+                        : (value) => setState(
+                              () => _ageConsentChecked = value ?? false,
+                            ),
+                  ),
+
                   const SizedBox(height: 20),
 
                   // ── CREATE ACCOUNT — gold solid button ───────────────
@@ -524,6 +603,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   _goldOutlineButton(
                     onPressed: isLoading ? null : () => context.go('/auth'),
                     label: 'ALREADY HAVE AN ACCOUNT',
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  _demoUtilityButton(
+                    onPressed: isLoading ? null : _instantDemoLogin,
                   ),
 
                   const SizedBox(height: 16),
@@ -596,6 +681,108 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   // ── gold solid button ─────────────────────────────────────────────────────
+  Widget _oauthGoogleButton({required VoidCallback? onPressed}) {
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _rOnSurface,
+          side: BorderSide(color: _rOnVariant.withAlpha(80)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          backgroundColor: const Color(0xFFFFFFFF),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+        ),
+        icon: const _GoogleGlyph(size: 18),
+        label: Text(
+          'Continue with Google Sign-In',
+          style: GoogleFonts.raleway(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            color: const Color(0xFF111318),
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _consentGate({
+    required bool checked,
+    required ValueChanged<bool?>? onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _rSurfaceHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _rGoldBorder),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: CheckboxListTile(
+        value: checked,
+        onChanged: onChanged,
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        controlAffinity: ListTileControlAffinity.leading,
+        activeColor: _rPrimary,
+        checkColor: _rSurface,
+        title: RichText(
+          text: TextSpan(
+            style: GoogleFonts.raleway(
+              color: _rOnVariant,
+              fontSize: 11,
+              height: 1.35,
+            ),
+            children: [
+              const TextSpan(text: 'I confirm I am 18+ and agree to the '),
+              TextSpan(
+                text: 'Community Guidelines',
+                style: GoogleFonts.raleway(
+                  color: _rPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                  decorationColor: _rPrimary,
+                ),
+              ),
+              const TextSpan(text: ' and terms.'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _demoUtilityButton({required VoidCallback? onPressed}) {
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _rSecondaryBright,
+          side: BorderSide(color: _rSecondaryBright.withAlpha(150)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          backgroundColor: _rSecondary.withAlpha(25),
+        ),
+        icon: const Icon(
+          Icons.flash_on_rounded,
+          size: 16,
+          color: _rSecondaryBright,
+        ),
+        label: Text(
+          'Instant One-Click Demo Login',
+          style: GoogleFonts.raleway(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: _rSecondaryBright,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _goldSolidButton({
     required VoidCallback? onPressed,
     required Widget child,
@@ -717,4 +904,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
+}
+
+class _GoogleGlyph extends StatelessWidget {
+  const _GoogleGlyph({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF3FF),
+        borderRadius: BorderRadius.circular(size * 0.25),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'G',
+        style: GoogleFonts.raleway(
+          color: const Color(0xFF4285F4),
+          fontWeight: FontWeight.w800,
+          fontSize: size * 0.75,
+          height: 1,
+        ),
+      ),
+    );
+  }
 }
