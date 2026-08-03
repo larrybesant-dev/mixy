@@ -2016,10 +2016,21 @@ async function requestCashOutHandler(request, deps = {}) {
     );
   }
 
+  const requestRef = firestore.collection("cash_out_requests").doc();
+  await requestRef.set({
+    id: requestRef.id,
+    userId: requesterId,
+    amount,
+    status: "pending",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
   return {
     ok: true,
     accepted: true,
     availableBalance,
+    requestId: requestRef.id,
   };
 }
 
@@ -4189,6 +4200,86 @@ async function inviteToMicHandler(request, deps = {}) {
 
 exports.inviteToMic = onCall(async (request) => inviteToMicHandler(request));
 
+// ── dropFromMic ────────────────────────────────────────────────────────────
+// Host/co-host/moderator operation: demotes a target participant from stage
+// back to audience/member role.
+async function dropFromMicHandler(request, deps = {}) {
+  const callerId = requireAuth(request);
+
+  const roomId = parseIdField(request.data && request.data.roomId, "roomId");
+  const targetUserId = parseIdField(
+    request.data && (request.data.targetUserId || request.data.userId),
+    "targetUserId",
+  );
+
+  if (callerId === targetUserId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Use releaseOwnMic to remove your own mic seat.",
+    );
+  }
+
+  const firestore = deps.firestore || db;
+  const participantsCol = firestore
+    .collection("rooms")
+    .doc(roomId)
+    .collection("participants");
+
+  await firestore.runTransaction(async (tx) => {
+    const callerRef = participantsCol.doc(callerId);
+    const targetRef = participantsCol.doc(targetUserId);
+
+    const [callerSnap, targetSnap] = await Promise.all([
+      tx.get(callerRef),
+      tx.get(targetRef),
+    ]);
+
+    if (!callerSnap.exists) {
+      throw new HttpsError("permission-denied", "You are not in this room.");
+    }
+    if (!targetSnap.exists) {
+      throw new HttpsError("not-found", "Target participant was not found.");
+    }
+
+    const callerRole = String(callerSnap.data().role || "");
+    const targetRole = String(targetSnap.data().role || "");
+
+    const callerCanManageMic = ["host", "owner", "cohost", "moderator"].includes(callerRole);
+    if (!callerCanManageMic) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only host, co-host, or moderators can remove a speaker.",
+      );
+    }
+
+    const targetIsHostLike = ["host", "owner"].includes(targetRole);
+    const callerIsHostLike = ["host", "owner"].includes(callerRole);
+    if (targetIsHostLike && !callerIsHostLike) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only a host can modify another host's stage state.",
+      );
+    }
+
+    tx.set(
+      targetRef,
+      {
+        role: "member",
+        micOn: false,
+        isMuted: false,
+        micExpiresAt: admin.firestore.FieldValue.delete(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+    );
+  });
+
+  return {success: true};
+}
+
+exports.dropFromMic = onCall(async (request) => dropFromMicHandler(request));
+
 // ── Automatic Verification Document Creation on User Signup ───────────────────
 // Triggers when a new user document is created in /users/{uid}.
 // Automatically creates a /verifications/{uid} document with initial 'pending' status.
@@ -4234,6 +4325,7 @@ exports.__testing = {
   createCheckoutSessionHandler,
   createCheckoutSessionCallableHandler,
   requestRefundHandler,
+  requestCashOutHandler,
   sendRoomGiftHandler,
   cleanupDeletedUserData,
   classifyModerationText,
@@ -4261,6 +4353,8 @@ exports.__testing = {
   sendIncomingCallPushHandler,
   grabMicHandler,
   inviteToMicHandler,
+  dropFromMicHandler,
+  generateTurnCredentialsHandler,
   buildCheckoutSessionPayload,
   resolveCheckoutProduct,
 };

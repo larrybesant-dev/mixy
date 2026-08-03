@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/mixvy_economy_config.dart';
@@ -52,7 +53,7 @@ class CashOutService {
         });
   }
 
-  Future<void> requestCashOut(double amount) async {
+  Future<String> requestCashOut(double amount) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null || userId.isEmpty) {
       throw Exception('User not logged in');
@@ -89,17 +90,17 @@ class CashOutService {
       );
     }
 
-    // Hardening: Optimistically create the pending request record.
-    // The Cloud Function will process this and update status/balances.
-    await _firestore.collection('cash_out_requests').add({
-      'userId': userId,
-      'amount': amount,
-      'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
     final callable = _functions.httpsCallable('requestCashOut');
-    await callable.call<Map<String, dynamic>>({'amount': amount});
+    final result = await callable.call<Map<String, dynamic>>({'amount': amount});
+    final data = Map<String, dynamic>.from(result.data);
+    final requestId = (data['requestId'] as String?)?.trim() ?? '';
+    if (requestId.isEmpty) {
+      throw Exception('Cash-out request was accepted but no request id was returned.');
+    }
+    debugPrint(
+      '[CashOutService] Success: Cash-out requested. RequestID: $requestId',
+    );
+    return requestId;
   }
 }
 
