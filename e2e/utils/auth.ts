@@ -1,6 +1,22 @@
 import { Page, expect } from '@playwright/test';
 
-const AUTH_STEP_TIMEOUT_MS = 45000;
+const DEFAULT_AUTH_STEP_TIMEOUT_MS = 45000;
+const FIREFOX_AUTH_STEP_TIMEOUT_MS = 90000;
+const DEFAULT_READY_TIMEOUT_MS = 30000;
+const FIREFOX_READY_TIMEOUT_MS = 60000;
+const DEFAULT_NAVIGATION_TIMEOUT_MS = 30000;
+const FIREFOX_NAVIGATION_TIMEOUT_MS = 45000;
+const DEFAULT_TEST_EMAIL = 'test_a_prod@example.com';
+const DEFAULT_TEST_PASSWORD = 'ProdTest@2026!';
+const DEFAULT_FIREBASE_WEB_API_KEY = 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I';
+
+function browserName(page: Page): string {
+  return page.context().browser()?.browserType().name() ?? 'unknown';
+}
+
+function isFirefox(page: Page): boolean {
+  return browserName(page) === 'firefox';
+}
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -39,8 +55,12 @@ async function enableFlutterSemantics(page: Page): Promise<void> {
 }
 
 async function waitForAppReady(page: Page): Promise<void> {
+  const readyTimeout = isFirefox(page)
+    ? FIREFOX_READY_TIMEOUT_MS
+    : DEFAULT_READY_TIMEOUT_MS;
+
   await page.waitForLoadState('domcontentloaded');
-  await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('body')).toBeVisible({ timeout: readyTimeout });
   await expect
     .poll(
       async () =>
@@ -48,7 +68,7 @@ async function waitForAppReady(page: Page): Promise<void> {
           .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
           .count(),
       {
-        timeout: 30000,
+        timeout: readyTimeout,
         message: 'Expected app readiness markers to be present'
       }
     )
@@ -60,20 +80,23 @@ async function waitForAppReady(page: Page): Promise<void> {
  * Supports multiple fallback methods including Firebase auth and local storage injection
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
-  const testEmail = process.env.TEST_EMAIL || 'test@example.com';
-  const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
+  const testEmail = process.env.TEST_EMAIL || DEFAULT_TEST_EMAIL;
+  const testPassword = process.env.TEST_PASSWORD || DEFAULT_TEST_PASSWORD;
   const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';
+  const authStepTimeout = isFirefox(page)
+    ? FIREFOX_AUTH_STEP_TIMEOUT_MS
+    : DEFAULT_AUTH_STEP_TIMEOUT_MS;
 
   try {
 
     // Navigate to auth page
     await page.goto('/auth', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(isFirefox(page) ? 3500 : 2000);
 
     // Method 1: Try standard email/password form
     const authSuccess = await withTimeout(
       tryEmailPasswordAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
+      authStepTimeout,
       'email/password authentication'
     ).catch(() => false);
     if (authSuccess) {
@@ -84,7 +107,7 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     // Method 2: Try Firebase Auth REST API (fallback)
     const firebaseSuccess = await withTimeout(
       tryFirebaseRestAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
+      authStepTimeout,
       'firebase REST authentication'
     ).catch(() => false);
     if (firebaseSuccess) {
@@ -100,7 +123,7 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     // Method 3: Try guest access fallback
     const guestSuccess = await withTimeout(
       tryGuestAccess(page),
-      AUTH_STEP_TIMEOUT_MS,
+      authStepTimeout,
       'guest access fallback'
     ).catch(() => false);
     if (guestSuccess) {
@@ -125,6 +148,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     // Flutter Web doesn't expose real <input>/<button> DOM nodes until semantics
     // are activated - do this first or every locator below finds nothing.
     await enableFlutterSemantics(page);
+    await ensureAuthFormVisible(page);
 
     // Real DOM attributes (verified against the live app): type="text" with an
     // empty placeholder, identified via aria-label instead (e.g. "Email address").
@@ -148,7 +172,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
 
     // Find and click login button
     const loginButton = page.locator(
-      'button:has-text("SIGN IN"), button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")'
+      'button:has-text("SIGN IN"), button:has-text("Sign In"), button:has-text("SIGN IN / UP"), button:has-text("Sign In / Up"), button:has-text("LOGIN"), button:has-text("Log In")'
     ).first();
     await loginButton.click();
 
@@ -157,7 +181,30 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     // so the real signal is GoRouter navigating away from the /auth route once the
     // app confirms the session.
     try {
-      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 8000 });
+      await Promise.race([
+        page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 8000 }),
+        expect
+          .poll(
+            async () => {
+              const authInputsVisible = await page
+                .locator('input[aria-label*="mail" i], input[type="email"], input[placeholder*="mail" i]')
+                .first()
+                .isVisible()
+                .catch(() => false);
+              const composerVisible = await page
+                .locator('text=Share your latest broadcast, text=Share your latest')
+                .first()
+                .isVisible()
+                .catch(() => false);
+              return !authInputsVisible && composerVisible;
+            },
+            {
+              timeout: 8000,
+              message: 'Expected auth form to close and authenticated shell to appear',
+            }
+          )
+          .toBeTruthy(),
+      ]);
       return true;
     } catch {
       return false;
@@ -167,14 +214,41 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
   }
 }
 
+async function ensureAuthFormVisible(page: Page): Promise<void> {
+  const emailInput = page.locator(
+    'input[aria-label*="mail" i], input[type="email"], input[placeholder*="mail" i]'
+  ).first();
+
+  if (await emailInput.isVisible().catch(() => false)) {
+    return;
+  }
+
+  const signInTrigger = page.locator(
+    'button:has-text("Sign In / Up"), button:has-text("SIGN IN / UP"), button:has-text("SIGN IN"), button:has-text("Sign In"), button[title*="sign in" i]'
+  ).first();
+
+  if (await signInTrigger.isVisible().catch(() => false)) {
+    await signInTrigger.click();
+    await page.waitForTimeout(500);
+  }
+
+  const signInTab = page.locator(
+    'button:has-text("SIGN IN"), button:has-text("Sign In"), [role="tab"]:has-text("SIGN IN"), [role="tab"]:has-text("Sign In")'
+  ).first();
+
+  if (await signInTab.isVisible().catch(() => false)) {
+    await signInTab.click().catch(() => undefined);
+  }
+
+  await expect(emailInput).toBeVisible({ timeout: 5000 });
+}
+
 /**
  * Attempts authentication via Firebase Auth REST API (server-side fallback)
  */
 async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
   try {
-    // Get Firebase config from window object or use hardcoded values
-    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCqXHwQaMV1VvWxYnrAGqhGlx9S2K0MZZE';
-    const firebaseProjectId = 'mixvy-v2';
+    const firebaseKey = process.env.FIREBASE_API_KEY || DEFAULT_FIREBASE_WEB_API_KEY;
 
     const response = await page.request.post(
       `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseKey}`,
@@ -197,28 +271,65 @@ async function tryFirebaseRestAuth(page: Page, email: string, password: string):
       return false;
     }
 
-    // Store auth tokens in localStorage
-    await page.evaluate(
-      ({ tokens, uid }) => {
-        localStorage.setItem('firebase:authUser:mixvy-v2', JSON.stringify({
-          uid,
-          email: tokens.email,
-          emailVerified: false,
-          displayName: null,
-          isAnonymous: false,
-          metadata: {
-            creationTime: new Date().toISOString(),
-            lastSignInTime: new Date().toISOString(),
+    const expirationTime = Date.now() + (Number(result.expiresIn ?? 3600) * 1000);
+    const authRecord = {
+      fbase_key: `firebase:authUser:${firebaseKey}:[DEFAULT]`,
+      value: {
+        uid: result.localId,
+        email: result.email,
+        emailVerified: false,
+        displayName: null,
+        isAnonymous: false,
+        photoURL: null,
+        providerData: [
+          {
+            providerId: 'password',
+            uid: result.localId,
+            displayName: null,
+            email: result.email,
+            phoneNumber: null,
+            photoURL: null,
           },
-          providerData: [],
-          _token: tokens.idToken,
-          _tokenExpirationTime: Date.now() + (3600 * 1000),
-        }));
+        ],
+        stsTokenManager: {
+          refreshToken: result.refreshToken,
+          accessToken: result.idToken,
+          expirationTime,
+        },
+        createdAt: `${Date.now()}`,
+        lastLoginAt: `${Date.now()}`,
+        apiKey: firebaseKey,
+        appName: '[DEFAULT]',
       },
-      { tokens: result, uid: result.localId }
-    );
+    };
 
-    return true;
+    await page.evaluate(async (record) => {
+      await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('firebaseLocalStorageDb', 1);
+        request.onerror = () => reject(request.error ?? new Error('Failed to open firebaseLocalStorageDb'));
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('firebaseLocalStorage')) {
+            db.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' });
+          }
+        };
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('firebaseLocalStorage', 'readwrite');
+          const store = tx.objectStore('firebaseLocalStorage');
+          store.put(record);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error ?? new Error('Failed to write auth record'));
+        };
+      });
+    }, authRecord);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
+    await waitForAppReady(page);
+
+    return !(new URL(page.url()).pathname.includes('/auth'));
   } catch (e) {
     return false;
   }
@@ -248,17 +359,33 @@ async function tryGuestAccess(page: Page): Promise<boolean> {
  * Navigates to a page with retry logic
  */
 export async function safeNavigate(page: Page, path: string, maxRetries: number = 3): Promise<void> {
+  const navigationTimeout = isFirefox(page)
+    ? FIREFOX_NAVIGATION_TIMEOUT_MS
+    : DEFAULT_NAVIGATION_TIMEOUT_MS;
+  const effectiveRetries = isFirefox(page)
+    ? Math.max(maxRetries, 5)
+    : maxRetries;
+
   let lastError: Error | null = null;
   
-  for (let i = 0; i < maxRetries; i++) {
+  for (let i = 0; i < effectiveRetries; i++) {
     try {
-      await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.goto(path, { waitUntil: 'domcontentloaded', timeout: navigationTimeout });
       await waitForAppReady(page);
+
+      const bodyText = (await page.locator('body').innerText().catch(() => '')).trim();
+      if (/^not found$/i.test(bodyText)) {
+        throw new Error(
+          `Reached a Not Found page while navigating to '${path}'. Verify baseURL/hosting rewrites and deep-link support.`
+        );
+      }
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.log(`Navigation attempt ${i + 1}/${maxRetries} failed for path: ${path}`);
-      await page.waitForTimeout(2000 * (i + 1)); // Exponential backoff
+      console.log(`Navigation attempt ${i + 1}/${effectiveRetries} failed for path: ${path}`);
+
+      const backoffMs = Math.min(1500, 500 * (i + 1));
+      await page.waitForTimeout(backoffMs);
     }
   }
   

@@ -5,7 +5,7 @@ const baseURL =
   process.env.PLAYWRIGHT_BASE_URL ||
   process.env.APP_URL ||
   process.env.STARTUP_APP_URL ||
-  'http://127.0.0.1:9100';
+  'https://mixvy-v2.web.app';
 
 export default defineConfig({
   testDir: './e2e',
