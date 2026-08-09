@@ -6,9 +6,10 @@ const DEFAULT_READY_TIMEOUT_MS = 30000;
 const FIREFOX_READY_TIMEOUT_MS = 60000;
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 30000;
 const FIREFOX_NAVIGATION_TIMEOUT_MS = 45000;
-const DEFAULT_TEST_EMAIL = 'test_a_prod@example.com';
-const DEFAULT_TEST_PASSWORD = 'ProdTest@2026!';
-const DEFAULT_FIREBASE_WEB_API_KEY = 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I';
+
+function envValue(name: string): string {
+  return (process.env[name] ?? '').trim();
+}
 
 function browserName(page: Page): string {
   return page.context().browser()?.browserType().name() ?? 'unknown';
@@ -80,8 +81,8 @@ async function waitForAppReady(page: Page): Promise<void> {
  * Supports multiple fallback methods including Firebase auth and local storage injection
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
-  const testEmail = process.env.TEST_EMAIL || DEFAULT_TEST_EMAIL;
-  const testPassword = process.env.TEST_PASSWORD || DEFAULT_TEST_PASSWORD;
+  const testEmail = envValue('TEST_EMAIL');
+  const testPassword = envValue('TEST_PASSWORD');
   const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';
   const authStepTimeout = isFirefox(page)
     ? FIREFOX_AUTH_STEP_TIMEOUT_MS
@@ -93,26 +94,33 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     await page.goto('/auth', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(isFirefox(page) ? 3500 : 2000);
 
-    // Method 1: Try standard email/password form
-    const authSuccess = await withTimeout(
-      tryEmailPasswordAuth(page, testEmail, testPassword),
-      authStepTimeout,
-      'email/password authentication'
-    ).catch(() => false);
-    if (authSuccess) {
-      console.log('✓ Authenticated via email/password form');
-      return true;
-    }
+    if (testEmail && testPassword) {
+      // Method 1: Try standard email/password form
+      const authSuccess = await withTimeout(
+        tryEmailPasswordAuth(page, testEmail, testPassword),
+        authStepTimeout,
+        'email/password authentication'
+      ).catch(() => false);
+      if (authSuccess) {
+        console.log('✓ Authenticated via email/password form');
+        return true;
+      }
 
-    // Method 2: Try Firebase Auth REST API (fallback)
-    const firebaseSuccess = await withTimeout(
-      tryFirebaseRestAuth(page, testEmail, testPassword),
-      authStepTimeout,
-      'firebase REST authentication'
-    ).catch(() => false);
-    if (firebaseSuccess) {
-      console.log('✓ Authenticated via Firebase REST API');
-      return true;
+      // Method 2: Try Firebase Auth REST API (fallback)
+      const firebaseSuccess = await withTimeout(
+        tryFirebaseRestAuth(page, testEmail, testPassword),
+        authStepTimeout,
+        'firebase REST authentication'
+      ).catch(() => false);
+      if (firebaseSuccess) {
+        console.log('✓ Authenticated via Firebase REST API');
+        return true;
+      }
+    } else if (authRequired) {
+      console.warn('⚠ Missing required TEST_EMAIL/TEST_PASSWORD for AUTH_REQUIRED=1.');
+      return false;
+    } else {
+      console.log('ℹ TEST_EMAIL/TEST_PASSWORD not set; skipping credentialed auth attempts.');
     }
 
     if (authRequired) {
@@ -248,7 +256,10 @@ async function ensureAuthFormVisible(page: Page): Promise<void> {
  */
 async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
   try {
-    const firebaseKey = process.env.FIREBASE_API_KEY || DEFAULT_FIREBASE_WEB_API_KEY;
+    const firebaseKey = envValue('FIREBASE_API_KEY');
+    if (!firebaseKey) {
+      return false;
+    }
 
     const response = await page.request.post(
       `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseKey}`,

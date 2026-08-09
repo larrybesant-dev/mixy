@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -43,12 +44,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   static const String _demoEmail = String.fromEnvironment(
     'DEMO_LOGIN_EMAIL',
-    defaultValue: 'test_a_prod@example.com',
   );
   static const String _demoPassword = String.fromEnvironment(
     'DEMO_LOGIN_PASSWORD',
-    defaultValue: 'ProdTest@2026!',
   );
+
+  static bool get _demoLoginEnabled =>
+      kDebugMode && _demoEmail.isNotEmpty && _demoPassword.isNotEmpty;
 
   @override
   void initState() {
@@ -133,6 +135,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   Future<void> _instantDemoLogin() async {
+    if (!_demoLoginEnabled) {
+      setState(() => _localError = 'Demo login is not available in this build.');
+      return;
+    }
     final authState = ref.read(authControllerProvider);
     if (authState.isLoading) return;
     if (!_ageConsentChecked) {
@@ -280,13 +286,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Create your account and step into\na world of real connections.',
+                  'Build your profile, verify your vibe,\nand step into the lounge.',
                   style: GoogleFonts.raleway(
                     fontSize: 15,
                     color: _rOnVariant,
                     height: 1.7,
                   ),
                 ),
+                if (_demoLoginEnabled) ...[
+                  const SizedBox(height: 10),
+                  _demoUtilityButton(
+                    onPressed: authState.isLoading ? null : _instantDemoLogin,
+                  ),
+                ],
                 const SizedBox(height: 40),
                 _brandingCards(),
               ],
@@ -605,11 +617,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     label: 'ALREADY HAVE AN ACCOUNT',
                   ),
 
-                  const SizedBox(height: 10),
+                  if (_demoLoginEnabled) ...[
+                    const SizedBox(height: 10),
 
-                  _demoUtilityButton(
-                    onPressed: isLoading ? null : _instantDemoLogin,
-                  ),
+                    _demoUtilityButton(
+                      onPressed: isLoading ? null : _instantDemoLogin,
+                    ),
+                  ],
 
                   const SizedBox(height: 16),
 

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,12 +48,13 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
 
   static const String _demoEmail = String.fromEnvironment(
     'DEMO_LOGIN_EMAIL',
-    defaultValue: 'test_a_prod@example.com',
   );
   static const String _demoPassword = String.fromEnvironment(
     'DEMO_LOGIN_PASSWORD',
-    defaultValue: 'ProdTest@2026!',
   );
+
+  static bool get _demoLoginEnabled =>
+      kDebugMode && _demoEmail.isNotEmpty && _demoPassword.isNotEmpty;
 
   @override
   void initState() {
@@ -141,6 +143,10 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   }
 
   Future<void> _instantDemoLogin() async {
+    if (!_demoLoginEnabled) {
+      await _showMessage('Demo login is not available in this build.', isError: true);
+      return;
+    }
     final authState = ref.read(authControllerProvider);
     if (authState.isLoading) return;
     if (!_ageConsentChecked) {
@@ -652,14 +658,16 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   label: 'SIGN UP',
                 ),
 
-                const SizedBox(height: 10),
+                if (_demoLoginEnabled) ...[
+                  const SizedBox(height: 10),
 
-                // Demo utility login (developer testing)
-                _demoUtilityButton(
-                  onPressed: isLoading ? null : _instantDemoLogin,
-                ),
+                  // Demo utility login (developer testing)
+                  _demoUtilityButton(
+                    onPressed: isLoading ? null : _instantDemoLogin,
+                  ),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                ],
 
                 // Footer
                 Wrap(

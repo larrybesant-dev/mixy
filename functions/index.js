@@ -86,6 +86,29 @@ function getGenAIClient() {
 
 const DEV_API_TOKEN = process.env.DEV_API_TOKEN || "";
 
+function isDevApiBypassAllowed() {
+  if (String(process.env.FUNCTIONS_EMULATOR || "").toLowerCase() === "true") {
+    return true;
+  }
+
+  let projectId = process.env.GCLOUD_PROJECT || "";
+  if (!projectId) {
+    try {
+      const rawConfig = process.env.FIREBASE_CONFIG || "{}";
+      const parsedConfig = JSON.parse(rawConfig);
+      projectId = typeof parsedConfig.projectId === "string" ? parsedConfig.projectId : "";
+    } catch (error) {
+      logger.warn("Unable to read projectId for DEV_API_TOKEN guard", {
+        error: String(error),
+      });
+    }
+  }
+
+  // Allow bypass only in explicit non-production projects.
+  // Never allow for the production project id.
+  return Boolean(projectId) && projectId !== "mixvy-v2";
+}
+
 async function resolveHttpCaller(request) {
   const authHeader = request.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -97,11 +120,15 @@ async function resolveHttpCaller(request) {
     throw new HttpsError("unauthenticated", "Missing bearer token.");
   }
 
-  if (DEV_API_TOKEN && token === DEV_API_TOKEN) {
+  if (DEV_API_TOKEN && token === DEV_API_TOKEN && isDevApiBypassAllowed()) {
     const fallbackUid =
       (typeof request.headers["x-user-id"] === "string" && request.headers["x-user-id"].trim()) ||
       "dev_user";
     return {uid: fallbackUid};
+  }
+
+  if (DEV_API_TOKEN && token === DEV_API_TOKEN) {
+    logger.warn("Rejected DEV_API_TOKEN auth bypass outside allowed environment.");
   }
 
   try {
@@ -275,6 +302,7 @@ async function rebuildConversationSummary(conversationId) {
 }
 
 const RATE_LIMITS = {
+  createRoomCallable: {windowMs: 60 * 1000, maxRequests: 20},
   createPaymentIntent: {windowMs: 60 * 1000, maxRequests: 12},
   recordStripePaymentSuccess: {windowMs: 60 * 1000, maxRequests: 20},
   generateReferralCode: {windowMs: 60 * 1000, maxRequests: 12},
@@ -664,6 +692,96 @@ function requireAuth(request) {
   }
   return uid.trim();
 }
+
+function asOptionalTrimmedString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function asStringArray(value, maxItems = 20) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0)
+    .slice(0, maxItems);
+}
+
+async function createRoomCallableHandler(request, deps = {}) {
+  const uid = requireAuth(request);
+  enforceRateLimit("createRoomCallable", uid);
+
+  const data = request.data || {};
+  const name = asOptionalTrimmedString(data.name);
+  if (!name) {
+    throw new HttpsError("invalid-argument", "name is required.");
+  }
+  if (name.length > 120) {
+    throw new HttpsError("invalid-argument", "name is too long.");
+  }
+
+  const isLive = data.isLive !== false;
+  const isAdult = data.isAdult === true;
+
+  if (typeof data.isLive !== "undefined" && typeof data.isLive !== "boolean") {
+    throw new HttpsError("invalid-argument", "isLive must be a boolean.");
+  }
+  if (typeof data.isAdult !== "undefined" && typeof data.isAdult !== "boolean") {
+    throw new HttpsError("invalid-argument", "isAdult must be a boolean.");
+  }
+
+  const firestore = deps.firestore || db;
+
+  if (isAdult) {
+    const verificationSnap = await firestore.collection("verification").doc(uid).get();
+    const verification = verificationSnap.exists ? (verificationSnap.data() || {}) : {};
+    if (verification.isAdultVerified !== true || verification.verificationStatus !== "verified") {
+      throw new HttpsError("permission-denied", "Adult verification is required for 18+ rooms.");
+    }
+  }
+
+  const hostUsername = asOptionalTrimmedString(data.hostUsername);
+  const hostAvatarUrl = asOptionalTrimmedString(data.hostAvatarUrl);
+  const description = asOptionalTrimmedString(data.description);
+  const rules = asOptionalTrimmedString(data.rules);
+  const thumbnailUrl = asOptionalTrimmedString(data.thumbnailUrl);
+  const category = asOptionalTrimmedString(data.category);
+  const tags = asStringArray(data.tags);
+
+  const scheduledAtMillis = Number(data.scheduledAtMillis);
+  const hasScheduledAt = Number.isFinite(scheduledAtMillis) && scheduledAtMillis > 0;
+
+  const roomRef = firestore.collection("rooms").doc();
+  const payload = {
+    name,
+    hostId: uid,
+    ownerId: uid,
+    isLive,
+    isAdult,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    stageUserIds: [],
+    audienceUserIds: [uid],
+    memberCount: 1,
+    ...(description ? {description} : {}),
+    ...(rules ? {rules} : {}),
+    ...(hostUsername ? {hostUsername} : {}),
+    ...(hostAvatarUrl ? {hostAvatarUrl} : {}),
+    ...(thumbnailUrl ? {thumbnailUrl} : {}),
+    ...(category ? {category} : {}),
+    ...(tags.length ? {tags} : {}),
+    meta: {title: name},
+    coHosts: [],
+    isLocked: false,
+    slowModeSeconds: 0,
+    ...(hasScheduledAt ? {scheduledAt: admin.firestore.Timestamp.fromMillis(scheduledAtMillis)} : {}),
+  };
+
+  await roomRef.set(payload);
+  return {roomId: roomRef.id};
+}
+
+exports.createRoomCallable = onCall(async (request) => createRoomCallableHandler(request));
 
 function parsePositiveAmount(value) {
   const amount = Number(value);
