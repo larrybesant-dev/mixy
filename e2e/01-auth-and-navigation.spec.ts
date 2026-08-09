@@ -82,9 +82,9 @@ test.describe('MixVy - Auth Page Smoke Tests', () => {
     await page.goto('/auth');
     await page.waitForTimeout(500);
 
-    // Reload page
-    await page.reload();
-    await page.waitForTimeout(500);
+    // In Firefox CI, waiting for full "load" can hang on third-party resources.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Should still have content
     const title = await page.title();
