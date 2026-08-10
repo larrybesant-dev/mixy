@@ -699,17 +699,6 @@ test.describe('MixVy Production Smoke Pass', () => {
     }
 
     if (!signedIn) {
-      if (envAccount && envAccount.password.trim().length > 0) {
-        try {
-          await signIn(page, envAccount);
-          signedIn = true;
-        } catch {
-          signedIn = false;
-        }
-      }
-    }
-
-    if (!signedIn) {
       signedIn = await signInWithGuestOrDemo(page);
       if (signedIn) {
         authenticatedAccount = {
