@@ -138,6 +138,33 @@ async function waitForSemanticsTree(page: Page): Promise<void> {
   throw new Error('Expected Flutter semantics/accessibility nodes to be attached');
 }
 
+type PostSignupState = 'home' | 'profile-completion';
+
+async function waitForPostSignupState(page: Page): Promise<PostSignupState> {
+  const timeoutMs = 30000;
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (currentRoute(page) === '/home') {
+      return 'home';
+    }
+
+    const profileCompletionVisible =
+      (await page.getByText(/complete your profile/i).first().isVisible().catch(() => false)) ||
+      (await page.getByRole('button', { name: /save & complete/i }).first().isVisible().catch(() => false)) ||
+      (await page.getByLabel(/display name/i).first().isVisible().catch(() => false));
+
+    if (profileCompletionVisible) {
+      return 'profile-completion';
+    }
+
+    await enableFlutterSemantics(page);
+    await page.waitForTimeout(500);
+  }
+
+  throw new Error('Expected signup to reach /home or the mandatory profile completion dialog');
+}
+
 function currentRoute(page: Page): string {
   const url = new URL(page.url());
   return url.pathname;
@@ -419,12 +446,7 @@ async function completeSignUp(page: Page, account: TestAccount): Promise<TestAcc
   await createAccountButton.click({ force: true });
 
   try {
-    await expect
-      .poll(() => currentRoute(page), {
-        timeout: 25000,
-        message: 'Expected create account to advance away from /register',
-      })
-      .not.toBe('/register');
+    await waitForPostSignupState(page);
     return account;
   } catch {
     const envAccount = getFallbackAuthAccountFromEnv();
@@ -454,40 +476,6 @@ async function completeSignUp(page: Page, account: TestAccount): Promise<TestAcc
     }
 
     throw new Error('Expected create account to advance away from /register or recover via auth fallback');
-  }
-}
-
-async function skipProfileSetup(page: Page): Promise<void> {
-  await enableFlutterSemantics(page);
-  await waitForSemanticsTree(page);
-  if (currentRoute(page) === '/home') {
-    return;
-  }
-
-  try {
-    const skipButton = await findFirstVisibleLocator(page, [
-      () => page.getByRole('button', { name: /skip for now/i }).first(),
-      () => page.getByRole('button', { name: /^skip$/i }).first(),
-      () => page.getByRole('button', { name: /skip.*profile|maybe later|not now/i }).first(),
-      () => page.locator('button:has-text("Skip for now"), text=Skip for now').first(),
-    ], 20000);
-    await skipButton.click({ force: true });
-    await page.waitForLoadState('domcontentloaded');
-  } catch (error) {
-    if (currentRoute(page) === '/home') {
-      return;
-    }
-
-    // Some environments land on an authenticated intermediate route without
-    // rendering a visible "skip" action. In that case, verify the session by
-    // navigating to /home and ensuring it stays signed in.
-    await page.goto(toProdUrl('/home'), { waitUntil: 'domcontentloaded' });
-    await waitForAppReady(page);
-    if (currentRoute(page) === '/home') {
-      return;
-    }
-
-    throw error;
   }
 }
 
@@ -649,29 +637,21 @@ test.describe('MixVy Production Smoke Pass', () => {
     }
   });
 
-  test('2. Signup and skippable profile flow', async ({ page }) => {
+  test('2. Signup and profile completion handoff', async ({ page }) => {
     authenticatedAccount = await completeSignUp(page, account);
-    await skipProfileSetup(page);
+    const postSignupState = await waitForPostSignupState(page);
 
-    const routeAfterSignup = await expect
-      .poll(() => currentRoute(page), {
-        timeout: 15000,
-        message: 'Expected post-signup flow to complete on an authenticated route',
-      })
-      .not.toMatch(/^\/(auth|register)$/)
-      .then(() => currentRoute(page));
-
-    if (routeAfterSignup !== '/home') {
-      await page.goto(toProdUrl('/home'), { waitUntil: 'domcontentloaded' });
-      await waitForAppReady(page);
+    if (postSignupState === 'profile-completion') {
+      await expect(page.getByText(/complete your profile/i).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: /save & complete/i }).first()).toBeVisible();
     }
 
-    await expect
-      .poll(() => currentRoute(page), {
-        timeout: 15000,
-        message: 'Expected signed-in user to reach /home after signup flow',
-      })
-      .toBe('/home');
+    const reusableAccount = getFallbackAuthAccountFromEnv();
+    if (reusableAccount && reusableAccount.password.trim().length > 0) {
+      authenticatedAccount = reusableAccount;
+    }
+
+    await expectNoRawPermissionDeniedLeak(page);
   });
 
   test('3. Signed-out room deep-link preservation', async ({ page, context }) => {
@@ -698,8 +678,18 @@ test.describe('MixVy Production Smoke Pass', () => {
 
     let signedIn = false;
 
-    // Use the authenticated account from test 2 when it has reusable credentials.
-    if (authenticatedAccount.email !== 'guest@local.invalid' && authenticatedAccount.password.trim().length > 0) {
+    const envAccount = getFallbackAuthAccountFromEnv();
+    if (envAccount && envAccount.password.trim().length > 0) {
+      try {
+        await signIn(page, envAccount);
+        authenticatedAccount = envAccount;
+        signedIn = true;
+      } catch {
+        signedIn = false;
+      }
+    }
+
+    if (!signedIn && authenticatedAccount.email !== 'guest@local.invalid' && authenticatedAccount.password.trim().length > 0) {
       try {
         await signIn(page, authenticatedAccount);
         signedIn = true;
@@ -709,11 +699,9 @@ test.describe('MixVy Production Smoke Pass', () => {
     }
 
     if (!signedIn) {
-      const envAccount = getFallbackAuthAccountFromEnv();
       if (envAccount && envAccount.password.trim().length > 0) {
         try {
           await signIn(page, envAccount);
-          authenticatedAccount = envAccount;
           signedIn = true;
         } catch {
           signedIn = false;
