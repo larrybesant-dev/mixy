@@ -2,6 +2,9 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const PROD_BASE_URL = 'https://mixvy-v2.web.app';
 const FIREBASE_WEB_API_KEY = (process.env.FIREBASE_API_KEY ?? '').trim();
+const RUN_PROD_START_ROOM_SMOKE =
+  `${process.env.RUN_PROD_START_ROOM_SMOKE ?? ''}`.toLowerCase() === '1' ||
+  `${process.env.RUN_PROD_START_ROOM_SMOKE ?? ''}`.toLowerCase() === 'true';
 
 function toProdUrl(path: string): string {
   return new URL(path, `${PROD_BASE_URL}/`).toString();
@@ -340,6 +343,11 @@ async function waitForRoomStartOutcome(page: Page, timeoutMs: number): Promise<v
 }
 
 test.describe('MixVy Production Start Room Flow', () => {
+  test.skip(
+    !RUN_PROD_START_ROOM_SMOKE,
+    'Set RUN_PROD_START_ROOM_SMOKE=1 to run this production smoke suite.'
+  );
+
   test('START ROOM NOW creates room without aborted Firestore requests', async ({ page }) => {
     test.setTimeout(180000);
 
