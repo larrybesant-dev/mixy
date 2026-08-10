@@ -2,6 +2,7 @@ name: Live E2E Tests
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PLAYWRIGHT_BASE_URL: https://mixvy-v2.web.app
 
 # Least-privilege default: this workflow only checks out code, runs Playwright,
 # and uploads artifacts - no repo/PR/issue writes are performed anywhere in it.
@@ -38,6 +39,7 @@ jobs:
       - name: Run Smoke Test
         run: npx playwright test e2e/01-auth-and-navigation.spec.ts --project=chromium --reporter=html
         env:
+          PLAYWRIGHT_BASE_URL: https://mixvy-v2.web.app
           PLAYWRIGHT_LIVE_URL: https://mixvy-v2.web.app
 
       - name: Upload test report
@@ -89,6 +91,7 @@ jobs:
       - name: Run Production Suite Tests
         run: npx playwright test e2e/06-critical-user-flows.spec.ts --project=chromium --reporter=html
         env:
+          PLAYWRIGHT_BASE_URL: https://mixvy-v2.web.app
           PLAYWRIGHT_LIVE_URL: https://mixvy-v2.web.app
         continue-on-error: true
 

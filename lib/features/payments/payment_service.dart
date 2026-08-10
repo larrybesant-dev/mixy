@@ -63,10 +63,12 @@ class StripePaymentService implements IPaymentService {
         'createPaymentIntent',
       );
 
+      // Backend contract requires recipientId + amount + currency.
+      // For package checkout flows we default recipient to the current user.
       final result = await callable.call<Map<String, dynamic>>({
-        'packageId': packageId,
-        'amount': (amount * 100).toInt(), // Convert to cents
-        'userId': user.uid,
+        'recipientId': user.uid,
+        'amount': amount,
+        'currency': 'usd',
       });
 
       final data = Map<String, dynamic>.from(result.data);
@@ -121,7 +123,6 @@ class StripePaymentService implements IPaymentService {
 
       final result = await callable.call<Map<String, dynamic>>({
         'packageId': packageId,
-        'userId': user.uid,
       });
 
       final data = Map<String, dynamic>.from(result.data);
@@ -147,18 +148,14 @@ class StripePaymentService implements IPaymentService {
   /// Confirm payment via cloud function (for web)
   Future<bool> _confirmPaymentViaFunction(String clientSecret) async {
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'confirmPaymentIntent',
+      // No backend confirmPaymentIntent callable exists. For web,
+      // Stripe hosted checkout/session confirmation is the supported path.
+      if (clientSecret.trim().isEmpty) {
+        return false;
+      }
+      throw UnsupportedError(
+        'Web confirmation via callable is not supported. Use hosted checkout flow.',
       );
-
-      final result = await callable.call<Map<String, dynamic>>({
-        'clientSecret': clientSecret,
-      });
-
-      final data = Map<String, dynamic>.from(result.data);
-      final status = data['status'] as String?;
-
-      return status == 'succeeded' || status == 'processing';
     } catch (e, st) {
       Logger.error(
         'Failed to confirm payment via function',

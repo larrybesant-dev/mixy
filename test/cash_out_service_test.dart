@@ -12,21 +12,17 @@ class _MockUser extends Mock implements User {}
 
 class _MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
 
-class _FakeHttpsCallable extends Fake implements HttpsCallable {
-  @override
-  Future<HttpsCallableResult<T>> call<T>([dynamic parameters]) async {
-    return _FakeHttpsCallableResult<T>() as HttpsCallableResult<T>;
-  }
-}
+class _MockHttpsCallable extends Mock implements HttpsCallable {}
 
-class _FakeHttpsCallableResult<T> extends Fake implements HttpsCallableResult<T> {}
+class _MockHttpsCallableResult extends Mock
+    implements HttpsCallableResult<Map<String, dynamic>> {}
 
 CashOutService _buildService({
   required FakeFirebaseFirestore firestore,
+  required FirebaseFunctions functions,
   String? uid,
 }) {
   final auth = _MockFirebaseAuth();
-  final functions = _MockFirebaseFunctions();
   
   if (uid != null) {
     final user = _MockUser();
@@ -35,10 +31,22 @@ CashOutService _buildService({
   } else {
     when(() => auth.currentUser).thenReturn(null);
   }
-  
-  when(() => functions.httpsCallable(any())).thenReturn(_FakeHttpsCallable());
-  
+
   return CashOutService(firestore: firestore, auth: auth, functions: functions);
+}
+
+_MockFirebaseFunctions _buildFunctionsReturningRequestId(String requestId) {
+  final functions = _MockFirebaseFunctions();
+  final callable = _MockHttpsCallable();
+  final result = _MockHttpsCallableResult();
+
+  when(() => functions.httpsCallable('requestCashOut')).thenReturn(callable);
+  when(
+    () => callable.call<Map<String, dynamic>>(any()),
+  ).thenAnswer((_) async => result);
+  when(() => result.data).thenReturn(<String, dynamic>{'requestId': requestId});
+
+  return functions;
 }
 
 void main() {
@@ -47,7 +55,10 @@ void main() {
       'requestsForCurrentUser returns empty stream when no user is signed in',
       () async {
         final firestore = FakeFirebaseFirestore();
-        final service = _buildService(firestore: firestore);
+        final service = _buildService(
+          firestore: firestore,
+          functions: _buildFunctionsReturningRequestId('req_1'),
+        );
         final requests = await service.requestsForCurrentUser().isEmpty;
         expect(requests, isTrue);
       },
@@ -57,7 +68,11 @@ void main() {
       'requestsForCurrentUser returns empty list when user has no requests',
       () async {
         final firestore = FakeFirebaseFirestore();
-        final service = _buildService(firestore: firestore, uid: 'user-1');
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: _buildFunctionsReturningRequestId('req_1'),
+        );
         final requests = await service.requestsForCurrentUser().first;
         expect(requests, isEmpty);
       },
@@ -80,7 +95,11 @@ void main() {
           'status': 'pending',
           'createdAt': Timestamp.fromDate(DateTime.now()),
         });
-        final service = _buildService(firestore: firestore, uid: 'user-1');
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: _buildFunctionsReturningRequestId('req_1'),
+        );
         final requests = await service.requestsForCurrentUser().first;
         expect(requests.length, 1);
         expect(requests.first.amount, 30.0);
@@ -89,7 +108,10 @@ void main() {
 
     test('requestCashOut throws when user is not signed in', () async {
       final firestore = FakeFirebaseFirestore();
-      final service = _buildService(firestore: firestore);
+      final service = _buildService(
+        firestore: firestore,
+        functions: _buildFunctionsReturningRequestId('req_1'),
+      );
       await expectLater(service.requestCashOut(30), throwsA(isA<Exception>()));
     });
 
@@ -101,7 +123,11 @@ void main() {
         await firestore.collection('wallets').doc('user-1').set({
           'cashBalance': 100.0,
         });
-        final service = _buildService(firestore: firestore, uid: 'user-1');
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: _buildFunctionsReturningRequestId('req_1'),
+        );
         // \$10 is below the \$25 minimum.
         await expectLater(
           service.requestCashOut(10),
@@ -123,7 +149,11 @@ void main() {
         await firestore.collection('wallets').doc('user-1').set({
           'cashBalance': 30.0,
         });
-        final service = _buildService(firestore: firestore, uid: 'user-1');
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: _buildFunctionsReturningRequestId('req_1'),
+        );
         await expectLater(
           service.requestCashOut(50),
           throwsA(
@@ -138,21 +168,54 @@ void main() {
     );
 
     test(
-      'requestCashOut saves a pending request when conditions are met',
+      'requestCashOut returns callable requestId when accepted',
       () async {
         final firestore = FakeFirebaseFirestore();
+        final functions = _buildFunctionsReturningRequestId('req_abc123');
         await firestore.collection('wallets').doc('user-1').set({
           'cashBalance': 100.0,
         });
-        final service = _buildService(firestore: firestore, uid: 'user-1');
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: functions,
+        );
+        final requestId = await service.requestCashOut(30);
+        expect(requestId, 'req_abc123');
+      },
+    );
+
+    test(
+      'requestCashOut sends amount payload to callable',
+      () async {
+        final firestore = FakeFirebaseFirestore();
+        final functions = _MockFirebaseFunctions();
+        final callable = _MockHttpsCallable();
+        final result = _MockHttpsCallableResult();
+
+        await firestore.collection('wallets').doc('user-1').set({
+          'cashBalance': 100.0,
+        });
+
+        when(() => functions.httpsCallable('requestCashOut')).thenReturn(callable);
+        when(
+          () => callable.call<Map<String, dynamic>>(any()),
+        ).thenAnswer((_) async => result);
+        when(() => result.data).thenReturn(<String, dynamic>{'requestId': 'req_42'});
+
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: functions,
+        );
+
         await service.requestCashOut(30);
-        final snapshot = await firestore
-            .collection('cash_out_requests')
-            .where('userId', isEqualTo: 'user-1')
-            .get();
-        expect(snapshot.docs.length, 1);
-        expect(snapshot.docs.first.data()['status'], 'pending');
-        expect(snapshot.docs.first.data()['amount'], 30.0);
+
+        verify(
+          () => callable.call<Map<String, dynamic>>(
+            <String, dynamic>{'amount': 30.0},
+          ),
+        ).called(1);
       },
     );
 
@@ -170,7 +233,11 @@ void main() {
           'status': 'pending',
           'createdAt': Timestamp.fromDate(DateTime.now()),
         });
-        final service = _buildService(firestore: firestore, uid: 'user-1');
+        final service = _buildService(
+          firestore: firestore,
+          uid: 'user-1',
+          functions: _buildFunctionsReturningRequestId('req_1'),
+        );
         await expectLater(
           service.requestCashOut(30),
           throwsA(

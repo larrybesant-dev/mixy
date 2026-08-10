@@ -224,10 +224,10 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     try {
-      await _cashOutService.requestCashOut(amount);
+      final requestId = await _cashOutService.requestCashOut(amount);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cash-out request submitted.')),
+        SnackBar(content: Text('Cash-out request submitted (#$requestId).')),
       );
     } catch (e) {
       if (!mounted) return;

@@ -6,6 +6,7 @@ const functionsV1 = require("firebase-functions/v1");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
+const {GoogleGenAI, GenerateVideosOperation} = require("@google/genai");
 const {RtcTokenBuilder, RtcRole} = require("agora-access-token");
 const nodeFetch = require("node-fetch");
 const {
@@ -14,6 +15,7 @@ const {
   AGORA_APP_ID,
   AGORA_APP_CERTIFICATE,
   METERED_API_KEY,
+  GEMINI_API_KEY,
 } = require("./params");
 
 admin.initializeApp();
@@ -53,6 +55,8 @@ let cachedTurnIceServers = null;
 let cachedTurnIceServersFetchedAt = 0;
 
 let _stripe;
+let _genAi;
+
 function getStripe() {
   if (!_stripe) {
     const key = process.env.STRIPE_SECRET;
@@ -60,6 +64,131 @@ function getStripe() {
     _stripe = new Stripe(key);
   }
   return _stripe;
+}
+
+function getGenAIClient() {
+  if (!_genAi) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured.");
+    }
+    _genAi = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          "User-Agent": "mixvy-functions",
+        },
+      },
+    });
+  }
+  return _genAi;
+}
+
+const DEV_API_TOKEN = process.env.DEV_API_TOKEN || "";
+
+function isDevApiBypassAllowed() {
+  if (String(process.env.FUNCTIONS_EMULATOR || "").toLowerCase() === "true") {
+    return true;
+  }
+
+  let projectId = process.env.GCLOUD_PROJECT || "";
+  if (!projectId) {
+    try {
+      const rawConfig = process.env.FIREBASE_CONFIG || "{}";
+      const parsedConfig = JSON.parse(rawConfig);
+      projectId = typeof parsedConfig.projectId === "string" ? parsedConfig.projectId : "";
+    } catch (error) {
+      logger.warn("Unable to read projectId for DEV_API_TOKEN guard", {
+        error: String(error),
+      });
+    }
+  }
+
+  // Allow bypass only in explicit non-production projects.
+  // Never allow for the production project id.
+  return Boolean(projectId) && projectId !== "mixvy-v2";
+}
+
+async function resolveHttpCaller(request) {
+  const authHeader = request.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new HttpsError("unauthenticated", "Missing bearer token.");
+  }
+
+  const token = authHeader.substring(7).trim();
+  if (!token) {
+    throw new HttpsError("unauthenticated", "Missing bearer token.");
+  }
+
+  if (DEV_API_TOKEN && token === DEV_API_TOKEN && isDevApiBypassAllowed()) {
+    const fallbackUid =
+      (typeof request.headers["x-user-id"] === "string" && request.headers["x-user-id"].trim()) ||
+      "dev_user";
+    return {uid: fallbackUid};
+  }
+
+  if (DEV_API_TOKEN && token === DEV_API_TOKEN) {
+    logger.warn("Rejected DEV_API_TOKEN auth bypass outside allowed environment.");
+  }
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return {uid: decoded.uid};
+  } catch (error) {
+    logger.warn("HTTP auth token verification failed", {
+      error: String(error),
+    });
+    throw new HttpsError("unauthenticated", "Invalid bearer token.");
+  }
+}
+
+function sendHttpError(response, status, code, message) {
+  return response.status(status).json({
+    ok: false,
+    error: {
+      code,
+      message,
+    },
+  });
+}
+
+function mapHttpsErrorToHttpStatus(errorCode) {
+  switch (errorCode) {
+    case "unauthenticated":
+      return 401;
+    case "permission-denied":
+      return 403;
+    case "invalid-argument":
+      return 400;
+    case "resource-exhausted":
+      return 429;
+    default:
+      return 400;
+  }
+}
+
+function mapHttpsErrorToApiCode(errorCode) {
+  switch (errorCode) {
+    case "unauthenticated":
+      return "UNAUTHORIZED";
+    case "permission-denied":
+      return "FORBIDDEN";
+    case "resource-exhausted":
+      return "RATE_LIMITED";
+    case "invalid-argument":
+      return "BAD_REQUEST";
+    default:
+      return "BAD_REQUEST";
+  }
+}
+
+function sendHttpsError(response, error) {
+  return sendHttpError(
+    response,
+    mapHttpsErrorToHttpStatus(error.code),
+    mapHttpsErrorToApiCode(error.code),
+    error.message,
+  );
 }
 
 const CHECKOUT_PRODUCTS = {
@@ -173,6 +302,7 @@ async function rebuildConversationSummary(conversationId) {
 }
 
 const RATE_LIMITS = {
+  createRoomCallable: {windowMs: 60 * 1000, maxRequests: 20},
   createPaymentIntent: {windowMs: 60 * 1000, maxRequests: 12},
   recordStripePaymentSuccess: {windowMs: 60 * 1000, maxRequests: 20},
   generateReferralCode: {windowMs: 60 * 1000, maxRequests: 12},
@@ -188,6 +318,9 @@ const RATE_LIMITS = {
   requestRefund: {windowMs: 60 * 1000, maxRequests: 12},
   grabMic: {windowMs: 60 * 1000, maxRequests: 20},
   inviteToMic: {windowMs: 60 * 1000, maxRequests: 30},
+  veoGenerateVideo: {windowMs: 60 * 1000, maxRequests: 6},
+  veoVideoStatus: {windowMs: 60 * 1000, maxRequests: 90},
+  veoVideoDownload: {windowMs: 60 * 1000, maxRequests: 24},
 };
 
 const rateLimitState = new Map();
@@ -221,6 +354,16 @@ const MEDIUM_RISK_TERMS = [
 ];
 
 const REFERRAL_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+const VEO_ALLOWED_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
+const VEO_MAX_IMAGE_BASE64_CHARS = 14 * 1024 * 1024;
+const VEO_MAX_PROMPT_CHARS = 500;
+const VEO_MAX_OPERATION_NAME_CHARS = 256;
+const VEO_OPERATIONS_COLLECTION = "veo_operations";
 
 function enforceRateLimit(functionName, uid) {
   const config = RATE_LIMITS[functionName];
@@ -256,6 +399,65 @@ function parseIdField(value, fieldName) {
     throw new HttpsError("invalid-argument", `${fieldName} is too long.`);
   }
   return normalized;
+}
+
+function parseVeoOperationName(value) {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) {
+    throw new HttpsError("invalid-argument", "operationName is required.");
+  }
+  if (normalized.length > VEO_MAX_OPERATION_NAME_CHARS) {
+    throw new HttpsError("invalid-argument", "operationName is too long.");
+  }
+  if (!normalized.includes("/operations/")) {
+    throw new HttpsError("invalid-argument", "operationName format is invalid.");
+  }
+  return normalized;
+}
+
+function toVeoOperationDocId(operationName) {
+  return Buffer.from(operationName, "utf8").toString("base64url");
+}
+
+async function recordVeoOperationOwner(operationName, uid) {
+  await db.collection(VEO_OPERATIONS_COLLECTION).doc(toVeoOperationDocId(operationName)).set(
+    {
+      operationName,
+      ownerUid: uid,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    {merge: true},
+  );
+}
+
+async function assertVeoOperationOwner(operationName, uid) {
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Missing caller identity.");
+  }
+
+  if (uid === "dev_user" || uid.startsWith("dev_")) {
+    return;
+  }
+
+  const operationRef = db.collection(VEO_OPERATIONS_COLLECTION)
+    .doc(toVeoOperationDocId(operationName));
+  const operationSnap = await operationRef.get();
+
+  if (!operationSnap.exists) {
+    throw new HttpsError(
+      "permission-denied",
+      "Operation is not registered for this account.",
+    );
+  }
+
+  const operationData = operationSnap.data() || {};
+  if (operationData.ownerUid !== uid) {
+    throw new HttpsError(
+      "permission-denied",
+      "You do not have access to this operation.",
+    );
+  }
 }
 
 function classifyModerationText(reason = "", details = "") {
@@ -490,6 +692,96 @@ function requireAuth(request) {
   }
   return uid.trim();
 }
+
+function asOptionalTrimmedString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function asStringArray(value, maxItems = 20) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0)
+    .slice(0, maxItems);
+}
+
+async function createRoomCallableHandler(request, deps = {}) {
+  const uid = requireAuth(request);
+  enforceRateLimit("createRoomCallable", uid);
+
+  const data = request.data || {};
+  const name = asOptionalTrimmedString(data.name);
+  if (!name) {
+    throw new HttpsError("invalid-argument", "name is required.");
+  }
+  if (name.length > 120) {
+    throw new HttpsError("invalid-argument", "name is too long.");
+  }
+
+  const isLive = data.isLive !== false;
+  const isAdult = data.isAdult === true;
+
+  if (typeof data.isLive !== "undefined" && typeof data.isLive !== "boolean") {
+    throw new HttpsError("invalid-argument", "isLive must be a boolean.");
+  }
+  if (typeof data.isAdult !== "undefined" && typeof data.isAdult !== "boolean") {
+    throw new HttpsError("invalid-argument", "isAdult must be a boolean.");
+  }
+
+  const firestore = deps.firestore || db;
+
+  if (isAdult) {
+    const verificationSnap = await firestore.collection("verification").doc(uid).get();
+    const verification = verificationSnap.exists ? (verificationSnap.data() || {}) : {};
+    if (verification.isAdultVerified !== true || verification.verificationStatus !== "verified") {
+      throw new HttpsError("permission-denied", "Adult verification is required for 18+ rooms.");
+    }
+  }
+
+  const hostUsername = asOptionalTrimmedString(data.hostUsername);
+  const hostAvatarUrl = asOptionalTrimmedString(data.hostAvatarUrl);
+  const description = asOptionalTrimmedString(data.description);
+  const rules = asOptionalTrimmedString(data.rules);
+  const thumbnailUrl = asOptionalTrimmedString(data.thumbnailUrl);
+  const category = asOptionalTrimmedString(data.category);
+  const tags = asStringArray(data.tags);
+
+  const scheduledAtMillis = Number(data.scheduledAtMillis);
+  const hasScheduledAt = Number.isFinite(scheduledAtMillis) && scheduledAtMillis > 0;
+
+  const roomRef = firestore.collection("rooms").doc();
+  const payload = {
+    name,
+    hostId: uid,
+    ownerId: uid,
+    isLive,
+    isAdult,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    stageUserIds: [],
+    audienceUserIds: [uid],
+    memberCount: 1,
+    ...(description ? {description} : {}),
+    ...(rules ? {rules} : {}),
+    ...(hostUsername ? {hostUsername} : {}),
+    ...(hostAvatarUrl ? {hostAvatarUrl} : {}),
+    ...(thumbnailUrl ? {thumbnailUrl} : {}),
+    ...(category ? {category} : {}),
+    ...(tags.length ? {tags} : {}),
+    meta: {title: name},
+    coHosts: [],
+    isLocked: false,
+    slowModeSeconds: 0,
+    ...(hasScheduledAt ? {scheduledAt: admin.firestore.Timestamp.fromMillis(scheduledAtMillis)} : {}),
+  };
+
+  await roomRef.set(payload);
+  return {roomId: roomRef.id};
+}
+
+exports.createRoomCallable = onCall(async (request) => createRoomCallableHandler(request));
 
 function parsePositiveAmount(value) {
   const amount = Number(value);
@@ -1271,6 +1563,7 @@ async function sendRoomGiftHandler(request, deps = {}) {
     typeof (request.data && request.data.receiverName) === "string"
       ? request.data.receiverName.trim().slice(0, 64)
       : "";
+  const makeItRainOnCam = request.data?.makeItRainOnCam === true;
   const firestore = deps.firestore || db;
 
   if (receiverId === senderId) {
@@ -1410,6 +1703,7 @@ async function sendRoomGiftHandler(request, deps = {}) {
       platformFeeAmount,
       sentAt: admin.firestore.FieldValue.serverTimestamp(),
       emoji: request.data?.emoji || "🎁",
+      makeItRainOnCam,
     });
 
     return giftEventRef.id;
@@ -1797,6 +2091,69 @@ async function requestRefundHandler(request, deps = {}) {
 
 exports.requestRefund = onCall(async (request) => requestRefundHandler(request));
 
+async function requestCashOutHandler(request, deps = {}) {
+  const requesterId = requireAuth(request);
+  enforceRateLimit("requestCashOut", requesterId);
+
+  const rawAmount = request.data && request.data.amount;
+  const amount = Number(rawAmount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new HttpsError("invalid-argument", "amount must be a positive number.");
+  }
+
+  const minimumCashOut = 25;
+  if (amount < minimumCashOut) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Minimum cash-out is ${minimumCashOut.toFixed(2)}.`,
+    );
+  }
+
+  const firestore = deps.firestore || db;
+  const walletSnap = await firestore.collection("wallets").doc(requesterId).get();
+  const walletData = walletSnap.exists ? walletSnap.data() : {};
+  const cashBalance = Number(walletData.cashBalance || 0);
+
+  const pendingSnapshot = await firestore
+    .collection("cash_out_requests")
+    .where("userId", "==", requesterId)
+    .where("status", "==", "pending")
+    .get();
+
+  let pendingTotal = 0;
+  pendingSnapshot.docs.forEach((doc) => {
+    const docData = doc.data() || {};
+    pendingTotal += Number(docData.amount || 0);
+  });
+
+  const availableBalance = cashBalance - pendingTotal;
+  if (amount > availableBalance) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Requested amount exceeds available cash balance.",
+    );
+  }
+
+  const requestRef = firestore.collection("cash_out_requests").doc();
+  await requestRef.set({
+    id: requestRef.id,
+    userId: requesterId,
+    amount,
+    status: "pending",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return {
+    ok: true,
+    accepted: true,
+    availableBalance,
+    requestId: requestRef.id,
+  };
+}
+
+exports.requestCashOut = onCall(async (request) => requestCashOutHandler(request));
+
 async function cleanupDeletedUserData(uid, deps = {}) {
   const firestore = deps.firestore || db;
 
@@ -2052,6 +2409,218 @@ exports.createCheckoutSession = onRequest({secrets: [STRIPE_SECRET]}, async (req
 
 exports.createCheckoutSessionCallable = onCall({secrets: [STRIPE_SECRET]}, async (request) =>
   createCheckoutSessionCallableHandler(request),
+);
+
+exports.veoGenerateVideo = onRequest(
+  {cors: true, region: "us-east1", secrets: [GEMINI_API_KEY]},
+  async (request, response) => {
+    if (request.method !== "POST") {
+      return sendHttpError(response, 405, "BAD_REQUEST", "POST method is required.");
+    }
+
+    try {
+      const caller = await resolveHttpCaller(request);
+      enforceRateLimit("veoGenerateVideo", caller.uid);
+
+      const body = request.body || {};
+      const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : "";
+      const mimeTypeRaw = typeof body.mimeType === "string" ? body.mimeType : "image/png";
+      const mimeType = mimeTypeRaw.toLowerCase().trim();
+      const prompt =
+        typeof body.prompt === "string" && body.prompt.trim()
+          ? body.prompt.trim()
+          : "Animate this image with cinematic motion and realistic lighting";
+      const aspectRatio = body.aspectRatio === "9:16" ? "9:16" : "16:9";
+
+      if (!imageBase64.trim()) {
+        return sendHttpError(
+          response,
+          400,
+          "BAD_REQUEST",
+          "imageBase64 is required.",
+        );
+      }
+
+      if (!VEO_ALLOWED_MIME_TYPES.has(mimeType)) {
+        return sendHttpError(
+          response,
+          400,
+          "BAD_REQUEST",
+          "mimeType must be one of image/png, image/jpeg, or image/webp.",
+        );
+      }
+
+      if (prompt.length > VEO_MAX_PROMPT_CHARS) {
+        return sendHttpError(
+          response,
+          400,
+          "BAD_REQUEST",
+          `prompt exceeds ${VEO_MAX_PROMPT_CHARS} characters.`,
+        );
+      }
+
+      const cleanBase64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+      if (cleanBase64.length > VEO_MAX_IMAGE_BASE64_CHARS) {
+        return sendHttpError(
+          response,
+          413,
+          "BAD_REQUEST",
+          "imageBase64 payload is too large.",
+        );
+      }
+
+      const ai = getGenAIClient();
+      const operation = await ai.models.generateVideos({
+        model: "veo-3.1-fast-generate-preview",
+        prompt,
+        image: {
+          imageBytes: cleanBase64,
+          mimeType,
+        },
+        config: {
+          numberOfVideos: 1,
+          aspectRatio,
+          resolution: "720p",
+        },
+      });
+
+      const operationName = parseVeoOperationName(operation.name);
+      await recordVeoOperationOwner(operationName, caller.uid);
+
+      return response.status(200).json({
+        ok: true,
+        data: {
+          operationName,
+          status: "processing",
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpsError) {
+        return sendHttpsError(response, error);
+      }
+      logger.error("veoGenerateVideo failed", {error: String(error)});
+      return sendHttpError(
+        response,
+        500,
+        "INTERNAL_ERROR",
+        "Failed to start Veo generation.",
+      );
+    }
+  },
+);
+
+exports.veoVideoStatus = onRequest(
+  {cors: true, region: "us-east1", secrets: [GEMINI_API_KEY]},
+  async (request, response) => {
+    if (request.method !== "POST") {
+      return sendHttpError(response, 405, "BAD_REQUEST", "POST method is required.");
+    }
+
+    try {
+      const caller = await resolveHttpCaller(request);
+      enforceRateLimit("veoVideoStatus", caller.uid);
+
+      const body = request.body || {};
+      const operationName = parseVeoOperationName(body.operationName);
+      await assertVeoOperationOwner(operationName, caller.uid);
+
+      const ai = getGenAIClient();
+      const operation = new GenerateVideosOperation();
+      operation.name = operationName;
+      const updated = await ai.operations.getVideosOperation({operation});
+
+      return response.status(200).json({
+        ok: true,
+        data: {
+          done: Boolean(updated.done),
+          error: updated.error || null,
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpsError) {
+        return sendHttpsError(response, error);
+      }
+      logger.error("veoVideoStatus failed", {error: String(error)});
+      return sendHttpError(
+        response,
+        500,
+        "INTERNAL_ERROR",
+        "Failed to fetch Veo operation status.",
+      );
+    }
+  },
+);
+
+exports.veoVideoDownload = onRequest(
+  {cors: true, region: "us-east1", secrets: [GEMINI_API_KEY]},
+  async (request, response) => {
+    if (request.method !== "POST") {
+      return sendHttpError(response, 405, "BAD_REQUEST", "POST method is required.");
+    }
+
+    try {
+      const caller = await resolveHttpCaller(request);
+      enforceRateLimit("veoVideoDownload", caller.uid);
+
+      const body = request.body || {};
+      const operationName = parseVeoOperationName(body.operationName);
+      await assertVeoOperationOwner(operationName, caller.uid);
+
+      const ai = getGenAIClient();
+      const operation = new GenerateVideosOperation();
+      operation.name = operationName;
+      const updated = await ai.operations.getVideosOperation({operation});
+      const videoUri = updated.response?.generatedVideos?.[0]?.video?.uri;
+
+      if (!videoUri) {
+        return sendHttpError(
+          response,
+          404,
+          "NOT_FOUND",
+          "Generated video URI not ready.",
+        );
+      }
+
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+      if (!geminiApiKey) {
+        throw new Error("GEMINI_API_KEY is not configured.");
+      }
+      const upstream = await nodeFetch(videoUri, {
+        headers: {
+          "x-goog-api-key": geminiApiKey,
+        },
+      });
+
+      if (!upstream.ok) {
+        logger.error("veoVideoDownload upstream failed", {
+          status: upstream.status,
+          statusText: upstream.statusText,
+        });
+        return sendHttpError(
+          response,
+          502,
+          "INTERNAL_ERROR",
+          "Failed to download generated Veo video.",
+        );
+      }
+
+      const buffer = await upstream.arrayBuffer();
+      response.setHeader("Content-Type", "video/mp4");
+      response.setHeader("Cache-Control", "no-store");
+      return response.status(200).send(Buffer.from(buffer));
+    } catch (error) {
+      if (error instanceof HttpsError) {
+        return sendHttpsError(response, error);
+      }
+      logger.error("veoVideoDownload failed", {error: String(error)});
+      return sendHttpError(
+        response,
+        500,
+        "INTERNAL_ERROR",
+        "Failed to stream Veo video.",
+      );
+    }
+  },
 );
 
 // Stripe Webhook
@@ -2469,19 +3038,18 @@ exports.joinSpeedDatingQueue = onCall(async (request) => {
     matched: false,
   });
 
-  // Look for another waiting user (not self, not already matched)
+  // Look for another waiting user and filter out self locally.
+  // This avoids fragile inequality query/index requirements.
   const waiting = await db
     .collection("speed_dating_queue")
     .where("matched", "==", false)
-    .where("uid", "!=", uid)
-    .limit(1)
+    .limit(10)
     .get();
 
-  if (waiting.empty) {
+  const partnerDoc = waiting.docs.find((doc) => doc.id !== uid);
+  if (!partnerDoc) {
     return { matched: false };
   }
-
-  const partnerDoc = waiting.docs[0];
   const partnerId = partnerDoc.id;
 
   // Create a session atomically
@@ -3750,6 +4318,86 @@ async function inviteToMicHandler(request, deps = {}) {
 
 exports.inviteToMic = onCall(async (request) => inviteToMicHandler(request));
 
+// ── dropFromMic ────────────────────────────────────────────────────────────
+// Host/co-host/moderator operation: demotes a target participant from stage
+// back to audience/member role.
+async function dropFromMicHandler(request, deps = {}) {
+  const callerId = requireAuth(request);
+
+  const roomId = parseIdField(request.data && request.data.roomId, "roomId");
+  const targetUserId = parseIdField(
+    request.data && (request.data.targetUserId || request.data.userId),
+    "targetUserId",
+  );
+
+  if (callerId === targetUserId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Use releaseOwnMic to remove your own mic seat.",
+    );
+  }
+
+  const firestore = deps.firestore || db;
+  const participantsCol = firestore
+    .collection("rooms")
+    .doc(roomId)
+    .collection("participants");
+
+  await firestore.runTransaction(async (tx) => {
+    const callerRef = participantsCol.doc(callerId);
+    const targetRef = participantsCol.doc(targetUserId);
+
+    const [callerSnap, targetSnap] = await Promise.all([
+      tx.get(callerRef),
+      tx.get(targetRef),
+    ]);
+
+    if (!callerSnap.exists) {
+      throw new HttpsError("permission-denied", "You are not in this room.");
+    }
+    if (!targetSnap.exists) {
+      throw new HttpsError("not-found", "Target participant was not found.");
+    }
+
+    const callerRole = String(callerSnap.data().role || "");
+    const targetRole = String(targetSnap.data().role || "");
+
+    const callerCanManageMic = ["host", "owner", "cohost", "moderator"].includes(callerRole);
+    if (!callerCanManageMic) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only host, co-host, or moderators can remove a speaker.",
+      );
+    }
+
+    const targetIsHostLike = ["host", "owner"].includes(targetRole);
+    const callerIsHostLike = ["host", "owner"].includes(callerRole);
+    if (targetIsHostLike && !callerIsHostLike) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only a host can modify another host's stage state.",
+      );
+    }
+
+    tx.set(
+      targetRef,
+      {
+        role: "member",
+        micOn: false,
+        isMuted: false,
+        micExpiresAt: admin.firestore.FieldValue.delete(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+    );
+  });
+
+  return {success: true};
+}
+
+exports.dropFromMic = onCall(async (request) => dropFromMicHandler(request));
+
 // ── Automatic Verification Document Creation on User Signup ───────────────────
 // Triggers when a new user document is created in /users/{uid}.
 // Automatically creates a /verifications/{uid} document with initial 'pending' status.
@@ -3795,6 +4443,7 @@ exports.__testing = {
   createCheckoutSessionHandler,
   createCheckoutSessionCallableHandler,
   requestRefundHandler,
+  requestCashOutHandler,
   sendRoomGiftHandler,
   cleanupDeletedUserData,
   classifyModerationText,
@@ -3822,6 +4471,8 @@ exports.__testing = {
   sendIncomingCallPushHandler,
   grabMicHandler,
   inviteToMicHandler,
+  dropFromMicHandler,
+  generateTurnCredentialsHandler,
   buildCheckoutSessionPayload,
   resolveCheckoutProduct,
 };

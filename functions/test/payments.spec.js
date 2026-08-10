@@ -26,6 +26,9 @@ const {
   stripeWebhookHandler,
   grabMicHandler,
   inviteToMicHandler,
+  dropFromMicHandler,
+  generateTurnCredentialsHandler,
+  requestCashOutHandler,
 } = paymentFunctions.__testing;
 
 function makeRequest(data, authUid = "user-1") {
@@ -68,6 +71,7 @@ function createFirestoreDouble(initialUsers = {}) {
   const stripeWebhookEvents = new Map();
   const entitlementEvents = new Map();
   const refundRequests = new Map();
+  const cashOutRequests = new Map();
   const referralCodes = new Map();
   const referrals = new Map();
   const rooms = new Map();
@@ -90,6 +94,7 @@ function createFirestoreDouble(initialUsers = {}) {
       case "stripe_webhook_events": return stripeWebhookEvents;
       case "entitlement_events": return entitlementEvents;
       case "refund_requests": return refundRequests;
+      case "cash_out_requests": return cashOutRequests;
       case "referral_codes": return referralCodes;
       case "referrals": return referrals;
       case "rooms": return rooms;
@@ -247,24 +252,34 @@ function createFirestoreDouble(initialUsers = {}) {
             return {empty: docs.length === 0, docs, size: docs.length};
           };
 
-          const filterEntries = () =>
-            [...store.entries()].filter(([_, data]) => {
-              switch (op) {
-                case "==": return data[field] === value;
-                case "!=": return data[field] !== value;
-                case ">": return data[field] > value;
-                case "<": return data[field] < value;
-                case ">=": return data[field] >= value;
-                case "<=": return data[field] <= value;
-                default: return true;
-              }
-            });
+          const filters = [{field, op, value}];
 
-          return {
+          const applyFilter = (data, filter) => {
+            switch (filter.op) {
+              case "==": return data[filter.field] === filter.value;
+              case "!=": return data[filter.field] !== filter.value;
+              case ">": return data[filter.field] > filter.value;
+              case "<": return data[filter.field] < filter.value;
+              case ">=": return data[filter.field] >= filter.value;
+              case "<=": return data[filter.field] <= filter.value;
+              default: return true;
+            }
+          };
+
+          const query = {
+            where(nextField, nextOp, nextValue) {
+              filters.push({field: nextField, op: nextOp, value: nextValue});
+              return query;
+            },
             async get() {
-              return buildSnapshot(filterEntries());
+              const entries = [...store.entries()].filter(([_, data]) =>
+                filters.every((filter) => applyFilter(data, filter)),
+              );
+              return buildSnapshot(entries);
             },
           };
+
+          return query;
         },
       };
     },
@@ -367,5 +382,142 @@ describe("grabMicHandler", () => {
         }, "user-1"), {firestore}),
         (error) => error && error.code === "permission-denied",
     );
+  });
+});
+
+describe("dropFromMicHandler", () => {
+  it("allows host-like caller to demote a stage participant", async () => {
+    const firestore = createFirestoreDouble();
+
+    await firestore.collection("rooms").doc("room-drop-ok").set({
+      isLive: true,
+    });
+
+    await firestore
+        .collection("rooms")
+        .doc("room-drop-ok")
+        .collection("participants")
+        .doc("host-1")
+        .set({
+          userId: "host-1",
+          role: "host",
+        });
+
+    await firestore
+        .collection("rooms")
+        .doc("room-drop-ok")
+        .collection("participants")
+        .doc("user-2")
+        .set({
+          userId: "user-2",
+          role: "stage",
+          micOn: true,
+          isMuted: true,
+        });
+
+    const result = await dropFromMicHandler(makeRequest({
+      roomId: "room-drop-ok",
+      targetUserId: "user-2",
+    }, "host-1"), {firestore});
+
+    assert.equal(result.success, true);
+
+    const targetSnap = await firestore
+        .collection("rooms")
+        .doc("room-drop-ok")
+        .collection("participants")
+        .doc("user-2")
+        .get();
+
+    assert.equal(targetSnap.exists, true);
+    assert.equal(targetSnap.data().role, "member");
+    assert.equal(targetSnap.data().micOn, false);
+    assert.equal(targetSnap.data().isMuted, false);
+  });
+
+  it("rejects non-moderator callers", async () => {
+    const firestore = createFirestoreDouble();
+
+    await firestore.collection("rooms").doc("room-drop-deny").set({
+      isLive: true,
+    });
+
+    await firestore
+        .collection("rooms")
+        .doc("room-drop-deny")
+        .collection("participants")
+        .doc("audience-1")
+        .set({
+          userId: "audience-1",
+          role: "audience",
+        });
+
+    await firestore
+        .collection("rooms")
+        .doc("room-drop-deny")
+        .collection("participants")
+        .doc("user-2")
+        .set({
+          userId: "user-2",
+          role: "stage",
+        });
+
+    await assert.rejects(
+        () => dropFromMicHandler(makeRequest({
+          roomId: "room-drop-deny",
+          targetUserId: "user-2",
+        }, "audience-1"), {firestore}),
+        (error) => error && error.code === "permission-denied",
+    );
+  });
+});
+
+describe("generateTurnCredentialsHandler", () => {
+  it("returns fallback ICE server structure when TURN secret is unavailable", async () => {
+    const originalApiKey = process.env.METERED_API_KEY;
+    delete process.env.METERED_API_KEY;
+
+    try {
+      const result = await generateTurnCredentialsHandler(makeRequest({}, "user-turn-1"));
+
+      assert.equal(result.fallback, true);
+      assert.ok(Array.isArray(result.iceServers));
+      assert.ok(result.iceServers.length > 0);
+      assert.ok(Array.isArray(result.iceServers[0].urls));
+    } finally {
+      if (originalApiKey === undefined) {
+        delete process.env.METERED_API_KEY;
+      } else {
+        process.env.METERED_API_KEY = originalApiKey;
+      }
+    }
+  });
+});
+
+describe("requestCashOutHandler", () => {
+  it("creates cash_out_requests doc and returns requestId", async () => {
+    const firestore = createFirestoreDouble();
+
+    await firestore.collection("wallets").doc("test-user-123").set({
+      cashBalance: 200,
+    });
+
+    const result = await requestCashOutHandler(makeRequest({
+      amount: 50.0,
+      paymentMethod: "stripe",
+    }, "test-user-123"), {firestore});
+
+    assert.equal(typeof result.requestId, "string");
+    assert.ok(result.requestId.length > 0);
+
+    const docSnapshot = await firestore
+        .collection("cash_out_requests")
+        .doc(result.requestId)
+        .get();
+
+    assert.equal(docSnapshot.exists, true);
+    assert.equal(docSnapshot.data().userId, "test-user-123");
+    assert.equal(docSnapshot.data().amount, 50.0);
+    assert.equal(docSnapshot.data().status, "pending");
   });
 });
