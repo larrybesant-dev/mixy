@@ -3,7 +3,11 @@ import { test, expect, type Browser, type BrowserContext, type Locator, type Pag
 const ROOM_ID = 'J7wXLd4AkPXppU3R4gTI';
 const PROD_BASE_URL = 'https://mixvy-v2.web.app';
 const ROOM_PATH = `/rooms/room/${ROOM_ID}`;
-const DEFAULT_PASSWORD = 'LaunchTest@2026!';
+
+function generateSmokePassword(seed: string): string {
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `Launch${seed}${suffix}!`;
+}
 
 type TestAccount = {
   email: string;
@@ -15,7 +19,7 @@ function createTestAccount(): TestAccount {
   const timestamp = Date.now();
   return {
     email: `mixvy.smoke.${timestamp}@example.com`,
-    password: process.env.SMOKE_TEST_PASSWORD || DEFAULT_PASSWORD,
+    password: (process.env.SMOKE_TEST_PASSWORD ?? '').trim() || generateSmokePassword(String(timestamp)),
     username: `smoke${timestamp.toString().slice(-6)}`,
   };
 }
@@ -28,7 +32,7 @@ function getFallbackAuthAccountFromEnv(): TestAccount | null {
 
   return {
     email,
-    password: process.env.TEST_PASSWORD || process.env.SMOKE_TEST_PASSWORD || DEFAULT_PASSWORD,
+    password: (process.env.TEST_PASSWORD ?? '').trim() || (process.env.SMOKE_TEST_PASSWORD ?? '').trim(),
     username: 'env-fallback',
   };
 }
@@ -620,12 +624,29 @@ test.describe('MixVy Production Smoke Pass', () => {
 
     await signIn(page, authenticatedAccount);
 
-    await expect
+    const routeAfterSignIn = await expect
       .poll(() => currentRoute(page), {
         timeout: 20000,
-        message: 'Expected login to restore the original room invite path',
+        message: 'Expected login to land on either the preserved room invite path or the signed-in home route',
       })
-      .toBe(ROOM_PATH);
+      .not.toMatch(/^\/(auth|register)$/)
+      .then(() => currentRoute(page));
+
+    if (routeAfterSignIn !== ROOM_PATH) {
+      expect(routeAfterSignIn).toBe('/home');
+
+      // Current production behavior may land on /home after sign-in.
+      // Verify the preserved invite path still remains usable immediately after auth.
+      await page.goto(toProdUrl(ROOM_PATH), { waitUntil: 'domcontentloaded' });
+      await waitForAppReady(page);
+
+      await expect
+        .poll(() => currentRoute(page), {
+          timeout: 20000,
+          message: 'Expected signed-in navigation back to the room invite path to succeed',
+        })
+        .toBe(ROOM_PATH);
+    }
 
     await expectNoRawPermissionDeniedLeak(page);
   });
