@@ -4,12 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firestore/firestore_debug_tracing.dart';
+import '../../../features/auth/controllers/auth_controller.dart';
 import '../../../models/room_participant_model.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../controllers/room_state.dart';
 import '../repository/room_repository.dart';
 import 'room_firestore_provider.dart';
 import '../../../core/constants/query_policy.dart';
+import '../../../services/app_check_guard.dart';
 
 /// ============================================================================
 /// HARDENING FIX #1: Self-Participant Cache
@@ -51,19 +53,28 @@ class SelfParticipantCacheNotifier
 /// so the host check resolves even before the participant document is written.
 final roomDocStreamProvider = StreamProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, roomId) {
+      final uid = ref.watch(authControllerProvider.select((auth) => auth.uid));
+      if (uid == null || uid.trim().isEmpty) {
+        return Stream.value(null);
+      }
+
       final firestore = ref.watch(roomFirestoreProvider);
+      final readStream = firestore
+          .collection('rooms')
+          .doc(
+            roomId,
+          ) // Single-document read — .limit(1) not applicable for document snapshots.
+          .snapshots()
+          .map((snap) => snap.data());
+
       return traceFirestoreStream<Map<String, dynamic>?>(
         key: 'room_doc/$roomId',
         query: 'rooms/$roomId',
         roomId: roomId,
         itemCount: (value) => value == null ? 0 : 1,
-        stream: firestore
-            .collection('rooms')
-            .doc(
-              roomId,
-            ) // Single-document read — .limit(1) not applicable for document snapshots.
-            .snapshots()
-            .map((snap) => snap.data()),
+        stream: Stream.fromFuture(
+          prepareAppCheckTokenForRead(operation: 'room_doc_read/$roomId'),
+        ).asyncExpand((_) => readStream),
       );
     });
 
@@ -264,6 +275,11 @@ List<RoomParticipantModel> _mapParticipants(
 
 final participantsStreamProvider = StreamProvider.autoDispose
     .family<List<RoomParticipantModel>, String>((ref, roomId) {
+      final uid = ref.watch(authControllerProvider.select((auth) => auth.uid));
+      if (uid == null || uid.trim().isEmpty) {
+        return Stream.value(const <RoomParticipantModel>[]);
+      }
+
       // Guard: do not attempt to stream participants until the room metadata is ready.
       final roomDocValue = ref.watch(roomDocStreamProvider(roomId));
       if (!roomDocValue.hasValue || roomDocValue.value == null) {
@@ -373,6 +389,11 @@ final onMicParticipantsProvider = StreamProvider.autoDispose
 /// the caller is responsible for guarding access.
 final modLogStreamProvider = StreamProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, roomId) {
+      final uid = ref.watch(authControllerProvider.select((auth) => auth.uid));
+      if (uid == null || uid.trim().isEmpty) {
+        return Stream.value(const <Map<String, dynamic>>[]);
+      }
+
       final firestore = ref.watch(roomFirestoreProvider);
       return firestore
           .collection('rooms')
