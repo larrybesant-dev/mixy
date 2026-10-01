@@ -18,7 +18,7 @@ class GoLiveBanner extends StatelessWidget {
         );
         if (!allowed) return;
         if (!context.mounted) return;
-        context.go('/create-room');
+        context.go('/rooms/create');
       },
       child: Container(
         height: 88,

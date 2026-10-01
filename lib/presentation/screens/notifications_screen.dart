@@ -78,7 +78,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       case 'friend_favorite':
         if (actorId.isNotEmpty) context.go('/profile/$actorId');
       case 'friend_request':
-        context.go('/friends');
+        context.go('/profile/social?tab=requests');
       case 'speed_dating_match':
         context.go('/speed-dating');
       default:
@@ -572,6 +572,3 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
-
-
-
