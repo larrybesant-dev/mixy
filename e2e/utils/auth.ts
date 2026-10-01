@@ -20,7 +20,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
  * synthetic click at its bounding box instead. This must run before any
  * input/button locators are used against the app.
  */
-async function enableFlutterSemantics(page: Page): Promise<void> {
+export async function enableFlutterSemantics(page: Page): Promise<void> {
   try {
     await page.evaluate(() => {
       const el = document.querySelector('flt-semantics-placeholder') as HTMLElement | null;
@@ -38,7 +38,7 @@ async function enableFlutterSemantics(page: Page): Promise<void> {
   }
 }
 
-async function waitForAppReady(page: Page): Promise<void> {
+export async function waitForAppReady(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
   await expect
