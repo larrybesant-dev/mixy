@@ -83,7 +83,7 @@ test.describe('MixVy - Auth Page Smoke Tests', () => {
     await page.waitForTimeout(500);
 
     // Reload page
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(500);
 
     // Should still have content

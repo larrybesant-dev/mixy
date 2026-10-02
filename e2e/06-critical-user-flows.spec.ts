@@ -243,7 +243,7 @@ test.describe('MixVy - Critical User Flows', () => {
       }).catch(() => {});
 
       // Reload page
-      await page.reload();
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1000);
 
       // Verify auth persists (or page still works)
