@@ -394,25 +394,78 @@ async function cleanupCanaryBots() {
       .get();
 
     let deleted = 0;
+    let failed = 0;
     for (const doc of botsSnapshot.docs) {
       const botUid = doc.id;
       try {
-        // Delete Firestore user document
-        await firestore.collection('users').doc(botUid).delete();
+        const botData = doc.data();
+        const botAvatarUrl = botData.avatarUrl || botData.photoUrl || '';
+
+        const followingSnapshot = await doc.ref.collection('following').get();
+        for (const followingDoc of followingSnapshot.docs) {
+          const targetRef = firestore.collection('users').doc(followingDoc.id);
+          await firestore.runTransaction(async transaction => {
+            const target = await transaction.get(targetRef);
+            if (!target.exists) return;
+            const currentFollowers = Number(target.data().followers || 0);
+            transaction.update(targetRef, {
+              followers: Math.max(0, currentFollowers - 1),
+            });
+          });
+        }
+
+        const participantsSnapshot = await firestore
+          .collectionGroup('participants')
+          .where('userId', '==', botUid)
+          .get();
+        for (const participantDoc of participantsSnapshot.docs) {
+          const roomRef = participantDoc.ref.parent.parent;
+          if (!roomRef) continue;
+          await firestore.runTransaction(async transaction => {
+            const room = await transaction.get(roomRef);
+            transaction.delete(participantDoc.ref);
+            if (!room.exists) return;
+            const currentMemberCount = Number(room.data().memberCount || 0);
+            transaction.update(roomRef, {
+              audienceUserIds: admin.firestore.FieldValue.arrayRemove(botUid),
+              audienceUserAvatarUrls:
+                admin.firestore.FieldValue.arrayRemove(botAvatarUrl),
+              memberCount: Math.max(0, currentMemberCount - 1),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+        }
+
+        const messagesSnapshot = await firestore
+          .collectionGroup('messages')
+          .where('uid', '==', botUid)
+          .get();
+        for (const messageDoc of messagesSnapshot.docs) {
+          await messageDoc.ref.delete();
+        }
+
+        await firestore.recursiveDelete(doc.ref);
 
         // Delete Auth user
-        await auth.deleteUser(botUid);
+        await auth.deleteUser(botUid).catch(error => {
+          if (error.code !== 'auth/user-not-found') throw error;
+        });
 
         deleted++;
         console.log(`  ✅ Deleted bot: ${doc.data().displayName}`);
       } catch (error) {
+        failed++;
         console.error(`  ❌ Failed to delete bot ${botUid}:`, error.message);
       }
     }
 
     console.log(`\n✅ Cleanup complete: Deleted ${deleted} canary bot accounts`);
+    if (failed > 0) {
+      throw new Error(`Cleanup failed for ${failed} canary bot account(s).`);
+    }
   } catch (error) {
     console.error(`❌ Cleanup failed:`, error.message);
+    throw error;
   }
 }
 
@@ -427,6 +480,11 @@ async function main() {
   console.log('='.repeat(70));
 
   try {
+    if (process.argv.includes('--cleanup')) {
+      await cleanupCanaryBots();
+      return;
+    }
+
     // Step 1: Create bots
     const bots = await createAllCanaryBots();
 
@@ -463,15 +521,9 @@ async function main() {
     console.log(`\n  🧹 To cleanup all canary bot accounts, run:`);
     console.log(`     node load-test-canary.js --cleanup\n`);
 
-    // Auto-cleanup if --cleanup flag provided
-    if (process.argv.includes('--cleanup')) {
-      await cleanupCanaryBots();
-    }
   } catch (error) {
     console.error('\n❌ Fatal error:', error.message);
-    process.exit(1);
-  } finally {
-    process.exit(0);
+    process.exitCode = 1;
   }
 }
 
