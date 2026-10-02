@@ -1,4 +1,5 @@
 import { Page, expect } from '@playwright/test';
+import { activateWorkerCredentials } from './credentials';
 
 const AUTH_STEP_TIMEOUT_MS = 45000;
 
@@ -60,6 +61,7 @@ export async function waitForAppReady(page: Page): Promise<void> {
  * Supports multiple fallback methods including Firebase auth and local storage injection
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
+  activateWorkerCredentials();
   const testEmail = process.env.TEST_EMAIL || 'test@example.com';
   const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
   const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';

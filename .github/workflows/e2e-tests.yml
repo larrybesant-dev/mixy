@@ -37,30 +37,37 @@ jobs:
           - browser: chromium
             shard: 1/2
             shard_id: 1of2
+            account_index: 0
             timeout_minutes: 45
           - browser: chromium
             shard: 2/2
             shard_id: 2of2
+            account_index: 1
             timeout_minutes: 45
           - browser: webkit
             shard: 1/2
             shard_id: 1of2
+            account_index: 2
             timeout_minutes: 45
           - browser: webkit
             shard: 2/2
             shard_id: 2of2
+            account_index: 3
             timeout_minutes: 45
           - browser: firefox
             shard: 1/3
             shard_id: 1of3
+            account_index: 4
             timeout_minutes: 60
           - browser: firefox
             shard: 2/3
             shard_id: 2of3
+            account_index: 5
             timeout_minutes: 60
           - browser: firefox
             shard: 3/3
             shard_id: 3of3
+            account_index: 6
             timeout_minutes: 60
 
     steps:
@@ -91,13 +98,10 @@ jobs:
 
       - name: Validate auth test secrets
         env:
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          TEST_ACCOUNTS_JSON: ${{ secrets.TEST_ACCOUNTS_JSON }}
+          E2E_ACCOUNT_INDEX: ${{ matrix.account_index }}
         run: |
-          if [ -z "$TEST_EMAIL" ] || [ -z "$TEST_PASSWORD" ]; then
-            echo "Missing required secrets: TEST_EMAIL and/or TEST_PASSWORD"
-            exit 1
-          fi
+          node -e "const pool=JSON.parse(process.env.TEST_ACCOUNTS_JSON||'{}').accounts||[]; const i=Number(process.env.E2E_ACCOUNT_INDEX); if(!pool[i]?.email||!pool[i]?.password) throw new Error('Missing E2E account at index '+i); console.log('Validated isolated E2E account index '+i)"
 
       - name: Run E2E tests - ${{ matrix.browser }}
         run: |
@@ -106,8 +110,8 @@ jobs:
             --shard=${{ matrix.shard }} \
             --grep-invert="MixVy Performance & Accessibility"
         env:
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          TEST_ACCOUNTS_JSON: ${{ secrets.TEST_ACCOUNTS_JSON }}
+          E2E_ACCOUNT_INDEX: ${{ matrix.account_index }}
           AUTH_REQUIRED: '1'
 
       - name: Upload test report
@@ -161,21 +165,18 @@ jobs:
 
       - name: Validate auth test secrets
         env:
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          TEST_ACCOUNTS_JSON: ${{ secrets.TEST_ACCOUNTS_JSON }}
+          E2E_ACCOUNT_INDEX: '7'
         run: |
-          if [ -z "$TEST_EMAIL" ] || [ -z "$TEST_PASSWORD" ]; then
-            echo "Missing required secrets: TEST_EMAIL and/or TEST_PASSWORD"
-            exit 1
-          fi
+          node -e "const pool=JSON.parse(process.env.TEST_ACCOUNTS_JSON||'{}').accounts||[]; const i=Number(process.env.E2E_ACCOUNT_INDEX); if(!pool[i]?.email||!pool[i]?.password) throw new Error('Missing E2E account at index '+i); console.log('Validated isolated E2E account index '+i)"
 
       - name: Run performance/accessibility suite (advisory)
         run: |
           npx playwright test e2e/05-performance-accessibility.spec.ts \
             --project=chromium
         env:
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          TEST_ACCOUNTS_JSON: ${{ secrets.TEST_ACCOUNTS_JSON }}
+          E2E_ACCOUNT_INDEX: '7'
           AUTH_REQUIRED: '1'
 
       - name: Upload advisory report
@@ -227,6 +228,7 @@ jobs:
           files: '**/junit.xml'
           check_name: 'E2E Test Results'
           compare_to_earlier_commit: true
+          action_fail: true
 
       - name: Comment PR with test results
         if: always() && github.event_name == 'pull_request'
