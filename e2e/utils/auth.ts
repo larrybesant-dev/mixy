@@ -58,7 +58,7 @@ export async function waitForAppReady(page: Page): Promise<void> {
 
 /**
  * Authenticates a user in the test environment by logging into the Flutter web app
- * Supports multiple fallback methods including Firebase auth and local storage injection
+ * Uses the application UI so Firebase establishes a real browser session.
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   activateWorkerCredentials();
@@ -70,7 +70,7 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
 
     // Navigate to auth page
     await page.goto('/auth', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await waitForAppReady(page);
 
     // Method 1: Try standard email/password form
     const authSuccess = await withTimeout(
@@ -80,17 +80,6 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     ).catch(() => false);
     if (authSuccess) {
       console.log('✓ Authenticated via email/password form');
-      return true;
-    }
-
-    // Method 2: Try Firebase Auth REST API (fallback)
-    const firebaseSuccess = await withTimeout(
-      tryFirebaseRestAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
-      'firebase REST authentication'
-    ).catch(() => false);
-    if (firebaseSuccess) {
-      console.log('✓ Authenticated via Firebase REST API');
       return true;
     }
 
@@ -126,17 +115,24 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
   try {
     // Flutter Web doesn't expose real <input>/<button> DOM nodes until semantics
     // are activated - do this first or every locator below finds nothing.
-    await enableFlutterSemantics(page);
-
     // Real DOM attributes (verified against the live app): type="text" with an
     // empty placeholder, identified via aria-label instead (e.g. "Email address").
     const emailInput = page.locator(
       'input[aria-label*="mail" i], input[type="email"], input[placeholder*="mail" i]'
     ).first();
 
-    if ((await emailInput.count()) === 0) {
-      return false;
-    }
+    await expect
+      .poll(
+        async () => {
+          await enableFlutterSemantics(page);
+          return await emailInput.count();
+        },
+        {
+          timeout: 30000,
+          message: 'Expected the Flutter email input to become available',
+        },
+      )
+      .toBeGreaterThan(0);
 
     await emailInput.click();
     await emailInput.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
@@ -167,63 +163,6 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     } catch {
       return false;
     }
-  } catch (e) {
-    return false;
-  }
-}
-
-/**
- * Attempts authentication via Firebase Auth REST API (server-side fallback)
- */
-async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
-  try {
-    // Get Firebase config from window object or use hardcoded values
-    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I';
-    const firebaseProjectId = 'mixvy-v2';
-
-    const response = await page.request.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseKey}`,
-      {
-        data: {
-          email,
-          password,
-          returnSecureToken: true,
-        },
-      }
-    );
-
-    if (!response.ok()) {
-      return false;
-    }
-
-    const result = await response.json() as any;
-    
-    if (!result.idToken) {
-      return false;
-    }
-
-    // Store auth tokens in localStorage
-    await page.evaluate(
-      ({ tokens, uid }) => {
-        localStorage.setItem('firebase:authUser:mixvy-v2', JSON.stringify({
-          uid,
-          email: tokens.email,
-          emailVerified: false,
-          displayName: null,
-          isAnonymous: false,
-          metadata: {
-            creationTime: new Date().toISOString(),
-            lastSignInTime: new Date().toISOString(),
-          },
-          providerData: [],
-          _token: tokens.idToken,
-          _tokenExpirationTime: Date.now() + (3600 * 1000),
-        }));
-      },
-      { tokens: result, uid: result.localId }
-    );
-
-    return true;
   } catch (e) {
     return false;
   }

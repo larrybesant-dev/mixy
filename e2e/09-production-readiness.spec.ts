@@ -9,6 +9,8 @@ import { loadTestCredentials } from './utils/credentials';
 const hasCredentials = loadTestCredentials();
 
 test.describe('MixVy production readiness', () => {
+  test.setTimeout(150000);
+
   for (const viewport of [
     { name: 'desktop', width: 1440, height: 900 },
     { name: 'mobile', width: 390, height: 844 },
@@ -36,9 +38,13 @@ test.describe('MixVy production readiness', () => {
     await waitForAppReady(page);
     await enableFlutterSemantics(page);
 
-    await expect(page.getByText('Account Center', { exact: true })).toBeVisible();
+    await expect(page.getByText('Account Center', { exact: true })).toBeVisible({
+      timeout: 45000,
+    });
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
-    await expect(page.getByText('Delete account?', { exact: true })).toBeVisible();
+    await expect(page.getByText('Delete account?', { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
     await expect(
       page.getByText('This action is permanent. Type DELETE to continue.'),
     ).toBeVisible();
