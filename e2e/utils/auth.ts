@@ -23,16 +23,16 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
  */
 export async function enableFlutterSemantics(page: Page): Promise<void> {
   try {
-    await page.evaluate(() => {
-      const el = document.querySelector('flt-semantics-placeholder') as HTMLElement | null;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      el.dispatchEvent(new MouseEvent('click', {
-        bubbles: true,
-        clientX: rect.left + 1,
-        clientY: rect.top + 1,
-      }));
+    const accessibilityButton = page.getByRole('button', {
+      name: 'Enable accessibility',
     });
+    if (await accessibilityButton.count()) {
+      await accessibilityButton.dispatchEvent('click');
+    } else {
+      await page.locator('flt-semantics-placeholder').evaluate((element) => {
+        (element as HTMLElement).click();
+      });
+    }
     await page.waitForTimeout(500);
   } catch {
     // Semantics may already be enabled, or the placeholder may not be present yet - ignore.
@@ -138,20 +138,23 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
       return false;
     }
 
-    await emailInput.fill(email);
+    await emailInput.click();
+    await emailInput.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
+    await emailInput.pressSequentially(email, { delay: 35 });
     await page.waitForTimeout(500);
 
     // Find and fill password field
     const passwordInput = page.locator(
       'input[aria-label*="password" i], input[type="password"], input[placeholder*="password" i]'
     ).first();
-    await passwordInput.fill(password);
+    await passwordInput.click();
+    await passwordInput.pressSequentially(password, { delay: 35 });
     await page.waitForTimeout(500);
 
     // Find and click login button
-    const loginButton = page.locator(
-      'button:has-text("SIGN IN"), button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")'
-    ).first();
+    const loginButton = page.getByRole('button', {
+      name: /^(sign in|log in|login)$/i,
+    }).first();
     await loginButton.click();
 
     // Verify auth success: the modern Firebase JS SDK (firebase_auth v6+) persists
@@ -159,7 +162,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     // so the real signal is GoRouter navigating away from the /auth route once the
     // app confirms the session.
     try {
-      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 8000 });
+      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 35000 });
       return true;
     } catch {
       return false;
@@ -175,7 +178,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
 async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
   try {
     // Get Firebase config from window object or use hardcoded values
-    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCqXHwQaMV1VvWxYnrAGqhGlx9S2K0MZZE';
+    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I';
     const firebaseProjectId = 'mixvy-v2';
 
     const response = await page.request.post(
