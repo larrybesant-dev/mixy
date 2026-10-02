@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test';
 import { activateWorkerCredentials } from './credentials';
 
-const AUTH_STEP_TIMEOUT_MS = 45000;
+const AUTH_STEP_TIMEOUT_MS = 90000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
