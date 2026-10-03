@@ -84,11 +84,18 @@ jobs:
             playwright_args: '--shard=3/3'
             grep_invert: 'MixVy production readiness|MixVy Performance & Accessibility'
           - browser: firefox
-            shard: readiness
-            shard_id: readiness
+            shard: readiness-public
+            shard_id: readiness-public
             account_index: 7
             timeout_minutes: 30
-            playwright_args: 'e2e/09-production-readiness.spec.ts --workers=4'
+            playwright_args: 'e2e/09-production-readiness.spec.ts --grep="shows authentication actions" --workers=2'
+            grep_invert: 'MixVy Performance & Accessibility'
+          - browser: firefox
+            shard: readiness-authenticated
+            shard_id: readiness-authenticated
+            account_index: 7
+            timeout_minutes: 30
+            playwright_args: 'e2e/09-production-readiness.spec.ts --grep="exposes a guarded account deletion flow|redirects disabled payment offers" --workers=1'
             grep_invert: 'MixVy Performance & Accessibility'
 
     steps:
