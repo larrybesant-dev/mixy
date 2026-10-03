@@ -9,6 +9,7 @@ import { loadTestCredentials } from './utils/credentials';
 const hasCredentials = loadTestCredentials();
 
 test.describe('MixVy production readiness', () => {
+  test.describe.configure({ mode: process.env.CI ? 'parallel' : 'default' });
   test.setTimeout(150000);
 
   for (const viewport of [

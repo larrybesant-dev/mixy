@@ -754,6 +754,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/edit-profile', redirect: (context, state) => '/profile/edit'),
       GoRoute(
           path: '/settings', redirect: (context, state) => '/profile/settings'),
+        GoRoute(
+          path: '/account', redirect: (context, state) => '/profile/account'),
       GoRoute(
           path: '/friends', redirect: (context, state) => '/profile/friends'),
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
