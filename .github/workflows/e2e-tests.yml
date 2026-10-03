@@ -39,36 +39,49 @@ jobs:
             shard_id: 1of2
             account_index: 0
             timeout_minutes: 45
+            playwright_args: '--shard=1/2'
           - browser: chromium
             shard: 2/2
             shard_id: 2of2
             account_index: 1
             timeout_minutes: 45
+            playwright_args: '--shard=2/2'
           - browser: webkit
             shard: 1/2
             shard_id: 1of2
             account_index: 2
             timeout_minutes: 45
+            playwright_args: '--shard=1/2'
           - browser: webkit
             shard: 2/2
             shard_id: 2of2
             account_index: 3
             timeout_minutes: 45
+            playwright_args: '--shard=2/2'
           - browser: firefox
             shard: 1/3
             shard_id: 1of3
             account_index: 4
             timeout_minutes: 60
+            playwright_args: '--shard=1/3'
           - browser: firefox
             shard: 2/3
             shard_id: 2of3
             account_index: 5
             timeout_minutes: 60
+            playwright_args: '--shard=2/3'
           - browser: firefox
             shard: 3/3
             shard_id: 3of3
             account_index: 6
             timeout_minutes: 60
+            playwright_args: '--shard=3/3 --grep-invert="MixVy production readiness"'
+          - browser: firefox
+            shard: readiness
+            shard_id: readiness
+            account_index: 7
+            timeout_minutes: 30
+            playwright_args: 'e2e/09-production-readiness.spec.ts'
 
     steps:
       - name: Checkout code
@@ -107,7 +120,7 @@ jobs:
         run: |
           npx playwright test \
             --project=${{ matrix.browser }} \
-            --shard=${{ matrix.shard }} \
+            ${{ matrix.playwright_args }} \
             --grep-invert="MixVy Performance & Accessibility"
         env:
           TEST_ACCOUNTS_JSON: ${{ secrets.TEST_ACCOUNTS_JSON }}
