@@ -23,16 +23,12 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
  */
 export async function enableFlutterSemantics(page: Page): Promise<void> {
   try {
-    const accessibilityButton = page.getByRole('button', {
-      name: 'Enable accessibility',
+    await page.evaluate(() => {
+      const element = document.querySelector<HTMLElement>(
+        'flt-semantics-placeholder, [role="button"][aria-label="Enable accessibility"]',
+      );
+      element?.click();
     });
-    if (await accessibilityButton.count()) {
-      await accessibilityButton.dispatchEvent('click');
-    } else {
-      await page.locator('flt-semantics-placeholder').evaluate((element) => {
-        (element as HTMLElement).click();
-      });
-    }
     await page.waitForTimeout(500);
   } catch {
     // Semantics may already be enabled, or the placeholder may not be present yet - ignore.
@@ -67,20 +63,19 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
   const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';
 
   try {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+      await waitForAppReady(page);
 
-    // Navigate to auth page
-    await page.goto('/auth', { waitUntil: 'domcontentloaded' });
-    await waitForAppReady(page);
-
-    // Method 1: Try standard email/password form
-    const authSuccess = await withTimeout(
-      tryEmailPasswordAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
-      'email/password authentication'
-    ).catch(() => false);
-    if (authSuccess) {
-      console.log('✓ Authenticated via email/password form');
-      return true;
+      const authSuccess = await withTimeout(
+        tryEmailPasswordAuth(page, testEmail, testPassword),
+        AUTH_STEP_TIMEOUT_MS,
+        'email/password authentication'
+      ).catch(() => false);
+      if (authSuccess) {
+        console.log(`✓ Authenticated via email/password form (attempt ${attempt})`);
+        return true;
+      }
     }
 
     if (authRequired) {
@@ -134,17 +129,14 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
       )
       .toBeGreaterThan(0);
 
-    await emailInput.click();
-    await emailInput.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
-    await emailInput.pressSequentially(email, { delay: 35 });
+    await emailInput.fill(email);
     await page.waitForTimeout(500);
 
     // Find and fill password field
     const passwordInput = page.locator(
       'input[aria-label*="password" i], input[type="password"], input[placeholder*="password" i]'
     ).first();
-    await passwordInput.click();
-    await passwordInput.pressSequentially(password, { delay: 35 });
+    await passwordInput.fill(password);
     await page.waitForTimeout(500);
 
     // Find and click login button
