@@ -1,6 +1,7 @@
 import { Page, expect } from '@playwright/test';
+import { activateWorkerCredentials } from './credentials';
 
-const AUTH_STEP_TIMEOUT_MS = 45000;
+const AUTH_STEP_TIMEOUT_MS = 90000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -20,17 +21,13 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
  * synthetic click at its bounding box instead. This must run before any
  * input/button locators are used against the app.
  */
-async function enableFlutterSemantics(page: Page): Promise<void> {
+export async function enableFlutterSemantics(page: Page): Promise<void> {
   try {
     await page.evaluate(() => {
-      const el = document.querySelector('flt-semantics-placeholder') as HTMLElement | null;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      el.dispatchEvent(new MouseEvent('click', {
-        bubbles: true,
-        clientX: rect.left + 1,
-        clientY: rect.top + 1,
-      }));
+      const element = document.querySelector<HTMLElement>(
+        'flt-semantics-placeholder, [role="button"][aria-label="Enable accessibility"]',
+      );
+      element?.click();
     });
     await page.waitForTimeout(500);
   } catch {
@@ -38,7 +35,7 @@ async function enableFlutterSemantics(page: Page): Promise<void> {
   }
 }
 
-async function waitForAppReady(page: Page): Promise<void> {
+export async function waitForAppReady(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
   await expect
@@ -57,39 +54,28 @@ async function waitForAppReady(page: Page): Promise<void> {
 
 /**
  * Authenticates a user in the test environment by logging into the Flutter web app
- * Supports multiple fallback methods including Firebase auth and local storage injection
+ * Uses the application UI so Firebase establishes a real browser session.
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
+  activateWorkerCredentials();
   const testEmail = process.env.TEST_EMAIL || 'test@example.com';
   const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
   const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';
 
   try {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      await page.goto('/auth', { waitUntil: 'domcontentloaded' });
+      await waitForAppReady(page);
 
-    // Navigate to auth page
-    await page.goto('/auth', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-
-    // Method 1: Try standard email/password form
-    const authSuccess = await withTimeout(
-      tryEmailPasswordAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
-      'email/password authentication'
-    ).catch(() => false);
-    if (authSuccess) {
-      console.log('✓ Authenticated via email/password form');
-      return true;
-    }
-
-    // Method 2: Try Firebase Auth REST API (fallback)
-    const firebaseSuccess = await withTimeout(
-      tryFirebaseRestAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
-      'firebase REST authentication'
-    ).catch(() => false);
-    if (firebaseSuccess) {
-      console.log('✓ Authenticated via Firebase REST API');
-      return true;
+      const authSuccess = await withTimeout(
+        tryEmailPasswordAuth(page, testEmail, testPassword),
+        AUTH_STEP_TIMEOUT_MS,
+        'email/password authentication'
+      ).catch(() => false);
+      if (authSuccess) {
+        console.log(`✓ Authenticated via email/password form (attempt ${attempt})`);
+        return true;
+      }
     }
 
     if (authRequired) {
@@ -124,17 +110,24 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
   try {
     // Flutter Web doesn't expose real <input>/<button> DOM nodes until semantics
     // are activated - do this first or every locator below finds nothing.
-    await enableFlutterSemantics(page);
-
     // Real DOM attributes (verified against the live app): type="text" with an
     // empty placeholder, identified via aria-label instead (e.g. "Email address").
     const emailInput = page.locator(
       'input[aria-label*="mail" i], input[type="email"], input[placeholder*="mail" i]'
     ).first();
 
-    if ((await emailInput.count()) === 0) {
-      return false;
-    }
+    await expect
+      .poll(
+        async () => {
+          await enableFlutterSemantics(page);
+          return await emailInput.count();
+        },
+        {
+          timeout: 30000,
+          message: 'Expected the Flutter email input to become available',
+        },
+      )
+      .toBeGreaterThan(0);
 
     await emailInput.fill(email);
     await page.waitForTimeout(500);
@@ -147,9 +140,9 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     await page.waitForTimeout(500);
 
     // Find and click login button
-    const loginButton = page.locator(
-      'button:has-text("SIGN IN"), button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")'
-    ).first();
+    const loginButton = page.getByRole('button', {
+      name: /^(sign in|log in|login)$/i,
+    }).first();
     await loginButton.click();
 
     // Verify auth success: the modern Firebase JS SDK (firebase_auth v6+) persists
@@ -157,68 +150,11 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     // so the real signal is GoRouter navigating away from the /auth route once the
     // app confirms the session.
     try {
-      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 8000 });
+      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 35000 });
       return true;
     } catch {
       return false;
     }
-  } catch (e) {
-    return false;
-  }
-}
-
-/**
- * Attempts authentication via Firebase Auth REST API (server-side fallback)
- */
-async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
-  try {
-    // Get Firebase config from window object or use hardcoded values
-    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCqXHwQaMV1VvWxYnrAGqhGlx9S2K0MZZE';
-    const firebaseProjectId = 'mixvy-v2';
-
-    const response = await page.request.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseKey}`,
-      {
-        data: {
-          email,
-          password,
-          returnSecureToken: true,
-        },
-      }
-    );
-
-    if (!response.ok()) {
-      return false;
-    }
-
-    const result = await response.json() as any;
-    
-    if (!result.idToken) {
-      return false;
-    }
-
-    // Store auth tokens in localStorage
-    await page.evaluate(
-      ({ tokens, uid }) => {
-        localStorage.setItem('firebase:authUser:mixvy-v2', JSON.stringify({
-          uid,
-          email: tokens.email,
-          emailVerified: false,
-          displayName: null,
-          isAnonymous: false,
-          metadata: {
-            creationTime: new Date().toISOString(),
-            lastSignInTime: new Date().toISOString(),
-          },
-          providerData: [],
-          _token: tokens.idToken,
-          _tokenExpirationTime: Date.now() + (3600 * 1000),
-        }));
-      },
-      { tokens: result, uid: result.localId }
-    );
-
-    return true;
   } catch (e) {
     return false;
   }

@@ -109,6 +109,14 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     );
   }
 
+  Future<void> _signInWithGoogle() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+
+    FocusScope.of(context).unfocus();
+    await ref.read(authControllerProvider.notifier).signInWithGoogle();
+  }
+
   String? _validateEmail(String? value) {
     final input = value?.trim() ?? '';
     if (input.isEmpty) {
@@ -129,9 +137,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     }
     return null;
   }
-
-  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
-  // These methods were for social sign-in which is no longer displayed
 
   // ── build ─────────────────────────────────────────────────────────────────
   @override
@@ -546,6 +551,53 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                               letterSpacing: 1.5,
                             ),
                           ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: _ghostBorder)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'OR',
+                        style: GoogleFonts.raleway(
+                          color: _onVariant,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider(color: _ghostBorder)),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                OutlinedButton.icon(
+                  onPressed: isLoading ? null : _signInWithGoogle,
+                  icon: Text(
+                    'G',
+                    style: GoogleFonts.raleway(
+                      color: _onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  label: Text(
+                    'CONTINUE WITH GOOGLE',
+                    style: GoogleFonts.raleway(
+                      color: _onSurface,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    side: const BorderSide(color: _ghostBorder),
+                    shape: const StadiumBorder(),
                   ),
                 ),
 

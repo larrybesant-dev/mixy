@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAppReady } from './utils/auth';
 
 test.describe('MixVy - Auth Page Smoke Tests', () => {
   test('should load auth page', async ({ page }) => {
@@ -82,12 +83,10 @@ test.describe('MixVy - Auth Page Smoke Tests', () => {
     await page.goto('/auth');
     await page.waitForTimeout(500);
 
-    // Reload page
-    await page.reload();
-    await page.waitForTimeout(500);
-
-    // Should still have content
-    const title = await page.title();
-    expect(title.length).toBeGreaterThan(0);
+    // A same-URL navigation performs a full document reload without relying on
+    // Firefox's occasionally stale Playwright response binding.
+    await page.goto(page.url(), { waitUntil: 'domcontentloaded' });
+    await waitForAppReady(page);
+    await expect(page.locator('body')).toBeVisible();
   });
 });

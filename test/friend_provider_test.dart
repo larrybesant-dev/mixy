@@ -92,6 +92,101 @@ void main() {
       container.dispose();
     });
 
+    test('social lists resolve empty while no user is available', () async {
+      final signedOutContainer = ProviderContainer(
+        overrides: [
+          friendFirestoreProvider.overrideWithValue(firestore),
+          userProvider.overrideWithValue(null),
+        ],
+      );
+      addTearDown(signedOutContainer.dispose);
+
+      expect(
+        await signedOutContainer.read(friendRosterProvider.future),
+        isEmpty,
+      );
+      expect(
+        await signedOutContainer.read(incomingFriendRequestsProvider.future),
+        isEmpty,
+      );
+      expect(
+        await signedOutContainer.read(outgoingFriendRequestsProvider.future),
+        isEmpty,
+      );
+      expect(
+        await signedOutContainer.read(currentUserPresenceProvider.future),
+        isNull,
+      );
+    });
+
+    test(
+      'friendSuggestionsProvider discovers public users without friendships',
+      () async {
+        final newUserFirestore = FakeFirebaseFirestore();
+        await newUserFirestore.collection('users').doc('new-user').set({
+          'uid': 'new-user',
+          'email': 'new@mixvy.dev',
+          'username': 'New User',
+          'usernameLower': 'new user',
+          'isPrivate': false,
+          'createdAt': DateTime(2026, 1, 1),
+        });
+        await newUserFirestore.collection('users').doc('other-user').set({
+          'uid': 'other-user',
+          'email': 'other@mixvy.dev',
+          'username': 'Other User',
+          'usernameLower': 'other user',
+          'isPrivate': false,
+          'createdAt': DateTime(2026, 1, 2),
+        });
+
+        final newUserContainer = ProviderContainer(
+          overrides: [
+            friendFirestoreProvider.overrideWithValue(newUserFirestore),
+            userProvider.overrideWithValue(
+              UserModel(
+                id: 'new-user',
+                email: 'new@mixvy.dev',
+                username: 'New User',
+                createdAt: DateTime(2026, 1, 1),
+              ),
+            ),
+          ],
+        );
+        addTearDown(newUserContainer.dispose);
+
+        final suggestions = await newUserContainer.read(
+          friendSuggestionsProvider.future,
+        );
+
+        expect(suggestions.map((user) => user.id), ['other-user']);
+      },
+    );
+
+    test('friendPresenceBatchProvider reports online and offline users', () async {
+      final now = DateTime.now();
+      await firestore.collection('presence').doc('user-2').set({
+        'userId': 'user-2',
+        'isOnline': true,
+        'status': 'online',
+        'lastSeen': now,
+      });
+      await firestore.collection('presence').doc('user-3').set({
+        'userId': 'user-3',
+        'isOnline': false,
+        'status': 'offline',
+        'lastSeen': now,
+      });
+
+      final batchKey = buildFriendPresenceBatchKey(['user-3', 'user-2']);
+      final presence = await container.read(
+        friendPresenceBatchProvider(batchKey).future,
+      );
+
+      expect(presence['user-2']?.online, isTrue);
+      expect(presence['user-3']?.online, isFalse);
+    });
+
     test(
       'friendsListProvider resolves accepted friends from friendships',
       () async {
@@ -132,6 +227,20 @@ void main() {
     );
 
     test(
+      'outgoingFriendRequestsProvider resolves recipient user details',
+      () async {
+        final requests = await container.read(
+          outgoingFriendRequestsProvider.future,
+        );
+
+        expect(requests, hasLength(1));
+        expect(requests.single.friendship.id, 'user-1_user-4');
+        expect(requests.single.toUser?.id, 'user-4');
+        expect(requests.single.toUser?.username, 'Pending Person');
+      },
+    );
+
+    test(
       'friendsListProvider resolves accepted friends from schema friend_links when legacy docs are absent',
       () async {
         final schemaOnlyFirestore = FakeFirebaseFirestore();
@@ -153,12 +262,12 @@ void main() {
             .collection('friend_links')
             .doc('user-1_user-2')
             .set({
-              'users': ['user-1', 'user-2'],
-              'status': 'accepted',
-              'requestedBy': 'user-1',
-              'createdAt': DateTime(2026, 1, 2),
-              'updatedAt': DateTime(2026, 1, 2),
-            });
+          'users': ['user-1', 'user-2'],
+          'status': 'accepted',
+          'requestedBy': 'user-1',
+          'createdAt': DateTime(2026, 1, 2),
+          'updatedAt': DateTime(2026, 1, 2),
+        });
 
         final schemaContainer = ProviderContainer(
           overrides: [
@@ -204,12 +313,12 @@ void main() {
             .collection('friend_links')
             .doc('user-1_user-3')
             .set({
-              'users': ['user-1', 'user-3'],
-              'status': 'pending',
-              'requestedBy': 'user-3',
-              'createdAt': DateTime(2026, 1, 3),
-              'updatedAt': DateTime(2026, 1, 3),
-            });
+          'users': ['user-1', 'user-3'],
+          'status': 'pending',
+          'requestedBy': 'user-3',
+          'createdAt': DateTime(2026, 1, 3),
+          'updatedAt': DateTime(2026, 1, 3),
+        });
 
         final schemaContainer = ProviderContainer(
           overrides: [
@@ -235,6 +344,43 @@ void main() {
         expect(requests.single.fromUser?.id, 'user-3');
       },
     );
+
+    test('acceptFriendRequest accepts a schema-only pending link', () async {
+      await firestore.collection('friend_links').doc('user-1_user-3').set({
+        'users': ['user-1', 'user-3'],
+        'status': 'pending',
+        'requestedBy': 'user-3',
+        'createdAt': DateTime(2026, 1, 3),
+      });
+
+      await container
+          .read(friendServiceProvider)
+          .acceptFriendRequest('user-1_user-3');
+
+      final legacy =
+          await firestore.collection('friendships').doc('user-1_user-3').get();
+      final schema =
+          await firestore.collection('friend_links').doc('user-1_user-3').get();
+      expect(legacy.data()?['status'], 'accepted');
+      expect(schema.data()?['status'], 'accepted');
+    });
+
+    test('declineFriendRequest deletes a schema-only pending link', () async {
+      await firestore.collection('friend_links').doc('user-1_user-5').set({
+        'users': ['user-1', 'user-5'],
+        'status': 'pending',
+        'requestedBy': 'user-5',
+        'createdAt': DateTime(2026, 1, 5),
+      });
+
+      await container
+          .read(friendServiceProvider)
+          .declineFriendRequest('user-1_user-5');
+
+      final schema =
+          await firestore.collection('friend_links').doc('user-1_user-5').get();
+      expect(schema.exists, isFalse);
+    });
 
     test(
       'sendFriendRequest mirrors pending links into schema collection',

@@ -221,93 +221,93 @@ class FriendService {
 
       final subA = _streamLifecycleManager
           .bind<QuerySnapshot<Map<String, dynamic>>>(
-            key: _streamLifecycleManager.buildDedupeKey(
-              domain: 'friendships-legacy-userA',
-              userId: normalizedUserId,
-              queryHash: normalizedStatuses.join('|'),
-            ),
-            routePrefixes: const <String>['*'],
-            create: () => buildLegacyQuery('userA').snapshots(),
-          )
+        key: _streamLifecycleManager.buildDedupeKey(
+          domain: 'friendships-legacy-userA',
+          userId: normalizedUserId,
+          queryHash: normalizedStatuses.join('|'),
+        ),
+        routePrefixes: const <String>['*'],
+        create: () => buildLegacyQuery('userA').snapshots(),
+      )
           .listen(
-            (snapshot) {
-              userAFriendships = snapshot.docs
-                  .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
-                  .toList(growable: false);
-              userAReady = true;
-              emit();
-            },
-            onError: (error, stackTrace) {
-              if (_isPermissionDenied(error)) {
-                userAFriendships = const <FriendshipModel>[];
-                userAReady = true;
-                emit();
-                return;
-              }
-              controller.addError(error, stackTrace);
-            },
-          );
+        (snapshot) {
+          userAFriendships = snapshot.docs
+              .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
+              .toList(growable: false);
+          userAReady = true;
+          emit();
+        },
+        onError: (error, stackTrace) {
+          if (_isPermissionDenied(error)) {
+            userAFriendships = const <FriendshipModel>[];
+            userAReady = true;
+            emit();
+            return;
+          }
+          controller.addError(error, stackTrace);
+        },
+      );
 
       final subB = _streamLifecycleManager
           .bind<QuerySnapshot<Map<String, dynamic>>>(
-            key: _streamLifecycleManager.buildDedupeKey(
-              domain: 'friendships-legacy-userB',
-              userId: normalizedUserId,
-              queryHash: normalizedStatuses.join('|'),
-            ),
-            routePrefixes: const <String>['*'],
-            create: () => buildLegacyQuery('userB').snapshots(),
-          )
+        key: _streamLifecycleManager.buildDedupeKey(
+          domain: 'friendships-legacy-userB',
+          userId: normalizedUserId,
+          queryHash: normalizedStatuses.join('|'),
+        ),
+        routePrefixes: const <String>['*'],
+        create: () => buildLegacyQuery('userB').snapshots(),
+      )
           .listen(
-            (snapshot) {
-              userBFriendships = snapshot.docs
-                  .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
-                  .toList(growable: false);
-              userBReady = true;
-              emit();
-            },
-            onError: (error, stackTrace) {
-              if (_isPermissionDenied(error)) {
-                userBFriendships = const <FriendshipModel>[];
-                userBReady = true;
-                emit();
-                return;
-              }
-              controller.addError(error, stackTrace);
-            },
-          );
+        (snapshot) {
+          userBFriendships = snapshot.docs
+              .map((doc) => FriendshipModel.fromJson(doc.id, doc.data()))
+              .toList(growable: false);
+          userBReady = true;
+          emit();
+        },
+        onError: (error, stackTrace) {
+          if (_isPermissionDenied(error)) {
+            userBFriendships = const <FriendshipModel>[];
+            userBReady = true;
+            emit();
+            return;
+          }
+          controller.addError(error, stackTrace);
+        },
+      );
 
       final schemaSub = _streamLifecycleManager
           .bind<QuerySnapshot<Map<String, dynamic>>>(
-            key: _streamLifecycleManager.buildDedupeKey(
-              domain: 'friendships-schema',
-              userId: normalizedUserId,
-              queryHash: normalizedStatuses.join('|'),
-            ),
-            routePrefixes: const <String>['*'],
-            create: () => buildSchemaQuery().snapshots(),
-          )
+        key: _streamLifecycleManager.buildDedupeKey(
+          domain: 'friendships-schema',
+          userId: normalizedUserId,
+          queryHash: normalizedStatuses.join('|'),
+        ),
+        routePrefixes: const <String>['*'],
+        create: () => buildSchemaQuery().snapshots(),
+      )
           .listen(
-            (snapshot) {
-              schemaFriendships = snapshot.docs
-                  .map((doc) => _friendshipFromSchemaDoc(doc.id, doc.data()))
-                  .where(
-                    (friendship) => friendship.involvesUser(normalizedUserId),
-                  )
-                  .toList(growable: false);
-              schemaReady = true;
-              emit();
-            },
-            onError: (error, stackTrace) {
-              if (_isPermissionDenied(error)) {
-                schemaFriendships = const <FriendshipModel>[];
-                schemaReady = true;
-                emit();
-                return;
-              }
-              controller.addError(error, stackTrace);
-            },
-          );
+        (snapshot) {
+          schemaFriendships = snapshot.docs
+              .map((doc) => _friendshipFromSchemaDoc(doc.id, doc.data()))
+              .where(
+                (friendship) => friendship.involvesUser(normalizedUserId),
+              )
+              .toList(growable: false);
+          schemaReady = true;
+          emit();
+        },
+        onError: (error, stackTrace) {
+          if (_isPermissionDenied(error)) {
+            schemaFriendships = const <FriendshipModel>[];
+            schemaReady = true;
+            emit();
+            return;
+          }
+          controller.addError(error, stackTrace);
+        },
+      );
 
       controller.onCancel = () async {
         await subA.cancel();
@@ -351,23 +351,23 @@ class FriendService {
         controller.add(friendships);
       }
 
-      fallbackSub = _watchAcceptedFriendshipsFromUserDoc(normalizedUserId)
-          .listen(
-            (friendships) {
-              fallbackFriendships = friendships;
-              fallbackReady = true;
-              emit();
-            },
-            onError: (error, stackTrace) {
-              if (_isPermissionDenied(error)) {
-                fallbackFriendships = const <FriendshipModel>[];
-                fallbackReady = true;
-                emit();
-                return;
-              }
-              controller.addError(error, stackTrace);
-            },
-          );
+      fallbackSub =
+          _watchAcceptedFriendshipsFromUserDoc(normalizedUserId).listen(
+        (friendships) {
+          fallbackFriendships = friendships;
+          fallbackReady = true;
+          emit();
+        },
+        onError: (error, stackTrace) {
+          if (_isPermissionDenied(error)) {
+            fallbackFriendships = const <FriendshipModel>[];
+            fallbackReady = true;
+            emit();
+            return;
+          }
+          controller.addError(error, stackTrace);
+        },
+      );
 
       primarySub = watchFriendships(
         normalizedUserId,
@@ -407,18 +407,16 @@ class FriendService {
 
       final friendIds = _asStringList(data['friends']);
       final fallbackCreatedAt = DateTime.fromMillisecondsSinceEpoch(0);
-      return friendIds
-          .map((friendId) {
-            final sorted = FriendshipModel.sortedPair(userId, friendId);
-            return FriendshipModel(
-              id: FriendshipModel.canonicalIdFor(userId, friendId),
-              userA: sorted.userA,
-              userB: sorted.userB,
-              status: 'accepted',
-              createdAt: fallbackCreatedAt,
-            );
-          })
-          .toList(growable: false);
+      return friendIds.map((friendId) {
+        final sorted = FriendshipModel.sortedPair(userId, friendId);
+        return FriendshipModel(
+          id: FriendshipModel.canonicalIdFor(userId, friendId),
+          userA: sorted.userA,
+          userB: sorted.userB,
+          status: 'accepted',
+          createdAt: fallbackCreatedAt,
+        );
+      }).toList(growable: false);
     });
   }
 
@@ -1006,12 +1004,20 @@ class FriendService {
 
     final friendshipRef = _friendshipsCollection.doc(normalizedRequestId);
     final friendshipSnap = await friendshipRef.get();
-    if (!friendshipSnap.exists) return;
-
-    final friendship = FriendshipModel.fromJson(
-      friendshipSnap.id,
-      friendshipSnap.data() ?? <String, dynamic>{},
-    );
+    final schemaRef = _friendLinksCollection.doc(normalizedRequestId);
+    final schemaSnap = friendshipSnap.exists ? null : await schemaRef.get();
+    final friendship = friendshipSnap.exists
+        ? FriendshipModel.fromJson(
+            friendshipSnap.id,
+            friendshipSnap.data() ?? <String, dynamic>{},
+          )
+        : schemaSnap?.exists == true
+            ? _friendshipFromSchemaDoc(
+                schemaSnap!.id,
+                schemaSnap.data() ?? <String, dynamic>{},
+              )
+            : null;
+    if (friendship == null) return;
     if (friendship.status != 'pending') {
       return;
     }
@@ -1063,21 +1069,27 @@ class FriendService {
 
     final friendshipRef = _friendshipsCollection.doc(normalizedRequestId);
     final friendshipSnap = await friendshipRef.get();
-    if (!friendshipSnap.exists) {
-      return;
-    }
-
-    final friendship = FriendshipModel.fromJson(
-      friendshipSnap.id,
-      friendshipSnap.data() ?? <String, dynamic>{},
-    );
+    final schemaRef = _friendLinksCollection.doc(normalizedRequestId);
+    final schemaSnap = friendshipSnap.exists ? null : await schemaRef.get();
+    final friendship = friendshipSnap.exists
+        ? FriendshipModel.fromJson(
+            friendshipSnap.id,
+            friendshipSnap.data() ?? <String, dynamic>{},
+          )
+        : schemaSnap?.exists == true
+            ? _friendshipFromSchemaDoc(
+                schemaSnap!.id,
+                schemaSnap.data() ?? <String, dynamic>{},
+              )
+            : null;
+    if (friendship == null) return;
     if (friendship.status != 'pending') {
       return;
     }
 
     await Future.wait<void>([
       friendshipRef.delete(),
-      _firestore.collection('friend_links').doc(normalizedRequestId).delete(),
+      schemaRef.delete(),
     ]);
   }
 
@@ -1128,8 +1140,7 @@ class FriendService {
             .where(FieldPath.documentId, whereIn: chunk)
             .get();
         for (final doc in query.docs) {
-          usersById[doc.id] =
-              UserModel.fromJson({'id': doc.id, ...doc.data()});
+          usersById[doc.id] = UserModel.fromJson({'id': doc.id, ...doc.data()});
         }
       } catch (error, stackTrace) {
         if (!_isPermissionDenied(error)) {
@@ -1310,10 +1321,9 @@ class FriendService {
         .where((user) => !excludeUserIds.contains(user.id))
         .where((user) => !blockedIds.contains(user.id))
         .where((user) {
-          if (normalizedQuery.isEmpty) return true;
-          return user.username.toLowerCase().contains(normalizedQuery);
-        })
-        .toList(growable: false);
+      if (normalizedQuery.isEmpty) return true;
+      return user.username.toLowerCase().contains(normalizedQuery);
+    }).toList(growable: false);
   }
 
   Future<List<UserModel>> getFriendSuggestions(
@@ -1323,7 +1333,10 @@ class FriendService {
     if (userId.trim().isEmpty) return const <UserModel>[];
 
     final myFriendIds = (await getFriendIds(userId)).toSet();
-    if (myFriendIds.isEmpty) return const <UserModel>[];
+    if (myFriendIds.isEmpty) {
+      final publicUsers = await searchUsers('', currentUserId: userId);
+      return publicUsers.take(limit).toList(growable: false);
+    }
 
     final excludedIds = await _moderationService.getExcludedUserIds(userId);
     final excluded = {...excludedIds, userId, ...myFriendIds};
@@ -1336,14 +1349,19 @@ class FriendService {
         mutualCount[candidate] = (mutualCount[candidate] ?? 0) + 1;
       }
     }
-    if (mutualCount.isEmpty) return const <UserModel>[];
+    if (mutualCount.isEmpty) {
+      final publicUsers = await searchUsers(
+        '',
+        currentUserId: userId,
+        excludeUserIds: myFriendIds.toList(growable: false),
+      );
+      return publicUsers.take(limit).toList(growable: false);
+    }
 
     final sorted = mutualCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final topIds = sorted
-        .take(limit)
-        .map((entry) => entry.key)
-        .toList(growable: false);
+    final topIds =
+        sorted.take(limit).map((entry) => entry.key).toList(growable: false);
     if (topIds.isEmpty) return const <UserModel>[];
 
     return getUsersByIds(topIds);
@@ -1397,10 +1415,7 @@ class FriendService {
         void emitFallback() => emitMerged(usersById);
 
         for (final userId in normalizedIds) {
-          final sub = _usersCollection
-              .doc(userId)
-              .snapshots()
-              .listen(
+          final sub = _usersCollection.doc(userId).snapshots().listen(
             (doc) {
               final data = doc.data();
               if (!doc.exists || data == null) {
