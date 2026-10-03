@@ -374,6 +374,7 @@ class PushMessagingService {
         final roomId = data['roomId'] as String? ?? '';
         route = roomId.isNotEmpty ? '/room/$roomId' : '/home';
       case 'friend_request':
+        route = '/profile/social?tab=requests';
       case 'friend_accepted':
         final senderId = data['senderId'] as String? ?? '';
         route = senderId.isNotEmpty ? '/profile/$senderId' : '/friends';
@@ -410,6 +411,3 @@ class PushMessagingService {
     _isInitialized = false;
   }
 }
-
-
-

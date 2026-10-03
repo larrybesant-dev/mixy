@@ -7,8 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/flags/feature_flags.dart';
 import '../../../core/layout/app_layout.dart';
-import '../../../core/providers/session_capabilities_provider.dart';
+import '../../../core/telemetry/launch_monitoring.dart';
 import '../../../core/theme.dart';
 import '../../../dev/app_debug_flags.dart';
 import '../../../dev/app_state_reasoning.dart';
@@ -35,6 +36,7 @@ import '../widgets/trending_user_card.dart';
 import '../../stories/providers/story_provider.dart';
 import '../../../presentation/providers/notification_provider.dart';
 import '../../../services/room_discovery_service.dart';
+import '../../../services/room_service.dart';
 import '../../../core/providers/firebase_providers.dart';
 
 // ── Velvet Noir brand aliases ────────────────────────────────────────────────
@@ -49,16 +51,54 @@ const _npOnSurface = VelvetNoir.onSurface;
 const _npOnVariant = VelvetNoir.onSurfaceVariant;
 const _npGhost = Color(0x1A4A2E35);
 
+Future<void> _openLiveRoom(
+  BuildContext context,
+  WidgetRef ref,
+  RoomModel room,
+) async {
+  final allowed = await GuestAuthGate.requireRoomJoin(context, ref);
+  if (!allowed || !context.mounted) return;
+
+  try {
+    final currentRoom =
+        await ref.read(roomServiceProvider).getRoomById(room.id);
+    if (!context.mounted) return;
+    if (currentRoom == null || !currentRoom.isLive) {
+      LaunchMonitoring.record(
+        action: LaunchMonitoring.staleRoomNavigation,
+        message: 'Discovery room was unavailable during join validation.',
+        roomId: room.id,
+        result: currentRoom == null ? 'missing' : 'ended',
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This room has ended. Refreshing live rooms...'),
+        ),
+      );
+      await ref.read(feedControllerProvider.notifier).loadFeed();
+      return;
+    }
+
+    context.go('/room/${currentRoom.id}', extra: currentRoom);
+    unawaited(SessionPersistence.saveLastRoom(currentRoom.id));
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content:
+            Text('Could not open this room. Check your connection and retry.'),
+      ),
+    );
+  }
+}
+
 // ── Host avatar provider ──────────────────────────────────────────────────────
 final _hostAvatarProvider = FutureProvider.autoDispose.family<String?, String>((
   ref,
   hostId,
 ) async {
-  final doc = await ref
-      .watch(firestoreProvider)
-      .collection('users')
-      .doc(hostId)
-      .get();
+  final doc =
+      await ref.watch(firestoreProvider).collection('users').doc(hostId).get();
   if (!doc.exists) return null;
   return sanitizeNetworkImageUrl(doc.data()?['avatarUrl'] as String?);
 });
@@ -114,7 +154,6 @@ class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
       child: AppPageScaffold(
         backgroundColor: _npSurface,
         safeArea: false,
-        floatingActionButton: const _GoLiveFab(),
         body: NestedScrollView(
           controller: _scrollController,
           headerSliverBuilder: (context, _) => [
@@ -475,21 +514,14 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   String? _joiningRoomId;
 
   Future<void> _joinRoom(RoomModel room) async {
-    final allowed = await GuestAuthGate.requireRoomJoin(context, ref);
-    if (!allowed || !mounted) return;
-
     if (_joiningRoomId != null) return;
     setState(() => _joiningRoomId = room.id);
-    context.go('/room/${room.id}', extra: room);
 
-    // Hardening: Persist room ID so it can be recovered after crash
-    unawaited(SessionPersistence.saveLastRoom(room.id));
-
-    // Clear the joining state after a short window so the button re-enables
-    // if the user navigates back before the new screen mounts.
-    Future.delayed(const Duration(seconds: 3), () {
+    try {
+      await _openLiveRoom(context, ref, room);
+    } finally {
       if (mounted) setState(() => _joiningRoomId = null);
-    });
+    }
   }
 
   Future<void> _startRoomCreation() async {
@@ -518,7 +550,7 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   @override
   Widget build(BuildContext context) {
     final feedState = ref.watch(feedControllerProvider);
-    
+
     final horizontalPadding = context.pageHorizontalPadding;
 
     if (feedState.isLoading) {
@@ -532,8 +564,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final filteredRooms = _selectedCategory == null
         ? feedState.liveRooms
         : feedState.liveRooms
-              .where((r) => r.category?.toLowerCase() == _selectedCategory)
-              .toList();
+            .where((r) => r.category?.toLowerCase() == _selectedCategory)
+            .toList();
     final liveRoomCount = feedState.liveRooms.length;
     final activeListenerCount = feedState.liveRooms.fold<int>(
       0,
@@ -547,16 +579,16 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final discoveryStateLabel = feedState.error != null
         ? 'error'
         : filteredRooms.isEmpty
-        ? 'empty'
-        : 'ready';
+            ? 'empty'
+            : 'ready';
     final selectedCategoryLabel = _selectedCategory ?? 'all';
     final discoveryHint = feedState.error != null
         ? feedState.error!
         : filteredRooms.isEmpty
-        ? (_selectedCategory == null
-              ? 'No live rooms currently passed visibility rules.'
-              : 'No live rooms match the selected category right now.')
-        : 'Rooms are visible and ranked normally.';
+            ? (_selectedCategory == null
+                ? 'No live rooms currently passed visibility rules.'
+                : 'No live rooms match the selected category right now.')
+            : 'Rooms are visible and ranked normally.';
 
     HomeLayoutV1.debugAssertOrder(const <String>[
       HomeLayoutV1.livePulseSlotId,
@@ -665,13 +697,13 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                   final crossAxisCount = width >= 980
                       ? 4
                       : width >= 720
-                      ? 3
-                      : 2;
+                          ? 3
+                          : 2;
                   final aspectRatio = width >= 980
                       ? 1.0
                       : width >= 720
-                      ? 0.95
-                      : 1.0;
+                          ? 0.95
+                          : 1.0;
 
                   return SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -706,6 +738,9 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
           SliverToBoxAdapter(
             child: Builder(
               builder: (ctx) {
+                if (!kPaymentsEnabled) {
+                  return const SizedBox.shrink();
+                }
                 final hasVipEntitlement =
                     ref.watch(vipEntitlementProvider).valueOrNull ?? false;
                 if (!AdManager.shouldShowAds(
@@ -939,12 +974,12 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
 
   Widget _buildErrorState(String error) {
     final feedState = ref.watch(feedControllerProvider);
-    
+
     // If we have cached data, show it with a "stale" indicator
     if (feedState.isFromCache && feedState.liveRooms.isNotEmpty) {
       return _buildCachedFeedWithIndicator(error);
     }
-    
+
     // No cache - show error
     return Center(
       child: Padding(
@@ -968,7 +1003,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
               ),
               SizedBox(height: context.sectionSpacing),
               FilledButton(
-                onPressed: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+                onPressed: () =>
+                    ref.read(feedControllerProvider.notifier).loadFeed(),
                 child: const Text('Try again'),
               ),
             ],
@@ -1027,7 +1063,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                 ),
               ),
               FilledButton.tonal(
-                onPressed: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+                onPressed: () =>
+                    ref.read(feedControllerProvider.notifier).loadFeed(),
                 child: const Text('Refresh', style: TextStyle(fontSize: 12)),
               ),
             ],
@@ -1061,8 +1098,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final filteredRooms = _selectedCategory == null
         ? feedState.liveRooms
         : feedState.liveRooms
-              .where((r) => r.category?.toLowerCase() == _selectedCategory)
-              .toList();
+            .where((r) => r.category?.toLowerCase() == _selectedCategory)
+            .toList();
 
     if (filteredRooms.isEmpty) {
       return const AppEmptyView(
@@ -1076,7 +1113,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+            padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding, vertical: 16),
             child: Text(
               'Available Rooms',
               style: Theme.of(context).textTheme.titleLarge,
@@ -1416,7 +1454,7 @@ class _BentoHeroCard extends ConsumerWidget {
                         count: room.memberCount > 0
                             ? room.memberCount
                             : room.stageUserIds.length +
-                                  room.audienceUserIds.length,
+                                room.audienceUserIds.length,
                         label: 'listening',
                       ),
                       const SizedBox(width: 6),
@@ -2179,7 +2217,7 @@ class _LiveNowStrip extends ConsumerWidget {
             separatorBuilder: (__, _) => const SizedBox(width: 14),
             itemBuilder: (ctx, i) => _LiveNowBubble(
               room: rooms[i],
-              onTap: () => context.go('/room/${rooms[i].id}', extra: rooms[i]),
+              onTap: () => unawaited(_openLiveRoom(context, ref, rooms[i])),
             ),
           ),
         ),
@@ -2413,12 +2451,13 @@ class _LiveStateBar extends StatelessWidget {
       // Map audience users to their avatars
       for (var i = 0; i < room.audienceUserIds.length; i++) {
         final uid = room.audienceUserIds[i];
-        if (!uidMap.containsKey(uid) && i < room.audienceUserAvatarUrls.length) {
+        if (!uidMap.containsKey(uid) &&
+            i < room.audienceUserAvatarUrls.length) {
           uidMap[uid] = room.audienceUserAvatarUrls[i];
         }
       }
     }
-    
+
     // Return avatars in the same order as clusterUids
     return _clusterUids()
         .map((uid) => uidMap[uid] ?? '')
@@ -2677,8 +2716,9 @@ class _HeroJoinCard extends StatelessWidget {
     final listenerCount = firstRoom == null
         ? 0
         : firstRoom!.memberCount > 0
-        ? firstRoom!.memberCount
-        : firstRoom!.stageUserIds.length + firstRoom!.audienceUserIds.length;
+            ? firstRoom!.memberCount
+            : firstRoom!.stageUserIds.length +
+                firstRoom!.audienceUserIds.length;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.pageHorizontalPadding,
@@ -2742,8 +2782,8 @@ class _HeroJoinCard extends StatelessWidget {
             Text(
               hasLiveRoom
                   ? firstRoom!.name.isNotEmpty
-                        ? firstRoom!.name
-                        : 'Someone is live right now'
+                      ? firstRoom!.name
+                      : 'Someone is live right now'
                   : 'No one is live yet — be first',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -2798,9 +2838,9 @@ class _HeroJoinCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: hasLiveRoom
                     ? () => context.go(
-                        '/room/${firstRoom!.id}',
-                        extra: firstRoom!,
-                      )
+                          '/room/${firstRoom!.id}',
+                          extra: firstRoom!,
+                        )
                     : onStartRoom,
                 style: FilledButton.styleFrom(
                   backgroundColor: _npPrimary,
@@ -3021,32 +3061,6 @@ class _NotificationBell extends ConsumerWidget {
   }
 }
 
-class _GoLiveFab extends StatelessWidget {
-  const _GoLiveFab();
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        final allowed = await GuestAuthGate.requireCapabilityFromContext(
-          context,
-          SessionCapability.createRoom,
-        );
-        if (!allowed) return;
-        if (!context.mounted) return;
-        context.go('/rooms/create');
-      },
-      backgroundColor: _npPrimary,
-      foregroundColor: _npSurface,
-      icon: const Icon(Icons.mic_rounded),
-      label: Text(
-        'Start Room',
-        style: GoogleFonts.raleway(fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
 class _FriendsLiveSection extends ConsumerWidget {
   const _FriendsLiveSection();
 
@@ -3138,6 +3152,3 @@ class _FriendsLiveSection extends ConsumerWidget {
     );
   }
 }
-
-
-

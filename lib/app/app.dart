@@ -34,12 +34,14 @@ class MixVyApp extends ConsumerWidget {
 
     // While loading, show the loading container
     if (bootState == BootState.loading) {
-      return const MaterialApp(
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: Color(0xFF0A0A0E),
-          body: Center(
-            child: CircularProgressIndicator(color: Colors.purple),
+        onGenerateRoute: (_) => MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(
+            backgroundColor: Color(0xFF0A0A0E),
+            body: Center(
+              child: CircularProgressIndicator(color: Colors.purple),
+            ),
           ),
         ),
       );
