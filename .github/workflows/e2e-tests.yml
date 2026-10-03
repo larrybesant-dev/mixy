@@ -29,6 +29,9 @@ jobs:
     name: Playwright Core E2E (${{ matrix.browser }}, shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout_minutes }}
+    concurrency:
+      group: e2e-${{ github.run_id }}-${{ matrix.browser }}-${{ startsWith(matrix.shard_id, 'readiness-authenticated') && 'readiness-authenticated' || matrix.shard_id }}
+      cancel-in-progress: false
     
     strategy:
       fail-fast: false
@@ -91,11 +94,18 @@ jobs:
             playwright_args: 'e2e/09-production-readiness.spec.ts --grep="shows authentication actions" --workers=2'
             grep_invert: 'MixVy Performance & Accessibility'
           - browser: firefox
-            shard: readiness-authenticated
-            shard_id: readiness-authenticated
+            shard: readiness-authenticated-account
+            shard_id: readiness-authenticated-account
             account_index: 7
             timeout_minutes: 30
-            playwright_args: 'e2e/09-production-readiness.spec.ts --grep="exposes a guarded account deletion flow|redirects disabled payment offers" --workers=1'
+            playwright_args: 'e2e/09-production-readiness.spec.ts --grep="exposes a guarded account deletion flow" --workers=1'
+            grep_invert: 'MixVy Performance & Accessibility'
+          - browser: firefox
+            shard: readiness-authenticated-payments
+            shard_id: readiness-authenticated-payments
+            account_index: 7
+            timeout_minutes: 30
+            playwright_args: 'e2e/09-production-readiness.spec.ts --grep="redirects disabled payment offers" --workers=1'
             grep_invert: 'MixVy Performance & Accessibility'
 
     steps:
