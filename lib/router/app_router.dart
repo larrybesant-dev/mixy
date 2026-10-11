@@ -528,15 +528,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
             return '/auth';
           }
-          if (state.uri.path == '/profile') {
-            final target = '/profile/$uid';
-            RedirectTrace.record(
-              from: state.uri.path,
-              to: target,
-              reason: 'profile_root_redirect_to_uid',
-            );
-            return target;
-          }
           return null;
         },
         builder: (context, state) => _CustomShell(initialIndex: 4),
