@@ -547,8 +547,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: 'social',
               name: 'profileSocial',
               builder: (context, state) => SocialHubScreen(
-                  initialTab:
-                      state.uri.queryParameters['tab'] == 'requests' ? 1 : 0)),
+                initialTab: switch (state.uri.queryParameters['tab']) {
+                  'requests' => 1,
+                  'discover' => 2,
+                  _ => 0,
+                },
+              )),
           GoRoute(
               path: 'friends',
               name: 'profileFriends',
