@@ -19,6 +19,19 @@ class _StubPresenceController extends PresenceController {
 }
 
 void main() {
+  test('camera presets use fitted desktop matrices', () {
+    expect(liveRoomGridColumnCount(4, 680), 2);
+    expect(liveRoomGridColumnCount(8, 680), 4);
+    expect(liveRoomGridColumnCount(12, 680), 4);
+    expect(liveRoomGridColumnCount(16, 680), 4);
+    expect(liveRoomGridColumnCount(20, 680), 5);
+  });
+
+  test('camera matrix reduces columns on narrow screens', () {
+    expect(liveRoomGridColumnCount(12, 500), 3);
+    expect(liveRoomGridColumnCount(12, 350), 2);
+  });
+
   setUpAll(() async {
     await testSetup();
   });

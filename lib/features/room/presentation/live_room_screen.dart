@@ -35,6 +35,19 @@ import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
 
+const int liveRoomDefaultGridSlotCount = 16;
+
+int liveRoomGridColumnCount(int slotCount, double availableWidth) {
+  final preferredColumns = switch (slotCount) {
+    <= 4 => 2,
+    <= 16 => 4,
+    _ => 5,
+  };
+  if (availableWidth < 360) return preferredColumns.clamp(1, 2);
+  if (availableWidth < 520) return preferredColumns.clamp(1, 3);
+  return preferredColumns;
+}
+
 class LiveRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
 
@@ -127,7 +140,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
-  int _gridSlotCount = 12;
+  int _gridSlotCount = liveRoomDefaultGridSlotCount;
   bool _isFollowActionBusy = false;
   bool _isJoiningRoom = false;
   bool _hasAttemptedAutoJoin = false;
@@ -1444,24 +1457,34 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           children: [
             Container(
               color: VelvetNoir.surfaceHigh,
-              padding: const EdgeInsets.fromLTRB(10, 56, 10, 10),
+              padding: const EdgeInsets.fromLTRB(2, 46, 2, 2),
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  const tileGap = 3.0;
                   final width = constraints.maxWidth;
-                  final crossAxisCount = width >= 1300
-                      ? (width >= 1700 ? 5 : 4)
-                      : width >= 900
-                      ? 3
-                      : width >= 520
-                      ? 2
-                      : 1;
+                  final height = constraints.maxHeight;
+                  final crossAxisCount =
+                      liveRoomGridColumnCount(_gridSlotCount, width);
+                  final rowCount = (_gridSlotCount / crossAxisCount).ceil();
+                  final tileWidth = (width - ((crossAxisCount - 1) * tileGap)) /
+                      crossAxisCount;
+                  final tileHeight =
+                      (height - ((rowCount - 1) * tileGap)) / rowCount;
+                  final childAspectRatio = tileWidth.isFinite &&
+                          tileHeight.isFinite &&
+                          tileWidth > 0 &&
+                          tileHeight > 0
+                      ? tileWidth / tileHeight
+                      : 4 / 3;
 
                   return GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    primary: false,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 4 / 3,
+                      crossAxisSpacing: tileGap,
+                      mainAxisSpacing: tileGap,
+                      childAspectRatio: childAspectRatio,
                     ),
                     itemCount: visibleEntries.length + placeholders,
                     itemBuilder: (context, index) {
@@ -2510,7 +2533,6 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 }
-
 
 
 
