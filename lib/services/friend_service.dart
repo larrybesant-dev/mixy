@@ -1268,10 +1268,7 @@ class FriendService {
     QuerySnapshot<Map<String, dynamic>> snapshot;
     try {
       if (normalizedQuery.isEmpty) {
-        snapshot = await _usersCollection
-            .orderBy('createdAt', descending: true)
-            .limit(50)
-            .get();
+        snapshot = await _usersCollection.limit(50).get();
       } else {
         snapshot = await _usersCollection
             .where('usernameLower', isGreaterThanOrEqualTo: normalizedQuery)

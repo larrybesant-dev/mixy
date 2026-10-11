@@ -175,8 +175,8 @@ void main() {
         );
 
         expect(suggestions.map((user) => user.id), [
-          'legacy-user',
           'other-user',
+          'legacy-user',
         ]);
       },
     );
