@@ -27,32 +27,12 @@ import '../../services/rtdb_user_service.dart';
 final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) {
     final firestore = FirebaseFirestore.instance;
-    
-    // Configure Firestore for web resilience
+
     if (kIsWeb) {
-      try {
-        // Enable persistence for offline resilience + bounded cache to prevent bloat
-        firestore.settings = Settings(
-          persistenceEnabled: true,  // ✅ Enable offline caching for network resilience
-          cacheSizeBytes: 50 * 1024 * 1024,  // 50MB standard cache limit for web/PWA
-          ignoreUndefinedProperties: true,
-          
-          // Browser extensions and some proxies buffer Firestore's streaming
-          // transport indefinitely. Force long polling so reads complete.
-          webExperimentalForceLongPolling: true,
-          host: 'firestore.googleapis.com',
-          sslEnabled: true,
-        );
-        debugPrint('[Firebase] Firestore configured: persistence=enabled, REST-API optimized');
-        
-        // Enable emergency polling detection for WebSocket failures
-        FirestoreConnectionFallback.enableFallbackDetection(firestore);
-        debugPrint('[Firebase] ${FirestoreConnectionFallback.getStatus()}');
-      } catch (e) {
-        debugPrint('[Firebase] Failed to configure Firestore settings: $e');
-      }
+      FirestoreConnectionFallback.enableFallbackDetection(firestore);
+      debugPrint('[Firebase] ${FirestoreConnectionFallback.getStatus()}');
     }
-    
+
     return firestore;
   },
 );
@@ -298,5 +278,4 @@ final displayNameStreamProvider = StreamProvider.autoDispose
 /// Alias used by non-canonical consumers to avoid direct `*StreamProvider`
 /// identifier references while still deriving from the canonical stream.
 final displayNameLiveProvider = displayNameStreamProvider;
-
 
