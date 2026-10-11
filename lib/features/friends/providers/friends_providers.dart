@@ -364,7 +364,8 @@ final friendSuggestionsProvider = FutureProvider.autoDispose<List<UserModel>>((
 ) async {
   final userId = ref.watch(currentFriendUserIdProvider);
   if (userId == null) return const <UserModel>[];
-  return ref
+  final users = await ref
       .watch(friendServiceProvider)
-      .getFriendSuggestions(userId, limit: 15);
+      .searchUsers('', currentUserId: userId);
+  return users.take(15).toList(growable: false);
 });
