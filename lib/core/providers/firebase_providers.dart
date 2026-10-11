@@ -37,11 +37,9 @@ final firestoreProvider = Provider<FirebaseFirestore>(
           cacheSizeBytes: 50 * 1024 * 1024,  // 50MB standard cache limit for web/PWA
           ignoreUndefinedProperties: true,
           
-          // 🔧 HOTFIX: Browser extensions (uBlock, Privacy Badger, etc.) often block
-          // WebSocket connections to *.googleapis.com as a security measure.
-          // This forces Firestore to skip WebSocket and HTTP long-polling,
-          // using REST API directly instead (which extensions typically don't block).
-          // See WEBSOCKET_ERR_ABORTED_ANALYSIS.md for detailed diagnosis.
+          // Browser extensions and some proxies buffer Firestore's streaming
+          // transport indefinitely. Force long polling so reads complete.
+          webExperimentalForceLongPolling: true,
           host: 'firestore.googleapis.com',
           sslEnabled: true,
         );
@@ -300,6 +298,5 @@ final displayNameStreamProvider = StreamProvider.autoDispose
 /// Alias used by non-canonical consumers to avoid direct `*StreamProvider`
 /// identifier references while still deriving from the canonical stream.
 final displayNameLiveProvider = displayNameStreamProvider;
-
 
 
