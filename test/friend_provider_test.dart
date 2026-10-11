@@ -139,6 +139,21 @@ void main() {
           'isPrivate': false,
           'createdAt': DateTime(2026, 1, 2),
         });
+        await newUserFirestore.collection('users').doc('legacy-user').set({
+          'uid': 'legacy-user',
+          'email': 'legacy@mixvy.dev',
+          'username': 'Legacy User',
+          'usernameLower': 'legacy user',
+          'createdAt': DateTime(2026, 1, 3),
+        });
+        await newUserFirestore.collection('users').doc('private-user').set({
+          'uid': 'private-user',
+          'email': 'private@mixvy.dev',
+          'username': 'Private User',
+          'usernameLower': 'private user',
+          'isPrivate': true,
+          'createdAt': DateTime(2026, 1, 4),
+        });
 
         final newUserContainer = ProviderContainer(
           overrides: [
@@ -159,7 +174,10 @@ void main() {
           friendSuggestionsProvider.future,
         );
 
-        expect(suggestions.map((user) => user.id), ['other-user']);
+        expect(suggestions.map((user) => user.id), [
+          'legacy-user',
+          'other-user',
+        ]);
       },
     );
 

@@ -170,6 +170,12 @@ class _PeopleDiscoveryViewState extends ConsumerState<_PeopleDiscoveryView> {
             : users
                 .where((user) => presenceById[user.id]?.online == true)
                 .length;
+        final onlineUsers = users
+            .where((user) => presenceById?[user.id]?.online == true)
+            .toList(growable: false);
+        final otherUsers = users
+            .where((user) => presenceById?[user.id]?.online != true)
+            .toList(growable: false);
 
         return Column(
           children: [
@@ -180,71 +186,84 @@ class _PeopleDiscoveryViewState extends ConsumerState<_PeopleDiscoveryView> {
               offlineCount: users.length - onlineCount,
             ),
             Expanded(
-              child: ListView.separated(
+              child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                itemCount: users.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final user = users[index];
-                  final isSending = _sendingToUserIds.contains(user.id);
-                  final isOnline = presenceById?[user.id]?.online;
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: VelvetNoir.surfaceContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: VelvetNoir.outlineVariant),
+                children: [
+                  const _DiscoverySectionHeading(title: 'Online Now'),
+                  if (onlineUsers.isEmpty)
+                    const _NoOnlinePeopleMessage()
+                  else
+                    ...onlineUsers.map(
+                      (user) => _buildSuggestionCard(user, isOnline: true),
                     ),
-                    child: ListTile(
-                      onTap: () => context.push('/profile/${user.id}'),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      leading: SafeNetworkAvatar(
-                        radius: 24,
-                        avatarUrl: user.avatarUrl,
-                        fallbackText:
-                            user.username.characters.first.toUpperCase(),
-                      ),
-                      title: Text(
-                        user.username,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: VelvetNoir.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      subtitle: Text(
-                        _suggestionSubtitle(user, isOnline: isOnline),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isOnline == true
-                              ? const Color(0xFF22C55E)
-                              : VelvetNoir.onSurfaceVariant,
-                        ),
-                      ),
-                      trailing: IconButton.filledTonal(
-                        tooltip: isSending ? 'Sending request' : 'Add friend',
-                        onPressed: isSending ? null : () => _sendRequest(user),
-                        icon: isSending
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.person_add_alt_1_rounded),
-                      ),
+                  const _DiscoverySectionHeading(title: 'More People'),
+                  ...otherUsers.map(
+                    (user) => _buildSuggestionCard(
+                      user,
+                      isOnline: presenceById?[user.id]?.online,
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSuggestionCard(UserModel user, {required bool? isOnline}) {
+    final isSending = _sendingToUserIds.contains(user.id);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VelvetNoir.surfaceContainer,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: VelvetNoir.outlineVariant),
+        ),
+        child: ListTile(
+          onTap: () => context.push('/profile/${user.id}'),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          leading: SafeNetworkAvatar(
+            radius: 24,
+            avatarUrl: user.avatarUrl,
+            fallbackText: user.username.characters.first.toUpperCase(),
+          ),
+          title: Text(
+            user.username,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: VelvetNoir.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            _suggestionSubtitle(user, isOnline: isOnline),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isOnline == true
+                  ? const Color(0xFF22C55E)
+                  : VelvetNoir.onSurfaceVariant,
+            ),
+          ),
+          trailing: IconButton.filledTonal(
+            tooltip: isSending ? 'Sending request' : 'Add friend',
+            onPressed: isSending ? null : () => _sendRequest(user),
+            icon: isSending
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.person_add_alt_1_rounded),
+          ),
+        ),
+      ),
     );
   }
 
@@ -286,6 +305,47 @@ class _PeopleDiscoveryViewState extends ConsumerState<_PeopleDiscoveryView> {
         setState(() => _sendingToUserIds.remove(user.id));
       }
     }
+  }
+}
+
+class _DiscoverySectionHeading extends StatelessWidget {
+  const _DiscoverySectionHeading({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: const TextStyle(
+            color: VelvetNoir.onSurface,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoOnlinePeopleMessage extends StatelessWidget {
+  const _NoOnlinePeopleMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'No one else is online right now.',
+          style: TextStyle(color: VelvetNoir.onSurfaceVariant),
+        ),
+      ),
+    );
   }
 }
 
