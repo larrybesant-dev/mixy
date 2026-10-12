@@ -7,11 +7,13 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1228, 768));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
+    var friendsSelected = false;
     await tester.pumpWidget(
       MaterialApp(
         home: PrimaryNavigationShell(
           currentIndex: 4,
           onSelected: (_) {},
+          onFriendsSelected: () => friendsSelected = true,
           child: const ColoredBox(color: Color(0xFF0D0A0C)),
         ),
       ),
@@ -26,6 +28,10 @@ void main() {
       findsNothing,
     );
     expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.text('Friends List'), findsOneWidget);
+
+    await tester.tap(find.text('Friends List'));
+    expect(friendsSelected, isTrue);
   });
 
   testWidgets('keeps bottom navigation on compact widths', (tester) async {
@@ -37,6 +43,7 @@ void main() {
         home: PrimaryNavigationShell(
           currentIndex: 0,
           onSelected: (_) {},
+          onFriendsSelected: () {},
           child: const ColoredBox(color: Color(0xFF0D0A0C)),
         ),
       ),
@@ -51,5 +58,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(NavigationRail), findsNothing);
+    expect(find.text('Friends List'), findsNothing);
   });
 }

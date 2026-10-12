@@ -7,6 +7,7 @@ class PrimaryNavigationShell extends StatelessWidget {
     super.key,
     required this.currentIndex,
     required this.onSelected,
+    required this.onFriendsSelected,
     required this.child,
   });
 
@@ -17,6 +18,7 @@ class PrimaryNavigationShell extends StatelessWidget {
 
   final int currentIndex;
   final ValueChanged<int> onSelected;
+  final VoidCallback onFriendsSelected;
   final Widget child;
 
   static const _items = <({IconData icon, String label})>[
@@ -26,6 +28,8 @@ class PrimaryNavigationShell extends StatelessWidget {
     (icon: Icons.favorite_rounded, label: 'Dating'),
     (icon: Icons.account_circle_rounded, label: 'Profile'),
   ];
+
+  static const _friendsDesktopIndex = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +46,18 @@ class PrimaryNavigationShell extends StatelessWidget {
                     NavigationRail(
                       key: desktopNavigationKey,
                       backgroundColor: const Color(0xFF0B0B0B),
-                      selectedIndex: currentIndex,
-                      onDestinationSelected: onSelected,
+                      selectedIndex: currentIndex >= _friendsDesktopIndex
+                          ? currentIndex + 1
+                          : currentIndex,
+                      onDestinationSelected: (index) {
+                        if (index == _friendsDesktopIndex) {
+                          onFriendsSelected();
+                          return;
+                        }
+                        onSelected(
+                          index > _friendsDesktopIndex ? index - 1 : index,
+                        );
+                      },
                       extended: true,
                       minExtendedWidth: 196,
                       labelType: NavigationRailLabelType.none,
@@ -79,7 +93,14 @@ class PrimaryNavigationShell extends StatelessWidget {
                         ),
                       ),
                       destinations: [
-                        for (final item in _items)
+                        for (final item in [
+                          ..._items.take(_friendsDesktopIndex),
+                          (
+                            icon: Icons.people_alt_outlined,
+                            label: 'Friends List',
+                          ),
+                          ..._items.skip(_friendsDesktopIndex),
+                        ])
                           NavigationRailDestination(
                             icon: Icon(item.icon),
                             label: Text(item.label),
