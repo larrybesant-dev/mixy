@@ -99,10 +99,12 @@ class AuthController extends Notifier<AuthState> {
     }
     final previous = state;
     state = nextState;
-    
+
     // Log phase changes for debugging bootstrap issues
     if (kDebugMode) {
-      print('[AuthController] Phase transition: ${previous.phase.name} -> ${nextState.phase.name} (source: $source)');
+      print(
+        '[AuthController] Phase transition: ${previous.phase.name} -> ${nextState.phase.name} (source: $source)',
+      );
     }
 
     if (previous.phase != nextState.phase) {
@@ -158,19 +160,23 @@ class AuthController extends Notifier<AuthState> {
     );
     try {
       await _googleSignInHelper.signInWithGoogle();
+      final signedInUser = _auth.currentUser;
+      if (signedInUser != null) {
+        await _ensureUserDocument(signedInUser);
+      }
       _setAuthState(
         state.copyWith(
           isLoading: false,
           hasResolvedSession: true,
-          uid: _auth.currentUser?.uid,
-          phase: _auth.currentUser?.uid == null
+          uid: signedInUser?.uid,
+          phase: signedInUser?.uid == null
               ? AuthBootstrapPhase.unauthenticatedStable
               : AuthBootstrapPhase.authenticatedStable,
         ),
         source: 'google_sign_in_success',
       );
       AppTelemetry.updateAuthState(
-        userId: _auth.currentUser?.uid,
+        userId: signedInUser?.uid,
         isLoading: false,
         error: null,
       );
@@ -978,7 +984,3 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 }
-
-
-
-
