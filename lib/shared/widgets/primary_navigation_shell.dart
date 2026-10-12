@@ -8,6 +8,7 @@ class PrimaryNavigationShell extends StatelessWidget {
     required this.currentIndex,
     required this.onSelected,
     required this.onFriendsSelected,
+    required this.onDiscoverSelected,
     required this.child,
   });
 
@@ -19,6 +20,7 @@ class PrimaryNavigationShell extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback onFriendsSelected;
+  final VoidCallback onDiscoverSelected;
   final Widget child;
 
   static const _items = <({IconData icon, String label})>[
@@ -30,6 +32,7 @@ class PrimaryNavigationShell extends StatelessWidget {
   ];
 
   static const _friendsDesktopIndex = 4;
+  static const _discoverDesktopIndex = 5;
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +50,19 @@ class PrimaryNavigationShell extends StatelessWidget {
                       key: desktopNavigationKey,
                       backgroundColor: const Color(0xFF0B0B0B),
                       selectedIndex: currentIndex >= _friendsDesktopIndex
-                          ? currentIndex + 1
+                          ? currentIndex + 2
                           : currentIndex,
                       onDestinationSelected: (index) {
                         if (index == _friendsDesktopIndex) {
                           onFriendsSelected();
                           return;
                         }
+                        if (index == _discoverDesktopIndex) {
+                          onDiscoverSelected();
+                          return;
+                        }
                         onSelected(
-                          index > _friendsDesktopIndex ? index - 1 : index,
+                          index > _discoverDesktopIndex ? index - 2 : index,
                         );
                       },
                       extended: true,
@@ -98,6 +105,10 @@ class PrimaryNavigationShell extends StatelessWidget {
                           (
                             icon: Icons.people_alt_outlined,
                             label: 'Friends List',
+                          ),
+                          (
+                            icon: Icons.person_search_outlined,
+                            label: 'Find People',
                           ),
                           ..._items.skip(_friendsDesktopIndex),
                         ])

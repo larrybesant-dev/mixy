@@ -799,6 +799,7 @@ class _CustomShell extends ConsumerWidget {
         }
       },
       onFriendsSelected: () => context.go('/profile/social?tab=friends'),
+      onDiscoverSelected: () => context.go('/profile/social?tab=discover'),
       child: IndexedStack(
         index: displayIndex,
         children: [
