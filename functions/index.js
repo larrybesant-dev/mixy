@@ -3087,6 +3087,8 @@ exports.saveProfile = onRequest(
       // Update users/{userId} with identity fields
       const userRef = db.collection("users").doc(userId);
       const identityFields = {
+        uid: userId,
+        id: userId,
         username: userData.username || "",
         displayName: userData.username || "",
         email: userData.email || "",
@@ -3098,7 +3100,7 @@ exports.saveProfile = onRequest(
         relationshipStatus: userData.relationshipStatus || null,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
-      batch.update(userRef, identityFields);
+      batch.set(userRef, identityFields, {merge: true});
 
       // Update profile_public/{userId} with public profile data
       const profilePublicRef = db.collection("profile_public").doc(userId);
