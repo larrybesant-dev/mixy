@@ -181,7 +181,8 @@ void main() {
       },
     );
 
-    test('friendPresenceBatchProvider reports online and offline users', () async {
+    test('friendPresenceBatchProvider reports online and offline users',
+        () async {
       final now = DateTime.now();
       await firestore.collection('presence').doc('user-2').set({
         'userId': 'user-2',
@@ -241,6 +242,27 @@ void main() {
         expect(requests.single.request.id, 'user-1_user-3');
         expect(requests.single.fromUser?.id, 'user-3');
         expect(requests.single.fromUser?.username, 'Searchable Person');
+      },
+    );
+
+    test(
+      'incomingFriendRequestsProvider immediately hides resolved requests',
+      () async {
+        final initial = await container.read(
+          incomingFriendRequestsProvider.future,
+        );
+        expect(initial.map((entry) => entry.request.id), [
+          'user-1_user-3',
+        ]);
+
+        container
+            .read(resolvedIncomingFriendRequestIdsProvider.notifier)
+            .state = {'user-1_user-3'};
+
+        final resolved = await container.read(
+          incomingFriendRequestsProvider.future,
+        );
+        expect(resolved, isEmpty);
       },
     );
 

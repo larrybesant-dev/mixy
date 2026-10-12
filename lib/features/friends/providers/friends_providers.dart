@@ -142,6 +142,9 @@ class IncomingFriendRequestEntry {
   final UserModel? fromUser;
 }
 
+final resolvedIncomingFriendRequestIdsProvider =
+    StateProvider.autoDispose<Set<String>>((ref) => const <String>{});
+
 final incomingFriendRequestsProvider =
     StreamProvider.autoDispose<List<IncomingFriendRequestEntry>>((ref) {
   final userId = ref.watch(currentFriendUserIdProvider);
@@ -149,6 +152,9 @@ final incomingFriendRequestsProvider =
     return Stream.value(const <IncomingFriendRequestEntry>[]);
   }
 
+  final resolvedRequestIds = ref.watch(
+    resolvedIncomingFriendRequestIdsProvider,
+  );
   final service = ref.watch(friendServiceProvider);
   final allFriendshipsStream = ref.watch(
     rawAllFriendshipsStreamProvider(userId),
@@ -158,7 +164,10 @@ final incomingFriendRequestsProvider =
       .map(
     (friendships) => friendships
         .where(
-          (f) => f.status == 'pending' && f.requestedBy != userId,
+          (f) =>
+              f.status == 'pending' &&
+              f.requestedBy != userId &&
+              !resolvedRequestIds.contains(f.id),
         )
         .map(
           (f) => FriendRequestModel(

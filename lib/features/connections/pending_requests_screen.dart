@@ -172,6 +172,9 @@ class _FriendRequestsViewState extends ConsumerState<FriendRequestsView> {
         await service.declineFriendRequest(requestId);
       }
       if (!mounted) return;
+      ref.read(resolvedIncomingFriendRequestIdsProvider.notifier).update(
+            (requestIds) => {...requestIds, requestId},
+          );
       final displayName = (username ?? '').trim();
       final action = accept ? 'accepted' : 'declined';
       ScaffoldMessenger.of(context).showSnackBar(
