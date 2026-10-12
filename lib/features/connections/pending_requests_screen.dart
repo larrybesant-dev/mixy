@@ -29,11 +29,19 @@ class FriendRequestsView extends ConsumerStatefulWidget {
 
 class _FriendRequestsViewState extends ConsumerState<FriendRequestsView> {
   final Set<String> _busyRequestIds = <String>{};
+  final Set<String> _resolvedIncomingRequestIds = <String>{};
 
   @override
   Widget build(BuildContext context) {
     final incoming = ref.watch(incomingFriendRequestsProvider);
     final outgoing = ref.watch(outgoingFriendRequestsProvider);
+    final visibleIncoming = incoming.whenData(
+      (requests) => requests
+          .where(
+            (entry) => !_resolvedIncomingRequestIds.contains(entry.request.id),
+          )
+          .toList(growable: false),
+    );
 
     return DefaultTabController(
       length: 2,
@@ -43,7 +51,10 @@ class _FriendRequestsViewState extends ConsumerState<FriendRequestsView> {
             color: VelvetNoir.surfaceLow,
             child: TabBar(
               tabs: [
-                Tab(text: 'Incoming (${incoming.valueOrNull?.length ?? 0})'),
+                Tab(
+                  text:
+                      'Incoming (${visibleIncoming.valueOrNull?.length ?? 0})',
+                ),
                 Tab(text: 'Sent (${outgoing.valueOrNull?.length ?? 0})'),
               ],
             ),
@@ -51,7 +62,7 @@ class _FriendRequestsViewState extends ConsumerState<FriendRequestsView> {
           Expanded(
             child: TabBarView(
               children: [
-                incoming.when(
+                visibleIncoming.when(
                   loading: () => const _RequestLoadingView(),
                   error: (error, stackTrace) => const _RequestErrorView(),
                   data: _buildIncomingRequests,
@@ -172,6 +183,7 @@ class _FriendRequestsViewState extends ConsumerState<FriendRequestsView> {
         await service.declineFriendRequest(requestId);
       }
       if (!mounted) return;
+      setState(() => _resolvedIncomingRequestIds.add(requestId));
       ref.read(resolvedIncomingFriendRequestIdsProvider.notifier).update(
             (requestIds) => {...requestIds, requestId},
           );
