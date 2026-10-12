@@ -177,7 +177,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final userId = ref.watch(currentNotificationUserIdProvider);
-    final notificationsAsync = ref.watch(notificationsStreamProvider);
+    final notificationsAsync = ref.watch(visibleNotificationsProvider);
     final notificationsEnabled = ref.watch(notificationsEnabledProvider);
     final service = ref.read(notificationServiceProvider);
 
