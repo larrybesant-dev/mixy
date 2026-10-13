@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,19 @@ class _StubProfileController extends ProfileController {
 
   @override
   Future<void> loadCurrentProfile() async {}
+}
+
+class _DelayedProfileController extends _StubProfileController {
+  _DelayedProfileController(this.loaded)
+      : super(const ProfileState(userId: 'tester'));
+
+  final Completer<void> loaded;
+
+  @override
+  Future<void> loadCurrentProfile() async {
+    await loaded.future;
+    state = state.copyWith(username: 'Loaded Tester');
+  }
 }
 
 Widget _buildScreen(List<Override> overrides) {
@@ -167,6 +182,30 @@ void main() {
   });
 
   group('EditProfileScreen — save button state', () {
+    testWidgets('hydrates identity fields after the async profile load',
+        (tester) async {
+      final loaded = Completer<void>();
+      await tester.pumpWidget(_buildScreen([
+        profileControllerProvider.overrideWith(
+          () => _DelayedProfileController(loaded),
+        ),
+      ]));
+      await tester.pump();
+      loaded.complete();
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('Identity'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextFormField>(
+          find.widgetWithText(TextFormField, 'Display name'),
+        ).controller?.text,
+        'Loaded Tester',
+      );
+    });
+
     testWidgets('Save button is enabled when not loading', (tester) async {
       await tester.pumpWidget(
         _buildScreen([
