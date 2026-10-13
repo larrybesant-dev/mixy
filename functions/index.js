@@ -1855,6 +1855,75 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
   await cleanupDeletedUserData(user.uid);
 });
 
+async function createDirectConversationHandler(request, deps = {}) {
+  const currentUserId = request.auth?.uid?.trim();
+  if (!currentUserId) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+
+  const targetUserId = typeof request.data?.targetUserId === "string"
+    ? request.data.targetUserId.trim()
+    : "";
+  if (!targetUserId || targetUserId === currentUserId) {
+    throw new HttpsError("invalid-argument", "A different target user is required.");
+  }
+
+  const firestore = deps.firestore || admin.firestore();
+  const sortedIds = [currentUserId, targetUserId].sort();
+  const conversationId = `dm_${sortedIds[0]}_${sortedIds[1]}`;
+  const conversationRef = firestore.collection("conversations").doc(conversationId);
+  const blockRefs = [
+    firestore.collection("blocks").doc(`${currentUserId}_${targetUserId}`),
+    firestore.collection("blocks").doc(`${targetUserId}_${currentUserId}`),
+  ];
+  const userRefs = [
+    firestore.collection("users").doc(currentUserId),
+    firestore.collection("users").doc(targetUserId),
+  ];
+  const [blockSnapshots, userSnapshots] = await Promise.all([
+    firestore.getAll(...blockRefs),
+    firestore.getAll(...userRefs),
+  ]);
+  if (blockSnapshots.some((snapshot) => snapshot.exists)) {
+    throw new HttpsError("permission-denied", "Cannot start this conversation.");
+  }
+  if (!userSnapshots[1].exists) {
+    throw new HttpsError("not-found", "Target user was not found.");
+  }
+
+  const participantNames = {};
+  userSnapshots.forEach((snapshot) => {
+    const userId = snapshot.id;
+    const data = snapshot.data() || {};
+    participantNames[userId] =
+      (typeof data.username === "string" && data.username.trim()) ||
+      (typeof data.displayName === "string" && data.displayName.trim()) ||
+      userId;
+  });
+
+  await firestore.runTransaction(async (transaction) => {
+    const existingConversation = await transaction.get(conversationRef);
+    if (existingConversation.exists) return;
+    transaction.create(conversationRef, {
+      type: "direct",
+      participantIds: sortedIds,
+      participantNames,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastReadAt: {
+        [currentUserId]: admin.firestore.FieldValue.serverTimestamp(),
+        [targetUserId]: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      isArchived: false,
+      status: "active",
+    });
+  });
+
+  return {conversationId};
+}
+
+exports.createDirectConversation = onCall(async (request) =>
+  createDirectConversationHandler(request));
+
 exports.classifyNewReport = onDocumentCreated("reports/{reportId}", async (event) => {
   if (!event.data) {
     return;
@@ -3799,6 +3868,7 @@ exports.__testing = {
   requestRefundHandler,
   sendRoomGiftHandler,
   cleanupDeletedUserData,
+  createDirectConversationHandler,
   classifyModerationText,
   buildModerationReviewPayload,
   getCheckoutBaseUrl,
