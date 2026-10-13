@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -593,25 +594,37 @@ class MessagingController {
     }
 
     // Deterministic conversation ID: sort participant UIDs so both orderings
-    // produce the same document path. Using set() with merge:true makes this
-    // fully idempotent — concurrent calls from different devices cannot create
-    // duplicate conversation documents (eliminates the prior TOCTOU race).
+    // produce the same document path. The transaction creates only when absent,
+    // so reopening a chat does not mutate immutable creation fields and
+    // concurrent callers cannot create duplicate conversation documents.
     final sortedIds = ([currentUserId, targetUserId]..sort());
     final deterministicId = 'dm_${sortedIds[0]}_${sortedIds[1]}';
     final convRef = _firestore.collection('conversations').doc(deterministicId);
 
-    await convRef.set({
-      'type': 'direct',
-      'participantIds': [currentUserId, targetUserId],
-      'participantNames': {currentUserId: user1Name, targetUserId: user2Name},
-      'createdAt': FieldValue.serverTimestamp(),
-      'lastReadAt': {
-        currentUserId: FieldValue.serverTimestamp(),
-        targetUserId: FieldValue.serverTimestamp(),
-      },
-      'isArchived': false,
-      'status': 'active',
-    }, SetOptions(merge: true));
+    await _firestore.runTransaction((transaction) async {
+      final existingConversation = await transaction.get(convRef);
+      if (existingConversation.exists) {
+        return;
+      }
+
+      transaction.set(convRef, {
+        'type': 'direct',
+        'participantIds': [currentUserId, targetUserId],
+        'participantNames': {currentUserId: user1Name, targetUserId: user2Name},
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastReadAt': {
+          currentUserId: FieldValue.serverTimestamp(),
+          targetUserId: FieldValue.serverTimestamp(),
+        },
+        'isArchived': false,
+        'status': 'active',
+      });
+    }).timeout(
+      const Duration(seconds: 30),
+      onTimeout: () => throw TimeoutException(
+        'Starting the conversation took too long. Please try again.',
+      ),
+    );
 
     return deterministicId;
   }
@@ -945,7 +958,6 @@ final excludedUserIdsProvider = FutureProvider.autoDispose
     .family<Set<String>, String>((ref, userId) async {
       return ModerationService().getExcludedUserIds(userId);
     });
-
 
 
 
