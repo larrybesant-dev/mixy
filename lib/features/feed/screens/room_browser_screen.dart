@@ -263,7 +263,7 @@ class _GoLiveBanner extends StatelessWidget {
         );
         if (!allowed) return;
         if (!context.mounted) return;
-        context.go('/create-room');
+        context.go('/rooms/create');
       },
       child: Container(
         height: 88,
@@ -667,7 +667,7 @@ class _RoomListView extends ConsumerWidget {
                                 ref,
                               );
                           if (!allowed || !context.mounted) return;
-                          context.go('/create-room');
+                          context.go('/rooms/create');
                         },
                         icon: const Icon(
                           Icons.mic_rounded,

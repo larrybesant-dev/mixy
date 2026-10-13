@@ -316,9 +316,9 @@ class MixVyDrawer extends ConsumerWidget {
           ),
           _navItem(
             context,
-            icon: Icons.people_alt_rounded,
-            title: 'Friends',
-            route: '/friends',
+            icon: Icons.people_alt_outlined,
+            title: 'Friends List',
+            route: '/profile/social?tab=friends',
           ),
           _navItem(
             context,
@@ -395,6 +395,5 @@ class MixVyDrawer extends ConsumerWidget {
     return Drawer(child: drawerContent);
   }
 }
-
 
 

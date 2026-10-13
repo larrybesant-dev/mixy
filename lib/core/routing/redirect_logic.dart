@@ -5,6 +5,16 @@ class RedirectEvaluation {
   final String reason;
 }
 
+String initialRouterLocation(String platformRouteName) {
+  final uri = Uri.tryParse(platformRouteName.trim());
+  if (uri == null) return '/';
+
+  final path = uri.path.isEmpty ? '/' : uri.path;
+  final query = uri.hasQuery ? '?${uri.query}' : '';
+  final fragment = uri.hasFragment ? '#${uri.fragment}' : '';
+  return '$path$query$fragment';
+}
+
 RedirectEvaluation evaluateAppRedirectWithReason({
   required String matchedLocation,
   required String? uid,
@@ -89,6 +99,3 @@ String? evaluateAppRedirect({
     hasAcceptedLegal: hasAcceptedLegal,
   ).redirectTo;
 }
-
-
-

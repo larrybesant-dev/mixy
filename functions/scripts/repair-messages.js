@@ -3,11 +3,11 @@
  * repair-messages.js
  *
  * Normalizes every document in the `messages` subcollection across ALL
- * conversations using a Firestore collectionGroup query:
+ * conversations and rooms using a Firestore collectionGroup query:
  *
  *   - createdAt  — if missing, copy from sentAt; if both missing → skip (flag)
  *   - sentAt     — if missing, copy from createdAt (ensure alias is present)
- *   - conversationId — if missing, derive from the parent path segment
+ *   - conversationId/roomId — if missing, derive from the parent path
  *   - senderId   — if missing, log and skip (cannot safely derive)
  *
  * Documents with null timestamps or missing senderId are NEVER silently deleted
@@ -110,14 +110,26 @@ async function run() {
         updates.sentAt = data.createdAt;
       }
 
-      // ── conversationId ───────────────────────────────────────────────────────
-      // Path: conversations/{conversationId}/messages/{messageId}
-      if (!isNonEmptyString(data.conversationId)) {
-        const pathSegments = doc.ref.path.split("/");
-        // pathSegments[0] = 'conversations', pathSegments[1] = conversationId
-        if (pathSegments.length >= 2 && isNonEmptyString(pathSegments[1])) {
+      // ── Parent identifier ────────────────────────────────────────────────────
+      const pathSegments = doc.ref.path.split("/");
+      const parentCollection = pathSegments[0];
+      const parentId = pathSegments[1];
+      if (
+        parentCollection === "conversations" &&
+        !isNonEmptyString(data.conversationId) &&
+        isNonEmptyString(parentId)
+      ) {
           updates.conversationId = pathSegments[1];
-        }
+      } else if (
+        parentCollection === "rooms" &&
+        !isNonEmptyString(data.roomId) &&
+        isNonEmptyString(parentId)
+      ) {
+        updates.roomId = parentId;
+      } else if (parentCollection !== "conversations" && parentCollection !== "rooms") {
+        invalid++;
+        console.warn(`  [invalid:unknown-parent] ${doc.ref.path}`);
+        continue;
       }
 
       if (Object.keys(updates).length === 0) {

@@ -1,5 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+const bool kPaymentsEnabled = bool.fromEnvironment(
+  'ENABLE_PAYMENTS',
+  defaultValue: false,
+);
+
 /// Feature flag to enable/disable the Top 8 Friends feature.
 final enableTop8FriendsFeature = Provider<bool>((ref) {
   // Set to true for testing purposes as requested.

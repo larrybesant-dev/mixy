@@ -155,8 +155,23 @@ async function checkMessages() {
         }
       }
 
-      if (!isNonEmptyString(d.conversationId)) {
-        addViolation("messages", p, "missing_conversationId", null);
+      const pathSegments = p.split("/");
+      const parentCollection = pathSegments[0];
+      const parentId = pathSegments[1];
+      if (parentCollection === "conversations") {
+        if (!isNonEmptyString(d.conversationId)) {
+          addViolation("messages", p, "missing_conversationId", null);
+        } else if (d.conversationId !== parentId) {
+          addViolation("messages", p, "conversationId_path_mismatch", null);
+        }
+      } else if (parentCollection === "rooms") {
+        if (!isNonEmptyString(d.roomId)) {
+          addViolation("messages", p, "missing_roomId", null);
+        } else if (d.roomId !== parentId) {
+          addViolation("messages", p, "roomId_path_mismatch", null);
+        }
+      } else {
+        addViolation("messages", p, "unknown_message_parent", parentCollection);
       }
     }
 

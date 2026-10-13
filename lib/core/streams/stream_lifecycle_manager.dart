@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rxdart/rxdart.dart';
 
 class StreamLifecycleManager extends ChangeNotifier {
   StreamLifecycleManager();
@@ -65,8 +66,8 @@ class StreamLifecycleManager extends ChangeNotifier {
       return existing.cast<T>();
     }
 
-    late final Stream<T> broadcast;
-    broadcast = create().asBroadcastStream(
+    late final Stream<T> shared;
+    final broadcast = create().asBroadcastStream(
       onListen: (_) {
         _register(scopedKey);
       },
@@ -75,9 +76,10 @@ class StreamLifecycleManager extends ChangeNotifier {
         _sharedStreams.remove(scopedKey);
       },
     );
+    shared = broadcast.shareReplay(maxSize: 1);
 
-    _sharedStreams[scopedKey] = broadcast;
-    return broadcast;
+    _sharedStreams[scopedKey] = shared;
+    return shared;
   }
 
   String buildDedupeKey({
@@ -136,10 +138,7 @@ class StreamLifecycleManager extends ChangeNotifier {
 
 final streamLifecycleManagerProvider =
     ChangeNotifierProvider<StreamLifecycleManager>((ref) {
-      final manager = StreamLifecycleManager();
-      ref.onDispose(manager.dispose);
-      return manager;
-    });
-
-
-
+  final manager = StreamLifecycleManager();
+  ref.onDispose(manager.dispose);
+  return manager;
+});

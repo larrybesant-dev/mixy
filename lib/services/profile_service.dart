@@ -19,12 +19,14 @@ class ProfileService {
   Future<UserModel?> loadProfile(String userId) async {
     // Phase 1: Try Function endpoint (bypasses browser extensions)
     try {
+      final uri = Uri.parse(
+        'https://us-east1-mixvy-v2.cloudfunctions.net/getProfile',
+      ).replace(queryParameters: {
+        'userId': userId,
+        'cacheBust': DateTime.now().microsecondsSinceEpoch.toString(),
+      });
       final response = await http
-          .get(
-            Uri.parse(
-              'https://us-east1-mixvy-v2.cloudfunctions.net/getProfile?userId=$userId',
-            ),
-          )
+          .get(uri)
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {

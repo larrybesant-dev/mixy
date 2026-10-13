@@ -1,40 +1,49 @@
 {
   "project_info": {
-    "project_number": "980846719834",
-    "project_id": "mix-and-mingle-v2",
-    "storage_bucket": "mix-and-mingle-v2.firebasestorage.app"
+    "project_number": "770164332233",
+    "firebase_url": "https://mixvy-v2-default-rtdb.firebaseio.com",
+    "project_id": "mixvy-v2",
+    "storage_bucket": "mixvy-v2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:980846719834:android:c369e5b790a2945b077963",
+        "mobilesdk_app_id": "1:770164332233:android:8fae7410889374d9c3df18",
         "android_client_info": {
           "package_name": "com.mixvy.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "980846719834-8dj4or0c8k9nsts3j1eiv3kuu3t1r27q.apps.googleusercontent.com",
+          "client_id": "770164332233-pbam72b3ngn1maihelqtt6t8p64jagi1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mixvy.app",
+            "certificate_hash": "4042e5fdb068e86d0285a332064b8b1dc5de8944"
+          }
+        },
+        {
+          "client_id": "770164332233-4ut4b9jjq502asj5dpvkchsabi8qach2.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCbS7zVY2o4S1-OOPkqFuUXz5B5hmmsS0U"
+          "current_key": "AIzaSyCejcBAOY6WPsc4qfVkmOvnx6MOofFiJo4"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "980846719834-8dj4or0c8k9nsts3j1eiv3kuu3t1r27q.apps.googleusercontent.com",
+              "client_id": "770164332233-4ut4b9jjq502asj5dpvkchsabi8qach2.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "980846719834-33bplru454rf2bnr6e45tm5f0pdfnh69.apps.googleusercontent.com",
+              "client_id": "770164332233-1imcnqdundip11j1l5qkkqcrtbfbceii.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.mixAndMingle"
+                "bundle_id": "com.example.mixvy"
               }
             }
           ]

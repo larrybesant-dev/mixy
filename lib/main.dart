@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -46,16 +47,18 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('[Firebase] Firebase initialized successfully');
-    
-    // ⚠️ CRITICAL: Firestore settings are managed EXCLUSIVELY by firestoreProvider
-    // in firebase_providers.dart. Configuring settings here causes WebSocket listener
-    // conflicts (net::ERR_ABORTED) because settings are applied twice with different values.
-    // See WEBSOCKET_LISTENER_FIX.md for detailed analysis.
-    //
-    // Removed: if (kIsWeb) { FirebaseFirestore.instance.settings = ... }
-    // This block was causing Firestore real-time listeners to abort during WebSocket handshake.
-    
-    debugPrint('[Firebase] Firestore settings delegated to firestoreProvider (single source of truth)');
+
+    if (kIsWeb) {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: 50 * 1024 * 1024,
+        ignoreUndefinedProperties: true,
+        webExperimentalForceLongPolling: true,
+        host: 'firestore.googleapis.com',
+        sslEnabled: true,
+      );
+      debugPrint('[Firebase] Firestore web transport configured');
+    }
     
     // Setup production logging: Route [MIXVY_DEBUG] logs to Firebase Crashlytics
     // only on platforms where the plugin is available.

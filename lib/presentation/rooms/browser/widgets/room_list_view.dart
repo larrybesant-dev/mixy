@@ -147,7 +147,7 @@ class RoomListView extends ConsumerWidget {
                           onPressed: () async {
                             final allowed = await GuestAuthGate.requireRoomCreation(context, ref);
                             if (!allowed || !context.mounted) return;
-                            context.go('/create-room');
+                            context.go('/rooms/create');
                           },
                           icon: const Icon(Icons.mic_rounded, color: VelvetNoir.primary),
                           label: Text('Start a Room', style: GoogleFonts.raleway(color: VelvetNoir.primary, fontWeight: FontWeight.w700)),

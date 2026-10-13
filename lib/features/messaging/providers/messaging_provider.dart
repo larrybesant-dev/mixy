@@ -9,6 +9,8 @@ import 'package:mixvy/core/services/feature_gate_service.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../../../services/presence_repository.dart';
+import '../../../services/direct_conversation_service.dart';
+import '../../../services/firebase_direct_conversation_service.dart';
 import '../models/conversation_model.dart';
 import '../../../services/moderation_service.dart';
 import '../../../presentation/providers/user_provider.dart';
@@ -333,6 +335,9 @@ final messagingControllerProvider = Provider<MessagingController>((ref) {
   final firestore = ref.watch(firestoreProvider);
   return MessagingController(
     firestore: firestore,
+    directConversationService: FirebaseDirectConversationService(
+      ref.watch(firebaseFunctionsProvider),
+    ),
     isMessagingEnabled: () {
       try {
         return ref.read(featureGateControllerProvider).enableMessaging;
@@ -429,12 +434,15 @@ final draftCacheProvider =
 class MessagingController {
   static const int messageRetentionDays = 90;
   final FirebaseFirestore _firestore;
+  final DirectConversationService? _directConversationService;
   final bool Function()? _isMessagingEnabled;
 
   MessagingController({
     required FirebaseFirestore firestore,
+    DirectConversationService? directConversationService,
     bool Function()? isMessagingEnabled,
-  }) : _firestore = firestore,
+  })  : _firestore = firestore,
+       _directConversationService = directConversationService,
        _isMessagingEnabled = isMessagingEnabled;
 
   bool _messagingEnabled() {
@@ -583,37 +591,11 @@ class MessagingController {
       throw Exception('Cannot start a conversation with yourself.');
     }
 
-    // Prevent messaging blocked users.
-    final isBlocked = await ModerationService().hasBlockingRelationship(
-      currentUserId,
-      targetUserId,
-    );
-    if (isBlocked) {
-      throw Exception('Cannot start a conversation with this user.');
+    final service = _directConversationService;
+    if (service == null) {
+      throw StateError('Direct conversation service is not configured.');
     }
-
-    // Deterministic conversation ID: sort participant UIDs so both orderings
-    // produce the same document path. Using set() with merge:true makes this
-    // fully idempotent — concurrent calls from different devices cannot create
-    // duplicate conversation documents (eliminates the prior TOCTOU race).
-    final sortedIds = ([currentUserId, targetUserId]..sort());
-    final deterministicId = 'dm_${sortedIds[0]}_${sortedIds[1]}';
-    final convRef = _firestore.collection('conversations').doc(deterministicId);
-
-    await convRef.set({
-      'type': 'direct',
-      'participantIds': [currentUserId, targetUserId],
-      'participantNames': {currentUserId: user1Name, targetUserId: user2Name},
-      'createdAt': FieldValue.serverTimestamp(),
-      'lastReadAt': {
-        currentUserId: FieldValue.serverTimestamp(),
-        targetUserId: FieldValue.serverTimestamp(),
-      },
-      'isArchived': false,
-      'status': 'active',
-    }, SetOptions(merge: true));
-
-    return deterministicId;
+    return service.create(targetUserId: targetUserId);
   }
 
   Future<String> createGroupConversation({
@@ -945,7 +927,5 @@ final excludedUserIdsProvider = FutureProvider.autoDispose
     .family<Set<String>, String>((ref, userId) async {
       return ModerationService().getExcludedUserIds(userId);
     });
-
-
 
 

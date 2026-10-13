@@ -31,6 +31,7 @@ import '../../features/feed/widgets/post_card.dart';
 import '../../presentation/providers/friend_provider.dart';
 import '../../presentation/providers/user_provider.dart';
 import '../../services/schema_mutation_service.dart';
+import 'profile_field_resolver.dart';
 import 'profile_view_providers.dart';
 import 'widgets/profile_card.dart';
 import '../../core/flags/feature_flags.dart';
@@ -537,7 +538,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
 
               final username = _stringOrNull(data['username']);
               final usernameHandle = _buildHandle(username);
-              final avatarUrl = _stringOrNull(data['avatarUrl']);
+              final avatarUrl = resolveProfileAvatarUrl(data);
               final aboutMe = _stringOrNull(data['aboutMe']);
               final introVideoUrl = _stringOrNull(data['introVideoUrl']);
               final galleryUrls = _stringList(data['galleryUrls']);
@@ -1214,10 +1215,16 @@ class _LivePulseDot extends StatefulWidget {
 
 class _LivePulseDotState extends State<_LivePulseDot>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat(reverse: true);
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {

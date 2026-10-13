@@ -87,15 +87,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       vsync: this,
       initialIndex: widget.initialTab.clamp(0, 2),
     );
-    _hydrateFromState(ref.read(profileControllerProvider));
-    Future.microtask(
-      () => ref.read(profileControllerProvider.notifier).loadCurrentProfile(),
-    );
+    Future.microtask(() async {
+      await ref.read(profileControllerProvider.notifier).loadCurrentProfile();
+      if (!mounted) return;
+      setState(
+        () => _hydrateFromState(
+          ref.read(profileControllerProvider),
+          force: true,
+        ),
+      );
+    });
   }
 
-  void _hydrateFromState(ProfileState state) {
+  void _hydrateFromState(ProfileState state, {bool force = false}) {
     final userId = state.userId;
-    if (userId == null || userId.isEmpty || _hydratedUserId == userId) {
+    if (userId == null ||
+        userId.isEmpty ||
+        (!force && _hydratedUserId == userId)) {
       return;
     }
     _hydratedUserId = userId;
@@ -1022,6 +1030,5 @@ class _GallerySlot extends StatelessWidget {
     );
   }
 }
-
 
 

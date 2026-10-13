@@ -242,8 +242,9 @@ test.describe('MixVy - Critical User Flows', () => {
         }
       }).catch(() => {});
 
-      // Reload page
-      await page.reload();
+      // Perform a full document reload without relying on Firefox's unstable
+      // Playwright response binding.
+      await page.goto(page.url(), { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1000);
 
       // Verify auth persists (or page still works)

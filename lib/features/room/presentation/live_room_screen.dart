@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +34,19 @@ import '../../../presentation/providers/user_provider.dart';
 import '../../../widgets/floating_gift_animation.dart';
 import '../../../widgets/gift_ticker_widget.dart';
 import '../../../widgets/room_gift_picker_sheet.dart';
+
+const int liveRoomDefaultGridSlotCount = 16;
+
+int liveRoomGridColumnCount(int slotCount, double availableWidth) {
+  final preferredColumns = switch (slotCount) {
+    <= 4 => 2,
+    <= 16 => 4,
+    _ => 5,
+  };
+  if (availableWidth < 360) return preferredColumns.clamp(1, 2);
+  if (availableWidth < 520) return preferredColumns.clamp(1, 3);
+  return preferredColumns;
+}
 
 class LiveRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
@@ -128,7 +140,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   late TextEditingController messageController;
   late ScrollController scrollController;
   String? _lastSeenGiftId;
-  int _gridSlotCount = 12;
+  int _gridSlotCount = liveRoomDefaultGridSlotCount;
   bool _isFollowActionBusy = false;
   bool _isJoiningRoom = false;
   bool _hasAttemptedAutoJoin = false;
@@ -1109,6 +1121,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
   Widget _buildMobileLayout(RoomModel room, User? currentUser, RoomSessionState sessionState) {
     final currentUserId = currentUser?.uid ?? '';
+    final stageHeight = (MediaQuery.sizeOf(context).height * 0.32)
+      .clamp(220.0, 320.0)
+      .toDouble();
     final isHostLike = currentUserId.isNotEmpty &&
         (room.hostId == currentUserId ||
             room.ownerId == currentUserId ||
@@ -1117,10 +1132,12 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     return Column(
       children: [
         // Video Grid Area
-        if (sessionState.hasJoined)
-          _buildVideoArea(sessionState)
-        else
-          _buildRoomPreview(room),
+        SizedBox(
+          height: stageHeight,
+          child: sessionState.hasJoined
+              ? _buildVideoArea(sessionState)
+              : _buildRoomPreview(room),
+        ),
         
         // Room Info & Controls
         Expanded(
@@ -1440,24 +1457,34 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           children: [
             Container(
               color: VelvetNoir.surfaceHigh,
-              padding: const EdgeInsets.fromLTRB(10, 56, 10, 10),
+              padding: const EdgeInsets.fromLTRB(2, 46, 2, 2),
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  const tileGap = 3.0;
                   final width = constraints.maxWidth;
-                  final crossAxisCount = width >= 1300
-                      ? (width >= 1700 ? 5 : 4)
-                      : width >= 900
-                      ? 3
-                      : width >= 520
-                      ? 2
-                      : 1;
+                  final height = constraints.maxHeight;
+                  final crossAxisCount =
+                      liveRoomGridColumnCount(_gridSlotCount, width);
+                  final rowCount = (_gridSlotCount / crossAxisCount).ceil();
+                  final tileWidth = (width - ((crossAxisCount - 1) * tileGap)) /
+                      crossAxisCount;
+                  final tileHeight =
+                      (height - ((rowCount - 1) * tileGap)) / rowCount;
+                  final childAspectRatio = tileWidth.isFinite &&
+                          tileHeight.isFinite &&
+                          tileWidth > 0 &&
+                          tileHeight > 0
+                      ? tileWidth / tileHeight
+                      : 4 / 3;
 
                   return GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    primary: false,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 4 / 3,
+                      crossAxisSpacing: tileGap,
+                      mainAxisSpacing: tileGap,
+                      childAspectRatio: childAspectRatio,
                     ),
                     itemCount: visibleEntries.length + placeholders,
                     itemBuilder: (context, index) {
@@ -1782,92 +1809,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 },
                 onLeave: () => Navigator.of(context).pop(),
               ),
-            
-            // TEMPORARY TEST BUTTONS - DELETE BEFORE COMMIT
-            if (kDebugMode)
-              Positioned(
-                bottom: 120,
-                right: 16,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Test WARNING trigger
-                    FloatingActionButton.extended(
-                      heroTag: 'warning-test',
-                      label: const Text('⚠️ Test WARNING'),
-                      backgroundColor: Colors.orange,
-                      tooltip: 'Trigger a test WARNING alert',
-                      onPressed: () {
-                        logWarning(
-                          'Test Warning Triggered - Verifying alert pipeline',
-                          metadata: {
-                            'test_type': 'warning',
-                            'timestamp': DateTime.now().toIso8601String(),
-                            'room_id': widget.roomId,
-                          },
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✓ WARNING logged to Crashlytics (check in 2 min)'),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // Test ERROR trigger
-                    FloatingActionButton.extended(
-                      heroTag: 'error-test',
-                      label: const Text('🔴 Test ERROR'),
-                      backgroundColor: Colors.red,
-                      tooltip: 'Trigger a test ERROR alert',
-                      onPressed: () {
-                        logError(
-                          'Test Error Triggered - Verifying alert pipeline',
-                          error: Exception('Controlled test failure'),
-                          metadata: {
-                            'test_type': 'error',
-                            'timestamp': DateTime.now().toIso8601String(),
-                            'room_id': widget.roomId,
-                          },
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✓ ERROR logged to Crashlytics (check in 2 min)'),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // Test CRITICAL trigger
-                    FloatingActionButton.extended(
-                      heroTag: 'critical-test',
-                      label: const Text('🚨 Test CRITICAL'),
-                      backgroundColor: Colors.redAccent,
-                      tooltip: 'Trigger a test CRITICAL alert',
-                      onPressed: () {
-                        logCritical(
-                          'Test Critical Triggered - Verifying EMERGENCY alert pipeline',
-                          error: Exception('Controlled critical test failure'),
-                          metadata: {
-                            'test_type': 'critical',
-                            'timestamp': DateTime.now().toIso8601String(),
-                            'room_id': widget.roomId,
-                          },
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✓ CRITICAL logged to Crashlytics (check in 2 min)'),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            
+
             // Gift Ticker: Shows recent gifts at bottom
             GiftTickerWidget(
               roomId: widget.roomId,
@@ -1901,11 +1843,15 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     return Container(
       color: VelvetNoir.surfaceHigh,
       padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
             Container(
               width: 100,
               height: 100,
@@ -1970,7 +1916,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 ),
               ],
             ),
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -2059,27 +2008,34 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             ],
           ),
           const SizedBox(height: 4),
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              FutureBuilder<String>(
-                future: _getUserDisplayName(
-                  room.hostId.trim().isNotEmpty ? room.hostId : room.ownerId,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 190),
+                child: FutureBuilder<String>(
+                  future: _getUserDisplayName(
+                    room.hostId.trim().isNotEmpty ? room.hostId : room.ownerId,
+                  ),
+                  builder: (context, snapshot) {
+                    final resolved = (snapshot.data ?? '').trim();
+                    final effectiveHostLabel = resolved.isNotEmpty
+                        ? resolved
+                        : hostLabel;
+                    return Text(
+                      'Hosted by $effectiveHostLabel',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.raleway(
+                        fontSize: 12,
+                        color: VelvetNoir.onSurfaceVariant,
+                      ),
+                    );
+                  },
                 ),
-                builder: (context, snapshot) {
-                  final resolved = (snapshot.data ?? '').trim();
-                  final effectiveHostLabel = resolved.isNotEmpty
-                      ? resolved
-                      : hostLabel;
-                  return Text(
-                    'Hosted by $effectiveHostLabel',
-                    style: GoogleFonts.raleway(
-                      fontSize: 12,
-                      color: VelvetNoir.onSurfaceVariant,
-                    ),
-                  );
-                },
               ),
-              const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -2096,7 +2052,6 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
               Consumer(
                 builder: (context, consumerRef, _) {
                   final participantCount = consumerRef.watch(participantCountProvider(room.id));
@@ -2562,7 +2517,7 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                   foregroundColor: VelvetNoir.surface,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: currentUser != null ? _leaveRoom : null,
                 icon: const Icon(Icons.logout),
@@ -2578,7 +2533,6 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
     );
   }
 }
-
 
 
 
