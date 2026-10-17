@@ -66,13 +66,13 @@
 //   friendRosterProvider) are simultaneously mounted.
 //
 //   rawConversationsStreamProvider when both panels are mounted. This is the
-//   remaining duplication to consolidate (see TODO: schema conversation merge).
+//   remaining duplication tracked as schema conversation merge work.
 //
 // ⚠ notificationsStreamProvider is intentionally global (badge count must
 //   survive navigation) but is now limited to 50 docs. This is documented
 //   intentional behavior, not an oversight.
 //
-// TODO (next): Consolidate schemaConversationsProvider with rawConversationsStreamProvider.
+// Planned: Consolidate schemaConversationsProvider with rawConversationsStreamProvider.
 //
 // ## Banned patterns
 //
@@ -163,7 +163,7 @@ const Set<String> kCanonicalStreamProviderNames = {
   // Verification
   'verifiedUsersProvider',
   'userVerificationProvider',
-  // Schema messenger conversations (pending consolidation — see registry TODO)
+  // Schema messenger conversations (pending consolidation — see registry notes)
   'schemaConversationsProvider',
   // Auth / presence (not Firestore, but tracked)
   'schemaAuthUserIdProvider',

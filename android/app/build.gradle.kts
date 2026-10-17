@@ -16,9 +16,27 @@ val keyPropertiesFile = rootProject.file("key.properties")
 if (keyPropertiesFile.exists()) {
     keyPropertiesFile.inputStream().use { keyProperties.load(it) }
 }
+val releaseSigningProperties = listOf(
+    "storeFile",
+    "storePassword",
+    "keyAlias",
+    "keyPassword",
+)
+val hasReleaseSigningConfig = releaseSigningProperties.all {
+    !keyProperties.getProperty(it).isNullOrBlank()
+}
+val releaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+if (releaseBuildRequested && !hasReleaseSigningConfig) {
+    throw GradleException(
+        "Release signing is not configured. Add storeFile, storePassword, " +
+            "keyAlias, and keyPassword to android/key.properties.",
+    )
+}
 
 android {
-    namespace = "com.mixvy.app"
+    namespace = "com.mixandmingle.mixandmingle"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,7 +50,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mixvy.app"
+        applicationId = "com.mixandmingle.mixandmingle"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -55,7 +73,7 @@ android {
 
     buildTypes {
         release {
-            if (keyProperties.getProperty("storeFile").isNullOrBlank().not()) {
+            if (hasReleaseSigningConfig) {
                 signingConfig = signingConfigs.getByName("release")
             }
             isMinifyEnabled = true

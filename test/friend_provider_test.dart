@@ -139,6 +139,21 @@ void main() {
           'isPrivate': false,
           'createdAt': DateTime(2026, 1, 2),
         });
+        await newUserFirestore.collection('users').doc('legacy-user').set({
+          'uid': 'legacy-user',
+          'email': 'legacy@mixvy.dev',
+          'username': 'Legacy User',
+          'usernameLower': 'legacy user',
+          'createdAt': DateTime(2026, 1, 3),
+        });
+        await newUserFirestore.collection('users').doc('private-user').set({
+          'uid': 'private-user',
+          'email': 'private@mixvy.dev',
+          'username': 'Private User',
+          'usernameLower': 'private user',
+          'isPrivate': true,
+          'createdAt': DateTime(2026, 1, 4),
+        });
 
         final newUserContainer = ProviderContainer(
           overrides: [
@@ -159,11 +174,15 @@ void main() {
           friendSuggestionsProvider.future,
         );
 
-        expect(suggestions.map((user) => user.id), ['other-user']);
+        expect(suggestions.map((user) => user.id), [
+          'other-user',
+          'legacy-user',
+        ]);
       },
     );
 
-    test('friendPresenceBatchProvider reports online and offline users', () async {
+    test('friendPresenceBatchProvider reports online and offline users',
+        () async {
       final now = DateTime.now();
       await firestore.collection('presence').doc('user-2').set({
         'userId': 'user-2',
@@ -223,6 +242,27 @@ void main() {
         expect(requests.single.request.id, 'user-1_user-3');
         expect(requests.single.fromUser?.id, 'user-3');
         expect(requests.single.fromUser?.username, 'Searchable Person');
+      },
+    );
+
+    test(
+      'incomingFriendRequestsProvider immediately hides resolved requests',
+      () async {
+        final initial = await container.read(
+          incomingFriendRequestsProvider.future,
+        );
+        expect(initial.map((entry) => entry.request.id), [
+          'user-1_user-3',
+        ]);
+
+        container
+            .read(resolvedIncomingFriendRequestIdsProvider.notifier)
+            .state = {'user-1_user-3'};
+
+        final resolved = await container.read(
+          incomingFriendRequestsProvider.future,
+        );
+        expect(resolved, isEmpty);
       },
     );
 

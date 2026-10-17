@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/firestore/firestore_debug_tracing.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../core/telemetry/app_telemetry.dart';
+import '../../../core/telemetry/launch_monitoring.dart';
 import '../../../presentation/screens/google_sign_in_helper.dart';
 import '../../../presentation/screens/apple_sign_in_helper.dart';
 import '../../../services/push_messaging_service.dart';
@@ -99,10 +100,11 @@ class AuthController extends Notifier<AuthState> {
     }
     final previous = state;
     state = nextState;
-    
+
     // Log phase changes for debugging bootstrap issues
     if (kDebugMode) {
-      print('[AuthController] Phase transition: ${previous.phase.name} -> ${nextState.phase.name} (source: $source)');
+      print(
+          '[AuthController] Phase transition: ${previous.phase.name} -> ${nextState.phase.name} (source: $source)');
     }
 
     if (previous.phase != nextState.phase) {
@@ -135,7 +137,19 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  bool get supportsGoogleSignIn => _googleSignInHelper.isSupported;
+
   Future<void> signInWithGoogle() async {
+    if (!supportsGoogleSignIn) {
+      _setAuthState(
+        state.copyWith(
+          error: 'Google Sign-In is not available on this device.',
+        ),
+        source: 'google_sign_in_unsupported',
+      );
+      return;
+    }
+
     _setAuthState(
       state.copyWith(
         isLoading: true,
@@ -158,19 +172,23 @@ class AuthController extends Notifier<AuthState> {
     );
     try {
       await _googleSignInHelper.signInWithGoogle();
+      final signedInUser = _auth.currentUser;
+      if (signedInUser != null) {
+        await _ensureUserDocument(signedInUser);
+      }
       _setAuthState(
         state.copyWith(
           isLoading: false,
           hasResolvedSession: true,
-          uid: _auth.currentUser?.uid,
-          phase: _auth.currentUser?.uid == null
+          uid: signedInUser?.uid,
+          phase: signedInUser?.uid == null
               ? AuthBootstrapPhase.unauthenticatedStable
               : AuthBootstrapPhase.authenticatedStable,
         ),
         source: 'google_sign_in_success',
       );
       AppTelemetry.updateAuthState(
-        userId: _auth.currentUser?.uid,
+        userId: signedInUser?.uid,
         isLoading: false,
         error: null,
       );
@@ -221,11 +239,11 @@ class AuthController extends Notifier<AuthState> {
     GoogleSignInHelper? googleSignInHelper,
     AppleSignInHelper? appleSignInHelper,
     SchemaMutationService? schemaMutationService,
-  }) : _firestore = firestore,
-       _unregisterToken = unregisterToken,
-       _googleSignInHelper = googleSignInHelper ?? getGoogleSignInHelper(),
-       _appleSignInHelper = appleSignInHelper ?? getAppleSignInHelper(),
-       _schemaMutationService = schemaMutationService;
+  })  : _firestore = firestore,
+        _unregisterToken = unregisterToken,
+        _googleSignInHelper = googleSignInHelper ?? getGoogleSignInHelper(),
+        _appleSignInHelper = appleSignInHelper ?? getAppleSignInHelper(),
+        _schemaMutationService = schemaMutationService;
 
   /// Get FirebaseAuth from Riverpod provider (not singleton)
   FirebaseAuth get _auth => ref.read(firebaseAuthProvider);
@@ -513,28 +531,7 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<void> signup(String email, String password, String username) async {
-    final normalizedUsername = username.trim();
-    if (normalizedUsername.isEmpty) {
-      _setAuthState(
-        state.copyWith(
-          isLoading: false,
-          hasResolvedSession: true,
-          error: 'A username is required.',
-          phase: state.uid == null
-              ? AuthBootstrapPhase.unauthenticatedStable
-              : AuthBootstrapPhase.authenticatedStable,
-        ),
-        source: 'signup_validation_failed',
-      );
-      AppTelemetry.updateAuthState(
-        userId: state.uid,
-        isLoading: false,
-        error: 'A username is required.',
-      );
-      return;
-    }
-
+  Future<void> signup(String email, String password) async {
     _setAuthState(
       state.copyWith(
         isLoading: true,
@@ -561,10 +558,7 @@ class AuthController extends Notifier<AuthState> {
       );
       final createdUser = cred.user;
       if (createdUser != null) {
-        await _ensureUserDocument(
-          createdUser,
-          preferredUsername: normalizedUsername,
-        );
+        await _ensureUserDocument(createdUser);
       }
       _setAuthState(
         state.copyWith(
@@ -960,6 +954,16 @@ class AuthController extends Notifier<AuthState> {
     StackTrace stackTrace, {
     required String context,
   }) {
+    if (context == 'login') {
+      LaunchMonitoring.record(
+        action: LaunchMonitoring.authFailure,
+        message: 'Interactive authentication failed.',
+        userId: _auth.currentUser?.uid ?? state.uid,
+        result: e.code,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
     AppTelemetry.logAction(
       level: 'error',
       domain: 'auth',
@@ -978,7 +982,3 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 }
-
-
-
-

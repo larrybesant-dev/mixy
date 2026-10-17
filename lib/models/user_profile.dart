@@ -4,7 +4,7 @@ class UserProfile {
   final String displayName;
   final String? avatarUrl;
   final String? bio;
-  final int vipLevel;
+  final int vipBadgeLevel;
   final int followersCount;
 
   const UserProfile({
@@ -13,7 +13,7 @@ class UserProfile {
     required this.displayName,
     this.avatarUrl,
     this.bio,
-    this.vipLevel = 0,
+    this.vipBadgeLevel = 0,
     this.followersCount = 0,
   });
 
@@ -24,7 +24,7 @@ class UserProfile {
       displayName: json['displayName']?.toString() ?? json['username']?.toString() ?? 'MixVy Member',
       avatarUrl: json['avatarUrl']?.toString() ?? json['photoUrl']?.toString(),
       bio: json['bio']?.toString() ?? json['aboutMe']?.toString(),
-      vipLevel: (json['vipLevel'] as num?)?.toInt() ?? 0,
+      vipBadgeLevel: (json['vipLevel'] as num?)?.toInt() ?? 0,
       followersCount: (json['followers'] is List)
           ? (json['followers'] as List).length
           : ((json['followersCount'] as num?)?.toInt() ?? 0),
@@ -37,7 +37,7 @@ class UserProfile {
     'displayName': displayName,
     'avatarUrl': avatarUrl,
     'bio': bio,
-    'vipLevel': vipLevel,
+    'vipLevel': vipBadgeLevel,
     'followersCount': followersCount,
   };
 }

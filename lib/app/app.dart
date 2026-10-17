@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/router/app_router.dart';
 import 'package:mixvy/features/payments/payment_provider.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
+import 'package:mixvy/services/presence_controller.dart';
 import 'boot_state.dart';
 import 'boot_state_notifier.dart';
 
@@ -14,6 +15,7 @@ class MixVyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bootState = ref.watch(bootStateProvider);
     final authState = ref.watch(authControllerProvider);
+    ref.watch(presenceControllerProvider);
 
     // Initialize Stripe early in the app lifecycle
     ref.watch(stripeInitializationProvider);

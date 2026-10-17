@@ -37,6 +37,9 @@ test.describe('MixVy production readiness', () => {
     await enableFlutterSemantics(page);
 
     await expect(page.getByText('Account Center', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('group', { name: /^Request data export/ }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.getByText('Delete account?', { exact: true })).toBeVisible();
     await expect(

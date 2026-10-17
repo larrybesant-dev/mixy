@@ -57,6 +57,7 @@ import 'package:mixvy/presentation/screens/feature_degraded_screen.dart';
 import 'package:mixvy/presentation/screens/legal_privacy_screen.dart';
 import 'package:mixvy/presentation/screens/legal_terms_screen.dart';
 import 'package:mixvy/presentation/screens/moderation_dashboard_screen.dart';
+import 'package:mixvy/presentation/screens/support_screen.dart';
 import 'package:mixvy/features/onboarding/onboarding_screen.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/observability/realtime_ops_screen.dart';
@@ -67,6 +68,7 @@ import 'package:mixvy/features/room/presentation/call_screen.dart';
 import 'package:mixvy/features/room/presentation/live_room_screen.dart';
 import 'package:mixvy/features/dashboard/dashboard_screen.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
+import 'package:mixvy/shared/widgets/primary_navigation_shell.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'mixvy-root-navigator',
@@ -527,15 +529,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
             return '/auth';
           }
-          if (state.uri.path == '/profile') {
-            final target = '/profile/$uid';
-            RedirectTrace.record(
-              from: state.uri.path,
-              to: target,
-              reason: 'profile_root_redirect_to_uid',
-            );
-            return target;
-          }
           return null;
         },
         builder: (context, state) => _CustomShell(initialIndex: 4),
@@ -555,8 +548,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: 'social',
               name: 'profileSocial',
               builder: (context, state) => SocialHubScreen(
-                  initialTab:
-                      state.uri.queryParameters['tab'] == 'requests' ? 1 : 0)),
+                    initialTab: switch (state.uri.queryParameters['tab']) {
+                      'requests' => 1,
+                      'discover' => 2,
+                      _ => 0,
+                    },
+                  )),
           GoRoute(
               path: 'friends',
               name: 'profileFriends',
@@ -620,14 +617,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               name: 'about',
               builder: (context, state) => const AppInfoScreen()),
           GoRoute(
-              path: 'legal/terms',
-              name: 'legalTerms',
-              builder: (context, state) => const LegalTermsScreen()),
-          GoRoute(
-              path: 'legal/privacy',
-              name: 'legalPrivacy',
-              builder: (context, state) => const LegalPrivacyScreen()),
-          GoRoute(
             path: 'payments',
             name: 'payments',
             redirect: (context, state) {
@@ -683,6 +672,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingScreen()),
+      GoRoute(
+          path: '/legal/terms',
+          name: 'legalTerms',
+          builder: (context, state) => const LegalTermsScreen()),
+      GoRoute(
+          path: '/legal/privacy',
+          name: 'legalPrivacy',
+          builder: (context, state) => const LegalPrivacyScreen()),
+      GoRoute(
+          path: '/support',
+          name: 'support',
+          builder: (context, state) => const SupportScreen()),
 
       // After Dark routes
       GoRoute(
@@ -786,9 +787,23 @@ class _CustomShell extends ConsumerWidget {
     // This is the most reliable way to determine which tab to display
     final displayIndex = initialIndex;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
-      body: IndexedStack(
+    return PrimaryNavigationShell(
+      currentIndex: displayIndex,
+      onSelected: (index) {
+        final routes = [
+          '/home',
+          '/messages',
+          '/rooms',
+          '/speed-dating',
+          '/profile'
+        ];
+        if (index >= 0 && index < routes.length) {
+          context.go(routes[index]);
+        }
+      },
+      onFriendsSelected: () => context.go('/profile/social?tab=friends'),
+      onDiscoverSelected: () => context.go('/profile/social?tab=discover'),
+      child: IndexedStack(
         index: displayIndex,
         children: [
           const DashboardScreen(),
@@ -797,110 +812,6 @@ class _CustomShell extends ConsumerWidget {
           const SpeedDatingScreen(),
           UserProfileScreen(userId: uid),
         ],
-      ),
-      bottomNavigationBar: _VelvetBottomNav(
-        currentIndex: displayIndex,
-        onSelected: (index) {
-          final routes = [
-            '/home',
-            '/messages',
-            '/rooms',
-            '/speed-dating',
-            '/profile'
-          ];
-          if (index >= 0 && index < routes.length) {
-            context.go(routes[index]);
-          }
-        },
-      ),
-    );
-  }
-}
-
-class _VelvetBottomNav extends StatelessWidget {
-  const _VelvetBottomNav(
-      {required this.currentIndex, required this.onSelected});
-
-  final int currentIndex;
-  final ValueChanged<int> onSelected;
-
-  static const _items = <({IconData icon, String label})>[
-    (icon: Icons.home_rounded, label: 'Feed'),
-    (icon: Icons.forum_rounded, label: 'Messages'),
-    (icon: Icons.groups_rounded, label: 'Rooms'),
-    (icon: Icons.favorite_rounded, label: 'Dating'),
-    (icon: Icons.account_circle_rounded, label: 'Profile'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0B0B0B),
-        border: Border(top: BorderSide(color: Color(0x33781E2B))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 74,
-          child: Row(
-            children: [
-              for (var i = 0; i < _items.length; i++)
-                Expanded(
-                  child: _VelvetNavItem(
-                    icon: _items[i].icon,
-                    label: _items[i].label,
-                    selected: i == currentIndex,
-                    onTap: () => onSelected(i),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _VelvetNavItem extends StatelessWidget {
-  const _VelvetNavItem({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final activeColor = const Color(0xFFD4AF37);
-    final inactiveColor = const Color(0xFFF7EDE2).withValues(alpha: 0.74);
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 4),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                size: selected ? 24 : 22,
-                color: selected ? activeColor : inactiveColor),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? activeColor : inactiveColor,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

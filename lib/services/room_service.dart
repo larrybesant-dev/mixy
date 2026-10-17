@@ -35,8 +35,8 @@ final roomServiceProvider = Provider<RoomService>((ref) {
 /// Routed through [RoomService] per the FSL-007 stream architecture rule.
 final hostLiveStatusProvider =
     StreamProvider.autoDispose.family<RoomModel?, String>((ref, hostId) {
-      return ref.watch(roomServiceProvider).watchHostLiveStatus(hostId);
-    });
+  return ref.watch(roomServiceProvider).watchHostLiveStatus(hostId);
+});
 
 class RoomService {
   static const Duration _liveRoomRemovalGraceWindow = Duration(seconds: 2);
@@ -51,10 +51,10 @@ class RoomService {
     bool Function()? isLiveRoomsEnabled,
     RoomVisibilityWindows Function()? visibilityWindowsResolver,
     StreamLifecycleManager? lifecycleManager,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _isLiveRoomsEnabled = isLiveRoomsEnabled,
-       _visibilityWindowsResolver = visibilityWindowsResolver,
-       _streamLifecycleManager = lifecycleManager ?? StreamLifecycleManager();
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _isLiveRoomsEnabled = isLiveRoomsEnabled,
+        _visibilityWindowsResolver = visibilityWindowsResolver,
+        _streamLifecycleManager = lifecycleManager ?? StreamLifecycleManager();
 
   final FirebaseFirestore _firestore;
   final bool Function()? _isLiveRoomsEnabled;
@@ -76,7 +76,8 @@ class RoomService {
     required int limit,
     String? category,
   }) {
-    Query<Map<String, dynamic>> query = _roomsCollection.where('isLive', isEqualTo: true);
+    Query<Map<String, dynamic>> query =
+        _roomsCollection.where('isLive', isEqualTo: true);
     final normalizedCategory = category?.trim();
     if (normalizedCategory != null && normalizedCategory.isNotEmpty) {
       query = query.where('category', isEqualTo: normalizedCategory);
@@ -129,10 +130,7 @@ class RoomService {
 */
 
   int _effectiveRoomMemberCount(RoomModel room) {
-    return math.max(
-      room.memberCount,
-      room.stageUserIds.length + room.audienceUserIds.length,
-    );
+    return room.stageUserIds.length + room.audienceUserIds.length;
   }
 
   RoomModel _normalizeLiveRoomSnapshot(RoomModel room) {
@@ -140,30 +138,16 @@ class RoomService {
   }
 
   RoomModel _mergeStableLiveRoom(RoomModel previous, RoomModel incoming) {
-    final normalizedIncoming = _normalizeLiveRoomSnapshot(incoming);
-    final incomingLooksCollapsed =
-        normalizedIncoming.memberCount == 0 &&
-        normalizedIncoming.stageUserIds.isEmpty &&
-        normalizedIncoming.audienceUserIds.isEmpty &&
-        _effectiveRoomMemberCount(previous) > 0;
-
-    if (!incomingLooksCollapsed) {
-      return normalizedIncoming;
-    }
-
-    return normalizedIncoming.copyWith(
-      stageUserIds: previous.stageUserIds,
-      audienceUserIds: previous.audienceUserIds,
-      memberCount: _effectiveRoomMemberCount(previous),
-    );
+    return _normalizeLiveRoomSnapshot(incoming);
   }
 
   List<RoomModel> _sortedBufferedLiveRooms(
     Map<String, _StableLiveRoomBufferEntry> bufferedRooms,
   ) {
-    final rooms =
-        bufferedRooms.values.map((entry) => entry.room).toList(growable: false)
-          ..sort(_compareStableLiveRooms);
+    final rooms = bufferedRooms.values
+        .map((entry) => entry.room)
+        .toList(growable: false)
+      ..sort(_compareStableLiveRooms);
     return rooms;
   }
 
@@ -391,11 +375,11 @@ class RoomService {
       limit: limit,
       category: category,
     ).snapshots().asyncMap(
-      (snapshot) => _classifyLiveRooms(
-        snapshot.docs,
-        includeAdultRooms: includeAdultRooms,
-      ),
-    );
+          (snapshot) => _classifyLiveRooms(
+            snapshot.docs,
+            includeAdultRooms: includeAdultRooms,
+          ),
+        );
   }
 
   Stream<RoomWithVisibility?> watchPendingDirectCallForCallee({
@@ -639,20 +623,17 @@ class RoomService {
       now: now,
       cutoff: cutoff,
     ).snapshots().map((snap) {
-      final rooms =
-          snap.docs
-              .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
-              .where((room) => includeAdultRooms || !room.isAdult)
-              .toList(growable: false)
-            ..sort((a, b) {
-              final scheduledA =
-                  a.scheduledAt?.toDate() ??
-                  DateTime.fromMillisecondsSinceEpoch(0);
-              final scheduledB =
-                  b.scheduledAt?.toDate() ??
-                  DateTime.fromMillisecondsSinceEpoch(0);
-              return scheduledA.compareTo(scheduledB);
-            });
+      final rooms = snap.docs
+          .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
+          .where((room) => includeAdultRooms || !room.isAdult)
+          .toList(growable: false)
+        ..sort((a, b) {
+          final scheduledA =
+              a.scheduledAt?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final scheduledB =
+              b.scheduledAt?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return scheduledA.compareTo(scheduledB);
+        });
       return rooms;
     });
   }
@@ -678,20 +659,17 @@ class RoomService {
       const GetOptions(source: Source.server),
     );
 
-    final rooms =
-        snapshot.docs
-            .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
-            .where((room) => includeAdultRooms || !room.isAdult)
-            .toList(growable: false)
-          ..sort((a, b) {
-            final scheduledA =
-                a.scheduledAt?.toDate() ??
-                DateTime.fromMillisecondsSinceEpoch(0);
-            final scheduledB =
-                b.scheduledAt?.toDate() ??
-                DateTime.fromMillisecondsSinceEpoch(0);
-            return scheduledA.compareTo(scheduledB);
-          });
+    final rooms = snapshot.docs
+        .map((doc) => RoomModel.fromJson(doc.data(), doc.id))
+        .where((room) => includeAdultRooms || !room.isAdult)
+        .toList(growable: false)
+      ..sort((a, b) {
+        final scheduledA =
+            a.scheduledAt?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final scheduledB =
+            b.scheduledAt?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return scheduledA.compareTo(scheduledB);
+      });
     return rooms;
   }
 
@@ -760,9 +738,8 @@ class RoomService {
       return 'Friend is hosting';
     }
 
-    final friendPresenceCount = room.members
-        .where((memberId) => friendIds.contains(memberId))
-        .length;
+    final friendPresenceCount =
+        room.members.where((memberId) => friendIds.contains(memberId)).length;
     if (friendPresenceCount > 1) {
       return '$friendPresenceCount friends are here';
     }
@@ -795,9 +772,8 @@ class RoomService {
       return 'Friends';
     }
 
-    final friendPresenceCount = room.members
-        .where((memberId) => friendIds.contains(memberId))
-        .length;
+    final friendPresenceCount =
+        room.members.where((memberId) => friendIds.contains(memberId)).length;
     if (friendPresenceCount > 0) {
       return 'Friends';
     }
@@ -849,9 +825,8 @@ class RoomService {
 
     final hostFriendBonus = friendIds.contains(room.hostId) ? 25.0 : 0.0;
 
-    final friendPresenceCount = room.members
-        .where((memberId) => friendIds.contains(memberId))
-        .length;
+    final friendPresenceCount =
+        room.members.where((memberId) => friendIds.contains(memberId)).length;
     final friendPresenceBonus = math.min(friendPresenceCount * 6.0, 24.0);
 
     final updatedAt = room.updatedAt?.toDate();
@@ -930,12 +905,12 @@ class RoomService {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-          if (snapshot.docs.isEmpty) {
-            return null;
-          }
-          final doc = snapshot.docs.first;
-          return RoomModel.fromJson(doc.data(), doc.id);
-        });
+      if (snapshot.docs.isEmpty) {
+        return null;
+      }
+      final doc = snapshot.docs.first;
+      return RoomModel.fromJson(doc.data(), doc.id);
+    });
   }
 
   Future<String> createRoom({
@@ -1066,7 +1041,3 @@ class _StableLiveRoomBufferEntry {
   RoomModel room;
   DateTime? missingSince;
 }
-
-
-
-

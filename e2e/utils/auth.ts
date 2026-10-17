@@ -1,6 +1,9 @@
 import { Page, expect } from '@playwright/test';
+import { activateWorkerCredentials } from './credentials';
 
 const AUTH_STEP_TIMEOUT_MS = 45000;
+
+class InvalidAppEndpointError extends Error {}
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -20,25 +23,28 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
  * synthetic click at its bounding box instead. This must run before any
  * input/button locators are used against the app.
  */
-async function enableFlutterSemantics(page: Page): Promise<void> {
+export async function enableFlutterSemantics(page: Page): Promise<void> {
   try {
-    await page.evaluate(() => {
-      const el = document.querySelector('flt-semantics-placeholder') as HTMLElement | null;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      el.dispatchEvent(new MouseEvent('click', {
-        bubbles: true,
-        clientX: rect.left + 1,
-        clientY: rect.top + 1,
-      }));
+    const accessibilityButton = page.getByRole('button', {
+      name: 'Enable accessibility',
     });
+    if (await accessibilityButton.count()) {
+      await accessibilityButton.dispatchEvent('click');
+    } else {
+      const semanticsPlaceholder = page.locator('flt-semantics-placeholder');
+      if (await semanticsPlaceholder.count()) {
+        await semanticsPlaceholder.evaluate((element) => {
+          (element as HTMLElement).click();
+        });
+      }
+    }
     await page.waitForTimeout(500);
   } catch {
     // Semantics may already be enabled, or the placeholder may not be present yet - ignore.
   }
 }
 
-async function waitForAppReady(page: Page): Promise<void> {
+export async function waitForAppReady(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('body')).toBeVisible({ timeout: 30000 });
   await expect
@@ -55,11 +61,48 @@ async function waitForAppReady(page: Page): Promise<void> {
     .toBeGreaterThan(0);
 }
 
+async function assertMixvyAppEndpoint(page: Page): Promise<void> {
+  await enableFlutterSemantics(page);
+  const currentUrl = new URL(page.url());
+  const title = await page.title();
+  const endpointText = await page.locator('body').innerText().catch(() => '');
+  const isDartDevTools =
+    currentUrl.port === '9100' ||
+    title.toLowerCase().includes('devtools') ||
+    endpointText.includes('No client connection') ||
+    endpointText.includes('page cannot be found') ||
+    endpointText.includes("What's new in DevTools?");
+
+  if (isDartDevTools) {
+    throw new InvalidAppEndpointError(
+      `PLAYWRIGHT_BASE_URL points to Dart DevTools (${page.url()}), not the MixVy Flutter app.`,
+    );
+  }
+
+  const authControls = page.locator(
+    'input[aria-label*="mail" i], input[type="email"], input[aria-label*="password" i], input[type="password"]',
+  );
+  const hasAuthControls = await expect
+    .poll(async () => authControls.count(), {
+      timeout: 30000,
+      message: 'Expected MixVy email and password controls after Flutter startup',
+    })
+    .toBeGreaterThanOrEqual(2)
+    .then(() => true)
+    .catch(() => false);
+  if (!hasAuthControls) {
+    throw new InvalidAppEndpointError(
+      `The endpoint ${page.url()} does not expose the MixVy authentication screen.`,
+    );
+  }
+}
+
 /**
  * Authenticates a user in the test environment by logging into the Flutter web app
  * Supports multiple fallback methods including Firebase auth and local storage injection
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
+  activateWorkerCredentials();
   const testEmail = process.env.TEST_EMAIL || 'test@example.com';
   const testPassword = process.env.TEST_PASSWORD || 'Test123456!';
   const authRequired = `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === '1' || `${process.env.AUTH_REQUIRED ?? ''}`.toLowerCase() === 'true';
@@ -69,13 +112,21 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     // Navigate to auth page
     await page.goto('/auth', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
+    await assertMixvyAppEndpoint(page);
 
     // Method 1: Try standard email/password form
     const authSuccess = await withTimeout(
       tryEmailPasswordAuth(page, testEmail, testPassword),
       AUTH_STEP_TIMEOUT_MS,
       'email/password authentication'
-    ).catch(() => false);
+    ).catch((error) => {
+      console.warn(
+        `Email/password authentication timed out: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return false;
+    });
     if (authSuccess) {
       console.log('✓ Authenticated via email/password form');
       return true;
@@ -86,7 +137,14 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       tryFirebaseRestAuth(page, testEmail, testPassword),
       AUTH_STEP_TIMEOUT_MS,
       'firebase REST authentication'
-    ).catch(() => false);
+    ).catch((error) => {
+      console.warn(
+        `Firebase REST authentication fallback failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return false;
+    });
     if (firebaseSuccess) {
       console.log('✓ Authenticated via Firebase REST API');
       return true;
@@ -112,6 +170,9 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
     return false;
 
   } catch (error) {
+    if (error instanceof InvalidAppEndpointError) {
+      throw error;
+    }
     console.log(`⚠ Authentication error: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
@@ -136,20 +197,29 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
       return false;
     }
 
-    await emailInput.fill(email);
+    await emailInput.click();
+    await emailInput.press('Control+A');
+    await emailInput.pressSequentially(email, { delay: 10 });
     await page.waitForTimeout(500);
 
     // Find and fill password field
-    const passwordInput = page.locator(
-      'input[aria-label*="password" i], input[type="password"], input[placeholder*="password" i]'
-    ).first();
-    await passwordInput.fill(password);
+    const passwordInput = page
+      .getByRole('textbox', { name: /^Password$/i })
+      .or(
+        page.locator(
+          'input[aria-label="Password" i], input[type="password"], input[placeholder*="password" i]',
+        ),
+      )
+      .first();
+    await passwordInput.click();
+    await passwordInput.press('Control+A');
+    await passwordInput.pressSequentially(password, { delay: 10 });
     await page.waitForTimeout(500);
 
     // Find and click login button
-    const loginButton = page.locator(
-      'button:has-text("SIGN IN"), button:has-text("Sign In"), button:has-text("LOGIN"), button:has-text("Log In")'
-    ).first();
+    const loginButton = page.getByRole('button', {
+      name: /^(sign in|log in|login)$/i,
+    }).first();
     await loginButton.click();
 
     // Verify auth success: the modern Firebase JS SDK (firebase_auth v6+) persists
@@ -157,12 +227,23 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
     // so the real signal is GoRouter navigating away from the /auth route once the
     // app confirms the session.
     try {
-      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 8000 });
+      await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 20000 });
       return true;
-    } catch {
+    } catch (error) {
+      const visibleText = await page.locator('body').innerText().catch(() => '');
+      console.warn(
+        `Email/password authentication did not leave /auth: ${
+          error instanceof Error ? error.message : String(error)
+        }\nVisible UI: ${visibleText.slice(-1000)}`,
+      );
       return false;
     }
-  } catch (e) {
+  } catch (error) {
+    console.warn(
+      `Email/password authentication failed before navigation: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
     return false;
   }
 }
@@ -173,7 +254,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
 async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
   try {
     // Get Firebase config from window object or use hardcoded values
-    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCqXHwQaMV1VvWxYnrAGqhGlx9S2K0MZZE';
+    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I';
     const firebaseProjectId = 'mixvy-v2';
 
     const response = await page.request.post(
@@ -218,7 +299,10 @@ async function tryFirebaseRestAuth(page: Page, email: string, password: string):
       { tokens: result, uid: result.localId }
     );
 
-    return true;
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 10000 });
+    await page.waitForTimeout(3000);
+    return !new URL(page.url()).pathname.includes('/auth');
   } catch (e) {
     return false;
   }
@@ -247,18 +331,38 @@ async function tryGuestAccess(page: Page): Promise<boolean> {
 /**
  * Navigates to a page with retry logic
  */
-export async function safeNavigate(page: Page, path: string, maxRetries: number = 3): Promise<void> {
+export async function safeNavigate(page: Page, path: string, maxRetries: number = 2): Promise<void> {
   let lastError: Error | null = null;
   
   for (let i = 0; i < maxRetries; i++) {
     try {
-      await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await waitForAppReady(page);
+      await page.goto(path, { waitUntil: 'commit', timeout: 20000 });
+      await expect(page.locator('body')).toBeVisible({ timeout: 20000 });
+      await expect
+        .poll(
+          () => page.locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input').count(),
+          { timeout: 20000, message: `Expected app readiness after navigating to ${path}` },
+        )
+        .toBeGreaterThan(0);
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.log(`Navigation attempt ${i + 1}/${maxRetries} failed for path: ${path}`);
-      await page.waitForTimeout(2000 * (i + 1)); // Exponential backoff
+      if (lastError.message.includes('NS_BINDING_ABORTED')) {
+        const redirectedAppReady = await expect
+          .poll(
+            () => page.locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input').count(),
+            { timeout: 20000, message: `Expected redirected app readiness after navigating to ${path}` },
+          )
+          .toBeGreaterThan(0)
+          .then(() => true)
+          .catch(() => false);
+        if (redirectedAppReady) {
+          return;
+        }
+      }
+      if (i + 1 < maxRetries) {
+        await page.waitForTimeout(2000 * (i + 1));
+      }
     }
   }
   

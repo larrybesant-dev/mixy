@@ -86,14 +86,12 @@ class CamViewRequestController {
     final existingSnapshot = await _col(
       normalizedRoomId,
     ).where('targetId', isEqualTo: normalizedTargetId).get();
-    final pendingToSupersede = existingSnapshot.docs
-        .where((doc) {
-          final data = doc.data();
-          final requester = (data['requesterId'] as String? ?? '').trim();
-          final status = (data['status'] as String? ?? '').trim().toLowerCase();
-          return requester == normalizedRequesterId && status == 'pending';
-        })
-        .toList(growable: false);
+    final pendingToSupersede = existingSnapshot.docs.where((doc) {
+      final data = doc.data();
+      final requester = (data['requesterId'] as String? ?? '').trim();
+      final status = (data['status'] as String? ?? '').trim().toLowerCase();
+      return requester == normalizedRequesterId && status == 'pending';
+    }).toList(growable: false);
 
     final requestRef = _col(normalizedRoomId).doc();
     final batch = _db.batch();
@@ -123,12 +121,16 @@ class CamViewRequestController {
     final requesterLabel = normalizedRequesterName.isEmpty
         ? normalizedRequesterId
         : normalizedRequesterName;
-    await NotificationService(firestore: _db).inAppNotification(
-      normalizedTargetId,
-      pendingToSupersede.isNotEmpty
-          ? '$requesterLabel wants to view your camera in room $normalizedRoomId again.'
-          : '$requesterLabel wants to view your camera in room $normalizedRoomId.',
-    );
+    try {
+      await NotificationService(firestore: _db).inAppNotification(
+        normalizedTargetId,
+        pendingToSupersede.isNotEmpty
+            ? '$requesterLabel wants to view your camera in room $normalizedRoomId again.'
+            : '$requesterLabel wants to view your camera in room $normalizedRoomId.',
+      );
+    } on FirebaseException {
+      // The request is already committed; notification delivery is best-effort.
+    }
   }
 
   /// Marks a cam-view request as approved or denied.
@@ -141,20 +143,38 @@ class CamViewRequestController {
     final snapshot = await requestRef.get();
     final data = snapshot.data() ?? const <String, dynamic>{};
     final requesterId = (data['requesterId'] as String?)?.trim() ?? '';
+    final targetId = (data['targetId'] as String?)?.trim() ?? '';
+    if (!snapshot.exists || requesterId.isEmpty || targetId.isEmpty) {
+      return;
+    }
 
-    await requestRef.update({
+    final batch = _db.batch();
+    batch.update(requestRef, {
       'status': approved ? 'approved' : 'denied',
       'resolvedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    if (approved) {
+      batch.set(
+        _db.collection('userCamPermissions').doc(targetId),
+        {
+          'allowedViewers': FieldValue.arrayUnion([requesterId]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
 
-    if (requesterId.isNotEmpty) {
+    try {
       await NotificationService(firestore: _db).inAppNotification(
         requesterId,
         approved
             ? 'Your cam request was approved in room $roomId.'
             : 'Your cam request was denied in room $roomId.',
       );
+    } on FirebaseException {
+      // The response is already committed; notification delivery is best-effort.
     }
   }
 }
@@ -170,28 +190,23 @@ final camViewRequestControllerProvider = Provider<CamViewRequestController>((
 /// client-side.
 final pendingCamViewRequestsProvider = StreamProvider.autoDispose
     .family<List<CamViewRequest>, ({String roomId, String targetId})>((
-      ref,
-      params,
-    ) {
-      final firestore = ref.watch(roomFirestoreProvider);
-      return firestore
-          .collection('rooms')
-          .doc(params.roomId)
-          .collection('cam_view_requests')
-          .where('targetId', isEqualTo: params.targetId)
-          .limit(50)
-          .snapshots()
-          .map((qs) {
-            final requests =
-                qs.docs
-                    .map(CamViewRequest.fromDoc)
-                    .where((r) => r.isPending)
-                    .toList(growable: true)
-                  ..sort((a, b) => b.sortTime.compareTo(a.sortTime));
-            return requests.toList(growable: false);
-          });
-    });
-
-
-
-
+  ref,
+  params,
+) {
+  final firestore = ref.watch(roomFirestoreProvider);
+  return firestore
+      .collection('rooms')
+      .doc(params.roomId)
+      .collection('cam_view_requests')
+      .where('targetId', isEqualTo: params.targetId)
+      .limit(50)
+      .snapshots()
+      .map((qs) {
+    final requests = qs.docs
+        .map(CamViewRequest.fromDoc)
+        .where((r) => r.isPending)
+        .toList(growable: true)
+      ..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+    return requests.toList(growable: false);
+  });
+});

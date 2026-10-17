@@ -142,10 +142,10 @@ class _UserProfileBottomSheetState extends ConsumerState<UserProfileBottomSheet>
                       height: 104,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: profile.vipLevel > 0
+                        gradient: profile.vipBadgeLevel > 0
                             ? VelvetNoir.primaryGradient
                             : null,
-                        border: profile.vipLevel == 0
+                        border: profile.vipBadgeLevel == 0
                             ? Border.all(
                                 color: VelvetNoir.outlineVariant,
                                 width: 2,
@@ -159,7 +159,7 @@ class _UserProfileBottomSheetState extends ConsumerState<UserProfileBottomSheet>
                             ? profile.displayName[0]
                             : '?',
                         radius: 46,
-                        isVip: profile.vipLevel > 0,
+                        isVip: profile.vipBadgeLevel > 0,
                         isOnline: presence.isOnline,
                       ),
                     ),
@@ -206,11 +206,11 @@ class _UserProfileBottomSheetState extends ConsumerState<UserProfileBottomSheet>
                       icon: Icons.people_rounded,
                       label: '${profile.followersCount} followers',
                     ),
-                    if (profile.vipLevel > 0) ...[
+                    if (profile.vipBadgeLevel > 0) ...[
                       const SizedBox(width: 12),
                       _buildMetricChip(
                         icon: Icons.star_rounded,
-                        label: 'VIP Level ${profile.vipLevel}',
+                        label: 'VIP Level ${profile.vipBadgeLevel}',
                         color: VelvetNoir.secondary,
                       ),
                     ],

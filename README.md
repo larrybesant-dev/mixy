@@ -65,6 +65,17 @@ Behavior:
 - Cache-control headers are configured for index/bootstrap/service worker in firebase.json.
 
 ## Tests
+Profile photos on web and mobile are normalized to JPEG and uploaded to Firebase
+Storage; profile documents store download URLs, not inline image data. Inputs
+must be under 20MB, and processed uploads must be under the Storage rules' 5MB
+limit. Cover photos are cropped to 1200x525. In Edit Social Profile, wait for
+uploads to finish and select Save; reopening the editor must retain the avatar,
+cover, and gallery.
+
+Run profile photo persistence regressions:
+- flutter test test/profile_photo_upload_service_test.dart test/profile_media_persistence_test.dart test/profile_controller_test.dart test/edit_profile_screen_test.dart test/profile_screen_test.dart
+- node --test functions/test/profile_media.spec.js
+
 Run focused tests:
 - flutter test test/app_router_redirect_test.dart
 - flutter test test/room_service_test.dart

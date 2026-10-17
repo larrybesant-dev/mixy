@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mixvy/core/providers/session_capabilities_provider.dart';
 import 'package:mixvy/shared/widgets/guest_auth_gate.dart';
 
+import '../core/flags/feature_flags.dart';
 import '../core/theme.dart';
 import '../features/auth/providers/admin_provider.dart';
 import '../features/beta/beta_tester_provider.dart';
@@ -316,9 +317,9 @@ class MixVyDrawer extends ConsumerWidget {
           ),
           _navItem(
             context,
-            icon: Icons.people_alt_rounded,
-            title: 'Friends',
-            route: '/friends',
+            icon: Icons.people_alt_outlined,
+            title: 'Friends List',
+            route: '/profile/social?tab=friends',
           ),
           _navItem(
             context,
@@ -344,18 +345,20 @@ class MixVyDrawer extends ConsumerWidget {
             title: 'Get Verified',
             route: '/verification',
           ),
-          _navItem(
-            context,
-            icon: Icons.payments_rounded,
-            title: 'Payments',
-            route: '/payments',
-          ),
-          _navItem(
-            context,
-            icon: Icons.workspace_premium_rounded,
-            title: 'VIP',
-            route: '/vip',
-          ),
+          if (kPaymentsEnabled) ...[
+            _navItem(
+              context,
+              icon: Icons.payments_rounded,
+              title: 'Payments',
+              route: '/payments',
+            ),
+            _navItem(
+              context,
+              icon: Icons.workspace_premium_rounded,
+              title: 'VIP',
+              route: '/vip',
+            ),
+          ],
           if (isBetaTester)
             _navItem(
               context,
@@ -395,6 +398,5 @@ class MixVyDrawer extends ConsumerWidget {
     return Drawer(child: drawerContent);
   }
 }
-
 
 

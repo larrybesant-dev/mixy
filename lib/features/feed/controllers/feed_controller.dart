@@ -31,9 +31,10 @@ class FeedState {
 
   /// Bucketed discovery sections derived from [liveRooms] + [friendIds].
   final RoomDiscoverySections? discoverySections;
-  
+
   /// Whether this data came from browser cache (stale) vs fresh network fetch
   final bool isFromCache;
+
   /// When the cached data was last updated
   final DateTime? cachedAt;
 
@@ -120,8 +121,7 @@ class FeedController extends Notifier<FeedState> {
 
     return _FeedViewerProfile(
       friendIds: List<String>.from(data['friends'] ?? const <String>[]).toSet(),
-      canAccessAdultRooms:
-          data['adultModeEnabled'] == true &&
+      canAccessAdultRooms: data['adultModeEnabled'] == true &&
           data['adultConsentAccepted'] == true,
     );
   }
@@ -139,7 +139,8 @@ class FeedController extends Notifier<FeedState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('feed_cache', jsonEncode(cacheData));
       if (kDebugMode) {
-        debugPrint('[FeedCache] Saved ${feedData.liveRooms.length} rooms to cache');
+        debugPrint(
+            '[FeedCache] Saved ${feedData.liveRooms.length} rooms to cache');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -156,29 +157,38 @@ class FeedController extends Notifier<FeedState> {
       if (cached == null) return null;
 
       final data = jsonDecode(cached) as Map<String, dynamic>;
-      final liveRooms = (data['liveRooms'] as List?)
-          ?.map((r) => RoomModel.fromJson(r, r['id'] ?? ''))
-          .toList() ?? [];
-      final upcomingRooms = (data['upcomingRooms'] as List?)
-          ?.map((r) => RoomModel.fromJson(r, r['id'] ?? ''))
-          .toList() ?? [];
+      final liveRooms = (data['liveRooms'] as List?)?.map((roomJson) {
+            final room = roomJson as Map<String, dynamic>;
+            return RoomModel.fromJson(room, room['id'] as String? ?? '');
+          }).toList() ??
+          [];
+      final upcomingRooms = (data['upcomingRooms'] as List?)?.map((roomJson) {
+            final room = roomJson as Map<String, dynamic>;
+            return RoomModel.fromJson(room, room['id'] as String? ?? '');
+          }).toList() ??
+          [];
       final trendingUsers = (data['trendingUsers'] as List?)
-          ?.map((u) => UserModel.fromJson(u))
-          .toList() ?? [];
+              ?.map((u) => UserModel.fromJson(u))
+              .toList() ??
+          [];
       final friendIds = Set<String>.from(data['friendIds'] as List? ?? []);
-      final cachedAt = DateTime.parse(data['cachedAt'] as String? ?? DateTime.now().toIso8601String());
+      final cachedAt = DateTime.parse(
+          data['cachedAt'] as String? ?? DateTime.now().toIso8601String());
 
       final roomReasons = <String, String>{
         for (final room in liveRooms)
-          room.id: _roomService.getRecommendationReason(room, friendIds: friendIds),
+          room.id:
+              _roomService.getRecommendationReason(room, friendIds: friendIds),
       };
       final roomTiers = <String, String>{
         for (final room in liveRooms)
-          room.id: _roomService.getRecommendationTier(room, friendIds: friendIds),
+          room.id:
+              _roomService.getRecommendationTier(room, friendIds: friendIds),
       };
 
       if (kDebugMode) {
-        debugPrint('[FeedCache] Loaded ${liveRooms.length} rooms from cache (cached ${cachedAt.toLocal()})');
+        debugPrint(
+            '[FeedCache] Loaded ${liveRooms.length} rooms from cache (cached ${cachedAt.toLocal()})');
       }
 
       return FeedState(
@@ -210,23 +220,22 @@ class FeedController extends Notifier<FeedState> {
   Future<FeedState?> _loadFromFunctionEndpoint() async {
     try {
       final currentUserId = _auth.currentUser?.uid.trim();
-      final url = Uri.parse(
-        'https://us-east1-mixvy-v2.cloudfunctions.net/feed'
-        '${currentUserId != null && currentUserId.isNotEmpty ? '?userId=$currentUserId' : ''}'
-      );
+      final url = Uri.parse('https://us-east1-mixvy-v2.cloudfunctions.net/feed'
+          '${currentUserId != null && currentUserId.isNotEmpty ? '?userId=$currentUserId' : ''}');
 
       if (kDebugMode) {
         debugPrint('[FeedController] Fetching from Function endpoint: $url');
       }
 
       final response = await http.get(url).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => http.Response('timeout', 504),
-      );
+            const Duration(seconds: 10),
+            onTimeout: () => http.Response('timeout', 504),
+          );
 
       if (response.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('[FeedController] Function endpoint returned ${response.statusCode}');
+          debugPrint(
+              '[FeedController] Function endpoint returned ${response.statusCode}');
         }
         return null;
       }
@@ -234,7 +243,8 @@ class FeedController extends Notifier<FeedState> {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (data['success'] != true) {
         if (kDebugMode) {
-          debugPrint('[FeedController] Function endpoint returned success=false');
+          debugPrint(
+              '[FeedController] Function endpoint returned success=false');
         }
         return null;
       }
@@ -244,15 +254,16 @@ class FeedController extends Notifier<FeedState> {
       final upcomingRoomsJson = data['upcomingRooms'] as List? ?? [];
       final trendingUsersJson = data['trendingUsers'] as List? ?? [];
 
-      final liveRooms = liveRoomsJson
-          .map((r) => RoomModel.fromJson(r, r['id'] ?? ''))
-          .toList();
-      final upcomingRooms = upcomingRoomsJson
-          .map((r) => RoomModel.fromJson(r, r['id'] ?? ''))
-          .toList();
-      final trendingUsers = trendingUsersJson
-          .map((u) => UserModel.fromJson(u))
-          .toList();
+      final liveRooms = liveRoomsJson.map((roomJson) {
+        final room = roomJson as Map<String, dynamic>;
+        return RoomModel.fromJson(room, room['id'] as String? ?? '');
+      }).toList();
+      final upcomingRooms = upcomingRoomsJson.map((roomJson) {
+        final room = roomJson as Map<String, dynamic>;
+        return RoomModel.fromJson(room, room['id'] as String? ?? '');
+      }).toList();
+      final trendingUsers =
+          trendingUsersJson.map((u) => UserModel.fromJson(u)).toList();
 
       // Get viewer profile for friend IDs (needed for room reasons/tiers)
       final isSignedIn = currentUserId != null && currentUserId.isNotEmpty;
@@ -276,7 +287,8 @@ class FeedController extends Notifier<FeedState> {
       };
 
       if (kDebugMode) {
-        debugPrint('[FeedController] Successfully loaded feed from Function endpoint: ${liveRooms.length} live rooms');
+        debugPrint(
+            '[FeedController] Successfully loaded feed from Function endpoint: ${liveRooms.length} live rooms');
       }
 
       return FeedState(
@@ -305,11 +317,12 @@ class FeedController extends Notifier<FeedState> {
 
   Future<void> loadFeed() async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     // Phase 2: Try Function endpoint first (bypasses extension blocking)
     try {
       if (kDebugMode) {
-        debugPrint('[FeedController] Attempting to load from Function endpoint...');
+        debugPrint(
+            '[FeedController] Attempting to load from Function endpoint...');
       }
       final functionFeed = await _loadFromFunctionEndpoint();
       if (functionFeed != null && functionFeed.liveRooms.isNotEmpty) {
@@ -317,7 +330,8 @@ class FeedController extends Notifier<FeedState> {
         // Save to cache for offline fallback
         await _saveFeedToCache(functionFeed);
         if (kDebugMode) {
-          debugPrint('[FeedController] Successfully loaded feed from Function endpoint');
+          debugPrint(
+              '[FeedController] Successfully loaded feed from Function endpoint');
         }
         return;
       }
@@ -330,7 +344,8 @@ class FeedController extends Notifier<FeedState> {
     // Fallback 1: Try direct Firestore (may fail if extensions block)
     try {
       if (kDebugMode) {
-        debugPrint('[FeedController] Function endpoint unavailable, trying Firestore directly...');
+        debugPrint(
+            '[FeedController] Function endpoint unavailable, trying Firestore directly...');
       }
       await _loadFeedData().timeout(
         const Duration(seconds: 10),
@@ -338,7 +353,8 @@ class FeedController extends Notifier<FeedState> {
       return;
     } on TimeoutException {
       if (kDebugMode) {
-        debugPrint('[FeedController] Timeout loading from Firestore, checking cache...');
+        debugPrint(
+            '[FeedController] Timeout loading from Firestore, checking cache...');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -351,7 +367,8 @@ class FeedController extends Notifier<FeedState> {
     if (cachedFeed != null && cachedFeed.liveRooms.isNotEmpty) {
       state = cachedFeed;
       if (kDebugMode) {
-        debugPrint('[FeedController] Displayed cached feed (Function endpoint and Firestore unavailable)');
+        debugPrint(
+            '[FeedController] Displayed cached feed (Function endpoint and Firestore unavailable)');
       }
       return;
     }
@@ -359,7 +376,8 @@ class FeedController extends Notifier<FeedState> {
     // All methods failed - show error
     state = state.copyWith(
       isLoading: false,
-      error: 'Unable to connect to the discovery feed. This may be caused by browser extensions. Try disabling ad blockers or opening in Incognito mode.',
+      error:
+          'Unable to connect to the discovery feed. This may be caused by browser extensions. Try disabling ad blockers or opening in Incognito mode.',
     );
   }
 
@@ -397,12 +415,11 @@ class FeedController extends Notifier<FeedState> {
       var trendingUsers = const <UserModel>[];
       try {
         final usersSnap = await _userGateway.getPublicUsers(limit: 40);
-        final visibleUsers =
-            usersSnap.docs
-                .map((doc) => UserModel.fromJson({'id': doc.id, ...doc.data()}))
-                .where((user) => !blockedIds.contains(user.id))
-                .toList()
-              ..sort((a, b) => b.coinBalance.compareTo(a.coinBalance));
+        final visibleUsers = usersSnap.docs
+            .map((doc) => UserModel.fromJson({'id': doc.id, ...doc.data()}))
+            .where((user) => !blockedIds.contains(user.id))
+            .toList()
+          ..sort((a, b) => b.coinBalance.compareTo(a.coinBalance));
         trendingUsers = visibleUsers.take(10).toList(growable: false);
       } on FirebaseException catch (e, stackTrace) {
         logFirestoreError(
@@ -412,7 +429,8 @@ class FeedController extends Notifier<FeedState> {
         );
       } catch (e) {
         // Catch non-Firebase errors (network, browser extension blocking, etc.)
-        debugPrint('[FeedController] Non-Firebase error fetching trending users: $e');
+        debugPrint(
+            '[FeedController] Non-Firebase error fetching trending users: $e');
       }
       // Upcoming scheduled rooms (next 48 h)
       List<RoomModel> upcomingRooms = const [];
@@ -439,7 +457,7 @@ class FeedController extends Notifier<FeedState> {
         ),
         isFromCache: false,
       );
-      
+
       // Cache successful feed data for offline/fallback access
       await _saveFeedToCache(state);
     } on FirebaseException catch (e, stackTrace) {
@@ -448,17 +466,18 @@ class FeedController extends Notifier<FeedState> {
         error: e,
         stackTrace: stackTrace,
       );
-      
+
       // Most common cause: browser extension blocking Firestore API
       // Show helpful message to guide users to solutions
       final errorMessage = 'Unable to connect to the discovery feed.\n\n'
           'This may be caused by browser extensions blocking APIs.\n'
           'Try: disabling ad blockers or opening in Incognito mode.';
-      
+
       if (kDebugMode) {
-        debugPrint('[FeedController] Firestore error - code: ${e.code}, message: ${e.message}');
+        debugPrint(
+            '[FeedController] Firestore error - code: ${e.code}, message: ${e.message}');
       }
-      
+
       state = state.copyWith(
         isLoading: false,
         error: errorMessage,
@@ -467,17 +486,18 @@ class FeedController extends Notifier<FeedState> {
       // Catch all other errors (network, browser extension blocking, etc.)
       debugPrint('[FeedController] Error loading feed data: $e');
       debugPrintStack(stackTrace: stackTrace);
-      
+
       // Provide helpful error message that hints at solutions
-      String errorMessage = 'Failed to load discovery feed. Please check your connection and try again.';
-      
-      if (e.toString().contains('ABORTED') || 
+      String errorMessage =
+          'Failed to load discovery feed. Please check your connection and try again.';
+
+      if (e.toString().contains('ABORTED') ||
           e.toString().contains('blocked') ||
           e.toString().contains('network')) {
         errorMessage = 'Unable to load discovery feed. '
             'Try disabling browser extensions (like ad blockers) or open in Incognito mode.';
       }
-      
+
       state = state.copyWith(
         isLoading: false,
         error: errorMessage,
@@ -489,4 +509,3 @@ class FeedController extends Notifier<FeedState> {
 final feedControllerProvider = NotifierProvider<FeedController, FeedState>(
   () => FeedController(),
 );
-

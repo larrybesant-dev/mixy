@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/firestore/firestore_error_utils.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
+import 'package:mixvy/core/telemetry/launch_monitoring.dart';
 import 'package:mixvy/core/services/feature_gate_service.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/features/messaging/models/message_model.dart';
@@ -85,20 +85,10 @@ final rawConversationsStreamProvider = StreamProvider.autoDispose
                 .toList(growable: false),
           );
 
-      final stream = kDebugMode
-          ? baseStream
-          : baseStream.timeout(
-              const Duration(seconds: 3),
-              onTimeout: (sink) {
-                // Close sink on timeout - prevent permanent hang
-                sink.close();
-              },
-            );
-
       return lifecycle.bind(
         key: 'conversations:$resolvedUserId',
         routePrefixes: const <String>['/messages', '/new-message', '/chat'],
-        create: () => stream,
+        create: () => baseStream,
       );
     });
 
@@ -491,6 +481,7 @@ class MessagingController {
     );
     final convRef = _firestore.collection('conversations').doc(conversationId);
     final messageRef = convRef.collection('messages').doc();
+    final commitStartedAt = DateTime.now();
 
     try {
       // Atomic batch: message write + conversation metadata update in one commit.
@@ -528,6 +519,21 @@ class MessagingController {
 
       await batch.commit();
 
+      final acknowledgementLatency = DateTime.now().difference(commitStartedAt);
+      if (acknowledgementLatency >= LaunchMonitoring.messageAckWarning) {
+        LaunchMonitoring.record(
+          action: LaunchMonitoring.messagingFreshness,
+          message: 'Message acknowledgement exceeded the launch latency budget.',
+          level: 'warning',
+          roomId: conversationId,
+          userId: authoritativeSenderId,
+          result: 'slow_ack',
+          metadata: <String, Object?>{
+            'latency_ms': acknowledgementLatency.inMilliseconds,
+          },
+        );
+      }
+
       AppTelemetry.logAction(
         domain: 'messaging',
         action: 'send_message',
@@ -537,6 +543,18 @@ class MessagingController {
         result: 'success',
       );
     } catch (error, stackTrace) {
+      LaunchMonitoring.record(
+        action: LaunchMonitoring.messagingFreshness,
+        message: 'Message acknowledgement failed.',
+        roomId: conversationId,
+        userId: authoritativeSenderId,
+        result: 'failed_ack',
+        metadata: <String, Object?>{
+          'latency_ms': DateTime.now().difference(commitStartedAt).inMilliseconds,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       AppTelemetry.logAction(
         level: 'error',
         domain: 'messaging',

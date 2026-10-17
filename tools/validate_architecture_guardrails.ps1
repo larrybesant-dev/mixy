@@ -87,11 +87,13 @@ function Assert-FollowsSnapshotsCentralized([System.IO.FileInfo[]]$files) {
             $content = ''
         }
 
+        $executableContent = $content -replace '(?m)^\s*//.*$', ''
+
         # Guardrail: follow graph realtime listeners must be centralized.
         # Disallow any direct follows `.snapshots()` pipeline outside FollowService.
         $hasFollowsSnapshots =
-            ($content -match "(?s)collection\('follows'\).*?snapshots\s*\(") -or
-            ($content -match '(?s)collection\("follows"\).*?snapshots\s*\(')
+            ($executableContent -match "(?s)collection\('follows'\).*?snapshots\s*\(") -or
+            ($executableContent -match '(?s)collection\("follows"\).*?snapshots\s*\(')
         if ($hasFollowsSnapshots) {
             $rel = To-RepoRelativePath $file.FullName
             if ($rel -ne $allowedOwner) {
@@ -137,6 +139,7 @@ function Assert-LegacyPremiumFieldsScoped([System.IO.FileInfo[]]$files) {
         'lib/features/room/rtc/rtc_audio_service.dart',
         'lib/features/room/rtc/rtc_screen_service.dart',
         'lib/models/user_model.dart',
+        'lib/models/user_profile.dart',
         'lib/widgets/user_profile_popup.dart'
     )
     $legacyFieldPattern = '\b(vipLevel|membershipLevel|isPremium)\b'

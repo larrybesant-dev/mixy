@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mixvy/features/profile/edit_profile_screen.dart';
 import 'package:mixvy/features/profile/profile_controller.dart';
 import 'package:mixvy/models/profile_privacy_model.dart';
-
 
 /// Stub [ProfileController] that returns a fixed [ProfileState] without
 /// requiring Firebase or Firestore.
@@ -17,6 +19,25 @@ class _StubProfileController extends ProfileController {
 
   @override
   Future<void> loadCurrentProfile() async {}
+}
+
+class _DelayedProfileController extends _StubProfileController {
+  _DelayedProfileController(this.loaded)
+      : super(const ProfileState(userId: 'tester'));
+
+  final Completer<void> loaded;
+
+  @override
+  Future<void> loadCurrentProfile() async {
+    await loaded.future;
+    state = state.copyWith(
+      username: 'Loaded Tester',
+      galleryUrls: [
+        'https://storage.example.test/gallery-1.jpg',
+        'https://storage.example.test/gallery-2.jpg',
+      ],
+    );
+  }
 }
 
 Widget _buildScreen(List<Override> overrides) {
@@ -45,6 +66,29 @@ Future<void> _scrollToPrivateAccount(WidgetTester tester) async {
 }
 
 void main() {
+  group('edit profile upload errors', () {
+    test('maps exhausted Storage quota without exposing Firebase internals',
+        () {
+      final error = FirebaseException(
+        plugin: 'firebase_storage',
+        code: 'quota-exceeded',
+        message: 'Bucket quota exceeded',
+      );
+
+      expect(
+        editProfileUploadErrorMessage(error),
+        'Photo uploads are temporarily unavailable. Please try again later.',
+      );
+    });
+
+    test('uses a safe fallback for unknown upload failures', () {
+      expect(
+        editProfileUploadErrorMessage(Exception('private detail')),
+        'Upload failed. Check your connection and try again.',
+      );
+    });
+  });
+
   group('EditProfileScreen — private-account toggle', () {
     testWidgets('shows "Anyone can view" subtitle when isPrivate=false', (
       tester,
@@ -167,6 +211,57 @@ void main() {
   });
 
   group('EditProfileScreen — save button state', () {
+    testWidgets('waits for fresh profile media before enabling Save',
+        (tester) async {
+      final loaded = Completer<void>();
+      await tester.pumpWidget(_buildScreen([
+        profileControllerProvider.overrideWith(
+          () => _DelayedProfileController(loaded),
+        ),
+      ]));
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+      loaded.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
+            .onPressed,
+        isNotNull,
+      );
+      expect(find.text('2/6'), findsOneWidget);
+    });
+
+    testWidgets('hydrates identity fields after the async profile load',
+        (tester) async {
+      final loaded = Completer<void>();
+      await tester.pumpWidget(_buildScreen([
+        profileControllerProvider.overrideWith(
+          () => _DelayedProfileController(loaded),
+        ),
+      ]));
+      await tester.pump();
+      loaded.complete();
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('Identity'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextFormField>(
+          find.widgetWithText(TextFormField, 'Display name'),
+        ).controller?.text,
+        'Loaded Tester',
+      );
+    });
+
     testWidgets('Save button is enabled when not loading', (tester) async {
       await tester.pumpWidget(
         _buildScreen([

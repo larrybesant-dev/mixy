@@ -351,9 +351,8 @@ class MixvyGoldAvatar extends StatelessWidget {
           child: CircleAvatar(
             radius: radius,
             backgroundColor: VelvetNoir.surfaceHigh,
-            backgroundImage: safeImageUrl != null
-                ? NetworkImage(safeImageUrl)
-                : null,
+            backgroundImage:
+                safeImageUrl != null ? NetworkImage(safeImageUrl) : null,
             child: safeImageUrl == null
                 ? Text(
                     fallbackInitial.isNotEmpty
@@ -756,101 +755,137 @@ class BrandPillarNavCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     debugPrint('🎨 BrandPillarNavCard.build() - $kicker');
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 150;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
             borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: [
-                VelvetNoir.surfaceHigh,
-                VelvetNoir.surfaceHigh.withValues(alpha: 0.8),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: accentColor.withValues(alpha: 0.3),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: accentColor.withValues(alpha: 0.15),
-                blurRadius: 16,
-                spreadRadius: 0,
-                offset: const Offset(0, 4),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    VelvetNoir.surfaceHigh,
+                    VelvetNoir.surfaceHigh.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: accentColor.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: 0.15),
+                    blurRadius: 16,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+              padding: EdgeInsets.all(compact ? 12 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accentColor.withValues(alpha: 0.15),
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.4),
-                        width: 1.5,
+                  if (compact) ...[
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accentColor.withValues(alpha: 0.15),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.4),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(icon, color: accentColor, size: 22),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      kicker.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.raleway(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: accentColor,
+                        letterSpacing: 1,
                       ),
                     ),
-                    child: Icon(icon, color: accentColor, size: 22),
-                  ),
-                  const Spacer(),
+                  ] else
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: accentColor.withValues(alpha: 0.15),
+                            border: Border.all(
+                              color: accentColor.withValues(alpha: 0.4),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(icon, color: accentColor, size: 22),
+                        ),
+                        const Spacer(),
+                        Text(
+                          kicker.toUpperCase(),
+                          style: GoogleFonts.raleway(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: accentColor,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  SizedBox(height: compact ? 10 : 12),
                   Text(
-                    kicker.toUpperCase(),
-                    style: GoogleFonts.raleway(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: accentColor,
-                      letterSpacing: 2,
+                    title,
+                    maxLines: compact ? 3 : null,
+                    overflow: compact ? TextOverflow.ellipsis : null,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: VelvetNoir.onSurface,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (!compact) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.raleway(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: VelvetNoir.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const Spacer(),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: accentColor.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: VelvetNoir.onSurface,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: GoogleFonts.raleway(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: VelvetNoir.onSurfaceVariant,
-                  height: 1.4,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 18,
-                  color: accentColor.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -889,44 +924,44 @@ class BrandPillarNavSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            children: [
-              BrandPillarNavCard(
-                kicker: 'MIX',
-                title: 'Find Your Vibe',
-                subtitle: 'Step into rooms with chemistry',
-                icon: Icons.graphic_eq_rounded,
-                accentColor: VelvetNoir.primary,
-                onPressed: onMixPressed,
-              ),
-              BrandPillarNavCard(
-                kicker: 'CONNECT',
-                title: 'Meet Real People',
-                subtitle: 'Match with your energy fast',
-                icon: Icons.favorite_outline_rounded,
-                accentColor: VelvetNoir.secondaryBright,
-                onPressed: onConnectPressed,
-              ),
-              BrandPillarNavCard(
-                kicker: 'INDULGE',
-                title: 'Go Live',
-                subtitle: 'Host your own room',
-                icon: Icons.mic_external_on_rounded,
-                accentColor: VelvetNoir.secondary,
-                onPressed: onIndulgePressed,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) => GridView.count(
+              crossAxisCount: 3,
+              childAspectRatio: constraints.maxWidth < 600 ? 0.58 : 1,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              children: [
+                BrandPillarNavCard(
+                  kicker: 'MIX',
+                  title: 'Find Your Vibe',
+                  subtitle: 'Step into rooms with chemistry',
+                  icon: Icons.graphic_eq_rounded,
+                  accentColor: VelvetNoir.primary,
+                  onPressed: onMixPressed,
+                ),
+                BrandPillarNavCard(
+                  kicker: 'CONNECT',
+                  title: 'Meet Real People',
+                  subtitle: 'Match with your energy fast',
+                  icon: Icons.favorite_outline_rounded,
+                  accentColor: VelvetNoir.secondaryBright,
+                  onPressed: onConnectPressed,
+                ),
+                BrandPillarNavCard(
+                  kicker: 'INDULGE',
+                  title: 'Go Live',
+                  subtitle: 'Host your own room',
+                  icon: Icons.mic_external_on_rounded,
+                  accentColor: VelvetNoir.secondary,
+                  onPressed: onIndulgePressed,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-
-

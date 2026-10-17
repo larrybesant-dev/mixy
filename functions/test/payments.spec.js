@@ -369,3 +369,137 @@ describe("grabMicHandler", () => {
     );
   });
 });
+
+describe("Stripe entitlement lifecycle", () => {
+  it("grants VIP for a paid premium checkout", async () => {
+    const firestore = createFirestoreDouble({"user-1": {uid: "user-1"}});
+    const result = await handleCheckoutSessionCompleted({
+      id: "cs_paid",
+      payment_status: "paid",
+      amount_total: 999,
+      currency: "usd",
+      metadata: {userId: "user-1", productType: "premium_access"},
+    }, {firestore, eventId: "evt_paid", eventType: "checkout.session.completed"});
+
+    assert.deepEqual(result, {
+      creditedCoins: 0,
+      premiumApplied: true,
+      deduplicated: false,
+    });
+    const user = await firestore.collection("users").doc("user-1").get();
+    assert.equal(user.data().entitlements.vip.active, true);
+    assert.equal(user.data().entitlements.vip.source, "stripe_checkout");
+  });
+
+  it("does not grant VIP for an unpaid checkout", async () => {
+    const firestore = createFirestoreDouble({"user-1": {uid: "user-1"}});
+    const result = await handleCheckoutSessionCompleted({
+      id: "cs_unpaid",
+      payment_status: "unpaid",
+      metadata: {userId: "user-1", productType: "premium_access"},
+    }, {firestore, eventId: "evt_unpaid"});
+
+    assert.equal(result.premiumApplied, false);
+    const user = await firestore.collection("users").doc("user-1").get();
+    assert.equal(user.data().entitlements, undefined);
+  });
+
+  it("deduplicates a replayed checkout session", async () => {
+    const firestore = createFirestoreDouble({"user-1": {uid: "user-1"}});
+    const session = {
+      id: "cs_replayed",
+      payment_status: "paid",
+      metadata: {userId: "user-1", productType: "premium_access"},
+    };
+
+    await handleCheckoutSessionCompleted(session, {
+      firestore,
+      eventId: "evt_original",
+    });
+    const replay = await handleCheckoutSessionCompleted(session, {
+      firestore,
+      eventId: "evt_replay",
+    });
+
+    assert.deepEqual(replay, {
+      creditedCoins: 0,
+      premiumApplied: false,
+      deduplicated: true,
+    });
+  });
+
+  it("revokes VIP once for a fully refunded checkout", async () => {
+    const firestore = createFirestoreDouble({"user-1": {uid: "user-1"}});
+    await handleCheckoutSessionCompleted({
+      id: "cs_refunded",
+      payment_status: "paid",
+      metadata: {userId: "user-1", productType: "premium_access"},
+    }, {firestore, eventId: "evt_purchase"});
+
+    const charge = {
+      id: "ch_refunded",
+      metadata: {checkoutSessionId: "cs_refunded"},
+    };
+    const refund = await handleChargeRefunded(charge, {
+      firestore,
+      eventId: "evt_refund",
+      eventType: "charge.refunded",
+    });
+    const replay = await handleChargeRefunded(charge, {
+      firestore,
+      eventId: "evt_refund",
+      eventType: "charge.refunded",
+    });
+
+    assert.deepEqual(refund, {revoked: true, userId: "user-1"});
+    assert.deepEqual(replay, {revoked: false, reason: "deduplicated"});
+    const user = await firestore.collection("users").doc("user-1").get();
+    assert.equal(user.data().entitlements.vip.active, false);
+    assert.equal(user.data().entitlements.vip.revokeReason, "refund");
+  });
+});
+
+describe("adminSetEntitlementHandler", () => {
+  it("requires an admin caller", async () => {
+    const firestore = createFirestoreDouble({
+      "user-1": {uid: "user-1"},
+      "target-1": {uid: "target-1"},
+    });
+
+    await assert.rejects(
+        () => adminSetEntitlementHandler(makeRequest({
+          userId: "target-1",
+          active: true,
+        }), {firestore}),
+        (error) => error && error.code === "permission-denied",
+    );
+  });
+
+  it("allows an admin to grant and revoke VIP", async () => {
+    const firestore = createFirestoreDouble({
+      "admin-1": {uid: "admin-1", admin: true},
+      "target-1": {uid: "target-1"},
+    });
+
+    const grant = await adminSetEntitlementHandler(makeRequest({
+      userId: "target-1",
+      active: true,
+      reason: "release audit",
+    }, "admin-1"), {firestore});
+    assert.deepEqual(grant, {success: true, userId: "target-1", active: true});
+
+    let target = await firestore.collection("users").doc("target-1").get();
+    assert.equal(target.data().entitlements.vip.active, true);
+    assert.equal(target.data().entitlements.vip.source, "admin_override");
+
+    const revoke = await adminSetEntitlementHandler(makeRequest({
+      userId: "target-1",
+      active: false,
+      reason: "release audit cleanup",
+    }, "admin-1"), {firestore});
+    assert.deepEqual(revoke, {success: true, userId: "target-1", active: false});
+
+    target = await firestore.collection("users").doc("target-1").get();
+    assert.equal(target.data().entitlements.vip.active, false);
+  });
+});

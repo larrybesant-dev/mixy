@@ -1,7 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../config/agora_constants.dart';
 import '../../../services/rtc_room_service.dart';
 import '../../../services/connection_recovery_handler.dart';
+import '../../../core/telemetry/launch_monitoring.dart';
 import '../controllers/webrtc_controller.dart';
+import '../controllers/room_state.dart';
+import '../repository/room_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
 import 'connection_recovery_provider.dart';
 
@@ -139,20 +144,8 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
         final svc = state!.service!;
         // Re-join the channel to re-establish signaling and peer connections
         // Note: joinRoom is idempotent - calling it again will restart the connection
-        final currentUserId = state!.userId;
-        final channelId = roomId;
-        
-        // Calculate a stable UID from userId (same logic as WebRtcRoomService)
-        int uid = 0;
-        for (final c in currentUserId.codeUnits) {
-          uid = (uid * 31 + c) & 0x7FFFFFFF;
-        }
-        if (uid == 0) uid = 1;
-        
-        await svc.joinRoom(
-          '',
-          channelId,
-          uid,
+        await _joinService(
+          svc,
           publishCameraTrackOnJoin: service.isLocalVideoCapturing,
           publishMicrophoneTrackOnJoin: !service.isLocalAudioMuted,
         );
@@ -172,6 +165,18 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
         // Auto-transition isConnected based on final state
         isConnected: newState == RtcConnectionState.connected,
       );
+      if (newState == RtcConnectionState.failed) {
+        LaunchMonitoring.record(
+          action: LaunchMonitoring.rtcRecoveryExhausted,
+          message: 'RTC recovery attempts were exhausted.',
+          roomId: roomId,
+          userId: state?.userId,
+          result: 'failed',
+          metadata: <String, Object?>{
+            'attempt_count': service.reconnectAttemptCount,
+          },
+        );
+      }
     };
   }
 
@@ -184,6 +189,33 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     return uid;
   }
 
+  Future<void> _joinService(
+    RtcRoomService service, {
+    required bool publishCameraTrackOnJoin,
+    required bool publishMicrophoneTrackOnJoin,
+  }) async {
+    final uid = _stableUidFromUserId(state!.userId);
+    var token = '';
+    if (!kIsWeb) {
+      final credentials = await ref
+          .read(roomRepositoryProvider)
+          .fetchAgoraToken(
+            channelName: roomId,
+            rtcUid: uid,
+            fallbackAppId: AgoraConstants.appId,
+          );
+      await service.initialize(credentials.appId);
+      token = credentials.token;
+    }
+    await service.joinRoom(
+      token,
+      roomId,
+      uid,
+      publishCameraTrackOnJoin: publishCameraTrackOnJoin,
+      publishMicrophoneTrackOnJoin: publishMicrophoneTrackOnJoin,
+    );
+  }
+
   Future<void> _ensureJoinedChannel() async {
     if (state?.service == null) return;
     final service = state!.service!;
@@ -194,11 +226,8 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
       return;
     }
 
-    final uid = _stableUidFromUserId(state!.userId);
-    await service.joinRoom(
-      '',
-      roomId,
-      uid,
+    await _joinService(
+      service,
       publishCameraTrackOnJoin: false,
       publishMicrophoneTrackOnJoin: false,
     );
@@ -250,13 +279,23 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     }
   }
 
+  Future<void> switchCamera() async {
+    final service = state?.service;
+    if (service == null || !service.supportsCameraSwitch) {
+      throw UnsupportedError('Camera switching is not available');
+    }
+    await service.switchCamera();
+  }
+
   Future<void> toggleAudio(bool enabled) async {
     if (state?.service == null) return;
 
     try {
       await _ensureJoinedChannel();
       final service = state!.service!;
-      await service.mute(!enabled);
+      await service.syncAudio(
+        enabled ? RoomAudioState.speaking : RoomAudioState.muted,
+      );
       state = state?.copyWith(
         isConnected: true,
         isLocalAudioMuted: service.isLocalAudioMuted,

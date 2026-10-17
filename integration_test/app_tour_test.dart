@@ -35,7 +35,7 @@ void main() {
         username: 'neonrose',
         displayName: 'Aria Rose',
         bio: 'Pioneer of the digital premium lounge. Late night techno beats.',
-        vipLevel: 5,
+         vipBadgeLevel: 5,
         followersCount: 8840,
       );
 

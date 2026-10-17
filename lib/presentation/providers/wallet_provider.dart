@@ -32,19 +32,13 @@ final walletDetailsProvider = StreamProvider<WalletModel>((ref) {
     );
   }
 
-  return ref.watch(walletModelStreamProvider(userId).stream);
+  return ref.watch(walletModelStreamProvider(userId).future).asStream();
 });
 
 final walletProvider = StreamProvider<double>((ref) {
-  return ref
-      .watch(walletDetailsProvider)
-      .when(
+  return ref.watch(walletDetailsProvider).when(
         data: (wallet) => Stream<double>.value(wallet.coinBalance.toDouble()),
         loading: () => const Stream<double>.empty(),
         error: (__, _) => const Stream<double>.empty(),
       );
 });
-
-
-
-

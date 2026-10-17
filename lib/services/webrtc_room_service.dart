@@ -719,6 +719,13 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         final stream = event.streams[0];
         final uid = _stableUid(peerId);
 
+        final existingRenderer = _remoteRenderers[uid];
+        if (existingRenderer != null &&
+            identical(existingRenderer.srcObject, stream)) {
+          onRemoteUserJoined?.call();
+          return;
+        }
+
         final oldRenderer = _remoteRenderers.remove(uid);
         if (oldRenderer != null) {
           oldRenderer.srcObject = null;

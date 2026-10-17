@@ -89,9 +89,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: isError
-            ? const Color(0xFFFF6E84)
-            : const Color(0xFFC45E7A),
+        backgroundColor:
+            isError ? const Color(0xFFFF6E84) : const Color(0xFFC45E7A),
       ),
     );
   }
@@ -107,6 +106,14 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+
+    FocusScope.of(context).unfocus();
+    await ref.read(authControllerProvider.notifier).signInWithGoogle();
   }
 
   String? _validateEmail(String? value) {
@@ -130,15 +137,10 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     return null;
   }
 
-  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
-  // These methods were for social sign-in which is no longer displayed
-
   // ── build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final bottomSafePadding = MediaQuery.paddingOf(context).bottom;
 
     return AppPageScaffold(
       backgroundColor: _surface,
@@ -167,18 +169,6 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   }
                   return _narrowLayout(authState);
                 },
-              ),
-            ),
-            // System live indicator — bottom-left
-            Positioned(
-              bottom: 20 + bottomSafePadding,
-              left: context.pageHorizontalPadding,
-              child: IgnorePointer(
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 180),
-                  opacity: keyboardOpen ? 0 : 1,
-                  child: _systemLiveIndicator(),
-                ),
               ),
             ),
           ],
@@ -276,6 +266,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   const SizedBox(height: 40),
                   // Preview cards
                   _brandingCards(),
+                  const SizedBox(height: 28),
+                  _systemLiveIndicator(),
                 ],
               ),
             ),
@@ -328,7 +320,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
             constraints: const BoxConstraints(maxWidth: 520),
             child: _authCard(authState),
           ),
-          const SizedBox(height: 60),
+          const SizedBox(height: 28),
+          _systemLiveIndicator(),
         ],
       ),
     );
@@ -397,6 +390,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
   // ── glassmorphic auth card ────────────────────────────────────────────────
   Widget _authCard(AuthState authState) {
     final isLoading = authState.isLoading;
+    final supportsGoogleSignIn =
+        ref.read(authControllerProvider.notifier).supportsGoogleSignIn;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -440,7 +435,10 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icons.mail_outline_rounded,
                   textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.username, AutofillHints.email],
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email
+                  ],
                   validator: _validateEmail,
                   onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                 ),
@@ -472,7 +470,8 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                       borderRadius: BorderRadius.circular(999),
                       borderSide: const BorderSide(color: _primary, width: 1.5),
                     ),
-                    hintStyle: GoogleFonts.raleway(color: _onVariant, fontSize: 14),
+                    hintStyle:
+                        GoogleFonts.raleway(color: _onVariant, fontSize: 14),
                     prefixIcon: const Icon(
                       Icons.lock_outline_rounded,
                       size: 18,
@@ -500,8 +499,9 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed:
-                        isLoading ? null : () => context.push('/forgot-password'),
+                    onPressed: isLoading
+                        ? null
+                        : () => context.push('/forgot-password'),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 0,
@@ -549,6 +549,52 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   ),
                 ),
 
+                if (supportsGoogleSignIn) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: _ghostBorder)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'OR',
+                          style: GoogleFonts.raleway(
+                            color: _onVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider(color: _ghostBorder)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: isLoading ? null : _signInWithGoogle,
+                    icon: Text(
+                      'G',
+                      style: GoogleFonts.raleway(
+                        color: _onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    label: Text(
+                      'CONTINUE WITH GOOGLE',
+                      style: GoogleFonts.raleway(
+                        color: _onSurface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      side: const BorderSide(color: _ghostBorder),
+                      shape: const StadiumBorder(),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 12),
 
                 // ── SIGN UP — gold outline button ─────────────────
@@ -569,12 +615,14 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                     _footerLink('Terms'),
                     Text(
                       '·',
-                      style: GoogleFonts.raleway(fontSize: 11, color: _onVariant),
+                      style:
+                          GoogleFonts.raleway(fontSize: 11, color: _onVariant),
                     ),
                     _footerLink('Privacy'),
                     Text(
                       '·',
-                      style: GoogleFonts.raleway(fontSize: 11, color: _onVariant),
+                      style:
+                          GoogleFonts.raleway(fontSize: 11, color: _onVariant),
                     ),
                     _footerLink('Support'),
                   ],
@@ -715,7 +763,7 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     final route = switch (label) {
       'Terms' => '/legal/terms',
       'Privacy' => '/legal/privacy',
-      'Support' => '/about',
+      'Support' => '/support',
       _ => null,
     };
 
@@ -733,6 +781,3 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     );
   }
 }
-
-
-

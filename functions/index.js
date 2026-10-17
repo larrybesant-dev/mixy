@@ -115,6 +115,46 @@ const CHECKOUT_PRODUCTS = {
 
 const db = admin.firestore();
 const CHAT_RETENTION_BATCH_LIMIT = 400;
+const OPERATIONAL_SIGNAL_CODES = new Set([
+  "launch_auth_failure",
+  "launch_stale_room_navigation",
+  "launch_messaging_freshness",
+  "launch_rtc_recovery_exhausted",
+  "launch_payment_entitlement_mismatch",
+  "launch_uncaught_error",
+]);
+
+function sanitizeOperationalMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
+  return Object.fromEntries(Object.entries(metadata).slice(0, 10).map(([key, value]) => {
+    const safeKey = String(key).replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 40);
+    const safeValue = ["string", "number", "boolean"].includes(typeof value) ? value : String(value);
+    return [safeKey, typeof safeValue === "string" ? safeValue.slice(0, 120) : safeValue];
+  }));
+}
+
+async function recordOperationalSignalHandler(request) {
+  const code = typeof request.data?.code === "string" ? request.data.code.trim() : "";
+  if (!OPERATIONAL_SIGNAL_CODES.has(code)) {
+    throw new HttpsError("invalid-argument", "Unknown operational signal code.");
+  }
+  if (!request.auth && !["launch_auth_failure", "launch_uncaught_error"].includes(code)) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+  const actor = request.auth?.uid || request.rawRequest?.ip || "anonymous";
+  enforceRateLimit("recordOperationalSignal", actor);
+  logger.warn("mixvy_launch_signal", {
+    code,
+    result: typeof request.data?.result === "string" ? request.data.result.slice(0, 80) : null,
+    authenticated: Boolean(request.auth),
+    uid: request.auth?.uid || null,
+    metadata: sanitizeOperationalMetadata(request.data?.metadata),
+  });
+  return {accepted: true};
+}
+
+exports.recordOperationalSignal = onCall(async (request) =>
+  recordOperationalSignalHandler(request));
 
 function buildMessagePreview(content) {
   const normalized = typeof content === "string" ? content.trim() : "";
@@ -1799,51 +1839,59 @@ exports.requestRefund = onCall(async (request) => requestRefundHandler(request))
 
 async function cleanupDeletedUserData(uid, deps = {}) {
   const firestore = deps.firestore || db;
+  const bucket = deps.bucket || admin.storage().bucket();
 
   if (!uid || typeof uid !== "string") {
-    return;
+    throw new HttpsError("invalid-argument", "A valid user ID is required.");
   }
 
-  const userRef = firestore.collection("users").doc(uid);
-  const profilePublicRef = firestore.collection("profile_public").doc(uid);
-  const preferencesRef = firestore.collection("preferences").doc(uid);
-  const verificationRef = firestore.collection("verification").doc(uid);
-  const walletRef = firestore.collection("wallets").doc(uid);
-  const presenceRef = firestore.collection("presence").doc(uid);
-  const connectRef = firestore.collection("stripe_connect_accounts").doc(uid);
+  const recursiveDelete = async (documentRef) => {
+    if (typeof firestore.recursiveDelete === "function") {
+      await firestore.recursiveDelete(documentRef);
+      return;
+    }
+    await documentRef.delete();
+  };
 
-  // 1. Delete user-specific subcollections that might leak PII
-  const subColls = [
-    "notification_tokens",
-    "adult_profile",
-    "privacy",
-    "bookmarks",
-    "verification",
-    "preferences",
-    "wallet",
-    "security",
-    "profile_public",
+  const deleteMatchingDocuments = async (collection, field, operator = "==") => {
+    const pageSize = 100;
+    let snapshot;
+    do {
+      snapshot = await firestore
+          .collection(collection)
+          .where(field, operator, uid)
+          .limit(pageSize)
+          .get();
+      await Promise.all(snapshot.docs.map((doc) => recursiveDelete(doc.ref)));
+    } while (snapshot.size === pageSize);
+  };
+
+  const directDocuments = [
+    ["users", uid],
+    ["profile_public", uid],
+    ["preferences", uid],
+    ["verification", uid],
+    ["wallets", uid],
+    ["presence", uid],
+    ["stripe_connect_accounts", uid],
+    ["beta_feedback", uid],
+    ["speed_dating_queue", uid],
   ];
 
-  for (const collName of subColls) {
-    const snap = await userRef.collection(collName).limit(500).get();
-    if (!snap.empty) {
-      const batch = firestore.batch();
-      snap.docs.forEach((doc) => batch.delete(doc.ref));
-      await batch.commit();
-    }
-  }
+  await Promise.all(directDocuments.map(([collection, documentId]) =>
+    recursiveDelete(firestore.collection(collection).doc(documentId))));
 
-  // 2. Delete the root domain documents
-  await Promise.allSettled([
-    userRef.delete(),
-    profilePublicRef.delete(),
-    preferencesRef.delete(),
-    verificationRef.delete(),
-    walletRef.delete(),
-    presenceRef.delete(),
-    connectRef.delete(),
+  await Promise.all([
+    deleteMatchingDocuments("posts", "authorId"),
+    deleteMatchingDocuments("blocks", "blockerUserId"),
+    deleteMatchingDocuments("blocks", "blockedUserId"),
+    deleteMatchingDocuments("friendships", "userA"),
+    deleteMatchingDocuments("friendships", "userB"),
+    deleteMatchingDocuments("notifications", "userId"),
+    deleteMatchingDocuments("notifications", "actorId"),
   ]);
+
+  await bucket.deleteFiles({prefix: `users/${uid}/`, force: true});
 
   logger.info(`Cleanup complete for deleted user: ${uid}`);
 }
@@ -1854,6 +1902,38 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
   }
   await cleanupDeletedUserData(user.uid);
 });
+
+async function deleteCurrentUserAccountHandler(request, deps = {}) {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+
+  const nowSeconds = Math.floor((deps.now?.() || Date.now()) / 1000);
+  const authTimeSeconds = Number(request.auth?.token?.auth_time);
+  const authenticationAge = nowSeconds - authTimeSeconds;
+  if (!Number.isFinite(authTimeSeconds) ||
+      authenticationAge < 0 ||
+      authenticationAge > 5 * 60) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Sign in again before deleting your account.",
+        {reason: "requires-recent-login"},
+    );
+  }
+
+  const cleanup = deps.cleanup || cleanupDeletedUserData;
+  const auth = deps.auth || admin.auth();
+
+  await cleanup(uid, deps);
+  await auth.deleteUser(uid);
+
+  logger.info("User account deleted", {uid});
+  return {deleted: true};
+}
+
+exports.deleteCurrentUserAccount = onCall({invoker: "public"}, async (request) =>
+  deleteCurrentUserAccountHandler(request));
 
 exports.classifyNewReport = onDocumentCreated("reports/{reportId}", async (event) => {
   if (!event.data) {
@@ -2849,21 +2929,85 @@ exports.feed = onRequest(
         .limit(200)  // Fetch more, then sort in memory for top 20
         .get();
 
+      const activeParticipantCutoff = admin.firestore.Timestamp.fromMillis(
+        Date.now() - 90 * 1000,
+      );
+      const activeParticipantsSnap = await db
+        .collectionGroup("participants")
+        .get();
+      const activeParticipantsByRoom = new Map();
+      const stageRoles = new Set([
+        "host",
+        "owner",
+        "cohost",
+        "moderator",
+        "trusted_speaker",
+        "stage",
+      ]);
+
+      for (const participantDoc of activeParticipantsSnap.docs) {
+        const roomRef = participantDoc.ref.parent.parent;
+        if (!roomRef) continue;
+
+        const data = participantDoc.data();
+        const lastActiveAt = data.lastActiveAt;
+        if (!(lastActiveAt instanceof admin.firestore.Timestamp) ||
+            lastActiveAt.toMillis() < activeParticipantCutoff.toMillis()) {
+          continue;
+        }
+        if (String(data.userStatus || "").trim().toLowerCase() === "offline") {
+          continue;
+        }
+
+        const roomId = roomRef.id;
+        const participant = activeParticipantsByRoom.get(roomId) || {
+          stageUserIds: [],
+          audienceUserIds: [],
+          stageUserAvatarUrls: [],
+          audienceUserAvatarUrls: [],
+        };
+        const userId = String(data.userId || participantDoc.id).trim();
+        if (!userId) continue;
+
+        const role = String(data.role || "audience").trim().toLowerCase();
+        const photoUrl = String(data.photoUrl || "").trim();
+        if (stageRoles.has(role)) {
+          participant.stageUserIds.push(userId);
+          participant.stageUserAvatarUrls.push(photoUrl);
+        } else {
+          participant.audienceUserIds.push(userId);
+          participant.audienceUserAvatarUrls.push(photoUrl);
+        }
+        activeParticipantsByRoom.set(roomId, participant);
+      }
+
       const liveRooms = liveRoomsSnap.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          // Ensure serializable timestamps
-          createdAt:
-            doc.data().createdAt instanceof admin.firestore.Timestamp
-              ? doc.data().createdAt.toMillis()
-              : doc.data().createdAt,
-          updatedAt:
-            doc.data().updatedAt instanceof admin.firestore.Timestamp
-              ? doc.data().updatedAt.toMillis()
-              : doc.data().updatedAt,
-        }))
-        .sort((a, b) => (b.participantCount || 0) - (a.participantCount || 0))
+        .map((doc) => {
+          const data = doc.data();
+          const active = activeParticipantsByRoom.get(doc.id) || {
+            stageUserIds: [],
+            audienceUserIds: [],
+            stageUserAvatarUrls: [],
+            audienceUserAvatarUrls: [],
+          };
+          return {
+            id: doc.id,
+            ...data,
+            ...active,
+            memberCount:
+              active.stageUserIds.length + active.audienceUserIds.length,
+            // Ensure serializable timestamps
+            createdAt:
+              data.createdAt instanceof admin.firestore.Timestamp
+                ? data.createdAt.toMillis()
+                : data.createdAt,
+            updatedAt:
+              data.updatedAt instanceof admin.firestore.Timestamp
+                ? data.updatedAt.toMillis()
+                : data.updatedAt,
+          };
+        })
+        .sort((a, b) => b.memberCount - a.memberCount)
         .slice(0, 20);  // Take top 20 after sorting
 
       // Fetch upcoming rooms (next 48 hours)
@@ -2930,8 +3074,8 @@ exports.feed = onRequest(
         success: true,
       };
 
-      // Set cache headers (5 minute cache for browser, 1 minute for CDN)
-      response.set("Cache-Control", "public, max-age=60, s-maxage=300");
+      // Keep active presence counts responsive while still absorbing refresh bursts.
+      response.set("Cache-Control", "public, max-age=15, s-maxage=15");
       response.set("Content-Type", "application/json");
       response.set("X-Feed-Timestamp", new Date().toISOString());
 
@@ -3042,7 +3186,7 @@ exports.getProfile = onRequest(
         loadedAt: new Date().toISOString(),
       };
 
-      response.set("Cache-Control", "public, max-age=30, s-maxage=60");
+      response.set("Cache-Control", "no-cache, no-store, must-revalidate");
       response.set("Content-Type", "application/json");
       return response.status(200).json(profileData);
     } catch (error) {
@@ -3087,6 +3231,8 @@ exports.saveProfile = onRequest(
       // Update users/{userId} with identity fields
       const userRef = db.collection("users").doc(userId);
       const identityFields = {
+        uid: userId,
+        id: userId,
         username: userData.username || "",
         displayName: userData.username || "",
         email: userData.email || "",
@@ -3098,13 +3244,15 @@ exports.saveProfile = onRequest(
         relationshipStatus: userData.relationshipStatus || null,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
-      batch.update(userRef, identityFields);
+      batch.set(userRef, identityFields, {merge: true});
 
       // Update profile_public/{userId} with public profile data
       const profilePublicRef = db.collection("profile_public").doc(userId);
       const profilePublicFields = {
         avatarUrl: userData.avatarUrl || null,
         coverPhotoUrl: userData.coverPhotoUrl || null,
+        galleryUrls: userData.galleryUrls || [],
+        introVideoUrl: userData.introVideoUrl || null,
         bio: userData.bio || null,
         aboutMe: userData.aboutMe || null,
         interests: userData.interests || [],
@@ -3797,6 +3945,7 @@ exports.__testing = {
   requestRefundHandler,
   sendRoomGiftHandler,
   cleanupDeletedUserData,
+  deleteCurrentUserAccountHandler,
   classifyModerationText,
   buildModerationReviewPayload,
   getCheckoutBaseUrl,
@@ -3824,4 +3973,6 @@ exports.__testing = {
   inviteToMicHandler,
   buildCheckoutSessionPayload,
   resolveCheckoutProduct,
+  recordOperationalSignalHandler,
+  sanitizeOperationalMetadata,
 };

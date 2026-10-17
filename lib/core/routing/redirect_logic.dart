@@ -40,11 +40,15 @@ RedirectEvaluation evaluateAppRedirectWithReason({
   final isAuthRoute = matchedLocation == '/auth' ||
       matchedLocation == '/register' ||
       matchedLocation == '/forgot-password';
+  final isLegalRoute =
+      matchedLocation == '/legal/terms' || matchedLocation == '/legal/privacy';
+  final isSupportRoute = matchedLocation == '/support';
 
   // NO GUEST ACCESS: All room routes require authentication
   final isRoomRoute = false;
 
-  final isPublicRoute = isAuthRoute || isRoomRoute;
+  final isPublicRoute =
+      isAuthRoute || isLegalRoute || isSupportRoute || isRoomRoute;
 
   // ── 3. AUTH ROUTE SPECIAL CASE ─────────────────────────────────────────────
   // If user is already signed in, don't let them stay on /auth or /register.

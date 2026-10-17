@@ -25,30 +25,36 @@ bool _asBool(dynamic value, {required bool fallback}) {
 }
 
 // Check if user is verified
-final userVerificationProvider = StreamProvider.autoDispose
-    .family<bool, String>((ref, userId) {
-      final userDataAsync = ref.watch(userDataStreamProvider(userId));
+final userVerificationProvider =
+    StreamProvider.autoDispose.family<bool, String>((ref, userId) {
+  final userDataAsync = ref.watch(userDataStreamProvider(userId));
 
-      return ref.watch(verificationDocStreamProvider(userId).stream).map((snapshot) {
-        final verificationData = snapshot?.data();
-        if (snapshot?.exists == true && verificationData != null) {
-          return _asBool(verificationData['isVerified'], fallback: false);
-        }
+  return ref
+      .watch(verificationDocStreamProvider(userId).future)
+      .asStream()
+      .map((snapshot) {
+    final verificationData = snapshot?.data();
+    if (snapshot?.exists == true && verificationData != null) {
+      return _asBool(verificationData['isVerified'], fallback: false);
+    }
 
-        if (!SchemaMigrationFlags.enableVerificationLegacyRead) {
-          return false;
-        }
+    if (!SchemaMigrationFlags.enableVerificationLegacyRead) {
+      return false;
+    }
 
-        return _asBool(userDataAsync.valueOrNull?['isVerified'], fallback: false);
-      });
-    });
+    return _asBool(
+      userDataAsync.valueOrNull?['isVerified'],
+      fallback: false,
+    );
+  });
+});
 
 // Get all verified users — ADMIN ONLY context. autoDispose so it releases
 // when the admin screen is closed. Hard-limited to 200 docs; use server-side
 // pagination for larger admin queries. Do NOT watch this from a user-facing
 // widget — it scans the entire verification collection.
 final verifiedUsersProvider = StreamProvider.autoDispose<List<String>>((ref) {
-  return ref.watch(verifiedUserIdsStreamProvider.stream);
+  return ref.watch(verifiedUserIdsStreamProvider.future).asStream();
 });
 
 // Verification controller (admin only)
@@ -56,7 +62,7 @@ class VerificationController {
   final SchemaMutationService _mutationService;
 
   VerificationController({required FirebaseFirestore firestore})
-    : _mutationService = SchemaMutationService(firestore: firestore);
+      : _mutationService = SchemaMutationService(firestore: firestore);
 
   Future<void> verifyUser({
     required String userId,
@@ -83,16 +89,13 @@ final verificationControllerProvider = Provider<VerificationController>((ref) {
 
 final verificationRequestProvider =
     StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
-      final uid = ref.watch(authControllerProvider).uid;
-      if (uid == null || uid.trim().isEmpty) {
-        return Stream.value(null);
-      }
+  final uid = ref.watch(authControllerProvider).uid;
+  if (uid == null || uid.trim().isEmpty) {
+    return Stream.value(null);
+  }
 
-      return ref
-          .watch(verificationRequestDocStreamProvider(uid).stream)
-          .map((doc) => doc?.exists == true ? doc?.data() : null);
-    });
-
-
-
-
+  return ref
+      .watch(verificationRequestDocStreamProvider(uid).future)
+      .asStream()
+      .map((doc) => doc?.exists == true ? doc?.data() : null);
+});

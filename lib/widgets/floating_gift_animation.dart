@@ -11,11 +11,11 @@ class FloatingGiftAnimation extends StatefulWidget {
   final VoidCallback? onComplete;
 
   const FloatingGiftAnimation({
-    Key? key,
+    super.key,
     required this.emoji,
     this.duration = const Duration(milliseconds: 3000),
     this.onComplete,
-  }) : super(key: key);
+  });
 
   static void show(
     BuildContext context, {

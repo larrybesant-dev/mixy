@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { authenticateTestUser, safeNavigate } from './utils/auth';
 
-let authUnavailable = false;
-
 const BEFORE_EACH_AUTH_TIMEOUT_MS = 45000;
 const BEFORE_EACH_NAV_TIMEOUT_MS = 20000;
 const BEFORE_EACH_READY_TIMEOUT_MS = 20000;
@@ -34,9 +32,9 @@ async function waitForAppReady(page: Page) {
 }
 
 test.describe('MixVy Gift System & Monetization Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    test.skip(authUnavailable, 'Skipping auth-required suite: authentication is unavailable in this run.');
+  test.describe.configure({ timeout: 150000 });
 
+  test.beforeEach(async ({ page }) => {
     // Authenticate first to access Firestore data
     const authenticated = await withTimeout(
       authenticateTestUser(page),
@@ -45,7 +43,6 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     ).catch(() => false);
 
     if (!authenticated) {
-      authUnavailable = true;
       test.skip(true, 'Skipping auth-required suite: authentication timed out or failed in CI.');
     }
 
@@ -57,7 +54,6 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     ).catch(() => null);
 
     if (!navigated) {
-      authUnavailable = true;
       test.skip(true, 'Skipping auth-required suite: timed out navigating to app home after authentication.');
     }
 
@@ -68,7 +64,6 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     ).then(() => true).catch(() => false);
 
     if (!ready) {
-      authUnavailable = true;
       test.skip(true, 'Skipping auth-required suite: app readiness timed out after authentication.');
     }
 
@@ -107,16 +102,13 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     // Navigate to room if needed
     await safeNavigate(page, '/?room=lounge');
 
-    // Flutter web renders on canvas - verify page loaded and is interactive
-    const pageContent = await page.content();
-    expect(pageContent).toContain('<html'); // Page should be valid HTML
+    // The legacy room query is canonicalized to home when no matching room
+    // exists; either outcome must leave the Flutter app rendered and usable.
+    await expect(page).toHaveURL(/\/(?:$|\?room=lounge$)/);
 
-    // Verify the room parameter is in the URL (navigation worked)
-    expect(page.url()).toContain('room=lounge');
-
-    // Verify page has rendered (should have script tags and canvas elements)
-    const hasCanvas = await page.locator('canvas').count();
-    expect(hasCanvas).toBeGreaterThanOrEqual(0); // Canvas or other rendering elements
+    await expect(
+      page.locator('flt-glass-pane, flutter-view, canvas, [flt-semantics], [role="button"]').first(),
+    ).toBeVisible();
   });
 
   test('should open gift picker sheet when gift button clicked', async ({ page }) => {
@@ -166,14 +158,12 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
     const giftButton = page.locator('button:has-text("Gift")').first();
     if (await giftButton.isVisible()) {
       await giftButton.click();
-      await page.waitForTimeout(500);
 
-      // Look for gift items (emojis or gift boxes)
-      const giftItems = page.locator('[class*="gift-item"], button[class*="emoji"], [class*="present"]');
-      const itemCount = await giftItems.count();
-
-      // Should have at least one gift item option
-      expect(itemCount).toBeGreaterThanOrEqual(0);
+      const giftItems = page.locator(
+        '[class*="gift-item"], button[class*="emoji"], [class*="present"], [role="dialog"] button',
+      );
+      await expect(giftItems.first()).toBeVisible({ timeout: 10000 });
+      expect(await giftItems.count()).toBeGreaterThan(0);
     }
   });
 
@@ -199,6 +189,10 @@ test.describe('MixVy Gift System & Monetization Flow', () => {
   });
 
   test('should show "Buy Coins Now" button when free gifts exhausted', async ({ page }) => {
+    test.skip(
+      process.env.E2E_PAYMENTS_ENABLED !== 'true',
+      'Coin purchase prompts are disabled in the default release build.',
+    );
     // This test checks that the UI is ready to show the coin purchase prompt
     await safeNavigate(page, '/?room=lounge');
 

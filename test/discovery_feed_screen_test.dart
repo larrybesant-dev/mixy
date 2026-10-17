@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +47,23 @@ Widget _buildWidget(List<Override> overrides) {
 }
 
 void main() {
+  group('DiscoveryFeedScreen header', () {
+    test('keeps Friends visible before search and notifications', () {
+      final source = File(
+        'lib/features/feed/screens/discovery_feed_screen.dart',
+      ).readAsStringSync();
+      final friendsIndex = source.indexOf(
+        'const FriendsPanelButton(iconColor: _npOnVariant)',
+      );
+      final searchIndex = source.indexOf('Icons.search_rounded');
+      final notificationsIndex = source.indexOf('const _NotificationBell()');
+
+      expect(friendsIndex, greaterThanOrEqualTo(0));
+      expect(searchIndex, greaterThan(friendsIndex));
+      expect(notificationsIndex, greaterThan(searchIndex));
+    });
+  });
+
   group('FeedState timing defaults', () {
     test('starts in loading mode to avoid a first-frame empty flash', () {
       const state = FeedState();

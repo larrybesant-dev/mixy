@@ -257,6 +257,25 @@ void main() {
       }
     });
 
+    test('Conversation stream has no idle termination policy', () {
+      final source = File(
+        'lib/features/messaging/providers/messaging_provider.dart',
+      ).readAsStringSync();
+      final providerStart = source.indexOf(
+        'final rawConversationsStreamProvider =',
+      );
+      final providerEnd = source.indexOf(
+        '// Active conversations derived from the single raw stream.',
+      );
+
+      expect(providerStart, greaterThanOrEqualTo(0));
+      expect(providerEnd, greaterThan(providerStart));
+
+      final providerSource = source.substring(providerStart, providerEnd);
+      expect(providerSource, isNot(contains('.timeout(')));
+      expect(providerSource, isNot(contains('sink.close()')));
+    });
+
     // ── 4. messagetreamProvider (typo) must not open a live stream ─────────
     // chat_providers.dart's messagetreamProvider is a legacy typo-named provider
     // that routes through ChatRepository. It is allowed ONLY as a thin delegating

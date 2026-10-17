@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../presentation/providers/user_provider.dart';
+import '../../services/tenor_service.dart';
 import 'emoji_pack_catalog.dart';
 import 'emoji_pack_item.dart';
 import 'tenor_gif_provider.dart';
@@ -231,7 +232,9 @@ class _EmojiPackPickerSheetState extends ConsumerState<_EmojiPackPickerSheet>
             if (cat.isAdultOnly && !adultEnabled) {
               return _buildAgeLock(cat);
             }
-            final items = EmojiPackCatalog.byCategory(cat);
+            final items = _releaseAvailableItems(
+              EmojiPackCatalog.byCategory(cat),
+            );
             return _buildGrid(items);
           })
           .toList(growable: false),
@@ -245,6 +248,7 @@ class _EmojiPackPickerSheetState extends ConsumerState<_EmojiPackPickerSheet>
     if (!adultEnabled) {
       results = results.where((e) => !e.isAdultOnly).toList(growable: false);
     }
+    results = _releaseAvailableItems(results);
     if (results.isEmpty) {
       return Center(
         child: Text(
@@ -274,6 +278,13 @@ class _EmojiPackPickerSheetState extends ConsumerState<_EmojiPackPickerSheet>
       itemBuilder: (context, index) =>
           _EmojiGridCell(item: items[index], onTap: _select),
     );
+  }
+
+  List<EmojiPackItem> _releaseAvailableItems(List<EmojiPackItem> items) {
+    if (GifService.isAvailable) {
+      return items;
+    }
+    return items.where((item) => !item.isGif).toList(growable: false);
   }
 
   // ── Age-lock placeholder ─────────────────────────────────────────────────
@@ -554,6 +565,5 @@ class EmojimessageContent extends ConsumerWidget {
     );
   }
 }
-
 
 

@@ -12,6 +12,19 @@ class GifService {
   GifService._();
 
   static const _base = 'https://api.giphy.com/v1/gifs';
+  static const _enabled = bool.fromEnvironment(
+    'ENABLE_GIPHY',
+    defaultValue: false,
+  );
+  static bool _disabledForSession = false;
+
+  static bool get isAvailable {
+    final apiKey = AppEnv.giphyApiKey;
+    return _enabled &&
+        !_disabledForSession &&
+        apiKey.isNotEmpty &&
+        apiKey != 'YOUR_GIPHY_API_KEY';
+  }
 
   /// Returns the CDN URL of the first GIF for [query], or `null` on failure.
   static Future<String?> fetchGifUrl(
@@ -19,9 +32,9 @@ class GifService {
     String rating = 'pg-13', // g | pg | pg-13 | r
   }) async {
     final String apiKey = AppEnv.giphyApiKey;
-    if (apiKey.isEmpty || apiKey == 'YOUR_GIPHY_API_KEY') {
+    if (!isAvailable) {
       developer.log(
-        'GIPHY_API_KEY not set in app_env — GIFs will not load.',
+        'Giphy is disabled or unavailable.',
         name: 'GifService',
       );
       return null;
@@ -40,6 +53,9 @@ class GifService {
     try {
       final response = await http.get(uri).timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) {
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          _disabledForSession = true;
+        }
         developer.log(
           'Giphy API error ${response.statusCode}: ${response.body}',
           name: 'GifService',
@@ -73,6 +89,5 @@ class GifService {
     }
   }
 }
-
 
 

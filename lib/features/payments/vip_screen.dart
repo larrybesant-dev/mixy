@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/layout/app_layout.dart';
+import '../../core/telemetry/launch_monitoring.dart';
 import 'premium_entitlement.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 
@@ -78,6 +79,16 @@ class _VipScreenState extends ConsumerState<VipScreen> {
         });
         Future.delayed(_webhookPollTimeout, () {
           if (mounted && _awaitingWebhookConfirmation) {
+            LaunchMonitoring.record(
+              action: LaunchMonitoring.paymentEntitlementMismatch,
+              message: 'VIP entitlement was not confirmed within the webhook budget.',
+              userId: FirebaseAuth.instance.currentUser?.uid,
+              result: 'confirmation_timeout',
+              metadata: <String, Object?>{
+                'timeout_seconds': _webhookPollTimeout.inSeconds,
+                'tier': tier,
+              },
+            );
             setState(() {
               _awaitingWebhookConfirmation = false;
             });

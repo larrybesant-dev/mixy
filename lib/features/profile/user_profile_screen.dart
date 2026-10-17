@@ -23,6 +23,7 @@ import '../../shared/widgets/guest_auth_gate.dart';
 import '../../widgets/brand_ui_kit.dart';
 import '../../widgets/follow_button.dart';
 import '../../widgets/gift_picker_sheet.dart';
+import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/friends/providers/friends_providers.dart';
 import '../../features/messaging/models/conversation_model.dart';
 import '../../features/messaging/providers/messaging_provider.dart';
@@ -31,6 +32,7 @@ import '../../features/feed/widgets/post_card.dart';
 import '../../presentation/providers/friend_provider.dart';
 import '../../presentation/providers/user_provider.dart';
 import '../../services/schema_mutation_service.dart';
+import 'profile_field_resolver.dart';
 import 'profile_view_providers.dart';
 import 'widgets/profile_card.dart';
 import '../../core/flags/feature_flags.dart';
@@ -136,7 +138,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       try {
         await SchemaMutationService().createUserProfile(user: viewerUser);
         ref.invalidate(userProfileBaseProvider(widget.userId));
-        basePayload = await ref.read(userProfileBaseProvider(widget.userId).future);
+        basePayload =
+            await ref.read(userProfileBaseProvider(widget.userId).future);
         userSnapshot = basePayload.userSnapshot;
         privacyData = basePayload.privacy;
       } catch (_) {
@@ -183,7 +186,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     }
     setState(() => _sendingFriendRequest = true);
     try {
-      await ref.read(friendServiceProvider).sendFriendRequest(currentUser.uid, widget.userId);
+      await ref
+          .read(friendServiceProvider)
+          .sendFriendRequest(currentUser.uid, widget.userId);
       ref.invalidate(pendingOutgoingFriendRequestIdsProvider);
       ref.invalidate(currentFriendIdsProvider);
       if (!mounted) return;
@@ -214,16 +219,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       return;
     }
     try {
-      final conversationId = await ref
-          .read(messagingControllerProvider)
-          .createDirectConversation(
-            userId1: currentUser.id,
-            user1Name: currentUser.username,
-            user1AvatarUrl: currentUser.avatarUrl,
-            userId2: widget.userId,
-            user2Name: peerName,
-            user2AvatarUrl: peerAvatarUrl,
-          );
+      final conversationId =
+          await ref.read(messagingControllerProvider).createDirectConversation(
+                userId1: currentUser.id,
+                user1Name: currentUser.username,
+                user1AvatarUrl: currentUser.avatarUrl,
+                userId2: widget.userId,
+                user2Name: peerName,
+                user2AvatarUrl: peerAvatarUrl,
+              );
       if (!mounted) return;
       context.go('/messages/chat/$conversationId');
     } catch (e) {
@@ -410,10 +414,42 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
       return normalized;
     }
     final compact = normalized.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9_]+'),
-      '',
-    );
+          RegExp(r'[^a-z0-9_]+'),
+          '',
+        );
     return compact.isEmpty ? '@mixvy' : '@$compact';
+  }
+
+  Future<void> _confirmSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF171318),
+        title: Text(
+          'Sign out?',
+          style: GoogleFonts.playfairDisplay(color: VelvetNoir.onSurface),
+        ),
+        content: Text(
+          'You will be returned to the sign-in screen.',
+          style: GoogleFonts.raleway(color: VelvetNoir.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    await ref.read(authControllerProvider.notifier).logout();
+    if (!mounted) return;
+    context.go('/auth');
   }
 
   @override
@@ -422,7 +458,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         ref.watch(currentFriendIdsProvider).valueOrNull ?? const <String>[];
     final pendingIds =
         ref.watch(pendingOutgoingFriendRequestIdsProvider).valueOrNull ??
-        const <String>{};
+            const <String>{};
     final isFriend = friendIds.contains(widget.userId);
     final isRequestPending = pendingIds.contains(widget.userId);
     return AppPageScaffold(
@@ -450,6 +486,18 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Friends and social',
+            onPressed: () => context.push('/profile/social'),
+            icon: const Icon(Icons.people_alt_outlined),
+          ),
+          IconButton(
+            tooltip: 'Sign out',
+            onPressed: _confirmSignOut,
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -473,7 +521,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
               final payload = snapshot.data;
               if (payload == null) {
                 return AppEmptyView(
-                  title: isOwnProfile ? 'Complete your profile' : 'User not found',
+                  title:
+                      isOwnProfile ? 'Complete your profile' : 'User not found',
                   message: isOwnProfile
                       ? 'Your profile record has not been created yet. Open profile setup to finish your account.'
                       : null,
@@ -490,7 +539,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   payload['user'] as DocumentSnapshot<Map<String, dynamic>>;
               if (!userSnapshot.exists) {
                 return AppEmptyView(
-                  title: isOwnProfile ? 'Complete your profile' : 'User not found',
+                  title:
+                      isOwnProfile ? 'Complete your profile' : 'User not found',
                   message: isOwnProfile
                       ? 'Your profile is missing required data. Open profile setup to finish it now.'
                       : null,
@@ -516,13 +566,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
               final presence = isOwnProfile
                   ? ref.watch(currentUserPresenceProvider).valueOrNull
                   : ref
-                        .watch(friendPresenceProvider(widget.userId))
-                        .valueOrNull;
+                      .watch(friendPresenceProvider(widget.userId))
+                      .valueOrNull;
               final roomId = presence?.inRoom;
               String? directPreview;
               if (!isOwnProfile && viewerId != null) {
-                final conversations =
-                    ref
+                final conversations = ref
                         .watch(conversationsStreamProvider(viewerId))
                         .valueOrNull ??
                     const <Conversation>[];
@@ -537,7 +586,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
 
               final username = _stringOrNull(data['username']);
               final usernameHandle = _buildHandle(username);
-              final avatarUrl = _stringOrNull(data['avatarUrl']);
+                final avatarUrl = resolveProfileAvatarUrl(data);
               final aboutMe = _stringOrNull(data['aboutMe']);
               final introVideoUrl = _stringOrNull(data['introVideoUrl']);
               final galleryUrls = _stringList(data['galleryUrls']);
@@ -597,10 +646,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       aboutMe: aboutMe,
                       interests: interests,
                       galleryCount: galleryUrls.length,
-                      promptCount:
-                          [vibePrompt, firstDatePrompt, musicTastePrompt]
-                              .where((entry) => (entry ?? '').trim().isNotEmpty)
-                              .length,
+                      promptCount: [
+                        vibePrompt,
+                        firstDatePrompt,
+                        musicTastePrompt
+                      ]
+                          .where((entry) => (entry ?? '').trim().isNotEmpty)
+                          .length,
                       hasIntroVideo: (introVideoUrl ?? '').isNotEmpty,
                       isLiveNow: (roomId ?? '').isNotEmpty,
                       roomId: roomId,
@@ -645,8 +697,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed:
-                                (isFriend ||
+                            onPressed: (isFriend ||
                                     isRequestPending ||
                                     _sendingFriendRequest)
                                 ? null
@@ -655,17 +706,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                               isFriend
                                   ? Icons.check_circle_outline
                                   : isRequestPending
-                                  ? Icons.schedule_rounded
-                                  : Icons.person_add_alt_1_outlined,
+                                      ? Icons.schedule_rounded
+                                      : Icons.person_add_alt_1_outlined,
                             ),
                             label: Text(
                               isFriend
                                   ? 'Already Friends'
                                   : isRequestPending
-                                  ? 'Request Sent'
-                                  : (_sendingFriendRequest
-                                        ? 'Sending...'
-                                        : 'Add Friend'),
+                                      ? 'Request Sent'
+                                      : (_sendingFriendRequest
+                                          ? 'Sending...'
+                                          : 'Add Friend'),
                             ),
                           ),
                         ),
@@ -700,6 +751,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                   ],
                   if (isOwnProfile) ...[
                     const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/profile/social'),
+                        icon: const Icon(Icons.people_alt_outlined),
+                        label: const Text('Friends & Social'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -707,9 +767,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                             onPressed: () async {
                               final allowed =
                                   await GuestAuthGate.requireProfileEdit(
-                                    context,
-                                    ref,
-                                  );
+                                context,
+                                ref,
+                              );
                               if (!allowed || !context.mounted) return;
                               // ignore: use_build_context_synchronously
                               unawaited(context.push('/profile/edit'));
@@ -1214,10 +1274,16 @@ class _LivePulseDot extends StatefulWidget {
 
 class _LivePulseDotState extends State<_LivePulseDot>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat(reverse: true);
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {
@@ -1234,8 +1300,10 @@ class _LivePulseDotState extends State<_LivePulseDot>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final scale = 0.85 + (Curves.easeInOut.transform(_controller.value) * 0.35);
-        final opacity = 0.6 + (Curves.easeInOut.transform(_controller.value) * 0.4);
+        final scale =
+            0.85 + (Curves.easeInOut.transform(_controller.value) * 0.35);
+        final opacity =
+            0.6 + (Curves.easeInOut.transform(_controller.value) * 0.4);
         return Transform.scale(
           scale: scale,
           child: Container(
@@ -1381,7 +1449,3 @@ class _ProfileSectionCard extends StatelessWidget {
     );
   }
 }
-
-
-
-

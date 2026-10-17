@@ -47,6 +47,7 @@ abstract class RtcRoomService {
   bool get isJoinedChannel;
   bool get isLocalVideoCapturing;
   bool get isLocalAudioMuted;
+  bool get supportsCameraSwitch => false;
 
   /// Current connection state (idle, connecting, connected, degraded, reconnecting, failed).
   /// Updated by the service's internal recovery handler.
@@ -98,6 +99,10 @@ abstract class RtcRoomService {
   });
 
   Future<void> enableVideo(bool enabled, {bool publishMicrophoneTrack = true});
+
+  Future<void> switchCamera() async {
+    throw UnsupportedError('Camera switching is not supported');
+  }
 
   Future<void> mute(bool muted);
 

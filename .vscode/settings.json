@@ -23,7 +23,19 @@
 "flutterTools.displayRiverpodContextMenu": true,
 "flutterTools.displayModularContextMenu": false,
 "flutterTools.displaySignalsContextMenu": false,
-"dart.flutterSdkPath": "C:\\Users\\LARRY\\flutter",
 "editor.linkedEditing": true,
-"todo-tree.ripgrep": "C:\\Users\\LARRY\\scoop\\shims\\rg.exe"
+"todo-tree.ripgrep.ripgrep": "C:\\Users\\LARRY\\scoop\\shims\\rg.exe",
+"cSpell.words": [
+  "appspot",
+  "conv",
+  "MixVy",
+  "playfair",
+  "prefs",
+  "raleway",
+  "RTDB",
+  "unverify",
+  "WEBP"
+],
+"java.configuration.updateBuildConfiguration": "interactive",
+"java.import.gradle.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.18.8-hotspot"
 }

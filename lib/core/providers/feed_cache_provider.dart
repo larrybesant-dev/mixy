@@ -40,48 +40,56 @@ class CachedFeedData {
   }
 
   Map<String, dynamic> toJson() => {
-    'liveRooms': liveRooms.map((r) => r.toJson()).toList(),
-    'upcomingRooms': upcomingRooms.map((r) => r.toJson()).toList(),
-    'trendingUsers': trendingUsers.map((u) => u.toJson()).toList(),
-    'friendIds': friendIds.toList(),
-    'cachedAt': cachedAt.toIso8601String(),
-    'lastError': lastError,
-  };
+        'liveRooms': liveRooms.map((r) => r.toJson()).toList(),
+        'upcomingRooms': upcomingRooms.map((r) => r.toJson()).toList(),
+        'trendingUsers': trendingUsers.map((u) => u.toJson()).toList(),
+        'friendIds': friendIds.toList(),
+        'cachedAt': cachedAt.toIso8601String(),
+        'lastError': lastError,
+      };
 
   static CachedFeedData fromJson(Map<String, dynamic> json) {
     return CachedFeedData(
-      liveRooms: (json['liveRooms'] as List?)
-          ?.map((r) => RoomModel.fromJson(r, r['id'] ?? ''))
-          .toList() ?? [],
-      upcomingRooms: (json['upcomingRooms'] as List?)
-          ?.map((r) => RoomModel.fromJson(r, r['id'] ?? ''))
-          .toList() ?? [],
+      liveRooms: (json['liveRooms'] as List?)?.map((roomJson) {
+            final room = roomJson as Map<String, dynamic>;
+            return RoomModel.fromJson(room, room['id'] as String? ?? '');
+          }).toList() ??
+          [],
+      upcomingRooms: (json['upcomingRooms'] as List?)?.map((roomJson) {
+            final room = roomJson as Map<String, dynamic>;
+            return RoomModel.fromJson(room, room['id'] as String? ?? '');
+          }).toList() ??
+          [],
       trendingUsers: (json['trendingUsers'] as List?)
-          ?.map((u) => UserModel.fromJson(u))
-          .toList() ?? [],
+              ?.map((u) => UserModel.fromJson(u))
+              .toList() ??
+          [],
       friendIds: Set<String>.from(json['friendIds'] as List? ?? []),
-      cachedAt: DateTime.parse(json['cachedAt'] as String? ?? DateTime.now().toIso8601String()),
+      cachedAt: DateTime.parse(
+          json['cachedAt'] as String? ?? DateTime.now().toIso8601String()),
       lastError: json['lastError'] as String?,
     );
   }
 }
 
 /// Provider for persisted feed cache
-final feedCacheProvider = FutureProvider.autoDispose<CachedFeedData?>((ref) async {
+final feedCacheProvider =
+    FutureProvider.autoDispose<CachedFeedData?>((ref) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString('feed_cache_data');
-    
+
     if (cached == null) {
       if (kDebugMode) {
         debugPrint('[FeedCache] No cached feed data found');
       }
       return null;
     }
-    
+
     final data = CachedFeedData.fromJson(jsonDecode(cached));
     if (kDebugMode) {
-      debugPrint('[FeedCache] Loaded cached feed (${data.liveRooms.length} rooms, cached ${data.cachedAtDisplay})');
+      debugPrint(
+          '[FeedCache] Loaded cached feed (${data.liveRooms.length} rooms, cached ${data.cachedAtDisplay})');
     }
     return data;
   } catch (e) {
@@ -93,13 +101,15 @@ final feedCacheProvider = FutureProvider.autoDispose<CachedFeedData?>((ref) asyn
 });
 
 /// Save feed data to cache
-final feedCacheSaveProvider = FutureProvider.autoDispose.family<bool, CachedFeedData>((ref, feedData) async {
+final feedCacheSaveProvider = FutureProvider.autoDispose
+    .family<bool, CachedFeedData>((ref, feedData) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('feed_cache_data', jsonEncode(feedData.toJson()));
-    
+
     if (kDebugMode) {
-      debugPrint('[FeedCache] Saved feed cache (${feedData.liveRooms.length} rooms, ${feedData.trendingUsers.length} users)');
+      debugPrint(
+          '[FeedCache] Saved feed cache (${feedData.liveRooms.length} rooms, ${feedData.trendingUsers.length} users)');
     }
     return true;
   } catch (e) {
@@ -121,9 +131,10 @@ class CombinedFeedState {
   final List<UserModel> trendingUsers;
   final Set<String> friendIds;
   final RoomDiscoverySections? discoverySections;
-  
+
   /// Whether data is from cache (stale) vs fresh network fetch
   final bool isCached;
+
   /// When the data was cached (if isCached == true)
   final String? cachedAtDisplay;
 
@@ -144,7 +155,9 @@ class CombinedFeedState {
   /// User-friendly status message
   String get statusMessage {
     if (isLoading && !isCached) return 'Loading discovery feed...';
-    if (isCached && error != null) return 'Using cached data (${cachedAtDisplay ?? 'unknown'})';
+    if (isCached && error != null) {
+      return 'Using cached data (${cachedAtDisplay ?? 'unknown'})';
+    }
     if (isCached) return 'Last updated ${cachedAtDisplay ?? 'recently'}';
     return '';
   }

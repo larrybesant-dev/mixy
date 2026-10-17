@@ -32,7 +32,6 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -54,39 +53,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   @override
   void dispose() {
     _animController.dispose();
-    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _register() async {
-    final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     if (_formKey.currentState?.validate() != true) return;
-    if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(
-        () => _localError = 'Username, email, and password are required.',
-      );
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _localError = 'Email and password are required.');
       return;
     }
     setState(() => _localError = null);
     final controller = ref.read(authControllerProvider.notifier);
-    await controller.signup(email, password, username);
+    await controller.signup(email, password);
     if (!mounted) return;
     final authState = ref.read(authControllerProvider);
     setState(() => _localError = authState.error);
     if (authState.error == null && authState.uid != null) {
       await AnalyticsService().logLogin(method: 'email_password');
-      
+
       // Show lightweight profile completion dialog
       if (mounted) {
-        showProfileCompletionDialog(
-          context,
-          authState.uid!,
-          initialUsername: username,
-        );
+        showProfileCompletionDialog(context, authState.uid!);
       }
     }
   }
@@ -126,12 +117,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   return _narrowLayout(authState);
                 },
               ),
-            ),
-            // System live indicator — bottom-left
-            Positioned(
-              bottom: 20,
-              left: context.pageHorizontalPadding,
-              child: _systemLiveIndicator(),
             ),
           ],
         ),
@@ -198,34 +183,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         Expanded(
           child: Padding(
             padding: EdgeInsets.all(context.isExpandedLayout ? 48 : 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _logoText(size: 52),
-                const SizedBox(height: 32),
-                Text(
-                  'Your journey\nstarts here.',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
-                    color: _rOnSurface,
-                    fontStyle: FontStyle.italic,
-                    height: 1.3,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _logoText(size: 52),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Your journey\nstarts here.',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w600,
+                      color: _rOnSurface,
+                      fontStyle: FontStyle.italic,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Create your account and step into\na world of real connections.',
-                  style: GoogleFonts.raleway(
-                    fontSize: 15,
-                    color: _rOnVariant,
-                    height: 1.7,
+                  const SizedBox(height: 16),
+                  Text(
+                    'Create your account and step into\na world of real connections.',
+                    style: GoogleFonts.raleway(
+                      fontSize: 15,
+                      color: _rOnVariant,
+                      height: 1.7,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                _brandingCards(),
-              ],
+                  const SizedBox(height: 40),
+                  _brandingCards(),
+                  const SizedBox(height: 28),
+                  _systemLiveIndicator(),
+                ],
+              ),
             ),
           ),
         ),
@@ -267,7 +256,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           ),
           const SizedBox(height: 36),
           _registerCard(authState),
-          const SizedBox(height: 60),
+          const SizedBox(height: 28),
+          _systemLiveIndicator(),
         ],
       ),
     );
@@ -378,20 +368,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   const SizedBox(height: 20),
                   _orDivider(),
                   const SizedBox(height: 20),
-
-                  _brandInput(
-                    controller: _usernameController,
-                    hint: 'Username',
-                    prefixIcon: Icons.alternate_email_rounded,
-                    validator: (v) {
-                      final value = (v ?? '').trim();
-                      if (value.isEmpty) return 'Username is required';
-                      if (value.length < 3) return 'Minimum 3 characters';
-                      return null;
-                    },
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 12),
 
                   // ── Email ────────────────────────────────────────────
                   _brandInput(
@@ -716,5 +692,4 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       ),
     );
   }
-
 }

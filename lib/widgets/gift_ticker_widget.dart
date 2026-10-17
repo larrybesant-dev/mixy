@@ -10,10 +10,10 @@ class GiftTickerWidget extends ConsumerWidget {
   final double bottomPadding;
 
   const GiftTickerWidget({
-    Key? key,
+    super.key,
     required this.roomId,
     this.bottomPadding = 80,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,7 +68,8 @@ class _GiftTickerItemState extends State<_GiftTickerItem>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(duration: const Duration(seconds: 5), vsync: this);
+    _controller =
+        AnimationController(duration: const Duration(seconds: 5), vsync: this);
 
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInExpo),

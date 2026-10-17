@@ -77,6 +77,24 @@ void main() {
       expect(result, isNull);
     });
 
+    test('allows signed-out users to use public information routes', () {
+      for (final location in const [
+        '/legal/terms',
+        '/legal/privacy',
+        '/support',
+      ]) {
+        final result = evaluateAppRedirect(
+          matchedLocation: location,
+          uid: null,
+          authLoading: false,
+          legalStateResolved: true,
+          hasAcceptedLegal: false,
+        );
+
+        expect(result, isNull, reason: location);
+      }
+    });
+
     test('routes signed-out users away from onboarding route', () {
       final result = evaluateAppRedirect(
         matchedLocation: '/onboarding',

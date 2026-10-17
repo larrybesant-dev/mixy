@@ -109,7 +109,6 @@ service cloud.firestore {
 
     function isConversationParticipant(convData) {
       return signedIn()
-        && convData.participantIds is list
         && convData.participantIds.hasAny([uid()]);
     }
 
@@ -291,6 +290,11 @@ service cloud.firestore {
           && resource.data.userId == uid();
       }
 
+      match /top_friends/{friendId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
       match /following/{docId} {
         allow read, create, delete: if isSelf(userId);
         allow update: if false;
@@ -325,6 +329,10 @@ service cloud.firestore {
       match /{document=**} {
         allow read, write: if false;
       }
+    }
+
+    match /{path=**}/stories/{storyId} {
+      allow read: if signedIn();
     }
 
     // ---------------------------------------------------------------------
@@ -1356,7 +1364,13 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.authorId == uid()
         && request.resource.data.content is string
-        && request.resource.data.content.size() > 0
+        && (
+          request.resource.data.content.size() > 0
+          || (request.resource.data.imageUrl is string
+            && request.resource.data.imageUrl.size() > 0)
+          || (request.resource.data.videoUrl is string
+            && request.resource.data.videoUrl.size() > 0)
+        )
         && request.resource.data.createdAt is timestamp
         && request.resource.data.likeCount is int
         && request.resource.data.commentCount is int

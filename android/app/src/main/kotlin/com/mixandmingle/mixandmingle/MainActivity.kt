@@ -1,4 +1,4 @@
-package com.mixvy.app
+package com.mixandmingle.mixandmingle
 
 import io.flutter.embedding.android.FlutterActivity
 

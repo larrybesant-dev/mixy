@@ -38,6 +38,7 @@ import '../../../presentation/providers/notification_provider.dart';
 import '../../../services/room_discovery_service.dart';
 import '../../../services/room_service.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../widgets/friends_panel_button.dart';
 
 // ── Velvet Noir brand aliases ────────────────────────────────────────────────
 const _npSurface = VelvetNoir.surface;
@@ -154,8 +155,8 @@ class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
       child: AppPageScaffold(
         backgroundColor: _npSurface,
         safeArea: false,
+        maxContentWidth: 720,
         body: NestedScrollView(
-          controller: _scrollController,
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
               pinned: true,
@@ -164,6 +165,7 @@ class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
               scrolledUnderElevation: 0,
               title: _MixVyLogo(),
               actions: [
+                const FriendsPanelButton(iconColor: _npOnVariant),
                 IconButton(
                   icon: const Icon(Icons.search_rounded, color: _npOnVariant),
                   onPressed: () => context.go('/search'),
@@ -2299,7 +2301,7 @@ class _LiveNowBubble extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 66,
+        width: 84,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2394,7 +2396,7 @@ class _LiveNowBubble extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: GoogleFonts.raleway(
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: _npOnVariant,
               ),

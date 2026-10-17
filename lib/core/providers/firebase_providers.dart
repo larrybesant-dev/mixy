@@ -27,34 +27,12 @@ import '../../services/rtdb_user_service.dart';
 final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) {
     final firestore = FirebaseFirestore.instance;
-    
-    // Configure Firestore for web resilience
+
     if (kIsWeb) {
-      try {
-        // Enable persistence for offline resilience + bounded cache to prevent bloat
-        firestore.settings = Settings(
-          persistenceEnabled: true,  // ✅ Enable offline caching for network resilience
-          cacheSizeBytes: 50 * 1024 * 1024,  // 50MB standard cache limit for web/PWA
-          ignoreUndefinedProperties: true,
-          
-          // 🔧 HOTFIX: Browser extensions (uBlock, Privacy Badger, etc.) often block
-          // WebSocket connections to *.googleapis.com as a security measure.
-          // This forces Firestore to skip WebSocket and HTTP long-polling,
-          // using REST API directly instead (which extensions typically don't block).
-          // See WEBSOCKET_ERR_ABORTED_ANALYSIS.md for detailed diagnosis.
-          host: 'firestore.googleapis.com',
-          sslEnabled: true,
-        );
-        debugPrint('[Firebase] Firestore configured: persistence=enabled, REST-API optimized');
-        
-        // Enable emergency polling detection for WebSocket failures
-        FirestoreConnectionFallback.enableFallbackDetection(firestore);
-        debugPrint('[Firebase] ${FirestoreConnectionFallback.getStatus()}');
-      } catch (e) {
-        debugPrint('[Firebase] Failed to configure Firestore settings: $e');
-      }
+      FirestoreConnectionFallback.enableFallbackDetection(firestore);
+      debugPrint('[Firebase] ${FirestoreConnectionFallback.getStatus()}');
     }
-    
+
     return firestore;
   },
 );
@@ -65,24 +43,24 @@ final firestoreProvider = Provider<FirebaseFirestore>(
 /// of opening their own `users/{uid}` snapshots streams.
 final userDocStreamProvider = StreamProvider.autoDispose
     .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
-      }
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
+  }
 
-      return ref
-          .watch(firestoreProvider)
-          .collection('users')
-          .doc(normalizedUserId)
-          .snapshots();
-    });
+  return ref
+      .watch(firestoreProvider)
+      .collection('users')
+      .doc(normalizedUserId)
+      .snapshots();
+});
 
 final userDataStreamProvider = Provider.autoDispose
     .family<AsyncValue<Map<String, dynamic>?>, String>((ref, userId) {
-      return ref
-          .watch(userDocStreamProvider(userId))
-          .whenData((doc) => doc?.data());
-    });
+  return ref
+      .watch(userDocStreamProvider(userId))
+      .whenData((doc) => doc?.data());
+});
 
 /// Canonical per-user wallet document stream.
 ///
@@ -90,65 +68,68 @@ final userDataStreamProvider = Provider.autoDispose
 /// than opening direct `wallets/{uid}` snapshots in feature paths.
 final walletDocStreamProvider = StreamProvider.autoDispose
     .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
-      }
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
+  }
 
-      return ref
-          .watch(firestoreProvider)
-          .collection('wallets')
-          .doc(normalizedUserId)
-          .snapshots();
-    });
+  return ref
+      .watch(firestoreProvider)
+      .collection('wallets')
+      .doc(normalizedUserId)
+      .snapshots();
+});
 
 /// Canonical wallet model stream with legacy fallback to users balance fields.
-final walletModelStreamProvider = StreamProvider.autoDispose
-    .family<WalletModel, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<WalletModel>.value(const WalletModel(userId: ''));
-      }
+final walletModelStreamProvider =
+    StreamProvider.autoDispose.family<WalletModel, String>((ref, userId) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<WalletModel>.value(const WalletModel(userId: ''));
+  }
 
-      final userDataAsync = ref.watch(userDataStreamProvider(normalizedUserId));
+  final userDataAsync = ref.watch(userDataStreamProvider(normalizedUserId));
 
-      return ref.watch(walletDocStreamProvider(normalizedUserId).stream).map((
-        walletDoc,
-      ) {
-        final walletData = walletDoc?.data();
-        if (walletData != null) {
-          return WalletModel.fromJson({'userId': normalizedUserId, ...walletData});
-        }
-
-        final userData = userDataAsync.valueOrNull;
-        if (userData == null) {
-          return WalletModel(userId: normalizedUserId);
-        }
-
-        return WalletModel(
-          userId: normalizedUserId,
-          coinBalance:
-              ((userData['balance'] ?? userData['coinBalance']) as num?)
-                  ?.toInt() ??
-              0,
-        );
+  return ref
+      .watch(walletDocStreamProvider(normalizedUserId).future)
+      .asStream()
+      .map((walletDoc) {
+    final walletData = walletDoc?.data();
+    if (walletData != null) {
+      return WalletModel.fromJson({
+        'userId': normalizedUserId,
+        ...walletData,
       });
-    });
+    }
+
+    final userData = userDataAsync.valueOrNull;
+    if (userData == null) {
+      return WalletModel(userId: normalizedUserId);
+    }
+
+    return WalletModel(
+      userId: normalizedUserId,
+      coinBalance:
+          ((userData['balance'] ?? userData['coinBalance']) as num?)?.toInt() ??
+              0,
+    );
+  });
+});
 
 /// Canonical per-user verification document stream.
 final verificationDocStreamProvider = StreamProvider.autoDispose
     .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
-      }
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
+  }
 
-      return ref
-          .watch(firestoreProvider)
-          .collection('verification')
-          .doc(normalizedUserId)
-          .snapshots();
-    });
+  return ref
+      .watch(firestoreProvider)
+      .collection('verification')
+      .doc(normalizedUserId)
+      .snapshots();
+});
 
 /// Canonical admin stream of verified user IDs.
 final verifiedUserIdsStreamProvider = StreamProvider.autoDispose<List<String>>(
@@ -159,24 +140,25 @@ final verifiedUserIdsStreamProvider = StreamProvider.autoDispose<List<String>>(
         .where('isVerified', isEqualTo: true)
         .limit(200)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList(growable: false));
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => doc.id).toList(growable: false));
   },
 );
 
 /// Canonical per-user verification request document stream.
 final verificationRequestDocStreamProvider = StreamProvider.autoDispose
     .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
-      }
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<DocumentSnapshot<Map<String, dynamic>>?>.value(null);
+  }
 
-      return ref
-          .watch(firestoreProvider)
-          .collection('verification_requests')
-          .doc(normalizedUserId)
-          .snapshots();
-    });
+  return ref
+      .watch(firestoreProvider)
+      .collection('verification_requests')
+      .doc(normalizedUserId)
+      .snapshots();
+});
 
 /// Canonical referral service provider used by presentation wrappers.
 final coreReferralServiceProvider = Provider<ReferralService>((ref) {
@@ -184,42 +166,42 @@ final coreReferralServiceProvider = Provider<ReferralService>((ref) {
 });
 
 /// Canonical per-user referral code stream.
-final referralCodeForUserProvider = StreamProvider.autoDispose
-    .family<String?, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<String?>.value(null);
-      }
-      return ref
-          .watch(coreReferralServiceProvider)
-          .referralCodeStream(normalizedUserId);
-    });
+final referralCodeForUserProvider =
+    StreamProvider.autoDispose.family<String?, String>((ref, userId) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<String?>.value(null);
+  }
+  return ref
+      .watch(coreReferralServiceProvider)
+      .referralCodeStream(normalizedUserId);
+});
 
 /// Canonical per-user referral earnings stream.
-final referralEarningsForUserProvider = StreamProvider.autoDispose
-    .family<double, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<double>.value(0);
-      }
-      return ref
-          .watch(coreReferralServiceProvider)
-          .referralEarningsTotalStream(normalizedUserId);
-    });
+final referralEarningsForUserProvider =
+    StreamProvider.autoDispose.family<double, String>((ref, userId) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<double>.value(0);
+  }
+  return ref
+      .watch(coreReferralServiceProvider)
+      .referralEarningsTotalStream(normalizedUserId);
+});
 
 /// Canonical per-user referral attribution stream.
 final referralAttributionsForUserProvider = StreamProvider.autoDispose
     .family<List<ReferralAttributionModel>, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<List<ReferralAttributionModel>>.value(
-          const <ReferralAttributionModel>[],
-        );
-      }
-      return ref
-          .watch(coreReferralServiceProvider)
-          .referralsForUserStream(normalizedUserId);
-    });
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<List<ReferralAttributionModel>>.value(
+      const <ReferralAttributionModel>[],
+    );
+  }
+  return ref
+      .watch(coreReferralServiceProvider)
+      .referralsForUserStream(normalizedUserId);
+});
 
 final firebaseAuthProvider = Provider<FirebaseAuth>(
   (ref) => FirebaseAuth.instance,
@@ -264,8 +246,8 @@ final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
     final configuredBucket = app.options.storageBucket?.trim() ?? '';
     final fallbackBucket = configuredBucket.isNotEmpty
         ? (configuredBucket.startsWith('gs://')
-              ? configuredBucket
-              : 'gs://$configuredBucket')
+            ? configuredBucket
+            : 'gs://$configuredBucket')
         : 'gs://mixvy.appspot.com';
     return FirebaseStorage.instanceFor(app: app, bucket: fallbackBucket);
   }
@@ -287,19 +269,16 @@ final rtdbUserServiceProvider = Provider<RtdbUserService>((ref) {
 /// Returns null if the user ID is empty, RTDB is unavailable, or the field
 /// does not exist. Use this provider to get fresh displayName that bypasses
 /// Firestore and reads directly from the source of truth.
-final displayNameStreamProvider = StreamProvider.autoDispose
-    .family<String?, String>((ref, userId) {
-      final normalizedUserId = userId.trim();
-      if (normalizedUserId.isEmpty) {
-        return Stream<String?>.value(null);
-      }
-      final service = ref.watch(rtdbUserServiceProvider);
-      return service.watchDisplayName(normalizedUserId);
-    });
+final displayNameStreamProvider =
+    StreamProvider.autoDispose.family<String?, String>((ref, userId) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) {
+    return Stream<String?>.value(null);
+  }
+  final service = ref.watch(rtdbUserServiceProvider);
+  return service.watchDisplayName(normalizedUserId);
+});
 
 /// Alias used by non-canonical consumers to avoid direct `*StreamProvider`
 /// identifier references while still deriving from the canonical stream.
 final displayNameLiveProvider = displayNameStreamProvider;
-
-
-

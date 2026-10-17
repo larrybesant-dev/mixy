@@ -1,4 +1,4 @@
-// Neon Pulse Design System — MixVy v3
+// MIXVY Velvet Noir design system
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/font_fallbacks.dart';
@@ -7,35 +7,32 @@ import '../theme/font_fallbacks.dart';
 // Jet Black · Deep Wine Red · Gold · Soft Cream
 // COLOR SYSTEM — DO NOT DEVIATE FROM THESE VALUES
 class VelvetNoir {
-  // Surfaces — immersive ultra-dark theme
-  static const Color surface = Color(0xFF111319); // Digital Premium Lounge base
-  static const Color surfaceLow = Color(0xFF191B22); // Navigation rails
-  static const Color surfaceContainer = Color(0xFF21232B);
-  static const Color surfaceHigh = Color(0xFF2D2F37);
-  static const Color surfaceBright = Color(0xFF373940); // Surface containers
-  static const Color surfaceHighest = Color(0xFF3F4149);
+  static const Color surface = Color(0xFF0B0B0B);
+  static const Color surfaceLow = Color(0xFF121212);
+  static const Color surfaceContainer = Color(0xFF181818);
+  static const Color surfaceHigh = Color(0xFF202020);
+  static const Color surfaceBright = Color(0xFF282828);
+  static const Color surfaceHighest = Color(0xFF303030);
 
-  // Brand — Electric Cyan · Neon Purple
-  static const Color primary = Color(0xFF00F0FF); // Electric Cyan
-  static const Color primaryDim = Color(0xFF00B8C4);
-  static const Color secondary = Color(0xFFE5B4FF); // Neon Purple
-  static const Color secondaryBright = Color(0xFFF0D4FF);
-  static const Color gold = Color(0xFFFFD700); // Strip Coin Gold
+  static const Color primary = Color(0xFFD4AF37);
+  static const Color primaryDim = Color(0xFFA98C2B);
+  static const Color secondary = Color(0xFF781E2B);
+  static const Color secondaryBright = Color(0xFF9B2535);
+  static const Color gold = Color(0xFFD4AF37);
 
-  // On-surface — crisp white
-  static const Color onSurface = Color(0xFFFFFFFF);
-  static const Color onSurfaceVariant = Color(0xB3FFFFFF); // 70% opacity
-  static const Color outlineVariant = Color(0x1AFFFFFF); // 10% opacity border
+  static const Color onSurface = Color(0xFFF7EDE2);
+  static const Color onSurfaceVariant = Color(0xB3F7EDE2);
+  static const Color outlineVariant = Color(0x33781E2B);
 
   // Status
-  static const Color error = Color(0xFFFF4B4B); // DND / Error
-  static const Color liveGlow = Color(0xFFE5B4FF); // Neon Purple for Live
+  static const Color error = Color(0xFFB3261E);
+  static const Color liveGlow = Color(0xFF9B2535);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primary, Color(0xFF00A3FF)],
+    colors: [primary, primaryDim],
   );
   static const LinearGradient neonGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -81,7 +78,7 @@ final ThemeData midnightCreativeTheme = ThemeData(
   textTheme: TextTheme(
     // Display & Headline — Montserrat (elegant bold)
     displayLarge: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         fontWeight: FontWeight.w700,
         fontSize: 32,
         letterSpacing: -0.5,
@@ -89,7 +86,7 @@ final ThemeData midnightCreativeTheme = ThemeData(
       ),
     ),
     displayMedium: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         fontWeight: FontWeight.w700,
         fontSize: 28,
         letterSpacing: -0.3,
@@ -97,28 +94,28 @@ final ThemeData midnightCreativeTheme = ThemeData(
       ),
     ),
     headlineLarge: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         fontWeight: FontWeight.w700,
         fontSize: 26,
         color: VelvetNoir.onSurface,
       ),
     ),
     headlineMedium: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         fontWeight: FontWeight.w600,
         fontSize: 20,
         color: VelvetNoir.onSurface,
       ),
     ),
     headlineSmall: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         fontWeight: FontWeight.w600,
         fontSize: 18,
         color: VelvetNoir.onSurface,
       ),
     ),
     titleLarge: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         fontWeight: FontWeight.w600,
         fontSize: 20,
         color: VelvetNoir.onSurface,
@@ -181,7 +178,7 @@ final ThemeData midnightCreativeTheme = ThemeData(
     foregroundColor: VelvetNoir.onSurface,
     centerTitle: true,
     titleTextStyle: _playfair(
-      GoogleFonts.montserrat(
+      GoogleFonts.playfairDisplay(
         color: VelvetNoir.onSurface,
         fontSize: 20,
         fontWeight: FontWeight.w600,
@@ -322,6 +319,3 @@ final ThemeData midnightCreativeTheme = ThemeData(
     elevation: 0,
   ),
 );
-
-
-

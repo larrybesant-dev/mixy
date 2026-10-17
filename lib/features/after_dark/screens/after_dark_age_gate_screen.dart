@@ -5,6 +5,39 @@ import '../../../core/layout/app_layout.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../theme/after_dark_theme.dart';
 
+DateTime? _parseDateOfBirth(String input) {
+  final value = input.trim();
+  final match = RegExp(
+    r'^(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})/(\d{1,2})/(\d{4}))$',
+  ).firstMatch(value);
+  if (match == null) {
+    return null;
+  }
+
+  final year = int.tryParse(match.group(1) ?? match.group(6) ?? '');
+  final month = int.tryParse(match.group(2) ?? match.group(4) ?? '');
+  final day = int.tryParse(match.group(3) ?? match.group(5) ?? '');
+  if (year == null || month == null || day == null) {
+    return null;
+  }
+
+  final date = DateTime(year, month, day);
+  if (date.year != year || date.month != month || date.day != day) {
+    return null;
+  }
+  return date;
+}
+
+bool _isAtLeast18(DateTime dateOfBirth, DateTime today) {
+  final ageAtYearStart = today.year - dateOfBirth.year;
+  if (ageAtYearStart != 18) {
+    return ageAtYearStart > 18;
+  }
+
+  return today.month > dateOfBirth.month ||
+      (today.month == dateOfBirth.month && today.day >= dateOfBirth.day);
+}
+
 /// Step 1 of After Dark setup — age confirmation + consent.
 /// On pass → navigates to /after-dark/pin-setup.
 class AfterDarkAgeGateScreen extends StatefulWidget {
@@ -26,31 +59,16 @@ class _AfterDarkAgeGateScreenState extends State<AfterDarkAgeGateScreen> {
   }
 
   void _proceed() {
-    final text = _dobController.text.trim();
-    // Parse YYYY-MM-DD or MM/DD/YYYY
-    DateTime? dob;
-    try {
-      if (text.contains('/')) {
-        final parts = text.split('/');
-        if (parts.length == 3) {
-          dob = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-          );
-        }
-      } else {
-        dob = DateTime.parse(text);
-      }
-    } catch (_) {}
+    final dob = _parseDateOfBirth(_dobController.text);
 
     if (dob == null) {
       setState(() => _error = 'Please enter a valid date (MM/DD/YYYY)');
       return;
     }
 
-    final age = DateTime.now().difference(dob).inDays ~/ 365;
-    if (age < 18) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (!_isAtLeast18(dob, today)) {
       setState(
         () => _error = 'You must be 18 or older to access MixVy After Dark.',
       );
@@ -342,6 +360,3 @@ class _AfterDarkAgeGateScreenState extends State<AfterDarkAgeGateScreen> {
     );
   }
 }
-
-
-

@@ -19,9 +19,14 @@ const {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } = require("firebase/firestore");
 
 const rules = fs.readFileSync(
@@ -349,6 +354,39 @@ describe("firestore rules", () => {
     }));
   });
 
+  it("allows participants to list their conversations", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "conversations", "conv-user-1"), {
+        type: "direct",
+        participantIds: ["user-1", "user-2"],
+        createdAt: Timestamp.now(),
+        lastMessageAt: Timestamp.now(),
+        isArchived: false,
+        status: "active",
+      });
+      await setDoc(doc(db, "conversations", "conv-other"), {
+        type: "direct",
+        participantIds: ["user-2", "user-3"],
+        createdAt: Timestamp.now(),
+        lastMessageAt: Timestamp.now(),
+        isArchived: false,
+        status: "active",
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const conversationsQuery = query(
+      collection(userDb, "conversations"),
+      where("participantIds", "array-contains", "user-1"),
+      orderBy("lastMessageAt", "desc"),
+      limit(50),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(conversationsQuery));
+    assert.deepEqual(snapshot.docs.map((entry) => entry.id), ["conv-user-1"]);
+  });
+
   it("enforces post creation identity and blocks guest writes", async () => {
     const authorDb = testEnv.authenticatedContext("user-1").firestore();
     const guestDb = testEnv.unauthenticatedContext().firestore();
@@ -356,6 +394,30 @@ describe("firestore rules", () => {
     await assertSucceeds(setDoc(doc(authorDb, "posts", "post-cap-1"), {
       authorId: "user-1",
       content: "hello",
+      createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
+    }));
+
+    await assertSucceeds(setDoc(doc(authorDb, "posts", "post-cap-photo"), {
+      authorId: "user-1",
+      content: "",
+      imageUrl: "https://example.test/photo.jpg",
+      videoUrl: null,
+      createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
+    }));
+
+    await assertFails(setDoc(doc(authorDb, "posts", "post-cap-empty"), {
+      authorId: "user-1",
+      content: "",
+      imageUrl: null,
+      videoUrl: null,
       createdAt: serverTimestamp(),
       likeCount: 0,
       commentCount: 0,

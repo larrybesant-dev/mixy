@@ -12,6 +12,16 @@ import '../../../core/layout/app_layout.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 
+bool hasPostContent({
+  required String text,
+  String? imageUrl,
+  String? videoUrl,
+}) {
+  return text.trim().isNotEmpty ||
+      (imageUrl ?? '').trim().isNotEmpty ||
+      (videoUrl ?? '').trim().isNotEmpty;
+}
+
 class CreatePostScreen extends ConsumerStatefulWidget {
   final String userId;
   final String username;
@@ -36,8 +46,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   String? _imageUrl;
   String? _videoUrl;
 
-  static const int _maxPhotoBytes = 20 * 1024 * 1024;
-  static const int _maxVideoBytes = 120 * 1024 * 1024;
+  static const int _maxPhotoBytes = 5 * 1024 * 1024;
+  static const int _maxVideoBytes = 50 * 1024 * 1024;
 
   @override
   void initState() {
@@ -55,10 +65,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   Future<void> _publishPost() async {
     final content = _contentController.text.trim();
-    if (content.isEmpty) {
+    if (!hasPostContent(
+      text: content,
+      imageUrl: _imageUrl,
+      videoUrl: _videoUrl,
+    )) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Post cannot be empty')));
+      ).showSnackBar(
+        const SnackBar(content: Text('Add text, a photo, or a video.')),
+      );
       return;
     }
 
@@ -118,8 +134,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     if (bytes.lengthInBytes > maxBytes) {
       throw Exception(
         contentType.startsWith('video/')
-            ? 'Video is too large. Choose one under 120MB.'
-            : 'Photo is too large. Choose one under 20MB.',
+        ? 'Video is too large. Choose one under 50MB.'
+        : 'Photo is too large. Choose one under 5MB.',
       );
     }
 

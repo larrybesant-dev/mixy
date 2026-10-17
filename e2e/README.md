@@ -11,6 +11,7 @@ This directory contains **end-to-end tests** for the live MixVy application at `
 | **03-stripe-payment-integration.spec.ts** | Payment flow & Stripe integration | Payment sheet, card fields, error handling, Cloud Functions |
 | **04-responsive-design.spec.ts** | Mobile & responsive UX | Desktop/tablet/mobile viewports, touch targets, orientation changes |
 | **05-performance-accessibility.spec.ts** | Performance & A11y | Load times, LCP/CLS, keyboard nav, screen reader support, contrast |
+| **07-real-life-latency-journey.spec.ts** | Authenticated user journey | Sign-in, live rooms, messages, core controls, simulated backend latency |
 
 ---
 
@@ -72,6 +73,41 @@ After tests run, view the HTML report:
 npx playwright show-report
 ```
 
+### 9. Run the Real-Life Latency Journey
+
+Create a dedicated Firebase test account. Its generated password is not printed;
+credentials are stored only in the ignored `.playwright/e2e-credentials.json`
+file and are loaded automatically by the journey:
+
+```powershell
+npm run test:e2e:provision-account
+```
+
+Alternatively, provide an existing dedicated test account through environment variables:
+
+```powershell
+$env:TEST_EMAIL = 'e2e-user@example.test'
+$env:TEST_PASSWORD = '<test-account-password>'
+$env:E2E_LATENCY_MS = '600'
+$env:PLAYWRIGHT_BASE_URL = 'http://127.0.0.1:7357'
+npm run test:e2e:journey
+```
+
+Build and serve the app through its Firebase Hosting configuration in another
+terminal before running the journey. This preserves SPA route rewrites such as
+`/auth` and avoids coupling Playwright to Flutter's debug browser connection:
+
+```powershell
+flutter build web --release --base-href /
+npx firebase serve --only hosting --port 7357
+```
+
+The journey intentionally skips when credentials are absent. It delays Firebase,
+Google API, and Cloud Functions requests and attaches network/runtime diagnostics
+to the Playwright result. Point it at local, staging, or an approved deployment
+with `PLAYWRIGHT_BASE_URL`; do not use an account with production privileges.
+Port `9100` is commonly used by Dart DevTools and must not be used as the app URL.
+
 ---
 
 ## ⚙️ Configuration
@@ -131,7 +167,14 @@ use: {
 - ✅ Cloud Functions integrate correctly
 - ✅ Network timeouts handled gracefully
 
-**To run**: `npx playwright test 03-stripe`
+The checkout contract is skipped by default because release builds ship with
+payments disabled. Build with `--dart-define=ENABLE_PAYMENTS=true`, then opt into
+the matching contract suite explicitly:
+
+```powershell
+$env:E2E_PAYMENTS_ENABLED = 'true'
+npx playwright test e2e/03-stripe-payment-integration.spec.ts --project=chromium
+```
 
 ### Responsive Design (`04-responsive-*.spec.ts`)
 - ✅ Desktop layout optimized (1920x1080)

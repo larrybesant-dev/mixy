@@ -14,6 +14,10 @@ import 'test_helpers.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
+String _dateInput(DateTime date) => '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
 Widget _ageGateApp() {
   final router = GoRouter(
     initialLocation: '/after-dark/age-gate',
@@ -156,6 +160,18 @@ void main() {
       expect(find.textContaining('valid date'), findsOneWidget);
     });
 
+    testWidgets('rejects an invalid calendar date', (tester) async {
+      await tester.pumpWidget(_ageGateApp());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '2020-02-30');
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+
+      expect(find.textContaining('valid date'), findsOneWidget);
+    });
+
     testWidgets('shows under-18 error for young DOB', (tester) async {
       await tester.pumpWidget(_ageGateApp());
       await tester.pumpAndSettle();
@@ -170,6 +186,49 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('18 or older'), findsOneWidget);
+    });
+
+    testWidgets('rejects a date one day before the eighteenth birthday', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final eighteenthBirthday = DateTime(now.year, now.month, now.day);
+      final dateOfBirth = DateTime(
+        eighteenthBirthday.year - 18,
+        eighteenthBirthday.month,
+        eighteenthBirthday.day + 1,
+      );
+
+      await tester.pumpWidget(_ageGateApp());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), _dateInput(dateOfBirth));
+      await tester.ensureVisible(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+
+      expect(find.textContaining('18 or older'), findsOneWidget);
+    });
+
+    testWidgets('accepts the eighteenth birthday', (tester) async {
+      final now = DateTime.now();
+      final dateOfBirth = DateTime(now.year - 18, now.month, now.day);
+
+      await tester.pumpWidget(_ageGateApp());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), _dateInput(dateOfBirth));
+      await tester.ensureVisible(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pin Setup'), findsOneWidget);
     });
 
     testWidgets('shows consent error when checkbox not ticked', (tester) async {

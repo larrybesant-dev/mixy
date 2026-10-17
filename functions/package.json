@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "lint": "eslint .",
-    "test": "node --test test/payments.spec.js test/moderation.spec.js test/incoming_call_push.spec.js",
+    "test": "node --test test/payments.spec.js test/moderation.spec.js test/incoming_call_push.spec.js test/operational_signals.spec.js test/account_deletion.spec.js test/profile_media.spec.js",
     "test:rules": "firebase --config ../firebase.json emulators:exec --project mixvy-rules-test --only firestore \"node --test test/firestore_rules.spec.js\"",
     "backfill:transactions:participants": "node scripts/backfill-transactions-participants.js",
     "backfill:transactions:participants:apply": "node scripts/backfill-transactions-participants.js --apply",
@@ -40,7 +40,7 @@
     "agora-access-token": "^2.0.4",
     "dotenv": "^17.4.1",
     "firebase-admin": "^13.8.0",
-    "firebase-functions": "^7.2.5",
+    "firebase-functions": "^7.4.0",
     "stripe": "^20.4.1",
     "supertest": "^7.2.2"
   },

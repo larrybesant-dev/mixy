@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/flags/feature_flags.dart';
 import '../../core/layout/app_layout.dart';
 import '../providers/app_settings_provider.dart';
 import '../../features/beta/beta_tester_provider.dart';
@@ -256,25 +257,26 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
-            // ── PAYMENTS ─────────────────────────────────────────────────
-            _SettingsGroupLabel('PAYMENTS'),
-            _SettingsTile(
-              icon: Icons.credit_card_outlined,
-              label: 'Payment Methods',
-              onTap: () => context.go('/payments'),
-            ),
-            _SettingsTile(
-              icon: Icons.workspace_premium_rounded,
-              label: 'VIP Subscription',
-              accent: _svPrimary,
-              onTap: () => context.go('/payments'),
-            ),
-            _SettingsTile(
-              icon: Icons.receipt_long_outlined,
-              label: 'Purchase History',
-              onTap: () => context.go('/payments'),
-            ),
+            if (kPaymentsEnabled) ...[
+              const SizedBox(height: 24),
+              _SettingsGroupLabel('PAYMENTS'),
+              _SettingsTile(
+                icon: Icons.credit_card_outlined,
+                label: 'Payment Methods',
+                onTap: () => context.go('/payments'),
+              ),
+              _SettingsTile(
+                icon: Icons.workspace_premium_rounded,
+                label: 'VIP Subscription',
+                accent: _svPrimary,
+                onTap: () => context.go('/payments'),
+              ),
+              _SettingsTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'Purchase History',
+                onTap: () => context.go('/payments'),
+              ),
+            ],
 
             const SizedBox(height: 24),
             // ── LEGAL ────────────────────────────────────────────────────
