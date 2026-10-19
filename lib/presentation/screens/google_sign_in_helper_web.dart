@@ -4,6 +4,9 @@ import 'google_sign_in_helper_stub.dart';
 
 class GoogleSignInHelperWeb implements GoogleSignInHelper {
   @override
+  bool get isSupported => true;
+
+  @override
   Future<void> signInWithGoogle() async {
     await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
   }

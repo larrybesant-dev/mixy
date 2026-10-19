@@ -135,7 +135,19 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  bool get supportsGoogleSignIn => _googleSignInHelper.isSupported;
+
   Future<void> signInWithGoogle() async {
+    if (!supportsGoogleSignIn) {
+      _setAuthState(
+        state.copyWith(
+          error: 'Google Sign-In is not available on this device.',
+        ),
+        source: 'google_sign_in_unsupported',
+      );
+      return;
+    }
+
     _setAuthState(
       state.copyWith(
         isLoading: true,
