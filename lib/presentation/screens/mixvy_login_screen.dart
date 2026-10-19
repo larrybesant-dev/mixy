@@ -92,8 +92,16 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
     }
   }
 
-  // Removed: _signInWithGoogle, _signInWithApple, _supportsAppleSignIn
-  // These methods were for social sign-in which is no longer displayed
+  Future<void> _signInWithGoogle() async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) return;
+
+    FocusScope.of(context).unfocus();
+    await ref.read(authControllerProvider.notifier).signInWithGoogle();
+  }
+
+  // Removed: _signInWithApple, _supportsAppleSignIn
+  // Apple sign-in is no longer displayed
 
   // ── build ─────────────────────────────────────────────────────────────────
   @override
@@ -343,6 +351,9 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
 
   // ── glassmorphic auth card ────────────────────────────────────────────────
   Widget _authCard(AuthState authState) {
+    final supportsGoogleSignIn =
+        ref.read(authControllerProvider.notifier).supportsGoogleSignIn;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -493,6 +504,34 @@ class _MixVyLoginScreenState extends ConsumerState<MixVyLoginScreen>
                   ),
 
                   const SizedBox(height: 12),
+
+                  if (supportsGoogleSignIn) ...[
+                    OutlinedButton.icon(
+                      onPressed: authState.isLoading ? null : _signInWithGoogle,
+                      icon: Text(
+                        'G',
+                        style: GoogleFonts.raleway(
+                          color: _onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      label: Text(
+                        'CONTINUE WITH GOOGLE',
+                        style: GoogleFonts.raleway(
+                          color: _onSurface,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        side: const BorderSide(color: _ghostBorder),
+                        shape: const StadiumBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // ── SIGN UP — gold outline button ─────────────────
                   _goldOutlineButton(

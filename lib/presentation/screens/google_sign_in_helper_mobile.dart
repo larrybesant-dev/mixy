@@ -9,6 +9,11 @@ class GoogleSignInHelperMobile implements GoogleSignInHelper {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   @override
+  bool get isSupported =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
+  @override
   Future<void> signInWithGoogle() async {
     try {
       // Use signIn() instead of authenticate()
