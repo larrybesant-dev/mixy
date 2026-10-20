@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../config/app_env.dart';
 import '../../../models/user_model.dart';
 import '../../../services/agora_service.dart';
 import '../../../services/friend_service.dart';
@@ -58,12 +55,6 @@ class RoomRepository {
   final FirebaseFunctions? _functions;
   final StreamLifecycleManager _streamLifecycleManager;
 
-  static const List<Map<String, dynamic>> _fallbackIceServers = [
-    {
-      'urls': ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'],
-    },
-  ];
-
   String _asString(dynamic value, {String fallback = ''}) {
     if (value is String) {
       final trimmed = value.trim();
@@ -114,57 +105,6 @@ class RoomRepository {
     String userId,
   ) {
     return _speakerCollection(roomId).doc(userId);
-  }
-
-  Future<List<Map<String, dynamic>>> fetchIceServers() async {
-    final domain = AppEnv.meteredDomain;
-    final secretKey = AppEnv.meteredSecretKey;
-
-    if (secretKey.isNotEmpty) {
-      try {
-        final url = "https://$domain/api/v1/turn/credentialif (secretKey != null) secretKey=$secretKey";
-        final response = await http.post(
-          Uri.parse(url),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            "expiryInSeconds": 3600,
-            "label": "mixvy-session"
-          }),
-        ).timeout(const Duration(seconds: 5));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          return [
-            {'urls': ['stun:stun.l.google.com:19302']},
-            {
-              'urls': ['turn:open.metered.ca:443', 'turn:open.metered.ca:80'],
-              'username': data['username'] as String,
-              'credential': data['password'] as String,
-            }
-          ];
-        }
-      } catch (e) {
-        debugPrint("[WebRTC] Metered TURN fetch failed: $e. Falling back...");
-      }
-    }
-
-    // Fallback to Cloud Function if configured
-    final functions = _functions;
-    if (functions != null) {
-      try {
-        final callable = functions.httpsCallable('generateTurnCredentials');
-        final result = await callable.call<Map<String, dynamic>>({});
-        final raw = result.data['iceServers'];
-        if (raw is List && raw.isNotEmpty) {
-          return raw
-              .whereType<Map<dynamic, dynamic>>()
-              .map((entry) => entry.map((k, v) => MapEntry(k.toString(), v)))
-              .toList(growable: false);
-        }
-      } catch (_) {}
-    }
-
-    return _fallbackIceServers;
   }
 
   Future<({String token, String appId})> fetchAgoraToken({

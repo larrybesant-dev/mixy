@@ -18,6 +18,11 @@ service cloud.firestore {
       return signedIn() && uid() == userId;
     }
 
+    // Signaling pair ids are "id1_id2"; the requester must be one of the two segments.
+    function isPairMember(pairId) {
+      return pairId.matches(uid() + '_.*') || pairId.matches('.*_' + uid());
+    }
+
     function isParticipant(data) {
       return signedIn() && data.users is list && data.users.hasAny([uid()]);
     }
@@ -1517,6 +1522,17 @@ service cloud.firestore {
         allow read: if signedIn() && canReadRoomById(sessionId);
         // docId is "id1_id2", check if uid is one of them.
         allow write: if signedIn() && canReadRoomById(sessionId) && docId.matches('.*' + uid() + '.*');
+
+        // One message per offer/answer/renegotiation, so signals are never overwritten.
+        match /messages/{messageId} {
+          allow read: if signedIn() && canReadRoomById(sessionId) && isPairMember(docId);
+          allow create: if signedIn() && canReadRoomById(sessionId) && isPairMember(docId)
+            && request.resource.data.senderId == uid()
+            && request.resource.data.type in ['offer', 'answer']
+            && request.resource.data.keys().hasOnly(['senderId', 'type', 'sdp', 'timestamp']);
+          // Either peer deletes messages after applying them, and the offerer clears stale ones.
+          allow delete: if signedIn() && canReadRoomById(sessionId) && isPairMember(docId);
+        }
       }
     }
 
