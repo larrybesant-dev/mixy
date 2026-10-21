@@ -312,7 +312,7 @@ class FeedController extends Notifier<FeedState> {
         debugPrint('[FeedController] Attempting to load from Function endpoint...');
       }
       final functionFeed = await _loadFromFunctionEndpoint();
-      if (functionFeed != null && functionFeed.liveRooms.isNotEmpty) {
+      if (functionFeed != null) {
         state = functionFeed;
         // Save to cache for offline fallback
         await _saveFeedToCache(functionFeed);

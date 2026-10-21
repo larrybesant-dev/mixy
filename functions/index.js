@@ -2845,7 +2845,7 @@ exports.feed = onRequest(
 
       // Fetch live rooms (top 20 by activity)
       // Note: We fetch without ordering first, then sort in memory to avoid requiring
-      // a composite index (isLive + participantCount). This is safe because active
+      // a composite index (isLive + memberCount). This is safe because active
       // rooms are typically < 500 docs, well within Firestore document limits.
       const liveRoomsSnap = await db
         .collection("rooms")
@@ -2867,7 +2867,7 @@ exports.feed = onRequest(
               ? doc.data().updatedAt.toMillis()
               : doc.data().updatedAt,
         }))
-        .sort((a, b) => (b.participantCount || 0) - (a.participantCount || 0))
+        .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
         .slice(0, 60);  // Stored counts can be stale, so verify the top 60 below
 
       // Stored participant counts only change on join/leave, so crashed or

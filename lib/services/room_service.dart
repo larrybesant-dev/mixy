@@ -45,6 +45,7 @@ class RoomService {
   static const Duration _discoverablePromotionBuffer = Duration(minutes: 2);
   static const Duration _warmDemotionBuffer = Duration(minutes: 3);
   static const Duration _warmPromotionBuffer = Duration(minutes: 4);
+  static const Duration _liveParticipantFreshWindow = Duration(seconds: 90);
 
   RoomService({
     FirebaseFirestore? firestore,
@@ -715,6 +716,44 @@ class RoomService {
     );
   }
 
+  /// Keeps only rooms with a participant heartbeat inside the freshness window
+  /// and replaces the stored memberCount with that live count. A room whose
+  /// count cannot be verified is dropped rather than shown with stale numbers.
+  Future<List<RoomModel>> _withFreshParticipantCounts(
+    List<RoomModel> rooms,
+  ) async {
+    if (rooms.isEmpty) {
+      return rooms;
+    }
+    final cutoff = Timestamp.fromDate(
+      _now.subtract(_liveParticipantFreshWindow),
+    );
+    final results = await Future.wait(
+      rooms.map((room) async {
+        try {
+          final aggregate = await _roomsCollection
+              .doc(room.id)
+              .collection('participants')
+              .where('lastActiveAt', isGreaterThanOrEqualTo: cutoff)
+              .count()
+              .get();
+          final freshCount = aggregate.count ?? 0;
+          return freshCount > 0
+              ? room.copyWith(memberCount: freshCount)
+              : null;
+        } catch (error, stackTrace) {
+          Logger.warning(
+            'LIVE_ROOM_FRESHNESS count_failed roomId=${room.id}',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          return null;
+        }
+      }),
+    );
+    return results.whereType<RoomModel>().toList(growable: false);
+  }
+
   Future<List<RoomModel>> getRecommendedLiveRooms({
     required int limit,
     Set<String> friendIds = const <String>{},
@@ -725,10 +764,11 @@ class RoomService {
       return const <RoomModel>[];
     }
 
-    final rooms = await getLiveRooms(
+    final candidates = await getLiveRooms(
       limit: math.max(limit * 2, limit),
       includeAdultRooms: includeAdultRooms,
     );
+    final rooms = await _withFreshParticipantCounts(candidates);
     final filtered = rooms
         .where((room) => !excludedHostIds.contains(room.hostId))
         .toList(growable: false);
