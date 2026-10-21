@@ -596,9 +596,9 @@ class _CustomShell extends ConsumerWidget {
       },
       onFriendsSelected: () => context.go('/profile/friends'),
       onDiscoverSelected: () => context.go('/discover'),
-      floatingActionButton: _StartRoomFab(
-        onPressed: () => context.go('/rooms/create'),
-      ),
+      floatingActionButton: displayIndex == 0
+          ? null
+          : _StartRoomFab(onPressed: () => context.go('/rooms/create')),
       child: IndexedStack(
         index: displayIndex,
         children: [
