@@ -9,6 +9,10 @@ const Stripe = require("stripe");
 const {RtcTokenBuilder, RtcRole} = require("agora-access-token");
 const nodeFetch = require("node-fetch");
 const {
+  ACTIVE_PARTICIPANT_WINDOW_MS,
+  applyFreshParticipantCounts,
+} = require("./live_room_freshness");
+const {
   STRIPE_SECRET,
   STRIPE_WEBHOOK_SECRET,
   AGORA_APP_ID,
@@ -2849,7 +2853,7 @@ exports.feed = onRequest(
         .limit(200)  // Fetch more, then sort in memory for top 20
         .get();
 
-      const liveRooms = liveRoomsSnap.docs
+      const candidateRooms = liveRoomsSnap.docs
         .map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -2864,7 +2868,29 @@ exports.feed = onRequest(
               : doc.data().updatedAt,
         }))
         .sort((a, b) => (b.participantCount || 0) - (a.participantCount || 0))
-        .slice(0, 20);  // Take top 20 after sorting
+        .slice(0, 60);  // Stored counts can be stale, so verify the top 60 below
+
+      // Stored participant counts only change on join/leave, so crashed or
+      // abandoned sessions remain isLive. Count only recent heartbeats.
+      const activeCutoff = admin.firestore.Timestamp.fromMillis(
+        Date.now() - ACTIVE_PARTICIPANT_WINDOW_MS,
+      );
+      const freshCounts = new Map();
+      await Promise.all(candidateRooms.map(async (room) => {
+        try {
+          const agg = await db
+            .collection("rooms")
+            .doc(room.id)
+            .collection("participants")
+            .where("lastActiveAt", ">=", activeCutoff)
+            .count()
+            .get();
+          freshCounts.set(room.id, agg.data().count);
+        } catch (error) {
+          logger.warn(`Feed: fresh participant count failed for room ${room.id}: ${error.message}`);
+        }
+      }));
+      const liveRooms = applyFreshParticipantCounts(candidateRooms, freshCounts, 20);
 
       // Fetch upcoming rooms (next 48 hours)
       // Simplified to avoid composite index: fetch without date filtering, then filter in memory
@@ -2931,7 +2957,7 @@ exports.feed = onRequest(
       };
 
       // Set cache headers (5 minute cache for browser, 1 minute for CDN)
-      response.set("Cache-Control", "public, max-age=60, s-maxage=300");
+      response.set("Cache-Control", "public, max-age=15, s-maxage=30");
       response.set("Content-Type", "application/json");
       response.set("X-Feed-Timestamp", new Date().toISOString());
 
