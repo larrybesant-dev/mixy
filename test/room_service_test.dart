@@ -289,6 +289,64 @@ void main() {
     });
 
     test(
+      'getRecommendedLiveRooms drops rooms without a fresh heartbeat and uses live counts',
+      () async {
+        await firestore.collection('rooms').doc('stale-room').set({
+          'name': 'Stale Room',
+          'hostId': 'host-stale',
+          'isLive': true,
+          'isAdult': false,
+          'memberCount': 18,
+          'stageUserIds': <String>[],
+          'audienceUserIds': <String>['host-stale'],
+          'isLocked': false,
+          'updatedAt': Timestamp.fromDate(DateTime.now()),
+        });
+        await firestore
+            .collection('rooms')
+            .doc('stale-room')
+            .collection('participants')
+            .doc('host-stale')
+            .set({
+              'lastActiveAt': Timestamp.fromDate(
+                DateTime.now().subtract(const Duration(hours: 2)),
+              ),
+            });
+        await firestore.collection('rooms').doc('live-room').set({
+          'name': 'Live Room',
+          'hostId': 'host-live',
+          'isLive': true,
+          'isAdult': false,
+          'memberCount': 18,
+          'stageUserIds': <String>[],
+          'audienceUserIds': <String>['host-live', 'guest-live'],
+          'isLocked': false,
+          'updatedAt': Timestamp.fromDate(DateTime.now()),
+        });
+        final liveParticipants = firestore
+            .collection('rooms')
+            .doc('live-room')
+            .collection('participants');
+        await liveParticipants.doc('host-live').set({
+          'lastActiveAt': Timestamp.now(),
+        });
+        await liveParticipants.doc('guest-live').set({
+          'lastActiveAt': Timestamp.now(),
+        });
+        await liveParticipants.doc('idle-user').set({
+          'lastActiveAt': Timestamp.fromDate(
+            DateTime.now().subtract(const Duration(hours: 1)),
+          ),
+        });
+
+        final rooms = await service.getRecommendedLiveRooms(limit: 10);
+
+        expect(rooms.map((room) => room.id), ['live-room']);
+        expect(rooms.single.memberCount, 2);
+      },
+    );
+
+    test(
       'getLiveRooms can exclude adult rooms for public discovery queries',
       () async {
         await firestore.collection('rooms').doc('public-room').set({
