@@ -331,6 +331,17 @@ service cloud.firestore {
         allow write: if false; // Cloud Function only
       }
 
+      // Dating filter preferences (race, sexuality, location): owner-only.
+      // Other users never read these; the speed dating functions use admin access.
+      match /private/{docId} {
+        allow read, write: if isSelf(userId);
+      }
+
+      // Discovery preferences (users/{uid}/settings/discoveryPreferences): owner-only.
+      match /settings/{docId} {
+        allow read, write: if isSelf(userId);
+      }
+
       match /{document=**} {
         allow read, write: if false;
       }
@@ -491,7 +502,8 @@ service cloud.firestore {
           'updatedAt',
           'isLocked',
           'isAdult',
-          'photoCount'
+          'photoCount',
+          'spotlightUserId'
         ])
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.hostId == resource.data.hostId;
@@ -514,14 +526,24 @@ service cloud.firestore {
           (canManageRoom(resource.data) && validOwnerAdminRoomUpdate())
           ||
           (
-            // Any signed-in user can add/remove themselves from audience/stage during join/leave
-            // Trust Dart validation for room access control
+            // Any signed-in user can add/remove themselves from audience/stage during join/leave.
+            // Only the participant-list fields may change here, so this path cannot
+            // modify admins, moderation lists, lock/slow-mode, or other room settings.
             signedIn()
             && request.resource.data.hostId == resource.data.hostId
             && request.resource.data.ownerId == resource.data.ownerId
             && request.resource.data.name == resource.data.name
             && request.resource.data.isLive == resource.data.isLive
             && request.resource.data.isAdult == resource.data.isAdult
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'audienceUserIds',
+              'audienceUserAvatarUrls',
+              'stageUserIds',
+              'stageUserAvatarUrls',
+              'memberCount',
+              'spotlightUserId',
+              'updatedAt'
+            ])
           )
         );
 
