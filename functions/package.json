@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "lint": "eslint .",
-    "test": "node --test test/payments.spec.js test/moderation.spec.js test/incoming_call_push.spec.js",
+    "test": "node --test test/payments.spec.js test/moderation.spec.js test/incoming_call_push.spec.js test/live_room_freshness.spec.js",
     "test:rules": "firebase --config ../firebase.json emulators:exec --project mixvy-rules-test --only firestore \"node --test test/firestore_rules.spec.js\"",
     "backfill:transactions:participants": "node scripts/backfill-transactions-participants.js",
     "backfill:transactions:participants:apply": "node scripts/backfill-transactions-participants.js --apply",
