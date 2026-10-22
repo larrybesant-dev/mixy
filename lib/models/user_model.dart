@@ -76,7 +76,7 @@ class UserModel {
     email: _stringOrEmpty(json['email']),
     username: _resolvedUsername(json),
     avatarUrl: sanitizeNetworkImageUrl(
-      _stringOrNull(json['avatarUrl'] ?? json['photoUrl']),
+      _stringOrNull(json['avatarUrl']) ?? _stringOrNull(json['photoUrl']),
     ),
     coverPhotoUrl: sanitizeNetworkImageUrl(
       _stringOrNull(json['coverPhotoUrl']),

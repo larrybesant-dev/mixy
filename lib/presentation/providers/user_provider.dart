@@ -115,12 +115,17 @@ final userProvider = Provider<UserModel?>((ref) {
         authDisplayName: null,
       );
 
-  // Use avatar if it belongs to the current user.
-  final profileAvatar =
+  // Use avatar if it belongs to the current user; otherwise fall back to the
+  // signed-in account's Google photo so the UI does not show a placeholder.
+  final profileAvatarFromState =
       (profileState.userId == uid || profileState.userId == null) &&
           (profileState.avatarUrl?.isNotEmpty == true)
       ? profileState.avatarUrl
       : null;
+  final authUser = ref.watch(firebaseAuthProvider).currentUser;
+  final authPhotoUrl = authUser?.uid == uid ? authUser?.photoURL : null;
+  final profileAvatar = profileAvatarFromState ??
+      (authPhotoUrl?.isNotEmpty == true ? authPhotoUrl : null);
 
   return UserModel(
     id: uid,
