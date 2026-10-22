@@ -22,7 +22,7 @@ class UserProfile {
       id: userId,
       username: json['username']?.toString() ?? json['displayName']?.toString() ?? 'MixVy Member',
       displayName: json['displayName']?.toString() ?? json['username']?.toString() ?? 'MixVy Member',
-      avatarUrl: json['avatarUrl']?.toString() ?? json['photoUrl']?.toString(),
+      avatarUrl: _nonBlank(json['avatarUrl']) ?? _nonBlank(json['photoUrl']),
       bio: json['bio']?.toString() ?? json['aboutMe']?.toString(),
       vipLevel: (json['vipLevel'] as num?)?.toInt() ?? 0,
       followersCount: (json['followers'] is List)
@@ -40,6 +40,11 @@ class UserProfile {
     'vipLevel': vipLevel,
     'followersCount': followersCount,
   };
+
+  static String? _nonBlank(Object? value) {
+    final text = value?.toString().trim();
+    return (text == null || text.isEmpty) ? null : text;
+  }
 }
 
 
