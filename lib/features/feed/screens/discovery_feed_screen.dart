@@ -60,7 +60,12 @@ final _hostAvatarProvider = FutureProvider.autoDispose.family<String?, String>((
       .doc(hostId)
       .get();
   if (!doc.exists) return null;
-  return sanitizeNetworkImageUrl(doc.data()?['avatarUrl'] as String?);
+  final data = doc.data();
+  final avatar = (data?['avatarUrl'] as String?)?.trim();
+  final photo = (data?['photoUrl'] as String?)?.trim();
+  return sanitizeNetworkImageUrl(
+    (avatar != null && avatar.isNotEmpty) ? avatar : photo,
+  );
 });
 
 class DiscoveryFeedScreen extends ConsumerStatefulWidget {

@@ -537,7 +537,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
 
               final username = _stringOrNull(data['username']);
               final usernameHandle = _buildHandle(username);
-              final avatarUrl = _stringOrNull(data['avatarUrl']);
+              final avatarUrl =
+                  _stringOrNull(data['avatarUrl']) ??
+                  _stringOrNull(data['photoUrl']);
               final aboutMe = _stringOrNull(data['aboutMe']);
               final introVideoUrl = _stringOrNull(data['introVideoUrl']);
               final galleryUrls = _stringList(data['galleryUrls']);
