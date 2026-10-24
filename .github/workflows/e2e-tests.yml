@@ -27,7 +27,7 @@ env:
 jobs:
   e2e-tests:
     name: Playwright Core E2E (${{ matrix.browser }}, shard ${{ matrix.shard }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ matrix.timeout_minutes }}
     
     strategy:
