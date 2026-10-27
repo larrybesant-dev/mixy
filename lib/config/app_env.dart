@@ -27,12 +27,6 @@ class AppEnv {
       case 'STRIPE_PUBLISHABLE_KEY':
         value = const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
         break;
-      case 'METERED_DOMAIN':
-        value = const String.fromEnvironment('METERED_DOMAIN');
-        break;
-      case 'METERED_SECRET_KEY':
-        value = const String.fromEnvironment('METERED_SECRET_KEY');
-        break;
       case 'GIPHY_API_KEY':
         value = const String.fromEnvironment('GIPHY_API_KEY');
         break;
@@ -68,24 +62,7 @@ class AppEnv {
   // Common Keys
   static String get agoraAppId => get('AGORA_APP_ID');
   static String get stripePublishableKey => get('STRIPE_PUBLISHABLE_KEY');
-  static String get meteredDomain => get('METERED_DOMAIN', fallback: 'mixvy.metered.live');
-  static String get meteredSecretKey => get('METERED_SECRET_KEY');
   static String get giphyApiKey => get('GIPHY_API_KEY');
-  
-  /// Returns true if the environment seems to be configured.
-  /// Checks both Dart defines and Dotenv.
-  static bool get isConfigured {
-    // Check baked-in defines first
-    if (const String.fromEnvironment('METERED_SECRET_KEY').trim().isNotEmpty) {
-      return true;
-    }
-    // Check runtime dotenv
-    try {
-      return (dotenv.env['METERED_SECRET_KEY'] ?? '').trim().isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
 }
 
 

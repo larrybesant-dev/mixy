@@ -28,12 +28,16 @@ class SpeedDateCandidate {
   final String? bio;
   final List<String> interests;
 
+  /// Approximate distance from the viewer, when both sides shared a location.
+  final double? distanceKm;
+
   const SpeedDateCandidate({
     required this.id,
     required this.username,
     this.avatarUrl,
     this.bio,
     this.interests = const [],
+    this.distanceKm,
   });
 
   factory SpeedDateCandidate.fromDoc(
@@ -43,12 +47,27 @@ class SpeedDateCandidate {
     final username = _asNullableString(data['username']);
     return SpeedDateCandidate(
       id: doc.id,
-      username: (username == null || username.isEmpty)
-          ? 'MixVy User'
-          : username,
+      username:
+          (username == null || username.isEmpty) ? 'MixVy User' : username,
       avatarUrl: _asNullableString(data['avatarUrl']),
       bio: _asNullableString(data['bio']),
       interests: _asStringList(data['interests']),
+    );
+  }
+
+  /// Parses one entry from the `getSpeedDatingCandidates` callable.
+  factory SpeedDateCandidate.fromCallable(Map<dynamic, dynamic> data) {
+    final username = _asNullableString(data['username']);
+    final distance = data['distanceKm'];
+    return SpeedDateCandidate(
+      id: _asNullableString(data['id']) ?? '',
+      username:
+          (username == null || username.isEmpty) ? 'MixVy User' : username,
+      avatarUrl: _asNullableString(data['avatarUrl']),
+      bio: _asNullableString(data['bio']),
+      interests: _asStringList(data['interests']),
+      distanceKm:
+          distance is num && distance.isFinite ? distance.toDouble() : null,
     );
   }
 }
@@ -103,7 +122,3 @@ class SpeedDatingQueueResult {
     this.partnerId,
   });
 }
-
-
-
-

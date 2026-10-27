@@ -2280,20 +2280,21 @@ class _LiveNowBubble extends ConsumerWidget {
   /// When > 0, a gold "👥 N" badge is shown on the avatar ring.
   final int friendCount;
 
-  static const _categoryEmoji = {
-    'music': '🎵',
-    'gaming': '🎮',
-    'dating': '❤️',
-    'talk': '💬',
-    'tech': '💻',
-    'art': '🎨',
-    'dance': '💃',
+  static const Map<String, IconData> _categoryIcons = {
+    'music': Icons.music_note_rounded,
+    'gaming': Icons.sports_esports_rounded,
+    'dating': Icons.favorite_rounded,
+    'talk': Icons.chat_bubble_rounded,
+    'tech': Icons.computer_rounded,
+    'art': Icons.palette_rounded,
+    'dance': Icons.directions_run_rounded,
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final avatarAsync = ref.watch(_hostAvatarProvider(room.hostId));
-    final emoji = _categoryEmoji[room.category?.toLowerCase()] ?? '📡';
+    final categoryIcon =
+        _categoryIcons[room.category?.toLowerCase()] ?? Icons.podcasts_rounded;
     final memberCount = room.memberCount > 0
         ? room.memberCount
         : room.stageUserIds.length + room.audienceUserIds.length;
@@ -2327,11 +2328,11 @@ class _LiveNowBubble extends ConsumerWidget {
                               imageUrl: url,
                               fit: BoxFit.cover,
                               errorWidget: (___, __, _) =>
-                                  _EmojiAvatar(emoji: emoji),
+                                  _CategoryAvatar(icon: categoryIcon),
                             )
-                          : _EmojiAvatar(emoji: emoji),
-                      loading: () => _EmojiAvatar(emoji: emoji),
-                      error: (__, _) => _EmojiAvatar(emoji: emoji),
+                          : _CategoryAvatar(icon: categoryIcon),
+                      loading: () => _CategoryAvatar(icon: categoryIcon),
+                      error: (__, _) => _CategoryAvatar(icon: categoryIcon),
                     ),
                   ),
                 ),
@@ -2350,13 +2351,24 @@ class _LiveNowBubble extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: _npSurface, width: 1.5),
                       ),
-                      child: Text(
-                        '👥 $friendCount',
-                        style: GoogleFonts.raleway(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: _npSurface,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.people_rounded,
+                            size: 9,
+                            color: _npSurface,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '$friendCount',
+                            style: GoogleFonts.raleway(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: _npSurface,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -2646,7 +2658,11 @@ class _SpeedDateCard extends StatelessWidget {
                   ),
                 ),
                 child: const Center(
-                  child: Text('❤️', style: TextStyle(fontSize: 22)),
+                  child: Icon(
+                    Icons.favorite_rounded,
+                    color: _npSecondary,
+                    size: 24,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -2769,8 +2785,14 @@ class _HeroJoinCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(width: 7),
+                Icon(
+                  Icons.mic_rounded,
+                  size: 16,
+                  color: hasLiveRoom ? _npError : _npOnVariant,
+                ),
+                const SizedBox(width: 5),
                 Text(
-                  hasLiveRoom ? '🎤  Live Now' : '🎤  Quiet right now',
+                  hasLiveRoom ? 'Live Now' : 'Quiet right now',
                   style: GoogleFonts.raleway(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -3026,17 +3048,17 @@ String _relativeTime(DateTime? dt) {
   return '';
 }
 
-// ── Emoji fallback avatar ─────────────────────────────────────────────────────
-class _EmojiAvatar extends StatelessWidget {
-  const _EmojiAvatar({required this.emoji});
-  final String emoji;
+// ── Category fallback avatar ──────────────────────────────────────────────────
+class _CategoryAvatar extends StatelessWidget {
+  const _CategoryAvatar({required this.icon});
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: _npSurfaceHighest,
       alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 22)),
+      child: Icon(icon, size: 22, color: _npPrimary),
     );
   }
 }

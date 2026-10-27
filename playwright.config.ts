@@ -6,6 +6,11 @@ const baseURL =
   process.env.APP_URL ||
   process.env.STARTUP_APP_URL ||
   'http://127.0.0.1:7357';
+const configuredWorkers = Number(process.env.PLAYWRIGHT_WORKERS ?? '1');
+const workers =
+  Number.isInteger(configuredWorkers) && configuredWorkers > 0
+    ? configuredWorkers
+    : 1;
 
 export default defineConfig({
   testDir: './e2e',
@@ -17,7 +22,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   maxFailures: process.env.CI ? 10 : undefined,
   fullyParallel: false,
-  workers: process.env.CI ? 1 : undefined,
+  workers,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],

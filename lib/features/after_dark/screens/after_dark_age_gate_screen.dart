@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/app_layout.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
+import '../providers/after_dark_provider.dart';
 import '../theme/after_dark_theme.dart';
 
 DateTime? _parseDateOfBirth(String input) {
@@ -40,14 +42,16 @@ bool _isAtLeast18(DateTime dateOfBirth, DateTime today) {
 
 /// Step 1 of After Dark setup — age confirmation + consent.
 /// On pass → navigates to /after-dark/pin-setup.
-class AfterDarkAgeGateScreen extends StatefulWidget {
+class AfterDarkAgeGateScreen extends ConsumerStatefulWidget {
   const AfterDarkAgeGateScreen({super.key});
 
   @override
-  State<AfterDarkAgeGateScreen> createState() => _AfterDarkAgeGateScreenState();
+  ConsumerState<AfterDarkAgeGateScreen> createState() =>
+      _AfterDarkAgeGateScreenState();
 }
 
-class _AfterDarkAgeGateScreenState extends State<AfterDarkAgeGateScreen> {
+class _AfterDarkAgeGateScreenState
+    extends ConsumerState<AfterDarkAgeGateScreen> {
   final _dobController = TextEditingController();
   bool _consentChecked = false;
   String? _error;
@@ -82,6 +86,7 @@ class _AfterDarkAgeGateScreenState extends State<AfterDarkAgeGateScreen> {
       return;
     }
 
+    ref.read(afterDarkSetupAuthorizedProvider.notifier).state = true;
     context.go('/after-dark/pin-setup');
   }
 

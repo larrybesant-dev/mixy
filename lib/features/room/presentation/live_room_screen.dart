@@ -1259,7 +1259,6 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    final isDesktop = MediaQuery.of(context).size.width > 1200;
     final sessionState = ref.watch(roomSessionProvider(widget.roomId));
     final roomDocAsync = ref.watch(roomDocLiveProvider(widget.roomId));
     if (currentUser != null) {
@@ -1371,9 +1370,11 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           final room = RoomModel.fromJson(roomMap, widget.roomId);
           _ensureAutoJoined(
               currentUser: currentUser, sessionState: sessionState);
-          return isDesktop
-              ? _buildDesktopLayout(room, currentUser, sessionState)
-              : _buildMobileLayout(room, currentUser, sessionState);
+          return LayoutBuilder(
+            builder: (context, constraints) => constraints.maxWidth > 1200
+                ? _buildDesktopLayout(room, currentUser, sessionState)
+                : _buildMobileLayout(room, currentUser, sessionState),
+          );
         },
       ),
     );
@@ -1435,8 +1436,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
       RoomModel room, User? currentUser, RoomSessionState sessionState) {
     final currentUserId = currentUser?.uid ?? '';
     final stageHeight = (MediaQuery.sizeOf(context).height * 0.32)
-      .clamp(220.0, 320.0)
-      .toDouble();
+        .clamp(220.0, 320.0)
+        .toDouble();
     final isHostLike = currentUserId.isNotEmpty &&
         (room.hostId == currentUserId ||
             room.ownerId == currentUserId ||
@@ -1487,8 +1488,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     rankTierById: rankTierById,
                     diamondLevelById: diamondById,
                     onJoinQueue: _isMicActionBusy
-                      ? null
-                      : () => _requestMic(currentUserId),
+                        ? null
+                        : () => _requestMic(currentUserId),
                     onLeaveQueue: () {
                       if (currentUserId.isEmpty) return;
                       final myRequest = sideRef
@@ -1615,8 +1616,8 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                     rankTierById: rankTierById,
                     diamondLevelById: diamondById,
                     onJoinQueue: _isMicActionBusy
-                      ? null
-                      : () => _requestMic(currentUserId),
+                        ? null
+                        : () => _requestMic(currentUserId),
                     onLeaveQueue: () {
                       if (currentUserId.isEmpty) return;
                       final myRequest = sideRef
@@ -1736,6 +1737,10 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         final healthState = ref.watch(connectionHealthProvider);
         final recoveryState = ref.watch(connectionRecoveryProvider);
         final giftsAsync = ref.watch(roomGiftFeedProvider(widget.roomId));
+        final roomParticipants = ref
+                .watch(roomParticipantsLiveProvider(widget.roomId))
+                .valueOrNull ??
+            const [];
         final sessionNotifier =
             ref.read(roomSessionProvider(widget.roomId).notifier);
 
@@ -1780,12 +1785,19 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
         for (final uid in remoteUids) {
           final mappedUserId = service.userIdForUid(uid);
-          final mappedLabel = mappedUserId != null
-              ? (sessionState.userDisplayNames[mappedUserId]?.trim() ?? '')
-              : '';
+          final participantNames = roomParticipants
+              .where((p) => mappedUserId != null && p.userId == mappedUserId)
+              .map((p) => p.displayName?.trim() ?? '');
+          final sessionName = mappedUserId == null
+              ? ''
+              : (sessionState.userDisplayNames[mappedUserId]?.trim() ?? '');
+          final resolvedLabel = [sessionName, ...participantNames].firstWhere(
+            (name) => name.isNotEmpty && !_isPlaceholderIdentity(name),
+            orElse: () => _memberFallback(mappedUserId ?? '$uid'),
+          );
           gridEntries.add((
             key: 'remote_$uid',
-            label: mappedLabel.isNotEmpty ? mappedLabel : 'Guest $uid',
+            label: resolvedLabel,
             view: service.getRemoteView(uid, widget.roomId),
             isLocal: false,
           ));
@@ -2263,71 +2275,71 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: VelvetNoir.primary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.videocam_outlined,
-                size: 48,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              room.name,
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: VelvetNoir.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              room.description ?? 'A live streaming room',
-              style: GoogleFonts.raleway(
-                fontSize: 14,
-                color: VelvetNoir.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (room.isLive)
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: VelvetNoir.liveGlow,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '● LIVE',
-                        style: GoogleFonts.raleway(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: VelvetNoir.primary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.videocam_outlined,
+                      size: 48,
+                      color: Colors.white,
                     ),
                   ),
-                const SizedBox(width: 12),
-                Text(
-                  '${room.memberCount} listeners',
-                  style: GoogleFonts.raleway(
-                    color: VelvetNoir.onSurfaceVariant,
-                    fontSize: 14,
+                  const SizedBox(height: 24),
+                  Text(
+                    room.name,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: VelvetNoir.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 8),
+                  Text(
+                    room.description ?? 'A live streaming room',
+                    style: GoogleFonts.raleway(
+                      fontSize: 14,
+                      color: VelvetNoir.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (room.isLive)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: VelvetNoir.liveGlow,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '● LIVE',
+                              style: GoogleFonts.raleway(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${room.memberCount} listeners',
+                        style: GoogleFonts.raleway(
+                          color: VelvetNoir.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -2791,10 +2803,9 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
 
   Widget _buildControlBar(
       RoomModel room, User? currentUser, RoomSessionState sessionState) {
-    final supportsCameraSwitch =
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS);
+    final supportsCameraSwitch = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
     return SafeArea(
       top: false,
       child: Container(
@@ -2802,105 +2813,106 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
         decoration: BoxDecoration(
           color: VelvetNoir.surfaceHigh,
           border: Border(
-              top: BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
+              top:
+                  BorderSide(color: VelvetNoir.primary.withValues(alpha: 0.2))),
         ),
         child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          if (!sessionState.hasJoined)
-            FilledButton.icon(
-              onPressed: (currentUser != null && !_isJoiningRoom)
-                  ? () => _joinCurrentUserToRoom(currentUser)
-                  : null,
-              icon: const Icon(Icons.call_outlined),
-              label: Text(_isJoiningRoom ? 'ENTERING…' : 'RETRY ENTRY'),
-              style: FilledButton.styleFrom(
-                backgroundColor: VelvetNoir.primary,
-                foregroundColor: VelvetNoir.surface,
-              ),
-            )
-          else ...[
-            FilledButton.icon(
-              onPressed: () => _toggleVideo(!sessionState.isVideoEnabled),
-              icon: Icon(sessionState.isVideoEnabled
-                  ? Icons.videocam
-                  : Icons.videocam_off),
-              label:
-                  Text(sessionState.isVideoEnabled ? 'Camera' : 'Camera Off'),
-              style: FilledButton.styleFrom(
-                backgroundColor: sessionState.isVideoEnabled
-                    ? VelvetNoir.primary
-                    : VelvetNoir.surfaceHighest,
-                foregroundColor: sessionState.isVideoEnabled
-                    ? VelvetNoir.surface
-                    : VelvetNoir.onSurfaceVariant,
-              ),
-            ),
-            if (sessionState.isVideoEnabled && supportsCameraSwitch)
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (!sessionState.hasJoined)
               FilledButton.icon(
-                onPressed: _switchCamera,
-                icon: const Icon(Icons.cameraswitch_outlined),
-                label: const Text('Swap Cam'),
+                onPressed: (currentUser != null && !_isJoiningRoom)
+                    ? () => _joinCurrentUserToRoom(currentUser)
+                    : null,
+                icon: const Icon(Icons.call_outlined),
+                label: Text(_isJoiningRoom ? 'ENTERING…' : 'RETRY ENTRY'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: VelvetNoir.surfaceHighest,
+                  backgroundColor: VelvetNoir.primary,
+                  foregroundColor: VelvetNoir.surface,
+                ),
+              )
+            else ...[
+              FilledButton.icon(
+                onPressed: () => _toggleVideo(!sessionState.isVideoEnabled),
+                icon: Icon(sessionState.isVideoEnabled
+                    ? Icons.videocam
+                    : Icons.videocam_off),
+                label:
+                    Text(sessionState.isVideoEnabled ? 'Camera' : 'Camera Off'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: sessionState.isVideoEnabled
+                      ? VelvetNoir.primary
+                      : VelvetNoir.surfaceHighest,
+                  foregroundColor: sessionState.isVideoEnabled
+                      ? VelvetNoir.surface
+                      : VelvetNoir.onSurfaceVariant,
+                ),
+              ),
+              if (sessionState.isVideoEnabled && supportsCameraSwitch)
+                FilledButton.icon(
+                  onPressed: _switchCamera,
+                  icon: const Icon(Icons.cameraswitch_outlined),
+                  label: const Text('Swap Cam'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VelvetNoir.surfaceHighest,
+                    foregroundColor: VelvetNoir.onSurface,
+                  ),
+                ),
+              FilledButton.icon(
+                onPressed: () => _toggleAudio(!sessionState.isAudioEnabled),
+                icon: Icon(
+                    sessionState.isAudioEnabled ? Icons.mic : Icons.mic_off),
+                label: Text(sessionState.isAudioEnabled ? 'Mic' : 'Mic Off'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: sessionState.isAudioEnabled
+                      ? VelvetNoir.primary
+                      : VelvetNoir.surfaceHighest,
+                  foregroundColor: sessionState.isAudioEnabled
+                      ? VelvetNoir.surface
+                      : VelvetNoir.onSurfaceVariant,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () =>
+                    _toggleAudioSharing(!sessionState.isAudioSharingEnabled),
+                icon: Icon(sessionState.isAudioSharingEnabled
+                    ? Icons.volume_up
+                    : Icons.volume_mute),
+                label: Text(sessionState.isAudioSharingEnabled
+                    ? 'Share Audio'
+                    : 'No Audio Share'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: sessionState.isAudioSharingEnabled
+                      ? VelvetNoir.secondary
+                      : VelvetNoir.surfaceHighest,
+                  foregroundColor: sessionState.isAudioSharingEnabled
+                      ? VelvetNoir.surface
+                      : VelvetNoir.onSurfaceVariant,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () =>
+                    RoomGiftPickerSheet.show(context, ref, roomId: room.id),
+                icon: const Icon(Icons.card_giftcard),
+                label: const Text('Gift'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VelvetNoir.primary,
+                  foregroundColor: VelvetNoir.surface,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: currentUser != null ? _leaveRoom : null,
+                icon: const Icon(Icons.logout),
+                label: const Text('LEAVE'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VelvetNoir.error,
                   foregroundColor: VelvetNoir.onSurface,
                 ),
               ),
-            FilledButton.icon(
-              onPressed: () => _toggleAudio(!sessionState.isAudioEnabled),
-              icon:
-                  Icon(sessionState.isAudioEnabled ? Icons.mic : Icons.mic_off),
-              label: Text(sessionState.isAudioEnabled ? 'Mic' : 'Mic Off'),
-              style: FilledButton.styleFrom(
-                backgroundColor: sessionState.isAudioEnabled
-                    ? VelvetNoir.primary
-                    : VelvetNoir.surfaceHighest,
-                foregroundColor: sessionState.isAudioEnabled
-                    ? VelvetNoir.surface
-                    : VelvetNoir.onSurfaceVariant,
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () =>
-                  _toggleAudioSharing(!sessionState.isAudioSharingEnabled),
-              icon: Icon(sessionState.isAudioSharingEnabled
-                  ? Icons.volume_up
-                  : Icons.volume_mute),
-              label: Text(sessionState.isAudioSharingEnabled
-                  ? 'Share Audio'
-                  : 'No Audio Share'),
-              style: FilledButton.styleFrom(
-                backgroundColor: sessionState.isAudioSharingEnabled
-                    ? VelvetNoir.secondary
-                    : VelvetNoir.surfaceHighest,
-                foregroundColor: sessionState.isAudioSharingEnabled
-                    ? VelvetNoir.surface
-                    : VelvetNoir.onSurfaceVariant,
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: () =>
-                  RoomGiftPickerSheet.show(context, ref, roomId: room.id),
-              icon: const Icon(Icons.card_giftcard),
-              label: const Text('Gift'),
-              style: FilledButton.styleFrom(
-                backgroundColor: VelvetNoir.primary,
-                foregroundColor: VelvetNoir.surface,
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: currentUser != null ? _leaveRoom : null,
-              icon: const Icon(Icons.logout),
-              label: const Text('LEAVE'),
-              style: FilledButton.styleFrom(
-                backgroundColor: VelvetNoir.error,
-                foregroundColor: VelvetNoir.onSurface,
-              ),
-            ),
+            ],
           ],
-        ],
         ),
       ),
     );

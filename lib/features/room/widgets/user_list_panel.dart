@@ -55,8 +55,7 @@ class _UserListPanelState extends State<UserListPanel> {
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    final sortedParticipants = [...widget.participants]
-      ..sort((left, right) {
+    final sortedParticipants = [...widget.participants]..sort((left, right) {
         final leftRole = _roleRank(left.role);
         final rightRole = _roleRank(right.role);
         if (leftRole != rightRole) return leftRole.compareTo(rightRole);
@@ -117,7 +116,8 @@ class _UserListPanelState extends State<UserListPanel> {
             color: const Color(0xFFB09080),
             icon: Icons.groups_2_outlined,
             expanded: _audienceExpanded,
-            onToggle: () => setState(() => _audienceExpanded = !_audienceExpanded),
+            onToggle: () =>
+                setState(() => _audienceExpanded = !_audienceExpanded),
           ),
           if (_audienceExpanded) _sectionList(chatting, onlineIds),
           const SliverToBoxAdapter(child: SizedBox(height: 10)),
@@ -151,13 +151,17 @@ class _UserListPanelState extends State<UserListPanel> {
             children: [
               Icon(icon, color: color, size: 13),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
               const SizedBox(width: 6),
@@ -176,7 +180,7 @@ class _UserListPanelState extends State<UserListPanel> {
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 4),
               Icon(
                 expanded
                     ? Icons.keyboard_arrow_up_rounded
@@ -191,7 +195,8 @@ class _UserListPanelState extends State<UserListPanel> {
     );
   }
 
-  SliverList _sectionList(List<RoomParticipantModel> entries, Set<String> onlineIds) {
+  SliverList _sectionList(
+      List<RoomParticipantModel> entries, Set<String> onlineIds) {
     if (entries.isEmpty) {
       return SliverList(
         delegate: SliverChildListDelegate.fixed([
@@ -212,9 +217,9 @@ class _UserListPanelState extends State<UserListPanel> {
       delegate: SliverChildBuilderDelegate((context, index) {
         final p = entries[index];
         final displayName = widget.displayNameById[p.userId] ??
-          (p.displayName?.trim().isNotEmpty == true
-            ? p.displayName!.trim()
-            : p.userId);
+            (p.displayName?.trim().isNotEmpty == true
+                ? p.displayName!.trim()
+                : p.userId);
         final avatarUrl = widget.avatarUrlById[p.userId] ?? p.photoUrl;
         final isMe = p.userId == widget.currentUserId;
         final isOnline = onlineIds.contains(p.userId);
@@ -232,7 +237,8 @@ class _UserListPanelState extends State<UserListPanel> {
               rankTier: p.rankTier,
               diamondLevel: p.diamondLevel,
               layout: RoomUserTileLayout.list,
-              onTap: widget.onTapUser == null ? null : () => widget.onTapUser!(p),
+              onTap:
+                  widget.onTapUser == null ? null : () => widget.onTapUser!(p),
             ),
             Positioned(
               left: 34,

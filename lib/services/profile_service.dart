@@ -30,7 +30,17 @@ class ProfileService {
         'userId': userId,
         'cacheBust': DateTime.now().microsecondsSinceEpoch.toString(),
       });
-      final response = await (httpClient?.get(uri) ?? http.get(uri))
+      // Sending the token lets the server return owner-only fields (adult profile).
+      final headers = <String, String>{};
+      final currentUser = (auth ?? FirebaseAuth.instance).currentUser;
+      if (currentUser != null) {
+        final token = await currentUser.getIdToken();
+        if (token != null && token.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+      }
+      final response = await (httpClient?.get(uri, headers: headers) ??
+              http.get(uri, headers: headers))
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {

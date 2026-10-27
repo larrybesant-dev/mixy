@@ -51,7 +51,7 @@ Future<void> main() async {
 
     if (kIsWeb) {
       FirebaseFirestore.instance.settings = const Settings(
-        persistenceEnabled: true,
+        persistenceEnabled: false,
         cacheSizeBytes: 50 * 1024 * 1024,
         ignoreUndefinedProperties: true,
         webExperimentalForceLongPolling: true,

@@ -20,6 +20,7 @@ import '../../models/presence_model.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/guest_auth_gate.dart';
+import '../../theme/font_fallbacks.dart';
 import '../../widgets/brand_ui_kit.dart';
 import '../../widgets/follow_button.dart';
 import '../../widgets/gift_picker_sheet.dart';
@@ -50,12 +51,10 @@ class UserProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
 }
 
-class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
-    with SingleTickerProviderStateMixin {
+class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   final ModerationService _moderationService = ModerationService();
   final FollowService _followService = FollowService();
   late Future<Map<String, dynamic>> _profileFuture;
-  late TabController _tabController;
   bool _sendingFriendRequest = false;
   bool _attemptedProfileBootstrap = false;
 
@@ -98,13 +97,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   void initState() {
     super.initState();
     _profileFuture = _loadProfile();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -427,11 +419,19 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
         backgroundColor: const Color(0xFF171318),
         title: Text(
           'Sign out?',
-          style: GoogleFonts.playfairDisplay(color: VelvetNoir.onSurface),
+          style: GoogleFonts.playfairDisplay(
+            color: VelvetNoir.onSurface,
+            textStyle:
+                const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
+          ),
         ),
         content: Text(
           'You will be returned to the sign-in screen.',
-          style: GoogleFonts.raleway(color: VelvetNoir.onSurfaceVariant),
+          style: GoogleFonts.raleway(
+            color: VelvetNoir.onSurfaceVariant,
+            textStyle:
+                const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
+          ),
         ),
         actions: [
           TextButton(
@@ -474,6 +474,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: VelvetNoir.onSurface,
+                textStyle: const TextStyle(
+                    fontFamilyFallback: mixvyFontFamilyFallback),
               ),
             ),
             Text(
@@ -482,6 +484,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: VelvetNoir.onSurfaceVariant,
+                textStyle: const TextStyle(
+                    fontFamilyFallback: mixvyFontFamilyFallback),
               ),
             ),
           ],
@@ -498,496 +502,487 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             icon: const Icon(Icons.logout_rounded),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'About'),
-            Tab(text: 'Posts'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // ── About tab ──────────────────────────────────────────────────
-          FutureBuilder<Map<String, dynamic>>(
-            future: _profileFuture,
-            builder: (context, snapshot) {
-              final viewerId = FirebaseAuth.instance.currentUser?.uid;
-              final isOwnProfile = viewerId == widget.userId;
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const AppLoadingView(label: 'Loading profile');
-              }
-              final payload = snapshot.data;
-              if (payload == null) {
-                return AppEmptyView(
-                  title:
-                      isOwnProfile ? 'Complete your profile' : 'User not found',
-                  message: isOwnProfile
-                      ? 'Your profile record has not been created yet. Open profile setup to finish your account.'
-                      : null,
-                  action: isOwnProfile
-                      ? FilledButton(
-                          onPressed: () => context.push('/profile/edit'),
-                          child: const Text('Open profile setup'),
-                        )
-                      : null,
-                );
-              }
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          final viewerId = FirebaseAuth.instance.currentUser?.uid;
+          final isOwnProfile = viewerId == widget.userId;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const AppLoadingView(label: 'Loading profile');
+          }
+          final payload = snapshot.data;
+          if (payload == null) {
+            return AppEmptyView(
+              title: isOwnProfile ? 'Complete your profile' : 'User not found',
+              message: isOwnProfile
+                  ? 'Your profile record has not been created yet. Open profile setup to finish your account.'
+                  : null,
+              action: isOwnProfile
+                  ? FilledButton(
+                      onPressed: () => context.push('/profile/edit'),
+                      child: const Text('Open profile setup'),
+                    )
+                  : null,
+            );
+          }
 
-              final userSnapshot =
-                  payload['user'] as DocumentSnapshot<Map<String, dynamic>>;
-              if (!userSnapshot.exists) {
-                return AppEmptyView(
-                  title:
-                      isOwnProfile ? 'Complete your profile' : 'User not found',
-                  message: isOwnProfile
-                      ? 'Your profile is missing required data. Open profile setup to finish it now.'
-                      : null,
-                  action: isOwnProfile
-                      ? FilledButton(
-                          onPressed: () => context.push('/profile/edit'),
-                          child: const Text('Open profile setup'),
-                        )
-                      : null,
-                );
-              }
+          final userSnapshot =
+              payload['user'] as DocumentSnapshot<Map<String, dynamic>>;
+          if (!userSnapshot.exists) {
+            return AppEmptyView(
+              title: isOwnProfile ? 'Complete your profile' : 'User not found',
+              message: isOwnProfile
+                  ? 'Your profile is missing required data. Open profile setup to finish it now.'
+                  : null,
+              action: isOwnProfile
+                  ? FilledButton(
+                      onPressed: () => context.push('/profile/edit'),
+                      child: const Text('Open profile setup'),
+                    )
+                  : null,
+            );
+          }
 
-              final data = userSnapshot.data() ?? const <String, dynamic>{};
-              final privacy = Map<String, dynamic>.from(
-                payload['privacy'] as Map<String, dynamic>? ??
-                    const <String, dynamic>{},
-              );
-              final isBlocked = _asBool(payload['isBlocked'], fallback: false);
-              final isFollowing = _asBool(
-                payload['isFollowing'],
-                fallback: false,
-              );
-              final presence = isOwnProfile
-                  ? ref.watch(currentUserPresenceProvider).valueOrNull
-                  : ref
-                      .watch(friendPresenceProvider(widget.userId))
-                      .valueOrNull;
-              final roomId = presence?.inRoom;
-              String? directPreview;
-              if (!isOwnProfile && viewerId != null) {
-                final conversations = ref
-                        .watch(conversationsStreamProvider(viewerId))
-                        .valueOrNull ??
+          final data = userSnapshot.data() ?? const <String, dynamic>{};
+          final privacy = Map<String, dynamic>.from(
+            payload['privacy'] as Map<String, dynamic>? ??
+                const <String, dynamic>{},
+          );
+          final isBlocked = _asBool(payload['isBlocked'], fallback: false);
+          final isFollowing = _asBool(
+            payload['isFollowing'],
+            fallback: false,
+          );
+          final presence = isOwnProfile
+              ? ref.watch(currentUserPresenceProvider).valueOrNull
+              : ref.watch(friendPresenceProvider(widget.userId)).valueOrNull;
+          final roomId = presence?.inRoom;
+          String? directPreview;
+          if (!isOwnProfile && viewerId != null) {
+            final conversations =
+                ref.watch(conversationsStreamProvider(viewerId)).valueOrNull ??
                     const <Conversation>[];
-                for (final conversation in conversations) {
-                  if (conversation.type == 'direct' &&
-                      conversation.participantIds.contains(widget.userId)) {
-                    directPreview = conversation.lastMessagePreview;
-                    break;
-                  }
-                }
+            for (final conversation in conversations) {
+              if (conversation.type == 'direct' &&
+                  conversation.participantIds.contains(widget.userId)) {
+                directPreview = conversation.lastMessagePreview;
+                break;
               }
+            }
+          }
 
-              final username = _stringOrNull(data['username']);
-              final usernameHandle = _buildHandle(username);
-                final avatarUrl = resolveProfileAvatarUrl(data);
-              final aboutMe = _stringOrNull(data['aboutMe']);
-              final introVideoUrl = _stringOrNull(data['introVideoUrl']);
-              final galleryUrls = _stringList(data['galleryUrls']);
-              final vibePrompt = _stringOrNull(data['vibePrompt']);
-              final firstDatePrompt = _stringOrNull(data['firstDatePrompt']);
-              final musicTastePrompt = _stringOrNull(data['musicTastePrompt']);
-              final interests = _stringList(data['interests']);
-              final age = (data['age'] as num?)?.toInt();
-              final gender = _stringOrNull(data['gender']);
-              final location = _stringOrNull(data['location']);
-              final relationshipStatus = _stringOrNull(
-                data['relationshipStatus'],
-              );
-              final profileMusicUrl = _stringOrNull(data['profileMusicUrl']);
-              final profileMusicTitle =
-                  _stringOrNull(data['profileMusicTitle']) ?? '';
-              final displayName = (username == null || username.isEmpty)
-                  ? 'MixVy user'
-                  : username;
+          final username = _stringOrNull(data['username']);
+          final usernameHandle = _buildHandle(username);
+          final avatarUrl = resolveProfileAvatarUrl(data);
+          final aboutMe = _stringOrNull(data['aboutMe']);
+          final introVideoUrl = _stringOrNull(data['introVideoUrl']);
+          final galleryUrls = _stringList(data['galleryUrls']);
+          final vibePrompt = _stringOrNull(data['vibePrompt']);
+          final firstDatePrompt = _stringOrNull(data['firstDatePrompt']);
+          final musicTastePrompt = _stringOrNull(data['musicTastePrompt']);
+          final interests = _stringList(data['interests']);
+          final age = (data['age'] as num?)?.toInt();
+          final gender = _stringOrNull(data['gender']);
+          final location = _stringOrNull(data['location']);
+          final relationshipStatus = _stringOrNull(
+            data['relationshipStatus'],
+          );
+          final profileMusicUrl = _stringOrNull(data['profileMusicUrl']);
+          final profileMusicTitle =
+              _stringOrNull(data['profileMusicTitle']) ?? '';
+          final displayName =
+              (username == null || username.isEmpty) ? 'MixVy user' : username;
 
-              final details = <String>[];
-              if (isOwnProfile ||
-                  _asBool(privacy['showAge'], fallback: false)) {
-                if (age != null) details.add('$age');
-              }
-              if (isOwnProfile ||
-                  _asBool(privacy['showGender'], fallback: false)) {
-                if ((gender ?? '').isNotEmpty) details.add(gender!);
-              }
-              if (isOwnProfile ||
-                  _asBool(privacy['showLocation'], fallback: false)) {
-                if ((location ?? '').isNotEmpty) details.add(location!);
-              }
-              if (isOwnProfile ||
-                  _asBool(privacy['showRelationshipStatus'], fallback: false)) {
-                if ((relationshipStatus ?? '').isNotEmpty) {
-                  details.add(relationshipStatus!);
-                }
-              }
+          final details = <String>[];
+          if (isOwnProfile || _asBool(privacy['showAge'], fallback: false)) {
+            if (age != null) details.add('$age');
+          }
+          if (isOwnProfile || _asBool(privacy['showGender'], fallback: false)) {
+            if ((gender ?? '').isNotEmpty) details.add(gender!);
+          }
+          if (isOwnProfile ||
+              _asBool(privacy['showLocation'], fallback: false)) {
+            if ((location ?? '').isNotEmpty) details.add(location!);
+          }
+          if (isOwnProfile ||
+              _asBool(privacy['showRelationshipStatus'], fallback: false)) {
+            if ((relationshipStatus ?? '').isNotEmpty) {
+              details.add(relationshipStatus!);
+            }
+          }
 
-              return ListView(
-                padding: EdgeInsets.fromLTRB(
-                  context.pageHorizontalPadding,
-                  16,
-                  context.pageHorizontalPadding,
-                  32,
+          return ListView(
+            padding: EdgeInsets.fromLTRB(
+              context.pageHorizontalPadding,
+              16,
+              context.pageHorizontalPadding,
+              32,
+            ),
+            children: [
+              if (isOwnProfile) ...[
+                _OwnProfileHeroCard(
+                  userId: widget.userId,
+                  displayName: displayName,
+                  avatarUrl: avatarUrl,
+                  usernameHandle: usernameHandle,
+                  statusText: _presenceStatus(presence),
+                  details: details,
+                  aboutMe: aboutMe,
+                  interests: interests,
+                  galleryCount: galleryUrls.length,
+                  promptCount: [vibePrompt, firstDatePrompt, musicTastePrompt]
+                      .where((entry) => (entry ?? '').trim().isNotEmpty)
+                      .length,
+                  hasIntroVideo: (introVideoUrl ?? '').isNotEmpty,
+                  isLiveNow: (roomId ?? '').isNotEmpty,
+                  roomId: roomId,
                 ),
-                children: [
-                  if (isOwnProfile) ...[
-                    _OwnProfileHeroCard(
-                      userId: widget.userId,
-                      displayName: displayName,
-                      avatarUrl: avatarUrl,
-                      usernameHandle: usernameHandle,
-                      statusText: _presenceStatus(presence),
-                      details: details,
-                      aboutMe: aboutMe,
-                      interests: interests,
-                      galleryCount: galleryUrls.length,
-                      promptCount: [
-                        vibePrompt,
-                        firstDatePrompt,
-                        musicTastePrompt
-                      ]
-                          .where((entry) => (entry ?? '').trim().isNotEmpty)
-                          .length,
-                      hasIntroVideo: (introVideoUrl ?? '').isNotEmpty,
-                      isLiveNow: (roomId ?? '').isNotEmpty,
-                      roomId: roomId,
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (!isOwnProfile)
-                    ProfileCard(
-                      userId: widget.userId,
-                      displayName: displayName,
-                      avatarUrl: avatarUrl,
-                      usernameHandle: usernameHandle,
-                      statusText: _presenceStatus(presence),
-                      presenceState: _presenceState(presence),
-                      onmessage: () =>
-                          _startConversation(displayName, avatarUrl),
-                      onInvite: _inviteToLiveRoom,
-                      onJoin: (roomId ?? '').isNotEmpty
-                          ? () => context.go('/rooms/room/$roomId')
-                          : null,
-                      currentRoom: (roomId ?? '').isNotEmpty ? roomId : null,
-                      lastMessagePreview: directPreview,
-                      mutualFriendsCount: null,
-                      onMute: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('User muted for this session.'),
-                          ),
-                        );
-                      },
-                      onBlock: () => _toggleBlock(isBlocked),
-                      onReport: _reportUser,
-                      blockLabel: isBlocked ? 'Unblock' : 'Block',
-                    ),
-                  if (ref.watch(enableTop8FriendsFeature)) ...[
-                    const SizedBox(height: 12),
-                    TopEightCarousel(userId: widget.userId),
-                  ],
-                  if (!isOwnProfile) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: (isFriend ||
-                                    isRequestPending ||
-                                    _sendingFriendRequest)
-                                ? null
-                                : _sendFriendRequest,
-                            icon: Icon(
-                              isFriend
-                                  ? Icons.check_circle_outline
-                                  : isRequestPending
-                                      ? Icons.schedule_rounded
-                                      : Icons.person_add_alt_1_outlined,
-                            ),
-                            label: Text(
-                              isFriend
-                                  ? 'Already Friends'
-                                  : isRequestPending
-                                      ? 'Request Sent'
-                                      : (_sendingFriendRequest
-                                          ? 'Sending...'
-                                          : 'Add Friend'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FollowButton(
-                            isFollowing: isFollowing,
-                            onPressed: () => _toggleFollow(
-                              isFollowing,
-                              targetUsername: displayName,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Consumer(
-                      builder: (consumerCtx, widgetRef, _) => SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => GiftPickerSheet.show(
-                            consumerCtx,
-                            widgetRef,
-                            recipientId: widget.userId,
-                            recipientName: displayName,
-                          ),
-                          icon: const Icon(Icons.card_giftcard),
-                          label: const Text('Send Gift'),
-                        ),
+                const SizedBox(height: 12),
+              ],
+              if (!isOwnProfile)
+                ProfileCard(
+                  userId: widget.userId,
+                  displayName: displayName,
+                  avatarUrl: avatarUrl,
+                  usernameHandle: usernameHandle,
+                  statusText: _presenceStatus(presence),
+                  presenceState: _presenceState(presence),
+                  onmessage: () => _startConversation(displayName, avatarUrl),
+                  onInvite: _inviteToLiveRoom,
+                  onJoin: (roomId ?? '').isNotEmpty
+                      ? () => context.go('/rooms/room/$roomId')
+                      : null,
+                  currentRoom: (roomId ?? '').isNotEmpty ? roomId : null,
+                  lastMessagePreview: directPreview,
+                  mutualFriendsCount: null,
+                  onMute: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('User muted for this session.'),
                       ),
-                    ),
-                  ],
-                  if (isOwnProfile) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
+                    );
+                  },
+                  onBlock: () => _toggleBlock(isBlocked),
+                  onReport: _reportUser,
+                  blockLabel: isBlocked ? 'Unblock' : 'Block',
+                ),
+              if (ref.watch(enableTop8FriendsFeature)) ...[
+                const SizedBox(height: 12),
+                TopEightCarousel(userId: widget.userId),
+              ],
+              if (!isOwnProfile) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => context.push('/profile/social'),
-                        icon: const Icon(Icons.people_alt_outlined),
-                        label: const Text('Friends & Social'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: () async {
-                              final allowed =
-                                  await GuestAuthGate.requireProfileEdit(
-                                context,
-                                ref,
-                              );
-                              if (!allowed || !context.mounted) return;
-                              // ignore: use_build_context_synchronously
-                              unawaited(context.push('/profile/edit'));
-                            },
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Edit Profile'),
-                          ),
+                        onPressed: (isFriend ||
+                                isRequestPending ||
+                                _sendingFriendRequest)
+                            ? null
+                            : _sendFriendRequest,
+                        icon: Icon(
+                          isFriend
+                              ? Icons.check_circle_outline
+                              : isRequestPending
+                                  ? Icons.schedule_rounded
+                                  : Icons.person_add_alt_1_outlined,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(
-                                  text:
-                                      'https://mixvy.app/profile/${widget.userId}',
-                                ),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Profile link copied!'),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.share_outlined),
-                            label: const Text('Share'),
-                          ),
+                        label: Text(
+                          isFriend
+                              ? 'Already Friends'
+                              : isRequestPending
+                                  ? 'Request Sent'
+                                  : (_sendingFriendRequest
+                                      ? 'Sending...'
+                                      : 'Add Friend'),
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 18),
-                  ],
-                  if (aboutMe != null && aboutMe.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const MixvySectionHeader(
-                      title: 'About',
-                      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    ),
-                    _ProfileSectionCard(
-                      child: Text(
-                        aboutMe,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FollowButton(
+                        isFollowing: isFollowing,
+                        onPressed: () => _toggleFollow(
+                          isFollowing,
+                          targetUsername: displayName,
+                        ),
                       ),
                     ),
                   ],
-                  if ((profileMusicUrl ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const MixvySectionHeader(
-                      title: 'Profile Music',
-                      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                const SizedBox(height: 10),
+                Consumer(
+                  builder: (consumerCtx, widgetRef, _) => SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => GiftPickerSheet.show(
+                        consumerCtx,
+                        widgetRef,
+                        recipientId: widget.userId,
+                        recipientName: displayName,
+                      ),
+                      icon: const Icon(Icons.card_giftcard),
+                      label: const Text('Send Gift'),
                     ),
-                    _ProfileSectionCard(
-                      child: ProfileMusicPlayer(
-                        musicUrl: profileMusicUrl!,
-                        musicTitle: profileMusicTitle,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go(
+                      '/after-dark/creator-subscriptions/${widget.userId}',
+                    ),
+                    icon: const Icon(Icons.workspace_premium_outlined),
+                    label: const Text('Creator Membership'),
+                  ),
+                ),
+              ],
+              if (isOwnProfile) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/profile/social'),
+                    icon: const Icon(Icons.people_alt_outlined),
+                    label: const Text('Friends & Social'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          final allowed =
+                              await GuestAuthGate.requireProfileEdit(
+                            context,
+                            ref,
+                          );
+                          if (!allowed || !context.mounted) return;
+                          // ignore: use_build_context_synchronously
+                          unawaited(context.push('/profile/edit'));
+                        },
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit Profile'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(
+                            ClipboardData(
+                              text:
+                                  'https://mixvy.app/profile/${widget.userId}',
+                            ),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile link copied!'),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.share_outlined),
+                        label: const Text('Share'),
                       ),
                     ),
                   ],
-                  if ((vibePrompt ?? '').isNotEmpty ||
-                      (firstDatePrompt ?? '').isNotEmpty ||
-                      (musicTastePrompt ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const MixvySectionHeader(
-                      title: 'Conversation Starters',
-                      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    ),
-                    if ((vibePrompt ?? '').isNotEmpty)
-                      _PromptCard(title: 'Tonight vibe', content: vibePrompt!),
-                    if ((firstDatePrompt ?? '').isNotEmpty)
-                      _PromptCard(
-                        title: 'First date move',
-                        content: firstDatePrompt!,
-                      ),
-                    if ((musicTastePrompt ?? '').isNotEmpty)
-                      _PromptCard(
-                        title: 'Music in rotation',
-                        content: musicTastePrompt!,
-                      ),
-                  ],
-                  if (introVideoUrl != null && introVideoUrl.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const MixvySectionHeader(
-                      title: 'Intro Video',
-                      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    ),
-                    _ProfileSectionCard(
-                      child: Row(
-                        children: [
-                          const Icon(Icons.play_circle_fill_rounded),
-                          const SizedBox(width: 10),
-                          const Expanded(child: Text('Intro video available')),
-                          TextButton(
-                            onPressed: () async {
-                              final uri = Uri.tryParse(introVideoUrl);
-                              if (uri == null) {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Invalid intro video URL.'),
-                                  ),
-                                );
-                                return;
-                              }
+                ),
+                const SizedBox(height: 18),
+              ],
+              if (aboutMe != null && aboutMe.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const MixvySectionHeader(
+                  title: 'About',
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                _ProfileSectionCard(
+                  child: Text(
+                    aboutMe,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+              if ((profileMusicUrl ?? '').isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const MixvySectionHeader(
+                  title: 'Profile Music',
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                _ProfileSectionCard(
+                  child: ProfileMusicPlayer(
+                    musicUrl: profileMusicUrl!,
+                    musicTitle: profileMusicTitle,
+                  ),
+                ),
+              ],
+              if ((vibePrompt ?? '').isNotEmpty ||
+                  (firstDatePrompt ?? '').isNotEmpty ||
+                  (musicTastePrompt ?? '').isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const MixvySectionHeader(
+                  title: 'Conversation Starters',
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                if ((vibePrompt ?? '').isNotEmpty)
+                  _PromptCard(title: 'Tonight vibe', content: vibePrompt!),
+                if ((firstDatePrompt ?? '').isNotEmpty)
+                  _PromptCard(
+                    title: 'First date move',
+                    content: firstDatePrompt!,
+                  ),
+                if ((musicTastePrompt ?? '').isNotEmpty)
+                  _PromptCard(
+                    title: 'Music in rotation',
+                    content: musicTastePrompt!,
+                  ),
+              ],
+              if (introVideoUrl != null && introVideoUrl.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const MixvySectionHeader(
+                  title: 'Intro Video',
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                _ProfileSectionCard(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.play_circle_fill_rounded),
+                      const SizedBox(width: 10),
+                      const Expanded(child: Text('Intro video available')),
+                      TextButton(
+                        onPressed: () async {
+                          final uri = Uri.tryParse(introVideoUrl);
+                          if (uri == null) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Invalid intro video URL.'),
+                              ),
+                            );
+                            return;
+                          }
 
-                              final opened = await launchUrl(
-                                uri,
-                                mode: LaunchMode.externalApplication,
-                              );
-                              if (!opened && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Could not open intro video.',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            child: const Text('Open'),
+                          final opened = await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          if (!opened && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Could not open intro video.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('Open'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (galleryUrls.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const MixvySectionHeader(
+                  title: 'Photo Gallery',
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: galleryUrls.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: context.isExpandedLayout ? 4 : 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1,
+                  ),
+                  itemBuilder: (context, index) {
+                    final url = galleryUrls[index].trim();
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        child: CachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.cover,
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.broken_image),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+              if (interests.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const MixvySectionHeader(
+                  title: 'Interests',
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: interests
+                      .take(18)
+                      .map(
+                        (interest) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  if (galleryUrls.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const MixvySectionHeader(
-                      title: 'Photo Gallery',
-                      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    ),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: galleryUrls.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: context.isExpandedLayout ? 4 : 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 1,
-                      ),
-                      itemBuilder: (context, index) {
-                        final url = galleryUrls[index].trim();
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            child: CachedNetworkImage(
-                              imageUrl: url,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.broken_image),
+                          decoration: BoxDecoration(
+                            color: VelvetNoir.surfaceHigh.withValues(
+                              alpha: 0.76,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: VelvetNoir.primary.withValues(
+                                alpha: 0.14,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                  if (interests.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    const MixvySectionHeader(
-                      title: 'Interests',
-                      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: interests
-                          .take(18)
-                          .map(
-                            (interest) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: VelvetNoir.surfaceHigh.withValues(
-                                  alpha: 0.76,
-                                ),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: VelvetNoir.primary.withValues(
-                                    alpha: 0.14,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                interest,
-                                style: GoogleFonts.raleway(
-                                  color: VelvetNoir.onSurface,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                          child: Text(
+                            interest,
+                            style: GoogleFonts.raleway(
+                              color: VelvetNoir.onSurface,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              textStyle: const TextStyle(
+                                  fontFamilyFallback: mixvyFontFamilyFallback),
                             ),
-                          )
-                          .toList(),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
-          // ── Posts tab ──────────────────────────────────────────────────
-          _UserPostsTab(userId: widget.userId),
-        ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 24),
+              const MixvySectionHeader(
+                title: 'Posts',
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+              ),
+              _UserPostsSection(userId: widget.userId),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Posts tab — streams the profile user's posts from Firestore
+// Posts section — streams the profile user's posts within the profile scroll.
 // ---------------------------------------------------------------------------
-class _UserPostsTab extends ConsumerWidget {
+class _UserPostsSection extends ConsumerWidget {
   final String userId;
-  const _UserPostsTab({required this.userId});
+  const _UserPostsSection({required this.userId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -995,22 +990,71 @@ class _UserPostsTab extends ConsumerWidget {
     final postsAsync = ref.watch(userPostsStreamProvider(userId));
 
     return postsAsync.when(
-      loading: () => const AppLoadingView(label: 'Loading posts'),
-      error: (error, _) =>
-          AppErrorView(error: error, fallbackContext: 'Unable to load posts.'),
+      loading: () => const SizedBox(
+        height: 120,
+        child: AppLoadingView(label: 'Loading posts'),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: AppErrorView(
+          error: error,
+          fallbackContext: 'Unable to load posts.',
+        ),
+      ),
       data: (posts) {
+        final isOwnProfile = viewerId.isNotEmpty && viewerId == userId;
         if (posts.isEmpty) {
-          return const AppEmptyView(
-            title: 'No posts yet',
-            icon: Icons.post_add_outlined,
+          return _ProfileSectionCard(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.post_add_outlined,
+                  size: 38,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'No posts yet',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                if (isOwnProfile) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Share an update with your connections.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: () => context.push('/home/create-post'),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Create post'),
+                  ),
+                ],
+              ],
+            ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: posts.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (ctx, i) =>
-              PostCard(post: posts[i], currentUserId: viewerId),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isOwnProfile)
+              FilledButton.icon(
+                onPressed: () => context.push('/home/create-post'),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Create post'),
+              ),
+            if (isOwnProfile) const SizedBox(height: 8),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: posts.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 2),
+              itemBuilder: (ctx, i) =>
+                  PostCard(post: posts[i], currentUserId: viewerId),
+            ),
+          ],
         );
       },
     );
@@ -1102,6 +1146,8 @@ class _OwnProfileHeroCard extends StatelessWidget {
                       color: VelvetNoir.primary,
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
+                      textStyle: const TextStyle(
+                          fontFamilyFallback: mixvyFontFamilyFallback),
                     ),
                   ),
                 ),
@@ -1117,6 +1163,8 @@ class _OwnProfileHeroCard extends StatelessWidget {
                         color: VelvetNoir.onSurface,
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
+                        textStyle: const TextStyle(
+                            fontFamilyFallback: mixvyFontFamilyFallback),
                       ),
                     ),
                     if ((usernameHandle ?? '').isNotEmpty) ...[
@@ -1127,6 +1175,8 @@ class _OwnProfileHeroCard extends StatelessWidget {
                           color: VelvetNoir.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
+                          textStyle: const TextStyle(
+                              fontFamilyFallback: mixvyFontFamilyFallback),
                         ),
                       ),
                     ],
@@ -1155,6 +1205,9 @@ class _OwnProfileHeroCard extends StatelessWidget {
                                 color: VelvetNoir.onSurface,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
+                                textStyle: const TextStyle(
+                                    fontFamilyFallback:
+                                        mixvyFontFamilyFallback),
                               ),
                             ),
                           ),
@@ -1184,6 +1237,8 @@ class _OwnProfileHeroCard extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.8,
+                      textStyle: const TextStyle(
+                          fontFamilyFallback: mixvyFontFamilyFallback),
                     ),
                   ),
                 ),
@@ -1200,6 +1255,8 @@ class _OwnProfileHeroCard extends StatelessWidget {
               color: VelvetNoir.onSurface.withValues(alpha: 0.92),
               fontSize: 13,
               height: 1.45,
+              textStyle:
+                  const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
             ),
           ),
           if (details.isNotEmpty || interests.isNotEmpty || hasIntroVideo) ...[
@@ -1353,6 +1410,8 @@ class _HeroPill extends StatelessWidget {
               color: VelvetNoir.onSurface,
               fontSize: 12,
               fontWeight: FontWeight.w600,
+              textStyle:
+                  const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
             ),
           ),
         ],
@@ -1385,6 +1444,8 @@ class _HeroMetric extends StatelessWidget {
               color: VelvetNoir.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.w700,
+              textStyle:
+                  const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
             ),
           ),
           const SizedBox(height: 2),
@@ -1394,6 +1455,8 @@ class _HeroMetric extends StatelessWidget {
               color: VelvetNoir.onSurfaceVariant,
               fontSize: 11,
               fontWeight: FontWeight.w600,
+              textStyle:
+                  const TextStyle(fontFamilyFallback: mixvyFontFamilyFallback),
             ),
           ),
         ],

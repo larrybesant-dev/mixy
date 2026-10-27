@@ -58,6 +58,7 @@ dependencies:
   web: any
   meta: any
   firebase_app_check: ^0.4.5+2
+  geolocator: ^14.0.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -84,6 +85,9 @@ flutter:
     - family: NotoSans
       fonts:
         - asset: assets/fonts/NotoSans-Regular.ttf
+    - family: NotoEmoji
+      fonts:
+        - asset: assets/fonts/NotoEmoji-Regular.ttf
     - family: NotoSansSymbols
       fonts:
         - asset: assets/fonts/NotoSansSymbols-Regular.ttf

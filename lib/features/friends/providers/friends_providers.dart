@@ -373,8 +373,19 @@ final friendSuggestionsProvider = FutureProvider.autoDispose<List<UserModel>>((
 ) async {
   final userId = ref.watch(currentFriendUserIdProvider);
   if (userId == null) return const <UserModel>[];
-  final users = await ref
-      .watch(friendServiceProvider)
-      .searchUsers('', currentUserId: userId);
-  return users.take(15).toList(growable: false);
+  final service = ref.watch(friendServiceProvider);
+  final suggestionsFuture = service.getFriendSuggestions(userId, limit: 30);
+  final incomingIdsFuture = service.getIncomingRequesterIds(userId);
+  final outgoingIdsFuture = service.getOutgoingPendingRequestIds(userId);
+  final suggestions = await suggestionsFuture;
+  final incomingIds = await incomingIdsFuture;
+  final outgoingIds = await outgoingIdsFuture;
+  final excludedIds = {
+    ...incomingIds,
+    ...outgoingIds,
+  };
+  return suggestions
+      .where((user) => !excludedIds.contains(user.id))
+      .take(24)
+      .toList(growable: false);
 });

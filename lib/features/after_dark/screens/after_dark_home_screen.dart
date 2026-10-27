@@ -140,7 +140,7 @@ class AfterDarkHomeScreen extends ConsumerWidget {
             },
           ),
 
-          // ── Coming soon — subscriptions ───────────────────────────────────
+          // ── Creator subscriptions ─────────────────────────────────────────
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
           SliverToBoxAdapter(
             child: Padding(
@@ -150,7 +150,7 @@ class AfterDarkHomeScreen extends ConsumerWidget {
                 context.pageHorizontalPadding,
                 32,
               ),
-              child: _ComingSoonCard(),
+              child: _CreatorSubscriptionsCard(),
             ),
           ),
         ],
@@ -436,8 +436,7 @@ class _EmptyLounge extends StatelessWidget {
   }
 }
 
-// ── Coming soon subscriptions ─────────────────────────────────────────────────
-class _ComingSoonCard extends StatelessWidget {
+class _CreatorSubscriptionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _AfterDarkReveal(
@@ -466,7 +465,7 @@ class _ComingSoonCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.lock_outline_rounded,
+                Icons.workspace_premium_outlined,
                 color: EmberDark.secondary,
                 size: 24,
               ),
@@ -486,7 +485,7 @@ class _ComingSoonCard extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Private rooms, premium access, and closer connections are coming soon.',
+                    'Set your monthly price, offer premium access, and earn through Stripe.',
                     style: TextStyle(
                       color: EmberDark.onSurfaceVariant,
                       fontSize: 12,
@@ -495,23 +494,27 @@ class _ComingSoonCard extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: EmberDark.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: EmberDark.primary.withValues(alpha: 0.35),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Browse creator memberships',
+                  onPressed: () => context.go('/after-dark/creators'),
+                  icon: const Icon(
+                    Icons.explore_outlined,
+                    color: EmberDark.primary,
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Soon',
-                style: TextStyle(
-                  color: EmberDark.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                IconButton(
+                  tooltip: 'Manage creator subscriptions',
+                  onPressed: () =>
+                      context.go('/after-dark/creator-subscriptions'),
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: EmberDark.onSurfaceVariant,
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -545,6 +548,4 @@ class _AfterDarkReveal extends StatelessWidget {
     );
   }
 }
-
-
 

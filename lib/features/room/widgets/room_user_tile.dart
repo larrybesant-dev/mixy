@@ -59,9 +59,11 @@ class _RoomUserTileState extends State<RoomUserTile>
   late final Animation<double> _scaleAnim;
   Timer? _tickTimer;
   int _secondsLeft = 0;
+  bool _avatarLoadFailed = false;
 
   bool get _isSpeaking => widget.isMicOn && !widget.isMuted;
-  String get _normalizedRole => normalizeRoomRole(widget.role, fallbackRole: '');
+  String get _normalizedRole =>
+      normalizeRoomRole(widget.role, fallbackRole: '');
   bool get _isHost => isHostLikeRole(_normalizedRole);
   bool get _isCohost => _normalizedRole == roomRoleCohost;
   bool get _isSpeaker => _normalizedRole == roomRoleStage;
@@ -135,6 +137,9 @@ class _RoomUserTileState extends State<RoomUserTile>
       _tickTimer?.cancel();
       _startTimer();
     }
+    if (oldWidget.avatarUrl != widget.avatarUrl) {
+      _avatarLoadFailed = false;
+    }
   }
 
   @override
@@ -188,7 +193,8 @@ class _RoomUserTileState extends State<RoomUserTile>
               style: GoogleFonts.raleway(
                 fontSize: widget.compact ? 9 : 10,
                 fontWeight: widget.isMe ? FontWeight.w700 : FontWeight.w500,
-                color: widget.isMe ? _kGold : Colors.white.withValues(alpha: 0.9),
+                color:
+                    widget.isMe ? _kGold : Colors.white.withValues(alpha: 0.9),
               ),
             ),
             if (widget.rankTier > 0 || widget.diamondLevel > 0) ...[
@@ -228,12 +234,15 @@ class _RoomUserTileState extends State<RoomUserTile>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.isMe ? '${widget.displayName} (you)' : widget.displayName,
+                    widget.isMe
+                        ? '${widget.displayName} (you)'
+                        : widget.displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.raleway(
                       fontSize: 12,
-                      fontWeight: widget.isMe ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight:
+                          widget.isMe ? FontWeight.w700 : FontWeight.w500,
                       color: widget.isMe
                           ? _kGold
                           : Colors.white.withValues(alpha: 0.85),
@@ -310,15 +319,26 @@ class _RoomUserTileState extends State<RoomUserTile>
   Widget _buildAvatar() {
     final r = _avatarRadius;
     final ringColor = _ringColor;
+    final avatarUrl = widget.avatarUrl?.trim();
+    final hasAvatar =
+        avatarUrl != null && avatarUrl.isNotEmpty && !_avatarLoadFailed;
 
     final avatar = CircleAvatar(
       radius: r,
       backgroundColor: _kSurfaceHigh,
-      backgroundImage:
-          (widget.avatarUrl?.isNotEmpty == true) ? NetworkImage(widget.avatarUrl!) : null,
-      child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
+      backgroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
+      onBackgroundImageError: hasAvatar
+          ? (error, stackTrace) {
+              if (mounted && !_avatarLoadFailed) {
+                setState(() => _avatarLoadFailed = true);
+              }
+            }
+          : null,
+      child: !hasAvatar
           ? Text(
-              widget.displayName.isEmpty ? '?' : widget.displayName[0].toUpperCase(),
+              widget.displayName.isEmpty
+                  ? '?'
+                  : widget.displayName[0].toUpperCase(),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: r * 0.56,
@@ -336,7 +356,8 @@ class _RoomUserTileState extends State<RoomUserTile>
         child: Container(
           width: r * 0.65,
           height: r * 0.65,
-          decoration: const BoxDecoration(color: _kSurface, shape: BoxShape.circle),
+          decoration:
+              const BoxDecoration(color: _kSurface, shape: BoxShape.circle),
           child: Icon(
             widget.isMuted || !widget.isMicOn ? Icons.mic_off : Icons.mic,
             size: r * 0.40,
@@ -351,7 +372,8 @@ class _RoomUserTileState extends State<RoomUserTile>
           ? const BoxDecoration()
           : BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: ringColor, width: _isSpeaking ? 2.5 : 1.8),
+              border:
+                  Border.all(color: ringColor, width: _isSpeaking ? 2.5 : 1.8),
             ),
       child: Padding(
         padding: EdgeInsets.all(ringColor != null ? 2.0 : 0.0),
@@ -365,7 +387,8 @@ class _RoomUserTileState extends State<RoomUserTile>
     if (_isSpeaking) {
       return AnimatedBuilder(
         animation: _scaleAnim,
-        builder: (context, child) => Transform.scale(scale: _scaleAnim.value, child: child),
+        builder: (context, child) =>
+            Transform.scale(scale: _scaleAnim.value, child: child),
         child: decorated,
       );
     }

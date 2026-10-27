@@ -37,6 +37,10 @@ class RoomModel {
   /// Whether this is an 18+ After Dark room.
   final bool isAdult;
 
+  /// Whether joining requires an active subscription to [creatorId].
+  final bool subscriberOnly;
+  final String? creatorId;
+
   /// Denormalized host info to avoid N+1 lookups in discovery feed.
   final String? hostUsername;
   final String? hostAvatarUrl;
@@ -71,6 +75,8 @@ class RoomModel {
     this.maxBroadcasters = 4,
     this.scheduledAt,
     this.isAdult = false,
+    this.subscriberOnly = false,
+    this.creatorId,
     this.hostUsername,
     this.hostAvatarUrl,
     this.theme = RoomTheme.defaultTheme,
@@ -166,6 +172,8 @@ class RoomModel {
           : 4,
       scheduledAt: _asTimestamp(json['scheduledAt']),
       isAdult: _asBool(json['isAdult']),
+      subscriberOnly: _asBool(json['subscriberOnly']),
+      creatorId: json['creatorId'] is String ? json['creatorId'] as String : null,
       hostUsername: json['hostUsername'] as String?,
       hostAvatarUrl: json['hostAvatarUrl'] as String?,
       theme: RoomTheme.fromJson(
@@ -203,6 +211,8 @@ class RoomModel {
       'maxBroadcasters': maxBroadcasters,
       'scheduledAt': scheduledAt,
       'isAdult': isAdult,
+      'subscriberOnly': subscriberOnly,
+      'creatorId': creatorId,
       'hostUsername': hostUsername,
       'hostAvatarUrl': hostAvatarUrl,
       'theme': theme.toJson(),
@@ -236,6 +246,8 @@ class RoomModel {
     int? maxBroadcasters,
     Timestamp? scheduledAt,
     bool? isAdult,
+    bool? subscriberOnly,
+    String? creatorId,
     String? hostUsername,
     String? hostAvatarUrl,
     RoomTheme? theme,
@@ -267,12 +279,13 @@ class RoomModel {
       maxBroadcasters: maxBroadcasters ?? this.maxBroadcasters,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       isAdult: isAdult ?? this.isAdult,
+      subscriberOnly: subscriberOnly ?? this.subscriberOnly,
+      creatorId: creatorId ?? this.creatorId,
       hostUsername: hostUsername ?? this.hostUsername,
       hostAvatarUrl: hostAvatarUrl ?? this.hostAvatarUrl,
       theme: theme ?? this.theme,
     );
   }
 }
-
 
 

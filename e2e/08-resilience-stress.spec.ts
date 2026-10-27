@@ -42,12 +42,11 @@ test.describe.serial('MixVy resilience stress', () => {
   test('converges after rapid navigation and recovers from offline mode', async ({ page }, testInfo) => {
     test.skip(!hasCredentials, 'Run npm run test:e2e:provision-account first.');
     await page.setViewportSize({ width: 390, height: 844 });
+    expect(await authenticateTestUser(page)).toBe(true);
+    await enableFlutterSemantics(page);
     const diagnostics = await simulateBackendLatency(page, 250);
 
     try {
-      expect(await authenticateTestUser(page)).toBe(true);
-      await enableFlutterSemantics(page);
-
       for (let iteration = 0; iteration < 5; iteration += 1) {
         await page.getByRole('button', { name: 'Rooms', exact: true }).click();
         await page.getByRole('button', { name: 'Messages', exact: true }).click();

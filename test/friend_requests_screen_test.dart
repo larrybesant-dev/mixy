@@ -91,4 +91,58 @@ void main() {
     expect(find.text('User Two'), findsNothing);
     expect(find.byTooltip('Accept request'), findsNothing);
   });
+
+  testWidgets('sent requests show the recipient public profile name', (
+    tester,
+  ) async {
+    final firestore = FakeFirebaseFirestore();
+    await firestore.collection('users').doc('user-1').set({
+      'uid': 'user-1',
+      'username': 'Sender',
+      'createdAt': DateTime(2026, 1, 1),
+    });
+    await firestore.collection('users').doc('user-2').set({
+      'uid': 'user-2',
+      'username': 'Member USER',
+      'createdAt': DateTime(2026, 1, 2),
+    });
+    await firestore.collection('profile_public').doc('user-2').set({
+      'userId': 'user-2',
+      'username': 'Named Recipient',
+      'displayName': 'Named Recipient',
+    });
+    await firestore.collection('friendships').doc('user-1_user-2').set({
+      'userA': 'user-1',
+      'userB': 'user-2',
+      'status': 'pending',
+      'requestedBy': 'user-1',
+      'createdAt': DateTime(2026, 1, 2),
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          friendFirestoreProvider.overrideWithValue(firestore),
+          userProvider.overrideWithValue(
+            UserModel(
+              id: 'user-1',
+              email: '',
+              username: 'Sender',
+              createdAt: DateTime(2026, 1, 1),
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: FriendRequestsView()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Sent (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Named Recipient'), findsOneWidget);
+    expect(find.text('Member USER'), findsNothing);
+  });
 }

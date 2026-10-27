@@ -39,9 +39,14 @@ void main() {
       await firestore.collection('users').doc('user-4').set({
         'uid': 'user-4',
         'email': 'pending@mixvy.dev',
-        'username': 'Pending Person',
-        'usernameLower': 'pending person',
+        'username': 'Member USER',
+        'usernameLower': 'member user',
         'createdAt': DateTime(2026, 1, 4),
+      });
+      await firestore.collection('profile_public').doc('user-4').set({
+        'userId': 'user-4',
+        'username': 'Pending Person',
+        'displayName': 'Pending Person',
       });
       await firestore.collection('users').doc('user-5').set({
         'uid': 'user-5',

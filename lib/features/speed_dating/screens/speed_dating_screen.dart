@@ -12,8 +12,11 @@ import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../core/theme.dart';
+import '../models/dating_preferences.dart';
 import '../models/speed_dating_models.dart';
+import '../providers/dating_preferences_provider.dart';
 import '../services/speed_dating_service.dart';
+import '../widgets/dating_preferences_sheet.dart';
 
 class SpeedDatingScreen extends ConsumerStatefulWidget {
   const SpeedDatingScreen({super.key});
@@ -33,6 +36,8 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
   int _candidateIndex = 0;
   Timer? _timer;
   bool _isSubmitting = false;
+  // Cached so rebuilds do not re-subscribe and re-call the candidates function.
+  Stream<List<SpeedDateCandidate>>? _candidatesStream;
 
   // Session stats
   int _likesCount = 0;
@@ -71,6 +76,18 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
   }
 
   // ── Queue Match helpers ───────────────────────────────────────────────────
+
+  Future<void> _openPreferences(String uid) async {
+    final saved = await showDatingPreferencesSheet(context, userId: uid);
+    if (!saved || !mounted) return;
+    setState(() {
+      _candidatesStream = null;
+      _candidateIndex = 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Dating preferences saved')),
+    );
+  }
 
   Future<void> _enterQueueMode(String uid) async {
     if (_queueJoining) return;
@@ -356,11 +373,23 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     );
   }
 
+  String _formatDistance(double km, String unit) {
+    final value = datingDistanceFromKm(km, unit);
+    final label = unit == datingUnitMi ? 'mi' : 'km';
+    if (value < 10) return '${value.toStringAsFixed(1)} $label away';
+    return '${value.round()} $label away';
+  }
+
   Widget _buildCandidateCard(
     SpeedDateCandidate candidate,
     ThemeData theme,
     String currentUserId,
   ) {
+    final distanceUnit = ref
+            .watch(datingPreferencesProvider(currentUserId))
+            .valueOrNull
+            ?.distanceUnit ??
+        datingUnitKm;
     final hasAvatar =
         candidate.avatarUrl != null && candidate.avatarUrl!.trim().isNotEmpty;
     final displayName = candidate.username.trim().isEmpty
@@ -428,6 +457,15 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (candidate.distanceKm != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _formatDistance(candidate.distanceKm!, distanceUnit),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Text(
             (candidate.bio ?? '').trim().isEmpty
@@ -481,10 +519,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                   onPressed: _isSubmitting
                       ? null
                       : () => _handleDecision(
-                          candidate: candidate,
-                          liked: false,
-                          currentUserId: currentUserId,
-                        ),
+                            candidate: candidate,
+                            liked: false,
+                            currentUserId: currentUserId,
+                          ),
                   icon: const Icon(Icons.close),
                   label: const Text('Pass'),
                 ),
@@ -498,10 +536,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                   onPressed: _isSubmitting
                       ? null
                       : () => _handleDecision(
-                          candidate: candidate,
-                          liked: true,
-                          currentUserId: currentUserId,
-                        ),
+                            candidate: candidate,
+                            liked: true,
+                            currentUserId: currentUserId,
+                          ),
                   icon: const Icon(Icons.favorite),
                   label: const Text('Like'),
                 ),
@@ -546,6 +584,8 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
       );
     }
 
+    _candidatesStream ??= _service.candidatesStream(currentUserId: user.uid);
+
     return AppPageScaffold(
       backgroundColor: VelvetNoir.surface,
       appBar: AppBar(
@@ -584,6 +624,12 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           ],
         ),
         actions: [
+          if (!_queueMode)
+            IconButton(
+              tooltip: 'Dating preferences',
+              icon: const Icon(Icons.tune_rounded),
+              onPressed: () => _openPreferences(user.uid),
+            ),
           if (!_queueMode)
             Padding(
               padding: const EdgeInsets.only(right: 12),
@@ -635,7 +681,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
       body: _queueMode
           ? _buildQueueBody(user, theme)
           : StreamBuilder<List<SpeedDateCandidate>>(
-              stream: _service.candidatesStream(currentUserId: user.uid),
+              stream: _candidatesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const AppLoadingView(
@@ -710,8 +756,8 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                             final Color countdownColor = secondsLeft > 30
                                 ? theme.colorScheme.primary
                                 : secondsLeft > 10
-                                ? Colors.orange
-                                : Colors.red;
+                                    ? Colors.orange
+                                    : Colors.red;
                             return Stack(
                               alignment: Alignment.center,
                               children: [
@@ -722,8 +768,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                                     value: progress,
                                     strokeWidth: 5,
                                     backgroundColor: theme
-                                        .colorScheme
-                                        .surfaceContainerHighest,
+                                        .colorScheme.surfaceContainerHighest,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       countdownColor,
                                     ),
@@ -906,8 +951,8 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                                   onTap: match.latestRoomId == null
                                       ? null
                                       : () => context.go(
-                                          '/rooms/room/${match.latestRoomId}',
-                                        ),
+                                            '/rooms/room/${match.latestRoomId}',
+                                          ),
                                 ),
                               );
                             }),
@@ -1046,6 +1091,3 @@ class _StatBadge extends StatelessWidget {
     );
   }
 }
-
-
-

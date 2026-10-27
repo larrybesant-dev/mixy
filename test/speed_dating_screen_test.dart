@@ -8,11 +8,27 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
 
-SpeedDatingService _buildService(FakeFirebaseFirestore firestore) {
+class _MockHttpsCallable extends Mock implements HttpsCallable {}
+
+class _MockCallableResult extends Mock
+    implements HttpsCallableResult<Map<String, dynamic>> {}
+
+SpeedDatingService _buildService(
+  FakeFirebaseFirestore firestore, {
+  List<Map<String, dynamic>> candidates = const [],
+}) {
+  final functions = _MockFirebaseFunctions();
+  final callable = _MockHttpsCallable();
+  final result = _MockCallableResult();
+  when(() => functions.httpsCallable(any())).thenReturn(callable);
+  when(
+    () => callable.call<Map<String, dynamic>>(),
+  ).thenAnswer((_) async => result);
+  when(() => result.data).thenReturn({'candidates': candidates});
   return SpeedDatingService(
     firestore: firestore,
     moderationService: ModerationService(firestore: firestore),
-    functions: _MockFirebaseFunctions(),
+    functions: functions,
   );
 }
 
@@ -29,11 +45,13 @@ void main() {
 
     test('candidatesStream excludes the current user from results', () async {
       final firestore = FakeFirebaseFirestore();
-      await firestore.collection('users').doc('user-1').set({'username': 'Me'});
-      await firestore.collection('users').doc('user-2').set({
-        'username': 'Alice',
-      });
-      final service = _buildService(firestore);
+      final service = _buildService(
+        firestore,
+        candidates: [
+          {'id': 'user-1', 'username': 'Me'},
+          {'id': 'user-2', 'username': 'Alice'},
+        ],
+      );
       final candidates = await service
           .candidatesStream(currentUserId: 'user-1')
           .first;
@@ -42,19 +60,21 @@ void main() {
       expect(ids, isNot(contains('user-1')));
     });
 
-    test('candidatesStream excludes users with empty username', () async {
+    test('candidatesStream maps distance from the callable result', () async {
       final firestore = FakeFirebaseFirestore();
-      await firestore.collection('users').doc('user-2').set({
-        'username': 'Alice',
-      });
-      await firestore.collection('users').doc('user-3').set({'username': ''});
-      final service = _buildService(firestore);
+      final service = _buildService(
+        firestore,
+        candidates: [
+          {'id': 'user-2', 'username': 'Alice', 'distanceKm': 3.25},
+          {'id': 'user-3', 'username': 'Bo'},
+        ],
+      );
       final candidates = await service
           .candidatesStream(currentUserId: 'user-1')
           .first;
-      final ids = candidates.map((c) => c.id).toList();
-      expect(ids, contains('user-2'));
-      expect(ids, isNot(contains('user-3')));
+      expect(candidates.map((c) => c.id), ['user-2', 'user-3']);
+      expect(candidates.first.distanceKm, 3.25);
+      expect(candidates.last.distanceKm, isNull);
     });
 
     test(

@@ -110,6 +110,60 @@ beforeEach(async () => {
 });
 
 describe("firestore rules", () => {
+  const validDatingPreferences = {
+    lookingFor: ["Woman"],
+    minAge: 21,
+    maxAge: 40,
+    maxDistanceKm: 25,
+    distanceUnit: "km",
+    race: null,
+    sexuality: null,
+    preferredRaces: [],
+    preferredSexualities: [],
+    latitude: 40.71,
+    longitude: -74.01,
+    updatedAt: Timestamp.now(),
+  };
+
+  it("allows owners to manage valid dating preferences only", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+    const datingRef = doc(selfDb, "users", "user-1", "private", "dating");
+
+    await assertSucceeds(setDoc(datingRef, validDatingPreferences));
+    await assertSucceeds(getDoc(datingRef));
+    await assertFails(
+      getDoc(doc(otherDb, "users", "user-1", "private", "dating")),
+    );
+    await assertSucceeds(deleteDoc(datingRef));
+  });
+
+  it("rejects malformed or unexpected private dating data", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const datingRef = doc(selfDb, "users", "user-1", "private", "dating");
+
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      minAge: 17,
+    }));
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      latitude: 91,
+    }));
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      race: "not-allowed",
+    }));
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      publicLocation: "New York",
+    }));
+    await assertFails(setDoc(
+      doc(selfDb, "users", "user-1", "private", "unexpected"),
+      {value: true},
+    ));
+  });
+
   it("allows signed-in users to read top-level presence and only self to write", async () => {
     const viewerDb = testEnv.authenticatedContext("viewer-1").firestore();
     const selfDb = testEnv.authenticatedContext("user-1").firestore();
@@ -191,6 +245,172 @@ describe("firestore rules", () => {
       status: "sent",
       timestamp: Timestamp.now(),
     }));
+  });
+
+  it("keeps creator subscription state server-authoritative", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "creator_subscription_settings", "creator-1"), {
+        creatorId: "creator-1",
+        enabled: true,
+        monthlyPriceCents: 499,
+        currency: "usd",
+      });
+      await setDoc(doc(db, "creator_subscriptions", "subscriber-1_creator-1"), {
+        subscriberId: "subscriber-1",
+        creatorId: "creator-1",
+        status: "active",
+      });
+    });
+
+    const creatorDb = testEnv.authenticatedContext("creator-1").firestore();
+    const subscriberDb = testEnv.authenticatedContext("subscriber-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("outsider-1").firestore();
+
+    await assertSucceeds(
+      getDoc(doc(creatorDb, "creator_subscription_settings", "creator-1")),
+    );
+    await assertFails(
+      getDoc(doc(outsiderDb, "creator_subscription_settings", "creator-1")),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(creatorDb, "creator_subscriptions", "subscriber-1_creator-1"),
+      ),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(subscriberDb, "creator_subscriptions", "subscriber-1_creator-1"),
+      ),
+    );
+    await assertFails(
+      getDoc(
+        doc(outsiderDb, "creator_subscriptions", "subscriber-1_creator-1"),
+      ),
+    );
+    await assertFails(
+      setDoc(doc(creatorDb, "creator_subscription_settings", "creator-1"), {
+        creatorId: "creator-1",
+        enabled: false,
+        monthlyPriceCents: 299,
+        currency: "usd",
+      }),
+    );
+    await assertFails(
+      updateDoc(
+        doc(
+          subscriberDb,
+          "creator_subscriptions",
+          "subscriber-1_creator-1",
+        ),
+        {status: "canceled"},
+      ),
+    );
+  });
+
+  it("keeps subscriber-only updates and reports behind callable functions", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "creator_subscriber_updates", "update-1"), {
+        creatorId: "creator-1",
+        text: "Private update",
+        createdAt: Timestamp.now(),
+      });
+      await setDoc(doc(db, "creator_subscriber_update_reports", "report-1"), {
+        updateId: "update-1",
+        reporterId: "subscriber-1",
+        reason: "inappropriate_content",
+        createdAt: Timestamp.now(),
+      });
+    });
+
+    const creatorDb = testEnv.authenticatedContext("creator-1").firestore();
+    const subscriberDb = testEnv.authenticatedContext("subscriber-1").firestore();
+
+    await assertFails(
+      getDoc(doc(creatorDb, "creator_subscriber_updates", "update-1")),
+    );
+    await assertFails(
+      setDoc(doc(creatorDb, "creator_subscriber_updates", "update-2"), {
+        creatorId: "creator-1",
+        text: "Client-authored update",
+        createdAt: Timestamp.now(),
+      }),
+    );
+    await assertFails(
+      setDoc(
+        doc(subscriberDb, "creator_subscriber_update_reports", "report-2"),
+        {
+          updateId: "update-1",
+          reporterId: "subscriber-1",
+          reason: "inappropriate_content",
+          createdAt: Timestamp.now(),
+        },
+      ),
+    );
+  });
+
+  it("allows only active subscribers to join subscriber lounges", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "subscriber-room"), {
+        hostId: "creator-1",
+        ownerId: "creator-1",
+        name: "Members lounge",
+        isLive: true,
+        isAdult: true,
+        subscriberOnly: true,
+        creatorId: "creator-1",
+        audienceUserIds: ["creator-1"],
+        stageUserIds: [],
+        memberCount: 1,
+      });
+      await setDoc(
+        doc(db, "creator_subscriptions", "subscriber-1_creator-1"),
+        {
+          subscriberId: "subscriber-1",
+          creatorId: "creator-1",
+          status: "active",
+          terminal: false,
+        },
+      );
+    });
+
+    const subscriberDb = testEnv.authenticatedContext("subscriber-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("outsider-1").firestore();
+
+    await assertSucceeds(
+      setDoc(
+        doc(
+          subscriberDb,
+          "rooms",
+          "subscriber-room",
+          "participants",
+          "subscriber-1",
+        ),
+        {
+          userId: "subscriber-1",
+          role: "audience",
+          joinedAt: Timestamp.now(),
+        },
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(
+          outsiderDb,
+          "rooms",
+          "subscriber-room",
+          "participants",
+          "outsider-1",
+        ),
+        {
+          userId: "outsider-1",
+          role: "audience",
+          joinedAt: Timestamp.now(),
+        },
+      ),
+    );
   });
 
   it("blocks direct client writes to room speakers while still allowing participant reads", async () => {

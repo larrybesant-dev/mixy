@@ -227,6 +227,89 @@ service cloud.firestore {
         && request.resource.data.uid == uid();
     }
 
+    function validDatingPreferences(data) {
+      return data.keys().hasOnly([
+          'lookingFor',
+          'minAge',
+          'maxAge',
+          'maxDistanceKm',
+          'distanceUnit',
+          'race',
+          'sexuality',
+          'preferredRaces',
+          'preferredSexualities',
+          'latitude',
+          'longitude',
+          'updatedAt'
+        ])
+        && data.lookingFor is list
+        && data.lookingFor.hasOnly(['Woman', 'Man', 'Non-binary'])
+        && data.minAge is int
+        && data.minAge >= 18
+        && data.minAge <= 99
+        && data.maxAge is int
+        && data.maxAge >= data.minAge
+        && data.maxAge <= 99
+        && (data.maxDistanceKm == null
+          || (data.maxDistanceKm is number
+            && data.maxDistanceKm >= 1
+            && data.maxDistanceKm <= 500))
+        && data.distanceUnit in ['km', 'mi']
+        && (data.race == null
+          || data.race in [
+            'Asian',
+            'Black',
+            'Hispanic/Latino',
+            'Middle Eastern',
+            'Mixed',
+            'South Asian',
+            'White',
+            'Other'
+          ])
+        && (data.sexuality == null
+          || data.sexuality in [
+            'Straight',
+            'Gay',
+            'Lesbian',
+            'Bisexual',
+            'Pansexual',
+            'Queer',
+            'Asexual',
+            'Other'
+          ])
+        && data.preferredRaces is list
+        && data.preferredRaces.hasOnly([
+          'Asian',
+          'Black',
+          'Hispanic/Latino',
+          'Middle Eastern',
+          'Mixed',
+          'South Asian',
+          'White',
+          'Other'
+        ])
+        && data.preferredSexualities is list
+        && data.preferredSexualities.hasOnly([
+          'Straight',
+          'Gay',
+          'Lesbian',
+          'Bisexual',
+          'Pansexual',
+          'Queer',
+          'Asexual',
+          'Other'
+        ])
+        && (data.latitude == null
+          || (data.latitude is number
+            && data.latitude >= -90
+            && data.latitude <= 90))
+        && (data.longitude == null
+          || (data.longitude is number
+            && data.longitude >= -180
+            && data.longitude <= 180))
+        && data.updatedAt is timestamp;
+    }
+
     match /users/{userId} {
       // Soft-launch: Auth + field validation sufficient. App Check re-enabled post-launch.
       allow read: if signedIn();
@@ -333,8 +416,14 @@ service cloud.firestore {
 
       // Dating filter preferences (race, sexuality, location): owner-only.
       // Other users never read these; the speed dating functions use admin access.
+      match /private/dating {
+        allow read, delete: if isSelf(userId);
+        allow create, update: if isSelf(userId)
+          && validDatingPreferences(request.resource.data);
+      }
+
       match /private/{docId} {
-        allow read, write: if isSelf(userId);
+        allow read, write: if false;
       }
 
       // Discovery preferences (users/{uid}/settings/discoveryPreferences): owner-only.
@@ -390,6 +479,29 @@ service cloud.firestore {
     // Rooms: auth/adult gating + strict mutation controls
     // ---------------------------------------------------------------------
 
+    function hasActiveCreatorSubscription(creatorId) {
+      let subscriptionPath = /databases/$(database)/documents/creator_subscriptions/$(uid() + '_' + creatorId);
+      return signedIn()
+        && creatorId is string
+        && creatorId.size() > 0
+        && exists(subscriptionPath)
+        && get(subscriptionPath).data.creatorId == creatorId
+        && get(subscriptionPath).data.subscriberId == uid()
+        && get(subscriptionPath).data.status in ['active', 'trialing']
+        && get(subscriptionPath).data.terminal != true;
+    }
+
+    function canJoinRoom(roomData) {
+      return signedIn()
+        && (
+          !('subscriberOnly' in roomData)
+          || roomData.subscriberOnly != true
+          || roomData.hostId == uid()
+          || isAdmin()
+          || hasActiveCreatorSubscription(roomData.creatorId)
+        );
+    }
+
     function validRoomCreate() {
       return request.resource.data.keys().hasOnly([
           'name',
@@ -405,6 +517,8 @@ service cloud.firestore {
           'isLive',
           'endedAt',
           'isAdult',
+          'subscriberOnly',
+          'creatorId',
           'allowGuestAccess',
           'thumbnailUrl',
           'createdAt',
@@ -450,6 +564,18 @@ service cloud.firestore {
         )
         && request.resource.data.isLive is bool
         && request.resource.data.isAdult is bool
+        && (
+          !('subscriberOnly' in request.resource.data)
+          || request.resource.data.subscriberOnly is bool
+        )
+        && (
+          !('subscriberOnly' in request.resource.data)
+          || !request.resource.data.subscriberOnly
+          || (
+            request.resource.data.isAdult
+            && request.resource.data.creatorId == uid()
+          )
+        )
         && (!request.resource.data.isAdult || isAdultVerified(uid()))
         && request.resource.data.memberCount is int
         && request.resource.data.memberCount >= 0
@@ -535,6 +661,7 @@ service cloud.firestore {
             && request.resource.data.name == resource.data.name
             && request.resource.data.isLive == resource.data.isLive
             && request.resource.data.isAdult == resource.data.isAdult
+            && canJoinRoom(resource.data)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'audienceUserIds',
               'audienceUserAvatarUrls',
@@ -561,12 +688,14 @@ service cloud.firestore {
         allow create: if signedIn()
           && participantId == uid()
           && request.resource.data.userId == uid()
-          && exists(/databases/$(database)/documents/rooms/$(roomId));
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && canJoinRoom(get(/databases/$(database)/documents/rooms/$(roomId)).data);
 
 
         allow update: if signedIn()
           && participantId == uid()
           && request.resource.data.userId == uid()
+          && canJoinRoom(get(/databases/$(database)/documents/rooms/$(roomId)).data)
           && request.resource.data.role == resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'userId',
@@ -610,7 +739,8 @@ service cloud.firestore {
         // RELAXED: Simplified rules to debug join issues
         allow create, update: if signedIn()
           && memberId == uid()
-          && exists(/databases/$(database)/documents/rooms/$(roomId));
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && canJoinRoom(get(/databases/$(database)/documents/rooms/$(roomId)).data);
         allow delete: if signedIn() && (memberId == uid() || isAdmin());
       }
 
@@ -1178,6 +1308,30 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /creator_subscription_settings/{creatorId} {
+      allow read: if isSelf(creatorId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /creator_subscriptions/{subscriptionId} {
+      allow read: if signedIn()
+        && (
+          resource.data.subscriberId == uid()
+          || resource.data.creatorId == uid()
+          || isAdmin()
+        );
+      allow create, update, delete: if false;
+    }
+
+    match /creator_subscriber_updates/{updateId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /creator_subscriber_update_reports/{reportId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     // ---------------------------------------------------------------------
     // Presence
     // ---------------------------------------------------------------------
@@ -1563,4 +1717,3 @@ service cloud.firestore {
     }
   }
 }
-

@@ -8,6 +8,7 @@ import '../../../core/theme.dart';
 import '../../../models/presence_model.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../widgets/safe_network_avatar.dart';
+import '../../feed/providers/user_providers.dart' as feed_user;
 import '../models/conversation_model.dart';
 import '../providers/messaging_provider.dart';
 
@@ -586,11 +587,18 @@ class _ConversationTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = conversation.hasUnreadMessages(userId);
     final pinned = conversation.isPinnedFor(userId);
-    final displayName = conversation.getDisplayName(userId);
-    final avatarUrl = conversation.groupAvatarUrl;
-    final previewText = conversation.lastMessagePreview ?? 'No message yet';
     final isGroup = conversation.type == 'group';
     final peerUserId = _otherParticipantId();
+    // The name copied into the conversation can be stale, so prefer the live profile.
+    final peerProfile = (!isGroup && peerUserId != null)
+        ? ref.watch(feed_user.userProvider(peerUserId)).valueOrNull
+        : null;
+    final liveName = peerProfile?.username.trim() ?? '';
+    final displayName = liveName.isNotEmpty
+        ? liveName
+        : conversation.getDisplayName(userId);
+    final avatarUrl = conversation.groupAvatarUrl;
+    final previewText = conversation.lastMessagePreview ?? 'No message yet';
     final typingUsers =
         ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
         const <String>{};

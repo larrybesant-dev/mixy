@@ -10,7 +10,9 @@ import '../../../widgets/safe_network_avatar.dart';
 
 import '../../../core/layout/app_layout.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../presentation/providers/user_provider.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../profile/profile_view_providers.dart';
 
 bool hasPostContent({
   required String text,
@@ -20,6 +22,20 @@ bool hasPostContent({
   return text.trim().isNotEmpty ||
       (imageUrl ?? '').trim().isNotEmpty ||
       (videoUrl ?? '').trim().isNotEmpty;
+}
+
+String resolvePostAuthorName({
+  required String userId,
+  required String routeUsername,
+  String? profileUsername,
+  String? profileDisplayName,
+}) {
+  return getDisplayName(
+    uid: userId,
+    resolvedDisplayName: profileDisplayName,
+    profileUsername: profileUsername,
+    fallbackName: routeUsername,
+  );
 }
 
 class CreatePostScreen extends ConsumerStatefulWidget {
@@ -81,17 +97,26 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     setState(() => _isPosting = true);
 
     try {
+      final profile = await ref.read(
+        userProfileFutureProvider(widget.userId).future,
+      );
+      final authorName = resolvePostAuthorName(
+        userId: widget.userId,
+        routeUsername: widget.username,
+        profileUsername: profile.username,
+        profileDisplayName: profile.displayName,
+      );
       final tags = _tagsController.text.isEmpty
           ? <String>[]
           : _tagsController.text
-                .split(',')
-                .map((tag) => tag.trim().toLowerCase())
-                .toList();
+              .split(',')
+              .map((tag) => tag.trim().toLowerCase())
+              .toList();
 
       await ref.read(firestoreProvider).collection('posts').add({
         'authorId': widget.userId,
-        'authorName': widget.username,
-        'authorAvatarUrl': widget.avatarUrl,
+        'authorName': authorName,
+        'authorAvatarUrl': profile.avatarUrl ?? widget.avatarUrl,
         'content': content,
         'imageUrl': _imageUrl,
         'videoUrl': _videoUrl,
@@ -128,14 +153,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     required String contentType,
   }) async {
     final bytes = await file.readAsBytes().timeout(const Duration(seconds: 20));
-    final maxBytes = contentType.startsWith('video/')
-        ? _maxVideoBytes
-        : _maxPhotoBytes;
+    final maxBytes =
+        contentType.startsWith('video/') ? _maxVideoBytes : _maxPhotoBytes;
     if (bytes.lengthInBytes > maxBytes) {
       throw Exception(
         contentType.startsWith('video/')
-        ? 'Video is too large. Choose one under 50MB.'
-        : 'Photo is too large. Choose one under 5MB.',
+            ? 'Video is too large. Choose one under 50MB.'
+            : 'Photo is too large. Choose one under 5MB.',
       );
     }
 
@@ -222,6 +246,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profile =
+        ref.watch(userProfileFutureProvider(widget.userId)).valueOrNull;
+    final authorName = resolvePostAuthorName(
+      userId: widget.userId,
+      routeUsername: widget.username,
+      profileUsername: profile?.username,
+      profileDisplayName: profile?.displayName,
+    );
+    final authorAvatarUrl = profile?.avatarUrl ?? widget.avatarUrl;
+
     return AppPageScaffold(
       appBar: AppBar(
         title: const Text('Create Post'),
@@ -252,17 +286,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               children: [
                 SafeNetworkAvatar(
                   radius: 20,
-                  avatarUrl: widget.avatarUrl,
-                  fallbackText: widget.username.isNotEmpty
-                      ? widget.username[0].toUpperCase()
-                      : '?',
+                  avatarUrl: authorAvatarUrl,
+                  fallbackText:
+                      authorName.isNotEmpty ? authorName[0].toUpperCase() : '?',
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.username,
+                      authorName,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Text(
@@ -319,9 +352,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       onPressed: _isUploadingMedia
                           ? null
                           : () => setState(() {
-                              _imageUrl = null;
-                              _videoUrl = null;
-                            }),
+                                _imageUrl = null;
+                                _videoUrl = null;
+                              }),
                       icon: const Icon(Icons.clear),
                       label: const Text('Remove media'),
                     ),
@@ -334,16 +367,14 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 IconButton(
                   icon: const Icon(Icons.image),
                   tooltip: 'Add photo',
-                  onPressed: (_isUploadingMedia || _isPosting)
-                      ? null
-                      : _pickPhoto,
+                  onPressed:
+                      (_isUploadingMedia || _isPosting) ? null : _pickPhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.video_camera_back),
                   tooltip: 'Add video',
-                  onPressed: (_isUploadingMedia || _isPosting)
-                      ? null
-                      : _pickVideo,
+                  onPressed:
+                      (_isUploadingMedia || _isPosting) ? null : _pickVideo,
                 ),
                 // Emoji picker intentionally hidden until implemented.
                 // IconButton(
@@ -358,6 +389,3 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     );
   }
 }
-
-
-

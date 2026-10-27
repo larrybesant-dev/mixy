@@ -14,6 +14,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_remote_config
   firebase_storage
   flutter_webrtc
+  geolocator_windows
   iris_method_channel
   permission_handler_windows
   share_plus

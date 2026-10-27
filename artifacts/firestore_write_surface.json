@@ -34,6 +34,26 @@
       "inferredPath": "_health/{id}"
     },
     {
+      "file": "lib/services/firestore_dating_preferences_store.dart",
+      "line": 28,
+      "operation": "set",
+      "collections": [
+        "users",
+        "private"
+      ],
+      "inferredPath": "users/{id}/private/{id}"
+    },
+    {
+      "file": "lib/services/firestore_dating_preferences_store.dart",
+      "line": 35,
+      "operation": "delete",
+      "collections": [
+        "users",
+        "private"
+      ],
+      "inferredPath": "users/{id}/private/{id}"
+    },
+    {
       "file": "lib/services/follow_service.dart",
       "line": 187,
       "operation": "add",
@@ -45,105 +65,105 @@
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 106,
+      "line": 109,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 187,
+      "line": 190,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 351,
+      "line": 354,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 447,
+      "line": 450,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 459,
+      "line": 462,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 467,
+      "line": 470,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 528,
+      "line": 531,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 661,
+      "line": 664,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 671,
+      "line": 674,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 679,
+      "line": 682,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 741,
+      "line": 744,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1091,
+      "line": 1094,
       "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1092,
+      "line": 1095,
       "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1253,
+      "line": 1295,
       "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1254,
+      "line": 1296,
       "operation": "delete",
       "collections": [
         "friend_links"
@@ -152,28 +172,28 @@
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1386,
+      "line": 1404,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1446,
+      "line": 1464,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1482,
+      "line": 1500,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/friend_service.dart",
-      "line": 1624,
+      "line": 1642,
       "operation": "add",
       "collections": [
         "notifications"
@@ -557,35 +577,35 @@
     },
     {
       "file": "lib/services/room_service.dart",
-      "line": 951,
+      "line": 952,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/room_service.dart",
-      "line": 985,
+      "line": 988,
       "operation": "update",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/room_service.dart",
-      "line": 993,
+      "line": 996,
       "operation": "update",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/room_service.dart",
-      "line": 1002,
+      "line": 1005,
       "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/room_service.dart",
-      "line": 1028,
+      "line": 1031,
       "operation": "delete",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -829,21 +849,21 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 209,
+      "line": 207,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 215,
+      "line": 213,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 471,
+      "line": 469,
       "operation": "set",
       "collections": [
         "webrtc_sessions"
@@ -852,7 +872,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 476,
+      "line": 474,
       "operation": "set",
       "collections": [
         "webrtc_sessions",
@@ -862,7 +882,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 498,
+      "line": 496,
       "operation": "delete",
       "collections": [
         "participants"
@@ -871,7 +891,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 502,
+      "line": 500,
       "operation": "delete",
       "collections": [
         "participants",
@@ -881,7 +901,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 506,
+      "line": 504,
       "operation": "delete",
       "collections": [
         "signaling",
@@ -891,7 +911,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 576,
+      "line": 574,
       "operation": "update",
       "collections": [
         "webrtc_sessions",
@@ -901,7 +921,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 580,
+      "line": 578,
       "operation": "update",
       "collections": [
         "webrtc_sessions",
@@ -911,7 +931,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 603,
+      "line": 601,
       "operation": "set",
       "collections": [
         "webrtc_sessions"
@@ -920,7 +940,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 608,
+      "line": 606,
       "operation": "set",
       "collections": [
         "webrtc_sessions",
@@ -930,7 +950,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 625,
+      "line": 623,
       "operation": "add",
       "collections": [
         "webrtc_sessions",
@@ -940,38 +960,64 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 744,
+      "line": 778,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/webrtc_room_service.dart",
+      "line": 791,
+      "operation": "delete",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/webrtc_room_service.dart",
+      "line": 798,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/webrtc_room_service.dart",
+      "line": 881,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/services/webrtc_room_service.dart",
+      "line": 902,
       "operation": "add",
       "collections": [
         "webrtc_sessions",
-        "signaling"
+        "signaling",
+        "messages"
       ],
-      "inferredPath": "webrtc_sessions/{id}/signaling/{id}"
+      "inferredPath": "webrtc_sessions/{id}/signaling/{id}/messages/{id}"
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 769,
-      "operation": "set",
-      "collections": [],
-      "inferredPath": "(unknown)"
+      "line": 916,
+      "operation": "delete",
+      "collections": [
+        "webrtc_sessions",
+        "signaling",
+        "messages"
+      ],
+      "inferredPath": "webrtc_sessions/{id}/signaling/{id}/messages/{id}"
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 789,
+      "line": 977,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 851,
-      "operation": "set",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/services/webrtc_room_service.dart",
-      "line": 1195,
+      "line": 1384,
       "operation": "delete",
       "collections": [
         "webrtc_sessions",
@@ -981,7 +1027,7 @@
     },
     {
       "file": "lib/services/webrtc_room_service.dart",
-      "line": 1199,
+      "line": 1388,
       "operation": "delete",
       "collections": [
         "webrtc_sessions",
@@ -992,7 +1038,7 @@
     },
     {
       "file": "lib/features/after_dark/providers/after_dark_provider.dart",
-      "line": 85,
+      "line": 96,
       "operation": "set",
       "collections": [
         "preferences"
@@ -1001,7 +1047,14 @@
     },
     {
       "file": "lib/features/after_dark/providers/after_dark_provider.dart",
-      "line": 127,
+      "line": 129,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/after_dark/providers/after_dark_provider.dart",
+      "line": 163,
       "operation": "set",
       "collections": [
         "preferences"
@@ -1010,7 +1063,7 @@
     },
     {
       "file": "lib/features/after_dark/screens/after_dark_create_lounge_screen.dart",
-      "line": 109,
+      "line": 111,
       "operation": "update",
       "collections": [
         "rooms"
@@ -1076,14 +1129,42 @@
     },
     {
       "file": "lib/features/connections/pending_requests_screen.dart",
-      "line": 166,
+      "line": 177,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/connections/pending_requests_screen.dart",
-      "line": 199,
+      "line": 186,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/connections/pending_requests_screen.dart",
+      "line": 187,
+      "operation": "update",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/connections/pending_requests_screen.dart",
+      "line": 214,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/discovery/screens/persistent_discovery_screen.dart",
+      "line": 185,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/discovery/screens/persistent_discovery_screen.dart",
+      "line": 191,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -1374,49 +1455,49 @@
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2426,
+      "line": 2440,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2427,
+      "line": 2441,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2432,
+      "line": 2446,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2433,
+      "line": 2447,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2930,
+      "line": 2954,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2935,
+      "line": 2959,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/feed/screens/discovery_feed_screen.dart",
-      "line": 2948,
+      "line": 2972,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -1695,7 +1776,7 @@
     },
     {
       "file": "lib/features/posts/screens/create_post_screen.dart",
-      "line": 91,
+      "line": 116,
       "operation": "add",
       "collections": [
         "posts"
@@ -1714,7 +1795,7 @@
     },
     {
       "file": "lib/features/profile/edit_profile_screen.dart",
-      "line": 825,
+      "line": 838,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -1924,42 +2005,42 @@
     },
     {
       "file": "lib/features/profile/profile_screen.dart",
-      "line": 710,
+      "line": 592,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/profile_screen.dart",
-      "line": 1532,
+      "line": 1423,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 613,
+      "line": 599,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 617,
+      "line": 602,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 621,
+      "line": 606,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/profile/user_profile_screen.dart",
-      "line": 626,
+      "line": 611,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -2078,14 +2159,14 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 283,
+      "line": 285,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 540,
+      "line": 542,
       "operation": "delete",
       "collections": [
         "rooms",
@@ -2095,7 +2176,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 543,
+      "line": 545,
       "operation": "update",
       "collections": [
         "rooms",
@@ -2105,7 +2186,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 580,
+      "line": 582,
       "operation": "set",
       "collections": [
         "rooms",
@@ -2115,7 +2196,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 791,
+      "line": 841,
       "operation": "set",
       "collections": [
         "rooms",
@@ -2125,7 +2206,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 1190,
+      "line": 1240,
       "operation": "delete",
       "collections": [
         "rooms",
@@ -2135,7 +2216,7 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 1192,
+      "line": 1242,
       "operation": "set",
       "collections": [
         "rooms",
@@ -2145,14 +2226,14 @@
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 1687,
+      "line": 1778,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/presentation/live_room_screen.dart",
-      "line": 1700,
+      "line": 1798,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -2802,14 +2883,14 @@
     },
     {
       "file": "lib/features/room/repository/room_repository.dart",
-      "line": 416,
+      "line": 356,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/repository/room_repository.dart",
-      "line": 463,
+      "line": 403,
       "operation": "delete",
       "collections": [
         "rooms",
@@ -2819,7 +2900,7 @@
     },
     {
       "file": "lib/features/room/repository/room_repository.dart",
-      "line": 472,
+      "line": 412,
       "operation": "update",
       "collections": [
         "rooms",
@@ -2829,7 +2910,7 @@
     },
     {
       "file": "lib/features/room/repository/room_repository.dart",
-      "line": 511,
+      "line": 451,
       "operation": "set",
       "collections": [
         "reactions"
@@ -3090,6 +3171,13 @@
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
+      "line": 73,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/room/widgets/user_list_panel.dart",
       "line": 74,
       "operation": "add",
       "collections": [],
@@ -3097,21 +3185,14 @@
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 75,
+      "line": 81,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 82,
-      "operation": "add",
-      "collections": [],
-      "inferredPath": "(unknown)"
-    },
-    {
-      "file": "lib/features/room/widgets/user_list_panel.dart",
-      "line": 89,
+      "line": 88,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
@@ -3323,50 +3404,71 @@
     },
     {
       "file": "lib/features/social/screens/social_hub_screen.dart",
-      "line": 269,
+      "line": 291,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 77,
+      "line": 87,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 114,
+      "line": 124,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 122,
+      "line": 132,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 162,
+      "line": 172,
       "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 164,
+      "line": 174,
       "operation": "set",
       "collections": [],
       "inferredPath": "(unknown)"
     },
     {
       "file": "lib/features/speed_dating/services/speed_dating_service.dart",
-      "line": 183,
+      "line": 193,
       "operation": "set",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/speed_dating/widgets/dating_preferences_sheet.dart",
+      "line": 244,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/speed_dating/widgets/dating_preferences_sheet.dart",
+      "line": 395,
+      "operation": "add",
+      "collections": [],
+      "inferredPath": "(unknown)"
+    },
+    {
+      "file": "lib/features/speed_dating/widgets/dating_preferences_sheet.dart",
+      "line": 418,
+      "operation": "add",
       "collections": [],
       "inferredPath": "(unknown)"
     },

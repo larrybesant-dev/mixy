@@ -183,27 +183,31 @@ void main() {
       await tester.binding.setSurfaceSize(size);
       await tester.pump();
       for (final count in [4, 8, 12, 16, 20, 4]) {
-      await tester.tap(find.text('$count'));
-      await tester.pump();
+        await tester.tap(find.text('$count'));
+        await tester.pump();
 
-      final gridFinder = find.byType(GridView);
-      expect(gridFinder, findsOneWidget);
-      final grid = tester.widget<GridView>(gridFinder);
-      expect(grid.childrenDelegate.estimatedChildCount, count);
-      final slots = find.descendant(
-        of: gridFinder,
-        matching: find.byIcon(Icons.person),
-      );
-      expect(slots, findsNWidgets(count));
-      final viewport = tester.getRect(gridFinder);
-      for (final slot in slots.evaluate()) {
-        final rect = tester.getRect(find.byWidget(slot.widget));
-        expect(rect.left, greaterThanOrEqualTo(viewport.left));
-        expect(rect.top, greaterThanOrEqualTo(viewport.top));
-        expect(rect.right, lessThanOrEqualTo(viewport.right + 0.01));
-        expect(rect.bottom, lessThanOrEqualTo(viewport.bottom + 0.01));
-      }
-      expect(tester.takeException(), isNull);
+        final gridFinder = find.byType(GridView);
+        expect(gridFinder, findsOneWidget);
+        final grid = tester.widget<GridView>(gridFinder);
+        expect(grid.childrenDelegate.estimatedChildCount, count);
+        final slots = find.descendant(
+          of: gridFinder,
+          matching: find.byIcon(Icons.person),
+        );
+        expect(slots, findsNWidgets(count));
+        final viewport = tester.getRect(gridFinder);
+        for (final slot in slots.evaluate()) {
+          final rect = tester.getRect(find.byWidget(slot.widget));
+          expect(rect.left, greaterThanOrEqualTo(viewport.left));
+          expect(rect.top, greaterThanOrEqualTo(viewport.top));
+          expect(rect.right, lessThanOrEqualTo(viewport.right + 0.01));
+          expect(rect.bottom, lessThanOrEqualTo(viewport.bottom + 0.01));
+        }
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Unexpected layout error at $size with $count camera slots.',
+        );
       }
     }
   });

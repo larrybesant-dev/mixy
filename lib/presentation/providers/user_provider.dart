@@ -65,9 +65,8 @@ String resolvePublicUsername({
     return 'MixVy Member';
   }
 
-  final compactUid = normalizedUid
-      .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
-      .toUpperCase();
+  final compactUid =
+      normalizedUid.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
   final suffix = compactUid.isEmpty
       ? ''
       : compactUid.substring(0, compactUid.length < 4 ? compactUid.length : 4);
@@ -92,7 +91,7 @@ String resolvePublicUsername({
 final userProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authControllerProvider);
   final profileState = ref.watch(profileControllerProvider);
-  
+
   final uid = authState.uid;
   if (uid == null || uid.isEmpty) {
     return null;
@@ -107,20 +106,20 @@ final userProvider = Provider<UserModel?>((ref) {
     orElse: () => null,
   );
 
-  // Build resolved username: RTDB displayName takes priority.
-  final resolvedUsername = rtdbDisplayName ??
-      resolvePublicUsername(
-        uid: uid,
-        profileUsername: profileState.username,
-        authDisplayName: null,
-      );
+  // Prefer a real RTDB name, but never let a generated placeholder hide the
+  // persisted profile username.
+  final resolvedUsername = getDisplayName(
+    uid: uid,
+    resolvedDisplayName: rtdbDisplayName,
+    profileUsername: profileState.username,
+  );
 
   // Use avatar if it belongs to the current user.
   final profileAvatar =
       (profileState.userId == uid || profileState.userId == null) &&
-          (profileState.avatarUrl?.isNotEmpty == true)
-      ? profileState.avatarUrl
-      : null;
+              (profileState.avatarUrl?.isNotEmpty == true)
+          ? profileState.avatarUrl
+          : null;
 
   return UserModel(
     id: uid,
@@ -130,7 +129,3 @@ final userProvider = Provider<UserModel?>((ref) {
     createdAt: DateTime.now(),
   );
 });
-
-
-
-

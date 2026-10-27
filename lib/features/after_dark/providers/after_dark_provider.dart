@@ -13,9 +13,14 @@ import '../../auth/controllers/auth_controller.dart';
 const _kEnabled = 'after_dark_enabled';
 const _kPinStored = 'after_dark_pin';
 const _kDobYes = 'after_dark_dob_confirmed';
+const _kFailedAttempts = 'after_dark_failed_attempts';
+const _kLockedUntil = 'after_dark_locked_until';
+const _maxPinAttempts = 5;
+const _pinLockoutDuration = Duration(seconds: 30);
 
 // ── Session state — cleared when app is closed ───────────────────────────────
 final afterDarkSessionProvider = StateProvider<bool>((ref) => false);
+final afterDarkSetupAuthorizedProvider = StateProvider<bool>((ref) => false);
 
 // ── Persistent enable flag — reads from SharedPreferences ────────────────────
 final afterDarkEnabledProvider = FutureProvider<bool>((ref) async {
@@ -30,41 +35,47 @@ final afterDarkControllerProvider = Provider<AfterDarkController>((ref) {
 
 final adultRoomsProvider = StreamProvider.autoDispose
     .family<List<RoomModel>, String?>((ref, category) {
-      return ref
-          .watch(roomServiceProvider)
-          .watchRoomsWithVisibility(
-            category: category,
-            limit: 50,
-            includeAdultRooms: true,
-          )
-          .map((classifiedRooms) {
-            final rooms = classifiedRooms
-                .where((item) => item.tier != RoomVisibilityTier.invalid)
-                .map((item) => item.room)
-                .where((room) => room.isAdult)
-                .toList(growable: false);
-            rooms.sort((a, b) {
-              final aTs = a.createdAt?.seconds ?? 0;
-              final bTs = b.createdAt?.seconds ?? 0;
-              final byCreatedAt = bTs.compareTo(aTs);
-              if (byCreatedAt != 0) {
-                return byCreatedAt;
-              }
-              return a.id.compareTo(b.id);
-            });
-            return rooms;
-          });
+  return ref
+      .watch(roomServiceProvider)
+      .watchRoomsWithVisibility(
+        category: category,
+        limit: 50,
+        includeAdultRooms: true,
+      )
+      .map((classifiedRooms) {
+    final rooms = classifiedRooms
+        .where((item) => item.tier != RoomVisibilityTier.invalid)
+        .map((item) => item.room)
+        .where((room) => room.isAdult)
+        .toList(growable: false);
+    rooms.sort((a, b) {
+      final aTs = a.createdAt?.seconds ?? 0;
+      final bTs = b.createdAt?.seconds ?? 0;
+      final byCreatedAt = bTs.compareTo(aTs);
+      if (byCreatedAt != 0) {
+        return byCreatedAt;
+      }
+      return a.id.compareTo(b.id);
     });
+    return rooms;
+  });
+});
 
 class AfterDarkController {
   AfterDarkController(this._ref);
   final Ref _ref;
 
   // ── Activation (called after age gate + PIN setup) ────────────────────────
-  Future<void> enable(String pin) async {
+  Future<bool> enable(String pin) async {
     final prefs = await SharedPreferences.getInstance();
+    if ((prefs.getBool(_kEnabled) ?? false) ||
+        !_ref.read(afterDarkSetupAuthorizedProvider)) {
+      return false;
+    }
     await prefs.setBool(_kEnabled, true);
     await prefs.setBool(_kDobYes, true);
+    await prefs.remove(_kFailedAttempts);
+    await prefs.remove(_kLockedUntil);
     final uid = _ref.read(authControllerProvider).uid ?? 'anonymous';
     await prefs.setString(_kPinStored, _hashPin(pin, uid));
     // SINGLE SOURCE OF TRUTH FOR ADULT CONSENT STATE:
@@ -83,28 +94,51 @@ class AfterDarkController {
           .collection('preferences')
           .doc(firestoreUid)
           .set({
-            'userId': firestoreUid,
-            'adultModeEnabled': true,
-            'adultConsentAccepted': true,
-            'adultModeEnabledAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'userId': firestoreUid,
+        'adultModeEnabled': true,
+        'adultConsentAccepted': true,
+        'adultModeEnabledAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     }
     _ref.invalidate(afterDarkEnabledProvider);
+    _ref.read(afterDarkSetupAuthorizedProvider.notifier).state = false;
     _ref.read(afterDarkSessionProvider.notifier).state = true;
+    return true;
   }
 
   // ── Verify PIN → activate session ─────────────────────────────────────────
   Future<bool> unlock(String pin) async {
     final prefs = await SharedPreferences.getInstance();
+    final remaining = _remainingLockoutFromPreferences(prefs);
+    if (remaining != null) return false;
+
     final stored = prefs.getString(_kPinStored);
     if (stored == null) return false;
     final uid = _ref.read(authControllerProvider).uid ?? 'anonymous';
     final valid = _hashPin(pin, uid) == stored;
     if (valid) {
+      await prefs.remove(_kFailedAttempts);
+      await prefs.remove(_kLockedUntil);
       _ref.read(afterDarkSessionProvider.notifier).state = true;
+    } else {
+      final attempts = (prefs.getInt(_kFailedAttempts) ?? 0) + 1;
+      if (attempts >= _maxPinAttempts) {
+        await prefs.setInt(
+          _kLockedUntil,
+          DateTime.now().add(_pinLockoutDuration).millisecondsSinceEpoch,
+        );
+        await prefs.remove(_kFailedAttempts);
+      } else {
+        await prefs.setInt(_kFailedAttempts, attempts);
+      }
     }
     return valid;
+  }
+
+  Future<Duration?> remainingLockout() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _remainingLockoutFromPreferences(prefs);
   }
 
   // ── Lock session (stays enabled but requires PIN again) ───────────────────
@@ -118,6 +152,8 @@ class AfterDarkController {
     await prefs.remove(_kEnabled);
     await prefs.remove(_kPinStored);
     await prefs.remove(_kDobYes);
+    await prefs.remove(_kFailedAttempts);
+    await prefs.remove(_kLockedUntil);
     final uid = _ref.read(authControllerProvider).uid;
     if (uid != null) {
       await _ref
@@ -125,12 +161,13 @@ class AfterDarkController {
           .collection('preferences')
           .doc(uid)
           .set({
-            'userId': uid,
-            'adultModeEnabled': false,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'userId': uid,
+        'adultModeEnabled': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     }
     _ref.invalidate(afterDarkEnabledProvider);
+    _ref.read(afterDarkSetupAuthorizedProvider.notifier).state = false;
     _ref.read(afterDarkSessionProvider.notifier).state = false;
   }
 
@@ -142,8 +179,17 @@ class AfterDarkController {
     final digest = sha256.convert(saltedInput);
     return digest.toString();
   }
+
+  Duration? _remainingLockoutFromPreferences(SharedPreferences prefs) {
+    final lockedUntilMilliseconds = prefs.getInt(_kLockedUntil);
+    if (lockedUntilMilliseconds == null) return null;
+    final lockedUntil = DateTime.fromMillisecondsSinceEpoch(
+      lockedUntilMilliseconds,
+    );
+    final remaining = lockedUntil.difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      return null;
+    }
+    return remaining;
+  }
 }
-
-
-
-

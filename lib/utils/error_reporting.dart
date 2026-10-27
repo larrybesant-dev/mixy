@@ -3,6 +3,7 @@
 import 'package:logging/logging.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 final _logger = Logger('ErrorReporting');
@@ -16,10 +17,7 @@ bool get _crashlyticsSupported =>
 void reportError(dynamic error, StackTrace stack) {
   _logger.severe('Error: $error', error, stack);
   // Report to Crashlytics only on supported platforms
-  if (_crashlyticsSupported) {
+  if (_crashlyticsSupported && Firebase.apps.isNotEmpty) {
     FirebaseCrashlytics.instance.recordError(error, stack);
   }
 }
-
-
-

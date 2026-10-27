@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 import { activateWorkerCredentials } from './credentials';
 
 const AUTH_STEP_TIMEOUT_MS = 45000;
@@ -29,7 +29,9 @@ export async function enableFlutterSemantics(page: Page): Promise<void> {
       name: 'Enable accessibility',
     });
     if (await accessibilityButton.count()) {
-      await accessibilityButton.dispatchEvent('click');
+      await accessibilityButton.evaluate((element) => {
+        (element as HTMLElement).click();
+      });
     } else {
       const semanticsPlaceholder = page.locator('flt-semantics-placeholder');
       if (await semanticsPlaceholder.count()) {
@@ -83,7 +85,11 @@ async function assertMixvyAppEndpoint(page: Page): Promise<void> {
     'input[aria-label*="mail" i], input[type="email"], input[aria-label*="password" i], input[type="password"]',
   );
   const hasAuthControls = await expect
-    .poll(async () => authControls.count(), {
+    .poll(async () => {
+      const count = await authControls.count();
+      if (count < 2) await enableFlutterSemantics(page);
+      return authControls.count();
+    }, {
       timeout: 30000,
       message: 'Expected MixVy email and password controls after Flutter startup',
     })
@@ -197,9 +203,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
       return false;
     }
 
-    await emailInput.click();
-    await emailInput.press('Control+A');
-    await emailInput.pressSequentially(email, { delay: 10 });
+    await enterFlutterText(emailInput, email);
     await page.waitForTimeout(500);
 
     // Find and fill password field
@@ -211,9 +215,7 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
         ),
       )
       .first();
-    await passwordInput.click();
-    await passwordInput.press('Control+A');
-    await passwordInput.pressSequentially(password, { delay: 10 });
+    await enterFlutterText(passwordInput, password);
     await page.waitForTimeout(500);
 
     // Find and click login button
@@ -245,6 +247,22 @@ async function tryEmailPasswordAuth(page: Page, email: string, password: string)
       }`,
     );
     return false;
+  }
+}
+
+async function enterFlutterText(
+  input: Locator,
+  value: string,
+): Promise<void> {
+  await input.click();
+  await input.press('ControlOrMeta+A');
+  await input.pressSequentially(value, { delay: 10 });
+  const entered = await input.inputValue().catch(() => '');
+  if (entered === value) return;
+
+  await input.fill(value);
+  if (await input.inputValue().catch(() => '') !== value) {
+    throw new Error('Flutter text field did not accept the requested value.');
   }
 }
 

@@ -113,6 +113,14 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   final Map<String, Set<String>> _sentIceCandidateKeys = {};
 
+  // Peers whose renegotiation was requested while signaling was not stable.
+  final Set<String> _pendingRenegotiations = {};
+  final Map<String, Future<void>> _signalQueues = {};
+  final Map<String, List<RTCIceCandidate>> _pendingRemoteCandidates = {};
+  final Map<String, int> _iceRestartAttempts = {};
+  final Map<String, Timer> _iceRestartTimers = {};
+  static const int _maxIceRestartAttempts = 5;
+
   // Production ICE Servers
   List<Map<String, dynamic>>? _productionIceServers;
 
@@ -145,28 +153,18 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     developer.Timeline.startSync('MixVy:WebRTC:FetchTurnCredentials');
     try {
       // Call Cloud Function to fetch TURN credentials securely (secret key never leaves backend)
-      final callable = FirebaseFunctions.instance.httpsCallable('getTurnCredentials');
-      final result = await callable.call().timeout(const Duration(seconds: 10));
+      final callable = FirebaseFunctions.instance.httpsCallable('generateTurnCredentials');
+      final result = await callable.call<Map<String, dynamic>>().timeout(const Duration(seconds: 10));
       developer.Timeline.finishSync();
 
-      if (result.data is Map<String, dynamic>) {
-        final data = result.data as Map<String, dynamic>;
-        final username = data['username']?.toString();
-        final password = data['credential']?.toString();
-        final turnUrl = data['urls']?.toString() ?? 'turn:open.metered.ca:443';
-        
-        if (username != null && password != null) {
-          _productionIceServers = [
-            {'urls': 'stun:stun.l.google.com:19302'},
-            {
-              'urls': turnUrl,
-              'username': username,
-              'credential': password,
-            }
-          ];
-          _log('✅ Production ICE servers initialized via Cloud Function (secure)');
-          return;
-        }
+      final raw = result.data['iceServers'];
+      if (raw is List && raw.isNotEmpty) {
+        _productionIceServers = raw
+            .whereType<Map<dynamic, dynamic>>()
+            .map((entry) => entry.map((k, v) => MapEntry(k.toString(), v)))
+            .toList(growable: false);
+        _log('✅ Production ICE servers initialized via Cloud Function (secure)');
+        return;
       }
     } catch (e) {
       _log('[WebRTC][WARN] Cloud Function error during TURN fetch: $e. Falling back to STUN.');
@@ -641,13 +639,24 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           _cleanupPeer(userId).ignore();
         }
       }
-    }));
+    }, onError: (Object e) => _onListenerError(roomId, 'participants', e)));
+  }
+
+  void _onListenerError(String roomId, String source, Object error) {
+    _log('❌ $source listener failed for room $roomId: $error');
+    _setConnectionState(RtcConnectionState.failed);
+    onConnectionLost?.call();
   }
 
   Future<void> _cleanupPeer(String userId) async {
     final uid = _stableUid(userId);
 
     final peerSubs = _peerSubscriptions.remove(userId);
+    _pendingRenegotiations.remove(userId);
+    _iceRestartTimers.remove(userId)?.cancel();
+    _iceRestartAttempts.remove(userId);
+    _pendingRemoteCandidates.remove(userId);
+    _signalQueues.remove(userId);
     if (peerSubs != null) {
       for (final sub in peerSubs) {
         await sub.cancel();
@@ -703,6 +712,15 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         await pc.addTrack(track, _localStream!);
       }
     }
+    // Negotiate a video m-line up front so a camera turned on later can use replaceTrack.
+    // A sender with no track at answer time is negotiated as recvonly, so enableVideo
+    // renegotiates (see _renegotiate) once a track is attached.
+    if (await _videoTransceiver(pc) == null) {
+      await pc.addTransceiver(
+        kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
+        init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendRecv),
+      );
+    }
 
     pc.onIceCandidate = (candidate) {
       _writeIceCandidate(
@@ -715,8 +733,15 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     };
 
     pc.onTrack = (event) async {
+      // A video sender that starts without a track has no stream id, so wrap its track.
+      MediaStream? stream;
       if (event.streams.isNotEmpty) {
-        final stream = event.streams[0];
+        stream = event.streams[0];
+      } else if (event.track.kind == 'video') {
+        stream = await createLocalMediaStream('remote_$peerId');
+        await stream.addTrack(event.track);
+      }
+      if (stream != null) {
         final uid = _stableUid(peerId);
 
         final existingRenderer = _remoteRenderers[uid];
@@ -740,57 +765,34 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       }
     };
 
-    final signalRef = _firestore
-        .collection('webrtc_sessions')
-        .doc(roomId)
-        .collection('signaling')
-        .doc(_signalingDocId(_localUserId, peerId));
-
-    // Listen for remote signals
-    final peerSubs = _peerSubscriptions.putIfAbsent(peerId, () => []);
-    peerSubs.add(signalRef.snapshots().listen((snap) async {
-      if (!snap.exists) return;
-      final data = snap.data()!;
-      final senderId = data['senderId'] as String;
-      if (senderId == _localUserId) return;
-
-      final type = data['type'] as String;
-      final sdp = data['sdp'] as String;
-
-      // Record when remote description is received from Firestore
-      _latencyTracker.recordRemoteDescriptionReceived(peerId, type);
-
-      // Sprint 2 B-2 Fix: Validate role before applying remote description (prevents offer/answer race)
-      if (type == 'offer') {
-        if (isOfferer) {
-          _log('⚠️ RACE DETECTED: Received offer but I am offerer. Ignoring. (peerId=$peerId)');
-          return; // Both peers tried to be offerer - deterministic ordering should prevent this
-        }
-        
-        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
-        _latencyTracker.recordRemoteDescriptionApplied(peerId);
-        
-        final answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        
-        await signalRef.set({
-          'senderId': _localUserId,
-          'type': 'answer',
-          'sdp': answer.sdp,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-        
-        _latencyTracker.recordOfferAnswerSent(peerId, 'answer');
-      } else if (type == 'answer') {
-        if (!isOfferer) {
-          _log('⚠️ RACE DETECTED: Received answer but I am not offerer. Ignoring. (peerId=$peerId)');
-          return; // Non-offerer received answer - deterministic ordering violation
-        }
-        
-        await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
-        _latencyTracker.recordRemoteDescriptionApplied(peerId);
+    if (isOfferer) {
+      try {
+        await _clearSignalMessages(roomId, peerId);
+      } catch (e) {
+        _log('⚠️ Failed to clear stale signaling messages for $peerId: $e');
       }
-    }));
+    }
+
+    // Each signal is a separate message so offers, answers and renegotiations are never overwritten.
+    final peerSubs = _peerSubscriptions.putIfAbsent(peerId, () => []);
+    peerSubs.add(_signalMessages(roomId, peerId)
+        .orderBy('timestamp')
+        .snapshots()
+        .listen((snap) {
+      for (final change in snap.docChanges) {
+        if (change.type != DocumentChangeType.added) continue;
+        final doc = change.doc;
+        final data = doc.data();
+        if (data == null || data['senderId'] == _localUserId) continue;
+        _enqueueSignal(peerId, () async {
+          try {
+            await _applySignal(pc, roomId, peerId, data);
+          } finally {
+            await doc.reference.delete();
+          }
+        });
+      }
+    }, onError: (Object e) => _onListenerError(roomId, 'signaling', e)));
 
     // Listen for ICE candidates
     peerSubs.add(_firestore
@@ -830,8 +832,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
                 data['sdpMLineIndex'] as int?,
               );
               
-              pc.addCandidate(candidate);
-              _log('✅ Added ICE candidate for peer: $peerId');
+              _enqueueSignal(peerId, () => _addRemoteCandidate(pc, peerId, candidate));
+              _log('✅ Queued ICE candidate for peer: $peerId');
             } catch (e) {
               _log('⚠️ Failed to add ICE candidate for $peerId: $e. Connection state: ${pc.connectionState}');
             }
@@ -842,7 +844,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       if (staleCandidatesSkipped > 0) {
         _log('📊 Skipped $staleCandidatesSkipped stale ICE candidates for $peerId in this batch');
       }
-    }));
+    }, onError: (Object e) => _onListenerError(roomId, 'candidates', e)));
 
     if (isOfferer) {
       // Sprint 2 B-2 Fix: Add safeguard to ensure only deterministic offerer sends offer
@@ -855,16 +857,183 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
-      await signalRef.set({
-        'senderId': _localUserId,
-        'type': 'offer',
-        'sdp': offer.sdp,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      await _sendSignal(roomId, peerId, 'offer', offer.sdp ?? '');
       
       _latencyTracker.recordOfferAnswerSent(peerId, 'offer');
     }
     developer.Timeline.finishSync();
+  }
+
+  Future<RTCRtpTransceiver?> _videoTransceiver(RTCPeerConnection pc) async {
+    for (final transceiver in await pc.getTransceivers()) {
+      if (transceiver.receiver.track?.kind == 'video') return transceiver;
+    }
+    return null;
+  }
+
+  // Sends a new offer over the existing pair signaling doc so the remote side
+  // learns about a track that was attached after the initial negotiation.
+  Future<void> _renegotiate(String peerId, RTCPeerConnection pc) async {
+    final roomId = _currentChannelId;
+    if (roomId == null) return;
+    if (pc.signalingState != RTCSignalingState.RTCSignalingStateStable) {
+      _log('Renegotiation queued for $peerId: signaling state is ${pc.signalingState}');
+      _pendingRenegotiations.add(peerId);
+      return;
+    }
+    _pendingRenegotiations.remove(peerId);
+
+    final offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await _sendSignal(roomId, peerId, 'offer', offer.sdp ?? '');
+    _log('Sent renegotiation offer to $peerId');
+  }
+
+  CollectionReference<Map<String, dynamic>> _signalMessages(String roomId, String peerId) {
+    return _firestore
+        .collection('webrtc_sessions')
+        .doc(roomId)
+        .collection('signaling')
+        .doc(_signalingDocId(_localUserId, peerId))
+        .collection('messages');
+  }
+
+  Future<void> _sendSignal(String roomId, String peerId, String type, String sdp) async {
+    await _signalMessages(roomId, peerId).add({
+      'senderId': _localUserId,
+      'type': type,
+      'sdp': sdp,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Removes leftovers from an earlier session so a stale offer or answer is never replayed.
+  Future<void> _clearSignalMessages(String roomId, String peerId) async {
+    final snap = await _signalMessages(roomId, peerId).get();
+    if (snap.docs.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
+
+  // Runs signaling work for one peer strictly in arrival order.
+  void _enqueueSignal(String peerId, Future<void> Function() task) {
+    final previous = _signalQueues[peerId] ?? Future<void>.value();
+    _signalQueues[peerId] = previous.then((_) => task()).catchError((Object e) {
+      _log('⚠️ Signaling step failed for $peerId: $e');
+    });
+  }
+
+  Future<void> _applySignal(
+    RTCPeerConnection pc,
+    String roomId,
+    String peerId,
+    Map<String, dynamic> data,
+  ) async {
+    final type = data['type'] as String;
+    final sdp = data['sdp'] as String;
+
+    _latencyTracker.recordRemoteDescriptionReceived(peerId, type);
+
+    // Offers are accepted whenever the connection is stable, so either side can
+    // renegotiate (e.g. a camera turned on after the initial answer was sent).
+    if (type == 'offer') {
+      if (pc.signalingState != RTCSignalingState.RTCSignalingStateStable) {
+        _log('⚠️ Ignoring offer while signaling state is ${pc.signalingState} (peerId=$peerId)');
+        return;
+      }
+      await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+      _latencyTracker.recordRemoteDescriptionApplied(peerId);
+      await _flushPendingCandidates(pc, peerId);
+
+      final answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await _sendSignal(roomId, peerId, 'answer', answer.sdp ?? '');
+      _latencyTracker.recordOfferAnswerSent(peerId, 'answer');
+      if (_pendingRenegotiations.contains(peerId)) {
+        await _renegotiate(peerId, pc);
+      }
+    } else if (type == 'answer') {
+      // Only an answer to our own pending offer can be applied. Stale answers are ignored.
+      if (pc.signalingState != RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
+        _log('⚠️ Ignoring answer while signaling state is ${pc.signalingState} (peerId=$peerId)');
+        return;
+      }
+      await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
+      _latencyTracker.recordRemoteDescriptionApplied(peerId);
+      await _flushPendingCandidates(pc, peerId);
+      if (_pendingRenegotiations.contains(peerId)) {
+        await _renegotiate(peerId, pc);
+      }
+    }
+  }
+
+  // Candidates that arrive before the remote description are held until it is set.
+  Future<void> _addRemoteCandidate(RTCPeerConnection pc, String peerId, RTCIceCandidate candidate) async {
+    final remote = await pc.getRemoteDescription();
+    if (remote == null) {
+      _pendingRemoteCandidates.putIfAbsent(peerId, () => []).add(candidate);
+      return;
+    }
+    await pc.addCandidate(candidate);
+  }
+
+  Future<void> _flushPendingCandidates(RTCPeerConnection pc, String peerId) async {
+    final pending = _pendingRemoteCandidates.remove(peerId);
+    if (pending == null) return;
+    for (final candidate in pending) {
+      try {
+        await pc.addCandidate(candidate);
+      } catch (e) {
+        _log('⚠️ Failed to add buffered ICE candidate for $peerId: $e');
+      }
+    }
+  }
+
+  Duration _iceRestartBackoff(String peerId) {
+    final attempts = _iceRestartAttempts[peerId] ?? 0;
+    return Duration(seconds: attempts >= 5 ? 30 : (1 << attempts));
+  }
+
+  // Only the deterministic offerer restarts ICE, so the two sides never restart at once.
+  void _scheduleIceRestart(String peerId, {required Duration delay}) {
+    if (_localUserId.compareTo(peerId) >= 0) return;
+    if (_iceRestartTimers.containsKey(peerId)) return;
+    final attempts = _iceRestartAttempts[peerId] ?? 0;
+    if (attempts >= _maxIceRestartAttempts) {
+      _log('❌ ICE restart limit reached for $peerId');
+      _setConnectionState(RtcConnectionState.failed);
+      onConnectionLost?.call();
+      return;
+    }
+    _setConnectionState(RtcConnectionState.degraded);
+    _iceRestartTimers[peerId] = Timer(delay, () {
+      _iceRestartTimers.remove(peerId);
+      _restartIce(peerId).ignore();
+    });
+  }
+
+  Future<void> _restartIce(String peerId) async {
+    final pc = _pcs[peerId];
+    if (pc == null || !_isJoinedChannel || _currentChannelId == null) return;
+    final state = pc.iceConnectionState;
+    if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
+        state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
+      return;
+    }
+
+    final attempt = (_iceRestartAttempts[peerId] ?? 0) + 1;
+    _iceRestartAttempts[peerId] = attempt;
+    _log('🔁 ICE restart $attempt/$_maxIceRestartAttempts for $peerId');
+    try {
+      await pc.restartIce();
+      await _renegotiate(peerId, pc);
+    } catch (e) {
+      _log('ICE restart failed for $peerId: $e');
+      _scheduleIceRestart(peerId, delay: _iceRestartBackoff(peerId));
+    }
   }
 
   String _signalingDocId(String id1, String id2) {
@@ -950,15 +1119,16 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
       final videoTrack = _localStream?.getVideoTracks().firstOrNull;
       if (videoTrack != null) {
-        for (var pc in _pcs.values) {
-          final senders = await pc.getSenders();
-          final videoSender = senders.where((s) => s.track?.kind == 'video').firstOrNull;
-          if (videoSender != null) {
-            await videoSender.replaceTrack(videoTrack);
+        for (var entry in _pcs.entries) {
+          final pc = entry.value;
+          final videoTransceiver = await _videoTransceiver(pc);
+          if (videoTransceiver != null) {
+            await videoTransceiver.sender.replaceTrack(videoTrack);
           } else {
             await pc.addTrack(videoTrack, _localStream!);
-            _log('Renegotiation needed for peer after adding video track.');
           }
+          // The remote answer was negotiated without this track, so offer again.
+          await _renegotiate(entry.key, pc);
         }
       }
     } else {
@@ -1142,9 +1312,14 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   @override
   Future<void> reconnect() async {
-    // WebRTC doesn't have automatic reconnection yet; return gracefully.
-    _log('reconnect() called (no-op for WebRTC)');
-    logInfo('Reconnect requested for WebRTC service (no-op, manual recovery required)');
+    // Only the offerer side of each pair can renegotiate ICE, so answerers rely on their peer.
+    _log('reconnect() requested; restarting ICE for offerer-side peers');
+    for (final peerId in _pcs.keys.toList()) {
+      if (_localUserId.compareTo(peerId) >= 0) continue;
+      _iceRestartTimers.remove(peerId)?.cancel();
+      _iceRestartAttempts.remove(peerId);
+      await _restartIce(peerId);
+    }
   }
 
   @override
@@ -1188,7 +1363,14 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _reconnectAttemptCount = 0;
     _signalingHeartbeatFailures = 0;
     WidgetsBinding.instance.removeObserver(this);
-    _signalingHeartbeatTimer?.cancel();
+    for (final timer in _iceRestartTimers.values) {
+      timer.cancel();
+    }
+    _iceRestartTimers.clear();
+    _iceRestartAttempts.clear();
+    _pendingRemoteCandidates.clear();
+    _signalQueues.clear();
+
     _signalingHeartbeatTimer = null;
     _audioLevelTimer?.cancel();
     _audioLevelTimer = null;
@@ -1270,18 +1452,26 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
           // Record when peer connection is established
           _latencyTracker.recordPeerConnectionEstablished(peerId);
+          _iceRestartTimers.remove(peerId)?.cancel();
+          _iceRestartAttempts.remove(peerId);
           _setConnectionState(RtcConnectionState.connected);
           _reconnectAttemptCount = 0;
           break;
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
+          // Disconnected often recovers on its own, so wait before restarting ICE.
           _log('⚠️ Connection for $peerId disconnected. Waiting for recovery...');
-          _setConnectionState(RtcConnectionState.degraded);
+          _scheduleIceRestart(peerId, delay: const Duration(seconds: 5));
           break;
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
           _log('❌ Connection for $peerId failed.');
-          _latencyTracker.recordPeerConnectionClosed(peerId);
-          _setConnectionState(RtcConnectionState.failed);
-          onConnectionLost?.call();
+          if (_localUserId.compareTo(peerId) < 0) {
+            _scheduleIceRestart(peerId, delay: _iceRestartBackoff(peerId));
+          } else {
+            // The answerer cannot restart ICE itself; the offerer drives recovery.
+            _latencyTracker.recordPeerConnectionClosed(peerId);
+            _setConnectionState(RtcConnectionState.failed);
+            onConnectionLost?.call();
+          }
           break;
         case RTCIceConnectionState.RTCIceConnectionStateClosed:
           _log('Connection for $peerId closed.');

@@ -20,4 +20,16 @@ void main() {
     );
     expect(hasPostContent(text: '   '), isFalse);
   });
+
+  test('canonical profile name replaces a generated route placeholder', () {
+    expect(
+      resolvePostAuthorName(
+        userId: 'EL9KnmDMZGhES8yNYThQdjg3ya03',
+        routeUsername: 'Member EL9K',
+        profileUsername: 'CURVE',
+        profileDisplayName: 'CURVE',
+      ),
+      'CURVE',
+    );
+  });
 }

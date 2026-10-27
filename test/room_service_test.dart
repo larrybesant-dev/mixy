@@ -63,8 +63,26 @@ void main() {
       expect(data['isLive'], true);
       expect(data['isLocked'], false);
       expect(data['slowModeSeconds'], 0);
+      expect(data['subscriberOnly'], false);
+      expect(data['creatorId'], isNull);
       expect(data['audienceUserIds'], <String>['host-1']);
       expect(data['tags'], <String>['chill', 'music']);
+    });
+
+    test('createRoom marks subscriber lounges with creator authority',
+        () async {
+      final roomId = await service.createRoom(
+        hostId: 'creator-1',
+        name: 'Members Lounge',
+        isAdult: true,
+        subscriberOnly: true,
+      );
+
+      final data =
+          (await firestore.collection('rooms').doc(roomId).get()).data()!;
+      expect(data['subscriberOnly'], true);
+      expect(data['creatorId'], 'creator-1');
+      expect(data['isAdult'], true);
     });
 
     test('createRoom rejects empty hostId and name', () async {

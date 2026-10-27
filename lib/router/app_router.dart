@@ -44,6 +44,9 @@ import 'package:mixvy/features/trending/screens/trending_screen.dart';
 import 'package:mixvy/features/verification/screens/verification_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_age_gate_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_create_lounge_screen.dart';
+import 'package:mixvy/features/after_dark/screens/creator_subscription_screen.dart';
+import 'package:mixvy/features/after_dark/screens/creator_marketplace_screen.dart';
+import 'package:mixvy/features/after_dark/screens/after_dark_safety_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_home_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_lounges_screen.dart';
 import 'package:mixvy/features/after_dark/screens/after_dark_pin_screen.dart';
@@ -121,6 +124,12 @@ String? _activeProfileDeepLinkLock() {
   return locked;
 }
 
+bool hasCoreUserIdentityChanged(UserModel? previous, UserModel? next) {
+  return previous?.id != next?.id ||
+      previous?.username != next?.username ||
+      previous?.avatarUrl != next?.avatarUrl;
+}
+
 class _RouterRefreshNotifier extends ChangeNotifier {
   AuthState _authState = const AuthState();
   UserModel? _currentUser;
@@ -160,11 +169,9 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   }
 
   void updateCurrentUser(UserModel? value) {
-    // Only notify router listeners if the user's core ID changes, preventing
-    // full-app rebuilds when minor profile fields (e.g. followers) change.
-    final bool idChanged = _currentUser?.id != value?.id;
+    final identityChanged = hasCoreUserIdentityChanged(_currentUser, value);
     _currentUser = value;
-    if (!idChanged) return;
+    if (!identityChanged) return;
 
     if (!_isReady) return;
     notifyListeners();
@@ -214,6 +221,12 @@ final _routerRefreshNotifierProvider = Provider<_RouterRefreshNotifier>((ref) {
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.read(_routerRefreshNotifierProvider);
+
+  Future<String?> afterDarkProtectedRedirect() async {
+    if (refreshNotifier.isAfterDarkSessionActive) return null;
+    final enabled = await ref.read(afterDarkEnabledProvider.future);
+    return enabled ? '/after-dark/unlock' : '/after-dark/age-gate';
+  }
 
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -691,44 +704,81 @@ final routerProvider = Provider<GoRouter>((ref) {
           redirect: (context, state) => '/after-dark/age-gate'),
       GoRoute(
         path: '/after-dark',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
-            ? '/after-dark/unlock'
-            : null,
+        redirect: (context, state) => afterDarkProtectedRedirect(),
         builder: (context, state) =>
             const AfterDarkShell(child: AfterDarkHomeScreen()),
       ),
       GoRoute(
-          path: '/after-dark/age-gate',
-          builder: (context, state) => const AfterDarkAgeGateScreen()),
+        path: '/after-dark/age-gate',
+        redirect: (context, state) async {
+          final enabled = await ref.read(afterDarkEnabledProvider.future);
+          return enabled ? '/after-dark/unlock' : null;
+        },
+        builder: (context, state) => const AfterDarkAgeGateScreen(),
+      ),
       GoRoute(
-          path: '/after-dark/pin-setup',
-          builder: (context, state) => const AfterDarkPinScreen.setup()),
+        path: '/after-dark/pin-setup',
+        redirect: (context, state) async {
+          final enabled = await ref.read(afterDarkEnabledProvider.future);
+          if (enabled) return '/after-dark/unlock';
+          return ref.read(afterDarkSetupAuthorizedProvider)
+              ? null
+              : '/after-dark/age-gate';
+        },
+        builder: (context, state) => const AfterDarkPinScreen.setup(),
+      ),
       GoRoute(
-          path: '/after-dark/unlock',
-          builder: (context, state) => const AfterDarkPinScreen.unlock()),
+        path: '/after-dark/unlock',
+        redirect: (context, state) async {
+          final enabled = await ref.read(afterDarkEnabledProvider.future);
+          return enabled ? null : '/after-dark/age-gate';
+        },
+        builder: (context, state) => const AfterDarkPinScreen.unlock(),
+      ),
       GoRoute(
         path: '/after-dark/lounges',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
-            ? '/after-dark/unlock'
-            : null,
+        redirect: (context, state) => afterDarkProtectedRedirect(),
         builder: (context, state) =>
             const AfterDarkShell(child: AfterDarkLoungesScreen()),
       ),
       GoRoute(
         path: '/after-dark/profile',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
-            ? '/after-dark/unlock'
-            : null,
+        redirect: (context, state) => afterDarkProtectedRedirect(),
         builder: (context, state) =>
             const AfterDarkShell(child: AfterDarkProfileScreen()),
       ),
       GoRoute(
         path: '/after-dark/create-lounge',
-        redirect: (context, state) => !refreshNotifier.isAfterDarkSessionActive
-            ? '/after-dark/unlock'
-            : null,
+        redirect: (context, state) => afterDarkProtectedRedirect(),
         builder: (context, state) =>
             const AfterDarkShell(child: AfterDarkCreateLoungeScreen()),
+      ),
+      GoRoute(
+        path: '/after-dark/creator-subscriptions',
+        redirect: (context, state) => afterDarkProtectedRedirect(),
+        builder: (context, state) =>
+            const AfterDarkShell(child: CreatorSubscriptionScreen()),
+      ),
+      GoRoute(
+        path: '/after-dark/creators',
+        redirect: (context, state) => afterDarkProtectedRedirect(),
+        builder: (context, state) =>
+            const AfterDarkShell(child: CreatorMarketplaceScreen()),
+      ),
+      GoRoute(
+        path: '/after-dark/safety',
+        redirect: (context, state) => afterDarkProtectedRedirect(),
+        builder: (context, state) =>
+            const AfterDarkShell(child: AfterDarkSafetyScreen()),
+      ),
+      GoRoute(
+        path: '/after-dark/creator-subscriptions/:creatorId',
+        redirect: (context, state) => afterDarkProtectedRedirect(),
+        builder: (context, state) => AfterDarkShell(
+          child: CreatorSubscriptionScreen(
+            creatorId: state.pathParameters['creatorId'],
+          ),
+        ),
       ),
 
       GoRoute(

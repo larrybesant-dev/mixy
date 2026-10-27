@@ -80,7 +80,8 @@ void main() {
       expect(functionsGateway.calls.single.name, 'createPaymentIntent');
       expect(functionsGateway.calls.single.payload['amount'], 12.5);
       expect(functionsGateway.calls.single.payload['currency'], 'usd');
-      expect(functionsGateway.calls.single.payload['recipientId'], 'receiver-1');
+      expect(
+          functionsGateway.calls.single.payload['recipientId'], 'receiver-1');
       expect(
         functionsGateway.calls.single.payload['idempotencyKey'] as String,
         startsWith('intent_'),
@@ -223,4 +224,154 @@ void main() {
       });
     },
   );
+
+  test('getCreatorSubscriptionOverview maps offer and membership', () async {
+    final functionsGateway = FakePaymentFunctionsGateway(
+      responses: const <String, dynamic>{
+        'isOwner': false,
+        'offer': <String, dynamic>{
+          'creatorId': 'creator-9',
+          'enabled': true,
+          'monthlyPriceCents': 499,
+          'currency': 'usd',
+          'benefits': <String>['Private lounges'],
+        },
+        'connectStatus': <String, dynamic>{'onboardingComplete': true},
+        'subscription': <String, dynamic>{
+          'status': 'active',
+          'cancelAtPeriodEnd': false,
+          'currentPeriodEnd': 1770000000,
+        },
+        'subscriberCount': 12,
+      },
+    );
+    final paymentApi = PaymentApi(
+      MockRef(),
+      functionsGateway: functionsGateway,
+      authGateway: FakePaymentAuthGateway(mockUser),
+    );
+
+    final result = await paymentApi.getCreatorSubscriptionOverview(
+      ' creator-9 ',
+    );
+
+    expect(
+        functionsGateway.calls.single.name, 'getCreatorSubscriptionOverview');
+    expect(functionsGateway.calls.single.payload['creatorId'], 'creator-9');
+    expect(result.offer.monthlyPriceCents, 499);
+    expect(result.offer.benefits, <String>['Private lounges']);
+    expect(result.membership?.isActive, isTrue);
+    expect(result.subscriberCount, 12);
+  });
+
+  test('saveCreatorSubscriptionOffer sends server-validated fields', () async {
+    final functionsGateway = FakePaymentFunctionsGateway(
+      responses: const <String, dynamic>{
+        'isOwner': true,
+        'offer': <String, dynamic>{
+          'creatorId': 'user-123',
+          'enabled': true,
+          'monthlyPriceCents': 999,
+          'currency': 'usd',
+          'benefits': <String>['Premium access'],
+        },
+      },
+    );
+    final paymentApi = PaymentApi(
+      MockRef(),
+      functionsGateway: functionsGateway,
+      authGateway: FakePaymentAuthGateway(mockUser),
+    );
+
+    await paymentApi.saveCreatorSubscriptionOffer(
+      enabled: true,
+      monthlyPriceCents: 999,
+      benefits: const <String>['Premium access'],
+    );
+
+    expect(functionsGateway.calls.single.name, 'saveCreatorSubscriptionOffer');
+    expect(functionsGateway.calls.single.payload, <String, dynamic>{
+      'enabled': true,
+      'monthlyPriceCents': 999,
+      'benefits': <String>['Premium access'],
+    });
+  });
+
+  test('creator checkout rejects an empty creator id locally', () async {
+    final functionsGateway = FakePaymentFunctionsGateway();
+    final paymentApi = PaymentApi(
+      MockRef(),
+      functionsGateway: functionsGateway,
+      authGateway: FakePaymentAuthGateway(mockUser),
+    );
+
+    await expectLater(
+      () => paymentApi.createCreatorSubscriptionCheckout(' '),
+      throwsA(isA<Exception>()),
+    );
+    expect(functionsGateway.calls, isEmpty);
+  });
+
+  test('listCreatorSubscriptionMarketplace maps safe creator offers', () async {
+    final functionsGateway = FakePaymentFunctionsGateway(
+      responses: const <String, dynamic>{
+        'creators': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'creatorId': 'creator-1',
+            'displayName': 'CURVE',
+            'avatarUrl': '',
+            'subscriberCount': 7,
+            'offer': <String, dynamic>{
+              'creatorId': 'creator-1',
+              'enabled': true,
+              'monthlyPriceCents': 499,
+              'currency': 'usd',
+              'benefits': <String>['Private lounges'],
+            },
+          },
+        ],
+      },
+    );
+    final paymentApi = PaymentApi(
+      MockRef(),
+      functionsGateway: functionsGateway,
+      authGateway: FakePaymentAuthGateway(mockUser),
+    );
+
+    final creators = await paymentApi.listCreatorSubscriptionMarketplace(
+      query: ' curve ',
+    );
+
+    expect(functionsGateway.calls.single.name, 'listCreatorSubscriptionMarketplace');
+    expect(functionsGateway.calls.single.payload['query'], 'curve');
+    expect(creators.single.displayName, 'CURVE');
+    expect(creators.single.offer.monthlyPriceCents, 499);
+  });
+
+  test('publishCreatorSubscriberUpdate maps callable response', () async {
+    final functionsGateway = FakePaymentFunctionsGateway(
+      responses: const <String, dynamic>{
+        'update': <String, dynamic>{
+          'id': 'update-1',
+          'creatorId': 'user-123',
+          'text': 'Private update',
+          'createdAt': 1770000000,
+        },
+      },
+    );
+    final paymentApi = PaymentApi(
+      MockRef(),
+      functionsGateway: functionsGateway,
+      authGateway: FakePaymentAuthGateway(mockUser),
+    );
+
+    final update = await paymentApi.publishCreatorSubscriberUpdate(
+      ' Private update ',
+    );
+
+    expect(functionsGateway.calls.single.name, 'publishCreatorSubscriberUpdate');
+    expect(functionsGateway.calls.single.payload['text'], 'Private update');
+    expect(update.id, 'update-1');
+    expect(update.text, 'Private update');
+  });
 }

@@ -38,6 +38,14 @@ MixVy is a Flutter social/live-room app with Firebase, Riverpod, payments, moder
 4. Deploy hosting:
 	- firebase deploy --only hosting
 
+## Stripe Test-Mode Subscriptions
+- Creator subscription checkout stays disabled unless both values are supplied at build time:
+  - `--dart-define=ENABLE_PAYMENTS=true`
+  - `--dart-define=STRIPE_PUBLISHABLE_KEY=pk_test_...`
+- Never put a Stripe secret key (`sk_test_...` or `sk_live_...`) in a client build.
+- Keep checkout gated until Connect onboarding, checkout completion, renewal, failed payment, cancellation, webhook delivery, and reconciliation have all passed in Stripe test mode.
+- Subscriber-only updates and lounges use server-authoritative subscription records. Clients cannot grant themselves membership access.
+
 ## Launch Monitoring Checklist (First 24 Hours)
 - Keep one terminal on web/runtime logs for the first 2 hours after deploy.
 - Watch for repeated routing, auth persistence, and connection errors.

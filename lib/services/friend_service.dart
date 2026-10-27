@@ -70,6 +70,9 @@ class FriendService {
   CollectionReference<Map<String, dynamic>> get _usersCollection =>
       _firestore.collection('users');
 
+  CollectionReference<Map<String, dynamic>> get _publicProfilesCollection =>
+      _firestore.collection('profile_public');
+
   List<String> _asStringList(dynamic value) {
     if (value is! List) {
       return const <String>[];
@@ -1118,13 +1121,29 @@ class FriendService {
   }
 
   Future<UserModel?> getUserById(String userId) async {
-    final snapshot = await _usersCollection.doc(userId).get();
-    if (!snapshot.exists) {
+    final identity = (await _usersCollection.doc(userId).get()).data();
+    if (identity == null) {
       return null;
     }
 
-    return UserModel.fromJson(
-        {'id': snapshot.id, if (snapshot.data() != null) ...snapshot.data()!});
+    Map<String, dynamic>? publicProfile;
+    try {
+      publicProfile =
+          (await _publicProfilesCollection.doc(userId).get()).data();
+    } catch (error, stackTrace) {
+      _logReadFallback(
+        action: 'public_profile_read_failed',
+        details: 'path=profile_public/$userId',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return UserModel.fromJson({
+      ...identity,
+      ...?publicProfile,
+      'id': userId,
+    });
   }
 
   Future<List<UserModel>> getUsersByIds(List<String> userIds) async {
@@ -1133,14 +1152,15 @@ class FriendService {
     }
 
     final uniqueIds = userIds.toSet().toList(growable: false);
-    final usersById = <String, UserModel>{};
+    final identityById = <String, Map<String, dynamic>>{};
+    final publicProfileById = <String, Map<String, dynamic>>{};
     for (final chunk in _chunksOf(uniqueIds, _firestoreWhereInLimit)) {
       try {
         final query = await _usersCollection
             .where(FieldPath.documentId, whereIn: chunk)
             .get();
         for (final doc in query.docs) {
-          usersById[doc.id] = UserModel.fromJson({'id': doc.id, ...doc.data()});
+          identityById[doc.id] = doc.data();
         }
       } catch (error, stackTrace) {
         if (!_isPermissionDenied(error)) {
@@ -1155,11 +1175,9 @@ class FriendService {
         for (final userId in chunk) {
           try {
             final doc = await _usersCollection.doc(userId).get();
-            if (doc.exists) {
-              usersById[doc.id] = UserModel.fromJson({
-                'id': doc.id,
-                if (doc.data() != null) ...doc.data()!,
-              });
+            final data = doc.data();
+            if (data != null) {
+              identityById[doc.id] = data;
             }
           } catch (docError, docStackTrace) {
             if (_isPermissionDenied(docError)) {
@@ -1175,10 +1193,34 @@ class FriendService {
           }
         }
       }
+
+      try {
+        final query = await _publicProfilesCollection
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        for (final doc in query.docs) {
+          publicProfileById[doc.id] = doc.data();
+        }
+      } catch (error, stackTrace) {
+        _logReadFallback(
+          action: 'public_profiles_query_failed',
+          details: 'path=profile_public ids=${chunk.join(',')}',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }
 
     return uniqueIds
-        .map((userId) => usersById[userId])
+        .map((userId) {
+          final identity = identityById[userId];
+          if (identity == null) return null;
+          return UserModel.fromJson({
+            ...identity,
+            ...?publicProfileById[userId],
+            'id': userId,
+          });
+        })
         .whereType<UserModel>()
         .toList(growable: false);
   }
