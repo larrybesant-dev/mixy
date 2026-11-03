@@ -7,6 +7,7 @@ import '../../../core/theme.dart';
 import '../../../services/room_service.dart';
 import '../../../widgets/brand_ui_kit.dart';
 import '../../../widgets/safe_network_avatar.dart';
+import 'profile_photo_viewer.dart';
 
 enum ProfilePresenceState { online, recentlyActive, inRoom, offline }
 
@@ -109,36 +110,41 @@ class ProfileHeader extends ConsumerWidget {
     return Center(
       child: Column(
         children: [
-          GestureDetector(
-            onTap: isLiveNow
-                ? () => context.go('/rooms/room/${liveRoom.id}')
-                : null,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  width: 84,
-                  height: 84,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isLiveNow ? VelvetNoir.liveGlow : ringColor,
-                      width: 2.2,
-                    ),
-                    boxShadow: isLiveNow
-                        ? [
-                            BoxShadow(
-                              color: VelvetNoir.liveGlow.withValues(
-                                alpha: 0.45,
+          Semantics(
+            button: true,
+            label: 'Enlarge $displayName profile photo',
+            child: GestureDetector(
+              onTap: () => showProfilePhotoViewer(
+                context: context,
+                imageUrl: avatarUrl,
+                displayName: displayName,
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    width: 128,
+                    height: 128,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isLiveNow ? VelvetNoir.liveGlow : ringColor,
+                        width: 2.2,
+                      ),
+                      boxShadow: isLiveNow
+                          ? [
+                              BoxShadow(
+                                color: VelvetNoir.liveGlow.withValues(
+                                  alpha: 0.45,
+                                ),
+                                blurRadius: 16,
+                                spreadRadius: 0,
                               ),
-                              blurRadius: 16,
-                              spreadRadius: 0,
-                            ),
-                          ]
-                        : (glowColor == null
+                            ]
+                          : (glowColor == null
                               ? null
                               : [
                                   BoxShadow(
@@ -147,30 +153,34 @@ class ProfileHeader extends ConsumerWidget {
                                     spreadRadius: 0,
                                   ),
                                 ]),
-                  ),
-                  child: Hero(
-                    tag: 'avatar-$userId',
-                    child: SafeNetworkAvatar(
-                      radius: 36,
-                      avatarUrl: avatarUrl,
-                      backgroundColor: VelvetNoir.surfaceHigh,
-                      fallbackText: displayName.trim().isNotEmpty
-                          ? displayName.trim().characters.first.toUpperCase()
-                          : '?',
-                      fallbackTextStyle: GoogleFonts.raleway(
-                        color: VelvetNoir.primary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 26,
+                    ),
+                    child: Hero(
+                      tag: 'avatar-$userId',
+                      child: SafeNetworkAvatar(
+                        radius: 56,
+                        avatarUrl: avatarUrl,
+                        backgroundColor: VelvetNoir.surfaceHigh,
+                        fallbackText: displayName.trim().isNotEmpty
+                            ? displayName.trim().characters.first.toUpperCase()
+                            : '?',
+                        fallbackTextStyle: GoogleFonts.raleway(
+                          color: VelvetNoir.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 34,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (isLiveNow)
-                  const Positioned(
-                    bottom: -6,
-                    child: MixvyLiveBadge(),
-                  ),
-              ],
+                  if (isLiveNow)
+                    Positioned(
+                      bottom: -6,
+                      child: GestureDetector(
+                        onTap: () => context.go('/rooms/room/${liveRoom.id}'),
+                        child: const MixvyLiveBadge(),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -507,6 +517,3 @@ class _SecondaryActionsRow extends StatelessWidget {
     );
   }
 }
-
-
-

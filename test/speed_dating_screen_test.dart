@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mixvy/features/speed_dating/models/speed_dating_models.dart';
+import 'package:mixvy/features/speed_dating/screens/speed_dating_screen.dart';
 import 'package:mixvy/features/speed_dating/services/speed_dating_service.dart';
 import 'package:mixvy/services/moderation_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,13 +35,43 @@ SpeedDatingService _buildService(
 }
 
 void main() {
+  group('speed dating candidate photos', () {
+    const candidate = SpeedDateCandidate(
+      id: 'user-2',
+      username: 'Debo',
+    );
+
+    test('falls back to the persisted profile avatar', () {
+      final avatarUrl = resolveSpeedDateAvatarUrl(
+        candidate: candidate,
+        profileAvatarUrl: 'https://example.com/debo.jpg',
+      );
+
+      expect(avatarUrl, 'https://example.com/debo.jpg');
+    });
+
+    test('prefers the candidate avatar returned by matchmaking', () {
+      const candidateWithAvatar = SpeedDateCandidate(
+        id: 'user-2',
+        username: 'Debo',
+        avatarUrl: 'https://example.com/current.jpg',
+      );
+
+      final avatarUrl = resolveSpeedDateAvatarUrl(
+        candidate: candidateWithAvatar,
+        profileAvatarUrl: 'https://example.com/older.jpg',
+      );
+
+      expect(avatarUrl, 'https://example.com/current.jpg');
+    });
+  });
+
   group('SpeedDatingService', () {
     test('candidatesStream emits empty list when no users exist', () async {
       final firestore = FakeFirebaseFirestore();
       final service = _buildService(firestore);
-      final candidates = await service
-          .candidatesStream(currentUserId: 'user-1')
-          .first;
+      final candidates =
+          await service.candidatesStream(currentUserId: 'user-1').first;
       expect(candidates, isEmpty);
     });
 
@@ -52,9 +84,8 @@ void main() {
           {'id': 'user-2', 'username': 'Alice'},
         ],
       );
-      final candidates = await service
-          .candidatesStream(currentUserId: 'user-1')
-          .first;
+      final candidates =
+          await service.candidatesStream(currentUserId: 'user-1').first;
       final ids = candidates.map((c) => c.id).toList();
       expect(ids, contains('user-2'));
       expect(ids, isNot(contains('user-1')));
@@ -69,9 +100,8 @@ void main() {
           {'id': 'user-3', 'username': 'Bo'},
         ],
       );
-      final candidates = await service
-          .candidatesStream(currentUserId: 'user-1')
-          .first;
+      final candidates =
+          await service.candidatesStream(currentUserId: 'user-1').first;
       expect(candidates.map((c) => c.id), ['user-2', 'user-3']);
       expect(candidates.first.distanceKm, 3.25);
       expect(candidates.last.distanceKm, isNull);
@@ -115,10 +145,10 @@ void main() {
             .collection('speed_dating_actions')
             .doc('user-2_user-1')
             .set({
-              'decision': 'like',
-              'fromUserId': 'user-2',
-              'toUserId': 'user-1',
-            });
+          'decision': 'like',
+          'fromUserId': 'user-2',
+          'toUserId': 'user-1',
+        });
 
         // user-1 now likes user-2 → mutual match
         final result = await service.submitDecision(

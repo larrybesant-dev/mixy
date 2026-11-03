@@ -24,10 +24,8 @@ void main() {
     test('markRead updates only matching user notification', () async {
       await service.markRead('user-1', 'n1');
 
-      final updated = await firestore
-          .collection('notifications')
-          .doc('n1')
-          .get();
+      final updated =
+          await firestore.collection('notifications').doc('n1').get();
       expect(updated.data()?['isRead'], isTrue);
     });
 
@@ -36,12 +34,37 @@ void main() {
       () async {
         await service.markRead('user-3', 'n1');
 
-        final unchanged = await firestore
-            .collection('notifications')
-            .doc('n1')
-            .get();
+        final unchanged =
+            await firestore.collection('notifications').doc('n1').get();
         expect(unchanged.data()?['isRead'], isFalse);
       },
     );
+
+    test('sendRoomInviteToFriends creates joinable notifications', () async {
+      await service.sendRoomInviteToFriends(
+        friendIds: const ['friend-1', 'friend-2'],
+        inviterId: 'user-1',
+        inviterName: 'User One',
+        roomId: 'room-1',
+        roomName: 'Friday Night',
+      );
+
+      final notifications = await firestore
+          .collection('notifications')
+          .where('type', isEqualTo: 'live_room_invite')
+          .get();
+
+      expect(notifications.docs, hasLength(2));
+      expect(
+        notifications.docs.map((doc) => doc.data()['userId']).toSet(),
+        {'friend-1', 'friend-2'},
+      );
+      expect(
+        notifications.docs.every(
+          (doc) => doc.data()['roomId'] == 'room-1',
+        ),
+        isTrue,
+      );
+    });
   });
 }

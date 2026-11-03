@@ -36,6 +36,7 @@ import '../../services/schema_mutation_service.dart';
 import 'profile_field_resolver.dart';
 import 'profile_view_providers.dart';
 import 'widgets/profile_card.dart';
+import 'widgets/profile_photo_viewer.dart';
 import '../../core/flags/feature_flags.dart';
 import '../top_eight/top_eight_carousel.dart';
 import 'widgets/profile_music_player_stub.dart'
@@ -96,21 +97,25 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _profileFuture = _loadProfile();
+    _profileFuture = _profileLoadWithTimeout();
   }
 
   @override
   void didUpdateWidget(covariant UserProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.userId != widget.userId) {
-      _profileFuture = _loadProfile();
+      _profileFuture = _profileLoadWithTimeout();
     }
   }
 
   void _refreshProfile() {
     setState(() {
-      _profileFuture = _loadProfile();
+      _profileFuture = _profileLoadWithTimeout();
     });
+  }
+
+  Future<Map<String, dynamic>> _profileLoadWithTimeout() {
+    return _loadProfile().timeout(const Duration(seconds: 12));
   }
 
   Future<Map<String, dynamic>> _loadProfile() async {
@@ -497,6 +502,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             icon: const Icon(Icons.people_alt_outlined),
           ),
           IconButton(
+            tooltip: 'Settings',
+            onPressed: () => context.push('/profile/settings'),
+            icon: const Icon(Icons.settings_outlined),
+          ),
+          IconButton(
             tooltip: 'Sign out',
             onPressed: _confirmSignOut,
             icon: const Icon(Icons.logout_rounded),
@@ -509,7 +519,18 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           final viewerId = FirebaseAuth.instance.currentUser?.uid;
           final isOwnProfile = viewerId == widget.userId;
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const AppLoadingView(label: 'Loading profile');
+            return AppBoundedLoadingView(
+              fallbackContext: 'the profile',
+              label: 'Loading profile',
+              onRetry: _refreshProfile,
+            );
+          }
+          if (snapshot.hasError) {
+            return AppErrorView(
+              error: snapshot.error ?? 'Unknown profile error',
+              fallbackContext: 'profile',
+              onRetry: _refreshProfile,
+            );
           }
           final payload = snapshot.data;
           if (payload == null) {
@@ -593,6 +614,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               _stringOrNull(data['profileMusicTitle']) ?? '';
           final displayName =
               (username == null || username.isEmpty) ? 'MixVy user' : username;
+          final completedProfileFields = <bool>[
+            (username ?? '').isNotEmpty,
+            (avatarUrl ?? '').isNotEmpty,
+            (aboutMe ?? '').isNotEmpty,
+            interests.isNotEmpty,
+            (location ?? '').isNotEmpty,
+          ].where((complete) => complete).length;
+          final profileCompletionPercent =
+              ((completedProfileFields / 5) * 100).round();
 
           final details = <String>[];
           if (isOwnProfile || _asBool(privacy['showAge'], fallback: false)) {
@@ -639,6 +669,44 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   roomId: roomId,
                 ),
                 const SizedBox(height: 12),
+                if (profileCompletionPercent < 100) ...[
+                  Card(
+                    color: VelvetNoir.surfaceHigh,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Profile $profileCompletionPercent% complete',
+                                  style: const TextStyle(
+                                    color: VelvetNoir.onSurface,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => context.push('/profile/edit'),
+                                child: const Text('Finish profile'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: profileCompletionPercent / 100,
+                            color: VelvetNoir.primary,
+                            backgroundColor: VelvetNoir.surfaceContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ],
               if (!isOwnProfile)
                 ProfileCard(
@@ -903,17 +971,28 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   ),
                   itemBuilder: (context, index) {
                     final url = galleryUrls[index].trim();
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        child: CachedNetworkImage(
+                    return Semantics(
+                      button: true,
+                      label: 'Enlarge $displayName photo ${index + 1}',
+                      child: GestureDetector(
+                        onTap: () => showProfilePhotoViewer(
+                          context: context,
                           imageUrl: url,
-                          fit: BoxFit.cover,
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.broken_image),
+                          displayName: displayName,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Container(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            child: CachedNetworkImage(
+                              imageUrl: url,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.broken_image),
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -1122,32 +1201,44 @@ class _OwnProfileHeroCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isLiveNow
-                        ? VelvetNoir.liveGlow
-                        : VelvetNoir.primary.withValues(alpha: 0.7),
-                    width: 2,
+              Semantics(
+                button: true,
+                label: 'Enlarge $displayName profile photo',
+                child: GestureDetector(
+                  onTap: () => showProfilePhotoViewer(
+                    context: context,
+                    imageUrl: avatarUrl,
+                    displayName: displayName,
                   ),
-                ),
-                child: Hero(
-                  tag: 'avatar-$userId',
-                  child: SafeNetworkAvatar(
-                    radius: 34,
-                    avatarUrl: avatarUrl,
-                    backgroundColor: VelvetNoir.surfaceHigh,
-                    fallbackText: displayName.isNotEmpty
-                        ? displayName.characters.first.toUpperCase()
-                        : 'M',
-                    fallbackTextStyle: GoogleFonts.playfairDisplay(
-                      color: VelvetNoir.primary,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      textStyle: const TextStyle(
-                          fontFamilyFallback: mixvyFontFamilyFallback),
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isLiveNow
+                            ? VelvetNoir.liveGlow
+                            : VelvetNoir.primary.withValues(alpha: 0.7),
+                        width: 2,
+                      ),
+                    ),
+                    child: Hero(
+                      tag: 'avatar-$userId',
+                      child: SafeNetworkAvatar(
+                        radius: 34,
+                        avatarUrl: avatarUrl,
+                        backgroundColor: VelvetNoir.surfaceHigh,
+                        fallbackText: displayName.isNotEmpty
+                            ? displayName.characters.first.toUpperCase()
+                            : 'M',
+                        fallbackTextStyle: GoogleFonts.playfairDisplay(
+                          color: VelvetNoir.primary,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          textStyle: const TextStyle(
+                            fontFamilyFallback: mixvyFontFamilyFallback,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

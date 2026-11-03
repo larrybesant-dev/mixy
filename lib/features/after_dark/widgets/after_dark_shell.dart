@@ -130,7 +130,7 @@ class _AfterDarkTabBar extends StatelessWidget {
       BottomNavigationBarItem(
         icon: Icon(Icons.local_fire_department_outlined),
         activeIcon: Icon(Icons.local_fire_department_rounded),
-        label: 'Feed',
+        label: 'Home',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.meeting_room_outlined),
@@ -160,6 +160,5 @@ class _AfterDarkTabBar extends StatelessWidget {
     );
   }
 }
-
 
 

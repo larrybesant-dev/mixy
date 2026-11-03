@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/router/app_router.dart';
+import 'package:mixvy/router/route_state_bridge.dart';
 import 'package:mixvy/features/payments/payment_provider.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/services/presence_controller.dart';
@@ -56,6 +57,7 @@ class MixVyApp extends ConsumerWidget {
     // State changes are driven by refreshListenable in routerProvider,
     // which watches auth/user changes without recreating the router itself.
     final router = ref.read(routerProvider);
+    ref.watch(routeStateBridgeProvider(router));
 
     return MaterialApp.router(
       title: 'MixVy',

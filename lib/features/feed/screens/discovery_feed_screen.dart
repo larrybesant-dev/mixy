@@ -155,7 +155,6 @@ class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
       child: AppPageScaffold(
         backgroundColor: _npSurface,
         safeArea: false,
-        maxContentWidth: 720,
         body: NestedScrollView(
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
@@ -556,7 +555,11 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final horizontalPadding = context.pageHorizontalPadding;
 
     if (feedState.isLoading) {
-      return const AppLoadingView(label: 'Loading discovery feed');
+      return AppBoundedLoadingView(
+        fallbackContext: 'the discovery feed',
+        label: 'Loading discovery feed',
+        onRetry: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+      );
     }
 
     if (feedState.error != null) {
@@ -613,20 +616,10 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
             ),
           ),
 
-          // ── Hero CTA — "Join a Room" / "Start Your Own Room" ──────────
           SliverToBoxAdapter(
-            child: _HeroJoinCard(
+            child: HomePrimaryActions(
               firstRoom: filteredRooms.isNotEmpty ? filteredRooms[0] : null,
               onStartRoom: _startRoomCreation,
-            ),
-          ),
-
-          // ── Speed Date card — secondary CTA ───────────────────────────
-          const SliverToBoxAdapter(child: _SpeedDateCard()),
-
-          // ── Brand Pillar Nav Cards — MIX / CONNECT / INDULGE ──────────
-          SliverToBoxAdapter(
-            child: BrandPillarNavSection(
               onMixPressed: () => context.go('/discover'),
               onConnectPressed: () => context.go('/speed-dating'),
               onIndulgePressed: () => context.go('/rooms/create'),
@@ -2614,17 +2607,20 @@ class _AnimatedPulseDotState extends State<_AnimatedPulseDot>
 
 // ── Speed Date card — secondary CTA ──────────────────────────────────────────
 class _SpeedDateCard extends StatelessWidget {
-  const _SpeedDateCard();
+  const _SpeedDateCard({this.padding});
+
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.pageHorizontalPadding,
-        10,
-        context.pageHorizontalPadding,
-        4,
-      ),
+      padding: padding ??
+          EdgeInsets.fromLTRB(
+            context.pageHorizontalPadding,
+            10,
+            context.pageHorizontalPadding,
+            4,
+          ),
       child: GestureDetector(
         onTap: () => context.go('/speed-dating'),
         child: Container(
@@ -2720,13 +2716,95 @@ class _SpeedDateCard extends StatelessWidget {
   }
 }
 
+class HomePrimaryActions extends StatelessWidget {
+  const HomePrimaryActions({
+    super.key,
+    this.firstRoom,
+    this.onStartRoom,
+    this.onMixPressed,
+    this.onConnectPressed,
+    this.onIndulgePressed,
+  });
+
+  final RoomModel? firstRoom;
+  final VoidCallback? onStartRoom;
+  final VoidCallback? onMixPressed;
+  final VoidCallback? onConnectPressed;
+  final VoidCallback? onIndulgePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 900) {
+          return Column(
+            key: const ValueKey('home-primary-actions-stacked'),
+            children: [
+              _HeroJoinCard(
+                firstRoom: firstRoom,
+                onStartRoom: onStartRoom,
+              ),
+              const _SpeedDateCard(),
+              BrandPillarNavSection(
+                onMixPressed: onMixPressed,
+                onConnectPressed: onConnectPressed,
+                onIndulgePressed: onIndulgePressed,
+              ),
+            ],
+          );
+        }
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            context.pageHorizontalPadding,
+            16,
+            context.pageHorizontalPadding,
+            4,
+          ),
+          child: Row(
+            key: const ValueKey('home-primary-actions-wide'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: _HeroJoinCard(
+                  firstRoom: firstRoom,
+                  onStartRoom: onStartRoom,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    const _SpeedDateCard(padding: EdgeInsets.zero),
+                    const SizedBox(height: 8),
+                    BrandPillarNavSection(
+                      padding: EdgeInsets.zero,
+                      onMixPressed: onMixPressed,
+                      onConnectPressed: onConnectPressed,
+                      onIndulgePressed: onIndulgePressed,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 // ── Hero Join / Start Room card ───────────────────────────────────────────────
 /// Dominant CTA card at the top of the Discover feed.
 /// Two actions: join the first live room (if any), or start your own room.
 class _HeroJoinCard extends StatelessWidget {
-  const _HeroJoinCard({this.firstRoom, this.onStartRoom});
+  const _HeroJoinCard({this.firstRoom, this.onStartRoom, this.padding});
   final RoomModel? firstRoom;
   final VoidCallback? onStartRoom;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -2738,12 +2816,13 @@ class _HeroJoinCard extends StatelessWidget {
             : firstRoom!.stageUserIds.length +
                 firstRoom!.audienceUserIds.length;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.pageHorizontalPadding,
-        16,
-        context.pageHorizontalPadding,
-        4,
-      ),
+      padding: padding ??
+          EdgeInsets.fromLTRB(
+            context.pageHorizontalPadding,
+            16,
+            context.pageHorizontalPadding,
+            4,
+          ),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

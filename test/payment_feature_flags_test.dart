@@ -5,4 +5,8 @@ void main() {
   test('native builds cannot expose Stripe payments', () {
     expect(kPaymentsEnabled, isFalse);
   });
+
+  test('creator payouts default to disabled', () {
+    expect(kCreatorPayoutsEnabled, isFalse);
+  });
 }

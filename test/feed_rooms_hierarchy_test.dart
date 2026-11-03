@@ -5,6 +5,42 @@ import 'package:mixvy/features/social/screens/live_floor_screen.dart';
 import 'package:mixvy/shared/widgets/ui_stability_contract.dart';
 
 void main() {
+  testWidgets('home actions stack on phones and use both columns on desktop', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: HomePrimaryActions()),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('home-primary-actions-stacked')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('home-primary-actions-wide')),
+      findsNothing,
+    );
+
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('home-primary-actions-wide')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('home-primary-actions-stacked')),
+      findsNothing,
+    );
+  });
+
   testWidgets('home feed surfaces a clear live pulse banner', (
     WidgetTester tester,
   ) async {

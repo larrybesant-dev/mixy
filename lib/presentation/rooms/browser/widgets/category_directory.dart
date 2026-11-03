@@ -38,6 +38,17 @@ class CategoryDirectory extends StatelessWidget {
     'art': Color(0xFFFFCA28),
   };
 
+  static const Map<String?, String> _images = {
+    null: 'assets/images/room_categories/all_rooms.jpg',
+    'music': 'assets/images/room_categories/music.jpg',
+    'talk': 'assets/images/room_categories/talk.jpg',
+    'gaming': 'assets/images/room_categories/gaming.jpg',
+    'dance': 'assets/images/room_categories/dance.jpg',
+    'dating': 'assets/images/room_categories/dating.jpg',
+    'study': 'assets/images/room_categories/study.jpg',
+    'art': 'assets/images/room_categories/art.jpg',
+  };
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -106,7 +117,9 @@ class CategoryDirectory extends StatelessWidget {
           sliver: SliverLayoutBuilder(
             builder: (ctx, constraints) {
               final w = constraints.crossAxisExtent;
-              final cols = w > 900 ? 4 : (w > 600 ? 3 : 2);
+              final useFourColumns = w >= 720;
+              final cols = useFourColumns ? 4 : 2;
+              final tileHeight = useFourColumns ? 158.0 : 138.0;
               return SliverGrid(
                 delegate: SliverChildBuilderDelegate((_, i) {
                   final cat = categories[i];
@@ -117,12 +130,13 @@ class CategoryDirectory extends StatelessWidget {
                     emoji: cat.emoji,
                     gradientColors: grads,
                     accent: accent,
+                    imageAsset: _images[cat.value]!,
                     onTap: () => onCategorySelected(cat.value),
                   );
                 }, childCount: categories.length),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: cols,
-                  childAspectRatio: 0.9,
+                  mainAxisExtent: tileHeight,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),

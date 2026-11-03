@@ -1,27 +1,27 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-10-12T22:59:48.559Z",
-  "finishedAt": "2026-10-12T22:59:52.639Z",
-  "durationMs": 4080,
+  "startedAt": "2026-11-01T12:30:06.152Z",
+  "finishedAt": "2026-11-01T12:30:10.085Z",
+  "durationMs": 3933,
   "sampleSize": 500,
-  "totalScanned": 32,
-  "totalViolations": 3,
-  "passed": false,
+  "totalScanned": 65,
+  "totalViolations": 0,
+  "passed": true,
   "summary": {
     "conversations": {
-      "scanned": 2,
+      "scanned": 6,
       "violations": 0
     },
     "messages": {
-      "scanned": 8,
-      "violations": 3
+      "scanned": 7,
+      "violations": 0
     },
     "rooms": {
-      "scanned": 2,
+      "scanned": 8,
       "violations": 0
     },
     "roomParticipants": {
-      "scanned": 15,
+      "scanned": 39,
       "violations": 0
     },
     "follows": {
@@ -37,23 +37,7 @@
   },
   "violations": {
     "conversations": [],
-    "messages": [
-      {
-        "path": "rooms/2cWvKUNPgXTuBZr4zxBg/messages/285zjcCw0tROJGNr8uPb",
-        "rule": "missing_conversationId",
-        "details": null
-      },
-      {
-        "path": "rooms/2cWvKUNPgXTuBZr4zxBg/messages/O4koWJoFWAFdJveFtoPo",
-        "rule": "missing_conversationId",
-        "details": null
-      },
-      {
-        "path": "rooms/2cWvKUNPgXTuBZr4zxBg/messages/ezePVlb9W761CprdYxTC",
-        "rule": "missing_conversationId",
-        "details": null
-      }
-    ],
+    "messages": [],
     "rooms": [],
     "roomParticipants": [],
     "follows": [],

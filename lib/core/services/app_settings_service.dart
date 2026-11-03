@@ -7,6 +7,8 @@ class AppSettings {
   final ThemeMode themeMode;
   final bool notificationsEnabled;
   final bool analyticsEnabled;
+  final bool messengerSoundsEnabled;
+  final bool messengerBuzzEnabled;
   final bool legalAccepted;
   final String legalAcceptedVersion;
   final DateTime? legalAcceptedAt;
@@ -16,6 +18,8 @@ class AppSettings {
     required this.themeMode,
     required this.notificationsEnabled,
     required this.analyticsEnabled,
+    this.messengerSoundsEnabled = false,
+    this.messengerBuzzEnabled = false,
     required this.legalAccepted,
     required this.legalAcceptedVersion,
     required this.legalAcceptedAt,
@@ -23,18 +27,22 @@ class AppSettings {
   });
 
   const AppSettings.defaults()
-    : themeMode = ThemeMode.system,
-      notificationsEnabled = true,
-      analyticsEnabled = true,
-      legalAccepted = false,
-      legalAcceptedVersion = '',
-      legalAcceptedAt = null,
-      localeCode = 'en';
+      : themeMode = ThemeMode.system,
+        notificationsEnabled = true,
+        analyticsEnabled = true,
+        messengerSoundsEnabled = false,
+        messengerBuzzEnabled = false,
+        legalAccepted = false,
+        legalAcceptedVersion = '',
+        legalAcceptedAt = null,
+        localeCode = 'en';
 
   AppSettings copyWith({
     ThemeMode? themeMode,
     bool? notificationsEnabled,
     bool? analyticsEnabled,
+    bool? messengerSoundsEnabled,
+    bool? messengerBuzzEnabled,
     bool? legalAccepted,
     String? legalAcceptedVersion,
     DateTime? legalAcceptedAt,
@@ -44,6 +52,9 @@ class AppSettings {
       themeMode: themeMode ?? this.themeMode,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
+      messengerSoundsEnabled:
+          messengerSoundsEnabled ?? this.messengerSoundsEnabled,
+      messengerBuzzEnabled: messengerBuzzEnabled ?? this.messengerBuzzEnabled,
       legalAccepted: legalAccepted ?? this.legalAccepted,
       legalAcceptedVersion: legalAcceptedVersion ?? this.legalAcceptedVersion,
       legalAcceptedAt: legalAcceptedAt ?? this.legalAcceptedAt,
@@ -59,6 +70,8 @@ class AppSettingsService {
   static const _themeModeKey = 'app.theme_mode';
   static const _notificationsEnabledKey = 'app.notifications_enabled';
   static const _analyticsEnabledKey = 'app.analytics_enabled';
+  static const _messengerSoundsEnabledKey = 'app.messenger_sounds_enabled';
+  static const _messengerBuzzEnabledKey = 'app.messenger_buzz_enabled';
   static const _legalAcceptedKey = 'app.legal_accepted';
   static const _legalAcceptedVersionKey = 'app.legal_accepted_version';
   static const _legalAcceptedAtKey = 'app.legal_accepted_at';
@@ -70,6 +83,9 @@ class AppSettingsService {
       themeMode: _themeModeFromString(prefs.getString(_themeModeKey)),
       notificationsEnabled: prefs.getBool(_notificationsEnabledKey) ?? true,
       analyticsEnabled: prefs.getBool(_analyticsEnabledKey) ?? true,
+      messengerSoundsEnabled:
+          prefs.getBool(_messengerSoundsEnabledKey) ?? false,
+      messengerBuzzEnabled: prefs.getBool(_messengerBuzzEnabledKey) ?? false,
       legalAccepted: prefs.getBool(_legalAcceptedKey) ?? false,
       legalAcceptedVersion: prefs.getString(_legalAcceptedVersionKey) ?? '',
       legalAcceptedAt: _parseDateTime(prefs.getString(_legalAcceptedAtKey)),
@@ -85,6 +101,14 @@ class AppSettingsService {
       settings.notificationsEnabled,
     );
     await prefs.setBool(_analyticsEnabledKey, settings.analyticsEnabled);
+    await prefs.setBool(
+      _messengerSoundsEnabledKey,
+      settings.messengerSoundsEnabled,
+    );
+    await prefs.setBool(
+      _messengerBuzzEnabledKey,
+      settings.messengerBuzzEnabled,
+    );
     await prefs.setBool(_legalAcceptedKey, settings.legalAccepted);
     await prefs.setString(
       _legalAcceptedVersionKey,
@@ -132,6 +156,3 @@ class AppSettingsService {
     return normalized;
   }
 }
-
-
-

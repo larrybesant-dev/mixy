@@ -4,6 +4,7 @@ const {describe, it} = require("node:test");
 const paymentFunctions = require("../index");
 
 const {
+  assertStripeSecretAllowed,
   createPaymentIntentHandler,
   recordStripePaymentSuccessHandler,
   claimDailyCheckinHandler,
@@ -39,6 +40,23 @@ const {
   reportCreatorSubscriberUpdateHandler,
   reconcileCreatorSubscriptionsHandler,
 } = paymentFunctions.__testing;
+
+describe("Stripe environment guard", () => {
+  it("allows test keys and explicitly enabled live keys", () => {
+    assert.equal(assertStripeSecretAllowed("sk_test_example"), "sk_test_example");
+    assert.equal(
+        assertStripeSecretAllowed("sk_live_example", true),
+        "sk_live_example",
+    );
+  });
+
+  it("rejects live keys unless live mode is explicitly enabled", () => {
+    assert.throws(
+        () => assertStripeSecretAllowed("sk_live_example", false),
+        (error) => error?.code === "failed-precondition",
+    );
+  });
+});
 
 function makeRequest(data, authUid = "user-1") {
   return {

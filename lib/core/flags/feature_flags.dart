@@ -7,6 +7,12 @@ const bool kPaymentsEnabled = kIsWeb &&
       defaultValue: false,
     );
 
+const bool kCreatorPayoutsEnabled = kPaymentsEnabled &&
+    bool.fromEnvironment(
+      'ENABLE_CREATOR_PAYOUTS',
+      defaultValue: false,
+    );
+
 /// Feature flag to enable/disable the Top 8 Friends feature.
 final enableTop8FriendsFeature = Provider<bool>((ref) {
   // Set to true for testing purposes as requested.

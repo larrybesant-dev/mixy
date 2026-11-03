@@ -366,10 +366,12 @@ class _CreatorSubscriptionScreenState
         ),
         const SizedBox(height: 18),
         _statusRow(
-          overview.connectOnboardingComplete
+          !kCreatorPayoutsEnabled
+              ? 'Creator payouts disabled during beta'
+              : overview.connectOnboardingComplete
               ? 'Stripe payouts ready'
               : 'Stripe payout setup required',
-          overview.connectOnboardingComplete,
+          kCreatorPayoutsEnabled && overview.connectOnboardingComplete,
         ),
         const SizedBox(height: 8),
         Text(
@@ -377,7 +379,7 @@ class _CreatorSubscriptionScreenState
           style: const TextStyle(color: EmberDark.onSurfaceVariant),
         ),
         const SizedBox(height: 18),
-        if (!overview.connectOnboardingComplete)
+        if (kCreatorPayoutsEnabled && !overview.connectOnboardingComplete)
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(

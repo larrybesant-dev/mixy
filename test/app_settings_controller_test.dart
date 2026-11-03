@@ -22,14 +22,15 @@ void main() {
       addTearDown(container.dispose);
 
       await container.read(appSettingsControllerProvider.notifier).load();
-      final settings = container
-          .read(appSettingsControllerProvider)
-          .valueOrNull;
+      final settings =
+          container.read(appSettingsControllerProvider).valueOrNull;
 
       expect(settings, isNotNull);
       expect(settings!.themeMode, ThemeMode.system);
       expect(settings.notificationsEnabled, isTrue);
       expect(settings.analyticsEnabled, isTrue);
+      expect(settings.messengerSoundsEnabled, isFalse);
+      expect(settings.messengerBuzzEnabled, isFalse);
     });
 
     test('persists theme and toggle updates', () async {
@@ -45,12 +46,16 @@ void main() {
       await controller.updateThemeMode(ThemeMode.dark);
       await controller.setNotificationsEnabled(false);
       await controller.setAnalyticsEnabled(false);
+      await controller.setMessengerSoundsEnabled(true);
+      await controller.setMessengerBuzzEnabled(true);
       await controller.setLocaleCode('fr');
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('app.theme_mode'), 'dark');
       expect(prefs.getBool('app.notifications_enabled'), isFalse);
       expect(prefs.getBool('app.analytics_enabled'), isFalse);
+      expect(prefs.getBool('app.messenger_sounds_enabled'), isTrue);
+      expect(prefs.getBool('app.messenger_buzz_enabled'), isTrue);
       expect(prefs.getString('app.locale_code'), 'fr');
     });
 
@@ -66,9 +71,8 @@ void main() {
       await controller.load();
       await controller.acceptCurrentLegal();
 
-      final settings = container
-          .read(appSettingsControllerProvider)
-          .valueOrNull;
+      final settings =
+          container.read(appSettingsControllerProvider).valueOrNull;
       final prefs = await SharedPreferences.getInstance();
 
       expect(settings, isNotNull);

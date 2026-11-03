@@ -35,6 +35,8 @@ class UserModel {
   final String? profileBgGradientEnd;
   final String? profileMusicUrl;
   final String? profileMusicTitle;
+  final String? statusMessage;
+  final String messengerStatus;
 
   UserModel({
     required this.id,
@@ -69,6 +71,8 @@ class UserModel {
     this.profileBgGradientEnd,
     this.profileMusicUrl,
     this.profileMusicTitle,
+    this.statusMessage,
+    this.messengerStatus = 'online',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -118,6 +122,11 @@ class UserModel {
     profileBgGradientEnd: _stringOrNull(json['profileBgGradientEnd']),
     profileMusicUrl: _stringOrNull(json['profileMusicUrl']),
     profileMusicTitle: _stringOrNull(json['profileMusicTitle']),
+    statusMessage: _stringOrNull(json['statusMessage']),
+    messengerStatus: _stringOrEmpty(
+      json['messengerStatus'],
+      fallback: 'online',
+    ),
   );
 
   static bool _boolOr(dynamic value, {required bool fallback}) {
@@ -245,6 +254,8 @@ class UserModel {
     'profileBgGradientEnd': profileBgGradientEnd,
     'profileMusicUrl': profileMusicUrl,
     'profileMusicTitle': profileMusicTitle,
+    'statusMessage': statusMessage,
+    'messengerStatus': messengerStatus,
   };
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -255,6 +266,4 @@ class UserModel {
     });
   }
 }
-
-
 

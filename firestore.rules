@@ -207,8 +207,21 @@ service cloud.firestore {
         'profileBgGradientStart',
         'profileBgGradientEnd',
         'profileMusicUrl',
-        'profileMusicTitle'
+        'profileMusicTitle',
+        'statusMessage',
+        'messengerStatus'
       ];
+    }
+
+    function validMessengerProfile(data) {
+      return (
+          !('statusMessage' in data)
+          || (data.statusMessage is string && data.statusMessage.size() <= 80)
+        )
+        && (
+          !('messengerStatus' in data)
+          || data.messengerStatus in ['online', 'away', 'dnd']
+        );
     }
 
     function userCreateValid(userId) {
@@ -216,6 +229,7 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.uid == uid()
         && request.resource.data.keys().hasAny(['createdAt', 'updatedAt'])
+        && validMessengerProfile(request.resource.data)
         // Server timestamps are set after rule evaluation; allow their presence
         && !request.resource.data.keys().hasAny(restrictedUserFields());
     }
@@ -224,7 +238,8 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedSelfUserFields())
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(restrictedUserFields())
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.uid == uid();
+        && request.resource.data.uid == uid()
+        && validMessengerProfile(request.resource.data);
     }
 
     function validDatingPreferences(data) {
@@ -402,6 +417,24 @@ service cloud.firestore {
         allow update: if false;
       }
 
+      match /discovery/{candidateId} {
+        allow read: if isSelf(userId);
+        allow create, update: if isSelf(userId)
+          && request.resource.data.candidateId == candidateId
+          && request.resource.data.isLike is bool
+          && request.resource.data.createdAt is timestamp;
+        allow delete: if isSelf(userId);
+      }
+
+      match /profileViews/{viewId} {
+        allow read, delete: if isSelf(userId);
+        allow create: if signedIn()
+          && request.resource.data.viewerId == uid()
+          && request.resource.data.viewedUserId == userId
+          && request.resource.data.createdAt is timestamp;
+        allow update: if false;
+      }
+
       match /privacy/{docId} {
         allow read: if isSelf(userId);
         allow create, update: if isSelf(userId);
@@ -438,6 +471,11 @@ service cloud.firestore {
 
     match /{path=**}/stories/{storyId} {
       allow read: if signedIn();
+    }
+
+    match /{path=**}/discovery/{candidateId} {
+      allow read: if signedIn()
+        && resource.data.candidateId == uid();
     }
 
     // ---------------------------------------------------------------------
@@ -805,6 +843,52 @@ service cloud.firestore {
             && canReadRoomById(roomId)
             && reactionId == uid();
         }
+
+      }
+
+      match /whispers/{whisperId} {
+        allow read: if signedIn()
+          && uid() in resource.data.participantIds;
+
+        allow create: if signedIn()
+          && isRoomParticipant(roomId, uid())
+          && request.resource.data.keys().hasOnly([
+            'id',
+            'roomId',
+            'senderId',
+            'senderName',
+            'recipientId',
+            'recipientName',
+            'participantIds',
+            'content',
+            'createdAt',
+            'clientSentAt'
+          ])
+          && request.resource.data.id == whisperId
+          && request.resource.data.roomId == roomId
+          && request.resource.data.senderId == uid()
+          && request.resource.data.recipientId is string
+          && request.resource.data.recipientId != uid()
+          && request.resource.data.participantIds is list
+          && request.resource.data.participantIds.size() == 2
+          && (
+            (
+              request.resource.data.participantIds[0] == uid()
+              && request.resource.data.participantIds[1]
+                == request.resource.data.recipientId
+            )
+            ||
+            (
+              request.resource.data.participantIds[1] == uid()
+              && request.resource.data.participantIds[0]
+                == request.resource.data.recipientId
+            )
+          )
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.createdAt is timestamp;
+
+        allow update, delete: if false;
       }
 
       match /typing/{typingUserId} {
@@ -1150,6 +1234,7 @@ service cloud.firestore {
             'senderName',
             'senderAvatarUrl',
             'content',
+            'type',
             'clientMessageId',
             'clientmessageId',
             'createdAt',
@@ -1158,6 +1243,10 @@ service cloud.firestore {
             'isDeleted',
             'readBy'
           ])
+          && (
+            !('type' in request.resource.data)
+            || request.resource.data.type in ['normal', 'buzz']
+          )
           && request.resource.data.conversationId == conversationId
           && request.resource.data.senderId == uid()
           && request.resource.data.createdAt is timestamp

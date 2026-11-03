@@ -25,7 +25,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.didUpdateWidget(oldWidget);
     // Sync navigationShell's current index to provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(selectedTabIndexProvider.notifier).state = widget.navigationShell.currentIndex;
+      ref.read(selectedTabIndexProvider.notifier).state =
+          widget.navigationShell.currentIndex;
     });
   }
 
@@ -34,12 +35,19 @@ class _AppShellState extends ConsumerState<AppShell> {
     StartupProfiler.instance.markFirstUserAction(
       context: 'bottom_nav_tab_$index',
     );
-    
+
     // Update provider first
     ref.read(selectedTabIndexProvider.notifier).state = index;
-    
+
     // Navigate using go() with explicit paths instead of goBranch()
-    final routes = ['/home', '/messages', '/rooms', '/speed-dating', '/profile'];
+    final routes = [
+      '/home',
+      '/messages',
+      '/rooms',
+      '/speed-dating',
+      '/profile',
+      '/settings',
+    ];
     if (index >= 0 && index < routes.length) {
       GoRouter.of(context).go(routes[index]);
     }
@@ -48,7 +56,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final selectedIndex = ref.watch(selectedTabIndexProvider);
-    
+
     return Scaffold(
       body: widget.navigationShell,
       bottomNavigationBar: NavigationBar(
@@ -57,7 +65,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
-            label: 'Feed',
+            label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.chat_bubble_outline),
@@ -79,10 +87,14 @@ class _AppShellState extends ConsumerState<AppShell> {
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
         onDestinationSelected: _onDestinationSelected,
       ),
     );
   }
 }
-

@@ -13,6 +13,7 @@ import 'package:mixvy/features/auth/register_screen.dart';
 import 'package:mixvy/features/auth/screens/login_screen.dart';
 import 'package:mixvy/features/auth/screens/forgot_password_screen.dart';
 import 'package:mixvy/features/beta/beta_feedback_screen.dart';
+import 'package:mixvy/features/beta/beta_tester_provider.dart';
 import 'package:mixvy/features/follow/screens/follow_screens.dart';
 import 'package:mixvy/features/friends/screens/friends_list_screen.dart';
 import 'package:mixvy/features/messaging/screens/chat_screen.dart';
@@ -69,8 +70,10 @@ import 'package:mixvy/presentation/providers/user_provider.dart';
 import 'package:mixvy/presentation/screens/settings_screen.dart';
 import 'package:mixvy/features/room/presentation/call_screen.dart';
 import 'package:mixvy/features/room/presentation/live_room_screen.dart';
+import 'package:mixvy/features/room/providers/room_session_provider.dart';
 import 'package:mixvy/features/dashboard/dashboard_screen.dart';
 import 'package:mixvy/features/messaging/screens/messages_screen.dart';
+import 'package:mixvy/features/messaging/providers/messenger_window_provider.dart';
 import 'package:mixvy/shared/widgets/primary_navigation_shell.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -556,7 +559,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: 'settings',
               name: 'profileSettings',
-              builder: (context, state) => const SettingsScreen()),
+              builder: (context, state) => const _CustomShell(initialIndex: 5)),
           GoRoute(
               path: 'social',
               name: 'profileSocial',
@@ -620,15 +623,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: 'verification',
               name: 'verification',
-              builder: (context, state) => const VerificationScreen()),
+              builder: (context, state) => const _CustomShell(
+                    initialIndex: 5,
+                    content: VerificationScreen(),
+                  )),
           GoRoute(
               path: 'account',
               name: 'account',
-              builder: (context, state) => const AccountCenterScreen()),
+              builder: (context, state) => const _CustomShell(
+                    initialIndex: 5,
+                    content: AccountCenterScreen(),
+                  )),
           GoRoute(
               path: 'about',
               name: 'about',
-              builder: (context, state) => const AppInfoScreen()),
+              builder: (context, state) => const _CustomShell(
+                    initialIndex: 5,
+                    content: AppInfoScreen(),
+                  )),
           GoRoute(
             path: 'payments',
             name: 'payments',
@@ -637,7 +649,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               final uid = refreshNotifier.authState.uid;
               return (uid == null || uid.isEmpty) ? '/auth' : null;
             },
-            builder: (context, state) => const PaymentsScreen(),
+            builder: (context, state) => const _CustomShell(
+              initialIndex: 5,
+              content: PaymentsScreen(),
+            ),
           ),
           GoRoute(
               path: 'vip',
@@ -782,8 +797,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
-          path: '/beta-feedback',
-          builder: (context, state) => const BetaFeedbackScreen()),
+        path: '/beta-feedback',
+        builder: (context, state) => const _CustomShell(
+          initialIndex: 6,
+          content: BetaFeedbackScreen(),
+        ),
+      ),
 
       // Global redirects for deep links and legacy paths
       GoRoute(path: '/live', redirect: (context, state) => '/rooms'),
@@ -806,6 +825,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/settings', redirect: (context, state) => '/profile/settings'),
       GoRoute(
+          path: '/verification',
+          redirect: (context, state) => '/profile/verification'),
+      GoRoute(
+          path: '/account', redirect: (context, state) => '/profile/account'),
+      GoRoute(path: '/about', redirect: (context, state) => '/profile/about'),
+      GoRoute(
+          path: '/payments', redirect: (context, state) => '/profile/payments'),
+      GoRoute(
           path: '/friends', redirect: (context, state) => '/profile/friends'),
       GoRoute(path: '/groups', redirect: (context, state) => '/profile/groups'),
     ],
@@ -822,9 +849,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 /// Custom shell implementation using IndexedStack for reliable web navigation
 class _CustomShell extends ConsumerWidget {
-  const _CustomShell({required this.initialIndex});
+  const _CustomShell({
+    required this.initialIndex,
+    this.content,
+  });
 
   final int initialIndex;
+  final Widget? content;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -832,6 +863,9 @@ class _CustomShell extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
     final uid = currentUser?.id ?? authState.uid ?? '';
     final username = currentUser?.username ?? '';
+    final showBetaFeedback =
+        ref.watch(isBetaTesterProvider).valueOrNull ?? false;
+    final activeRoomId = ref.watch(activeRoomIdProvider);
 
     // Simply use the initialIndex provided by the route
     // This is the most reliable way to determine which tab to display
@@ -845,24 +879,31 @@ class _CustomShell extends ConsumerWidget {
           '/messages',
           '/rooms',
           '/speed-dating',
-          '/profile'
+          '/profile',
+          '/settings',
         ];
         if (index >= 0 && index < routes.length) {
           context.go(routes[index]);
         }
       },
-      onFriendsSelected: () => context.go('/profile/social?tab=friends'),
+      onFriendsSelected: () =>
+          ref.read(messengerDesktopProvider.notifier).toggleBuddyList(),
       onDiscoverSelected: () => context.go('/profile/social?tab=discover'),
-      child: IndexedStack(
-        index: displayIndex,
-        children: [
-          const DashboardScreen(),
-          MessagesScreen(userId: uid, username: username),
-          const RoomBrowserScreen(),
-          const SpeedDatingScreen(),
-          UserProfileScreen(userId: uid),
-        ],
-      ),
+      showBetaFeedback: showBetaFeedback,
+      onBetaFeedbackSelected: () => context.go('/beta-feedback'),
+      activeRoomId: activeRoomId,
+      onReturnToRoom: activeRoomId == null
+          ? null
+          : () => context.go('/rooms/room/$activeRoomId'),
+      child: content ??
+          switch (displayIndex) {
+            0 => const DashboardScreen(),
+            1 => MessagesScreen(userId: uid, username: username),
+            2 => const RoomBrowserScreen(),
+            3 => const SpeedDatingScreen(),
+            4 => UserProfileScreen(userId: uid),
+            _ => const SettingsScreen(),
+          },
     );
   }
 }

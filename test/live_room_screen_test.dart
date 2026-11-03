@@ -30,10 +30,76 @@ class _StubPresenceController extends PresenceController {
 }
 
 void main() {
-  test('desktop room defaults to the dense reference layout', () {
-    expect(liveRoomDefaultGridSlotCount, 16);
+  testWidgets('room artwork fills the live stage behind a dark overlay', (
+    WidgetTester tester,
+  ) async {
+    const artworkUrl = 'https://example.com/circle-networks.png';
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SizedBox(
+          width: 800,
+          height: 600,
+          child: RoomStageBackground(
+            imageUrl: artworkUrl,
+            child: SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+
+    final image = tester.widget<Image>(
+      find.byKey(const ValueKey('room-stage-background-image')),
+    );
+    final provider = image.image as NetworkImage;
+
+    expect(provider.url, artworkUrl);
+    expect(image.fit, BoxFit.cover);
+    expect(
+      find.byKey(const ValueKey('room-stage-background-overlay')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('room stage keeps its fallback when no artwork is set', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: RoomStageBackground(
+          imageUrl: null,
+          child: SizedBox.expand(),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('room-stage-background-image')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('room-stage-background-overlay')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('room-stage-background-fallback')),
+      findsOneWidget,
+    );
+  });
+
+  test('desktop room defaults to an inviting four-slot layout', () {
+    expect(liveRoomDefaultGridSlotCount, 4);
     expect(liveRoomDesktopChatWidth, 280);
     expect(liveRoomDesktopRosterWidth, 184);
+  });
+
+  test('automatic camera grid grows only when cameras join', () {
+    expect(liveRoomAutomaticGridSlotCount(0), 4);
+    expect(liveRoomAutomaticGridSlotCount(4), 4);
+    expect(liveRoomAutomaticGridSlotCount(5), 8);
+    expect(liveRoomAutomaticGridSlotCount(9), 12);
+    expect(liveRoomAutomaticGridSlotCount(13), 16);
+    expect(liveRoomAutomaticGridSlotCount(17), 20);
   });
 
   test('camera presets use fitted desktop matrices', () {
@@ -55,10 +121,7 @@ void main() {
     ).readAsStringSync();
 
     expect(source, contains('NeverScrollableScrollPhysics'));
-    expect(
-        source,
-        contains(
-            "tooltip: expanded\n                                    ? 'Return to camera grid'"));
+    expect(source, contains("'Return to camera grid'"));
     expect(source, contains(": 'Expand camera'"));
   });
 
@@ -82,8 +145,83 @@ void main() {
     expect(resolver, isNot(contains('authUser.displayName')));
   });
 
+  test('live profile name replaces generated room identity', () {
+    expect(
+      resolveLiveRoomDisplayName(
+        userId: 'r4gf-user',
+        liveProfileName: 'Real Profile Name',
+        sessionName: 'Member R4GF',
+        participantName: 'Member R4GF',
+      ),
+      'Real Profile Name',
+    );
+  });
+
+  test('room identity uses generated member label only as final fallback', () {
+    expect(
+      resolveLiveRoomDisplayName(
+        userId: 'r4gf-user',
+        liveProfileName: '',
+        sessionName: 'Member R4GF',
+        participantName: 'MixVy Member',
+      ),
+      liveRoomMemberFallback('r4gf-user'),
+    );
+  });
+
   setUpAll(() async {
     await testSetup();
+  });
+
+  test('remote video users are included in the room roster', () {
+    final now = DateTime(2026, 1, 1);
+    final participants = [
+      RoomParticipantModel(
+        userId: 'current-user',
+        role: 'audience',
+        joinedAt: now,
+        lastActiveAt: now,
+      ),
+    ];
+
+    final merged = mergeLiveRoomRemoteCameraParticipants(
+      participants: participants,
+      remoteCameraUserIds: {'PaW0-user'},
+      sessionDisplayNames: const {},
+      now: now,
+    );
+
+    expect(merged, hasLength(2));
+    final remote = merged.singleWhere(
+      (participant) => participant.userId == 'PaW0-user',
+    );
+    expect(remote.camOn, isTrue);
+    expect(remote.micOn, isFalse);
+    expect(remote.displayName, 'Member PAW0');
+  });
+
+  test('remote video users update existing roster entries without duplicates',
+      () {
+    final now = DateTime(2026, 1, 1);
+    final merged = mergeLiveRoomRemoteCameraParticipants(
+      participants: [
+        RoomParticipantModel(
+          userId: 'peer-user',
+          role: 'audience',
+          displayName: 'Peer',
+          camOn: false,
+          joinedAt: now,
+          lastActiveAt: now,
+        ),
+      ],
+      remoteCameraUserIds: {'peer-user'},
+      sessionDisplayNames: const {'peer-user': 'Peer'},
+      now: now,
+    );
+
+    expect(merged, hasLength(1));
+    expect(merged.single.camOn, isTrue);
+    expect(merged.single.displayName, 'Peer');
   });
 
   testWidgets('desktop controls and all camera presets fit without scrolling', (
@@ -95,6 +233,7 @@ void main() {
     final firestore = FakeFirebaseFirestore();
     final rtcService = _MockRtcRoomService();
     when(() => rtcService.remoteUids).thenReturn([]);
+    when(() => rtcService.remoteVideoUids).thenReturn([]);
     when(() => rtcService.isSharingSystemAudio).thenReturn(false);
     when(() => rtcService.supportsCameraSwitch).thenReturn(false);
     await firestore.collection('rooms').doc('room-a').set({

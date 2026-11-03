@@ -33,7 +33,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     'speed_dating_match',
   };
   static const _giftTypes = {'gift'};
-  static const _systemTypes = {'live_room_invite'};
+  static const _systemTypes = {'live_room_invite', 'room_invite'};
+
+  static bool _isRoomInviteType(String type) =>
+      type == 'live_room_invite' || type == 'room_invite';
 
   bool _matchesFilter(String type) {
     switch (_filter) {
@@ -71,6 +74,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final roomId = notification.roomId?.trim() ?? '';
 
     switch (notification.type) {
+      case 'room_invite':
       case 'live_room_invite':
         if (roomId.isNotEmpty) context.go('/room/$roomId');
       case 'follow':
@@ -98,6 +102,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         return Icons.handshake_rounded;
       case 'friend_favorite':
         return Icons.star_rounded;
+      case 'room_invite':
       case 'live_room_invite':
         return Icons.meeting_room_rounded;
       case 'speed_dating_match':
@@ -123,6 +128,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         return const Color(0xFFFFD54F);
       case 'friend_accept':
         return const Color(0xFF81C784);
+      case 'room_invite':
       case 'live_room_invite':
         return const Color(0xFF4DB6AC);
       case 'speed_dating_match':
@@ -148,6 +154,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         return 'Friend accepted';
       case 'friend_favorite':
         return 'Favorited you';
+      case 'room_invite':
       case 'live_room_invite':
         return 'Room invite';
       case 'speed_dating_match':
@@ -478,7 +485,9 @@ class _NotificationTile extends StatelessWidget {
                     ),
                   ],
                   // Room invite inline action
-                  if (notification.type == 'live_room_invite') ...[
+                  if (_NotificationsScreenState._isRoomInviteType(
+                    notification.type,
+                  )) ...[
                     const SizedBox(height: 10),
                     _ActionChip(
                       label: 'Join Room',

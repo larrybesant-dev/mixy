@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/services/feature_gate_service.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../core/utils/avatar_url_resolver.dart';
+import '../../profile/profile_view_providers.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../core/theme.dart';
@@ -17,6 +19,18 @@ import '../models/speed_dating_models.dart';
 import '../providers/dating_preferences_provider.dart';
 import '../services/speed_dating_service.dart';
 import '../widgets/dating_preferences_sheet.dart';
+
+String? resolveSpeedDateAvatarUrl({
+  required SpeedDateCandidate candidate,
+  String? profileAvatarUrl,
+  int preferredSize = 192,
+}) {
+  return resolveAvatarUrl(
+    directAvatarUrl: candidate.avatarUrl,
+    persistedProfileAvatarUrl: profileAvatarUrl,
+    preferredSize: preferredSize,
+  );
+}
 
 class SpeedDatingScreen extends ConsumerStatefulWidget {
   const SpeedDatingScreen({super.key});
@@ -205,10 +219,19 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     _startTimer();
   }
 
+  void _retryCandidates() {
+    setState(() {
+      _candidatesStream = _service.candidatesStream(
+        currentUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
+      );
+    });
+  }
+
   Future<void> _handleDecision({
     required SpeedDateCandidate candidate,
     required bool liked,
     required String currentUserId,
+    required String? resolvedAvatarUrl,
   }) async {
     if (_isSubmitting) return;
     setState(() {
@@ -235,6 +258,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           candidate: candidate,
           currentUserId: currentUserId,
           matchId: result.matchId!,
+          avatarUrl: resolvedAvatarUrl,
         );
       }
     } catch (e) {
@@ -254,6 +278,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     required SpeedDateCandidate candidate,
     required String currentUserId,
     required String matchId,
+    required String? avatarUrl,
   }) async {
     final pageContext = context;
     await showModalBottomSheet<void>(
@@ -307,10 +332,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
               ),
               const SizedBox(height: 28),
               // Avatar pair
-              if (candidate.avatarUrl != null)
+              if (avatarUrl != null)
                 ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl: candidate.avatarUrl!,
+                    imageUrl: avatarUrl,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
@@ -384,19 +409,20 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
     SpeedDateCandidate candidate,
     ThemeData theme,
     String currentUserId,
+    String? avatarUrl,
   ) {
     final distanceUnit = ref
             .watch(datingPreferencesProvider(currentUserId))
             .valueOrNull
             ?.distanceUnit ??
         datingUnitKm;
-    final hasAvatar =
-        candidate.avatarUrl != null && candidate.avatarUrl!.trim().isNotEmpty;
     final displayName = candidate.username.trim().isEmpty
         ? 'MixVy user'
         : candidate.username.trim();
+    final isWide = MediaQuery.sizeOf(context).width >= 900;
+    final avatarDiameter = isWide ? 144.0 : 104.0;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isWide ? 24 : 18),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -415,19 +441,19 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
-            radius: 46,
+            radius: avatarDiameter / 2,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-            child: hasAvatar
+            child: avatarUrl != null
                 ? ClipOval(
                     child: CachedNetworkImage(
-                      imageUrl: candidate.avatarUrl!.trim(),
-                      width: 92,
-                      height: 92,
+                      imageUrl: avatarUrl,
+                      width: avatarDiameter,
+                      height: avatarDiameter,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Center(
                         child: SizedBox(
-                          width: 46,
-                          height: 46,
+                          width: avatarDiameter / 2,
+                          height: avatarDiameter / 2,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation(
@@ -451,7 +477,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'Live now • Speed date ready',
+            'Available for Speed Dating',
             style: theme.textTheme.labelMedium?.copyWith(
               color: theme.colorScheme.secondary,
               fontWeight: FontWeight.w700,
@@ -522,6 +548,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                             candidate: candidate,
                             liked: false,
                             currentUserId: currentUserId,
+                            resolvedAvatarUrl: avatarUrl,
                           ),
                   icon: const Icon(Icons.close),
                   label: const Text('Pass'),
@@ -539,6 +566,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                             candidate: candidate,
                             liked: true,
                             currentUserId: currentUserId,
+                            resolvedAvatarUrl: avatarUrl,
                           ),
                   icon: const Icon(Icons.favorite),
                   label: const Text('Like'),
@@ -547,9 +575,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
             ],
           ),
           const SizedBox(height: 8),
-          TextButton(
+          TextButton.icon(
             onPressed: _isSubmitting ? null : _nextCandidate,
-            child: const Text('Skip to next person'),
+            icon: const Icon(Icons.skip_next_rounded),
+            label: const Text('Skip without voting'),
           ),
         ],
       ),
@@ -588,6 +617,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
 
     return AppPageScaffold(
       backgroundColor: VelvetNoir.surface,
+      maxContentWidth: 900,
       appBar: AppBar(
         backgroundColor: VelvetNoir.surfaceHigh,
         elevation: 0,
@@ -684,8 +714,10 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
               stream: _candidatesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const AppLoadingView(
+                  return AppBoundedLoadingView(
+                    fallbackContext: 'the speed dating queue',
                     label: 'Loading speed dating queue',
+                    onRetry: _retryCandidates,
                   );
                 }
 
@@ -693,6 +725,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                   return AppErrorView(
                     error: snapshot.error ?? 'Unknown error',
                     fallbackContext: 'Failed to load queue.',
+                    onRetry: _retryCandidates,
                   );
                 }
 
@@ -741,6 +774,14 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
 
                 final activeCandidate =
                     candidates[_candidateIndex % candidates.length];
+                final profileAvatarUrl = ref
+                    .watch(userProfileFutureProvider(activeCandidate.id))
+                    .valueOrNull
+                    ?.avatarUrl;
+                final activeAvatarUrl = resolveSpeedDateAvatarUrl(
+                  candidate: activeCandidate,
+                  profileAvatarUrl: profileAvatarUrl,
+                );
 
                 return ListView(
                   padding: const EdgeInsets.all(20),
@@ -798,7 +839,8 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                                 ),
                               ),
                               Text(
-                                '${candidates.length} in queue  •  $_likesCount ❤️  $_passesCount ✗',
+                                '${candidates.length} profiles available  •  '
+                                '$_likesCount liked  •  $_passesCount passed',
                                 style: theme.textTheme.bodySmall,
                               ),
                             ],
@@ -807,6 +849,25 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                       ],
                     ),
                     const SizedBox(height: 20),
+                    Card(
+                      color: VelvetNoir.surfaceHigh,
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.shield_outlined,
+                          color: VelvetNoir.primary,
+                        ),
+                        title: const Text('Review before you match'),
+                        subtitle: const Text(
+                          'View their full profile first. You can report or block at any time.',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () =>
+                              context.push('/profile/${activeCandidate.id}'),
+                          child: const Text('Review'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // Swipeable candidate card
                     GestureDetector(
                       onHorizontalDragUpdate: (details) {
@@ -823,6 +884,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                             candidate: activeCandidate,
                             liked: true,
                             currentUserId: user.uid,
+                            resolvedAvatarUrl: activeAvatarUrl,
                           );
                         } else if (_dragOffset < -threshold) {
                           // Swipe left = pass
@@ -830,6 +892,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                             candidate: activeCandidate,
                             liked: false,
                             currentUserId: user.uid,
+                            resolvedAvatarUrl: activeAvatarUrl,
                           );
                         } else {
                           setState(() {
@@ -851,6 +914,7 @@ class _SpeedDatingScreenState extends ConsumerState<SpeedDatingScreen>
                               activeCandidate,
                               theme,
                               user.uid,
+                              activeAvatarUrl,
                             ),
                             // Swipe overlay hints
                             if (_dragOffset > 40)

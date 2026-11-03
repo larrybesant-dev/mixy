@@ -46,9 +46,6 @@ class _FriendsSchemaBridgeViewState
   String _lastEmittedMismatchSignature = '';
   String _candidateMismatchSignature = '';
   int _candidateMismatchCount = 0;
-  String? _lastBootUserId;
-  SchemaConversationBootSource _nextBootSource =
-      SchemaConversationBootSource.unknown;
   static const int _stableMismatchThreshold = 2;
 
   @override
@@ -59,29 +56,26 @@ class _FriendsSchemaBridgeViewState
     final isDesktop = context.isExpandedLayout;
     final showGovernance = currentEnv == Environment.dev;
     final currentUser = ref.watch(userProvider);
-    final authUserId = ref.watch(schemaAuthUserIdProvider);
-    final bootTarget = ref.watch(schemaConversationFirstBootTargetProvider);
     final onStartChat = currentUser == null
         ? null
         : (
             String friendUserId,
             String friendUsername,
             String? friendAvatarUrl,
-          ) => _openDirectChat(
-            context: context,
-            currentUserId: currentUser.id,
-            currentUsername: currentUser.username,
-            currentAvatarUrl: currentUser.avatarUrl,
-            friendUserId: friendUserId,
-            friendUsername: friendUsername,
-            friendAvatarUrl: friendAvatarUrl,
-          );
+          ) =>
+            _openDirectChat(
+              context: context,
+              currentUserId: currentUser.id,
+              currentUsername: currentUser.username,
+              currentAvatarUrl: currentUser.avatarUrl,
+              friendUserId: friendUserId,
+              friendUsername: friendUsername,
+              friendAvatarUrl: friendAvatarUrl,
+            );
 
-    _syncBootSession(authUserId);
     if (kDebugMode) {
       _runParityDiagnostics(mode);
     }
-    _runConversationFirstBoot(bootTarget: bootTarget);
 
     return Column(
       children: [
@@ -98,65 +92,22 @@ class _FriendsSchemaBridgeViewState
         Expanded(
           child: switch (mode) {
             FriendPaneRenderMode.legacy => const FriendsPaneView(
-              showHeader: false,
-            ),
+                showHeader: false,
+              ),
             FriendPaneRenderMode.schema => SchemaFriendsModuleView(
-              onStartChat: onStartChat,
-            ),
-            FriendPaneRenderMode.dual =>
-              isDesktop
-                  ? _DualDesktopFriendPanes(
-                      schemaPane: SchemaFriendsModuleView(
-                        onStartChat: onStartChat,
-                      ),
-                    )
-                  : SchemaFriendsModuleView(onStartChat: onStartChat),
+                onStartChat: onStartChat,
+              ),
+            FriendPaneRenderMode.dual => isDesktop
+                ? _DualDesktopFriendPanes(
+                    schemaPane: SchemaFriendsModuleView(
+                      onStartChat: onStartChat,
+                    ),
+                  )
+                : SchemaFriendsModuleView(onStartChat: onStartChat),
           },
         ),
       ],
     );
-  }
-
-  void _syncBootSession(String? authUserId) {
-    final normalizedUserId = authUserId?.trim();
-    if (_lastBootUserId == normalizedUserId) {
-      return;
-    }
-
-    final previousUserId = _lastBootUserId;
-    _lastBootUserId = normalizedUserId;
-    _nextBootSource = previousUserId == null
-        ? SchemaConversationBootSource.appStart
-        : SchemaConversationBootSource.authSwitch;
-    ref.read(schemaConversationBootStateProvider.notifier).reset();
-  }
-
-  void _runConversationFirstBoot({
-    required SchemaConversationBootTarget? bootTarget,
-  }) {
-    if (bootTarget == null || !mounted) {
-      return;
-    }
-    final bootState = ref.read(schemaConversationBootStateProvider);
-    if (bootState.isTerminal || bootState.isInFlight) {
-      return;
-    }
-
-    final source = _nextBootSource;
-    _nextBootSource = SchemaConversationBootSource.unknown;
-
-    ref
-        .read(schemaConversationBootEngineProvider)
-        .startConversationBoot(
-          target: bootTarget,
-          source: source,
-          navigate: (conversationId) async {
-            if (!mounted) {
-              return;
-            }
-            GoRouter.of(context).go('/chat/$conversationId');
-          },
-        );
   }
 
   Future<void> _openDirectChat({
@@ -172,16 +123,15 @@ class _FriendsSchemaBridgeViewState
     final messenger = ScaffoldMessenger.of(context);
 
     try {
-      final conversationId = await ref
-          .read(messagingControllerProvider)
-          .createDirectConversation(
-            userId1: currentUserId,
-            user1Name: currentUsername,
-            user1AvatarUrl: currentAvatarUrl,
-            userId2: friendUserId,
-            user2Name: friendUsername,
-            user2AvatarUrl: friendAvatarUrl,
-          );
+      final conversationId =
+          await ref.read(messagingControllerProvider).createDirectConversation(
+                userId1: currentUserId,
+                user1Name: currentUsername,
+                user1AvatarUrl: currentAvatarUrl,
+                userId2: friendUserId,
+                user2Name: friendUsername,
+                user2AvatarUrl: friendAvatarUrl,
+              );
 
       if (!mounted) {
         return;
@@ -214,8 +164,7 @@ class _FriendsSchemaBridgeViewState
     final schemaPresenceMap = schemaPresenceMapAsync.valueOrNull;
 
     final snapshot = FriendParitySnapshot(
-      legacyIdsOrdered:
-          legacyRoster
+      legacyIdsOrdered: legacyRoster
               ?.map((entry) => entry.friendId)
               .toList(growable: false) ??
           const <String>[],
@@ -223,14 +172,12 @@ class _FriendsSchemaBridgeViewState
           .map((link) => link.otherUserId(authUserId))
           .where((id) => id.isNotEmpty)
           .toList(growable: false),
-      legacyOnlineIds:
-          legacyRoster
+      legacyOnlineIds: legacyRoster
               ?.where((entry) => entry.isOnline)
               .map((entry) => entry.friendId)
               .toSet() ??
           const <String>{},
-      schemaOnlineIds:
-          schemaPresenceMap?.entries
+      schemaOnlineIds: schemaPresenceMap?.entries
               .where((entry) => entry.value.isOnline)
               .map((entry) => entry.key)
               .toSet() ??
@@ -357,9 +304,8 @@ class _BootTimelineStrip extends ConsumerWidget {
       }
     }
 
-    final statusColor = latest == null
-        ? VelvetNoir.onSurfaceVariant
-        : levelColor(latest.level);
+    final statusColor =
+        latest == null ? VelvetNoir.onSurfaceVariant : levelColor(latest.level);
 
     final latestSummary = latest == null
         ? 'No boot timeline events yet.'
@@ -572,6 +518,3 @@ class _PaneCard extends StatelessWidget {
     );
   }
 }
-
-
-

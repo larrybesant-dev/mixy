@@ -4,21 +4,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:developer' as developer;
 import 'package:mixvy/services/rtc_room_service.dart';
 import 'package:mixvy/services/connection_recovery_handler.dart';
 import 'package:mixvy/services/diagnostic_logger.dart';
 import '../core/streams/stream_lifecycle_manager.dart';
 import '../observability/webrtc_latency_tracker.dart';
+import 'outgoing_audio_gain.dart';
+
+@visibleForTesting
+bool hasRenderableVideoTrack(MediaStream? stream) {
+  return stream?.getVideoTracks().any(
+            (track) => track.enabled != false && track.muted != true,
+          ) ==
+      true;
+}
 
 /// WebRtcRoomService
-/// 
+///
 /// The production-hardened engine for MixVy's real-time communication.
 /// Manages peer connections, Firestore signaling, and professional NAT traversal.
-class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBindingObserver {
-  DateTime? _rtcConnectedAt;
+class WebRtcRoomService extends RtcRoomService
+    with DiagnosticLogger, WidgetsBindingObserver {
   final FirebaseFirestore _firestore;
   final String _localUserId;
+  final String _connectionId;
   final WebRtcLatencyTracker _latencyTracker;
 
   WebRtcRoomService({
@@ -30,6 +41,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     WebRtcLatencyTracker? latencyTracker,
   })  : _firestore = firestore,
         _localUserId = localUserId,
+        _connectionId = const Uuid().v4(),
         _latencyTracker = latencyTracker ?? WebRtcLatencyTracker(),
         _productionIceServers = iceServers {
     assert(() {
@@ -42,10 +54,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   void _registerFirestoreContractSignals() {
     final roomRef = _firestore.collection('rooms').doc('__contract_signal__');
     roomRef.collection('webrtc_peers');
-    roomRef
-        .collection('webrtc_calls')
-        .doc('__call__')
-        .collection('viewer_ice');
+    roomRef.collection('webrtc_calls').doc('__call__').collection('viewer_ice');
     roomRef
         .collection('webrtc_calls')
         .doc('__call__')
@@ -57,26 +66,13 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (kIsWeb) {
-      if (state == AppLifecycleState.hidden) {
-        // Prevent browser layout initialization shifts from killing the track
-        if (_rtcConnectedAt != null && 
-            DateTime.now().difference(_rtcConnectedAt!).inSeconds < 5) {
-          _log('Ignored ghost hidden event during initialization stabilization.');
-          return;
-        }
-        _log('App tab hidden. Suspending WebRTC tracks.');
-        _wasVideoActiveBeforePause = _localVideoCapturing;
-        if (_localVideoCapturing) {
-          enableVideo(false).ignore();
-        }
-      } else if (state == AppLifecycleState.resumed) {
-        if (_wasVideoActiveBeforePause) {
-          _log('App tab resumed. Restoring WebRTC tracks.');
-          enableVideo(true).ignore();
-        }
-      }
+      // A browser tab can become hidden while its user remains on camera.
+      // Keep publishing until the user explicitly turns the camera off or
+      // leaves the room; mobile platforms still suspend capture below.
+      return;
     } else {
-      if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive) {
         _log('App backgrounded. Suspending WebRTC tracks.');
         _wasVideoActiveBeforePause = _localVideoCapturing;
         if (_localVideoCapturing) {
@@ -95,13 +91,24 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   final Map<String, RTCPeerConnection> _pcs = {};
   final Map<String, List<StreamSubscription>> _roomSubscriptions = {};
   final Map<String, List<StreamSubscription>> _peerSubscriptions = {};
-  
+  final Map<String, String> _remoteConnectionIds = {};
+
   MediaStream? _localStream;
   MediaStream? _systemAudioStream;
+  OutgoingAudioGain? _microphoneGain;
+  OutgoingAudioGain? _sharedAudioGain;
+  double _microphoneOutputVolume = 1.0;
+  double _sharedAudioOutputVolume = 1.0;
+  double _speakerOutputVolume = 1.0;
+  final Map<String, RTCRtpSender> _systemAudioSenders = {};
   RTCVideoRenderer? _localRenderer;
   final Map<int, RTCVideoRenderer> _remoteRenderers = {};
+  final Map<int, MediaStream> _remoteStreams = {};
   final Map<int, String> _uidToUserId = {};
-  
+  final Set<int> _activeRemoteVideoUids = {};
+  final Map<int, Timer> _remoteVideoMuteTimers = {};
+  static const Duration _remoteVideoMuteGrace = Duration(seconds: 3);
+
   // Audio Level Monitoring (VAD)
   final Map<int, double> _remoteAudioLevels = {};
   double _localAudioLevel = 0.0;
@@ -110,6 +117,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   // Adaptive Bandwidth Monitoring & Quality Throttling
   bool _networkDegraded = false;
   int _consecutiveHighLossTicks = 0;
+  DateTime? _lastNetworkMetricsAt;
 
   final Map<String, Set<String>> _sentIceCandidateKeys = {};
 
@@ -153,8 +161,11 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     developer.Timeline.startSync('MixVy:WebRTC:FetchTurnCredentials');
     try {
       // Call Cloud Function to fetch TURN credentials securely (secret key never leaves backend)
-      final callable = FirebaseFunctions.instance.httpsCallable('generateTurnCredentials');
-      final result = await callable.call<Map<String, dynamic>>().timeout(const Duration(seconds: 10));
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('generateTurnCredentials');
+      final result = await callable
+          .call<Map<String, dynamic>>()
+          .timeout(const Duration(seconds: 10));
       developer.Timeline.finishSync();
 
       final raw = result.data['iceServers'];
@@ -163,11 +174,13 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
             .whereType<Map<dynamic, dynamic>>()
             .map((entry) => entry.map((k, v) => MapEntry(k.toString(), v)))
             .toList(growable: false);
-        _log('✅ Production ICE servers initialized via Cloud Function (secure)');
+        _log(
+            '✅ Production ICE servers initialized via Cloud Function (secure)');
         return;
       }
     } catch (e) {
-      _log('[WebRTC][WARN] Cloud Function error during TURN fetch: $e. Falling back to STUN.');
+      _log(
+          '[WebRTC][WARN] Cloud Function error during TURN fetch: $e. Falling back to STUN.');
     } finally {
       if (_productionIceServers == null) {
         _log('[WebRTC] Initialized with STUN fallback topology.');
@@ -176,9 +189,10 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   }
 
   Map<String, dynamic> get _iceConfig => {
-        'iceServers': (_productionIceServers != null && _productionIceServers!.isNotEmpty)
-            ? _productionIceServers
-            : _defaultIceServers,
+        'iceServers':
+            (_productionIceServers != null && _productionIceServers!.isNotEmpty)
+                ? _productionIceServers
+                : _defaultIceServers,
         'sdpSemantics': 'unified-plan',
         'iceCandidatePoolSize': 8,
       };
@@ -188,7 +202,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   // ──────────────────────────────────────────────────────────────────────────
 
   String _iceCandidateFingerprint(RTCIceCandidate candidate) {
-    final raw = '${candidate.sdpMid}|${candidate.sdpMLineIndex}|${candidate.candidate}';
+    final raw =
+        '${candidate.sdpMid}|${candidate.sdpMLineIndex}|${candidate.candidate}';
     return raw.hashCode.toUnsigned(32).toRadixString(16);
   }
 
@@ -207,15 +222,12 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     if (!seen.add(fingerprint)) return;
 
     try {
-      await signalRef
-          .collection(subcollection)
-          .doc(fingerprint)
-          .set({
-            ...candidate.toMap(),
-            'userId': _localUserId,
-            'targetUserId': targetUserId,
-            'timestamp': FieldValue.serverTimestamp(),
-          });
+      await signalRef.collection(subcollection).doc(fingerprint).set({
+        ...candidate.toMap(),
+        'userId': _localUserId,
+        'targetUserId': targetUserId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     } catch (error) {
       seen.remove(fingerprint);
       _log('failed to write ICE candidate: $error');
@@ -294,6 +306,10 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   @override
   List<int> get remoteUids => _remoteRenderers.keys.toList();
   @override
+  List<int> get remoteVideoUids => _activeRemoteVideoUids
+      .where(_remoteRenderers.containsKey)
+      .toList(growable: false);
+  @override
   bool get localSpeaking => _localAudioLevel > 0.05;
   @override
   bool get canRenderLocalView => _localRenderer != null && _localVideoCapturing;
@@ -317,108 +333,95 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   @override
   Future<void> shareSystemAudio(bool enabled) async {
     if (enabled) {
+      if (_systemAudioStream != null) return;
       try {
         _log('Starting system audio capture...');
-        
-        // Request display media (includes system audio option in Chrome)
-        _systemAudioStream = await navigator.mediaDevices.getDisplayMedia({
+
+        final stream = await navigator.mediaDevices.getDisplayMedia({
           'audio': {
             'echoCancellation': false,
             'noiseSuppression': false,
             'autoGainControl': false,
           },
-          'video': {
-            'cursor': 'always', // Show cursor while capturing
-          } // Optional: capture video too, or set to false for audio-only
+          'video': true,
         });
-        
+
         _log('✅ System audio stream acquired');
-        
-        // Get the audio track
-        final audioTracks = _systemAudioStream!.getAudioTracks();
+
+        final audioTracks = stream.getAudioTracks();
         if (audioTracks.isEmpty) {
-          _log('⚠️ No audio track in display media stream');
-          _systemAudioStream = null;
-          return;
-        }
-        
-        final audioTrack = audioTracks.first;
-        
-        // Add audio track to all peer connections
-        for (var entry in _pcs.entries) {
-          final peerId = entry.key;
-          final pc = entry.value;
-          try {
-            // Check if audio sender already exists
-            final senders = await pc.getSenders();
-            final audioSender = senders.where((s) => s.track?.kind == 'audio').firstOrNull;
-            
-            if (audioSender != null) {
-              // Replace existing audio track
-              await audioSender.replaceTrack(audioTrack);
-              _log('✅ Replaced mic audio with system audio for peer: $peerId');
-            } else {
-              // Add new audio track
-              await pc.addTrack(audioTrack, _systemAudioStream!);
-              _log('✅ Added system audio track to peer: $peerId');
-            }
-          } catch (e) {
-            _log('❌ Failed to add audio track to peer $peerId: $e');
+          for (final track in stream.getTracks()) {
+            await track.stop();
           }
+          await stream.dispose();
+          throw StateError(
+            'The selected screen or tab did not include shared audio.',
+          );
         }
-        
-        // Listen for stream end (user stops sharing)
+
+        _systemAudioStream = stream;
+        await _sharedAudioGain?.dispose();
+        _sharedAudioGain = await createOutgoingAudioGain(
+          audioTracks.first,
+          initialGain: _sharedAudioOutputVolume,
+        );
+        final audioTrack = _sharedAudioGain!.outputTrack;
+
+        for (final entry in _pcs.entries) {
+          final sender = await entry.value.addTrack(audioTrack, stream);
+          _systemAudioSenders[entry.key] = sender;
+          await _renegotiate(entry.key, entry.value);
+          _log(
+            '✅ Added shared audio alongside microphone for peer: ${entry.key}',
+          );
+        }
+
         audioTrack.onEnded = () {
           _log('⚠️ User stopped screen/audio share. Cleaning up.');
           shareSystemAudio(false).ignore();
         };
-        
       } catch (e) {
         _log('❌ Failed to get display media: $e');
-        _systemAudioStream = null;
+        if (_systemAudioStream != null || _systemAudioSenders.isNotEmpty) {
+          try {
+            await shareSystemAudio(false);
+          } catch (cleanupError) {
+            _log('❌ Failed to clean up shared audio: $cleanupError');
+          }
+        }
         rethrow;
       }
     } else {
-      // Stop sharing system audio and restore mic
-      try {
-        if (_systemAudioStream != null) {
-          _log('Stopping system audio capture...');
-          for (var track in _systemAudioStream!.getTracks()) {
-            track.enabled = false;
-            await track.stop();
-          }
-          await _systemAudioStream!.dispose();
-          _systemAudioStream = null;
+      Object? detachError;
+      for (final entry in _pcs.entries) {
+        final sender = _systemAudioSenders.remove(entry.key);
+        if (sender == null) continue;
+        try {
+          await entry.value.removeTrack(sender);
+          await _renegotiate(entry.key, entry.value);
+        } catch (error) {
+          detachError ??= error;
         }
-        
-        // Restore original microphone audio for all peers
-        if (_localStream != null) {
-          final micAudioTracks = _localStream!.getAudioTracks();
-          if (micAudioTracks.isNotEmpty) {
-            final micAudioTrack = micAudioTracks.first;
-            
-            for (var entry in _pcs.entries) {
-              final peerId = entry.key;
-              final pc = entry.value;
-              try {
-                final senders = await pc.getSenders();
-                final audioSender = senders.where((s) => s.track?.kind == 'audio').firstOrNull;
-                
-                if (audioSender != null) {
-                  await audioSender.replaceTrack(micAudioTrack);
-                  _log('✅ Restored microphone audio for peer: $peerId');
-                }
-              } catch (e) {
-                _log('Failed to restore mic audio for peer $peerId: $e');
-              }
-            }
-          }
-        }
-        
-        _log('✅ System audio sharing stopped');
-      } catch (e) {
-        _log('Error stopping system audio sharing: $e');
       }
+      _systemAudioSenders.clear();
+
+      final stream = _systemAudioStream;
+      _systemAudioStream = null;
+      await _sharedAudioGain?.dispose();
+      _sharedAudioGain = null;
+      if (stream != null) {
+        _log('Stopping system audio capture...');
+        for (final track in stream.getTracks()) {
+          track.enabled = false;
+          await track.stop();
+        }
+        await stream.dispose();
+      }
+
+      if (detachError != null) {
+        throw StateError('Failed to detach shared audio: $detachError');
+      }
+      _log('✅ System audio sharing stopped; microphone was preserved');
     }
   }
 
@@ -435,14 +438,17 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   Widget getLocalView() {
     final renderer = _localRenderer;
     if (renderer == null) return const SizedBox.shrink();
-    return RTCVideoView(renderer, mirror: true, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
+    return RTCVideoView(renderer,
+        mirror: true,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
   }
-  
+
   @override
   Widget getRemoteView(int uid, String channelId) {
     final renderer = _remoteRenderers[uid];
     if (renderer == null) return const SizedBox.shrink();
-    return RTCVideoView(renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
+    return RTCVideoView(renderer,
+        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover);
   }
 
   @override
@@ -463,9 +469,10 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 /* Unused: /* Deprecated/Unused:     _localUid = uid; */ */
     _isJoinedChannel = true;
     _setConnectionState(RtcConnectionState.connecting);
-    
+
     // Register participant in the signaling session
-    final sessionRef = _firestore.collection('webrtc_sessions').doc(channelName);
+    final sessionRef =
+        _firestore.collection('webrtc_sessions').doc(channelName);
     await sessionRef.set({
       'updatedAt': FieldValue.serverTimestamp(),
       'active': true,
@@ -473,43 +480,12 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
     await sessionRef.collection('participants').doc(_localUserId).set({
       'uid': uid,
+      'connectionId': _connectionId,
       'lastSeen': FieldValue.serverTimestamp(),
-      'isBroadcasting': publishCameraTrackOnJoin,
+      'isBroadcasting': false,
     });
 
-    // BACKGROUND PRUNE: Purge stale signaling participants (older than 60 seconds) on join
-    unawaited(Future(() async {
-      try {
-        final now = DateTime.now();
-        final staleThreshold = now.subtract(const Duration(seconds: 60));
-        final participantsQuery = await sessionRef.collection('participants').get();
-        for (var doc in participantsQuery.docs) {
-          final pId = doc.id;
-          if (pId == _localUserId) continue;
-
-          final data = doc.data();
-          final lastSeenTimestamp = data['lastSeen'] as Timestamp?;
-          if (lastSeenTimestamp != null) {
-            final lastSeen = lastSeenTimestamp.toDate();
-            if (lastSeen.isBefore(staleThreshold)) {
-              _log('Purging stale/ghost signaling participant: $pId (last seen: $lastSeen)');
-              await doc.reference.delete();
-              
-              // Also clean up any stale signaling or candidates for this ghost user
-              final signalDocId = _signalingDocId(_localUserId, pId);
-              await sessionRef.collection('signaling').doc(signalDocId).delete();
-              
-              final candidates = await sessionRef.collection('candidates').where('userId', isEqualTo: pId).get();
-              for (var cDoc in candidates.docs) {
-                await cDoc.reference.delete();
-              }
-            }
-          }
-        }
-      } catch (e) {
-        _log('Failed to prune stale signaling participants: $e');
-      }
-    }));
+    await _clearLocalIceCandidates(sessionRef);
 
     _startSignalingHeartbeat();
     _startAudioLevelMonitoring();
@@ -517,13 +493,15 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _setConnectionState(RtcConnectionState.connected);
 
     if (publishCameraTrackOnJoin || publishMicrophoneTrackOnJoin) {
-      await enableVideo(publishCameraTrackOnJoin, publishMicrophoneTrack: publishMicrophoneTrackOnJoin);
+      await enableVideo(publishCameraTrackOnJoin,
+          publishMicrophoneTrack: publishMicrophoneTrackOnJoin);
     }
   }
 
   void _startAudioLevelMonitoring() {
     _audioLevelTimer?.cancel();
-    _audioLevelTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) async {
+    _audioLevelTimer =
+        Timer.periodic(const Duration(milliseconds: 200), (timer) async {
       if (!_isJoinedChannel) {
         timer.cancel();
         return;
@@ -539,10 +517,12 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           final stats = await pc.getStats();
           for (var stat in stats) {
             if (stat.type == 'media-source' && stat.values['kind'] == 'audio') {
-              _localAudioLevel = (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
+              _localAudioLevel =
+                  (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
             }
             if (stat.type == 'inbound-rtp' && stat.values['kind'] == 'audio') {
-              final level = (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
+              final level =
+                  (stat.values['audioLevel'] as num?)?.toDouble() ?? 0.0;
               _remoteAudioLevels[uid] = level;
             }
           }
@@ -550,12 +530,12 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           // Stats might fail during connection transition state parameters
         }
       }
-      
+
       if (_pcs.isEmpty) {
         _localAudioLevel = 0.0;
         _remoteAudioLevels.clear();
       }
-      
+
       onSpeakerActivityChanged?.call();
       _monitorNetworkMetrics().ignore();
     });
@@ -563,18 +543,20 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   void _startSignalingHeartbeat() {
     _signalingHeartbeatTimer?.cancel();
-    _signalingHeartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+    _signalingHeartbeatTimer =
+        Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (!_isJoinedChannel || _currentChannelId == null) {
         timer.cancel();
         return;
       }
-      
+
       try {
-        final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+        final sessionRef =
+            _firestore.collection('webrtc_sessions').doc(_currentChannelId);
         await sessionRef.collection('participants').doc(_localUserId).update({
           'lastSeen': FieldValue.serverTimestamp(),
         });
-        
+
         await sessionRef.update({
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -597,7 +579,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _setConnectionState(RtcConnectionState.reconnecting);
 
     try {
-      final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+      final sessionRef =
+          _firestore.collection('webrtc_sessions').doc(_currentChannelId);
       await sessionRef.set({
         'updatedAt': FieldValue.serverTimestamp(),
         'active': true,
@@ -605,6 +588,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
       await sessionRef.collection('participants').doc(_localUserId).set({
         'uid': _stableUid(_localUserId),
+        'connectionId': _connectionId,
         'lastSeen': FieldValue.serverTimestamp(),
         'isBroadcasting': _localVideoCapturing,
       }, SetOptions(merge: true));
@@ -630,13 +614,46 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         final userId = change.doc.id;
         if (userId == _localUserId) continue;
 
-        if (change.type == DocumentChangeType.added) {
+        if (change.type == DocumentChangeType.removed) {
+          _log('Peer left: $userId. Cleaning up.');
+          _remoteConnectionIds.remove(userId);
+          _cleanupPeer(userId).ignore();
+          continue;
+        }
+
+        final data = change.doc.data();
+        if (data == null) continue;
+        final lastSeen = (data['lastSeen'] as Timestamp?)?.toDate();
+        final isFresh = lastSeen != null &&
+            DateTime.now().difference(lastSeen) <= const Duration(seconds: 60);
+        if (!isFresh) {
+          continue;
+        }
+
+        final connectionId = data['connectionId']?.toString();
+        final previousConnectionId = _remoteConnectionIds[userId];
+        if (connectionId != null && connectionId.isNotEmpty) {
+          _remoteConnectionIds[userId] = connectionId;
+        }
+        if (previousConnectionId != null &&
+            connectionId != null &&
+            connectionId.isNotEmpty &&
+            previousConnectionId != connectionId &&
+            _pcs.containsKey(userId)) {
+          _log('Peer reconnected: $userId. Replacing stale connection.');
+          final isOfferer = _localUserId.compareTo(userId) < 0;
+          unawaited(() async {
+            await _cleanupPeer(userId);
+            await _setupPC(userId, roomId, isOfferer);
+          }());
+          continue;
+        }
+
+        if (change.type == DocumentChangeType.added ||
+            !_pcs.containsKey(userId)) {
           _log('New peer detected: $userId. Establishing connection.');
           final isOfferer = _localUserId.compareTo(userId) < 0;
           _setupPC(userId, roomId, isOfferer).ignore();
-        } else if (change.type == DocumentChangeType.removed) {
-          _log('Peer left: $userId. Cleaning up.');
-          _cleanupPeer(userId).ignore();
         }
       }
     }, onError: (Object e) => _onListenerError(roomId, 'participants', e)));
@@ -662,45 +679,51 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         await sub.cancel();
       }
     }
-    
+
     // 1. Remove peer connection first
+    _systemAudioSenders.remove(userId);
     final pc = _pcs.remove(userId);
     if (pc != null) {
       await pc.close();
       await pc.dispose();
     }
-    
+
     // 2. Snapshot the renderer before disposal (prevents deactivated widget exceptions)
     final renderer = _remoteRenderers.remove(uid);
-    
+    final stream = _remoteStreams.remove(uid);
+    _remoteVideoMuteTimers.remove(uid)?.cancel();
+    _activeRemoteVideoUids.remove(uid);
+
     // 3. Clear all references
     _uidToUserId.remove(uid);
     _remoteAudioLevels.remove(uid);
-    
+
     // 4. Remove ICE candidate fingerprints for this peer
     if (_currentChannelId != null) {
       final scopeKey = '$_currentChannelId:$userId';
       _sentIceCandidateKeys.remove(scopeKey);
     }
-    
+
     // 5. Trigger UI rebuild callback BEFORE renderer disposal
     onRemoteUserLeft?.call();
-    
+
     // 6. Finally, dispose renderer after callback completes
     if (renderer != null) {
       renderer.srcObject = null;
       await renderer.dispose();
     }
+    await stream?.dispose();
   }
 
   Future<void> _setupPC(String peerId, String roomId, bool isOfferer) async {
     if (_pcs.containsKey(peerId)) return;
 
-    developer.Timeline.startSync('MixVy:WebRTC:SetupPC', arguments: {'peerId': peerId, 'isOfferer': isOfferer});
-    
+    developer.Timeline.startSync('MixVy:WebRTC:SetupPC',
+        arguments: {'peerId': peerId, 'isOfferer': isOfferer});
+
     // Start latency tracking for this peer
     _latencyTracker.startSignalingTimer(peerId);
-    
+
     final pc = await createPeerConnection(_iceConfig);
     _pcs[peerId] = pc;
     _uidToUserId[_stableUid(peerId)] = peerId;
@@ -712,12 +735,26 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         await pc.addTrack(track, _localStream!);
       }
     }
+    final systemAudioTrack = _systemAudioStream?.getAudioTracks().firstOrNull;
+    final outgoingSystemAudioTrack = _sharedAudioGain?.outputTrack;
+    if (systemAudioTrack != null &&
+        outgoingSystemAudioTrack != null &&
+        _systemAudioStream != null) {
+      _systemAudioSenders[peerId] =
+          await pc.addTrack(outgoingSystemAudioTrack, _systemAudioStream!);
+    }
     // Negotiate a video m-line up front so a camera turned on later can use replaceTrack.
     // A sender with no track at answer time is negotiated as recvonly, so enableVideo
     // renegotiates (see _renegotiate) once a track is attached.
     if (await _videoTransceiver(pc) == null) {
       await pc.addTransceiver(
         kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
+        init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendRecv),
+      );
+    }
+    if (await _microphoneTransceiver(pc) == null) {
+      await pc.addTransceiver(
+        kind: RTCRtpMediaType.RTCRtpMediaTypeAudio,
         init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendRecv),
       );
     }
@@ -733,36 +770,63 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     };
 
     pc.onTrack = (event) async {
-      // A video sender that starts without a track has no stream id, so wrap its track.
-      MediaStream? stream;
-      if (event.streams.isNotEmpty) {
-        stream = event.streams[0];
-      } else if (event.track.kind == 'video') {
-        stream = await createLocalMediaStream('remote_$peerId');
+      final uid = _stableUid(peerId);
+      if (event.track.kind == 'video') {
+        event.track.onMute = () {
+          _remoteVideoMuteTimers.remove(uid)?.cancel();
+          _remoteVideoMuteTimers[uid] = Timer(_remoteVideoMuteGrace, () {
+            _remoteVideoMuteTimers.remove(uid);
+            if (event.track.muted == true &&
+                _activeRemoteVideoUids.remove(uid)) {
+              onRemoteUserJoined?.call();
+            }
+          });
+        };
+        event.track.onUnMute = () {
+          _remoteVideoMuteTimers.remove(uid)?.cancel();
+          if (_activeRemoteVideoUids.add(uid)) {
+            onRemoteUserJoined?.call();
+          }
+        };
+        event.track.onEnded = () {
+          _remoteVideoMuteTimers.remove(uid)?.cancel();
+          if (_activeRemoteVideoUids.remove(uid)) {
+            onRemoteUserJoined?.call();
+          }
+        };
+      }
+
+      var stream = _remoteStreams[uid];
+      if (stream == null) {
+        stream = event.streams.isNotEmpty
+            ? event.streams.first
+            : await createLocalMediaStream('remote_$peerId');
+        _remoteStreams[uid] = stream;
+      }
+      final hasTrack =
+          stream.getTracks().any((track) => track.id == event.track.id);
+      if (!hasTrack) {
         await stream.addTrack(event.track);
       }
-      if (stream != null) {
-        final uid = _stableUid(peerId);
 
-        final existingRenderer = _remoteRenderers[uid];
-        if (existingRenderer != null &&
-            identical(existingRenderer.srcObject, stream)) {
-          onRemoteUserJoined?.call();
-          return;
-        }
-
-        final oldRenderer = _remoteRenderers.remove(uid);
-        if (oldRenderer != null) {
-          oldRenderer.srcObject = null;
-          await oldRenderer.dispose();
-        }
-        
+      final existingRenderer = _remoteRenderers[uid];
+      if (existingRenderer != null) {
+        existingRenderer.srcObject = stream;
+        existingRenderer.muted = _speakerOutputVolume == 0.0;
+      } else {
         final renderer = RTCVideoRenderer();
         await renderer.initialize();
         renderer.srcObject = stream;
+        renderer.muted = _speakerOutputVolume == 0.0;
         _remoteRenderers[uid] = renderer;
-        onRemoteUserJoined?.call();
       }
+      if (event.track.kind == 'video' &&
+          event.track.enabled != false &&
+          event.track.muted != true) {
+        _remoteVideoMuteTimers.remove(uid)?.cancel();
+        _activeRemoteVideoUids.add(uid);
+      }
+      onRemoteUserJoined?.call();
     };
 
     if (isOfferer) {
@@ -785,11 +849,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         final data = doc.data();
         if (data == null || data['senderId'] == _localUserId) continue;
         _enqueueSignal(peerId, () async {
-          try {
-            await _applySignal(pc, roomId, peerId, data);
-          } finally {
-            await doc.reference.delete();
-          }
+          await _applySignal(pc, roomId, peerId, data);
+          await doc.reference.delete();
         });
       }
     }, onError: (Object e) => _onListenerError(roomId, 'signaling', e)));
@@ -805,7 +866,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       final now = DateTime.now();
       final maxCandidateAge = Duration(seconds: 20);
       int staleCandidatesSkipped = 0;
-      
+
       for (var change in snap.docChanges) {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
@@ -819,30 +880,35 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
             // Check candidate age: skip stale candidates older than 20 seconds
             final createdAt = (data['timestamp'] as Timestamp?)?.toDate();
-            if (createdAt != null && now.difference(createdAt) > maxCandidateAge) {
+            if (createdAt != null &&
+                now.difference(createdAt) > maxCandidateAge) {
               staleCandidatesSkipped++;
-              _log('⏭️ Skipping stale ICE candidate for $peerId (age: ${now.difference(createdAt).inSeconds}s)');
+              _log(
+                  '⏭️ Skipping stale ICE candidate for $peerId (age: ${now.difference(createdAt).inSeconds}s)');
               continue;
             }
-            
+
             try {
               final candidate = RTCIceCandidate(
                 data['candidate']?.toString(),
                 data['sdpMid']?.toString(),
                 data['sdpMLineIndex'] as int?,
               );
-              
-              _enqueueSignal(peerId, () => _addRemoteCandidate(pc, peerId, candidate));
+
+              _enqueueSignal(
+                  peerId, () => _addRemoteCandidate(pc, peerId, candidate));
               _log('✅ Queued ICE candidate for peer: $peerId');
             } catch (e) {
-              _log('⚠️ Failed to add ICE candidate for $peerId: $e. Connection state: ${pc.connectionState}');
+              _log(
+                  '⚠️ Failed to add ICE candidate for $peerId: $e. Connection state: ${pc.connectionState}');
             }
           }
         }
       }
-      
+
       if (staleCandidatesSkipped > 0) {
-        _log('📊 Skipped $staleCandidatesSkipped stale ICE candidates for $peerId in this batch');
+        _log(
+            '📊 Skipped $staleCandidatesSkipped stale ICE candidates for $peerId in this batch');
       }
     }, onError: (Object e) => _onListenerError(roomId, 'candidates', e)));
 
@@ -850,18 +916,39 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       // Sprint 2 B-2 Fix: Add safeguard to ensure only deterministic offerer sends offer
       // Verify local user ID is lexicographically smaller than peer ID
       if (_localUserId.compareTo(peerId) >= 0) {
-        _log('❌ LOGIC ERROR: Non-offerer tried to send offer! localUserId=$_localUserId, peerId=$peerId');
+        _log(
+            '❌ LOGIC ERROR: Non-offerer tried to send offer! localUserId=$_localUserId, peerId=$peerId');
         return;
       }
-      
+
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      
+
       await _sendSignal(roomId, peerId, 'offer', offer.sdp ?? '');
-      
+
       _latencyTracker.recordOfferAnswerSent(peerId, 'offer');
     }
     developer.Timeline.finishSync();
+  }
+
+  Future<void> _clearLocalIceCandidates(
+    DocumentReference<Map<String, dynamic>> sessionRef,
+  ) async {
+    while (true) {
+      final candidates = await sessionRef
+          .collection('candidates')
+          .where('userId', isEqualTo: _localUserId)
+          .limit(400)
+          .get();
+      if (candidates.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final candidate in candidates.docs) {
+        batch.delete(candidate.reference);
+      }
+      await batch.commit();
+      if (candidates.docs.length < 400) return;
+    }
   }
 
   Future<RTCRtpTransceiver?> _videoTransceiver(RTCPeerConnection pc) async {
@@ -871,13 +958,38 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     return null;
   }
 
+  Future<RTCRtpTransceiver?> _microphoneTransceiver(
+      RTCPeerConnection pc) async {
+    final systemTrackIds = _systemAudioStream
+            ?.getAudioTracks()
+            .map((track) => track.id)
+            .whereType<String>()
+            .toSet() ??
+        const <String>{};
+    final outgoingSystemTrackId = _sharedAudioGain?.outputTrack.id;
+    if (outgoingSystemTrackId != null) {
+      systemTrackIds.add(outgoingSystemTrackId);
+    }
+    for (final transceiver in await pc.getTransceivers()) {
+      if (transceiver.receiver.track?.kind != 'audio') continue;
+      final senderTrackId = transceiver.sender.track?.id;
+      if (senderTrackId == null || !systemTrackIds.contains(senderTrackId)) {
+        return transceiver;
+      }
+    }
+    return null;
+  }
+
   // Sends a new offer over the existing pair signaling doc so the remote side
   // learns about a track that was attached after the initial negotiation.
   Future<void> _renegotiate(String peerId, RTCPeerConnection pc) async {
     final roomId = _currentChannelId;
     if (roomId == null) return;
-    if (pc.signalingState != RTCSignalingState.RTCSignalingStateStable) {
-      _log('Renegotiation queued for $peerId: signaling state is ${pc.signalingState}');
+    final signalingState = pc.signalingState;
+    if (signalingState != null &&
+        signalingState != RTCSignalingState.RTCSignalingStateStable) {
+      _log(
+          'Renegotiation queued for $peerId: signaling state is $signalingState');
       _pendingRenegotiations.add(peerId);
       return;
     }
@@ -889,7 +1001,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _log('Sent renegotiation offer to $peerId');
   }
 
-  CollectionReference<Map<String, dynamic>> _signalMessages(String roomId, String peerId) {
+  CollectionReference<Map<String, dynamic>> _signalMessages(
+      String roomId, String peerId) {
     return _firestore
         .collection('webrtc_sessions')
         .doc(roomId)
@@ -898,7 +1011,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         .collection('messages');
   }
 
-  Future<void> _sendSignal(String roomId, String peerId, String type, String sdp) async {
+  Future<void> _sendSignal(
+      String roomId, String peerId, String type, String sdp) async {
     await _signalMessages(roomId, peerId).add({
       'senderId': _localUserId,
       'type': type,
@@ -940,9 +1054,31 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     // Offers are accepted whenever the connection is stable, so either side can
     // renegotiate (e.g. a camera turned on after the initial answer was sent).
     if (type == 'offer') {
-      if (pc.signalingState != RTCSignalingState.RTCSignalingStateStable) {
-        _log('⚠️ Ignoring offer while signaling state is ${pc.signalingState} (peerId=$peerId)');
-        return;
+      final signalingState = pc.signalingState;
+      if (signalingState != null &&
+          signalingState != RTCSignalingState.RTCSignalingStateStable) {
+        final shouldYieldToPeer = _localUserId.compareTo(peerId) > 0 &&
+            signalingState == RTCSignalingState.RTCSignalingStateHaveLocalOffer;
+        if (!shouldYieldToPeer) {
+          if (_localUserId.compareTo(peerId) > 0) {
+            _log(
+                'Offer arrived in stale state $signalingState. Resetting peer $peerId.');
+            unawaited(Future<void>.delayed(
+              const Duration(milliseconds: 100),
+              () async {
+                await _cleanupPeer(peerId);
+                await _setupPC(peerId, roomId, false);
+              },
+            ));
+            throw StateError(
+                'Peer reset required for offer in $signalingState');
+          }
+          _log(
+              '⚠️ Ignoring offer while signaling state is $signalingState (peerId=$peerId)');
+          return;
+        }
+        _log('Offer collision with $peerId. Rolling back local offer.');
+        await pc.setLocalDescription(RTCSessionDescription(null, 'rollback'));
       }
       await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
       _latencyTracker.recordRemoteDescriptionApplied(peerId);
@@ -957,8 +1093,12 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       }
     } else if (type == 'answer') {
       // Only an answer to our own pending offer can be applied. Stale answers are ignored.
-      if (pc.signalingState != RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-        _log('⚠️ Ignoring answer while signaling state is ${pc.signalingState} (peerId=$peerId)');
+      final signalingState = pc.signalingState;
+      final localDescription = await pc.getLocalDescription();
+      if (signalingState != RTCSignalingState.RTCSignalingStateHaveLocalOffer &&
+          localDescription?.type != 'offer') {
+        _log(
+            '⚠️ Ignoring answer while signaling state is $signalingState (peerId=$peerId)');
         return;
       }
       await pc.setRemoteDescription(RTCSessionDescription(sdp, type));
@@ -971,7 +1111,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   }
 
   // Candidates that arrive before the remote description are held until it is set.
-  Future<void> _addRemoteCandidate(RTCPeerConnection pc, String peerId, RTCIceCandidate candidate) async {
+  Future<void> _addRemoteCandidate(
+      RTCPeerConnection pc, String peerId, RTCIceCandidate candidate) async {
     final remote = await pc.getRemoteDescription();
     if (remote == null) {
       _pendingRemoteCandidates.putIfAbsent(peerId, () => []).add(candidate);
@@ -980,7 +1121,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     await pc.addCandidate(candidate);
   }
 
-  Future<void> _flushPendingCandidates(RTCPeerConnection pc, String peerId) async {
+  Future<void> _flushPendingCandidates(
+      RTCPeerConnection pc, String peerId) async {
     final pending = _pendingRemoteCandidates.remove(peerId);
     if (pending == null) return;
     for (final candidate in pending) {
@@ -1042,7 +1184,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   }
 
   @override
-  Future<void> enableVideo(bool enabled, {bool publishMicrophoneTrack = true}) async {
+  Future<void> enableVideo(bool enabled,
+      {bool publishMicrophoneTrack = true}) async {
     _log('enableVideo: $enabled');
     if (enabled) {
       if (_localStream == null) {
@@ -1058,7 +1201,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           _localStream = await navigator.mediaDevices.getUserMedia(constraints);
           _log('Successfully acquired local stream.');
         } catch (e) {
-          _log('Failed to get user media with constraints, trying fallback: $e');
+          _log(
+              'Failed to get user media with constraints, trying fallback: $e');
           try {
             _localStream = await navigator.mediaDevices.getUserMedia({
               'audio': publishMicrophoneTrack,
@@ -1076,19 +1220,22 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         final videoTracks = _localStream!.getVideoTracks();
         if (videoTracks.isEmpty || videoTracks.any((t) => t.enabled == false)) {
           _log('Video track missing or ended. Re-acquiring...');
-          final videoStream = await navigator.mediaDevices.getUserMedia({'video': true});
+          final videoStream =
+              await navigator.mediaDevices.getUserMedia({'video': true});
           final newTrack = videoStream.getVideoTracks().first;
           await _localStream!.addTrack(newTrack);
         } else {
-          for (var t in videoTracks) { t.enabled = true; }
+          for (var t in videoTracks) {
+            t.enabled = true;
+          }
         }
       }
-      
+
       if (_localRenderer == null) {
         _localRenderer = RTCVideoRenderer();
         await _localRenderer!.initialize();
       }
-      
+
       // Explicitly enable all video tracks before rendering
       // This prevents the "lens covered" state that occurs when tracks are disabled
       final videoTracks = _localStream!.getVideoTracks();
@@ -1096,22 +1243,23 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       for (final track in videoTracks) {
         track.enabled = true;
       }
-      
+
       // Set the stream on the renderer
       _localRenderer!.srcObject = _localStream;
       _log('Stream attached to local renderer');
-      
+
       // Critical: Wait for browser to properly attach the video stream to the DOM element
       // Without this delay, the renderer shows "lens covered" state on initial attach
       // because the browser hasn't finished initializing the video playback pipeline.
       // This 100ms is essential for Chrome/Firefox/Safari to initialize the video element.
       await Future<void>.delayed(const Duration(milliseconds: 100));
-      _log('Video renderer initialization complete - camera should now display');
-      
+      _log(
+          'Video renderer initialization complete - camera should now display');
+
       // Force the renderer to refresh by triggering a rebuild notification
       // This ensures the RTCVideoView immediately reflects the new stream
       onLocalVideoCaptureChanged?.call();
-      
+
       _localVideoCapturing = true;
       _isBroadcaster = true;
       _localAudioMuted = !publishMicrophoneTrack;
@@ -1131,10 +1279,11 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           await _renegotiate(entry.key, pc);
         }
       }
+      await _syncSignalingBroadcastState();
     } else {
       _localVideoCapturing = false;
       _localRenderer?.srcObject = null;
-      
+
       final videoTracks = _localStream?.getVideoTracks();
       if (videoTracks != null) {
         for (var track in videoTracks) {
@@ -1148,8 +1297,25 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         _localStream?.getTracks().forEach((t) => t.stop());
         _localStream = null;
       }
+      await _syncSignalingBroadcastState();
     }
     onLocalVideoCaptureChanged?.call();
+  }
+
+  Future<void> _syncSignalingBroadcastState() async {
+    final roomId = _currentChannelId;
+    if (!_isJoinedChannel || roomId == null) return;
+
+    await _firestore
+        .collection('webrtc_sessions')
+        .doc(roomId)
+        .collection('participants')
+        .doc(_localUserId)
+        .set({
+      'uid': _stableUid(_localUserId),
+      'isBroadcasting': _localVideoCapturing,
+      'lastSeen': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -1174,7 +1340,61 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   @override
   Future<void> publishLocalAudioStream(bool enabled) async {
-    await mute(!enabled);
+    if (enabled) {
+      MediaStreamTrack? audioTrack = _localStream?.getAudioTracks().firstOrNull;
+      if (audioTrack == null) {
+        final audioStream =
+            await navigator.mediaDevices.getUserMedia({'audio': true});
+        audioTrack = audioStream.getAudioTracks().firstOrNull;
+        if (audioTrack == null) {
+          await audioStream.dispose();
+          throw StateError('The selected microphone did not provide audio.');
+        }
+        if (_localStream == null) {
+          _localStream = audioStream;
+        } else {
+          await _localStream!.addTrack(audioTrack);
+        }
+      }
+
+      audioTrack.enabled = true;
+      await _microphoneGain?.dispose();
+      _microphoneGain = await createOutgoingAudioGain(
+        audioTrack,
+        initialGain: _microphoneOutputVolume,
+      );
+      final outgoingAudioTrack = _microphoneGain!.outputTrack;
+      for (final entry in _pcs.entries) {
+        final transceiver = await _microphoneTransceiver(entry.value);
+        if (transceiver != null) {
+          await transceiver.sender.replaceTrack(outgoingAudioTrack);
+        } else {
+          await entry.value.addTrack(outgoingAudioTrack, _localStream!);
+        }
+        await _renegotiate(entry.key, entry.value);
+      }
+      await mute(false);
+      return;
+    }
+
+    final audioTracks =
+        _localStream?.getAudioTracks().toList(growable: false) ?? const [];
+    for (final pc in _pcs.values) {
+      final transceiver = await _microphoneTransceiver(pc);
+      await transceiver?.sender.replaceTrack(null);
+    }
+    for (final track in audioTracks) {
+      track.enabled = false;
+      await track.stop();
+      await _localStream?.removeTrack(track);
+    }
+    await _microphoneGain?.dispose();
+    _microphoneGain = null;
+    if (_localStream?.getTracks().isEmpty == true) {
+      await _localStream?.dispose();
+      _localStream = null;
+    }
+    await mute(true);
   }
 
   @override
@@ -1186,7 +1406,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     final renderer = _remoteRenderers[uid];
     if (renderer != null) {
       renderer.srcObject?.getVideoTracks().forEach((track) {
-        track.enabled = _networkDegraded ? false : subscribe;
+        track.enabled = subscribe;
       });
     }
   }
@@ -1200,20 +1420,22 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         if (sender.track?.kind == 'video') {
           try {
             final parameters = sender.parameters;
-            if (parameters.encodings != null && parameters.encodings!.isNotEmpty) {
+            if (parameters.encodings != null &&
+                parameters.encodings!.isNotEmpty) {
               for (var encoding in parameters.encodings!) {
                 if (highQuality) {
-                  encoding.maxBitrate = 1500000; 
+                  encoding.maxBitrate = 1500000;
                   encoding.maxFramerate = 30;
                   encoding.scaleResolutionDownBy = 1.0;
                 } else {
-                  encoding.maxBitrate = 300000; 
+                  encoding.maxBitrate = 300000;
                   encoding.maxFramerate = 15;
-                  encoding.scaleResolutionDownBy = 2.0; 
+                  encoding.scaleResolutionDownBy = 2.0;
                 }
               }
               await sender.setParameters(parameters);
-              _log('Successfully updated encoding parameters for highQuality=$highQuality');
+              _log(
+                  'Successfully updated encoding parameters for highQuality=$highQuality');
             }
           } catch (e) {
             _log('Failed to set encoding parameters: $e');
@@ -1225,41 +1447,53 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   Future<void> _monitorNetworkMetrics() async {
     if (!_isJoinedChannel || _pcs.isEmpty) return;
-    
+    final now = DateTime.now();
+    final lastCheck = _lastNetworkMetricsAt;
+    if (lastCheck != null &&
+        now.difference(lastCheck) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastNetworkMetricsAt = now;
+
     double totalPacketsLost = 0;
     double totalPacketsReceived = 0;
     double maxRtt = 0.0;
-    
+
     for (var pc in _pcs.values) {
       try {
         final stats = await pc.getStats();
         for (var stat in stats) {
           if (stat.type == 'inbound-rtp') {
-            totalPacketsLost += (stat.values['packetsLost'] as num?)?.toDouble() ?? 0.0;
-            totalPacketsReceived += (stat.values['packetsReceived'] as num?)?.toDouble() ?? 0.0;
+            totalPacketsLost +=
+                (stat.values['packetsLost'] as num?)?.toDouble() ?? 0.0;
+            totalPacketsReceived +=
+                (stat.values['packetsReceived'] as num?)?.toDouble() ?? 0.0;
           }
-          if (stat.type == 'candidate-pair' && stat.values['state'] == 'succeeded') {
-            final rtt = (stat.values['currentRoundTripTime'] as num?)?.toDouble() ?? 0.0;
+          if (stat.type == 'candidate-pair' &&
+              stat.values['state'] == 'succeeded') {
+            final rtt =
+                (stat.values['currentRoundTripTime'] as num?)?.toDouble() ??
+                    0.0;
             if (rtt > maxRtt) maxRtt = rtt;
           }
         }
       } catch (_) {}
     }
-    
+
     double lossRatio = 0.0;
     if (totalPacketsReceived > 0) {
       lossRatio = totalPacketsLost / (totalPacketsLost + totalPacketsReceived);
     }
-    
+
     final bool isLossDegraded = lossRatio > 0.05;
     final bool isRttDegraded = maxRtt > 0.4;
-    
+
     if (isLossDegraded || isRttDegraded) {
       _consecutiveHighLossTicks++;
     } else {
       _consecutiveHighLossTicks = 0;
     }
-    
+
     if (_consecutiveHighLossTicks >= 3 && !_networkDegraded) {
       _networkDegraded = true;
       _log('⚠️ High network degradation detected. Throttling bitrates.');
@@ -1278,16 +1512,17 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         if (sender.track?.kind == 'video') {
           try {
             final parameters = sender.parameters;
-            if (parameters.encodings != null && parameters.encodings!.isNotEmpty) {
+            if (parameters.encodings != null &&
+                parameters.encodings!.isNotEmpty) {
               for (var encoding in parameters.encodings!) {
                 if (_networkDegraded) {
-                  encoding.maxBitrate = 100000; 
-                  encoding.maxFramerate = 8;    
-                  encoding.scaleResolutionDownBy = 4.0; 
+                  encoding.maxBitrate = 100000;
+                  encoding.maxFramerate = 8;
+                  encoding.scaleResolutionDownBy = 4.0;
                 } else {
-                  encoding.maxBitrate = 300000; 
+                  encoding.maxBitrate = 300000;
                   encoding.maxFramerate = 15;
-                  encoding.scaleResolutionDownBy = 2.0; 
+                  encoding.scaleResolutionDownBy = 2.0;
                 }
               }
               await sender.setParameters(parameters);
@@ -1297,13 +1532,6 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           }
         }
       }
-    }
-    
-    for (var entry in _remoteRenderers.entries) {
-      final renderer = entry.value;
-      renderer.srcObject?.getVideoTracks().forEach((track) {
-        track.enabled = !_networkDegraded;
-      });
     }
   }
 
@@ -1330,12 +1558,29 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
   }
 
   @override
-  Future<void> setMicVolume(double volume) async {}
-  @override
-  Future<void> setSpeakerVolume(double volume) async {}
+  Future<void> setMicVolume(double volume) async {
+    _microphoneOutputVolume = volume.clamp(0.0, 2.0);
+    await _microphoneGain?.setGain(_microphoneOutputVolume);
+  }
 
   @override
-  Future<void> ensureDeviceAccess({required bool video, required bool audio}) async {
+  Future<void> setSpeakerVolume(double volume) async {
+    _speakerOutputVolume = volume.clamp(0.0, 1.0);
+    final muted = _speakerOutputVolume == 0.0;
+    for (final renderer in _remoteRenderers.values) {
+      renderer.muted = muted;
+    }
+  }
+
+  @override
+  Future<void> setSharedAudioVolume(double volume) async {
+    _sharedAudioOutputVolume = volume.clamp(0.0, 2.0);
+    await _sharedAudioGain?.setGain(_sharedAudioOutputVolume);
+  }
+
+  @override
+  Future<void> ensureDeviceAccess(
+      {required bool video, required bool audio}) async {
     _log('Ensuring device access: video=$video, audio=$audio');
     try {
       final Map<String, dynamic> constraints = {
@@ -1359,6 +1604,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   Future<void> disposeAll() async {
     _log('Disposing WebRtcRoomService');
+    _isJoinedChannel = false;
     _setConnectionState(RtcConnectionState.idle);
     _reconnectAttemptCount = 0;
     _signalingHeartbeatFailures = 0;
@@ -1370,20 +1616,32 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
     _iceRestartAttempts.clear();
     _pendingRemoteCandidates.clear();
     _signalQueues.clear();
+    _remoteConnectionIds.clear();
 
+    _signalingHeartbeatTimer?.cancel();
     _signalingHeartbeatTimer = null;
     _audioLevelTimer?.cancel();
     _audioLevelTimer = null;
-    
+    for (final timer in _remoteVideoMuteTimers.values) {
+      timer.cancel();
+    }
+    _remoteVideoMuteTimers.clear();
+    _activeRemoteVideoUids.clear();
+    _lastNetworkMetricsAt = null;
+
     // Clean up latency tracking
     _latencyTracker.reset();
-    
+
     if (_currentChannelId != null) {
       try {
-        final sessionRef = _firestore.collection('webrtc_sessions').doc(_currentChannelId);
+        final sessionRef =
+            _firestore.collection('webrtc_sessions').doc(_currentChannelId);
         await sessionRef.collection('participants').doc(_localUserId).delete();
-        
-        final candidates = await sessionRef.collection('candidates').where('userId', isEqualTo: _localUserId).get();
+
+        final candidates = await sessionRef
+            .collection('candidates')
+            .where('userId', isEqualTo: _localUserId)
+            .get();
         for (var doc in candidates.docs) {
           await doc.reference.delete();
         }
@@ -1411,7 +1669,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       await pc.dispose();
     }
     _pcs.clear();
-    
+
     if (_localStream != null) {
       for (var track in _localStream!.getTracks()) {
         track.enabled = false;
@@ -1420,6 +1678,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       await _localStream!.dispose();
       _localStream = null;
     }
+    await _microphoneGain?.dispose();
+    _microphoneGain = null;
 
     if (_systemAudioStream != null) {
       for (var track in _systemAudioStream!.getTracks()) {
@@ -1429,6 +1689,9 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       await _systemAudioStream!.dispose();
       _systemAudioStream = null;
     }
+    await _sharedAudioGain?.dispose();
+    _sharedAudioGain = null;
+    _systemAudioSenders.clear();
 
     if (_localRenderer != null) {
       _localRenderer!.srcObject = null;
@@ -1441,12 +1704,16 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
       await renderer.dispose();
     }
     _remoteRenderers.clear();
+    for (final stream in _remoteStreams.values) {
+      await stream.dispose();
+    }
+    _remoteStreams.clear();
   }
 
   void _setupIceConnectionStateListener(RTCPeerConnection pc, String peerId) {
     pc.onIceConnectionState = (RTCIceConnectionState state) {
       _log('ICE Connection State changed for $peerId: $state');
-      
+
       switch (state) {
         case RTCIceConnectionState.RTCIceConnectionStateConnected:
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
@@ -1459,7 +1726,8 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
           break;
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
           // Disconnected often recovers on its own, so wait before restarting ICE.
-          _log('⚠️ Connection for $peerId disconnected. Waiting for recovery...');
+          _log(
+              '⚠️ Connection for $peerId disconnected. Waiting for recovery...');
           _scheduleIceRestart(peerId, delay: const Duration(seconds: 5));
           break;
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
@@ -1488,13 +1756,16 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
 
   static int _stableUid(String userId) {
     int h = 0;
-    for (final c in userId.codeUnits) { h = (h * 31 + c) & 0x7FFFFFFF; }
+    for (final c in userId.codeUnits) {
+      h = (h * 31 + c) & 0x7FFFFFFF;
+    }
     return h == 0 ? 1 : h;
   }
 
   // --- 1-to-1 Compatibility Methods (Phase 2 Legacy) ---
 
-  Future<String> createRoom(MediaStream localStream, void Function(MediaStream) onRemoteStream) async {
+  Future<String> createRoom(MediaStream localStream,
+      void Function(MediaStream) onRemoteStream) async {
     final roomId = _firestore.collection('webrtc_sessions').doc().id;
     _localStream = localStream;
     onRemoteUserJoined = () {
@@ -1502,12 +1773,13 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         onRemoteStream(_remoteRenderers.values.first.srcObject!);
       }
     };
-    await joinRoom('', roomId, _stableUid(_localUserId), publishCameraTrackOnJoin: true);
+    await joinRoom('', roomId, _stableUid(_localUserId),
+        publishCameraTrackOnJoin: true);
     return roomId;
   }
 
   Future<void> joinRoomById(
-    String roomId, 
+    String roomId,
     MediaStream localStream, [
     void Function(MediaStream)? onRemoteStream,
   ]) async {
@@ -1519,10 +1791,7 @@ class WebRtcRoomService extends RtcRoomService with DiagnosticLogger, WidgetsBin
         }
       };
     }
-    await joinRoom('', roomId, _stableUid(_localUserId), publishCameraTrackOnJoin: true);
+    await joinRoom('', roomId, _stableUid(_localUserId),
+        publishCameraTrackOnJoin: true);
   }
 }
-
-
-
-

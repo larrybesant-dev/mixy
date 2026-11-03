@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/core/firestore/firestore_error_utils.dart';
 import 'package:mixvy/core/telemetry/app_telemetry.dart';
@@ -58,55 +59,90 @@ String _validatedMessagingActorId(String candidateUserId) {
   return normalizedCandidate;
 }
 
+@visibleForTesting
+Future<String> ensureDirectConversationDocument({
+  required FirebaseFirestore firestore,
+  required String currentUserId,
+  required String currentUserName,
+  required String targetUserId,
+  required String targetUserName,
+}) async {
+  final sortedIds = ([currentUserId, targetUserId]..sort());
+  final deterministicId = 'dm_${sortedIds[0]}_${sortedIds[1]}';
+  final conversationRef =
+      firestore.collection('conversations').doc(deterministicId);
+
+  await firestore.runTransaction((transaction) async {
+    final existing = await transaction.get(conversationRef);
+    if (existing.exists) return;
+
+    transaction.set(conversationRef, {
+      'type': 'direct',
+      'participantIds': [currentUserId, targetUserId],
+      'participantNames': {
+        currentUserId: currentUserName,
+        targetUserId: targetUserName,
+      },
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastReadAt': {
+        currentUserId: FieldValue.serverTimestamp(),
+        targetUserId: FieldValue.serverTimestamp(),
+      },
+      'isArchived': false,
+      'status': 'active',
+    });
+  });
+
+  return deterministicId;
+}
+
 // Single raw realtime stream for all conversation documents of a user.
 final rawConversationsStreamProvider = StreamProvider.autoDispose
     .family<List<Conversation>, String>((ref, userId) {
-      final firestore = ref.watch(firestoreProvider);
-      final lifecycle = ref.watch(streamLifecycleManagerProvider);
-      final resolvedUserId = _effectiveMessagingUserId(userId);
-      final baseStream = firestore
-          .collection('conversations')
-          .where('participantIds', arrayContains: resolvedUserId)
-          .orderBy('lastMessageAt', descending: true)
-          .limit(QueryPolicy.conversationsLimit)
-          .snapshots()
-          .handleError((error, stackTrace) {
-            // Log error but let stream continue or complete
-            logFirestoreError(
-              context: 'messaging.rawConversationsStreamProvider',
-              error: error,
-              stackTrace: stackTrace,
-            );
-            throw error; // Re-throw so provider shows error state
-          })
-          .map(
-            (snapshot) => snapshot.docs
-                .map((doc) => Conversation.fromJson(doc.data(), doc.id))
-                .toList(growable: false),
-          );
+  final firestore = ref.watch(firestoreProvider);
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  final resolvedUserId = _effectiveMessagingUserId(userId);
+  final baseStream = firestore
+      .collection('conversations')
+      .where('participantIds', arrayContains: resolvedUserId)
+      .orderBy('lastMessageAt', descending: true)
+      .limit(QueryPolicy.conversationsLimit)
+      .snapshots()
+      .handleError((error, stackTrace) {
+    // Log error but let stream continue or complete
+    logFirestoreError(
+      context: 'messaging.rawConversationsStreamProvider',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    throw error; // Re-throw so provider shows error state
+  }).map(
+    (snapshot) => snapshot.docs
+        .map((doc) => Conversation.fromJson(doc.data(), doc.id))
+        .toList(growable: false),
+  );
 
-      return lifecycle.bind(
-        key: 'conversations:$resolvedUserId',
-        routePrefixes: const <String>['/messages', '/new-message', '/chat'],
-        create: () => baseStream,
-      );
-    });
+  return lifecycle.bind(
+    key: 'conversations:$resolvedUserId',
+    routePrefixes: const <String>['/messages', '/new-message', '/chat'],
+    create: () => baseStream,
+  );
+});
 
 // Active conversations derived from the single raw stream.
 final conversationsStreamProvider = Provider.autoDispose
     .family<AsyncValue<List<Conversation>>, String>((ref, userId) {
-      final resolvedUserId = _effectiveMessagingUserId(userId);
-      return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
-        final active = all
-            .where((c) => !c.isArchived && c.status != 'pending')
-            .toList();
-        active.sort(
-          (left, right) =>
-              _compareConversationsForUser(left, right, resolvedUserId),
-        );
-        return active;
-      });
-    });
+  final resolvedUserId = _effectiveMessagingUserId(userId);
+  return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
+    final active =
+        all.where((c) => !c.isArchived && c.status != 'pending').toList();
+    active.sort(
+      (left, right) =>
+          _compareConversationsForUser(left, right, resolvedUserId),
+    );
+    return active;
+  });
+});
 
 /// Alias for non-canonical consumers to avoid direct `*StreamProvider`
 /// identifier references while still deriving from the canonical stream.
@@ -131,16 +167,15 @@ int _compareConversationsForUser(
 // Stream of pending message requests for the current user.
 final requestsStreamProvider = Provider.autoDispose
     .family<AsyncValue<List<Conversation>>, String>((ref, userId) {
-      return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
-        final pending = all
-            .where((c) => !c.isArchived && c.status == 'pending')
-            .toList();
-        pending.sort(
-          (left, right) => right.createdAt.compareTo(left.createdAt),
-        );
-        return pending;
-      });
-    });
+  return ref.watch(rawConversationsStreamProvider(userId)).whenData((all) {
+    final pending =
+        all.where((c) => !c.isArchived && c.status == 'pending').toList();
+    pending.sort(
+      (left, right) => right.createdAt.compareTo(left.createdAt),
+    );
+    return pending;
+  });
+});
 
 /// Alias for non-canonical consumers to avoid direct `*StreamProvider`
 /// identifier references while still deriving from the canonical stream.
@@ -149,27 +184,27 @@ final messageRequestsFeedProvider = requestsStreamProvider;
 // Stream of a single conversation document (used for read receipt tracking)
 final conversationDocProvider = StreamProvider.autoDispose
     .family<Conversation?, String>((ref, conversationId) {
-      final firestore = ref.watch(firestoreProvider);
-      final lifecycle = ref.watch(streamLifecycleManagerProvider);
-      return lifecycle.bind(
-        key: 'conversation-doc:$conversationId',
-        routePrefixes: const <String>['/chat'],
-        create: () => firestore
-            .collection('conversations')
-            .doc(conversationId)
-            .snapshots()  // FSL-002: Single doc is inherently bounded
-            .map((snap) {
-              if (!snap.exists) {
-                return null;
-              }
-              final data = snap.data();
-              if (data == null) {
-                return null;
-              }
-              return Conversation.fromJson(data, snap.id);
-            }),
-      );
-    });
+  final firestore = ref.watch(firestoreProvider);
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  return lifecycle.bind(
+    key: 'conversation-doc:$conversationId',
+    routePrefixes: const <String>['/chat'],
+    create: () => firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .snapshots() // FSL-002: Single doc is inherently bounded
+        .map((snap) {
+      if (!snap.exists) {
+        return null;
+      }
+      final data = snap.data();
+      if (data == null) {
+        return null;
+      }
+      return Conversation.fromJson(data, snap.id);
+    }),
+  );
+});
 
 // Stream of messages in a conversation.
 // createdAt is a server timestamp, so Firestore is the ordering authority.
@@ -178,54 +213,53 @@ final conversationDocProvider = StreamProvider.autoDispose
 // correct behavior. We sort stable-ly so pending writes stay in send order.
 final messageStreamProvider = StreamProvider.autoDispose
     .family<List<MessageModel>, String>((ref, conversationId) {
-      final firestore = ref.watch(firestoreProvider);
-      final lifecycle = ref.watch(streamLifecycleManagerProvider);
-      return lifecycle.bind(
-        key: 'messages:$conversationId',
-        routePrefixes: const <String>['/chat'],
-        create: () => firestore
-            .collection('conversations')
-            .doc(conversationId)
-            .collection('messages')
-            .orderBy('createdAt', descending: false)
-            .limit(QueryPolicy.messagesLimit)
-            .snapshots(includeMetadataChanges: true)
-            .handleError((error, stackTrace) {
-              logFirestoreError(
-                context: 'messaging.messageStreamProvider',
-                error: error,
-                stackTrace: stackTrace,
-              );
-            })
-            .map((snapshot) {
-              final docs = snapshot.docs.toList()
-                ..sort((a, b) {
-                  final aData = a.data();
-                  final bData = b.data();
-                  final aCreatedAt = aData['createdAt'];
-                  final bCreatedAt = bData['createdAt'];
-
-                  if (aCreatedAt is Timestamp && bCreatedAt is Timestamp) {
-                    final cmp = aCreatedAt.compareTo(bCreatedAt);
-                    if (cmp != 0) return cmp;
-                  }
-
-                  final aClient = aData['clientSentAt'];
-                  final bClient = bData['clientSentAt'];
-                  if (aClient is Timestamp && bClient is Timestamp) {
-                    final cmp = aClient.compareTo(bClient);
-                    if (cmp != 0) return cmp;
-                  }
-
-                  return a.id.compareTo(b.id);
-                });
-
-              return docs
-                  .map((doc) => MessageModel.fromJson(doc.data(), doc.id))
-                  .toList(growable: false);
-            }),
+  final firestore = ref.watch(firestoreProvider);
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  return lifecycle.bind(
+    key: 'messages:$conversationId',
+    routePrefixes: const <String>['/chat'],
+    create: () => firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .orderBy('createdAt', descending: false)
+        .limit(QueryPolicy.messagesLimit)
+        .snapshots(includeMetadataChanges: true)
+        .handleError((error, stackTrace) {
+      logFirestoreError(
+        context: 'messaging.messageStreamProvider',
+        error: error,
+        stackTrace: stackTrace,
       );
-    });
+    }).map((snapshot) {
+      final docs = snapshot.docs.toList()
+        ..sort((a, b) {
+          final aData = a.data();
+          final bData = b.data();
+          final aCreatedAt = aData['createdAt'];
+          final bCreatedAt = bData['createdAt'];
+
+          if (aCreatedAt is Timestamp && bCreatedAt is Timestamp) {
+            final cmp = aCreatedAt.compareTo(bCreatedAt);
+            if (cmp != 0) return cmp;
+          }
+
+          final aClient = aData['clientSentAt'];
+          final bClient = bData['clientSentAt'];
+          if (aClient is Timestamp && bClient is Timestamp) {
+            final cmp = aClient.compareTo(bClient);
+            if (cmp != 0) return cmp;
+          }
+
+          return a.id.compareTo(b.id);
+        });
+
+      return docs
+          .map((doc) => MessageModel.fromJson(doc.data(), doc.id))
+          .toList(growable: false);
+    }),
+  );
+});
 
 /// Alias for non-canonical consumers to avoid direct `*StreamProvider`
 /// identifier references while still deriving from the canonical stream.
@@ -268,7 +302,7 @@ class _PaginatedMessageState {
 
 class _PaginatedMessageNotifier extends StateNotifier<_PaginatedMessageState> {
   _PaginatedMessageNotifier(this._firestore, this._conversationId)
-    : super(const _PaginatedMessageState());
+      : super(const _PaginatedMessageState());
 
   final FirebaseFirestore _firestore;
   final String _conversationId;
@@ -300,9 +334,8 @@ class _PaginatedMessageNotifier extends StateNotifier<_PaginatedMessageState> {
         olderMessages: [...fetched, ...state.olderMessages],
         isLoading: false,
         hasMore: snapshot.docs.length == _kMessagePageSize,
-        oldestDoc: snapshot.docs.isNotEmpty
-            ? snapshot.docs.last
-            : state.oldestDoc,
+        oldestDoc:
+            snapshot.docs.isNotEmpty ? snapshot.docs.last : state.oldestDoc,
       );
     } catch (_) {
       state = state.copyWith(isLoading: false);
@@ -312,11 +345,11 @@ class _PaginatedMessageNotifier extends StateNotifier<_PaginatedMessageState> {
 
 final paginatedMessageProvider = StateNotifierProvider.autoDispose
     .family<_PaginatedMessageNotifier, _PaginatedMessageState, String>(
-      (ref, conversationId) => _PaginatedMessageNotifier(
-        ref.watch(firestoreProvider),
-        conversationId,
-      ),
-    );
+  (ref, conversationId) => _PaginatedMessageNotifier(
+    ref.watch(firestoreProvider),
+    conversationId,
+  ),
+);
 
 // Controller for sending message
 final messagingControllerProvider = Provider<MessagingController>((ref) {
@@ -342,46 +375,43 @@ class ConversationScrollMemoryNotifier
   }
 }
 
-final conversationScrollMemoryProvider =
-    StateNotifierProvider<
-      ConversationScrollMemoryNotifier,
-      Map<String, double>
-    >((ref) => ConversationScrollMemoryNotifier());
+final conversationScrollMemoryProvider = StateNotifierProvider<
+    ConversationScrollMemoryNotifier,
+    Map<String, double>>((ref) => ConversationScrollMemoryNotifier());
 
 String buildPresenceBatchKey(Iterable<String> userIds) {
-  final normalized =
-      userIds
-          .map((id) => id.trim())
-          .where((id) => id.isNotEmpty)
-          .toSet()
-          .toList(growable: false)
-        ..sort();
+  final normalized = userIds
+      .map((id) => id.trim())
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList(growable: false)
+    ..sort();
   return normalized.join('|');
 }
 
 final batchedPresenceProvider = StreamProvider.autoDispose
     .family<Map<String, PresenceModel>, String>((ref, batchKey) {
-      if (batchKey.trim().isEmpty) {
-        return Stream<Map<String, PresenceModel>>.value(
-          const <String, PresenceModel>{},
-        );
-      }
+  if (batchKey.trim().isEmpty) {
+    return Stream<Map<String, PresenceModel>>.value(
+      const <String, PresenceModel>{},
+    );
+  }
 
-      final userIds = batchKey
-          .split('|')
-          .map((id) => id.trim())
-          .where((id) => id.isNotEmpty)
-          .toSet()
-          .toList(growable: false);
+  final userIds = batchKey
+      .split('|')
+      .map((id) => id.trim())
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
 
-      if (userIds.isEmpty) {
-        return Stream<Map<String, PresenceModel>>.value(
-          const <String, PresenceModel>{},
-        );
-      }
+  if (userIds.isEmpty) {
+    return Stream<Map<String, PresenceModel>>.value(
+      const <String, PresenceModel>{},
+    );
+  }
 
-      return ref.watch(presenceRepositoryProvider).watchUsersPresence(userIds);
-    });
+  return ref.watch(presenceRepositoryProvider).watchUsersPresence(userIds);
+});
 
 // ── Draft message cache ───────────────────────────────────────────────────────
 // Persists unsent message text keyed by conversationId across tab switches.
@@ -413,19 +443,21 @@ class DraftCacheNotifier extends StateNotifier<Map<String, String>> {
 
 final draftCacheProvider =
     StateNotifierProvider<DraftCacheNotifier, Map<String, String>>(
-      (ref) => DraftCacheNotifier(),
-    );
+  (ref) => DraftCacheNotifier(),
+);
 
 class MessagingController {
   static const int messageRetentionDays = 90;
+  static const Duration buzzCooldown = Duration(seconds: 30);
   final FirebaseFirestore _firestore;
   final bool Function()? _isMessagingEnabled;
+  final Map<String, DateTime> _lastBuzzSentAt = <String, DateTime>{};
 
   MessagingController({
     required FirebaseFirestore firestore,
     bool Function()? isMessagingEnabled,
-  }) : _firestore = firestore,
-       _isMessagingEnabled = isMessagingEnabled;
+  })  : _firestore = firestore,
+        _isMessagingEnabled = isMessagingEnabled;
 
   bool _messagingEnabled() {
     final resolver = _isMessagingEnabled;
@@ -447,6 +479,7 @@ class MessagingController {
     required String? senderAvatarUrl,
     required String content,
     String? clientMessageId,
+    String type = 'normal',
   }) async {
     if (!_messagingEnabled()) {
       AppTelemetry.logAction(
@@ -463,6 +496,9 @@ class MessagingController {
     }
 
     final authoritativeSenderId = _validatedMessagingActorId(senderId);
+    if (type != 'normal' && type != 'buzz') {
+      throw ArgumentError.value(type, 'type', 'Unsupported message type');
+    }
 
     AppTelemetry.logAction(
       domain: 'messaging',
@@ -498,6 +534,7 @@ class MessagingController {
         'senderName': senderName,
         'senderAvatarUrl': senderAvatarUrl,
         'content': content,
+        'type': type,
         'clientMessageId': resolvedClientMessageId,
         'createdAt': FieldValue.serverTimestamp(),
         'clientSentAt': Timestamp.now(),
@@ -523,7 +560,8 @@ class MessagingController {
       if (acknowledgementLatency >= LaunchMonitoring.messageAckWarning) {
         LaunchMonitoring.record(
           action: LaunchMonitoring.messagingFreshness,
-          message: 'Message acknowledgement exceeded the launch latency budget.',
+          message:
+              'Message acknowledgement exceeded the launch latency budget.',
           level: 'warning',
           roomId: conversationId,
           userId: authoritativeSenderId,
@@ -550,7 +588,8 @@ class MessagingController {
         userId: authoritativeSenderId,
         result: 'failed_ack',
         metadata: <String, Object?>{
-          'latency_ms': DateTime.now().difference(commitStartedAt).inMilliseconds,
+          'latency_ms':
+              DateTime.now().difference(commitStartedAt).inMilliseconds,
         },
         error: error,
         stackTrace: stackTrace,
@@ -571,6 +610,34 @@ class MessagingController {
       );
       rethrow;
     }
+  }
+
+  Future<void> sendBuzz({
+    required String conversationId,
+    required String senderId,
+    required String senderName,
+    required String? senderAvatarUrl,
+  }) async {
+    final now = DateTime.now();
+    final lastSentAt = _lastBuzzSentAt[conversationId];
+    if (lastSentAt != null) {
+      final remaining = buzzCooldown - now.difference(lastSentAt);
+      if (!remaining.isNegative) {
+        throw StateError(
+          'Buzz is cooling down. Try again in ${remaining.inSeconds + 1} seconds.',
+        );
+      }
+    }
+
+    await sendMessage(
+      conversationId: conversationId,
+      senderId: senderId,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      content: 'BUZZ!',
+      type: 'buzz',
+    );
+    _lastBuzzSentAt[conversationId] = now;
   }
 
   Future<String> createDirectConversation({
@@ -610,28 +677,13 @@ class MessagingController {
       throw Exception('Cannot start a conversation with this user.');
     }
 
-    // Deterministic conversation ID: sort participant UIDs so both orderings
-    // produce the same document path. Using set() with merge:true makes this
-    // fully idempotent — concurrent calls from different devices cannot create
-    // duplicate conversation documents (eliminates the prior TOCTOU race).
-    final sortedIds = ([currentUserId, targetUserId]..sort());
-    final deterministicId = 'dm_${sortedIds[0]}_${sortedIds[1]}';
-    final convRef = _firestore.collection('conversations').doc(deterministicId);
-
-    await convRef.set({
-      'type': 'direct',
-      'participantIds': [currentUserId, targetUserId],
-      'participantNames': {currentUserId: user1Name, targetUserId: user2Name},
-      'createdAt': FieldValue.serverTimestamp(),
-      'lastReadAt': {
-        currentUserId: FieldValue.serverTimestamp(),
-        targetUserId: FieldValue.serverTimestamp(),
-      },
-      'isArchived': false,
-      'status': 'active',
-    }, SetOptions(merge: true));
-
-    return deterministicId;
+    return ensureDirectConversationDocument(
+      firestore: _firestore,
+      currentUserId: currentUserId,
+      currentUserName: user1Name,
+      targetUserId: targetUserId,
+      targetUserName: user2Name,
+    );
   }
 
   Future<String> createGroupConversation({
@@ -676,9 +728,8 @@ class MessagingController {
     required String userId,
   }) async {
     final actorUserId = _validatedMessagingActorId(userId);
-    final conversationRef = _firestore
-        .collection('conversations')
-        .doc(conversationId);
+    final conversationRef =
+        _firestore.collection('conversations').doc(conversationId);
     try {
       await conversationRef.update({
         'lastReadAt.$actorUserId': FieldValue.serverTimestamp(),
@@ -714,9 +765,8 @@ class MessagingController {
   }
 
   Future<void> archiveConversation({required String conversationId}) async {
-    final conversationRef = _firestore
-        .collection('conversations')
-        .doc(conversationId);
+    final conversationRef =
+        _firestore.collection('conversations').doc(conversationId);
     try {
       await conversationRef.update({
         'isArchived': true,
@@ -750,9 +800,8 @@ class MessagingController {
   }
 
   Future<void> acceptMessageRequest({required String conversationId}) async {
-    final conversationRef = _firestore
-        .collection('conversations')
-        .doc(conversationId);
+    final conversationRef =
+        _firestore.collection('conversations').doc(conversationId);
     try {
       await conversationRef.update({
         'status': 'active',
@@ -835,32 +884,32 @@ class MessagingController {
 /// Reactions on a message keyed by userId → emoji string.
 final messageReactionsProvider = StreamProvider.autoDispose
     .family<Map<String, String>, ({String conversationId, String messageId})>((
-      ref,
-      params,
-    ) {
-      final firestore = ref.watch(firestoreProvider);
-      final lifecycle = ref.watch(streamLifecycleManagerProvider);
-      return lifecycle.bind(
-        key: 'message-reactions:${params.conversationId}:${params.messageId}',
-        routePrefixes: const <String>['/chat'],
-        create: () => firestore
-            .collection('conversations')
-            .doc(params.conversationId)
-            .collection('messages')
-            .doc(params.messageId)
-            .collection('reactions')
-            .limit(QueryPolicy.messageReactionsLimit)
-            .snapshots()
-            .map((snap) {
-              final result = <String, String>{};
-              for (final doc in snap.docs) {
-                final emoji = doc.data()['emoji'] as String?;
-                if (emoji != null) result[doc.id] = emoji;
-              }
-              return result;
-            }),
-      );
-    });
+  ref,
+  params,
+) {
+  final firestore = ref.watch(firestoreProvider);
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  return lifecycle.bind(
+    key: 'message-reactions:${params.conversationId}:${params.messageId}',
+    routePrefixes: const <String>['/chat'],
+    create: () => firestore
+        .collection('conversations')
+        .doc(params.conversationId)
+        .collection('messages')
+        .doc(params.messageId)
+        .collection('reactions')
+        .limit(QueryPolicy.messageReactionsLimit)
+        .snapshots()
+        .map((snap) {
+      final result = <String, String>{};
+      for (final doc in snap.docs) {
+        final emoji = doc.data()['emoji'] as String?;
+        if (emoji != null) result[doc.id] = emoji;
+      }
+      return result;
+    }),
+  );
+});
 
 /// Emits the set of user IDs that are currently typing in [conversationId].
 /// Subscribes to the lightweight `ephemeral/typing` subcollection doc so
@@ -868,34 +917,34 @@ final messageReactionsProvider = StreamProvider.autoDispose
 /// unnecessary re-emits here.
 final typingUsersProvider = StreamProvider.autoDispose
     .family<Set<String>, String>((ref, conversationId) {
-      final firestore = ref.watch(firestoreProvider);
-      final lifecycle = ref.watch(streamLifecycleManagerProvider);
-      return lifecycle.bind(
-        key: 'typing:$conversationId',
-        routePrefixes: const <String>['/chat'],
-        create: () => firestore
-            .collection('conversations')
-            .doc(conversationId)
-            .collection('ephemeral')
-            .doc('typing')
-            .snapshots()  // FSL-002: Single doc is inherently bounded
-            .map((doc) {
-              final raw = doc.data()?['users'] as Map<String, dynamic>?;
-              if (raw == null) return <String>{};
-              final now = DateTime.now();
-              return raw.entries
-                  .where((e) {
-                    final ts = e.value;
-                    if (ts is Timestamp) {
-                      return now.difference(ts.toDate()).inSeconds < 10;
-                    }
-                    return false;
-                  })
-                  .map((e) => e.key)
-                  .toSet();
-            }),
-      );
-    });
+  final firestore = ref.watch(firestoreProvider);
+  final lifecycle = ref.watch(streamLifecycleManagerProvider);
+  return lifecycle.bind(
+    key: 'typing:$conversationId',
+    routePrefixes: const <String>['/chat'],
+    create: () => firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('ephemeral')
+        .doc('typing')
+        .snapshots() // FSL-002: Single doc is inherently bounded
+        .map((doc) {
+      final raw = doc.data()?['users'] as Map<String, dynamic>?;
+      if (raw == null) return <String>{};
+      final now = DateTime.now();
+      return raw.entries
+          .where((e) {
+            final ts = e.value;
+            if (ts is Timestamp) {
+              return now.difference(ts.toDate()).inSeconds < 10;
+            }
+            return false;
+          })
+          .map((e) => e.key)
+          .toSet();
+    }),
+  );
+});
 
 /// Count of conversations that have at least one unread message for the current
 /// user. Derived from the live conversations stream — stays real-time.
@@ -915,55 +964,51 @@ final unreadMessageCountProvider = Provider.autoDispose<int>((ref) {
 /// Hardening: separates the raw Firestore stream from the expensive moderation logic.
 final filteredConversationsProvider = Provider.autoDispose
     .family<AsyncValue<List<Conversation>>, String>((ref, userId) {
-      final allAsync = ref.watch(rawConversationsStreamProvider(userId));
-      final excludedAsync = ref.watch(excludedUserIdsProvider(userId));
+  final allAsync = ref.watch(rawConversationsStreamProvider(userId));
+  final excludedAsync = ref.watch(excludedUserIdsProvider(userId));
 
-      return allAsync.when(
-        data: (all) {
-          return excludedAsync.when(
-            data: (excludedIds) {
-              final active = all.where((c) => c.status != 'pending');
+  return allAsync.when(
+    data: (all) {
+      return excludedAsync.when(
+        data: (excludedIds) {
+          final active = all.where((c) => c.status != 'pending');
 
-              if (excludedIds.isEmpty) {
-                final sorted = active.toList();
-                sorted.sort(
-                  (left, right) =>
-                      _compareConversationsForUser(left, right, userId),
-                );
-                return AsyncValue.data(sorted);
-              }
+          if (excludedIds.isEmpty) {
+            final sorted = active.toList();
+            sorted.sort(
+              (left, right) =>
+                  _compareConversationsForUser(left, right, userId),
+            );
+            return AsyncValue.data(sorted);
+          }
 
-              final visible = active.where((conv) {
-                final others = conv.participantIds.where((id) => id != userId);
-                return !others.any((id) => excludedIds.contains(id));
-              }).toList();
+          final visible = active.where((conv) {
+            final others = conv.participantIds.where((id) => id != userId);
+            return !others.any((id) => excludedIds.contains(id));
+          }).toList();
 
-              visible.sort(
-                (left, right) =>
-                    _compareConversationsForUser(left, right, userId),
-              );
-              return AsyncValue.data(visible);
-            },
-            loading: () => const AsyncValue.loading(),
-            error: (e, st) => AsyncValue.data(
-              all.where((c) => c.status != 'pending').toList()..sort(
-                (left, right) =>
-                    _compareConversationsForUser(left, right, userId),
-              ),
-            ),
+          visible.sort(
+            (left, right) => _compareConversationsForUser(left, right, userId),
           );
+          return AsyncValue.data(visible);
         },
         loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
+        error: (e, st) => AsyncValue.data(
+          all.where((c) => c.status != 'pending').toList()
+            ..sort(
+              (left, right) =>
+                  _compareConversationsForUser(left, right, userId),
+            ),
+        ),
       );
-    });
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
 
 /// Watches the excluded user IDs for a given user, used for filtering conversations.
-final excludedUserIdsProvider = FutureProvider.autoDispose
-    .family<Set<String>, String>((ref, userId) async {
-      return ModerationService().getExcludedUserIds(userId);
-    });
-
-
-
-
+final excludedUserIdsProvider =
+    FutureProvider.autoDispose.family<Set<String>, String>((ref, userId) async {
+  return ModerationService().getExcludedUserIds(userId);
+});

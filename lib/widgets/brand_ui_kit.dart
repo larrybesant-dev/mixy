@@ -898,20 +898,20 @@ class BrandPillarNavSection extends StatelessWidget {
   final VoidCallback? onMixPressed;
   final VoidCallback? onConnectPressed;
   final VoidCallback? onIndulgePressed;
+  final EdgeInsetsGeometry padding;
 
   const BrandPillarNavSection({
     super.key,
     this.onMixPressed,
     this.onConnectPressed,
     this.onIndulgePressed,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   });
 
   @override
   Widget build(BuildContext context) {
-    // DEBUG: Verify widget is rendering
-    debugPrint('🎨 BrandPillarNavSection.build() called');
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

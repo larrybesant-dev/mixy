@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firestore/firestore_error_utils.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/theme.dart';
-import '../../../core/utils/network_image_url.dart';
+import '../../../core/utils/avatar_url_resolver.dart';
 import '../../../features/feed/providers/user_providers.dart' as feed_user;
 import '../../../services/web_popout_service.dart';
 import '../../../widgets/safe_network_avatar.dart';
@@ -18,6 +19,7 @@ import 'package:mixvy/features/messaging/models/message_model.dart';
 import '../../../core/telemetry/app_telemetry.dart';
 import '../../../models/user_model.dart';
 import '../../../observability/system_event_bus.dart';
+import '../../../presentation/providers/app_settings_provider.dart';
 import '../providers/messaging_provider.dart';
 import '../widgets/chat_media_widgets.dart';
 
@@ -54,6 +56,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
   bool _didAutoScrollInitialLoad = false;
   bool _allowEmptyState = false;
   bool _hydrationComplete = false;
+  String? _lastNotifiedMessageId;
   late final double? _savedScrollOffset;
   final List<_PendingMessage> _pendingMessages = <_PendingMessage>[];
   late final DateTime _entryTime;
@@ -74,6 +77,58 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
         );
       }),
     );
+  }
+
+  void _handleIncomingMessages(
+    AsyncValue<List<MessageModel>>? previous,
+    AsyncValue<List<MessageModel>> next,
+  ) {
+    final messages = next.valueOrNull;
+    if (messages == null || messages.isEmpty) return;
+    final latest = messages.last;
+
+    if (previous?.valueOrNull == null) {
+      _lastNotifiedMessageId = latest.id;
+      return;
+    }
+    if (_lastNotifiedMessageId == latest.id ||
+        latest.senderId == widget.userId) {
+      _lastNotifiedMessageId = latest.id;
+      return;
+    }
+    _lastNotifiedMessageId = latest.id;
+
+    final settings = ref.read(appSettingsControllerProvider).valueOrNull;
+    if (latest.type == 'buzz' && settings?.messengerBuzzEnabled == true) {
+      unawaited(HapticFeedback.heavyImpact());
+      unawaited(SystemSound.play(SystemSoundType.alert));
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('${latest.senderName} sent a BUZZ!')),
+      );
+      return;
+    }
+    if (settings?.messengerSoundsEnabled == true) {
+      unawaited(SystemSound.play(SystemSoundType.click));
+    }
+  }
+
+  Future<void> _sendBuzz() async {
+    try {
+      await _messagingController.sendBuzz(
+        conversationId: widget.conversationId,
+        senderId: widget.userId,
+        senderName: widget.username,
+        senderAvatarUrl: widget.avatarUrl,
+      );
+      if (!mounted) return;
+      unawaited(HapticFeedback.mediumImpact());
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+            content: Text(error.toString().replaceFirst('Bad state: ', ''))),
+      );
+    }
   }
 
   void _startHydrationWindow() {
@@ -367,15 +422,21 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     final messageStream = ref.watch(
       messageStreamProvider(widget.conversationId),
     );
+    ref.listen<AsyncValue<List<MessageModel>>>(
+      messageStreamProvider(widget.conversationId),
+      _handleIncomingMessages,
+    );
+    final appSettings = ref.watch(appSettingsControllerProvider).valueOrNull;
     final paginatedState = ref.watch(
       paginatedMessageProvider(widget.conversationId),
     );
     final conversationAsync = ref.watch(
       conversationDocProvider(widget.conversationId),
     );
-    
+
     if (kDebugMode && conversationAsync.hasValue) {
-       debugPrint('DEBUG: ChatPaneView conversation loaded: ${conversationAsync.value != null}');
+      debugPrint(
+          'DEBUG: ChatPaneView conversation loaded: ${conversationAsync.value != null}');
     }
 
     if (conversationAsync.hasError) {
@@ -427,16 +488,22 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
     final otherUserAsync = otherUserId.isEmpty
         ? const AsyncValue<UserModel?>.data(null)
         : ref.watch(feed_user.userProvider(otherUserId));
+    final livePeerName = otherUserAsync.valueOrNull?.username.trim() ?? '';
+    final storedDisplayName = conversation.getDisplayName(widget.userId).trim();
     final displayName = conversation.type == 'group'
         ? (conversation.groupName ?? 'Group Chat')
-        : (conversation.getDisplayName(widget.userId).trim().isNotEmpty
-              ? conversation.getDisplayName(widget.userId)
-              : (otherUserAsync.valueOrNull?.username ?? 'Conversation'));
+        : livePeerName.isNotEmpty
+            ? livePeerName
+            : storedDisplayName.isNotEmpty &&
+                    storedDisplayName != 'Unknown User'
+                ? storedDisplayName
+                : 'Conversation';
     final peerUser = otherUserAsync.valueOrNull;
-    final displayAvatarUrl = sanitizeNetworkImageUrl(
-      conversation.type == 'group'
-          ? conversation.groupAvatarUrl
-          : peerUser?.avatarUrl,
+    final displayAvatarUrl = resolveAvatarUrl(
+      directAvatarUrl:
+          conversation.type == 'group' ? conversation.groupAvatarUrl : null,
+      persistedProfileAvatarUrl:
+          conversation.type == 'group' ? null : peerUser?.avatarUrl,
     );
 
     return Column(
@@ -497,25 +564,25 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                   .map((message) => message.clientMessageId)
                   .whereType<String>()
                   .toSet();
-              
+
               // Keep pending messages that:
               // 1) Are NOT in the live stream (not yet persisted), OR
               // 2) Were just created (less than 5 sec old) — enforce minimum lifetime
               //    to prevent race condition where stream updates before Firestore write completes
               final now = DateTime.now();
               const minPendingLifetimeMs = 5000;
-              
-              final pendingMessages = _pendingMessages
-                  .where(
-                    (message) {
-                      final isInLive = liveClientIds.contains(message.clientMessageId);
-                      final ageMs = now.difference(message.createdAt).inMilliseconds;
-                      final isTooYoung = ageMs < minPendingLifetimeMs;
-                      // Keep if NOT in live, OR if still young
-                      return !isInLive || isTooYoung;
-                    },
-                  )
-                  .toList(growable: false);
+
+              final pendingMessages = _pendingMessages.where(
+                (message) {
+                  final isInLive =
+                      liveClientIds.contains(message.clientMessageId);
+                  final ageMs =
+                      now.difference(message.createdAt).inMilliseconds;
+                  final isTooYoung = ageMs < minPendingLifetimeMs;
+                  // Keep if NOT in live, OR if still young
+                  return !isInLive || isTooYoung;
+                },
+              ).toList(growable: false);
               final allMessages = [
                 ...paginatedState.olderMessages,
                 ...liveMessages,
@@ -581,7 +648,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                 key: const ValueKey('chat_message_list'),
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                itemCount: allMessages.length + (paginatedState.hasMore ? 1 : 0),
+                itemCount:
+                    allMessages.length + (paginatedState.hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == 0 && paginatedState.hasMore) {
                     return Center(
@@ -634,11 +702,11 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                       child: Center(
                         child: Text(
                           'message deleted',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey,
+                                  ),
                         ),
                       ),
                     );
@@ -646,9 +714,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
 
                   return Align(
                     key: ValueKey(message.id),
-                    alignment: isOwn
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
+                    alignment:
+                        isOwn ? Alignment.centerRight : Alignment.centerLeft,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
@@ -687,7 +754,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                     constraints: BoxConstraints(
                                       maxWidth:
                                           MediaQuery.of(context).size.width *
-                                          0.72,
+                                              0.72,
                                     ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 14,
@@ -704,9 +771,8 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                               ],
                                             )
                                           : null,
-                                      color: isOwn
-                                          ? null
-                                          : VelvetNoir.surfaceHigh,
+                                      color:
+                                          isOwn ? null : VelvetNoir.surfaceHigh,
                                       borderRadius: BorderRadius.only(
                                         topLeft: const Radius.circular(18),
                                         topRight: const Radius.circular(18),
@@ -728,7 +794,7 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                         BoxShadow(
                                           color: isOwn
                                               ? VelvetNoir.primaryDim
-                                                    .withValues(alpha: 0.25)
+                                                  .withValues(alpha: 0.25)
                                               : Colors.black.withValues(
                                                   alpha: 0.15,
                                                 ),
@@ -796,17 +862,17 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                                             switchOutCurve: Curves.easeInCubic,
                                             transitionBuilder:
                                                 (child, animation) {
-                                                  return FadeTransition(
-                                                    opacity: animation,
-                                                    child: ScaleTransition(
-                                                      scale: Tween<double>(
-                                                        begin: 0.85,
-                                                        end: 1,
-                                                      ).animate(animation),
-                                                      child: child,
-                                                    ),
-                                                  );
-                                                },
+                                              return FadeTransition(
+                                                opacity: animation,
+                                                child: ScaleTransition(
+                                                  scale: Tween<double>(
+                                                    begin: 0.85,
+                                                    end: 1,
+                                                  ).animate(animation),
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
                                             child: Icon(
                                               _deliveryStateIcon(
                                                 isPending: isPending,
@@ -934,6 +1000,17 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
                     );
                   },
                 ),
+                if (appSettings?.messengerBuzzEnabled == true)
+                  IconButton(
+                    tooltip: 'Send Buzz',
+                    icon: const Icon(
+                      Icons.vibration_rounded,
+                      color: VelvetNoir.secondaryBright,
+                    ),
+                    iconSize: 22,
+                    padding: EdgeInsets.zero,
+                    onPressed: _sendBuzz,
+                  ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
@@ -1122,27 +1199,23 @@ class _ChatPaneViewState extends ConsumerState<ChatPaneView> {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: emojis
-                .map((emoji) {
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _guardAsync(
-                        ref
-                            .read(messagingControllerProvider)
-                            .toggleReaction(
-                              conversationId: widget.conversationId,
-                              messageId: messageId,
-                              currentUserId: widget.userId,
-                              emoji: emoji,
-                            ),
-                        contextLabel: 'toggle_reaction',
-                      );
-                    },
-                    child: Text(emoji, style: const TextStyle(fontSize: 32)),
+            children: emojis.map((emoji) {
+              return GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _guardAsync(
+                    ref.read(messagingControllerProvider).toggleReaction(
+                          conversationId: widget.conversationId,
+                          messageId: messageId,
+                          currentUserId: widget.userId,
+                          emoji: emoji,
+                        ),
+                    contextLabel: 'toggle_reaction',
                   );
-                })
-                .toList(growable: false),
+                },
+                child: Text(emoji, style: const TextStyle(fontSize: 32)),
+              );
+            }).toList(growable: false),
           ),
         ),
       ),
@@ -1285,45 +1358,42 @@ class _ReactionRow extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
           child: Wrap(
             spacing: 4,
-            children: counts.entries
-                .map((e) {
-                  final myReaction = reactions[currentUserId] == e.key;
-                  return GestureDetector(
-                    onTap: () => ref
-                        .read(messagingControllerProvider)
-                        .toggleReaction(
+            children: counts.entries.map((e) {
+              final myReaction = reactions[currentUserId] == e.key;
+              return GestureDetector(
+                onTap: () =>
+                    ref.read(messagingControllerProvider).toggleReaction(
                           conversationId: conversationId,
                           messageId: messageId,
                           currentUserId: currentUserId,
                           emoji: e.key,
                         ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: myReaction
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(999),
-                        border: myReaction
-                            ? Border.all(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 1,
-                              )
-                            : null,
-                      ),
-                      child: Text(
-                        '${e.key} ${e.value}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  );
-                })
-                .toList(growable: false),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: myReaction
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(999),
+                    border: myReaction
+                        ? Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 1,
+                          )
+                        : null,
+                  ),
+                  child: Text(
+                    '${e.key} ${e.value}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              );
+            }).toList(growable: false),
           ),
         );
       },
@@ -1365,6 +1435,3 @@ class _PendingMessage {
     );
   }
 }
-
-
-

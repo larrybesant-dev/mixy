@@ -27,6 +27,17 @@ void main() {
         'Curve Live',
       );
     });
+
+    test('rejects a generated room-card name in favor of profile username', () {
+      expect(
+        getDisplayName(
+          uid: 'R4GFownerUid',
+          profileUsername: 'Paw Curve',
+          fallbackName: 'Member R4GF',
+        ),
+        'Paw Curve',
+      );
+    });
   });
 
   group('hasCoreUserIdentityChanged', () {

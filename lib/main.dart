@@ -1,4 +1,4 @@
-import 'dart:ui' as ui;                   
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:mixvy/firebase_options.dart'; 
+import 'package:mixvy/firebase_options.dart';
 import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
 import 'app/app.dart';
@@ -16,13 +16,14 @@ import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
 import 'core/telemetry/launch_monitoring.dart';
+import 'core/telemetry/web_vitals.dart';
 import 'services/diagnostic_logger.dart';
 
 bool get _crashlyticsSupported =>
-  !kIsWeb &&
-  (defaultTargetPlatform == TargetPlatform.android ||
-    defaultTargetPlatform == TargetPlatform.iOS ||
-    defaultTargetPlatform == TargetPlatform.macOS);
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS);
 
 // ignore: unused_element
 const String _appVersion = String.fromEnvironment(
@@ -51,16 +52,18 @@ Future<void> main() async {
 
     if (kIsWeb) {
       FirebaseFirestore.instance.settings = const Settings(
-        persistenceEnabled: false,
+        persistenceEnabled: true,
         cacheSizeBytes: 50 * 1024 * 1024,
         ignoreUndefinedProperties: true,
-        webExperimentalForceLongPolling: true,
+        webExperimentalForceLongPolling: false,
+        webExperimentalAutoDetectLongPolling: true,
         host: 'firestore.googleapis.com',
         sslEnabled: true,
       );
+      startWebVitalsMonitoring();
       debugPrint('[Firebase] Firestore web transport configured');
     }
-    
+
     // Setup production logging: Route [MIXVY_DEBUG] logs to Firebase Crashlytics
     // only on platforms where the plugin is available.
     if (!kDebugMode && _crashlyticsSupported) {
@@ -76,8 +79,10 @@ Future<void> main() async {
           );
 
           // Also add to custom keys for dashboard filtering
-          FirebaseCrashlytics.instance.setCustomKey('diagnostic_severity', log.severity);
-          FirebaseCrashlytics.instance.setCustomKey('diagnostic_category', log.category);
+          FirebaseCrashlytics.instance
+              .setCustomKey('diagnostic_severity', log.severity);
+          FirebaseCrashlytics.instance
+              .setCustomKey('diagnostic_category', log.category);
 
           // Log structured metadata if present
           if (log.metadata != null && log.metadata!.isNotEmpty) {
@@ -90,7 +95,8 @@ Future<void> main() async {
           // Never let diagnostics transport failures impact runtime.
         }
       });
-      debugPrint('[Logging] Production handler configured for Firebase Crashlytics');
+      debugPrint(
+          '[Logging] Production handler configured for Firebase Crashlytics');
     } else {
       debugPrint(
         '[Logging] DiagnosticLogger will output to console '

@@ -7,6 +7,7 @@ import '../../../core/theme.dart';
 import '../../../models/user_model.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../../../widgets/safe_network_avatar.dart';
 import '../../connections/pending_requests_screen.dart';
 import '../../friends/panes/friends_pane_view.dart';
@@ -139,7 +140,11 @@ class _PeopleDiscoveryViewState extends ConsumerState<_PeopleDiscoveryView> {
   Widget build(BuildContext context) {
     final suggestions = ref.watch(friendSuggestionsProvider);
     return suggestions.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => AppBoundedLoadingView(
+        fallbackContext: 'people suggestions',
+        label: 'Finding people',
+        onRetry: () => ref.invalidate(friendSuggestionsProvider),
+      ),
       error: (error, stackTrace) => _DiscoveryEmptyView(
         icon: Icons.cloud_off_outlined,
         title: 'Suggestions unavailable',

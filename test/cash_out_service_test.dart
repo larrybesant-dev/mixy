@@ -24,6 +24,7 @@ class _FakeHttpsCallableResult<T> extends Fake implements HttpsCallableResult<T>
 CashOutService _buildService({
   required FakeFirebaseFirestore firestore,
   String? uid,
+  bool cashOutEnabled = true,
 }) {
   final auth = _MockFirebaseAuth();
   final functions = _MockFirebaseFunctions();
@@ -38,11 +39,40 @@ CashOutService _buildService({
   
   when(() => functions.httpsCallable(any())).thenReturn(_FakeHttpsCallable());
   
-  return CashOutService(firestore: firestore, auth: auth, functions: functions);
+  return CashOutService(
+    firestore: firestore,
+    auth: auth,
+    functions: functions,
+    cashOutEnabled: cashOutEnabled,
+  );
 }
 
 void main() {
   group('CashOutService', () {
+    test('requestCashOut is blocked when beta cash-outs are disabled', () async {
+      final firestore = FakeFirebaseFirestore();
+      final service = _buildService(
+        firestore: firestore,
+        uid: 'user-1',
+        cashOutEnabled: false,
+      );
+
+      await expectLater(
+        service.requestCashOut(30),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('disabled during beta'),
+          ),
+        ),
+      );
+      expect(
+        (await firestore.collection('cash_out_requests').get()).docs,
+        isEmpty,
+      );
+    });
+
     test(
       'requestsForCurrentUser returns empty stream when no user is signed in',
       () async {

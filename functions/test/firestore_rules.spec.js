@@ -16,6 +16,7 @@ const {
 const {
   Timestamp,
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -124,6 +125,29 @@ describe("firestore rules", () => {
     longitude: -74.01,
     updatedAt: Timestamp.now(),
   };
+
+  it("allows users to update a bounded messenger status only for themselves", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(updateDoc(doc(selfDb, "users", "user-1"), {
+      statusMessage: "Available to chat",
+      messengerStatus: "away",
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(otherDb, "users", "user-1"), {
+      statusMessage: "Changed by someone else",
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(selfDb, "users", "user-1"), {
+      statusMessage: "x".repeat(81),
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(selfDb, "users", "user-1"), {
+      messengerStatus: "invisible",
+      updatedAt: serverTimestamp(),
+    }));
+  });
 
   it("allows owners to manage valid dating preferences only", async () => {
     const selfDb = testEnv.authenticatedContext("user-1").firestore();
@@ -502,6 +526,67 @@ describe("firestore rules", () => {
     }));
   });
 
+  it("allows room whispers only between the selected participants", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-whisper-1"), {
+        hostId: "host-1",
+        ownerId: "host-1",
+        isLocked: false,
+      });
+      await setDoc(doc(db, "rooms", "room-whisper-1", "participants", "user-1"), {
+        userId: "user-1",
+        role: "audience",
+      });
+      await setDoc(doc(db, "rooms", "room-whisper-1", "participants", "user-2"), {
+        userId: "user-2",
+        role: "audience",
+      });
+    });
+
+    const senderDb = testEnv.authenticatedContext("user-1").firestore();
+    const recipientDb = testEnv.authenticatedContext("user-2").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+    const whisperPath = [
+      "rooms",
+      "room-whisper-1",
+      "whispers",
+      "whisper-1",
+    ];
+    const whisper = {
+      id: "whisper-1",
+      roomId: "room-whisper-1",
+      senderId: "user-1",
+      senderName: "User 1",
+      recipientId: "user-2",
+      recipientName: "User 2",
+      participantIds: ["user-1", "user-2"],
+      content: "private hello",
+      createdAt: serverTimestamp(),
+      clientSentAt: Timestamp.now(),
+    };
+
+    await assertSucceeds(setDoc(doc(senderDb, ...whisperPath), whisper));
+    await assertSucceeds(getDoc(doc(senderDb, ...whisperPath)));
+    await assertSucceeds(getDoc(doc(recipientDb, ...whisperPath)));
+    await assertFails(getDoc(doc(outsiderDb, ...whisperPath)));
+    await assertSucceeds(getDocs(query(
+      collection(senderDb, "rooms", "room-whisper-1", "whispers"),
+      where("participantIds", "array-contains", "user-1"),
+      limit(100),
+    )));
+    await assertSucceeds(getDocs(query(
+      collection(recipientDb, "rooms", "room-whisper-1", "whispers"),
+      where("participantIds", "array-contains", "user-2"),
+      limit(100),
+    )));
+    await assertFails(getDocs(query(
+      collection(outsiderDb, "rooms", "room-whisper-1", "whispers"),
+      where("participantIds", "array-contains", "user-1"),
+      limit(100),
+    )));
+  });
+
   it("enforces canonical follows edge writes", async () => {
     const followerDb = testEnv.authenticatedContext("user-1").firestore();
 
@@ -605,6 +690,48 @@ describe("firestore rules", () => {
 
     const snapshot = await assertSucceeds(getDocs(conversationsQuery));
     assert.deepEqual(snapshot.docs.map((entry) => entry.id), ["conv-user-1"]);
+  });
+
+  it("allows normal and buzz conversation messages only", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "conversations", "conv-buzz"), {
+        type: "direct",
+        participantIds: ["user-1", "user-2"],
+        createdAt: Timestamp.now(),
+        isArchived: false,
+        status: "active",
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const message = {
+      conversationId: "conv-buzz",
+      senderId: "user-1",
+      senderName: "User 1",
+      senderAvatarUrl: null,
+      content: "BUZZ!",
+      clientMessageId: "client-message-1",
+      createdAt: serverTimestamp(),
+      clientSentAt: Timestamp.now(),
+      expiresAt: Timestamp.fromDate(
+        new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      ),
+      isDeleted: false,
+      readBy: ["user-1"],
+    };
+
+    await assertSucceeds(setDoc(
+      doc(userDb, "conversations", "conv-buzz", "messages", "normal"),
+      {...message, type: "normal"},
+    ));
+    await assertSucceeds(setDoc(
+      doc(userDb, "conversations", "conv-buzz", "messages", "buzz"),
+      {...message, clientMessageId: "client-message-2", type: "buzz"},
+    ));
+    await assertFails(setDoc(
+      doc(userDb, "conversations", "conv-buzz", "messages", "invalid"),
+      {...message, clientMessageId: "client-message-3", type: "shake_forever"},
+    ));
   });
 
   it("enforces post creation identity and blocks guest writes", async () => {
@@ -1274,6 +1401,88 @@ describe("firestore rules", () => {
     await assertFails(setDoc(doc(otherDb, "users", "user-1", "privacy", "settings"), {
       isPrivate: true,
     }, {merge: true}));
+  });
+
+  it("allows discovery owners and recipients without exposing other swipes", async () => {
+    const ownerDb = testEnv.authenticatedContext("user-1").firestore();
+    const recipientDb = testEnv.authenticatedContext("user-2").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+    const swipeRef = doc(ownerDb, "users", "user-1", "discovery", "user-2");
+
+    await assertSucceeds(setDoc(swipeRef, {
+      candidateId: "user-2",
+      isLike: true,
+      createdAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(
+      doc(recipientDb, "users", "user-1", "discovery", "user-3"),
+      {
+        candidateId: "user-3",
+        isLike: true,
+        createdAt: serverTimestamp(),
+      },
+    ));
+
+    await assertSucceeds(getDoc(doc(
+      recipientDb,
+      "users",
+      "user-1",
+      "discovery",
+      "user-2",
+    )));
+    await assertFails(getDoc(doc(
+      outsiderDb,
+      "users",
+      "user-1",
+      "discovery",
+      "user-2",
+    )));
+    await assertSucceeds(getDocs(query(
+      collectionGroup(recipientDb, "discovery"),
+      where("candidateId", "==", "user-2"),
+      where("isLike", "==", true),
+    )));
+  });
+
+  it("allows profile viewers to record views and owners to read them", async () => {
+    const ownerDb = testEnv.authenticatedContext("user-1").firestore();
+    const viewerDb = testEnv.authenticatedContext("user-2").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+    const viewRef = doc(
+      viewerDb,
+      "users",
+      "user-1",
+      "profileViews",
+      "view-1",
+    );
+
+    await assertSucceeds(setDoc(viewRef, {
+      viewerId: "user-2",
+      viewedUserId: "user-1",
+      createdAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(
+      doc(viewerDb, "users", "user-1", "profileViews", "view-spoofed"),
+      {
+        viewerId: "user-3",
+        viewedUserId: "user-1",
+        createdAt: serverTimestamp(),
+      },
+    ));
+    await assertSucceeds(getDoc(doc(
+      ownerDb,
+      "users",
+      "user-1",
+      "profileViews",
+      "view-1",
+    )));
+    await assertFails(getDoc(doc(
+      outsiderDb,
+      "users",
+      "user-1",
+      "profileViews",
+      "view-1",
+    )));
   });
 
   it("enforces activity_feed self-userId create", async () => {

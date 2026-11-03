@@ -44,6 +44,8 @@ admin.initializeApp();
 
 const ENABLE_RTDB_PRESENCE_SYNC =
   String(process.env.ENABLE_RTDB_PRESENCE_SYNC || "").toLowerCase() === "true";
+const ENABLE_LIVE_STRIPE =
+  String(process.env.ENABLE_LIVE_STRIPE || "").toLowerCase() === "true";
 
 const DEFAULT_ICE_SERVERS = [
   {
@@ -58,10 +60,25 @@ let cachedTurnIceServers = null;
 let cachedTurnIceServersFetchedAt = 0;
 
 let _stripe;
+function assertStripeSecretAllowed(key, allowLive = ENABLE_LIVE_STRIPE) {
+  if (!key) {
+    throw new HttpsError("internal", "Stripe is not configured.");
+  }
+  if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_")) {
+    throw new HttpsError("internal", "Stripe configuration is invalid.");
+  }
+  if (key.startsWith("sk_live_") && !allowLive) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Live Stripe payments are disabled for this deployment.",
+    );
+  }
+  return key;
+}
+
 function getStripe() {
   if (!_stripe) {
-    const key = process.env.STRIPE_SECRET;
-    if (!key) throw new HttpsError("internal", "Stripe is not configured.");
+    const key = assertStripeSecretAllowed(process.env.STRIPE_SECRET);
     _stripe = new Stripe(key);
   }
   return _stripe;
@@ -5221,6 +5238,7 @@ exports.onUserCreated = onDocumentCreated("users/{uid}", async (event) => {
 });
 
 exports.__testing = {
+  assertStripeSecretAllowed,
   createPaymentIntentHandler,
   recordStripePaymentSuccessHandler,
   claimDailyCheckinHandler,

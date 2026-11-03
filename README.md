@@ -38,10 +38,22 @@ MixVy is a Flutter social/live-room app with Firebase, Riverpod, payments, moder
 4. Deploy hosting:
 	- firebase deploy --only hosting
 
+## Android Build and Update Workflow
+- Bundled assets, including Rooms category photos, update only when a new
+  Android build is installed; deploying Firebase Hosting does not update an
+  installed native app.
+- Increment the `version` and build number in `pubspec.yaml`, then build:
+  - `flutter build apk --release`
+- Install or distribute `build/app/outputs/flutter-apk/app-release.apk`.
+
 ## Stripe Test-Mode Subscriptions
 - Creator subscription checkout stays disabled unless both values are supplied at build time:
   - `--dart-define=ENABLE_PAYMENTS=true`
   - `--dart-define=STRIPE_PUBLISHABLE_KEY=pk_test_...`
+- Creator payout setup and cash-out requests require the separate
+  `--dart-define=ENABLE_CREATOR_PAYOUTS=true` flag. Leave it unset for beta.
+- Cloud Functions reject `sk_live_...` keys unless `ENABLE_LIVE_STRIPE=true`
+  is explicitly configured for the deployment. Beta deployments must not set it.
 - Never put a Stripe secret key (`sk_test_...` or `sk_live_...`) in a client build.
 - Keep checkout gated until Connect onboarding, checkout completion, renewal, failed payment, cancellation, webhook delivery, and reconciliation have all passed in Stripe test mode.
 - Subscriber-only updates and lounges use server-authoritative subscription records. Clients cannot grant themselves membership access.
@@ -49,6 +61,8 @@ MixVy is a Flutter social/live-room app with Firebase, Riverpod, payments, moder
 ## Launch Monitoring Checklist (First 24 Hours)
 - Keep one terminal on web/runtime logs for the first 2 hours after deploy.
 - Watch for repeated routing, auth persistence, and connection errors.
+- Monitor `route_committed`, `route_first_frame`, `loading_timeout`, Firestore
+  listener failures, and `web_vitals` operational events.
 - Spot-check every few hours for recurring stack traces and error spikes.
 - If an issue spikes, pause rollout expansion and triage by app version from startup logs.
 
@@ -70,7 +84,24 @@ Behavior:
 ## Web Stability Notes
 - Hosting rewrites are configured in firebase.json to route all paths to /index.html.
 - Entry boot script is now stable and no longer force-clears browser caches every load.
-- Cache-control headers are configured for index/bootstrap/service worker in firebase.json.
+- Hosting revalidates cached responses for `/`, deep links, and assets; runtime
+  scripts and version metadata use no-store.
+- Scheduled E2E health checks do not deploy. Push-triggered E2E deployments
+  publish the pushed main or develop branch unless the head commit message
+  contains `[skip deploy]`; the marker skips Hosting only, not the E2E checks.
+  Release changes must be merged into the deployment branch before a later
+  unmarked push to avoid reverting a local-only build.
+- Architecture-gated production deployments build the exact validated main
+  revision; manually requested deployments build the selected revision.
+- Firestore web persistence keeps the last successful feed, profile, friend,
+  and conversation snapshots available during reconnects.
+- Firestore automatically detects whether browser long polling is required;
+  long polling is not forced for healthy browsers.
+- Primary routes mount only their active screen so hidden destinations do not
+  open duplicate listeners.
+- Messenger sounds and Buzz are disabled by default and can be enabled
+  independently in Settings. Buzz sends are limited to one every 30 seconds
+  per conversation on the sending client.
 
 ## Tests
 Profile photos on web and mobile are normalized to JPEG and uploaded to Firebase
