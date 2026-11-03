@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,9 @@ void main() {
   });
 
   testWidgets('login screen exposes signup navigation', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
     // Force narrow viewport to use single-column layout
     await tester.binding.setSurfaceSize(const Size(400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -61,7 +65,9 @@ void main() {
     emitAuthState(null);
     await tester.pump();
 
+    expect(find.text('CONTINUE WITH GOOGLE'), findsNothing);
     expect(find.text('SIGN UP'), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
     // Guest mode is not supported — ENTER AS GUEST button does not exist.
 
     await tester.tap(find.text('SIGN UP'), warnIfMissed: false);

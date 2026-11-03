@@ -53,10 +53,8 @@ void main() {
         expect(expiresAt.isAfter(lowerBound), isTrue);
         expect(expiresAt.isBefore(upperBound), isTrue);
 
-        final conversation = await firestore
-            .collection('conversations')
-            .doc('conv-1')
-            .get();
+        final conversation =
+            await firestore.collection('conversations').doc('conv-1').get();
         expect(conversation.data()?['lastMessageId'], message.docs.single.id);
         expect(conversation.data()?['lastMessagePreview'], 'Hello there');
         expect(conversation.data()?['lastMessageSenderId'], 'user-1');
@@ -66,7 +64,8 @@ void main() {
 
     test('MessageModel.fromJson parses expiresAt', () {
       final now = DateTime.now();
-      final createdAt = Timestamp.fromDate(now.subtract(const Duration(days: 1)));
+      final createdAt =
+          Timestamp.fromDate(now.subtract(const Duration(days: 1)));
       final expectedExpiry = now.add(const Duration(days: 30));
       final expiresAt = Timestamp.fromDate(expectedExpiry);
 
@@ -83,6 +82,49 @@ void main() {
 
       expect(parsedMessage.expiresAt, expectedExpiry);
       expect(parsedMessage.isExpired, isFalse);
+    });
+
+    test('sendBuzz writes a typed message and enforces cooldown', () async {
+      final firestore = FakeFirebaseFirestore();
+      final controller = MessagingController(firestore: firestore);
+      final now = DateTime.now();
+      await firestore.collection('conversations').doc('conv-buzz').set({
+        'type': 'direct',
+        'participantIds': ['user-1', 'user-2'],
+        'participantNames': {'user-1': 'User One', 'user-2': 'User Two'},
+        'createdAt': Timestamp.fromDate(now),
+        'lastReadAt': {
+          'user-1': Timestamp.fromDate(now),
+          'user-2': Timestamp.fromDate(now),
+        },
+        'isArchived': false,
+        'status': 'active',
+      });
+
+      await controller.sendBuzz(
+        conversationId: 'conv-buzz',
+        senderId: 'user-1',
+        senderName: 'User One',
+        senderAvatarUrl: null,
+      );
+
+      final messages = await firestore
+          .collection('conversations')
+          .doc('conv-buzz')
+          .collection('messages')
+          .get();
+      expect(messages.docs.single.data()['type'], 'buzz');
+      expect(messages.docs.single.data()['content'], 'BUZZ!');
+
+      await expectLater(
+        controller.sendBuzz(
+          conversationId: 'conv-buzz',
+          senderId: 'user-1',
+          senderName: 'User One',
+          senderAvatarUrl: null,
+        ),
+        throwsA(isA<StateError>()),
+      );
     });
   });
 }

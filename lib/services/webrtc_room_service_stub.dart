@@ -85,13 +85,15 @@ class WebRtcRoomService extends RtcRoomService {
     int uid, {
     bool publishCameraTrackOnJoin = false,
     bool publishMicrophoneTrackOnJoin = false,
-  }) => _unsupported();
+  }) =>
+      _unsupported();
 
   @override
   Future<void> enableVideo(
     bool enabled, {
     bool publishMicrophoneTrack = true,
-  }) => _unsupported();
+  }) =>
+      _unsupported();
 
   @override
   Future<void> mute(bool muted) => _unsupported();
@@ -110,7 +112,8 @@ class WebRtcRoomService extends RtcRoomService {
     int uid, {
     required bool subscribe,
     bool highQuality = false,
-  }) => _unsupported();
+  }) =>
+      _unsupported();
 
   @override
   Future<void> renewToken(String newToken) => _unsupported();
@@ -125,6 +128,8 @@ class WebRtcRoomService extends RtcRoomService {
   Future<void> setMicVolume(double volume) async {}
   @override
   Future<void> setSpeakerVolume(double volume) async {}
+  @override
+  Future<void> setSharedAudioVolume(double volume) async {}
 
   @override
   Future<void> dispose() => _unsupported();
@@ -133,6 +138,3 @@ class WebRtcRoomService extends RtcRoomService {
   Future<void> ensureDeviceAccess({required bool video, required bool audio}) =>
       _unsupported();
 }
-
-
-

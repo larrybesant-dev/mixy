@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'package:mixvy/core/providers/firebase_providers.dart';
+import 'package:mixvy/presentation/screens/google_sign_in_helper.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mixvy/services/schema_mutation_service.dart';
@@ -9,6 +10,8 @@ import 'test_helpers.dart';
 
 class _MockSchemaMutationService extends Mock
     implements SchemaMutationService {}
+
+class _MockGoogleSignInHelper extends Mock implements GoogleSignInHelper {}
 
 void main() {
   setUpAll(() async {
@@ -19,10 +22,22 @@ void main() {
     late ProviderContainer container;
     late User? currentUser;
     late _MockSchemaMutationService mockSchemaMutationService;
+    late _MockGoogleSignInHelper mockGoogleSignInHelper;
 
     setUp(() {
-      currentUser = mockUser;
+      currentUser = null;
       mockSchemaMutationService = _MockSchemaMutationService();
+      mockGoogleSignInHelper = _MockGoogleSignInHelper();
+      when(() => mockGoogleSignInHelper.isSupported).thenReturn(true);
+      when(
+        () => mockGoogleSignInHelper.completePendingRedirectSignIn(),
+      ).thenAnswer((_) async {});
+      when(() => mockGoogleSignInHelper.signInWithGoogle()).thenAnswer((
+        _,
+      ) async {
+        currentUser = mockUser;
+        emitAuthState(mockUser);
+      });
       when(
         () => mockSchemaMutationService.createUserProfile(
           user: any(named: 'user'),
@@ -62,6 +77,7 @@ void main() {
             () => AuthController(
               firestore: mockFirestore,
               unregisterToken: () async {},
+              googleSignInHelper: mockGoogleSignInHelper,
               schemaMutationService: mockSchemaMutationService,
             ),
           ),
@@ -93,33 +109,40 @@ void main() {
       expect(state.uid, isNull);
     });
 
-    test('signup sets user state when username is provided', () async {
+    test('signup sets user state', () async {
       final controller = container.read(authControllerProvider.notifier);
-      await controller.signup('new@example.com', 'password', 'VelvetNoir');
+      await controller.signup('new@example.com', 'password');
       final state = container.read(authControllerProvider);
       expect(state.uid, isNotNull);
       expect(state.error, isNull);
     });
 
-    test('signup persists the chosen username', () async {
+    test('signup creates a profile with a generated identity fallback',
+        () async {
       final controller = container.read(authControllerProvider.notifier);
 
-      await controller.signup('new@example.com', 'password', 'VelvetNoir');
+      await controller.signup('new@example.com', 'password');
 
       verify(
         () => mockSchemaMutationService.createUserProfile(
           user: any(named: 'user'),
-          preferredUsername: 'VelvetNoir',
+          preferredUsername: null,
         ),
       ).called(1);
     });
 
-    test('signup rejects blank usernames', () async {
+    test('Google sign-in ensures the user has a discoverable profile',
+        () async {
       final controller = container.read(authControllerProvider.notifier);
-      await controller.signup('new@example.com', 'password', '   ');
-      final state = container.read(authControllerProvider);
-      expect(state.error, isNotNull);
-      expect(state.error, contains('username'));
+
+      await controller.signInWithGoogle();
+
+      verify(
+        () => mockSchemaMutationService.createUserProfile(
+          user: mockUser,
+          preferredUsername: null,
+        ),
+      ).called(1);
     });
 
     test('anonymous session is rejected on startup', () async {
@@ -134,6 +157,7 @@ void main() {
             () => AuthController(
               firestore: mockFirestore,
               unregisterToken: () async {},
+              googleSignInHelper: mockGoogleSignInHelper,
               schemaMutationService: mockSchemaMutationService,
             ),
           ),

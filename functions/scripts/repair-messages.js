@@ -67,6 +67,15 @@ async function run() {
     let batchCount = 0;
 
     for (const doc of snap.docs) {
+      const pathSegments = doc.ref.path.split("/");
+      const isConversationMessage =
+        pathSegments.length === 4 &&
+        pathSegments[0] === "conversations" &&
+        pathSegments[2] === "messages";
+      if (!isConversationMessage) {
+        continue;
+      }
+
       scanned++;
       const data = doc.data() || {};
 
@@ -113,9 +122,8 @@ async function run() {
       // ── conversationId ───────────────────────────────────────────────────────
       // Path: conversations/{conversationId}/messages/{messageId}
       if (!isNonEmptyString(data.conversationId)) {
-        const pathSegments = doc.ref.path.split("/");
         // pathSegments[0] = 'conversations', pathSegments[1] = conversationId
-        if (pathSegments.length >= 2 && isNonEmptyString(pathSegments[1])) {
+        if (isNonEmptyString(pathSegments[1])) {
           updates.conversationId = pathSegments[1];
         }
       }

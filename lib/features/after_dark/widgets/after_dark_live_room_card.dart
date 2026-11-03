@@ -39,8 +39,7 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
         ? room.memberCount
         : room.stageUserIds.length + room.audienceUserIds.length;
     final categoryKey = room.category?.toLowerCase() ?? 'chat';
-    final gradientColors =
-        _fallbackGradients[categoryKey] ??
+    final gradientColors = _fallbackGradients[categoryKey] ??
         const [Color(0xFF461424), Color(0xFF14070C)];
     final moodLabel = _categoryGlyphs[categoryKey] ?? 'Late Night';
     final accent = room.isLocked ? EmberDark.secondary : EmberDark.primary;
@@ -78,9 +77,9 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorWidget: (context, error, stackTrace) =>
                           _LoungeFallback(
-                            label: moodLabel,
-                            gradientColors: gradientColors,
-                          ),
+                        label: moodLabel,
+                        gradientColors: gradientColors,
+                      ),
                     )
                   else
                     _LoungeFallback(
@@ -119,7 +118,18 @@ class AfterDarkLiveRoomCard extends StatelessWidget {
                       foreground: EmberDark.secondary,
                     ),
                   ),
-                  if (room.isLocked)
+                  if (room.subscriberOnly)
+                    Positioned(
+                      bottom: 10,
+                      left: 10,
+                      child: _Pill(
+                        icon: Icons.workspace_premium_rounded,
+                        label: 'SUBSCRIBERS',
+                        background: EmberDark.secondary.withValues(alpha: 0.18),
+                        foreground: EmberDark.secondary,
+                      ),
+                    ),
+                  if (!room.subscriberOnly && room.isLocked)
                     Positioned(
                       bottom: 10,
                       left: 10,
@@ -305,6 +315,3 @@ class _TagChip extends StatelessWidget {
     );
   }
 }
-
-
-

@@ -84,11 +84,27 @@ jobs:
     # (or if manually triggered via workflow_dispatch)
     if: |
       (github.event_name == 'workflow_dispatch' && inputs.target == 'production') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       (github.event.workflow_run.event == 'push' ||
+        github.event.workflow_run.event == 'workflow_dispatch'))
     
     steps:
+      - name: Require validated revision
+        if: github.event_name == 'workflow_run'
+        env:
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [[ ! "$VALIDATED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Upstream workflow did not provide a valid commit SHA."
+            exit 1
+          fi
+
       - name: Checkout Code
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -131,5 +147,4 @@ jobs:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_SERVICE_ACCOUNT_LEGACY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIX_AND_MINGLE_V2 }}
-
 

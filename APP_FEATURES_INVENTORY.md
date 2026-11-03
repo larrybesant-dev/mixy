@@ -11,6 +11,10 @@
 - ✅ **Live Pulse Banner** - Room count + active listeners + featured rooms indicator
 - ✅ **Hero CTA** - "Join a Room" / "Start Your Own Room" call-to-action
 - ✅ **Speed Dating Card** - Secondary engagement card (wine red accent)
+  - Private gender, age, race, sexuality, and distance preferences
+  - Approximate location rounded before storage, removable independently
+  - Owner-only Firestore storage with schema validation
+  - Mutual compatibility, block filtering, and atomic idempotent queue matching
 - ✅ **🆕 Brand Pillar Cards** - MIX / CONNECT / INDULGE navigation (gold, wine red)
 - ✅ **Featured Rooms Section** - Bento grid layout for top rooms
 - ✅ **Discovery Feed** - Infinite scroll with room cards
@@ -170,6 +174,11 @@
 
 ### Search & Discovery
 - **SearchScreen** - Full-text search across rooms/users/posts
+- **PersistentDiscoveryScreen** - Browse public, non-blocked profile suggestions
+  - Applies age and shared-interest preferences
+  - Opens full profiles before connecting
+  - Sends friend requests and excludes friends plus pending requests
+  - Supports pull-to-refresh and responsive one/two/three-column layouts
 
 ### Social Features
 - **TrendingScreen** - Trending rooms and content
@@ -188,11 +197,27 @@
 - **VerificationScreen** - Profile verification
 - **VIPScreen** - Subscription/premium features
 - **PaymentsScreen** - Payment methods
+  - Stripe backend secrets are configured
+  - Client UI remains feature-gated until a valid publishable key is supplied
+  - Stripe initialization is a no-op while payments are disabled
 
 ### Special Features
 - **AfterDark** - Age-gated adult lounges (full feature set)
   - AfterDark Home, Lounges, Profiles, Messaging
-  - PIN protection, age verification
+  - Mandatory 18+ consent and PIN protection
+  - Five-attempt PIN throttling with a timed lockout
+  - Signed-in reset flow for forgotten PINs
+  - Creator subscriptions with creator-set $2.99–$9.99 monthly pricing
+  - Stripe Connect payouts with a 15% MixVy platform fee
+  - Server-authoritative membership lifecycle and period-end cancellation
+  - Searchable creator membership marketplace and membership badges
+  - Creator analytics for active/canceling subscribers and estimated revenue
+  - Server-authoritative subscriber-only updates with moderation reporting
+  - Subscriber-only lounges enforced by Firestore membership checks
+  - Lifecycle notifications and bounded Stripe subscription reconciliation
+  - After Dark safety center with explicit consent and privacy guidance
+  - Government-ID age verification remains gated until a vetted provider is configured
+  - Test checkout remains gated until a valid `pk_test_...` key is supplied
 
 ---
 

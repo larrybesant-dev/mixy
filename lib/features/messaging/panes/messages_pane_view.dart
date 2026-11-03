@@ -8,6 +8,7 @@ import '../../../core/theme.dart';
 import '../../../models/presence_model.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../widgets/safe_network_avatar.dart';
+import '../../feed/providers/user_providers.dart' as feed_user;
 import '../models/conversation_model.dart';
 import '../providers/messaging_provider.dart';
 
@@ -17,11 +18,13 @@ class MessagesPaneView extends ConsumerStatefulWidget {
     required this.userId,
     required this.username,
     this.showHeader = true,
+    this.onConversationSelected,
   });
 
   final String userId;
   final String username;
   final bool showHeader;
+  final ValueChanged<Conversation>? onConversationSelected;
 
   @override
   ConsumerState<MessagesPaneView> createState() => _MessagesPaneViewState();
@@ -127,7 +130,7 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                   ),
                 ),
                 FilledButton.icon(
-                onPressed: () => context.go('/messages/new'),
+                  onPressed: () => context.go('/messages/new'),
                   icon: const Icon(Icons.add_comment_outlined),
                   label: const Text('New message'),
                 ),
@@ -299,12 +302,16 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
           child: AppAsyncValueView<List<Conversation>>(
             value: conversationsAsync,
             fallbackContext: 'conversations',
+            loadingLabel: 'Loading conversations',
+            onRetry: () =>
+                ref.invalidate(rawConversationsStreamProvider(widget.userId)),
             data: (conversations) => TabBarView(
               controller: _tabController,
               children: [
                 _ConversationsList(
                   conversations: _applySearch(_filterAll(conversations)),
                   userId: widget.userId,
+                  onConversationSelected: widget.onConversationSelected,
                   emptyMessage: _query.isNotEmpty
                       ? 'No results for "$_query"'
                       : 'No conversations yet',
@@ -312,11 +319,13 @@ class _MessagesPaneViewState extends ConsumerState<MessagesPaneView>
                 _ConversationsList(
                   conversations: _applySearch(_filterUnread(conversations)),
                   userId: widget.userId,
+                  onConversationSelected: widget.onConversationSelected,
                   emptyMessage: 'No unread messages',
                 ),
                 _ConversationsList(
                   conversations: _applySearch(_filterGroups(conversations)),
                   userId: widget.userId,
+                  onConversationSelected: widget.onConversationSelected,
                   emptyMessage: 'No group chats yet',
                 ),
               ],
@@ -379,6 +388,9 @@ class MessageRequestsSheet extends ConsumerWidget {
               child: AppAsyncValueView<List<Conversation>>(
                 value: requestsAsync,
                 fallbackContext: 'message requests',
+                loadingLabel: 'Loading message requests',
+                onRetry: () =>
+                    ref.invalidate(rawConversationsStreamProvider(userId)),
                 isEmpty: (requests) => requests.isEmpty,
                 empty: const AppEmptyView(
                   icon: Icons.mark_email_read_outlined,
@@ -471,11 +483,13 @@ class _ConversationsList extends ConsumerWidget {
     required this.conversations,
     required this.userId,
     required this.emptyMessage,
+    this.onConversationSelected,
   });
 
   final List<Conversation> conversations;
   final String userId;
   final String emptyMessage;
+  final ValueChanged<Conversation>? onConversationSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -537,7 +551,7 @@ class _ConversationsList extends ConsumerWidget {
     final presenceBatchKey = buildPresenceBatchKey(visiblePeerIds);
     final presenceMap =
         ref.watch(batchedPresenceProvider(presenceBatchKey)).valueOrNull ??
-        const <String, PresenceModel>{};
+            const <String, PresenceModel>{};
 
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 24),
@@ -561,11 +575,11 @@ class _ConversationsList extends ConsumerWidget {
       itemBuilder: (context, index) => _ConversationTile(
         conversation: conversations[index],
         userId: userId,
-        peerPresence:
-            presenceMap[_otherParticipantIdForConversation(
-              conversations[index],
-              userId,
-            )],
+        onConversationSelected: onConversationSelected,
+        peerPresence: presenceMap[_otherParticipantIdForConversation(
+          conversations[index],
+          userId,
+        )],
       ),
     );
   }
@@ -576,24 +590,32 @@ class _ConversationTile extends ConsumerWidget {
     required this.conversation,
     required this.userId,
     required this.peerPresence,
+    this.onConversationSelected,
   });
 
   final Conversation conversation;
   final String userId;
   final PresenceModel? peerPresence;
+  final ValueChanged<Conversation>? onConversationSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = conversation.hasUnreadMessages(userId);
     final pinned = conversation.isPinnedFor(userId);
-    final displayName = conversation.getDisplayName(userId);
-    final avatarUrl = conversation.groupAvatarUrl;
-    final previewText = conversation.lastMessagePreview ?? 'No message yet';
     final isGroup = conversation.type == 'group';
     final peerUserId = _otherParticipantId();
+    // The name copied into the conversation can be stale, so prefer the live profile.
+    final peerProfile = (!isGroup && peerUserId != null)
+        ? ref.watch(feed_user.userProvider(peerUserId)).valueOrNull
+        : null;
+    final liveName = peerProfile?.username.trim() ?? '';
+    final displayName =
+        liveName.isNotEmpty ? liveName : conversation.getDisplayName(userId);
+    final avatarUrl = conversation.groupAvatarUrl;
+    final previewText = conversation.lastMessagePreview ?? 'No message yet';
     final typingUsers =
         ref.watch(typingUsersProvider(conversation.id)).valueOrNull ??
-        const <String>{};
+            const <String>{};
     final isPeerTyping = peerUserId != null && typingUsers.contains(peerUserId);
     final resolvedPresence = isGroup ? null : peerPresence;
     final presenceColor = _presenceColor(resolvedPresence);
@@ -602,7 +624,14 @@ class _ConversationTile extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.go('/messages/chat/${conversation.id}'),
+        onTap: () {
+          final onSelected = onConversationSelected;
+          if (onSelected != null) {
+            onSelected(conversation);
+            return;
+          }
+          context.go('/messages/chat/${conversation.id}');
+        },
         onLongPress: () => _showActionSheet(context, ref),
         child: Container(
           color: unread
@@ -726,9 +755,8 @@ class _ConversationTile extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.raleway(
-                              fontWeight: unread
-                                  ? FontWeight.w800
-                                  : FontWeight.w700,
+                              fontWeight:
+                                  unread ? FontWeight.w800 : FontWeight.w700,
                               fontSize: 14,
                               color: VelvetNoir.onSurface,
                               letterSpacing: 0.1,
@@ -740,9 +768,8 @@ class _ConversationTile extends ConsumerWidget {
                           _formatTime(conversation.lastMessageAt),
                           style: GoogleFonts.raleway(
                             fontSize: 11,
-                            fontWeight: unread
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight:
+                                unread ? FontWeight.w700 : FontWeight.w500,
                             color: unread
                                 ? VelvetNoir.primary
                                 : VelvetNoir.onSurfaceVariant,
@@ -909,9 +936,7 @@ class _ConversationActionSheet extends ConsumerWidget {
               style: const TextStyle(color: VelvetNoir.onSurface, fontSize: 15),
             ),
             onTap: () {
-              ref
-                  .read(messagingControllerProvider)
-                  .setConversationPinned(
+              ref.read(messagingControllerProvider).setConversationPinned(
                     conversationId: conversation.id,
                     userId: userId,
                     pinned: !pinned,
@@ -996,8 +1021,3 @@ class _TypingDotsState extends State<_TypingDots>
     );
   }
 }
-
-
-
-
-

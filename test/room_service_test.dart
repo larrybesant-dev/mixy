@@ -8,12 +8,27 @@ import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/services/room_service.dart';
 
 /// Local fake to allow streams to flow regardless of route in tests.
-class _FakeLifecycleManager extends ChangeNotifier implements StreamLifecycleManager {
-  @override String get currentRoutePath => '/home';
-  @override void updateRoute(String routePath) {}
-  @override bool isRouteActive(List<String> routePrefixes) => true;
-  @override Stream<T> bind<T>({required String key, required Stream<T> Function() create, List<String> routePrefixes = const <String>[]}) => create();
-  @override String buildDedupeKey({required String domain, String? userId, String? route, String? queryHash}) => '$domain|$queryHash';
+class _FakeLifecycleManager extends ChangeNotifier
+    implements StreamLifecycleManager {
+  @override
+  String get currentRoutePath => '/home';
+  @override
+  void updateRoute(String routePath) {}
+  @override
+  bool isRouteActive(List<String> routePrefixes) => true;
+  @override
+  Stream<T> bind<T>(
+          {required String key,
+          required Stream<T> Function() create,
+          List<String> routePrefixes = const <String>[]}) =>
+      create();
+  @override
+  String buildDedupeKey(
+          {required String domain,
+          String? userId,
+          String? route,
+          String? queryHash}) =>
+      '$domain|$queryHash';
 }
 
 void main() {
@@ -48,8 +63,26 @@ void main() {
       expect(data['isLive'], true);
       expect(data['isLocked'], false);
       expect(data['slowModeSeconds'], 0);
+      expect(data['subscriberOnly'], false);
+      expect(data['creatorId'], isNull);
       expect(data['audienceUserIds'], <String>['host-1']);
       expect(data['tags'], <String>['chill', 'music']);
+    });
+
+    test('createRoom marks subscriber lounges with creator authority',
+        () async {
+      final roomId = await service.createRoom(
+        hostId: 'creator-1',
+        name: 'Members Lounge',
+        isAdult: true,
+        subscriberOnly: true,
+      );
+
+      final data =
+          (await firestore.collection('rooms').doc(roomId).get()).data()!;
+      expect(data['subscriberOnly'], true);
+      expect(data['creatorId'], 'creator-1');
+      expect(data['isAdult'], true);
     });
 
     test('createRoom rejects empty hostId and name', () async {
@@ -61,6 +94,18 @@ void main() {
         () => service.createRoom(hostId: 'host-1', name: '  '),
         throwsA(isA<ArgumentError>()),
       );
+    });
+
+    test('getRoomById returns null after a room is deleted', () async {
+      final roomRef = firestore.collection('rooms').doc('stale-room');
+      await roomRef.set({
+        'name': 'Temporary Room',
+        'hostId': 'host-1',
+        'isLive': true,
+      });
+      await roomRef.delete();
+
+      expect(await service.getRoomById('stale-room'), isNull);
     });
 
     test('getLiveRooms returns live rooms ordered by createdAt desc', () async {
@@ -427,7 +472,7 @@ void main() {
 
         // Allow initial emission to settle
         await Future<void>.delayed(const Duration(milliseconds: 500));
-        
+
         await firestore.collection('rooms').doc('room-b').set({
           'isLive': false,
           'updatedAt': Timestamp.now(),
@@ -443,7 +488,7 @@ void main() {
     );
 
     test(
-      'watchLiveRooms keeps the last known audience count during partial room updates',
+      'watchLiveRooms clears stale audience count when membership is empty',
       () async {
         await firestore.collection('rooms').doc('room-a').set({
           'name': 'Room A',
@@ -478,7 +523,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 1000));
 
         expect(emissions, isNotEmpty);
-        expect(emissions.last.single.memberCount, greaterThanOrEqualTo(5));
+        expect(emissions.last.single.memberCount, 0);
       },
     );
 

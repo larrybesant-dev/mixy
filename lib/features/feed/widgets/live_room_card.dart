@@ -1,10 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mixvy/models/room_model.dart';
 import 'package:mixvy/core/utils/network_image_url.dart';
 import '../../../core/theme.dart';
+import '../../../core/providers/firebase_providers.dart';
+import '../../profile/profile_view_providers.dart';
+import '../../../presentation/providers/user_provider.dart';
 
-class LiveRoomCard extends StatelessWidget {
+class LiveRoomCard extends ConsumerWidget {
   final RoomModel room;
   final VoidCallback onTap;
   final String? recommendationReason;
@@ -21,8 +25,20 @@ class LiveRoomCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final thumbnailUrl = sanitizeNetworkImageUrl(room.thumbnailUrl);
+    final liveHostName = room.hostId.isEmpty
+        ? null
+        : ref.watch(displayNameLiveProvider(room.hostId)).valueOrNull;
+    final hostProfile = room.hostId.isEmpty
+        ? null
+        : ref.watch(userProfileFutureProvider(room.hostId)).valueOrNull;
+    final hostName = getDisplayName(
+      uid: room.hostId,
+      resolvedDisplayName: liveHostName,
+      profileUsername: hostProfile?.username,
+      fallbackName: room.hostUsername,
+    );
     final speakerCount = room.stageUserIds.length;
     final memberCount = room.memberCount > 0
         ? room.memberCount
@@ -63,9 +79,8 @@ class LiveRoomCard extends StatelessWidget {
           curve: Curves.easeOut,
           width: 160,
           decoration: BoxDecoration(
-            color: featured
-                ? VelvetNoir.surfaceContainer
-                : VelvetNoir.surfaceHigh,
+            color:
+                featured ? VelvetNoir.surfaceContainer : VelvetNoir.surfaceHigh,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: featured ? VelvetNoir.primary : VelvetNoir.outlineVariant,
@@ -76,10 +91,8 @@ class LiveRoomCard extends StatelessWidget {
                 color:
                     (featured ? VelvetNoir.primaryDim : VelvetNoir.primaryDim)
                         .withValues(
-                          alpha: featured
-                              ? 0.18
-                              : (speakerCount > 0 ? 0.16 : 0.12),
-                        ),
+                  alpha: featured ? 0.18 : (speakerCount > 0 ? 0.16 : 0.12),
+                ),
                 blurRadius: featured ? 16 : (speakerCount > 0 ? 14 : 12),
                 offset: const Offset(0, 4),
               ),
@@ -216,20 +229,19 @@ class LiveRoomCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (room.hostUsername != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          'by ${room.hostUsername}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: VelvetNoir.primary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'by $hostName',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: VelvetNoir.primary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ),
                     if (room.description?.isNotEmpty == true) ...[
                       const SizedBox(height: 3),
                       Text(
@@ -419,6 +431,3 @@ class _FallbackThumbnail extends StatelessWidget {
     );
   }
 }
-
-
-

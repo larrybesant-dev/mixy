@@ -24,7 +24,7 @@ final discoveryPreferencesProvider =
 
 
 // Stream of candidates available for discovery (filtered by preferences)
-// TODO: Implement with actual candidate data from Firestore
+// Planned: Implement with actual candidate data from Firestore.
 // final discoveryCandidatesProvider =
 //     StreamProvider.family<List<dynamic>, String>((ref, userId) async* {
 //       yield [];

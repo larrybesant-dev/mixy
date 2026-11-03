@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/avatar_url_resolver.dart';
 import '../../../features/room/controllers/room_state.dart';
 import '../../../features/room/providers/presence_provider.dart';
 import '../../../models/room_participant_model.dart';
 import 'room_user_tile.dart';
+
+enum RoomRosterSection { onCam, micQueue, chatting }
+
+@visibleForTesting
+RoomRosterSection classifyRoomRosterParticipant({
+  required RoomParticipantModel participant,
+  required Set<String> micQueueUserIds,
+}) {
+  if (participant.micOn) return RoomRosterSection.onCam;
+  if (micQueueUserIds.contains(participant.userId)) {
+    return RoomRosterSection.micQueue;
+  }
+  if (participant.camOn) return RoomRosterSection.onCam;
+  return RoomRosterSection.chatting;
+}
 
 /// Sidebar roster grouped into three distinct buckets:
 /// - On Cam / Talking Now
@@ -19,6 +35,9 @@ class UserListPanel extends StatefulWidget {
     required this.avatarUrlById,
     this.micQueueUserIds = const <String>{},
     this.onTapUser,
+    this.onWhisper,
+    this.onGift,
+    this.onSendMoney,
   });
 
   final List<RoomParticipantModel> participants;
@@ -28,6 +47,9 @@ class UserListPanel extends StatefulWidget {
   final Map<String, String?> avatarUrlById;
   final Set<String> micQueueUserIds;
   final void Function(RoomParticipantModel participant)? onTapUser;
+  final void Function(RoomParticipantModel participant)? onWhisper;
+  final void Function(RoomParticipantModel participant)? onGift;
+  final void Function(RoomParticipantModel participant)? onSendMoney;
 
   @override
   State<UserListPanel> createState() => _UserListPanelState();
@@ -37,6 +59,7 @@ class _UserListPanelState extends State<UserListPanel> {
   bool _onCamExpanded = true;
   bool _queueExpanded = true;
   bool _audienceExpanded = true;
+  String? _hoveredUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +78,7 @@ class _UserListPanelState extends State<UserListPanel> {
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    final sortedParticipants = [...widget.participants]
-      ..sort((left, right) {
+    final sortedParticipants = [...widget.participants]..sort((left, right) {
         final leftRole = _roleRank(left.role);
         final rightRole = _roleRank(right.role);
         if (leftRole != rightRole) return leftRole.compareTo(rightRole);
@@ -67,26 +89,18 @@ class _UserListPanelState extends State<UserListPanel> {
     final micQueue = <RoomParticipantModel>[];
     final chatting = <RoomParticipantModel>[];
 
-    final onCamIds = <String>{};
-
     for (final p in sortedParticipants) {
-      if (p.camOn || p.micOn) {
-        onCam.add(p);
-        onCamIds.add(p.userId);
+      switch (classifyRoomRosterParticipant(
+        participant: p,
+        micQueueUserIds: normalizedQueueIds,
+      )) {
+        case RoomRosterSection.onCam:
+          onCam.add(p);
+        case RoomRosterSection.micQueue:
+          micQueue.add(p);
+        case RoomRosterSection.chatting:
+          chatting.add(p);
       }
-    }
-
-    for (final p in sortedParticipants) {
-      if (onCamIds.contains(p.userId)) continue;
-      if (normalizedQueueIds.contains(p.userId)) {
-        micQueue.add(p);
-      }
-    }
-
-    final queuedIds = micQueue.map((p) => p.userId).toSet();
-    for (final p in sortedParticipants) {
-      if (onCamIds.contains(p.userId) || queuedIds.contains(p.userId)) continue;
-      chatting.add(p);
     }
 
     return ColoredBox(
@@ -117,7 +131,8 @@ class _UserListPanelState extends State<UserListPanel> {
             color: const Color(0xFFB09080),
             icon: Icons.groups_2_outlined,
             expanded: _audienceExpanded,
-            onToggle: () => setState(() => _audienceExpanded = !_audienceExpanded),
+            onToggle: () =>
+                setState(() => _audienceExpanded = !_audienceExpanded),
           ),
           if (_audienceExpanded) _sectionList(chatting, onlineIds),
           const SliverToBoxAdapter(child: SizedBox(height: 10)),
@@ -151,13 +166,17 @@ class _UserListPanelState extends State<UserListPanel> {
             children: [
               Icon(icon, color: color, size: 13),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
               const SizedBox(width: 6),
@@ -176,7 +195,7 @@ class _UserListPanelState extends State<UserListPanel> {
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 4),
               Icon(
                 expanded
                     ? Icons.keyboard_arrow_up_rounded
@@ -191,7 +210,8 @@ class _UserListPanelState extends State<UserListPanel> {
     );
   }
 
-  SliverList _sectionList(List<RoomParticipantModel> entries, Set<String> onlineIds) {
+  SliverList _sectionList(
+      List<RoomParticipantModel> entries, Set<String> onlineIds) {
     if (entries.isEmpty) {
       return SliverList(
         delegate: SliverChildListDelegate.fixed([
@@ -212,45 +232,121 @@ class _UserListPanelState extends State<UserListPanel> {
       delegate: SliverChildBuilderDelegate((context, index) {
         final p = entries[index];
         final displayName = widget.displayNameById[p.userId] ??
-          (p.displayName?.trim().isNotEmpty == true
-            ? p.displayName!.trim()
-            : p.userId);
-        final avatarUrl = widget.avatarUrlById[p.userId] ?? p.photoUrl;
+            (p.displayName?.trim().isNotEmpty == true
+                ? p.displayName!.trim()
+                : p.userId);
+        final avatarUrl = resolveAvatarUrl(
+          directAvatarUrl: widget.avatarUrlById[p.userId],
+          persistedProfileAvatarUrl: p.photoUrl,
+        );
         final isMe = p.userId == widget.currentUserId;
         final isOnline = onlineIds.contains(p.userId);
 
-        return Stack(
-          children: [
-            RoomUserTile(
-              displayName: displayName,
-              avatarUrl: avatarUrl,
-              role: p.role,
-              isCamOn: p.camOn,
-              isMicOn: p.micOn,
-              isMuted: p.isMuted,
-              isMe: isMe,
-              rankTier: p.rankTier,
-              diamondLevel: p.diamondLevel,
-              layout: RoomUserTileLayout.list,
-              onTap: widget.onTapUser == null ? null : () => widget.onTapUser!(p),
-            ),
-            Positioned(
-              left: 34,
-              top: 25,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: isOnline
-                      ? const Color(0xFF22C55E)
-                      : const Color(0xFF6B7280),
-                  shape: BoxShape.circle,
+        final showActions = _hoveredUserId == p.userId && !isMe;
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => _hoveredUserId = p.userId),
+          onExit: (_) {
+            if (_hoveredUserId == p.userId) {
+              setState(() => _hoveredUserId = null);
+            }
+          },
+          child: Stack(
+            children: [
+              RoomUserTile(
+                displayName: displayName,
+                avatarUrl: avatarUrl,
+                role: p.role,
+                isCamOn: p.camOn,
+                isMicOn: p.micOn,
+                isMuted: p.isMuted,
+                isMe: isMe,
+                rankTier: p.rankTier,
+                diamondLevel: p.diamondLevel,
+                layout: RoomUserTileLayout.list,
+                onTap: widget.onTapUser == null
+                    ? null
+                    : () => widget.onTapUser!(p),
+              ),
+              Positioned(
+                left: 34,
+                top: 25,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isOnline
+                        ? const Color(0xFF22C55E)
+                        : const Color(0xFF6B7280),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
-          ],
+              if (showActions)
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111519),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              const Color(0xFFD4AF37).withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _hoverAction(
+                            tooltip: 'Whisper',
+                            icon: Icons.message_outlined,
+                            onPressed: widget.onWhisper == null
+                                ? null
+                                : () => widget.onWhisper!(p),
+                          ),
+                          _hoverAction(
+                            tooltip: 'Send Gift',
+                            icon: Icons.card_giftcard_outlined,
+                            onPressed: widget.onGift == null
+                                ? null
+                                : () => widget.onGift!(p),
+                          ),
+                          _hoverAction(
+                            tooltip: 'Send Money',
+                            icon: Icons.attach_money_rounded,
+                            onPressed: widget.onSendMoney == null
+                                ? null
+                                : () => widget.onSendMoney!(p),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       }, childCount: entries.length),
+    );
+  }
+
+  Widget _hoverAction({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+      padding: EdgeInsets.zero,
+      icon: Icon(icon, size: 15),
+      color: const Color(0xFFD4AF37),
+      disabledColor: const Color(0xFF6B7280),
     );
   }
 

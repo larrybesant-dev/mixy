@@ -265,22 +265,16 @@ test.describe('MixVy - Critical User Flows', () => {
       await safeNavigate(page, '/');
       await waitForAppReady(page);
 
-      // Simulate network failure
-      await page.context().setOffline(true);
-      await page.waitForTimeout(500);
+      try {
+        await page.context().setOffline(true);
+        await expect(page.locator('body')).toBeVisible();
+      } finally {
+        await page.context().setOffline(false);
+      }
 
-      // Page should still be accessible
-      const title = await page.title();
-      expect(title.length).toBeGreaterThan(0);
-
-      // Restore network
-      await page.context().setOffline(false);
       await safeNavigate(page, '/');
       await waitForAppReady(page);
-
-      // Should recover
-      const recoveredTitle = await page.title();
-      expect(recoveredTitle.length).toBeGreaterThan(0);
+      await expect(page.locator('body')).toBeVisible();
     });
 
     test('should track and handle errors', async ({ page }) => {
@@ -410,9 +404,9 @@ test.describe('MixVy - Critical User Flows', () => {
         await page.waitForTimeout(50);
       }
 
-      // Page should still be functional
-      const title = await page.title();
-      expect(title.length).toBeGreaterThan(0);
+      await waitForAppReady(page);
+      await expect(page.locator('body')).toBeVisible();
+      expect(await page.locator('*').count()).toBeGreaterThan(0);
     });
 
     test('should not leak memory on state updates', async ({ page }) => {

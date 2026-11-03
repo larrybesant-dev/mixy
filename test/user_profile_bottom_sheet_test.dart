@@ -18,7 +18,7 @@ void main() {
       required String username,
       required String displayName,
       String? bio,
-      int vipLevel = 0,
+      int vipBadgeLevel = 0,
       int followersCount = 0,
     }) {
       return UserProfile(
@@ -26,7 +26,7 @@ void main() {
         username: username,
         displayName: displayName,
         bio: bio,
-        vipLevel: vipLevel,
+        vipBadgeLevel: vipBadgeLevel,
         followersCount: followersCount,
       );
     }
@@ -69,7 +69,7 @@ void main() {
         username: 'velvethost',
         displayName: 'Aria Rose',
         bio: 'Set the mood, play the music, vibe all night.',
-        vipLevel: 3,
+        vipBadgeLevel: 3,
         followersCount: 1240,
       );
 

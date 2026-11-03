@@ -1,31 +1,31 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-07-18T13:26:05.440Z",
-  "finishedAt": "2026-07-18T13:26:07.104Z",
-  "durationMs": 1664,
+  "startedAt": "2026-11-01T12:30:06.152Z",
+  "finishedAt": "2026-11-01T12:30:10.085Z",
+  "durationMs": 3933,
   "sampleSize": 500,
-  "totalScanned": 4,
+  "totalScanned": 65,
   "totalViolations": 0,
   "passed": true,
   "summary": {
     "conversations": {
-      "scanned": 3,
+      "scanned": 6,
       "violations": 0
     },
     "messages": {
-      "scanned": 0,
+      "scanned": 7,
       "violations": 0
     },
     "rooms": {
-      "scanned": 1,
+      "scanned": 8,
       "violations": 0
     },
     "roomParticipants": {
-      "scanned": 0,
+      "scanned": 39,
       "violations": 0
     },
     "follows": {
-      "scanned": 0,
+      "scanned": 5,
       "violations": 0
     },
     "followersSymmetry": {

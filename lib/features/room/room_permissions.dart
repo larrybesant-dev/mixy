@@ -23,6 +23,32 @@ class RoomPermissions {
     return canUseCameraRole(role);
   }
 
+  static bool canBroadcastAudio({
+    required String userId,
+    required Iterable<String> speakerIds,
+  }) {
+    final normalizedUserId = userId.trim();
+    return normalizedUserId.isNotEmpty &&
+        speakerIds.any((speakerId) => speakerId.trim() == normalizedUserId);
+  }
+
+  static bool canTakeOpenMic({
+    required String userId,
+    required Iterable<String> speakerIds,
+  }) {
+    return userId.trim().isNotEmpty &&
+        !speakerIds.any((speakerId) => speakerId.trim().isNotEmpty);
+  }
+
+  static bool canShareAudio({
+    required String userId,
+    required Iterable<String> speakerIds,
+    required bool isMicEnabled,
+  }) {
+    return isMicEnabled &&
+        canBroadcastAudio(userId: userId, speakerIds: speakerIds);
+  }
+
   static bool canManageParticipant({
     required String actorRole,
     required String actorUserId,
@@ -92,7 +118,3 @@ bool shouldEjectJoinedUserFromRoom({
   final effectiveNow = now ?? DateTime.now();
   return effectiveNow.difference(lastMembership) > _ejectGraceWindow;
 }
-
-
-
-

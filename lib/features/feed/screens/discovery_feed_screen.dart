@@ -7,8 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/flags/feature_flags.dart';
 import '../../../core/layout/app_layout.dart';
-import '../../../core/providers/session_capabilities_provider.dart';
+import '../../../core/telemetry/launch_monitoring.dart';
 import '../../../core/theme.dart';
 import '../../../dev/app_debug_flags.dart';
 import '../../../dev/app_state_reasoning.dart';
@@ -35,7 +36,9 @@ import '../widgets/trending_user_card.dart';
 import '../../stories/providers/story_provider.dart';
 import '../../../presentation/providers/notification_provider.dart';
 import '../../../services/room_discovery_service.dart';
+import '../../../services/room_service.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../widgets/friends_panel_button.dart';
 
 // ── Velvet Noir brand aliases ────────────────────────────────────────────────
 const _npSurface = VelvetNoir.surface;
@@ -49,16 +52,54 @@ const _npOnSurface = VelvetNoir.onSurface;
 const _npOnVariant = VelvetNoir.onSurfaceVariant;
 const _npGhost = Color(0x1A4A2E35);
 
+Future<void> _openLiveRoom(
+  BuildContext context,
+  WidgetRef ref,
+  RoomModel room,
+) async {
+  final allowed = await GuestAuthGate.requireRoomJoin(context, ref);
+  if (!allowed || !context.mounted) return;
+
+  try {
+    final currentRoom =
+        await ref.read(roomServiceProvider).getRoomById(room.id);
+    if (!context.mounted) return;
+    if (currentRoom == null || !currentRoom.isLive) {
+      LaunchMonitoring.record(
+        action: LaunchMonitoring.staleRoomNavigation,
+        message: 'Discovery room was unavailable during join validation.',
+        roomId: room.id,
+        result: currentRoom == null ? 'missing' : 'ended',
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This room has ended. Refreshing live rooms...'),
+        ),
+      );
+      await ref.read(feedControllerProvider.notifier).loadFeed();
+      return;
+    }
+
+    context.go('/room/${currentRoom.id}', extra: currentRoom);
+    unawaited(SessionPersistence.saveLastRoom(currentRoom.id));
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content:
+            Text('Could not open this room. Check your connection and retry.'),
+      ),
+    );
+  }
+}
+
 // ── Host avatar provider ──────────────────────────────────────────────────────
 final _hostAvatarProvider = FutureProvider.autoDispose.family<String?, String>((
   ref,
   hostId,
 ) async {
-  final doc = await ref
-      .watch(firestoreProvider)
-      .collection('users')
-      .doc(hostId)
-      .get();
+  final doc =
+      await ref.watch(firestoreProvider).collection('users').doc(hostId).get();
   if (!doc.exists) return null;
   final data = doc.data();
   final avatar = (data?['avatarUrl'] as String?)?.trim();
@@ -119,9 +160,7 @@ class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
       child: AppPageScaffold(
         backgroundColor: _npSurface,
         safeArea: false,
-        floatingActionButton: const _GoLiveFab(),
         body: NestedScrollView(
-          controller: _scrollController,
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
               pinned: true,
@@ -130,6 +169,7 @@ class _DiscoveryFeedScreenState extends ConsumerState<DiscoveryFeedScreen> {
               scrolledUnderElevation: 0,
               title: _MixVyLogo(),
               actions: [
+                const FriendsPanelButton(iconColor: _npOnVariant),
                 IconButton(
                   icon: const Icon(Icons.search_rounded, color: _npOnVariant),
                   onPressed: () => context.go('/search'),
@@ -480,21 +520,14 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   String? _joiningRoomId;
 
   Future<void> _joinRoom(RoomModel room) async {
-    final allowed = await GuestAuthGate.requireRoomJoin(context, ref);
-    if (!allowed || !mounted) return;
-
     if (_joiningRoomId != null) return;
     setState(() => _joiningRoomId = room.id);
-    context.go('/room/${room.id}', extra: room);
 
-    // Hardening: Persist room ID so it can be recovered after crash
-    unawaited(SessionPersistence.saveLastRoom(room.id));
-
-    // Clear the joining state after a short window so the button re-enables
-    // if the user navigates back before the new screen mounts.
-    Future.delayed(const Duration(seconds: 3), () {
+    try {
+      await _openLiveRoom(context, ref, room);
+    } finally {
       if (mounted) setState(() => _joiningRoomId = null);
-    });
+    }
   }
 
   Future<void> _startRoomCreation() async {
@@ -523,11 +556,15 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
   @override
   Widget build(BuildContext context) {
     final feedState = ref.watch(feedControllerProvider);
-    
+
     final horizontalPadding = context.pageHorizontalPadding;
 
     if (feedState.isLoading) {
-      return const AppLoadingView(label: 'Loading discovery feed');
+      return AppBoundedLoadingView(
+        fallbackContext: 'the discovery feed',
+        label: 'Loading discovery feed',
+        onRetry: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+      );
     }
 
     if (feedState.error != null) {
@@ -537,8 +574,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final filteredRooms = _selectedCategory == null
         ? feedState.liveRooms
         : feedState.liveRooms
-              .where((r) => r.category?.toLowerCase() == _selectedCategory)
-              .toList();
+            .where((r) => r.category?.toLowerCase() == _selectedCategory)
+            .toList();
     final liveRoomCount = feedState.liveRooms.length;
     final activeListenerCount = feedState.liveRooms.fold<int>(
       0,
@@ -552,16 +589,16 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final discoveryStateLabel = feedState.error != null
         ? 'error'
         : filteredRooms.isEmpty
-        ? 'empty'
-        : 'ready';
+            ? 'empty'
+            : 'ready';
     final selectedCategoryLabel = _selectedCategory ?? 'all';
     final discoveryHint = feedState.error != null
         ? feedState.error!
         : filteredRooms.isEmpty
-        ? (_selectedCategory == null
-              ? 'No live rooms currently passed visibility rules.'
-              : 'No live rooms match the selected category right now.')
-        : 'Rooms are visible and ranked normally.';
+            ? (_selectedCategory == null
+                ? 'No live rooms currently passed visibility rules.'
+                : 'No live rooms match the selected category right now.')
+            : 'Rooms are visible and ranked normally.';
 
     HomeLayoutV1.debugAssertOrder(const <String>[
       HomeLayoutV1.livePulseSlotId,
@@ -584,20 +621,10 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
             ),
           ),
 
-          // ── Hero CTA — "Join a Room" / "Start Your Own Room" ──────────
           SliverToBoxAdapter(
-            child: _HeroJoinCard(
+            child: HomePrimaryActions(
               firstRoom: filteredRooms.isNotEmpty ? filteredRooms[0] : null,
               onStartRoom: _startRoomCreation,
-            ),
-          ),
-
-          // ── Speed Date card — secondary CTA ───────────────────────────
-          const SliverToBoxAdapter(child: _SpeedDateCard()),
-
-          // ── Brand Pillar Nav Cards — MIX / CONNECT / INDULGE ──────────
-          SliverToBoxAdapter(
-            child: BrandPillarNavSection(
               onMixPressed: () => context.go('/discover'),
               onConnectPressed: () => context.go('/speed-dating'),
               onIndulgePressed: () => context.go('/rooms/create'),
@@ -670,13 +697,13 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                   final crossAxisCount = width >= 980
                       ? 4
                       : width >= 720
-                      ? 3
-                      : 2;
+                          ? 3
+                          : 2;
                   final aspectRatio = width >= 980
                       ? 1.0
                       : width >= 720
-                      ? 0.95
-                      : 1.0;
+                          ? 0.95
+                          : 1.0;
 
                   return SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -711,6 +738,9 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
           SliverToBoxAdapter(
             child: Builder(
               builder: (ctx) {
+                if (!kPaymentsEnabled) {
+                  return const SizedBox.shrink();
+                }
                 final hasVipEntitlement =
                     ref.watch(vipEntitlementProvider).valueOrNull ?? false;
                 if (!AdManager.shouldShowAds(
@@ -944,12 +974,12 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
 
   Widget _buildErrorState(String error) {
     final feedState = ref.watch(feedControllerProvider);
-    
+
     // If we have cached data, show it with a "stale" indicator
     if (feedState.isFromCache && feedState.liveRooms.isNotEmpty) {
       return _buildCachedFeedWithIndicator(error);
     }
-    
+
     // No cache - show error
     return Center(
       child: Padding(
@@ -973,7 +1003,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
               ),
               SizedBox(height: context.sectionSpacing),
               FilledButton(
-                onPressed: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+                onPressed: () =>
+                    ref.read(feedControllerProvider.notifier).loadFeed(),
                 child: const Text('Try again'),
               ),
             ],
@@ -1032,7 +1063,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
                 ),
               ),
               FilledButton.tonal(
-                onPressed: () => ref.read(feedControllerProvider.notifier).loadFeed(),
+                onPressed: () =>
+                    ref.read(feedControllerProvider.notifier).loadFeed(),
                 child: const Text('Refresh', style: TextStyle(fontSize: 12)),
               ),
             ],
@@ -1066,8 +1098,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
     final filteredRooms = _selectedCategory == null
         ? feedState.liveRooms
         : feedState.liveRooms
-              .where((r) => r.category?.toLowerCase() == _selectedCategory)
-              .toList();
+            .where((r) => r.category?.toLowerCase() == _selectedCategory)
+            .toList();
 
     if (filteredRooms.isEmpty) {
       return const AppEmptyView(
@@ -1081,7 +1113,8 @@ class _DiscoveryFeedContentState extends ConsumerState<DiscoveryFeedContent> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+            padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding, vertical: 16),
             child: Text(
               'Available Rooms',
               style: Theme.of(context).textTheme.titleLarge,
@@ -1421,7 +1454,7 @@ class _BentoHeroCard extends ConsumerWidget {
                         count: room.memberCount > 0
                             ? room.memberCount
                             : room.stageUserIds.length +
-                                  room.audienceUserIds.length,
+                                room.audienceUserIds.length,
                         label: 'listening',
                       ),
                       const SizedBox(width: 6),
@@ -2184,7 +2217,7 @@ class _LiveNowStrip extends ConsumerWidget {
             separatorBuilder: (__, _) => const SizedBox(width: 14),
             itemBuilder: (ctx, i) => _LiveNowBubble(
               room: rooms[i],
-              onTap: () => context.go('/room/${rooms[i].id}', extra: rooms[i]),
+              onTap: () => unawaited(_openLiveRoom(context, ref, rooms[i])),
             ),
           ),
         ),
@@ -2245,20 +2278,21 @@ class _LiveNowBubble extends ConsumerWidget {
   /// When > 0, a gold "👥 N" badge is shown on the avatar ring.
   final int friendCount;
 
-  static const _categoryEmoji = {
-    'music': '🎵',
-    'gaming': '🎮',
-    'dating': '❤️',
-    'talk': '💬',
-    'tech': '💻',
-    'art': '🎨',
-    'dance': '💃',
+  static const Map<String, IconData> _categoryIcons = {
+    'music': Icons.music_note_rounded,
+    'gaming': Icons.sports_esports_rounded,
+    'dating': Icons.favorite_rounded,
+    'talk': Icons.chat_bubble_rounded,
+    'tech': Icons.computer_rounded,
+    'art': Icons.palette_rounded,
+    'dance': Icons.directions_run_rounded,
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final avatarAsync = ref.watch(_hostAvatarProvider(room.hostId));
-    final emoji = _categoryEmoji[room.category?.toLowerCase()] ?? '📡';
+    final categoryIcon =
+        _categoryIcons[room.category?.toLowerCase()] ?? Icons.podcasts_rounded;
     final memberCount = room.memberCount > 0
         ? room.memberCount
         : room.stageUserIds.length + room.audienceUserIds.length;
@@ -2266,7 +2300,7 @@ class _LiveNowBubble extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 66,
+        width: 84,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2292,11 +2326,11 @@ class _LiveNowBubble extends ConsumerWidget {
                               imageUrl: url,
                               fit: BoxFit.cover,
                               errorWidget: (___, __, _) =>
-                                  _EmojiAvatar(emoji: emoji),
+                                  _CategoryAvatar(icon: categoryIcon),
                             )
-                          : _EmojiAvatar(emoji: emoji),
-                      loading: () => _EmojiAvatar(emoji: emoji),
-                      error: (__, _) => _EmojiAvatar(emoji: emoji),
+                          : _CategoryAvatar(icon: categoryIcon),
+                      loading: () => _CategoryAvatar(icon: categoryIcon),
+                      error: (__, _) => _CategoryAvatar(icon: categoryIcon),
                     ),
                   ),
                 ),
@@ -2315,13 +2349,24 @@ class _LiveNowBubble extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: _npSurface, width: 1.5),
                       ),
-                      child: Text(
-                        '👥 $friendCount',
-                        style: GoogleFonts.raleway(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: _npSurface,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.people_rounded,
+                            size: 9,
+                            color: _npSurface,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '$friendCount',
+                            style: GoogleFonts.raleway(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: _npSurface,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -2361,7 +2406,7 @@ class _LiveNowBubble extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: GoogleFonts.raleway(
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: _npOnVariant,
               ),
@@ -2418,12 +2463,13 @@ class _LiveStateBar extends StatelessWidget {
       // Map audience users to their avatars
       for (var i = 0; i < room.audienceUserIds.length; i++) {
         final uid = room.audienceUserIds[i];
-        if (!uidMap.containsKey(uid) && i < room.audienceUserAvatarUrls.length) {
+        if (!uidMap.containsKey(uid) &&
+            i < room.audienceUserAvatarUrls.length) {
           uidMap[uid] = room.audienceUserAvatarUrls[i];
         }
       }
     }
-    
+
     // Return avatars in the same order as clusterUids
     return _clusterUids()
         .map((uid) => uidMap[uid] ?? '')
@@ -2566,17 +2612,20 @@ class _AnimatedPulseDotState extends State<_AnimatedPulseDot>
 
 // ── Speed Date card — secondary CTA ──────────────────────────────────────────
 class _SpeedDateCard extends StatelessWidget {
-  const _SpeedDateCard();
+  const _SpeedDateCard({this.padding});
+
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.pageHorizontalPadding,
-        10,
-        context.pageHorizontalPadding,
-        4,
-      ),
+      padding: padding ??
+          EdgeInsets.fromLTRB(
+            context.pageHorizontalPadding,
+            10,
+            context.pageHorizontalPadding,
+            4,
+          ),
       child: GestureDetector(
         onTap: () => context.go('/speed-dating'),
         child: Container(
@@ -2610,7 +2659,11 @@ class _SpeedDateCard extends StatelessWidget {
                   ),
                 ),
                 child: const Center(
-                  child: Text('❤️', style: TextStyle(fontSize: 22)),
+                  child: Icon(
+                    Icons.favorite_rounded,
+                    color: _npSecondary,
+                    size: 24,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -2668,13 +2721,95 @@ class _SpeedDateCard extends StatelessWidget {
   }
 }
 
+class HomePrimaryActions extends StatelessWidget {
+  const HomePrimaryActions({
+    super.key,
+    this.firstRoom,
+    this.onStartRoom,
+    this.onMixPressed,
+    this.onConnectPressed,
+    this.onIndulgePressed,
+  });
+
+  final RoomModel? firstRoom;
+  final VoidCallback? onStartRoom;
+  final VoidCallback? onMixPressed;
+  final VoidCallback? onConnectPressed;
+  final VoidCallback? onIndulgePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 900) {
+          return Column(
+            key: const ValueKey('home-primary-actions-stacked'),
+            children: [
+              _HeroJoinCard(
+                firstRoom: firstRoom,
+                onStartRoom: onStartRoom,
+              ),
+              const _SpeedDateCard(),
+              BrandPillarNavSection(
+                onMixPressed: onMixPressed,
+                onConnectPressed: onConnectPressed,
+                onIndulgePressed: onIndulgePressed,
+              ),
+            ],
+          );
+        }
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            context.pageHorizontalPadding,
+            16,
+            context.pageHorizontalPadding,
+            4,
+          ),
+          child: Row(
+            key: const ValueKey('home-primary-actions-wide'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: _HeroJoinCard(
+                  firstRoom: firstRoom,
+                  onStartRoom: onStartRoom,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    const _SpeedDateCard(padding: EdgeInsets.zero),
+                    const SizedBox(height: 8),
+                    BrandPillarNavSection(
+                      padding: EdgeInsets.zero,
+                      onMixPressed: onMixPressed,
+                      onConnectPressed: onConnectPressed,
+                      onIndulgePressed: onIndulgePressed,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 // ── Hero Join / Start Room card ───────────────────────────────────────────────
 /// Dominant CTA card at the top of the Discover feed.
 /// Two actions: join the first live room (if any), or start your own room.
 class _HeroJoinCard extends StatelessWidget {
-  const _HeroJoinCard({this.firstRoom, this.onStartRoom});
+  const _HeroJoinCard({this.firstRoom, this.onStartRoom, this.padding});
   final RoomModel? firstRoom;
   final VoidCallback? onStartRoom;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -2682,15 +2817,17 @@ class _HeroJoinCard extends StatelessWidget {
     final listenerCount = firstRoom == null
         ? 0
         : firstRoom!.memberCount > 0
-        ? firstRoom!.memberCount
-        : firstRoom!.stageUserIds.length + firstRoom!.audienceUserIds.length;
+            ? firstRoom!.memberCount
+            : firstRoom!.stageUserIds.length +
+                firstRoom!.audienceUserIds.length;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.pageHorizontalPadding,
-        16,
-        context.pageHorizontalPadding,
-        4,
-      ),
+      padding: padding ??
+          EdgeInsets.fromLTRB(
+            context.pageHorizontalPadding,
+            16,
+            context.pageHorizontalPadding,
+            4,
+          ),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -2732,8 +2869,14 @@ class _HeroJoinCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(width: 7),
+                Icon(
+                  Icons.mic_rounded,
+                  size: 16,
+                  color: hasLiveRoom ? _npError : _npOnVariant,
+                ),
+                const SizedBox(width: 5),
                 Text(
-                  hasLiveRoom ? '🎤  Live Now' : '🎤  Quiet right now',
+                  hasLiveRoom ? 'Live Now' : 'Quiet right now',
                   style: GoogleFonts.raleway(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -2747,8 +2890,8 @@ class _HeroJoinCard extends StatelessWidget {
             Text(
               hasLiveRoom
                   ? firstRoom!.name.isNotEmpty
-                        ? firstRoom!.name
-                        : 'Someone is live right now'
+                      ? firstRoom!.name
+                      : 'Someone is live right now'
                   : 'No one is live yet — be first',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -2803,9 +2946,9 @@ class _HeroJoinCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: hasLiveRoom
                     ? () => context.go(
-                        '/room/${firstRoom!.id}',
-                        extra: firstRoom!,
-                      )
+                          '/room/${firstRoom!.id}',
+                          extra: firstRoom!,
+                        )
                     : onStartRoom,
                 style: FilledButton.styleFrom(
                   backgroundColor: _npPrimary,
@@ -2989,17 +3132,17 @@ String _relativeTime(DateTime? dt) {
   return '';
 }
 
-// ── Emoji fallback avatar ─────────────────────────────────────────────────────
-class _EmojiAvatar extends StatelessWidget {
-  const _EmojiAvatar({required this.emoji});
-  final String emoji;
+// ── Category fallback avatar ──────────────────────────────────────────────────
+class _CategoryAvatar extends StatelessWidget {
+  const _CategoryAvatar({required this.icon});
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: _npSurfaceHighest,
       alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 22)),
+      child: Icon(icon, size: 22, color: _npPrimary),
     );
   }
 }
@@ -3022,32 +3165,6 @@ class _NotificationBell extends ConsumerWidget {
               ),
             )
           : const Icon(Icons.notifications_outlined, color: _npOnVariant),
-    );
-  }
-}
-
-class _GoLiveFab extends StatelessWidget {
-  const _GoLiveFab();
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        final allowed = await GuestAuthGate.requireCapabilityFromContext(
-          context,
-          SessionCapability.createRoom,
-        );
-        if (!allowed) return;
-        if (!context.mounted) return;
-        context.go('/rooms/create');
-      },
-      backgroundColor: _npPrimary,
-      foregroundColor: _npSurface,
-      icon: const Icon(Icons.mic_rounded),
-      label: Text(
-        'Start Room',
-        style: GoogleFonts.raleway(fontWeight: FontWeight.w700),
-      ),
     );
   }
 }
@@ -3143,6 +3260,3 @@ class _FriendsLiveSection extends ConsumerWidget {
     );
   }
 }
-
-
-

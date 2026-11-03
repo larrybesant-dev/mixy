@@ -15,44 +15,54 @@ class SpeedDatingService {
     FirebaseFunctions? functions,
     DiscoveryStreamService? streamService,
     SpeedDatingGateway? gateway,
-  }) : _moderationService =
-           moderationService ?? ModerationService(firestore: firestore),
-       _functions = functions ?? FirebaseFunctions.instance,
-       _streamService =
-         streamService ?? DiscoveryStreamService(firestore: firestore),
-       _gateway = gateway ?? SpeedDatingGateway(firestore);
+  })  : _moderationService =
+            moderationService ?? ModerationService(firestore: firestore),
+        _functions = functions ?? FirebaseFunctions.instance,
+        _streamService =
+            streamService ?? DiscoveryStreamService(firestore: firestore),
+        _gateway = gateway ?? SpeedDatingGateway(firestore);
 
   final ModerationService _moderationService;
   final FirebaseFunctions _functions;
   final DiscoveryStreamService _streamService;
   final SpeedDatingGateway _gateway;
   static const Uuid _uuid = Uuid();
+  static const Duration _candidateRefreshInterval = Duration(seconds: 45);
 
+  /// Emits candidates from the server, which applies the viewer's dating
+  /// preferences. Refreshes periodically so the deck stays current.
   Stream<List<SpeedDateCandidate>> candidatesStream({
     required String currentUserId,
-  }) {
-    // Query only users who have a non-empty username — avoids a full-collection
-    // scan and filters out incomplete accounts server-side. Limit to 40 so the
-    // Dart-side block filter still leaves a useful candidate set.
-    return _streamService
-        .watchSpeedDatingCandidates(limit: 40)
-        .asyncMap((snapshot) async {
-          final blockedIds = await _moderationService.getExcludedUserIds(
-            currentUserId,
-          );
-          return snapshot.docs
-              .where((doc) => doc.id != currentUserId)
-              .where((doc) => !blockedIds.contains(doc.id))
-              .map(SpeedDateCandidate.fromDoc)
-              .where((candidate) => candidate.username.trim().isNotEmpty)
-              .toList();
-        });
+  }) async* {
+    while (true) {
+      yield await _fetchCandidates(currentUserId);
+      await Future<void>.delayed(_candidateRefreshInterval);
+    }
+  }
+
+  Future<List<SpeedDateCandidate>> _fetchCandidates(
+      String currentUserId) async {
+    final result = await _functions
+        .httpsCallable('getSpeedDatingCandidates')
+        .call<Map<String, dynamic>>();
+    final data = Map<String, dynamic>.from(result.data as Map);
+    final raw = data['candidates'] as List? ?? const [];
+
+    final blockedIds = await _moderationService.getExcludedUserIds(
+      currentUserId,
+    );
+    return raw
+        .whereType<Map>()
+        .map(SpeedDateCandidate.fromCallable)
+        .where((candidate) => candidate.id.isNotEmpty)
+        .where((candidate) => candidate.id != currentUserId)
+        .where((candidate) => !blockedIds.contains(candidate.id))
+        .where((candidate) => candidate.username.trim().isNotEmpty)
+        .toList(growable: false);
   }
 
   Stream<List<SpeedDatingMatch>> matchesStream(String currentUserId) {
-    return _streamService
-        .watchSpeedDatingMatches(currentUserId, limit: 50)
-        .map(
+    return _streamService.watchSpeedDatingMatches(currentUserId, limit: 50).map(
           (snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList(),
         );
   }
@@ -180,10 +190,13 @@ class SpeedDatingService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      txn.set(matchRef, {
-        'latestRoomId': roomRef.id,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      txn.set(
+          matchRef,
+          {
+            'latestRoomId': roomRef.id,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
 
       return roomRef.id;
     });
@@ -216,18 +229,16 @@ class SpeedDatingService {
   /// Watches the live queue entry for the current user so the UI can react
   /// when the server matches them to a partner.
   Stream<SpeedDatingQueueResult?> watchQueueEntry(String userId) {
-    return _streamService
-        .watchQueueEntry(userId)
-        .map((doc) {
-          if (!doc.exists) return null;
-          final data = doc.data();
-          if (data == null) return null;
-          return SpeedDatingQueueResult(
-            matched: data['matched'] as bool? ?? false,
-            sessionId: data['sessionId'] as String?,
-            partnerId: null,
-          );
-        });
+    return _streamService.watchQueueEntry(userId).map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data();
+      if (data == null) return null;
+      return SpeedDatingQueueResult(
+        matched: data['matched'] as bool? ?? false,
+        sessionId: data['sessionId'] as String?,
+        partnerId: null,
+      );
+    });
   }
 
   /// Watches a specific speed dating session doc (active + expiresAt).
@@ -237,7 +248,3 @@ class SpeedDatingService {
         .map((doc) => doc.exists ? doc.data() : null);
   }
 }
-
-
-
-

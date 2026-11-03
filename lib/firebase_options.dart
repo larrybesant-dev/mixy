@@ -34,14 +34,16 @@ class DefaultFirebaseOptions {
     messagingSenderId: '770164332233',
     projectId: 'mixvy-v2',
     authDomain: 'mixvy-v2.firebaseapp.com',
+    databaseURL: 'https://mixvy-v2-default-rtdb.firebaseio.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCejcBAOY6WPsc4qfVkmOvnx6MOofFiJo4',
-    appId: '1:770164332233:android:8fae7410889374d9c3df18',
+    appId: '1:770164332233:android:e4c4e6e673c54bbbc3df18',
     messagingSenderId: '770164332233',
     projectId: 'mixvy-v2',
+    databaseURL: 'https://mixvy-v2-default-rtdb.firebaseio.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
   );
 
@@ -50,6 +52,7 @@ class DefaultFirebaseOptions {
     appId: '1:770164332233:ios:056a1477bcfa5f44c3df18',
     messagingSenderId: '770164332233',
     projectId: 'mixvy-v2',
+    databaseURL: 'https://mixvy-v2-default-rtdb.firebaseio.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
     androidClientId:
         '980846719834-2n0h54hq88s6gra5qnvqsbnh3ebnedcb.apps.googleusercontent.com',
@@ -64,6 +67,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '770164332233',
     projectId: 'mixvy-v2',
     authDomain: 'mixvy-v2.firebaseapp.com',
+    databaseURL: 'https://mixvy-v2-default-rtdb.firebaseio.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-L0G075C2EZ',
   );
@@ -74,6 +78,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '770164332233',
     projectId: 'mixvy-v2',
     authDomain: 'mixvy-v2.firebaseapp.com',
+    databaseURL: 'https://mixvy-v2-default-rtdb.firebaseio.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-L0G075C2EZ',
   );
@@ -84,10 +89,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '770164332233',
     projectId: 'mixvy-v2',
     authDomain: 'mixvy-v2.firebaseapp.com',
+    databaseURL: 'https://mixvy-v2-default-rtdb.firebaseio.com',
     storageBucket: 'mixvy-v2.firebasestorage.app',
     measurementId: 'G-L0G075C2EZ',
   );
 }
-
-
 

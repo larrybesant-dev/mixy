@@ -1,16 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/discovery_provider.dart';
-import '../../../presentation/providers/user_provider.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../core/theme.dart';
+import '../../../models/user_model.dart';
+import '../../../presentation/providers/user_provider.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../utils/error_reporting.dart';
+import '../../friends/providers/friends_providers.dart';
+import '../../profile/widgets/profile_card.dart';
+import '../../profile/widgets/social_user_card.dart';
+import '../models/discovery_preferences.dart';
+import '../providers/discovery_provider.dart';
 import '../widgets/discovery_filter_sheet.dart';
 
-/// Persistent discovery screen - placeholder for future candidate swiping
-class PersistentDiscoveryScreen extends ConsumerWidget {
+bool matchesDiscoveryPreferences(
+  UserModel candidate,
+  DiscoveryPreferences preferences,
+) {
+  final age = candidate.age;
+  if (age != null && (age < preferences.minAge || age > preferences.maxAge)) {
+    return false;
+  }
+  if (preferences.interestTags.isEmpty) return true;
+  final desired = preferences.interestTags
+      .map((tag) => tag.trim().toLowerCase())
+      .where((tag) => tag.isNotEmpty)
+      .toSet();
+  final candidateInterests =
+      candidate.interests.map((tag) => tag.trim().toLowerCase()).toSet();
+  return desired.intersection(candidateInterests).isNotEmpty;
+}
+
+class PersistentDiscoveryScreen extends ConsumerStatefulWidget {
   const PersistentDiscoveryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PersistentDiscoveryScreen> createState() =>
+      _PersistentDiscoveryScreenState();
+}
+
+class _PersistentDiscoveryScreenState
+    extends ConsumerState<PersistentDiscoveryScreen> {
+  final Set<String> _busyUserIds = <String>{};
+  final Set<String> _sentUserIds = <String>{};
+
+  @override
+  Widget build(BuildContext context) {
     final currentUser = ref.watch(userProvider);
     final userId = currentUser?.id ?? '';
 
@@ -22,6 +58,9 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
     }
 
     final preferencesAsync = ref.watch(discoveryPreferencesProvider(userId));
+    final suggestionsAsync = ref.watch(friendSuggestionsProvider);
+    final preferences =
+        preferencesAsync.valueOrNull ?? DiscoveryPreferences(userId: userId);
 
     return Scaffold(
       appBar: AppBar(
@@ -30,7 +69,7 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.tune_outlined),
-            onPressed: () => _showFilterSheet(context, ref, userId),
+            onPressed: () => _showFilterSheet(context, userId),
             tooltip: 'Filter Preferences',
           ),
           IconButton(
@@ -40,80 +79,142 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.favorite_outline,
-              size: 64,
-              color: VelvetNoir.primary,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Discovery Coming Soon',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                'Browse profiles and discover connections that match your preferences.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            preferencesAsync.when(
-              data: (prefs) => ElevatedButton.icon(
-                onPressed: () => _showFilterSheet(context, ref, userId),
-                icon: const Icon(Icons.tune),
-                label: const Text('Set Preferences'),
-              ),
-              loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const Text('Error loading preferences'),
-            ),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: VelvetNoir.surface.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: VelvetNoir.primary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    '✨ New Features Available',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• Photo Messaging\n• Online Status\n• Match History\n• Read Receipts',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      body: suggestionsAsync.when(
+        loading: () => const AppLoadingView(label: 'Finding people'),
+        error: (error, _) => AppErrorView(
+          error: error,
+          fallbackContext: 'Unable to load Discovery.',
+          onRetry: _refresh,
         ),
+        data: (suggestions) {
+          final candidates = suggestions
+              .where((user) => !_sentUserIds.contains(user.id))
+              .where((user) => matchesDiscoveryPreferences(user, preferences))
+              .toList(growable: false);
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 1050
+                    ? 3
+                    : constraints.maxWidth >= 680
+                        ? 2
+                        : 1;
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _DiscoverySummary(
+                        preferences: preferences,
+                        resultCount: candidates.length,
+                        onEditFilters: () => _showFilterSheet(context, userId),
+                      ),
+                    ),
+                    if (candidates.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: AppEmptyView(
+                          title: 'No new people right now',
+                          message:
+                              'Try broader filters or pull down to refresh.',
+                          icon: Icons.people_outline,
+                          action: FilledButton.icon(
+                            onPressed: () => _showFilterSheet(context, userId),
+                            icon: const Icon(Icons.tune),
+                            label: const Text('Adjust filters'),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                        sliver: SliverGrid.builder(
+                          itemCount: candidates.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 178,
+                          ),
+                          itemBuilder: (context, index) {
+                            final candidate = candidates[index];
+                            final busy = _busyUserIds.contains(candidate.id);
+                            return SocialUserCard(
+                              displayName: candidate.username,
+                              username:
+                                  '@${candidate.username.toLowerCase().replaceAll(' ', '')}',
+                              avatarUrl: candidate.avatarUrl,
+                              statusText:
+                                  candidate.location?.trim().isNotEmpty == true
+                                      ? candidate.location!
+                                      : 'Open profile to learn more',
+                              presenceState: ProfilePresenceState.offline,
+                              primaryLabel: 'View profile',
+                              onPrimaryPressed: () =>
+                                  context.push('/profile/${candidate.id}'),
+                              secondaryLabel: busy ? 'Sending...' : 'Connect',
+                              onSecondaryPressed: busy
+                                  ? () {}
+                                  : () => _sendRequest(
+                                        userId,
+                                        candidate.id,
+                                        candidate.username,
+                                      ),
+                              onTap: () =>
+                                  context.push('/profile/${candidate.id}'),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _sendRequest(
+    String currentUserId,
+    String candidateId,
+    String candidateName,
+  ) async {
+    setState(() => _busyUserIds.add(candidateId));
+    try {
+      await ref
+          .read(friendServiceProvider)
+          .sendFriendRequest(currentUserId, candidateId);
+      if (!mounted) return;
+      setState(() => _sentUserIds.add(candidateId));
+      ref.invalidate(friendSuggestionsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Friend request sent to $candidateName.')),
+      );
+    } catch (error, stackTrace) {
+      reportError(error, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not send this friend request. Try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busyUserIds.remove(candidateId));
+      }
+    }
+  }
+
+  Future<void> _refresh() async {
+    ref.invalidate(friendSuggestionsProvider);
+    final userId = ref.read(userProvider)?.id;
+    if (userId != null && userId.isNotEmpty) {
+      ref.invalidate(discoveryPreferencesProvider(userId));
+    }
+    await ref.read(friendSuggestionsProvider.future);
   }
 
   void _showInfo(BuildContext context) {
@@ -125,11 +226,11 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('💚 Like — Show interest and start chatting if they like you back'),
+            Text('👤 View profiles before deciding to connect'),
             SizedBox(height: 12),
-            Text('👋 Pass — Skip to the next profile'),
+            Text('🤝 Connect — Send a friend request'),
             SizedBox(height: 12),
-            Text('Set your preferences to find people you\'ll connect with.'),
+            Text('Use filters to focus on people with shared interests.'),
           ],
         ),
         actions: [
@@ -142,22 +243,88 @@ class PersistentDiscoveryScreen extends ConsumerWidget {
     );
   }
 
-  void _showFilterSheet(BuildContext context, WidgetRef ref, String userId) {
-    final preferencesAsync = ref.watch(discoveryPreferencesProvider(userId));
-
-    preferencesAsync.whenData((prefs) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => DiscoveryFilterSheet(
-          userId: userId,
-          preferences: prefs,
-          onApply: () {
-            ref.invalidate(discoveryPreferencesProvider(userId));
-          },
-        ),
+  void _showFilterSheet(BuildContext context, String userId) {
+    final preferences =
+        ref.read(discoveryPreferencesProvider(userId)).valueOrNull;
+    if (preferences == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Discovery filters are still loading.')),
       );
-    });
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DiscoveryFilterSheet(
+        userId: userId,
+        preferences: preferences,
+        onApply: () {
+          ref.invalidate(discoveryPreferencesProvider(userId));
+          ref.invalidate(friendSuggestionsProvider);
+        },
+      ),
+    );
+  }
+}
+
+class _DiscoverySummary extends StatelessWidget {
+  const _DiscoverySummary({
+    required this.preferences,
+    required this.resultCount,
+    required this.onEditFilters,
+  });
+
+  final DiscoveryPreferences preferences;
+  final int resultCount;
+  final VoidCallback onEditFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    final interestText = preferences.interestTags.isEmpty
+        ? 'all interests'
+        : preferences.interestTags.take(3).join(', ');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VelvetNoir.surfaceHigh,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: VelvetNoir.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: VelvetNoir.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$resultCount people to discover',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Ages ${preferences.minAge}-${preferences.maxAge} · $interestText',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: onEditFilters,
+                icon: const Icon(Icons.tune, size: 18),
+                label: const Text('Filters'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

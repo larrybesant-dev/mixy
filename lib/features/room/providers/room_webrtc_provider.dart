@@ -1,7 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../config/agora_constants.dart';
 import '../../../services/rtc_room_service.dart';
 import '../../../services/connection_recovery_handler.dart';
+import '../../../core/telemetry/launch_monitoring.dart';
 import '../controllers/webrtc_controller.dart';
+import '../room_controller.dart';
+import '../room_permissions.dart';
+import '../repository/room_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
 import 'connection_recovery_provider.dart';
 
@@ -48,10 +54,12 @@ class RoomWebRTCState {
       userId: userId ?? this.userId,
       isConnected: isConnected ?? this.isConnected,
       remoteUserUids: remoteUserUids ?? this.remoteUserUids,
-      isLocalVideoCapturing: isLocalVideoCapturing ?? this.isLocalVideoCapturing,
+      isLocalVideoCapturing:
+          isLocalVideoCapturing ?? this.isLocalVideoCapturing,
       isLocalAudioMuted: isLocalAudioMuted ?? this.isLocalAudioMuted,
       connectionState: connectionState ?? this.connectionState,
-      reconnectAttemptCount: reconnectAttemptCount ?? this.reconnectAttemptCount,
+      reconnectAttemptCount:
+          reconnectAttemptCount ?? this.reconnectAttemptCount,
       service: service ?? this.service,
       error: error ?? this.error,
     );
@@ -60,7 +68,8 @@ class RoomWebRTCState {
 
 /// Family-based provider: Creates and manages WebRTC service for a specific room
 /// Usage: ref.watch(roomWebRTCProvider(roomId))
-final roomWebRTCProvider = FutureProvider.family<RoomWebRTCState, String>((ref, roomId) async {
+final roomWebRTCProvider =
+    FutureProvider.family<RoomWebRTCState, String>((ref, roomId) async {
   final authState = ref.watch(authControllerProvider);
   final webrtcController = ref.watch(webrtcControllerProvider);
 
@@ -111,7 +120,8 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
 
   void _setupCallbacks(RtcRoomService service) {
     service.onLocalVideoCaptureChanged = () {
-      state = state?.copyWith(isLocalVideoCapturing: service.isLocalVideoCapturing);
+      state =
+          state?.copyWith(isLocalVideoCapturing: service.isLocalVideoCapturing);
     };
 
     service.onRemoteUserJoined = () {
@@ -125,43 +135,33 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     /// When connection is lost, trigger automatic recovery via the recovery handler
     service.onConnectionLost = () {
       state = state?.copyWith(isConnected: false);
-      
+
       // Trigger recovery handler with reconnection logic
       final recoveryNotifier = ref.read(connectionRecoveryProvider.notifier);
-      
+
       // Define what "reconnect" means: attempt to re-establish the connection
       // by calling joinRoom again on the service
       Future<void> reconnectAction() async {
         if (state?.service == null) {
           throw Exception('Service not available for reconnection');
         }
-        
+
         final svc = state!.service!;
         // Re-join the channel to re-establish signaling and peer connections
         // Note: joinRoom is idempotent - calling it again will restart the connection
-        final currentUserId = state!.userId;
-        final channelId = roomId;
-        
-        // Calculate a stable UID from userId (same logic as WebRtcRoomService)
-        int uid = 0;
-        for (final c in currentUserId.codeUnits) {
-          uid = (uid * 31 + c) & 0x7FFFFFFF;
-        }
-        if (uid == 0) uid = 1;
-        
-        await svc.joinRoom(
-          '',
-          channelId,
-          uid,
+        await _joinService(
+          svc,
           publishCameraTrackOnJoin: service.isLocalVideoCapturing,
           publishMicrophoneTrackOnJoin: !service.isLocalAudioMuted,
         );
       }
-      
-      recoveryNotifier.beginRecovery(
-        onReconnect: reconnectAction,
-        errorMessage: 'Connection lost. Attempting recovery...',
-      ).ignore(); // Fire and forget; recovery runs in background
+
+      recoveryNotifier
+          .beginRecovery(
+            onReconnect: reconnectAction,
+            errorMessage: 'Connection lost. Attempting recovery...',
+          )
+          .ignore(); // Fire and forget; recovery runs in background
     };
 
     /// Wire connection recovery state changes so UI can observe recovery progress
@@ -172,6 +172,18 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
         // Auto-transition isConnected based on final state
         isConnected: newState == RtcConnectionState.connected,
       );
+      if (newState == RtcConnectionState.failed) {
+        LaunchMonitoring.record(
+          action: LaunchMonitoring.rtcRecoveryExhausted,
+          message: 'RTC recovery attempts were exhausted.',
+          roomId: roomId,
+          userId: state?.userId,
+          result: 'failed',
+          metadata: <String, Object?>{
+            'attempt_count': service.reconnectAttemptCount,
+          },
+        );
+      }
     };
   }
 
@@ -184,6 +196,32 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     return uid;
   }
 
+  Future<void> _joinService(
+    RtcRoomService service, {
+    required bool publishCameraTrackOnJoin,
+    required bool publishMicrophoneTrackOnJoin,
+  }) async {
+    final uid = _stableUidFromUserId(state!.userId);
+    var token = '';
+    if (!kIsWeb) {
+      final credentials =
+          await ref.read(roomRepositoryProvider).fetchAgoraToken(
+                channelName: roomId,
+                rtcUid: uid,
+                fallbackAppId: AgoraConstants.appId,
+              );
+      await service.initialize(credentials.appId);
+      token = credentials.token;
+    }
+    await service.joinRoom(
+      token,
+      roomId,
+      uid,
+      publishCameraTrackOnJoin: publishCameraTrackOnJoin,
+      publishMicrophoneTrackOnJoin: publishMicrophoneTrackOnJoin,
+    );
+  }
+
   Future<void> _ensureJoinedChannel() async {
     if (state?.service == null) return;
     final service = state!.service!;
@@ -194,11 +232,8 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
       return;
     }
 
-    final uid = _stableUidFromUserId(state!.userId);
-    await service.joinRoom(
-      '',
-      roomId,
-      uid,
+    await _joinService(
+      service,
       publishCameraTrackOnJoin: false,
       publishMicrophoneTrackOnJoin: false,
     );
@@ -235,9 +270,13 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     try {
       await _ensureJoinedChannel();
       final service = state!.service!;
+      final canBroadcastAudio = RoomPermissions.canBroadcastAudio(
+        userId: state!.userId,
+        speakerIds: ref.read(roomControllerProvider(roomId)).speakerIds,
+      );
       await service.enableVideo(
         enabled,
-        publishMicrophoneTrack: !service.isLocalAudioMuted,
+        publishMicrophoneTrack: canBroadcastAudio && !service.isLocalAudioMuted,
       );
       state = state?.copyWith(
         isConnected: true,
@@ -250,13 +289,36 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     }
   }
 
-  Future<void> toggleAudio(bool enabled) async {
+  Future<void> switchCamera() async {
+    final service = state?.service;
+    if (service == null || !service.supportsCameraSwitch) {
+      throw UnsupportedError('Camera switching is not available');
+    }
+    await service.switchCamera();
+  }
+
+  Future<void> toggleAudio(
+    bool enabled, {
+    bool micClaimConfirmed = false,
+  }) async {
     if (state?.service == null) return;
 
     try {
+      if (enabled &&
+          !micClaimConfirmed &&
+          !RoomPermissions.canBroadcastAudio(
+            userId: state!.userId,
+            speakerIds: ref.read(roomControllerProvider(roomId)).speakerIds,
+          )) {
+        throw StateError(
+          'Only the mic holder and invited speakers can broadcast audio.',
+        );
+      }
       await _ensureJoinedChannel();
       final service = state!.service!;
-      await service.mute(!enabled);
+      await service.syncAudio(
+        enabled ? RoomAudioState.speaking : RoomAudioState.muted,
+      );
       state = state?.copyWith(
         isConnected: true,
         isLocalAudioMuted: service.isLocalAudioMuted,
@@ -272,12 +334,39 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
     if (state?.service == null) return;
 
     try {
+      if (enabled &&
+          !RoomPermissions.canShareAudio(
+            userId: state!.userId,
+            speakerIds: ref.read(roomControllerProvider(roomId)).speakerIds,
+            isMicEnabled: !state!.service!.isLocalAudioMuted,
+          )) {
+        throw StateError(
+          'Turn on an authorized microphone before sharing audio.',
+        );
+      }
+
       await state!.service!.shareSystemAudio(enabled);
       // No state change needed - the UI watches isSharingSystemAudio on the service
     } catch (e) {
       state = state?.copyWith(error: 'Failed to toggle system audio: $e');
       rethrow;
     }
+  }
+
+  Future<void> setMicOutputVolume(double volume) async {
+    await state?.service?.setMicVolume(volume);
+  }
+
+  Future<void> setSharedAudioOutputVolume(double volume) async {
+    await state?.service?.setSharedAudioVolume(volume);
+  }
+
+  Future<void> setRoomOutputMuted(bool muted) async {
+    final service = state?.service;
+    if (service == null) {
+      throw StateError('Room audio is not connected.');
+    }
+    await service.setSpeakerVolume(muted ? 0.0 : 1.0);
   }
 
   Future<void> disconnect() async {
@@ -293,9 +382,8 @@ class RoomWebRTCNotifier extends StateNotifier<RoomWebRTCState?> {
 }
 
 /// StateNotifier provider for managing active WebRTC session
-final activeRoomWebRTCProvider = StateNotifierProvider.autoDispose.family<
-    RoomWebRTCNotifier,
-    RoomWebRTCState?,
-    String>((ref, roomId) {
+final activeRoomWebRTCProvider =
+    StateNotifierProvider.family<RoomWebRTCNotifier, RoomWebRTCState?, String>(
+        (ref, roomId) {
   return RoomWebRTCNotifier(ref, roomId);
 });

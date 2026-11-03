@@ -68,7 +68,7 @@ jobs:
   production-suite:
     runs-on: ubuntu-latest
     needs: test
-    if: always()
+    if: success()
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -90,7 +90,6 @@ jobs:
         run: npx playwright test e2e/06-critical-user-flows.spec.ts --project=chromium --reporter=html
         env:
           PLAYWRIGHT_LIVE_URL: https://mixvy-v2.web.app
-        continue-on-error: true
 
       - name: Upload test report
         uses: actions/upload-artifact@v4

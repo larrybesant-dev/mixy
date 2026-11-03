@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/firebase_providers.dart';
 import '../../features/auth/controllers/auth_controller.dart';
+import '../../features/feed/providers/user_providers.dart' as feed_user;
 import '../../features/profile/profile_controller.dart';
 import '../../models/user_model.dart';
 
@@ -65,9 +66,8 @@ String resolvePublicUsername({
     return 'MixVy Member';
   }
 
-  final compactUid = normalizedUid
-      .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
-      .toUpperCase();
+  final compactUid =
+      normalizedUid.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
   final suffix = compactUid.isEmpty
       ? ''
       : compactUid.substring(0, compactUid.length < 4 ? compactUid.length : 4);
@@ -92,7 +92,7 @@ String resolvePublicUsername({
 final userProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authControllerProvider);
   final profileState = ref.watch(profileControllerProvider);
-  
+
   final uid = authState.uid;
   if (uid == null || uid.isEmpty) {
     return null;
@@ -100,28 +100,32 @@ final userProvider = Provider<UserModel?>((ref) {
 
   // Watch displayName from RTDB as an AsyncValue from the canonical source.
   final displayNameAsync = ref.watch(displayNameLiveProvider(uid));
+  final persistedProfile = ref.watch(feed_user.userProvider(uid)).valueOrNull;
 
   // Extract the actual displayName value from AsyncValue.
   final rtdbDisplayName = displayNameAsync.maybeWhen(
     data: (name) => name,
     orElse: () => null,
   );
+  final profileUsername = profileState.username?.trim() ?? '';
+  final profileEmail = profileState.email?.trim() ?? '';
 
-  // Build resolved username: RTDB displayName takes priority.
-  final resolvedUsername = rtdbDisplayName ??
-      resolvePublicUsername(
-        uid: uid,
-        profileUsername: profileState.username,
-        authDisplayName: null,
-      );
+  // Prefer a real RTDB name, but never let a generated placeholder hide the
+  // persisted profile username.
+  final resolvedUsername = getDisplayName(
+    uid: uid,
+    resolvedDisplayName: rtdbDisplayName,
+    profileUsername: profileUsername.isNotEmpty
+        ? profileUsername
+        : persistedProfile?.username,
+  );
 
-  // Use avatar if it belongs to the current user; otherwise fall back to the
-  // signed-in account's Google photo so the UI does not show a placeholder.
+  // Use avatar if it belongs to the current user.
   final profileAvatarFromState =
       (profileState.userId == uid || profileState.userId == null) &&
-          (profileState.avatarUrl?.isNotEmpty == true)
-      ? profileState.avatarUrl
-      : null;
+              (profileState.avatarUrl?.isNotEmpty == true)
+          ? profileState.avatarUrl
+          : persistedProfile?.avatarUrl;
   final authUser = ref.watch(firebaseAuthProvider).currentUser;
   final authPhotoUrl = authUser?.uid == uid ? authUser?.photoURL : null;
   final profileAvatar = profileAvatarFromState ??
@@ -129,13 +133,12 @@ final userProvider = Provider<UserModel?>((ref) {
 
   return UserModel(
     id: uid,
-    email: profileState.email ?? '',
+    email:
+        profileEmail.isNotEmpty ? profileEmail : persistedProfile?.email ?? '',
     username: resolvedUsername,
     avatarUrl: profileAvatar,
-    createdAt: DateTime.now(),
+    createdAt: persistedProfile?.createdAt ?? DateTime.now(),
+    statusMessage: persistedProfile?.statusMessage,
+    messengerStatus: persistedProfile?.messengerStatus ?? 'online',
   );
 });
-
-
-
-

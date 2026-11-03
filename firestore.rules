@@ -18,6 +18,11 @@ service cloud.firestore {
       return signedIn() && uid() == userId;
     }
 
+    // Signaling pair ids are "id1_id2"; the requester must be one of the two segments.
+    function isPairMember(pairId) {
+      return pairId.matches(uid() + '_.*') || pairId.matches('.*_' + uid());
+    }
+
     function isParticipant(data) {
       return signedIn() && data.users is list && data.users.hasAny([uid()]);
     }
@@ -109,7 +114,6 @@ service cloud.firestore {
 
     function isConversationParticipant(convData) {
       return signedIn()
-        && convData.participantIds is list
         && convData.participantIds.hasAny([uid()]);
     }
 
@@ -203,8 +207,21 @@ service cloud.firestore {
         'profileBgGradientStart',
         'profileBgGradientEnd',
         'profileMusicUrl',
-        'profileMusicTitle'
+        'profileMusicTitle',
+        'statusMessage',
+        'messengerStatus'
       ];
+    }
+
+    function validMessengerProfile(data) {
+      return (
+          !('statusMessage' in data)
+          || (data.statusMessage is string && data.statusMessage.size() <= 80)
+        )
+        && (
+          !('messengerStatus' in data)
+          || data.messengerStatus in ['online', 'away', 'dnd']
+        );
     }
 
     function userCreateValid(userId) {
@@ -212,6 +229,7 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.uid == uid()
         && request.resource.data.keys().hasAny(['createdAt', 'updatedAt'])
+        && validMessengerProfile(request.resource.data)
         // Server timestamps are set after rule evaluation; allow their presence
         && !request.resource.data.keys().hasAny(restrictedUserFields());
     }
@@ -220,7 +238,91 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedSelfUserFields())
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(restrictedUserFields())
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.uid == uid();
+        && request.resource.data.uid == uid()
+        && validMessengerProfile(request.resource.data);
+    }
+
+    function validDatingPreferences(data) {
+      return data.keys().hasOnly([
+          'lookingFor',
+          'minAge',
+          'maxAge',
+          'maxDistanceKm',
+          'distanceUnit',
+          'race',
+          'sexuality',
+          'preferredRaces',
+          'preferredSexualities',
+          'latitude',
+          'longitude',
+          'updatedAt'
+        ])
+        && data.lookingFor is list
+        && data.lookingFor.hasOnly(['Woman', 'Man', 'Non-binary'])
+        && data.minAge is int
+        && data.minAge >= 18
+        && data.minAge <= 99
+        && data.maxAge is int
+        && data.maxAge >= data.minAge
+        && data.maxAge <= 99
+        && (data.maxDistanceKm == null
+          || (data.maxDistanceKm is number
+            && data.maxDistanceKm >= 1
+            && data.maxDistanceKm <= 500))
+        && data.distanceUnit in ['km', 'mi']
+        && (data.race == null
+          || data.race in [
+            'Asian',
+            'Black',
+            'Hispanic/Latino',
+            'Middle Eastern',
+            'Mixed',
+            'South Asian',
+            'White',
+            'Other'
+          ])
+        && (data.sexuality == null
+          || data.sexuality in [
+            'Straight',
+            'Gay',
+            'Lesbian',
+            'Bisexual',
+            'Pansexual',
+            'Queer',
+            'Asexual',
+            'Other'
+          ])
+        && data.preferredRaces is list
+        && data.preferredRaces.hasOnly([
+          'Asian',
+          'Black',
+          'Hispanic/Latino',
+          'Middle Eastern',
+          'Mixed',
+          'South Asian',
+          'White',
+          'Other'
+        ])
+        && data.preferredSexualities is list
+        && data.preferredSexualities.hasOnly([
+          'Straight',
+          'Gay',
+          'Lesbian',
+          'Bisexual',
+          'Pansexual',
+          'Queer',
+          'Asexual',
+          'Other'
+        ])
+        && (data.latitude == null
+          || (data.latitude is number
+            && data.latitude >= -90
+            && data.latitude <= 90))
+        && (data.longitude == null
+          || (data.longitude is number
+            && data.longitude >= -180
+            && data.longitude <= 180))
+        && data.updatedAt is timestamp;
     }
 
     match /users/{userId} {
@@ -291,6 +393,11 @@ service cloud.firestore {
           && resource.data.userId == uid();
       }
 
+      match /top_friends/{friendId} {
+        allow read: if isSelf(userId);
+        allow write: if false;
+      }
+
       match /following/{docId} {
         allow read, create, delete: if isSelf(userId);
         allow update: if false;
@@ -310,6 +417,24 @@ service cloud.firestore {
         allow update: if false;
       }
 
+      match /discovery/{candidateId} {
+        allow read: if isSelf(userId);
+        allow create, update: if isSelf(userId)
+          && request.resource.data.candidateId == candidateId
+          && request.resource.data.isLike is bool
+          && request.resource.data.createdAt is timestamp;
+        allow delete: if isSelf(userId);
+      }
+
+      match /profileViews/{viewId} {
+        allow read, delete: if isSelf(userId);
+        allow create: if signedIn()
+          && request.resource.data.viewerId == uid()
+          && request.resource.data.viewedUserId == userId
+          && request.resource.data.createdAt is timestamp;
+        allow update: if false;
+      }
+
       match /privacy/{docId} {
         allow read: if isSelf(userId);
         allow create, update: if isSelf(userId);
@@ -322,9 +447,35 @@ service cloud.firestore {
         allow write: if false; // Cloud Function only
       }
 
+      // Dating filter preferences (race, sexuality, location): owner-only.
+      // Other users never read these; the speed dating functions use admin access.
+      match /private/dating {
+        allow read, delete: if isSelf(userId);
+        allow create, update: if isSelf(userId)
+          && validDatingPreferences(request.resource.data);
+      }
+
+      match /private/{docId} {
+        allow read, write: if false;
+      }
+
+      // Discovery preferences (users/{uid}/settings/discoveryPreferences): owner-only.
+      match /settings/{docId} {
+        allow read, write: if isSelf(userId);
+      }
+
       match /{document=**} {
         allow read, write: if false;
       }
+    }
+
+    match /{path=**}/stories/{storyId} {
+      allow read: if signedIn();
+    }
+
+    match /{path=**}/discovery/{candidateId} {
+      allow read: if signedIn()
+        && resource.data.candidateId == uid();
     }
 
     // ---------------------------------------------------------------------
@@ -366,6 +517,29 @@ service cloud.firestore {
     // Rooms: auth/adult gating + strict mutation controls
     // ---------------------------------------------------------------------
 
+    function hasActiveCreatorSubscription(creatorId) {
+      let subscriptionPath = /databases/$(database)/documents/creator_subscriptions/$(uid() + '_' + creatorId);
+      return signedIn()
+        && creatorId is string
+        && creatorId.size() > 0
+        && exists(subscriptionPath)
+        && get(subscriptionPath).data.creatorId == creatorId
+        && get(subscriptionPath).data.subscriberId == uid()
+        && get(subscriptionPath).data.status in ['active', 'trialing']
+        && get(subscriptionPath).data.terminal != true;
+    }
+
+    function canJoinRoom(roomData) {
+      return signedIn()
+        && (
+          !('subscriberOnly' in roomData)
+          || roomData.subscriberOnly != true
+          || roomData.hostId == uid()
+          || isAdmin()
+          || hasActiveCreatorSubscription(roomData.creatorId)
+        );
+    }
+
     function validRoomCreate() {
       return request.resource.data.keys().hasOnly([
           'name',
@@ -381,6 +555,8 @@ service cloud.firestore {
           'isLive',
           'endedAt',
           'isAdult',
+          'subscriberOnly',
+          'creatorId',
           'allowGuestAccess',
           'thumbnailUrl',
           'createdAt',
@@ -426,6 +602,18 @@ service cloud.firestore {
         )
         && request.resource.data.isLive is bool
         && request.resource.data.isAdult is bool
+        && (
+          !('subscriberOnly' in request.resource.data)
+          || request.resource.data.subscriberOnly is bool
+        )
+        && (
+          !('subscriberOnly' in request.resource.data)
+          || !request.resource.data.subscriberOnly
+          || (
+            request.resource.data.isAdult
+            && request.resource.data.creatorId == uid()
+          )
+        )
         && (!request.resource.data.isAdult || isAdultVerified(uid()))
         && request.resource.data.memberCount is int
         && request.resource.data.memberCount >= 0
@@ -478,7 +666,8 @@ service cloud.firestore {
           'updatedAt',
           'isLocked',
           'isAdult',
-          'photoCount'
+          'photoCount',
+          'spotlightUserId'
         ])
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.hostId == resource.data.hostId;
@@ -501,14 +690,25 @@ service cloud.firestore {
           (canManageRoom(resource.data) && validOwnerAdminRoomUpdate())
           ||
           (
-            // Any signed-in user can add/remove themselves from audience/stage during join/leave
-            // Trust Dart validation for room access control
+            // Any signed-in user can add/remove themselves from audience/stage during join/leave.
+            // Only the participant-list fields may change here, so this path cannot
+            // modify admins, moderation lists, lock/slow-mode, or other room settings.
             signedIn()
             && request.resource.data.hostId == resource.data.hostId
             && request.resource.data.ownerId == resource.data.ownerId
             && request.resource.data.name == resource.data.name
             && request.resource.data.isLive == resource.data.isLive
             && request.resource.data.isAdult == resource.data.isAdult
+            && canJoinRoom(resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'audienceUserIds',
+              'audienceUserAvatarUrls',
+              'stageUserIds',
+              'stageUserAvatarUrls',
+              'memberCount',
+              'spotlightUserId',
+              'updatedAt'
+            ])
           )
         );
 
@@ -526,12 +726,14 @@ service cloud.firestore {
         allow create: if signedIn()
           && participantId == uid()
           && request.resource.data.userId == uid()
-          && exists(/databases/$(database)/documents/rooms/$(roomId));
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && canJoinRoom(get(/databases/$(database)/documents/rooms/$(roomId)).data);
 
 
         allow update: if signedIn()
           && participantId == uid()
           && request.resource.data.userId == uid()
+          && canJoinRoom(get(/databases/$(database)/documents/rooms/$(roomId)).data)
           && request.resource.data.role == resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'userId',
@@ -575,7 +777,8 @@ service cloud.firestore {
         // RELAXED: Simplified rules to debug join issues
         allow create, update: if signedIn()
           && memberId == uid()
-          && exists(/databases/$(database)/documents/rooms/$(roomId));
+          && exists(/databases/$(database)/documents/rooms/$(roomId))
+          && canJoinRoom(get(/databases/$(database)/documents/rooms/$(roomId)).data);
         allow delete: if signedIn() && (memberId == uid() || isAdmin());
       }
 
@@ -640,6 +843,52 @@ service cloud.firestore {
             && canReadRoomById(roomId)
             && reactionId == uid();
         }
+
+      }
+
+      match /whispers/{whisperId} {
+        allow read: if signedIn()
+          && uid() in resource.data.participantIds;
+
+        allow create: if signedIn()
+          && isRoomParticipant(roomId, uid())
+          && request.resource.data.keys().hasOnly([
+            'id',
+            'roomId',
+            'senderId',
+            'senderName',
+            'recipientId',
+            'recipientName',
+            'participantIds',
+            'content',
+            'createdAt',
+            'clientSentAt'
+          ])
+          && request.resource.data.id == whisperId
+          && request.resource.data.roomId == roomId
+          && request.resource.data.senderId == uid()
+          && request.resource.data.recipientId is string
+          && request.resource.data.recipientId != uid()
+          && request.resource.data.participantIds is list
+          && request.resource.data.participantIds.size() == 2
+          && (
+            (
+              request.resource.data.participantIds[0] == uid()
+              && request.resource.data.participantIds[1]
+                == request.resource.data.recipientId
+            )
+            ||
+            (
+              request.resource.data.participantIds[1] == uid()
+              && request.resource.data.participantIds[0]
+                == request.resource.data.recipientId
+            )
+          )
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.createdAt is timestamp;
+
+        allow update, delete: if false;
       }
 
       match /typing/{typingUserId} {
@@ -985,6 +1234,7 @@ service cloud.firestore {
             'senderName',
             'senderAvatarUrl',
             'content',
+            'type',
             'clientMessageId',
             'clientmessageId',
             'createdAt',
@@ -993,6 +1243,10 @@ service cloud.firestore {
             'isDeleted',
             'readBy'
           ])
+          && (
+            !('type' in request.resource.data)
+            || request.resource.data.type in ['normal', 'buzz']
+          )
           && request.resource.data.conversationId == conversationId
           && request.resource.data.senderId == uid()
           && request.resource.data.createdAt is timestamp
@@ -1139,6 +1393,30 @@ service cloud.firestore {
     }
 
     match /entitlement_events/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /creator_subscription_settings/{creatorId} {
+      allow read: if isSelf(creatorId) || isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /creator_subscriptions/{subscriptionId} {
+      allow read: if signedIn()
+        && (
+          resource.data.subscriberId == uid()
+          || resource.data.creatorId == uid()
+          || isAdmin()
+        );
+      allow create, update, delete: if false;
+    }
+
+    match /creator_subscriber_updates/{updateId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /creator_subscriber_update_reports/{reportId} {
       allow read: if isAdmin();
       allow create, update, delete: if false;
     }
@@ -1356,7 +1634,13 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.authorId == uid()
         && request.resource.data.content is string
-        && request.resource.data.content.size() > 0
+        && (
+          request.resource.data.content.size() > 0
+          || (request.resource.data.imageUrl is string
+            && request.resource.data.imageUrl.size() > 0)
+          || (request.resource.data.videoUrl is string
+            && request.resource.data.videoUrl.size() > 0)
+        )
         && request.resource.data.createdAt is timestamp
         && request.resource.data.likeCount is int
         && request.resource.data.commentCount is int
@@ -1503,6 +1787,17 @@ service cloud.firestore {
         allow read: if signedIn() && canReadRoomById(sessionId);
         // docId is "id1_id2", check if uid is one of them.
         allow write: if signedIn() && canReadRoomById(sessionId) && docId.matches('.*' + uid() + '.*');
+
+        // One message per offer/answer/renegotiation, so signals are never overwritten.
+        match /messages/{messageId} {
+          allow read: if signedIn() && canReadRoomById(sessionId) && isPairMember(docId);
+          allow create: if signedIn() && canReadRoomById(sessionId) && isPairMember(docId)
+            && request.resource.data.senderId == uid()
+            && request.resource.data.type in ['offer', 'answer']
+            && request.resource.data.keys().hasOnly(['senderId', 'type', 'sdp', 'timestamp']);
+          // Either peer deletes messages after applying them, and the offerer clears stale ones.
+          allow delete: if signedIn() && canReadRoomById(sessionId) && isPairMember(docId);
+        }
       }
     }
 
@@ -1511,4 +1806,3 @@ service cloud.firestore {
     }
   }
 }
-

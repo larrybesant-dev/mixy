@@ -2,6 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mixvy/core/routing/redirect_logic.dart';
 
 void main() {
+  group('initialRouterLocation', () {
+    test('preserves path, query, and fragment from a cold-start URL', () {
+      final location = initialRouterLocation(
+        '/profile/social?tab=requests#incoming',
+      );
+
+      expect(location, '/profile/social?tab=requests#incoming');
+    });
+
+    test('uses root when the platform route is empty', () {
+      expect(initialRouterLocation(''), '/');
+    });
+  });
+
   group('evaluateAppRedirect', () {
     test('returns null while auth is loading', () {
       final result = evaluateAppRedirect(
@@ -61,6 +75,24 @@ void main() {
       );
 
       expect(result, isNull);
+    });
+
+    test('allows signed-out users to use public information routes', () {
+      for (final location in const [
+        '/legal/terms',
+        '/legal/privacy',
+        '/support',
+      ]) {
+        final result = evaluateAppRedirect(
+          matchedLocation: location,
+          uid: null,
+          authLoading: false,
+          legalStateResolved: true,
+          hasAcceptedLegal: false,
+        );
+
+        expect(result, isNull, reason: location);
+      }
     });
 
     test('routes signed-out users away from onboarding route', () {

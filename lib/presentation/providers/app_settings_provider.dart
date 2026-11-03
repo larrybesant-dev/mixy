@@ -9,11 +9,11 @@ final appSettingsServiceProvider = Provider<AppSettingsService>((ref) {
 
 final appSettingsControllerProvider =
     StateNotifierProvider<AppSettingsController, AsyncValue<AppSettings>>((
-      ref,
-    ) {
-      final service = ref.watch(appSettingsServiceProvider);
-      return AppSettingsController(service)..load();
-    });
+  ref,
+) {
+  final service = ref.watch(appSettingsServiceProvider);
+  return AppSettingsController(service)..load();
+});
 
 class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   AppSettingsController(this._service) : super(const AsyncValue.loading());
@@ -51,6 +51,18 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
   Future<void> setAnalyticsEnabled(bool enabled) {
     return _saveWith(
       (settings) => settings.copyWith(analyticsEnabled: enabled),
+    );
+  }
+
+  Future<void> setMessengerSoundsEnabled(bool enabled) {
+    return _saveWith(
+      (settings) => settings.copyWith(messengerSoundsEnabled: enabled),
+    );
+  }
+
+  Future<void> setMessengerBuzzEnabled(bool enabled) {
+    return _saveWith(
+      (settings) => settings.copyWith(messengerBuzzEnabled: enabled),
     );
   }
 
@@ -92,6 +104,3 @@ class AppSettingsController extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 }
-
-
-

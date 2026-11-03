@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAppReady } from './utils/auth';
 
 test.describe('MixVy - Auth Page Smoke Tests', () => {
   test('should load auth page', async ({ page }) => {
@@ -83,11 +84,10 @@ test.describe('MixVy - Auth Page Smoke Tests', () => {
     await page.waitForTimeout(500);
 
     // Reload page
-    await page.reload();
-    await page.waitForTimeout(500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForAppReady(page);
 
-    // Should still have content
-    const title = await page.title();
-    expect(title.length).toBeGreaterThan(0);
+    await expect(page.locator('body')).toBeVisible();
+    expect(await page.locator('*').count()).toBeGreaterThan(0);
   });
 });

@@ -7,7 +7,9 @@ import '../../../core/theme.dart';
 import '../../../models/user_model.dart';
 import '../../../presentation/providers/user_provider.dart';
 import '../../../services/notification_service.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../../messaging/providers/messaging_provider.dart';
+import '../../messaging/providers/messenger_window_provider.dart';
 import '../models/friend_roster_entry.dart';
 import '../providers/friends_providers.dart';
 import '../widgets/friend_tile.dart';
@@ -44,18 +46,15 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
     final myRoomId = myPresence?.inRoom;
 
     return rosterAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: VelvetNoir.primary),
+      loading: () => AppBoundedLoadingView(
+        fallbackContext: 'your friends',
+        label: 'Loading friends',
+        onRetry: () => ref.invalidate(friendRosterProvider),
       ),
-      error: (error, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'Could not load friends right now. Please try again shortly.',
-            style: const TextStyle(color: VelvetNoir.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
-        ),
+      error: (error, _) => AppErrorView(
+        error: error,
+        fallbackContext: 'friends',
+        onRetry: () => ref.invalidate(friendRosterProvider),
       ),
       data: (entries) {
         if (entries.isEmpty) {
@@ -74,8 +73,8 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
         final filtered = q.isEmpty
             ? entries
             : entries
-                  .where((e) => e.user.username.toLowerCase().contains(q))
-                  .toList(growable: false);
+                .where((e) => e.user.username.toLowerCase().contains(q))
+                .toList(growable: false);
 
         final inRoomEntries = filtered
             .where((e) => (e.roomId ?? '').isNotEmpty)
@@ -83,9 +82,8 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
         final onlineEntries = filtered
             .where((e) => e.isOnline && (e.roomId ?? '').isEmpty)
             .toList(growable: false);
-        final recentlyActiveEntries = filtered
-            .where((e) => e.isRecentlyActive)
-            .toList(growable: false);
+        final recentlyActiveEntries =
+            filtered.where((e) => e.isRecentlyActive).toList(growable: false);
         final offlineEntries = filtered
             .where((e) => !e.isOnline && !e.isRecentlyActive)
             .toList(growable: false);
@@ -106,9 +104,9 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
                 child: Text(
                   'Friends',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: VelvetNoir.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
+                        color: VelvetNoir.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -347,18 +345,22 @@ class _FriendsPaneViewState extends ConsumerState<FriendsPaneView> {
     if (currentUser == null) return;
 
     try {
-      final conversationId = await ref
-          .read(messagingControllerProvider)
-          .createDirectConversation(
-            userId1: currentUser.id,
-            user1Name: currentUser.username,
-            user1AvatarUrl: currentUser.avatarUrl,
-            userId2: friend.id,
-            user2Name: friend.username,
-            user2AvatarUrl: friend.avatarUrl,
-          );
+      final conversationId =
+          await ref.read(messagingControllerProvider).createDirectConversation(
+                userId1: currentUser.id,
+                user1Name: currentUser.username,
+                user1AvatarUrl: currentUser.avatarUrl,
+                userId2: friend.id,
+                user2Name: friend.username,
+                user2AvatarUrl: friend.avatarUrl,
+              );
       if (!context.mounted) return;
-      context.go('/chat/$conversationId');
+      presentMessengerConversation(
+        context: context,
+        ref: ref,
+        conversationId: conversationId,
+        title: friend.username,
+      );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -671,6 +673,3 @@ class _EmptySectionLabel extends StatelessWidget {
     );
   }
 }
-
-
-

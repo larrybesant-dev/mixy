@@ -1,26 +1,29 @@
-import 'dart:ui' as ui;                   
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:mixvy/firebase_options.dart'; 
+import 'package:mixvy/firebase_options.dart';
 import 'observability/provider_observer.dart';
 import 'observability/startup_timeline.dart';
 import 'app/app.dart';
 import 'app/boot_state.dart';
 import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
+import 'core/telemetry/launch_monitoring.dart';
+import 'core/telemetry/web_vitals.dart';
 import 'services/diagnostic_logger.dart';
 
 bool get _crashlyticsSupported =>
-  !kIsWeb &&
-  (defaultTargetPlatform == TargetPlatform.android ||
-    defaultTargetPlatform == TargetPlatform.iOS ||
-    defaultTargetPlatform == TargetPlatform.macOS);
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS);
 
 // ignore: unused_element
 const String _appVersion = String.fromEnvironment(
@@ -46,17 +49,21 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('[Firebase] Firebase initialized successfully');
-    
-    // ⚠️ CRITICAL: Firestore settings are managed EXCLUSIVELY by firestoreProvider
-    // in firebase_providers.dart. Configuring settings here causes WebSocket listener
-    // conflicts (net::ERR_ABORTED) because settings are applied twice with different values.
-    // See WEBSOCKET_LISTENER_FIX.md for detailed analysis.
-    //
-    // Removed: if (kIsWeb) { FirebaseFirestore.instance.settings = ... }
-    // This block was causing Firestore real-time listeners to abort during WebSocket handshake.
-    
-    debugPrint('[Firebase] Firestore settings delegated to firestoreProvider (single source of truth)');
-    
+
+    if (kIsWeb) {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: 50 * 1024 * 1024,
+        ignoreUndefinedProperties: true,
+        webExperimentalForceLongPolling: false,
+        webExperimentalAutoDetectLongPolling: true,
+        host: 'firestore.googleapis.com',
+        sslEnabled: true,
+      );
+      startWebVitalsMonitoring();
+      debugPrint('[Firebase] Firestore web transport configured');
+    }
+
     // Setup production logging: Route [MIXVY_DEBUG] logs to Firebase Crashlytics
     // only on platforms where the plugin is available.
     if (!kDebugMode && _crashlyticsSupported) {
@@ -72,8 +79,10 @@ Future<void> main() async {
           );
 
           // Also add to custom keys for dashboard filtering
-          FirebaseCrashlytics.instance.setCustomKey('diagnostic_severity', log.severity);
-          FirebaseCrashlytics.instance.setCustomKey('diagnostic_category', log.category);
+          FirebaseCrashlytics.instance
+              .setCustomKey('diagnostic_severity', log.severity);
+          FirebaseCrashlytics.instance
+              .setCustomKey('diagnostic_category', log.category);
 
           // Log structured metadata if present
           if (log.metadata != null && log.metadata!.isNotEmpty) {
@@ -86,7 +95,8 @@ Future<void> main() async {
           // Never let diagnostics transport failures impact runtime.
         }
       });
-      debugPrint('[Logging] Production handler configured for Firebase Crashlytics');
+      debugPrint(
+          '[Logging] Production handler configured for Firebase Crashlytics');
     } else {
       debugPrint(
         '[Logging] DiagnosticLogger will output to console '
@@ -163,6 +173,13 @@ Future<void> main() async {
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
+    LaunchMonitoring.record(
+      action: LaunchMonitoring.uncaughtError,
+      message: 'Unhandled Flutter framework error.',
+      result: 'framework',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
     Logger.error(
       'Unhandled Flutter framework error',
       error: details.exception,
@@ -172,6 +189,13 @@ Future<void> main() async {
   };
 
   ui.PlatformDispatcher.instance.onError = (error, stackTrace) {
+    LaunchMonitoring.record(
+      action: LaunchMonitoring.uncaughtError,
+      message: 'Unhandled platform error.',
+      result: 'platform',
+      error: error,
+      stackTrace: stackTrace,
+    );
     Logger.error(
       'Unhandled platform error',
       error: error,

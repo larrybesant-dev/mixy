@@ -7,12 +7,17 @@ import 'package:mixvy/features/after_dark/screens/after_dark_age_gate_screen.dar
 import 'package:mixvy/features/after_dark/screens/after_dark_pin_screen.dart';
 import 'package:mixvy/features/after_dark/widgets/after_dark_shell.dart';
 import 'package:mixvy/features/messaging/providers/messaging_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'test_helpers.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+String _dateInput(DateTime date) => '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
 
 Widget _ageGateApp() {
   final router = GoRouter(
@@ -156,6 +161,18 @@ void main() {
       expect(find.textContaining('valid date'), findsOneWidget);
     });
 
+    testWidgets('rejects an invalid calendar date', (tester) async {
+      await tester.pumpWidget(_ageGateApp());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '2020-02-30');
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+
+      expect(find.textContaining('valid date'), findsOneWidget);
+    });
+
     testWidgets('shows under-18 error for young DOB', (tester) async {
       await tester.pumpWidget(_ageGateApp());
       await tester.pumpAndSettle();
@@ -170,6 +187,49 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('18 or older'), findsOneWidget);
+    });
+
+    testWidgets('rejects a date one day before the eighteenth birthday', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final eighteenthBirthday = DateTime(now.year, now.month, now.day);
+      final dateOfBirth = DateTime(
+        eighteenthBirthday.year - 18,
+        eighteenthBirthday.month,
+        eighteenthBirthday.day + 1,
+      );
+
+      await tester.pumpWidget(_ageGateApp());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), _dateInput(dateOfBirth));
+      await tester.ensureVisible(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+
+      expect(find.textContaining('18 or older'), findsOneWidget);
+    });
+
+    testWidgets('accepts the eighteenth birthday', (tester) async {
+      final now = DateTime.now();
+      final dateOfBirth = DateTime(now.year - 18, now.month, now.day);
+
+      await tester.pumpWidget(_ageGateApp());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), _dateInput(dateOfBirth));
+      await tester.ensureVisible(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pin Setup'), findsOneWidget);
     });
 
     testWidgets('shows consent error when checkbox not ticked', (tester) async {
@@ -226,6 +286,47 @@ void main() {
       container.read(afterDarkSessionProvider.notifier).state = true;
       container.read(afterDarkControllerProvider).lock();
       expect(container.read(afterDarkSessionProvider), isFalse);
+    });
+
+    test('PIN setup requires age-gate authorization', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        await container.read(afterDarkControllerProvider).enable('1234'),
+        isFalse,
+      );
+    });
+
+    test('an enabled account cannot overwrite its PIN through setup', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(afterDarkControllerProvider);
+
+      container.read(afterDarkSetupAuthorizedProvider.notifier).state = true;
+      expect(await controller.enable('1234'), isTrue);
+      controller.lock();
+      expect(await controller.enable('5678'), isFalse);
+      expect(await controller.unlock('1234'), isTrue);
+    });
+
+    test('locks PIN verification after repeated invalid attempts', () async {
+      SharedPreferences.setMockInitialValues({
+        'after_dark_pin': 'not-the-entered-pin',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(afterDarkControllerProvider);
+
+      for (var attempt = 0; attempt < 5; attempt++) {
+        expect(await controller.unlock('0000'), isFalse);
+      }
+
+      final lockout = await controller.remainingLockout();
+      expect(lockout, isNotNull);
+      expect(lockout!.inSeconds, greaterThan(0));
     });
   });
 

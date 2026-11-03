@@ -96,7 +96,7 @@ function Section([string]$title) {
 Section 'Static analysis'
 
 Write-Host '  Running flutter analyze...'
-flutter analyze --no-fatal-warnings 2>&1 | Out-Null
+flutter analyze --no-pub --fatal-warnings --no-fatal-infos 2>&1 | Out-Null
 Register-Check 'flutter analyze' ($LASTEXITCODE -eq 0) 1 $true 'see above for errors'
 
 Section 'Architecture guardrails'

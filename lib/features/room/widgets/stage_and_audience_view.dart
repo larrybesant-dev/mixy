@@ -66,10 +66,18 @@ class StageAndAudienceView extends ConsumerWidget {
                     localSpeaking: rtcService?.localSpeaking ?? false,
                     showLocalTile: mediaState.isVideoEnabled,
                     localTile: (rtcService != null) ? rtcService.getLocalView() : const SizedBox.shrink(),
-                    remoteTiles: _buildRemoteTiles(rtcService, roomState),
-                    remoteTileBuilder: (tile) =>
-                        rtcService?.getRemoteView(tile.uid, roomId) ??
-                        const SizedBox.shrink(),
+                    remoteTiles: _buildRemoteTiles(
+                      rtcService,
+                      roomState,
+                      (targetId) => roomControllerState.canViewCamera(
+                        targetUserId: targetId,
+                        viewerUserId: currentUserId,
+                      ),
+                    ),
+                    remoteTileBuilder: (tile) => tile.canView
+                        ? (rtcService?.getRemoteView(tile.uid, roomId) ??
+                            const SizedBox.shrink())
+                        : const _LockedCamTile(),
                     spotlightUserId: roomControllerState.spotlightUserId,
                     
                     // ── BANDWIDTH GOVERNOR ───────────────────────────
@@ -162,6 +170,7 @@ class StageAndAudienceView extends ConsumerWidget {
   List<CameraWallRemoteTileData> _buildRemoteTiles(
     RtcRoomService? rtcService,
     RoomLiveState state,
+    bool Function(String targetUserId) canViewTarget,
   ) {
     if (rtcService == null) return const [];
     final List<int> remoteUids = rtcService.remoteUids;
@@ -182,12 +191,36 @@ class StageAndAudienceView extends ConsumerWidget {
         uid: uid,
         userId: userId,
         label: participant.displayName ?? 'User',
-        canView: true,
+        canView: userId == null || canViewTarget(userId),
         isSpeaking: rtcService.isRemoteSpeaking(uid),
         hasMic: onMicUserIds.contains(userId),
         avatarUrl: participant.photoUrl,
       );
     }).toList();
+  }
+}
+
+class _LockedCamTile extends StatelessWidget {
+  const _LockedCamTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFF000000),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.lock_outline, color: Colors.white70, size: 28),
+            SizedBox(height: 6),
+            Text(
+              'Camera locked',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

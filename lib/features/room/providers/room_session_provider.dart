@@ -174,3 +174,6 @@ final roomSessionProvider =
     StateNotifierProvider.family<RoomSessionNotifier, RoomSessionState, String>(
   (ref, roomId) => RoomSessionNotifier(),
 );
+
+/// The room whose media session remains active while the user browses elsewhere.
+final activeRoomIdProvider = StateProvider<String?>((ref) => null);

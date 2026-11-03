@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/layout/app_layout.dart';
 import '../../features/auth/controllers/auth_controller.dart';
+import '../../services/account_deletion_service.dart';
+import '../../services/user_data_export_service.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 
 class AccountCenterScreen extends ConsumerStatefulWidget {
@@ -186,25 +188,61 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
     setState(() => _busy = true);
     try {
       final uid = user.uid;
-      await user.delete();
+      await ref
+          .read(accountDeletionServiceProvider)
+          .deleteCurrentAccount();
       await ref
           .read(authControllerProvider.notifier)
           .finalizeSessionCleanup(uidOverride: uid);
       if (!mounted) return;
       context.go('/auth');
-    } on FirebaseAuthException catch (e) {
+    } on AccountDeletionException catch (error) {
       if (!mounted) return;
-      final message = e.code == 'requires-recent-login'
+      final message = error.requiresRecentLogin
           ? 'For security, log in again and retry account deletion.'
-          : 'Could not delete account: ${e.message ?? e.code}';
+          : 'Could not delete your account. Please try again.';
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Could not delete account: $e')));
+      ).showSnackBar(
+        const SnackBar(
+          content: Text('Could not delete your account. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _requestDataExport() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _busy = true);
+    try {
+      final opened = await ref
+          .read(userDataExportServiceProvider)
+          .requestExport(userId: user.uid, email: user.email);
+      if (!mounted) return;
+      final message = opened
+          ? 'Email request opened. Send it to begin your data export.'
+          : 'No email app is available. Contact larrybesant@gmail.com.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open the export request. Please try again.'),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -216,11 +254,9 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email?.trim();
-    final emailText = email == null || email.isEmpty
-        ? 'No email linked'
-        : email;
-    final linkedProviders =
-        user?.providerData
+    final emailText =
+        email == null || email.isEmpty ? 'No email linked' : email;
+    final linkedProviders = user?.providerData
             .where((provider) => provider.providerId.isNotEmpty)
             .toList(growable: false) ??
         const <UserInfo>[];
@@ -264,9 +300,8 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
                     'We will email you a secure reset link.',
                   ),
                   trailing: IconButton(
-                    onPressed: _busy || user == null
-                        ? null
-                        : _sendPasswordReset,
+                    onPressed:
+                        _busy || user == null ? null : _sendPasswordReset,
                     icon: const Icon(Icons.send_outlined),
                   ),
                 ),
@@ -310,6 +345,20 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('Request data export'),
+              subtitle: const Text(
+                'Ask for a copy of the data associated with your account.',
+              ),
+              trailing: FilledButton.tonal(
+                onPressed: _busy || user == null ? null : _requestDataExport,
+                child: const Text('Request'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
               leading: const Icon(
                 Icons.delete_forever_outlined,
                 color: Colors.redAccent,
@@ -329,6 +378,3 @@ class _AccountCenterScreenState extends ConsumerState<AccountCenterScreen> {
     );
   }
 }
-
-
-

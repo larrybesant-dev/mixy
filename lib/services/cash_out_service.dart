@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/mixvy_economy_config.dart';
+import '../core/flags/feature_flags.dart';
 import '../models/cash_out_request_model.dart';
 
 final cashOutServiceProvider = Provider<CashOutService>(
@@ -15,13 +16,16 @@ class CashOutService {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     FirebaseFunctions? functions,
+    bool cashOutEnabled = kCreatorPayoutsEnabled,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _auth = auth ?? FirebaseAuth.instance,
-       _functions = functions ?? FirebaseFunctions.instance;
+       _functions = functions ?? FirebaseFunctions.instance,
+       _cashOutEnabled = cashOutEnabled;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final FirebaseFunctions _functions;
+  final bool _cashOutEnabled;
 
   Stream<List<CashOutRequestModel>> requestsForCurrentUser() {
     final userId = _auth.currentUser?.uid;
@@ -53,6 +57,10 @@ class CashOutService {
   }
 
   Future<void> requestCashOut(double amount) async {
+    if (!_cashOutEnabled) {
+      throw StateError('Creator cash-outs are disabled during beta testing.');
+    }
+
     final userId = _auth.currentUser?.uid;
     if (userId == null || userId.isEmpty) {
       throw Exception('User not logged in');
@@ -102,6 +110,5 @@ class CashOutService {
     await callable.call<Map<String, dynamic>>({'amount': amount});
   }
 }
-
 
 

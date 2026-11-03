@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../core/utils/network_image_url.dart';
 import '../features/messaging/providers/messaging_provider.dart';
+import '../features/messaging/providers/messenger_window_provider.dart';
 import '../presentation/providers/friend_provider.dart';
 import '../presentation/providers/user_provider.dart';
 import '../shared/widgets/guest_auth_gate.dart';
@@ -19,14 +18,19 @@ import '../shared/widgets/guest_auth_gate.dart';
 // ProviderScope ancestor (which is the entire app).
 // ─────────────────────────────────────────────────────────────────────────────
 
-class FriendsPanelButton extends StatelessWidget {
+class FriendsPanelButton extends ConsumerWidget {
   const FriendsPanelButton({super.key, this.iconColor, this.size = 24});
 
   final Color? iconColor;
   final double size;
 
   /// Call this directly if you want to open the panel without the button.
-  static void openPanel(BuildContext context) {
+  static void openPanel(BuildContext context, {WidgetRef? ref}) {
+    if (ref != null &&
+        MediaQuery.sizeOf(context).width >= messengerDesktopBreakpoint) {
+      ref.read(messengerDesktopProvider.notifier).toggleBuddyList();
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -36,7 +40,7 @@ class FriendsPanelButton extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
       tooltip: 'Friends',
       icon: Icon(
@@ -44,7 +48,7 @@ class FriendsPanelButton extends StatelessWidget {
         color: iconColor ?? Theme.of(context).colorScheme.onSurface,
         size: size,
       ),
-      onPressed: () => openPanel(context),
+      onPressed: () => openPanel(context, ref: ref),
     );
   }
 }
@@ -160,11 +164,10 @@ class _FriendsPanelSheetState extends ConsumerState<_FriendsPanelSheet> {
                     final filtered = _query.isEmpty
                         ? friends
                         : friends
-                              .where(
-                                (f) =>
-                                    f.username.toLowerCase().contains(_query),
-                              )
-                              .toList();
+                            .where(
+                              (f) => f.username.toLowerCase().contains(_query),
+                            )
+                            .toList();
 
                     if (filtered.isEmpty) {
                       return _EmptyState(
@@ -327,7 +330,6 @@ class _MessageButton extends ConsumerWidget {
         if (!allowed || !context.mounted) return;
 
         final navigator = Navigator.of(context);
-        final router = GoRouter.of(context);
         final messenger = ScaffoldMessenger.of(context);
         try {
           final conversationId = await ref
@@ -340,8 +342,14 @@ class _MessageButton extends ConsumerWidget {
                 user2Name: friend.username,
                 user2AvatarUrl: friend.avatarUrl,
               );
+          if (!context.mounted) return;
           navigator.pop();
-          unawaited(router.push('/chat/$conversationId'));
+          presentMessengerConversation(
+            context: context,
+            ref: ref,
+            conversationId: conversationId,
+            title: friend.username,
+          );
         } catch (error) {
           messenger.showSnackBar(
             SnackBar(content: Text('Could not open chat: $error')),
@@ -351,6 +359,3 @@ class _MessageButton extends ConsumerWidget {
     );
   }
 }
-
-
-

@@ -11,7 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
 import 'package:mixvy/models/adult_profile_model.dart';
 import 'package:mixvy/models/profile_privacy_model.dart';
 import 'package:mixvy/models/room_policy_model.dart';
@@ -20,9 +19,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/flags/feature_flags.dart';
 import '../top_eight/top_eight_carousel.dart';
-import '../connections/connections_providers.dart';
+import '../friends/providers/friends_providers.dart';
 import '../auth/controllers/auth_controller.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
+import '../../services/profile_photo_upload_service.dart';
 import 'profile_completion.dart';
 import 'profile_controller.dart';
 import 'widgets/device_settings_panel.dart';
@@ -64,9 +64,16 @@ class ProfileScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Friend Requests',
               icon: Badge(
-                label: Text(ref.watch(dummyPendingRequestsProvider).length.toString()),
-                isLabelVisible: ref.watch(dummyPendingRequestsProvider).isNotEmpty,
-                child: const Icon(Icons.people_outline, color: Color(0xFFAD9585)),
+                label: Text(
+                  '${ref.watch(incomingFriendRequestsProvider).valueOrNull?.length ?? 0}',
+                ),
+                isLabelVisible: (ref
+                        .watch(incomingFriendRequestsProvider)
+                        .valueOrNull
+                        ?.isNotEmpty ??
+                    false),
+                child:
+                    const Icon(Icons.people_outline, color: Color(0xFFAD9585)),
               ),
               onPressed: () => context.push('/pending-requests'),
             ),
@@ -134,9 +141,6 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   bool _isUploadingGallery = false;
 
   static const int _maxPhotoBytes = 20 * 1024 * 1024;
-  static const int _maxInlineProfilePhotoBytes = 700 * 1024;
-  static const int _maxInlineCoverPhotoBytes = 700 * 1024;
-  static const int _maxInlineGalleryPhotoBytes = 500 * 1024;
   static const int _maxVideoBytes = 120 * 1024 * 1024;
   static const List<String> _genderOptions = [
     'Woman',
@@ -214,10 +218,15 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   String _mapStorageError(FirebaseException e, {required String kind}) {
     final code = e.code.toLowerCase();
     return switch (code) {
-      'unauthenticated' || 'permission-denied' || 'unauthorized' =>
+      'unauthenticated' ||
+      'permission-denied' ||
+      'unauthorized' =>
         'Upload blocked by auth permissions. Please sign out and sign in again.',
       'quota-exceeded' => 'Storage quota exceeded. Please try again later.',
       'cancelled' => 'Upload was cancelled.',
+      'invalid-image' =>
+        'This photo could not be read. Choose a JPEG, PNG, or WebP.',
+      'photo-too-large' => 'Photo is too large. Choose one under 20MB.',
       'retry-limit-exceeded' =>
         'Upload timed out. Check your network and retry.',
       'object-not-found' => 'Storage path missing. Please retry.',
@@ -255,91 +264,6 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     }
   }
 
-  /// Resize cover photo to fit 16:7 aspect ratio and compress for storage.
-  /// Target dimensions: 1200x525 (16:7 ratio) for optimal quality vs file size.
-  Uint8List _resizeCoverPhoto(Uint8List bytes) {
-    try {
-      developer.log(
-        'Starting cover photo resize. Original size: ${bytes.lengthInBytes} bytes',
-        name: 'ProfileUpload',
-      );
-
-      final image = img.decodeImage(bytes);
-      if (image == null) {
-        developer.log(
-          'Failed to decode image, returning original',
-          name: 'ProfileUpload',
-        );
-        return bytes;
-      }
-
-      developer.log(
-        'Image decoded. Dimensions: ${image.width}x${image.height}',
-        name: 'ProfileUpload',
-      );
-
-      final targetAspect = 16 / 7;
-      final currentAspect = image.width / image.height;
-
-      late int cropWidth;
-      late int cropHeight;
-      late int cropX;
-      late int cropY;
-
-      if (currentAspect > targetAspect) {
-        // Image is too wide, crop horizontally
-        cropHeight = image.height;
-        cropWidth = (image.height * targetAspect).toInt();
-        cropX = ((image.width - cropWidth) / 2).toInt();
-        cropY = 0;
-      } else {
-        // Image is too tall, crop vertically
-        cropWidth = image.width;
-        cropHeight = (image.width / targetAspect).toInt();
-        cropX = 0;
-        cropY = ((image.height - cropHeight) / 2).toInt();
-      }
-
-      developer.log(
-        'Crop: $cropWidth x $cropHeight at ($cropX, $cropY)',
-        name: 'ProfileUpload',
-      );
-
-      // Crop to 16:7 ratio
-      final cropped = img.copyCrop(
-        image,
-        x: cropX,
-        y: cropY,
-        width: cropWidth,
-        height: cropHeight,
-      );
-
-      // Resize to target dimensions (1200x525)
-      final resized = img.copyResize(
-        cropped,
-        width: 1200,
-        height: 525,
-        interpolation: img.Interpolation.linear,
-      );
-
-      // Encode as JPEG with quality 85 for smaller file size
-      final encoded = Uint8List.fromList(img.encodeJpg(resized, quality: 85));
-      developer.log(
-        'Resize complete. New size: ${encoded.lengthInBytes} bytes',
-        name: 'ProfileUpload',
-      );
-      return encoded;
-    } catch (e, st) {
-      developer.log(
-        'Error resizing cover photo: $e',
-        name: 'ProfileUpload',
-        error: e,
-        stackTrace: st,
-      );
-      return bytes; // Return original if resize fails
-    }
-  }
-
   Future<String> _uploadToStorage({
     required Uint8List bytes,
     required String userId,
@@ -369,8 +293,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       }
     } on FirebaseException catch (e) {
       final code = e.code.toLowerCase();
-      final shouldRetry =
-          code == 'unauthenticated' ||
+      final shouldRetry = code == 'unauthenticated' ||
           code == 'permission-denied' ||
           code == 'unauthorized';
       if (!shouldRetry) rethrow;
@@ -467,8 +390,8 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       );
       if (file == null) return;
       final bytes = await file.readAsBytes().timeout(
-        const Duration(seconds: 20),
-      );
+            const Duration(seconds: 20),
+          );
       if (bytes.lengthInBytes > _maxPhotoBytes) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -482,48 +405,18 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
       if (!mounted) return;
       setState(() => setBusy(true));
 
-      // Resize cover photos to fit 16:7 aspect ratio before upload
-      var uploadBytes = bytes;
-      if (folder == 'cover_photos') {
-        uploadBytes = _resizeCoverPhoto(bytes);
-      }
-
-      String url;
-      // Web fallback: keep image uploads in-profile as data URLs to avoid storage web host API crashes.
-      if (kIsWeb) {
-        final inlineLimit = switch (folder) {
-          'profile_photos' => _maxInlineProfilePhotoBytes,
-          'cover_photos' => _maxInlineCoverPhotoBytes,
-          'gallery_photos' => _maxInlineGalleryPhotoBytes,
-          _ => _maxInlineProfilePhotoBytes,
-        };
-        if (uploadBytes.lengthInBytes > inlineLimit) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Image is too large for web upload. Please choose a smaller file.',
-              ),
-            ),
-          );
-          return;
-        }
-        url = 'data:image/jpeg;base64,${base64Encode(uploadBytes)}';
-      } else {
-        url = await _uploadToStorage(
-          bytes: uploadBytes,
-          userId: userId,
-          folder: folder,
-          extension: 'jpg',
-          contentType: 'image/jpeg',
-        );
-      }
+      final url = await ref.read(profilePhotoUploadServiceProvider).upload(
+        bytes: bytes,
+        userId: userId,
+        folder: folder,
+      );
 
       final controller = ref.read(profileControllerProvider.notifier);
       final current = ref.read(profileControllerProvider);
       final next = transform(current, url);
-      controller.updateDraft(next);
       await controller.updateProfile(next);
+      final saveError = ref.read(profileControllerProvider).error;
+      if (saveError != null) throw StateError(saveError);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -576,39 +469,36 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
   }
 
   Future<void> _uploadPhoto() async {
-    final current = ref.read(profileControllerProvider);
     await _uploadImage(
       isBusy: _isUploadingPhoto,
       setBusy: (value) => _isUploadingPhoto = value,
       folder: 'profile_photos',
       successmessage: 'Profile photo uploaded.',
-      transform: (_, url) {
+      transform: (current, url) {
         return current.copyWith(avatarUrl: url);
       },
     );
   }
 
   Future<void> _uploadCoverPhoto() async {
-    final current = ref.read(profileControllerProvider);
     await _uploadImage(
       isBusy: _isUploadingCover,
       setBusy: (value) => _isUploadingCover = value,
       folder: 'cover_photos',
       successmessage: 'Cover photo uploaded.',
-      transform: (_, url) {
+      transform: (current, url) {
         return current.copyWith(coverPhotoUrl: url);
       },
     );
   }
 
   Future<void> _uploadGalleryPhoto() async {
-    final current = ref.read(profileControllerProvider);
     await _uploadImage(
       isBusy: _isUploadingGallery,
       setBusy: (value) => _isUploadingGallery = value,
       folder: 'gallery_photos',
       successmessage: 'Gallery photo uploaded.',
-      transform: (_, url) {
+      transform: (current, url) {
         return current.copyWith(
           galleryUrls: {...current.galleryUrls, url}.toList(growable: false),
         );
@@ -715,7 +605,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     _nameController.text = state.username ?? '';
     _bioController.text = state.bio ?? '';
     _aboutMeController.text = state.aboutMe ?? '';
-   _ageController.text = state.age.toString();
+    _ageController.text = state.age.toString();
     _locationController.text = state.location ?? '';
     _interestsController.text = state.interests.join(', ');
     _vibeController.text = state.vibePrompt ?? '';
@@ -828,8 +718,7 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
     final guidedItems = ProfileCompletion.guidedSetupItems(state);
     final isSetupComplete = requiredItems.isEmpty;
     final profileStrength = ProfileCompletion.completeness(state);
-    final hasPendingUploads =
-        _isUploadingPhoto ||
+    final hasPendingUploads = _isUploadingPhoto ||
         _isUploadingCover ||
         _isUploadingGallery ||
         _isUploadingVideo;
@@ -869,7 +758,9 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       children: [
                         Text(
                           'Finish setup to unlock all pages',
-                          style: Theme.of(context).textTheme.titleSmall
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 6),
@@ -916,6 +807,15 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                 ],
                 const SizedBox(height: 18),
                 if (state.userId != null) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/home/create-post'),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Create post'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _SectionCard(
                     title: 'My Posts',
                     subtitle: 'Everything you have shared.',
@@ -1251,8 +1151,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       Text(
                         'Used for text highlights on your profile.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       _ColorSwatchRow(
@@ -1270,8 +1172,10 @@ class _ProfileFormViewState extends ConsumerState<ProfileFormView> {
                       Text(
                         'Overrides the theme gradient on your profile card.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -1744,11 +1648,11 @@ class _HeroCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '${(100 * profileStrength).round()}% ready',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                     ],
                   ),
@@ -1759,9 +1663,8 @@ class _HeroCard extends StatelessWidget {
           Transform.translate(
             offset: const Offset(0, -24),
             child: GestureDetector(
-              onTap: isUploadingPhoto
-                  ? null
-                  : () => safeRunUpload(onUploadAvatar),
+              onTap:
+                  isUploadingPhoto ? null : () => safeRunUpload(onUploadAvatar),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -1782,29 +1685,29 @@ class _HeroCard extends StatelessWidget {
                             ),
                           )
                         : (state.avatarUrl ?? '').trim().isNotEmpty
-                        ? ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: (state.avatarUrl ?? "").trim(),
-                              width: 84,
-                              height: 84,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Center(
-                                child: SizedBox(
-                                  width: 42,
-                                  height: 42,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Theme.of(context).colorScheme.primary,
+                            ? ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: (state.avatarUrl ?? "").trim(),
+                                  width: 84,
+                                  height: 84,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Center(
+                                    child: SizedBox(
+                                      width: 42,
+                                      height: 42,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation(
+                                          Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
                                     ),
                                   ),
+                                  errorWidget: (___, __, _) =>
+                                      const Icon(Icons.person, size: 32),
                                 ),
-                              ),
-                              errorWidget: (___, __, _) =>
-                                  const Icon(Icons.person, size: 32),
-                            ),
-                          )
-                        : const Icon(Icons.person, size: 32),
+                              )
+                            : const Icon(Icons.person, size: 32),
                   ),
                   Positioned(
                     bottom: 0,
@@ -2132,9 +2035,9 @@ class _SectionCard extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFD4AF37),
-            ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFD4AF37),
+                ),
           ),
           const SizedBox(height: 4),
           Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
@@ -2168,9 +2071,9 @@ class _StatTile extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFFD4AF37),
-            ),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFD4AF37),
+                ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -2358,8 +2261,3 @@ Color _hexToColor(String hex) {
     return Colors.grey;
   }
 }
-
-
-
-
-

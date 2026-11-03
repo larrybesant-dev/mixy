@@ -125,6 +125,15 @@ async function checkMessages() {
     if (snap.empty) break;
 
     for (const doc of snap.docs) {
+      const pathSegments = doc.ref.path.split("/");
+      const isConversationMessage =
+        pathSegments.length === 4 &&
+        pathSegments[0] === "conversations" &&
+        pathSegments[2] === "messages";
+      if (!isConversationMessage) {
+        continue;
+      }
+
       scanned++;
       totalScanned++;
       const d = doc.data() || {};

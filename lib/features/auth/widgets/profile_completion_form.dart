@@ -97,7 +97,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
     if (_hydrated || !_hasHydratableData(state)) return;
     _hydrated = true;
 
-    _displayNameController.text = (widget.initialUsername ?? state.username ?? '').trim();
+    _displayNameController.text =
+        (widget.initialUsername ?? state.username ?? '').trim();
     _ageController.text = state.age > 0 ? state.age.toString() : '';
     _locationController.text = state.location ?? '';
     _bioController.text = state.bio ?? '';
@@ -235,7 +236,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
     }
     if (!_canSubmit) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please finish all required profile fields.')),
+        const SnackBar(
+            content: Text('Please finish all required profile fields.')),
       );
       return;
     }
@@ -257,11 +259,15 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
         avatarUrl: _avatarUrl,
         coverPhotoUrl: _coverPhotoUrl,
         galleryUrls: List<String>.from(_galleryUrls),
-        bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+        bio: _bioController.text.trim().isEmpty
+            ? null
+            : _bioController.text.trim(),
         aboutMe: currentState.aboutMe,
       );
 
-      await ref.read(profileControllerProvider.notifier).updateProfile(updatedProfile);
+      await ref
+          .read(profileControllerProvider.notifier)
+          .updateProfile(updatedProfile);
       if (!mounted) return;
 
       final savedState = ref.read(profileControllerProvider);
@@ -379,7 +385,9 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          circular ? Icons.person_outline : Icons.add_photo_alternate_outlined,
+                          circular
+                              ? Icons.person_outline
+                              : Icons.add_photo_alternate_outlined,
                           color: VelvetNoir.primary,
                           size: circular ? 34 : 40,
                         ),
@@ -417,7 +425,7 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
     final hasPhoto = (imageUrl ?? '').isNotEmpty;
     return GestureDetector(
       onTap: hasPhoto ? null : _addGalleryPhoto,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           color: const Color(0xFF1C1617),
           borderRadius: BorderRadius.circular(14),
@@ -500,7 +508,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
             : profileState.relationshipStatus,
         avatarUrl: _avatarUrl ?? profileState.avatarUrl,
         coverPhotoUrl: _coverPhotoUrl ?? profileState.coverPhotoUrl,
-        galleryUrls: _galleryUrls.isNotEmpty ? _galleryUrls : profileState.galleryUrls,
+        galleryUrls:
+            _galleryUrls.isNotEmpty ? _galleryUrls : profileState.galleryUrls,
         bio: _bioController.text.trim().isNotEmpty
             ? _bioController.text.trim()
             : profileState.bio,
@@ -563,7 +572,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF141014),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: VelvetNoir.primary.withValues(alpha: 0.18)),
+                  border: Border.all(
+                      color: VelvetNoir.primary.withValues(alpha: 0.18)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +590,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isWide = constraints.maxWidth >= 720;
-                        final avatarWidth = isWide ? 210.0 : constraints.maxWidth;
+                        final avatarWidth =
+                            isWide ? 210.0 : constraints.maxWidth;
                         return isWide
                             ? Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,7 +599,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                                   SizedBox(
                                     width: avatarWidth,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Profile photo',
@@ -600,7 +612,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                                         const SizedBox(height: 10),
                                         _imageCard(
                                           title: 'Add photo',
-                                          subtitle: 'Required for your profile card.',
+                                          subtitle:
+                                              'Required for your profile card.',
                                           imageUrl: _avatarUrl,
                                           onTap: _uploadAvatar,
                                           loading: _isUploadingAvatar,
@@ -613,7 +626,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Background cover',
@@ -625,7 +639,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                                         const SizedBox(height: 10),
                                         _imageCard(
                                           title: 'Add cover',
-                                          subtitle: 'A wide background photo for your profile header.',
+                                          subtitle:
+                                              'A wide background photo for your profile header.',
                                           imageUrl: _coverPhotoUrl,
                                           onTap: _uploadCover,
                                           loading: _isUploadingCover,
@@ -650,7 +665,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                                   const SizedBox(height: 14),
                                   _imageCard(
                                     title: 'Add cover',
-                                    subtitle: 'A wide background photo for your profile header.',
+                                    subtitle:
+                                        'A wide background photo for your profile header.',
                                     imageUrl: _coverPhotoUrl,
                                     onTap: _uploadCover,
                                     loading: _isUploadingCover,
@@ -694,7 +710,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _maxGalleryPhotos,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
@@ -709,7 +726,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
-                      onPressed: _isUploadingGallery || _galleryUrls.length >= _maxGalleryPhotos
+                      onPressed: _isUploadingGallery ||
+                              _galleryUrls.length >= _maxGalleryPhotos
                           ? null
                           : _addGalleryPhoto,
                       icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -725,7 +743,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF141014),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: VelvetNoir.primary.withValues(alpha: 0.18)),
+                  border: Border.all(
+                      color: VelvetNoir.primary.withValues(alpha: 0.18)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,7 +830,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                             ),
                           )
                           .toList(growable: false),
-                      onChanged: (value) => setState(() => _relationshipStatus = value),
+                      onChanged: (value) =>
+                          setState(() => _relationshipStatus = value),
                       validator: (value) {
                         if ((value ?? '').trim().isEmpty) {
                           return 'Relationship status is required';
@@ -841,7 +861,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF121214),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: VelvetNoir.primary.withValues(alpha: 0.14)),
+                  border: Border.all(
+                      color: VelvetNoir.primary.withValues(alpha: 0.14)),
                 ),
                 child: Text(
                   'You must fill the required fields and upload your profile photo, cover photo, and at least one gallery image before your account is considered complete.',
@@ -857,7 +878,8 @@ class _ProfileCompletionFormState extends ConsumerState<ProfileCompletionForm> {
                 children: [
                   Expanded(
                     child: FilledButton(
-                      onPressed: _isSaving || !_canSubmit ? null : _completeProfile,
+                      onPressed:
+                          _isSaving || !_canSubmit ? null : _completeProfile,
                       style: FilledButton.styleFrom(
                         backgroundColor: VelvetNoir.primary,
                         foregroundColor: VelvetNoir.surface,

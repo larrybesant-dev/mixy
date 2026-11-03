@@ -217,16 +217,25 @@ async function checkDataIntegrity() {
     addCheck("data", "Conversations sample", "WARN", `query failed: ${err.message}`);
   }
 
-  // Messages collectionGroup — sample 50
+  // Conversation messages collectionGroup — sample 50
   let msgViolations = 0;
+  let msgScanned = 0;
   try {
     const snap = await db.collectionGroup("messages").limit(50).get();
     for (const doc of snap.docs) {
+      const pathSegments = doc.ref.path.split("/");
+      const isConversationMessage =
+        pathSegments.length === 4 &&
+        pathSegments[0] === "conversations" &&
+        pathSegments[2] === "messages";
+      if (!isConversationMessage) continue;
+
+      msgScanned++;
       const d = doc.data() || {};
       if (!d.senderId) msgViolations++;
       if (!d.createdAt && !d.sentAt) msgViolations++;
     }
-    addCheck("data", `Messages sample (${snap.size} docs)`,
+    addCheck("data", `Messages sample (${msgScanned} docs)`,
       msgViolations === 0 ? "PASS" : "FAIL",
       msgViolations > 0 ? `${msgViolations} violations — run npm run repair:messages:apply` : null);
   } catch (err) {

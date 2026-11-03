@@ -47,12 +47,12 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
         _mics = devices.where((d) => d.kind == 'audioinput').toList();
         _selectedCameraId =
             (savedCam != null && _cameras.any((c) => c.deviceId == savedCam))
-            ? savedCam
-            : (_cameras.isNotEmpty ? _cameras.first.deviceId : null);
+                ? savedCam
+                : (_cameras.isNotEmpty ? _cameras.first.deviceId : null);
         _selectedMicId =
             (savedMic != null && _mics.any((m) => m.deviceId == savedMic))
-            ? savedMic
-            : (_mics.isNotEmpty ? _mics.first.deviceId : null);
+                ? savedMic
+                : (_mics.isNotEmpty ? _mics.first.deviceId : null);
         _loading = false;
       });
     } catch (e) {
@@ -114,8 +114,8 @@ class _DeviceSettingsPanelState extends State<DeviceSettingsPanel> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
             ),
           ],
@@ -223,7 +223,9 @@ class _DeviceDropdown extends StatelessWidget {
               child: Text(
                 d.label.isNotEmpty
                     ? d.label
-                    : 'Device ${d.deviceId.substring(0, 6)}',
+                    : d.kind == 'videoinput'
+                        ? 'Camera'
+                        : 'Microphone',
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -268,6 +270,3 @@ class _InfoTile extends StatelessWidget {
     );
   }
 }
-
-
-

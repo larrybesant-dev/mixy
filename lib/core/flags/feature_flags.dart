@@ -1,4 +1,17 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+const bool kPaymentsEnabled = kIsWeb &&
+    bool.fromEnvironment(
+      'ENABLE_PAYMENTS',
+      defaultValue: false,
+    );
+
+const bool kCreatorPayoutsEnabled = kPaymentsEnabled &&
+    bool.fromEnvironment(
+      'ENABLE_CREATOR_PAYOUTS',
+      defaultValue: false,
+    );
 
 /// Feature flag to enable/disable the Top 8 Friends feature.
 final enableTop8FriendsFeature = Provider<bool>((ref) {
@@ -10,6 +23,3 @@ final enableTop8FriendsFeature = Provider<bool>((ref) {
 final enableFriendRequestsFeature = Provider<bool>((ref) {
   return true;
 });
-
-
-

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,10 @@ import 'package:mixvy/firebase_options.dart';
 
 const bool runEmulatorTests = bool.fromEnvironment(
   'RUN_FIREBASE_EMULATOR_TESTS',
+  defaultValue: false,
+);
+const bool runProductionAppCheckTests = bool.fromEnvironment(
+  'RUN_PRODUCTION_APPCHECK_TESTS',
   defaultValue: false,
 );
 const String emulatorHost = String.fromEnvironment(
@@ -49,6 +54,21 @@ Future<void> _initializeFirebaseForEmulators() async {
 
   await FirebaseAuth.instance.useAuthEmulator(emulatorHost, authPort);
   FirebaseFirestore.instance.useFirestoreEmulator(emulatorHost, firestorePort);
+}
+
+Future<void> _initializeFirebaseForProduction() async {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
+  await FirebaseAppCheck.instance.activate(
+    providerWeb:
+        recaptchaSiteKey.isEmpty ? null : ReCaptchaV3Provider(recaptchaSiteKey),
+    providerAndroid: const AndroidPlayIntegrityProvider(),
+    providerApple: const AppleAppAttestWithDeviceCheckFallbackProvider(),
+  );
 }
 
 Future<UserCredential> _signUp({
@@ -91,14 +111,23 @@ void main() {
     if (runEmulatorTests) {
       await _initializeFirebaseForEmulators();
       debugPrint('[AUTH TEST] Firebase emulators initialized');
-    } else {
-      IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-      debugPrint('[AUTH TEST] Using production Firebase (AppCheck validation active)');
+    } else if (runProductionAppCheckTests) {
+      await _initializeFirebaseForProduction();
+      debugPrint(
+          '[AUTH TEST] Using production Firebase (AppCheck validation active)');
     }
   });
 
   tearDown(() async {
-    // Sign out after each test
+    final user = FirebaseAuth.instance.currentUser;
+    if (runProductionAppCheckTests && user != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+      await user.delete();
+      return;
+    }
     await FirebaseAuth.instance.signOut();
   });
 
@@ -110,7 +139,8 @@ void main() {
     });
 
     test('Sign up creates user and generates AppCheck token', () async {
-      final email = 'auth-test-signup-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-signup-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       // This request will trigger reCAPTCHA validation and AppCheck token generation
@@ -120,12 +150,14 @@ void main() {
       expect(credential.user!.email, email);
       expect(credential.user!.uid, isNotEmpty);
 
-      debugPrint('[AUTH TEST] ✓ Sign up successful - User UID: ${credential.user!.uid}');
+      debugPrint(
+          '[AUTH TEST] ✓ Sign up successful - User UID: ${credential.user!.uid}');
       debugPrint('[AUTH TEST] ✓ AppCheck token generated without 400 error');
     });
 
     test('Sign in with valid credentials succeeds', () async {
-      final email = 'auth-test-signin-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-signin-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       // Create user first
@@ -140,11 +172,14 @@ void main() {
       expect(signInCredential.user!.uid, uid);
       expect(FirebaseAuth.instance.currentUser, isNotNull);
 
-      debugPrint('[AUTH TEST] ✓ Sign in successful - Retrieved UID: ${signInCredential.user!.uid}');
+      debugPrint(
+          '[AUTH TEST] ✓ Sign in successful - Retrieved UID: ${signInCredential.user!.uid}');
     });
 
-    test('Authenticated user can write to Firestore (AppCheck validation)', () async {
-      final email = 'auth-test-firestore-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+    test('Authenticated user can write to Firestore (AppCheck validation)',
+        () async {
+      final email =
+          'auth-test-firestore-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       final credential = await _signUp(email: email, password: password);
@@ -153,7 +188,8 @@ void main() {
       // This write validates AppCheck token is accepted by Firestore
       await _createUserDocument(uid, email);
 
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
       expect(doc.exists, isTrue);
       expect(doc.data()?['email'], email);
       expect(doc.data()?['uid'], uid);
@@ -165,7 +201,8 @@ void main() {
     test('Current user state updates after authentication', () async {
       expect(FirebaseAuth.instance.currentUser, isNull);
 
-      final email = 'auth-test-state-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-state-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       final credential = await _signUp(email: email, password: password);
@@ -180,7 +217,8 @@ void main() {
     });
 
     test('Sign out clears user session', () async {
-      final email = 'auth-test-logout-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-logout-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       await _signUp(email: email, password: password);
@@ -193,8 +231,10 @@ void main() {
     });
 
     test('Multiple users can sign up independently', () async {
-      final user1Email = 'auth-test-user1-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
-      final user2Email = 'auth-test-user2-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final user1Email =
+          'auth-test-user1-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final user2Email =
+          'auth-test-user2-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       final user1 = await _signUp(email: user1Email, password: password);
@@ -226,7 +266,8 @@ void main() {
     });
 
     test('Error handling for weak password', () async {
-      final email = 'auth-test-weak-pwd-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-weak-pwd-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const weakPassword = '123'; // Too short
 
       expect(
@@ -238,7 +279,8 @@ void main() {
     });
 
     test('Error handling for sign in with wrong password', () async {
-      final email = 'auth-test-wrongpwd-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-wrongpwd-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const correctPassword = 'TestPassword123!';
       const wrongPassword = 'WrongPassword123!';
 
@@ -254,7 +296,8 @@ void main() {
     });
 
     test('Duplicate email registration is rejected', () async {
-      final email = 'auth-test-duplicate-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'auth-test-duplicate-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       // Create first account
@@ -267,9 +310,10 @@ void main() {
         throwsA(isA<FirebaseAuthException>()),
       );
 
-      debugPrint('[AUTH TEST] ✓ Duplicate email registration properly rejected');
+      debugPrint(
+          '[AUTH TEST] ✓ Duplicate email registration properly rejected');
     });
-  });
+  }, skip: !runEmulatorTests);
 
   group('AppCheck Token Generation (Production)', () {
     test('AppCheck validation does not produce 400 errors', () async {
@@ -277,7 +321,8 @@ void main() {
       // If reCAPTCHA configuration is incorrect, AppCheck token generation fails with 400.
       // We validate this by successfully authenticating and accessing Firestore.
 
-      final email = 'appcheck-test-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
+      final email =
+          'appcheck-test-${DateTime.now().millisecondsSinceEpoch}@mixvy.dev';
       const password = 'TestPassword123!';
 
       try {
@@ -287,14 +332,18 @@ void main() {
         // Attempt to access Firestore - this validates AppCheck token is valid
         await _createUserDocument(credential.user!.uid, email);
 
-        debugPrint('[AUTH TEST] ✓ AppCheck validation successful - No 400 errors');
-        debugPrint('[AUTH TEST] ✓ reCAPTCHA domain whitelist configured correctly');
+        debugPrint(
+            '[AUTH TEST] ✓ AppCheck validation successful - No 400 errors');
+        debugPrint(
+            '[AUTH TEST] ✓ reCAPTCHA domain whitelist configured correctly');
       } catch (e) {
-        if (e.toString().contains('400') || e.toString().contains('recaptcha-error')) {
-          fail('AppCheck validation failed with reCAPTCHA error - domain whitelist may be misconfigured: $e');
+        if (e.toString().contains('400') ||
+            e.toString().contains('recaptcha-error')) {
+          fail(
+              'AppCheck validation failed with reCAPTCHA error - domain whitelist may be misconfigured: $e');
         }
         rethrow;
       }
     });
-  });
+  }, skip: !runProductionAppCheckTests);
 }

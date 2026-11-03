@@ -12,6 +12,7 @@ import 'package:mixvy/features/friends/providers/friends_providers.dart';
 import 'package:mixvy/features/messaging/panes/chat_pane_view.dart';
 import 'package:mixvy/features/messaging/providers/messaging_provider.dart'
     as messaging;
+import 'package:mixvy/features/messaging/screens/chat_screen.dart';
 import 'test_helpers.dart';
 
 class _DelayedMessagingController extends messaging.MessagingController {
@@ -31,6 +32,7 @@ class _DelayedMessagingController extends messaging.MessagingController {
     required String? senderAvatarUrl,
     required String content,
     String? clientMessageId,
+    String type = 'normal',
   }) async {
     await sendCompleter.future;
     return super.sendMessage(
@@ -48,16 +50,23 @@ Widget _buildChatApp({
   required FakeFirebaseFirestore firestore,
   messaging.MessagingController? controller,
   ProviderContainer? container,
+  bool useChatScreen = false,
 }) {
-  final child = const MaterialApp(
-    home: Scaffold(
-      body: ChatPaneView(
-        conversationId: 'conv-1',
-        userId: 'user-1',
-        username: 'Test User',
-        showHeader: false,
-      ),
-    ),
+  final child = MaterialApp(
+    home: useChatScreen
+        ? const ChatScreen(
+            conversationId: 'conv-1',
+            userId: 'user-1',
+            username: 'Test User',
+          )
+        : const Scaffold(
+            body: ChatPaneView(
+              conversationId: 'conv-1',
+              userId: 'user-1',
+              username: 'Test User',
+              showHeader: false,
+            ),
+          ),
   );
 
   if (container != null) {
@@ -93,14 +102,14 @@ Future<void> _seedmessage(
         .collection('messages')
         .doc('msg-$index')
         .set({
-          'conversationId': 'conv-1',
-          'senderId': index.isEven ? 'user-1' : 'user-2',
-          'senderName': index.isEven ? 'Test User' : 'Alice',
-          'content': 'message $index',
-          'createdAt': Timestamp.fromDate(createdAt),
-          'isDeleted': false,
-          'readBy': ['user-1', if (index.isEven) 'user-2'],
-        });
+      'conversationId': 'conv-1',
+      'senderId': index.isEven ? 'user-1' : 'user-2',
+      'senderName': index.isEven ? 'Test User' : 'Alice',
+      'content': 'message $index',
+      'createdAt': Timestamp.fromDate(createdAt),
+      'isDeleted': false,
+      'readBy': ['user-1', if (index.isEven) 'user-2'],
+    });
   }
 }
 
@@ -132,6 +141,29 @@ void main() {
   });
 
   group('ChatPaneView', () {
+    testWidgets('chat app bar identifies the other direct-message participant',
+        (
+      tester,
+    ) async {
+      final firestore = FakeFirebaseFirestore();
+      final now = DateTime.now();
+      await _seedConversation(
+        firestore,
+        createdAt: now.subtract(const Duration(minutes: 10)),
+        lastMessageAt: now.subtract(const Duration(minutes: 1)),
+        lastReadAt: now.subtract(const Duration(minutes: 1)),
+      );
+
+      await tester.pumpWidget(
+        _buildChatApp(firestore: firestore, useChatScreen: true),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.text('Test User'), findsNothing);
+    });
+
     testWidgets(
       'renders sent message immediately before backend write finishes',
       (tester) async {
@@ -212,10 +244,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 20));
 
-      final snapshot = await firestore
-          .collection('conversations')
-          .doc('conv-1')
-          .get();
+      final snapshot =
+          await firestore.collection('conversations').doc('conv-1').get();
       final data = snapshot.data();
       expect(data, isNotNull);
 
@@ -327,17 +357,15 @@ void main() {
         of: messageList,
         matching: find.byType(Scrollable),
       );
-      final initialPosition = tester
-          .state<ScrollableState>(scrollable)
-          .position;
+      final initialPosition =
+          tester.state<ScrollableState>(scrollable).position;
       final initialOffset = initialPosition.pixels;
 
       await tester.drag(messageList, const Offset(0, 300), warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      final scrolledPosition = tester
-          .state<ScrollableState>(scrollable)
-          .position;
+      final scrolledPosition =
+          tester.state<ScrollableState>(scrollable).position;
       final savedOffset = scrolledPosition.pixels;
       expect(savedOffset, lessThan(initialOffset));
 
@@ -349,15 +377,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final restoredMessageList = find.byKey(const ValueKey('chat_message_list'));
+      final restoredMessageList =
+          find.byKey(const ValueKey('chat_message_list'));
       expect(restoredMessageList, findsOneWidget);
       final restoredScrollable = find.descendant(
         of: restoredMessageList,
         matching: find.byType(Scrollable),
       );
-      final restoredPosition = tester
-          .state<ScrollableState>(restoredScrollable)
-          .position;
+      final restoredPosition =
+          tester.state<ScrollableState>(restoredScrollable).position;
       expect(restoredPosition.pixels, closeTo(savedOffset, 24));
       expect(
         restoredPosition.pixels,

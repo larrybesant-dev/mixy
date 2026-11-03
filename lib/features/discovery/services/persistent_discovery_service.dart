@@ -31,20 +31,20 @@ class PersistentDiscoveryService {
     return Stream.periodic(const Duration(seconds: 10))
         .startWith(0)
         .asyncMap((_) async {
-          final snapshot = await _streamService.fetchPersistentCandidates(
-            limit: 200,
-          );
-          final blockedIds = await _moderationService.getExcludedUserIds(
-            currentUserId,
-          );
-          return snapshot.docs
-              .where((doc) => doc.id != currentUserId)
-              .where((doc) => !blockedIds.contains(doc.id))
-              .where((doc) => !alreadySwiped.contains(doc.id))
-              .map(SpeedDateCandidate.fromDoc)
-              .where((candidate) => candidate.username.trim().isNotEmpty)
-              .toList(growable: false);
-        });
+      final snapshot = await _streamService.fetchPersistentCandidates(
+        limit: 200,
+      );
+      final blockedIds = await _moderationService.getExcludedUserIds(
+        currentUserId,
+      );
+      return snapshot.docs
+          .where((doc) => doc.id != currentUserId)
+          .where((doc) => !blockedIds.contains(doc.id))
+          .where((doc) => !alreadySwiped.contains(doc.id))
+          .map(SpeedDateCandidate.fromDoc)
+          .where((candidate) => candidate.username.trim().isNotEmpty)
+          .toList(growable: false);
+    });
   }
 
   /// Record a like/pass swipe for persistent discovery
@@ -62,7 +62,7 @@ class PersistentDiscoveryService {
       {
         'candidateId': candidateId,
         'isLike': isLike,
-        'timestamp': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
       },
     );
 
@@ -95,29 +95,25 @@ class PersistentDiscoveryService {
 
   /// Get all mutual matches from persistent discovery
   Stream<List<SpeedDatingMatch>> matchesStream(String currentUserId) {
-    return _streamService
-        .watchPersistentMatches(currentUserId, limit: 200)
-        .map(
-          (snapshot) => snapshot.docs
-              .map(SpeedDatingMatch.fromDoc)
-              .toList(),
+    return _streamService.watchPersistentMatches(currentUserId, limit: 200).map(
+          (snapshot) => snapshot.docs.map(SpeedDatingMatch.fromDoc).toList(),
         );
   }
 
   /// Get user's swipe history (likes only)
   Stream<Set<String>> userSwipesStream(String userId) {
     return Stream.periodic(const Duration(seconds: 10))
-      .startWith(0)
-      .asyncMap((_) async {
-        final snapshot = await _streamService.fetchUserDiscoverySwipes(
-          userId,
-          limit: 500,
-        );
-        return snapshot.docs
+        .startWith(0)
+        .asyncMap((_) async {
+      final snapshot = await _streamService.fetchUserDiscoverySwipes(
+        userId,
+        limit: 500,
+      );
+      return snapshot.docs
           .where((doc) => doc.get('isLike') == true)
           .map((doc) => doc.id)
           .toSet();
-      });
+    });
   }
 
   /// Generate consistent match ID from two user IDs

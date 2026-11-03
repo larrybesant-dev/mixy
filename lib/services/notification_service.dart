@@ -176,7 +176,7 @@ class NotificationService {
       batch.set(ref, {
         'userId': friendId,
         'actorId': inviterId,
-        'type': 'room_invite',
+        'type': 'live_room_invite',
         'content':
             '$inviterName invited you to join "$roomName" — tap to join!',
         'roomId': roomId,
@@ -191,6 +191,5 @@ class NotificationService {
     );
   }
 }
-
 
 

@@ -45,7 +45,7 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
   }
 
   void _onDigit(String d) {
-    if (_digits.length >= 4) return;
+    if (_loading || _digits.length >= 4) return;
     setState(() {
       _digits.add(d);
       _error = null;
@@ -81,9 +81,9 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
       }
       // Confirmed — enable After Dark
       setState(() => _loading = true);
-      await ref.read(afterDarkControllerProvider).enable(pin);
+      final enabled = await ref.read(afterDarkControllerProvider).enable(pin);
       if (!mounted) return;
-      context.go('/after-dark');
+      context.go(enabled ? '/after-dark' : '/after-dark/unlock');
     } else {
       // Unlock mode
       setState(() => _loading = true);
@@ -92,8 +92,13 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
       if (valid) {
         context.go('/after-dark');
       } else {
+        final lockout =
+            await ref.read(afterDarkControllerProvider).remainingLockout();
+        if (!mounted) return;
         setState(() {
-          _error = 'Incorrect PIN. Try again.';
+          _error = lockout == null
+              ? 'Incorrect PIN. Try again.'
+              : 'Too many attempts. Try again in ${lockout.inSeconds + 1} seconds.';
           _digits.clear();
           _loading = false;
         });
@@ -159,18 +164,23 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(4, (i) {
                     final filled = i < _digits.length;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 10),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: filled ? EmberDark.primary : Colors.transparent,
-                        border: Border.all(
-                          color: filled
-                              ? EmberDark.primary
-                              : EmberDark.outlineVariant,
-                          width: 2,
+                    return Semantics(
+                      label:
+                          'PIN digit ${i + 1} ${filled ? 'entered' : 'empty'}',
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              filled ? EmberDark.primary : Colors.transparent,
+                          border: Border.all(
+                            color: filled
+                                ? EmberDark.primary
+                                : EmberDark.outlineVariant,
+                            width: 2,
+                          ),
                         ),
                       ),
                     );
@@ -199,6 +209,13 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
                     child: _Keypad(onDigit: _onDigit, onDelete: _onDelete),
                   ),
 
+                if (!_isSetup) ...[
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: _loading ? null : _resetAccess,
+                    child: const Text('Forgot PIN? Reset After Dark access'),
+                  ),
+                ],
                 const SizedBox(height: 40),
               ],
             ),
@@ -206,6 +223,44 @@ class _AfterDarkPinScreenState extends ConsumerState<AfterDarkPinScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _resetAccess() async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Reset After Dark access?'),
+            content: const Text(
+              'This clears the PIN and disables After Dark on this device. '
+              'You will need to confirm your age and create a new PIN.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Reset access'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+
+    setState(() => _loading = true);
+    try {
+      await ref.read(afterDarkControllerProvider).disable();
+      if (!mounted) return;
+      context.go('/after-dark/age-gate');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Could not reset access: $error';
+      });
+    }
   }
 }
 
@@ -280,6 +335,3 @@ class _KeyButton extends StatelessWidget {
     );
   }
 }
-
-
-

@@ -48,13 +48,57 @@
 >
 > **5. Known limitations (don't file these as bugs)**
 > - Apple Sign In is not available in this beta.
-> - Payment features (buying coins, Stripe Connect) are in test mode — no real money is charged.
+> - Web payment testing is temporarily disabled until the test server key is
+>   installed. Do not file missing checkout as a bug.
+> - Creator payout setup and cash-outs are disabled during beta.
+> - Native iOS and Android builds do not offer Stripe purchases.
+>
+> **6. Testing a web payment (only after the admin enables it)**
+> - Skip this section unless the beta coordinator explicitly confirms that
+>   Stripe test checkout is enabled.
+> - Never enter a real card number.
+> - Use Stripe test card `4242 4242 4242 4242`.
+> - Use any future expiration date, any three-digit CVC, and any valid postal code.
+> - Complete the checkout and confirm that MixVy returns to the app.
+> - Report the package, displayed amount, and result. Do not include screenshots
+>   containing personal billing information.
 >
 > Thank you for helping us build something great.
 >
 > — The MixVy Team
 
 ---
+
+## Beta Payment Safety
+
+- Build the web beta with `ENABLE_PAYMENTS=true` and a `pk_test_...`
+  publishable key only after the server test key is installed. The currently
+  deployed beta uses `ENABLE_PAYMENTS=false`.
+- The deployed `STRIPE_SECRET` must start with `sk_test_...`. Cloud Functions
+  fail closed when a live key is present unless live mode is explicitly enabled.
+- Leave `ENABLE_CREATOR_PAYOUTS` unset. Test purchases must not create real
+  withdrawable earnings, Connect onboarding, or cash-out requests.
+- Do not submit Stripe live-account activation until the IRS name/EIN mismatch
+  is resolved.
+- Do not ask testers for real payment details. Stripe test mode cannot charge,
+  refund, or pay out real funds.
+
+## Mobile Store Billing Decision
+
+- Stripe checkout remains web-only for this beta.
+- Apple generally requires In-App Purchase for digital features, subscriptions,
+  and virtual currency sold inside an App Store app. Regional external-purchase
+  exceptions require Apple-specific eligibility, disclosures, and implementation.
+  See [Apple App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/),
+  especially section 3.1.1.
+- Google Play requires Play Billing for digital goods, dating subscriptions,
+  cloud services, and virtual currency unless the app is enrolled in an eligible
+  alternative-billing or external-offers program for the user's region. See the
+  [Google Play Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738).
+- Before enabling native purchases, implement and test StoreKit/In-App Purchase
+  for iOS and Google Play Billing for Android, or document approved regional
+  alternative-billing enrollment. Never expose web Stripe checkout from native
+  purchase buttons by default.
 
 ## Admin Setup: Enabling a Beta Tester Account
 

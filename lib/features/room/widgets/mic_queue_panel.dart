@@ -44,7 +44,7 @@ class MicQueuePanel extends ConsumerStatefulWidget {
   final VoidCallback? onJoinQueue;
 
   /// Called when the user taps "Leave Queue".
-  final VoidCallback? onLeaveQueue;
+  final ValueChanged<MicAccessRequestModel>? onLeaveQueue;
 
   /// Called when the host taps Approve on a request.
   final void Function(MicAccessRequestModel request)? onApprove;
@@ -120,7 +120,9 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
             .where((r) => r.status == 'pending' && !r.isExpired)
             .toList(growable: false);
 
-        final myPending = pending.where((r) => r.requesterId == widget.currentUserId).toList(growable: false);
+        final myPending = pending
+            .where((r) => r.requesterId == widget.currentUserId)
+            .toList(growable: false);
         final hasMyPending = myPending.isNotEmpty;
 
         if (pending.isEmpty && widget.isHost) return const SizedBox.shrink();
@@ -191,7 +193,11 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: hasMyPending ? widget.onLeaveQueue : widget.onJoinQueue,
+                      onPressed: hasMyPending
+                          ? widget.onLeaveQueue == null
+                              ? null
+                              : () => widget.onLeaveQueue!(myPending.first)
+                          : widget.onJoinQueue,
                       icon: Icon(
                         hasMyPending
                             ? Icons.exit_to_app_rounded
@@ -203,12 +209,10 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                             : 'Join Queue to Talk',
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: hasMyPending
-                            ? const Color(0xFF8C2E3B)
-                            : npPrimary,
-                        foregroundColor: hasMyPending
-                            ? Colors.white
-                            : Colors.black,
+                        backgroundColor:
+                            hasMyPending ? const Color(0xFF8C2E3B) : npPrimary,
+                        foregroundColor:
+                            hasMyPending ? Colors.white : Colors.black,
                       ),
                     ),
                   ),
@@ -222,8 +226,7 @@ class _MicQueuePanelState extends ConsumerState<MicQueuePanel> {
                     itemCount: pending.length,
                     itemBuilder: (context, index) {
                       final req = pending[index];
-                      final name =
-                          widget.displayNameById[req.requesterId] ??
+                      final name = widget.displayNameById[req.requesterId] ??
                           req.requesterDisplayName.ifEmpty(req.requesterId);
                       final isMe = req.requesterId == widget.currentUserId;
                       final rankTier = req.requesterRankTier > 0
@@ -396,6 +399,3 @@ class _IconBtn extends StatelessWidget {
     );
   }
 }
-
-
-

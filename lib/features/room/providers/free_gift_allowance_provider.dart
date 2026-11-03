@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/providers/firebase_providers.dart';
 
-const int DAILY_FREE_GIFT_LIMIT = 5;
+const int dailyFreeGiftLimit = 5;
 
 class FreeGiftAllowance {
   final int remainingToday;
@@ -19,7 +19,7 @@ class FreeGiftAllowance {
     if (snap == null || !snap.exists) {
       // New user: full allowance
       return FreeGiftAllowance(
-        remainingToday: DAILY_FREE_GIFT_LIMIT,
+        remainingToday: dailyFreeGiftLimit,
         resetTime: _getMidnightTomorrow(now),
       );
     }
@@ -33,13 +33,13 @@ class FreeGiftAllowance {
     // If last reset was before today, reset counter
     if (lastReset == null || _isBeforeToday(lastReset, now)) {
       return FreeGiftAllowance(
-        remainingToday: DAILY_FREE_GIFT_LIMIT,
+        remainingToday: dailyFreeGiftLimit,
         resetTime: _getMidnightTomorrow(now),
       );
     }
 
     // Otherwise, decrement from stored count
-    final remaining = (data['remainingToday'] as int?) ?? DAILY_FREE_GIFT_LIMIT;
+    final remaining = (data['remainingToday'] as int?) ?? dailyFreeGiftLimit;
     return FreeGiftAllowance(
       remainingToday: remaining,
       resetTime: lastReset.add(const Duration(days: 1)),
@@ -54,7 +54,9 @@ class FreeGiftAllowance {
   static bool _isBeforeToday(DateTime date, DateTime now) {
     return date.year < now.year ||
         (date.year == now.year && date.month < now.month) ||
-        (date.year == now.year && date.month == now.month && date.day < now.day);
+        (date.year == now.year &&
+            date.month == now.month &&
+            date.day < now.day);
   }
 }
 
@@ -71,7 +73,7 @@ final freeGiftAllowanceProvider = StreamProvider<FreeGiftAllowance>((ref) {
         ));
       }
 
-        return firestore
+      return firestore
           .collection('users')
           .doc(user.uid)
           .collection('gift_tracking')
@@ -80,7 +82,7 @@ final freeGiftAllowanceProvider = StreamProvider<FreeGiftAllowance>((ref) {
           .map((snap) => FreeGiftAllowance.fromSnapshot(snap, DateTime.now()));
     },
     loading: () => Stream.value(FreeGiftAllowance(
-      remainingToday: DAILY_FREE_GIFT_LIMIT,
+      remainingToday: dailyFreeGiftLimit,
       resetTime: DateTime.now().add(const Duration(days: 1)),
     )),
     error: (_, __) => Stream.value(FreeGiftAllowance(
@@ -105,19 +107,18 @@ final useGiftAllowanceFunction = FutureProvider.autoDispose<void>((ref) async {
       .collection('gift_tracking')
       .doc('allowance')
       .update({
-        'remainingToday': FieldValue.increment(-1),
-        'lastReset': FieldValue.serverTimestamp(),
-      })
-      .catchError((_) {
-        // Document doesn't exist, create it
-        return firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('gift_tracking')
-            .doc('allowance')
-            .set({
-              'remainingToday': DAILY_FREE_GIFT_LIMIT - 1,
-              'lastReset': FieldValue.serverTimestamp(),
-            });
-      });
+    'remainingToday': FieldValue.increment(-1),
+    'lastReset': FieldValue.serverTimestamp(),
+  }).catchError((_) {
+    // Document doesn't exist, create it
+    return firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('gift_tracking')
+        .doc('allowance')
+        .set({
+      'remainingToday': dailyFreeGiftLimit - 1,
+      'lastReset': FieldValue.serverTimestamp(),
+    });
+  });
 });

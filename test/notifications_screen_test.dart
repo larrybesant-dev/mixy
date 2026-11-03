@@ -27,19 +27,18 @@ void main() {
           overrides: [
             notificationFirestoreProvider.overrideWithValue(firestore),
             appSettingsControllerProvider.overrideWith(
-              (ref) =>
-                  AppSettingsController(AppSettingsService())
-                    ..state = const AsyncValue.data(
-                      AppSettings(
-                        themeMode: ThemeMode.system,
-                        notificationsEnabled: false,
-                        analyticsEnabled: true,
-                        legalAccepted: true,
-                        legalAcceptedVersion: AppSettings.currentLegalVersion,
-                        legalAcceptedAt: null,
-                        localeCode: 'en',
-                      ),
-                    ),
+              (ref) => AppSettingsController(AppSettingsService())
+                ..state = const AsyncValue.data(
+                  AppSettings(
+                    themeMode: ThemeMode.system,
+                    notificationsEnabled: false,
+                    analyticsEnabled: true,
+                    legalAccepted: true,
+                    legalAcceptedVersion: AppSettings.currentLegalVersion,
+                    legalAcceptedAt: null,
+                    localeCode: 'en',
+                  ),
+                ),
             ),
             userProvider.overrideWithValue(
               UserModel(
@@ -61,6 +60,65 @@ void main() {
       expect(find.text('Payment received'), findsOneWidget);
       expect(find.byTooltip('Mark all as read'), findsOneWidget);
       expect(find.byTooltip('Notification settings'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'NotificationsScreen only shows friend requests that remain pending',
+    (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('friendships').doc('user-1_user-2').set({
+        'userA': 'user-1',
+        'userB': 'user-2',
+        'status': 'accepted',
+        'requestedBy': 'user-2',
+        'createdAt': DateTime(2026, 1, 1),
+      });
+      await firestore.collection('friendships').doc('user-1_user-3').set({
+        'userA': 'user-1',
+        'userB': 'user-3',
+        'status': 'pending',
+        'requestedBy': 'user-3',
+        'createdAt': DateTime(2026, 1, 2),
+      });
+      await firestore.collection('notifications').doc('resolved').set({
+        'userId': 'user-1',
+        'actorId': 'user-2',
+        'type': 'friend_request',
+        'content': 'Resolved request',
+        'isRead': false,
+        'createdAt': DateTime(2026, 1, 1),
+      });
+      await firestore.collection('notifications').doc('pending').set({
+        'userId': 'user-1',
+        'actorId': 'user-3',
+        'type': 'friend_request',
+        'content': 'Pending request',
+        'isRead': false,
+        'createdAt': DateTime(2026, 1, 2),
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationFirestoreProvider.overrideWithValue(firestore),
+            userProvider.overrideWithValue(
+              UserModel(
+                id: 'user-1',
+                email: 'user1@mixvy.dev',
+                username: 'User One',
+                createdAt: DateTime(2026, 1, 1),
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: NotificationsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resolved request'), findsNothing);
+      expect(find.text('Pending request'), findsOneWidget);
+      expect(find.text('View Request'), findsOneWidget);
     },
   );
 }

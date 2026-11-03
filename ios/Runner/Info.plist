@@ -57,6 +57,8 @@
 	<string>MixVy uses your camera for live video rooms.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MixVy uses your microphone for live audio rooms.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MixVy uses your approximate location to show distance in dating filters. It is never shown to other users.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>MixVy lets you upload profile photos and intro videos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

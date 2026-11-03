@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
-import '../features/room/models/room_gift_catalog.dart';
+import '../core/flags/feature_flags.dart';
 import '../features/room/providers/room_gift_provider.dart';
 import '../features/room/providers/free_gift_allowance_provider.dart';
 import '../features/room/providers/room_session_provider.dart';
@@ -67,7 +67,7 @@ class _RoomGiftPickerSheetContentState
     if (currentUser == null) return;
 
     final allowance = ref.read(freeGiftAllowanceProvider).value;
-    
+
     // Check if user has allowance or sufficient coins
     if (allowance == null || !allowance.canSendFreeGift) {
       // No free gifts remaining - check if user has coins to pay
@@ -270,7 +270,9 @@ class _RoomGiftPickerSheetContentState
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
-                          'You\'ve used all your free gifts for today. Buy coins to send more! 🎁',
+                          kPaymentsEnabled
+                              ? 'You\'ve used all your free gifts for today. Buy coins to send more! 🎁'
+                              : 'You\'ve used all your free gifts for today. Try again tomorrow.',
                           style: TextStyle(
                             color: VelvetNoir.onSurface,
                             fontSize: 12,
@@ -278,18 +280,20 @@ class _RoomGiftPickerSheetContentState
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: () {
-                          BuyCoinModal.show(context, ref);
-                        },
-                        icon: const Icon(Icons.shopping_cart),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: VelvetNoir.primary,
-                          foregroundColor: VelvetNoir.surface,
+                      if (kPaymentsEnabled) ...[
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: () {
+                            BuyCoinModal.show(context, ref);
+                          },
+                          icon: const Icon(Icons.shopping_cart),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: VelvetNoir.primary,
+                            foregroundColor: VelvetNoir.surface,
+                          ),
+                          label: const Text('Buy Coins Now'),
                         ),
-                        label: const Text('Buy Coins Now'),
-                      ),
+                      ],
                       const SizedBox(height: 16),
                     ],
                   )
@@ -384,7 +388,8 @@ class _RecipientSelector extends StatelessWidget {
             participantId: userId,
             participantName: sessionState.userDisplayNames[userId] ?? userId,
             isSelected: selected == userId,
-            onTap: () => onSelected(userId, sessionState.userDisplayNames[userId] ?? userId),
+            onTap: () => onSelected(
+                userId, sessionState.userDisplayNames[userId] ?? userId),
           ),
       ],
     );

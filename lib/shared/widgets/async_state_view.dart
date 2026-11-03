@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/firestore/firestore_error_utils.dart';
 import '../../core/layout/app_layout.dart';
+import '../../core/telemetry/app_telemetry.dart';
 
 class AppLoadingView extends StatelessWidget {
   const AppLoadingView({super.key, this.label});
@@ -17,9 +20,8 @@ class AppLoadingView extends StatelessWidget {
       builder: (context, constraints) {
         final shortestSide = constraints.biggest.shortestSide;
         final compact = shortestSide.isFinite && shortestSide < 48;
-        final indicatorSize = compact
-            ? shortestSide.clamp(16.0, 28.0).toDouble()
-            : 36.0;
+        final indicatorSize =
+            compact ? shortestSide.clamp(16.0, 28.0).toDouble() : 36.0;
 
         final child = compact && label == null
             ? SizedBox(
@@ -54,6 +56,97 @@ class AppLoadingView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class AppBoundedLoadingView extends StatefulWidget {
+  const AppBoundedLoadingView({
+    super.key,
+    required this.fallbackContext,
+    this.label,
+    this.onRetry,
+    this.timeout = const Duration(seconds: 12),
+  });
+
+  final String fallbackContext;
+  final String? label;
+  final VoidCallback? onRetry;
+  final Duration timeout;
+
+  @override
+  State<AppBoundedLoadingView> createState() => _AppBoundedLoadingViewState();
+}
+
+class _AppBoundedLoadingViewState extends State<AppBoundedLoadingView> {
+  Timer? _timer;
+  bool _timedOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppBoundedLoadingView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fallbackContext != widget.fallbackContext ||
+        oldWidget.timeout != widget.timeout) {
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timedOut = false;
+    _timer = Timer(widget.timeout, () {
+      if (!mounted) return;
+      setState(() => _timedOut = true);
+      AppTelemetry.logAction(
+        level: 'warn',
+        domain: 'loading',
+        action: 'loading_timeout',
+        message: 'A loading state exceeded its time limit.',
+        result: 'timeout',
+        metadata: <String, Object?>{
+          'context': widget.fallbackContext,
+          'timeout_ms': widget.timeout.inMilliseconds,
+        },
+      );
+    });
+  }
+
+  void _retry() {
+    _startTimer();
+    setState(() {});
+    widget.onRetry?.call();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_timedOut) {
+      return AppLoadingView(label: widget.label);
+    }
+
+    return AppEmptyView(
+      icon: Icons.cloud_off_outlined,
+      title: 'Taking longer than expected',
+      message:
+          'MixVy could not finish loading ${widget.fallbackContext}. Check your connection and try again.',
+      action: widget.onRetry == null
+          ? null
+          : FilledButton.icon(
+              onPressed: _retry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try again'),
+            ),
     );
   }
 }
@@ -202,7 +295,11 @@ class AppAsyncValueView<T> extends StatelessWidget {
         }
         return data(resolved);
       },
-      loading: () => AppLoadingView(label: loadingLabel),
+      loading: () => AppBoundedLoadingView(
+        fallbackContext: fallbackContext,
+        label: loadingLabel,
+        onRetry: onRetry,
+      ),
       error: (error, _) => AppErrorView(
         error: error,
         fallbackContext: fallbackContext,
@@ -211,6 +308,3 @@ class AppAsyncValueView<T> extends StatelessWidget {
     );
   }
 }
-
-
-

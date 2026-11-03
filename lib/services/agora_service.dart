@@ -106,6 +106,11 @@ class AgoraService extends RtcRoomService with DiagnosticLogger {
   bool get isLocalVideoCapturing => _localVideoCapturing;
   @override
   bool get isLocalAudioMuted => _localAudioMuted;
+  @override
+  bool get supportsCameraSwitch =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   @override
   RtcConnectionState get connectionState => _recoveryHandler.state;
@@ -194,6 +199,17 @@ class AgoraService extends RtcRoomService with DiagnosticLogger {
         publishMicrophoneTrack: enabled,
       ),
     );
+  }
+
+  @override
+  Future<void> switchCamera() async {
+    if (!supportsCameraSwitch || !_initialized || !_localVideoCapturing) {
+      throw const AgoraServiceException(
+        code: 'camera-switch-unavailable',
+        message: 'Turn on video before switching cameras.',
+      );
+    }
+    await _engine.switchCamera();
   }
 
   Future<void> _startCameraCaptureAfterRoleUpgrade() async {

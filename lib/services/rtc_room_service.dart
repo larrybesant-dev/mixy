@@ -41,12 +41,14 @@ abstract class RtcRoomService {
   // ──────────────────────────────────────────────────────────────────────────
 
   List<int> get remoteUids;
+  List<int> get remoteVideoUids => remoteUids;
   bool get localSpeaking;
   bool get canRenderLocalView;
   bool get isBroadcaster;
   bool get isJoinedChannel;
   bool get isLocalVideoCapturing;
   bool get isLocalAudioMuted;
+  bool get supportsCameraSwitch => false;
 
   /// Current connection state (idle, connecting, connected, degraded, reconnecting, failed).
   /// Updated by the service's internal recovery handler.
@@ -98,6 +100,10 @@ abstract class RtcRoomService {
   });
 
   Future<void> enableVideo(bool enabled, {bool publishMicrophoneTrack = true});
+
+  Future<void> switchCamera() async {
+    throw UnsupportedError('Camera switching is not supported');
+  }
 
   Future<void> mute(bool muted);
 
@@ -180,6 +186,11 @@ abstract class RtcRoomService {
   /// Default no-op — implementations that support it override this.
   Future<void> setSpeakerVolume(double volume) async {}
 
+  /// Set the outgoing shared tab/system audio gain.
+  ///
+  /// [volume] is in the range [0.0, 2.0] where 1.0 is the default (100%).
+  Future<void> setSharedAudioVolume(double volume) async {}
+
   /// Suggests the encoding quality for the local outgoing stream.
   /// Used in Mesh to save bandwidth when the user is not the active speaker.
   Future<void> setEncodingQuality(bool highQuality) async {}
@@ -188,6 +199,3 @@ abstract class RtcRoomService {
 
   Future<void> ensureDeviceAccess({required bool video, required bool audio});
 }
-
-
-

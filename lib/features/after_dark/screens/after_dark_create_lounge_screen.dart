@@ -14,7 +14,7 @@ import '../../../services/room_service.dart';
 import '../../../shared/widgets/app_page_scaffold.dart';
 import '../theme/after_dark_theme.dart';
 
-enum _Privacy { public, friends, private }
+enum _Privacy { public, friends, subscribers, private }
 
 class AfterDarkCreateLoungeScreen extends ConsumerStatefulWidget {
   const AfterDarkCreateLoungeScreen({super.key});
@@ -88,6 +88,7 @@ class _AfterDarkCreateLoungeScreenState
         switch (_privacy) {
           _Privacy.public => 'open',
           _Privacy.friends => 'friends-only',
+          _Privacy.subscribers => 'subscribers-only',
           _Privacy.private => 'private',
         },
       ];
@@ -98,6 +99,7 @@ class _AfterDarkCreateLoungeScreenState
         category: _category?.toLowerCase(),
         isLive: true,
         isAdult: true,
+        subscriberOnly: _privacy == _Privacy.subscribers,
         thumbnailUrl: _thumbnailUrl,
         tags: tags,
       );
@@ -395,6 +397,7 @@ class _AfterDarkCreateLoungeScreenState
     final privacyLabel = switch (_privacy) {
       _Privacy.public => 'OPEN',
       _Privacy.friends => 'FRIENDS',
+      _Privacy.subscribers => 'SUBSCRIBERS',
       _Privacy.private => 'PRIVATE',
     };
     final categoryLabel = _category ?? 'Late Night';
@@ -658,6 +661,11 @@ class _AfterDarkCreateLoungeScreenState
                 'Only your friends can join',
                 Icons.group_rounded,
               ),
+              _Privacy.subscribers => (
+                'Subscribers',
+                'Only active subscribers can join',
+                Icons.workspace_premium_outlined,
+              ),
               _Privacy.private => (
                 'Private',
                 'Invite-only access',
@@ -796,9 +804,11 @@ class _AfterDarkCreateLoungeScreenState
                     color: Colors.white,
                   ),
                   label: Text(
-                    _privacy == _Privacy.private
-                        ? 'Open Private Lounge'
-                        : 'Open Lounge',
+                    switch (_privacy) {
+                      _Privacy.private => 'Open Private Lounge',
+                      _Privacy.subscribers => 'Open Subscriber Lounge',
+                      _ => 'Open Lounge',
+                    },
                     style: GoogleFonts.raleway(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -882,6 +892,5 @@ class _AfterDarkCreateLoungeScreenState
     );
   }
 }
-
 
 

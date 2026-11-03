@@ -1,12 +1,12 @@
 {
   "schemaVersion": "1.0.0",
-  "startedAt": "2026-05-04T02:59:33.198Z",
-  "finishedAt": "2026-05-04T02:59:38.878Z",
-  "durationMs": 5680,
+  "startedAt": "2026-10-29T20:57:46.079Z",
+  "finishedAt": "2026-10-29T20:58:03.959Z",
+  "durationMs": 17880,
   "passed": true,
   "failCount": 0,
-  "warnCount": 1,
-  "totalChecks": 31,
+  "warnCount": 0,
+  "totalChecks": 32,
   "checks": [
     {
       "category": "env",
@@ -34,25 +34,25 @@
     },
     {
       "category": "data",
-      "name": "Conversations sample (9 docs)",
+      "name": "Conversations sample (6 docs)",
       "status": "PASS",
       "detail": null
     },
     {
       "category": "data",
-      "name": "Messages sample (50 docs)",
+      "name": "Messages sample (5 docs)",
       "status": "PASS",
       "detail": null
     },
     {
       "category": "data",
-      "name": "Rooms sample (10 docs)",
+      "name": "Rooms sample (4 docs)",
       "status": "PASS",
       "detail": null
     },
     {
       "category": "data",
-      "name": "Follows sample (11 docs)",
+      "name": "Follows sample (5 docs)",
       "status": "PASS",
       "detail": null
     },
@@ -77,8 +77,14 @@
     {
       "category": "arch",
       "name": "No raw FirebaseFirestore.instance in UI layer",
-      "status": "WARN",
-      "detail": "12 usages: lib\\features\\after_dark\\screens\\after_dark_create_lounge_screen.dart:104, lib\\features\\after_dark\\screens\\after_dark_profile_screen.dart:41, lib\\features\\after_dark\\screens\\after_dark_profile_screen.dart:61"
+      "status": "PASS",
+      "detail": null
+    },
+    {
+      "category": "arch",
+      "name": "Top-level rooms reads owned only by RoomService",
+      "status": "PASS",
+      "detail": null
     },
     {
       "category": "rules",

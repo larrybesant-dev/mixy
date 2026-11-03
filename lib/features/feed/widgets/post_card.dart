@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../presentation/providers/user_provider.dart';
+import '../../profile/profile_view_providers.dart';
 import '../models/post_model.dart';
 import '../providers/feed_providers.dart';
 
@@ -26,9 +28,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (_toggling) return;
     setState(() => _toggling = true);
     try {
-      await ref
-          .read(feedRepositoryProvider)
-          .toggleLike(
+      await ref.read(feedRepositoryProvider).toggleLike(
             widget.post.id,
             widget.currentUserId,
             widget.post.isLikedBy(widget.currentUserId),
@@ -48,8 +48,17 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget build(BuildContext context) {
     final post = widget.post;
     final liked = post.isLikedBy(widget.currentUserId);
-    final authorInitial = (post.authorName?.trim().isNotEmpty == true)
-        ? post.authorName!.trim().characters.first.toUpperCase()
+    final profile = post.userId.isEmpty
+        ? null
+        : ref.watch(userProfileFutureProvider(post.userId)).valueOrNull;
+    final authorName = getDisplayName(
+      uid: post.userId,
+      resolvedDisplayName: profile?.displayName,
+      profileUsername: profile?.username,
+      fallbackName: post.authorName,
+    );
+    final authorInitial = authorName.isNotEmpty
+        ? authorName.characters.first.toUpperCase()
         : (post.userId.isNotEmpty
             ? post.userId.characters.first.toUpperCase()
             : 'M');
@@ -84,9 +93,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.authorName?.trim().isNotEmpty == true
-                              ? post.authorName!
-                              : (post.userId.isNotEmpty ? post.userId : 'MixVy User'),
+                          post.userId.isEmpty ? 'MixVy User' : authorName,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
@@ -233,6 +240,3 @@ class _PostCardState extends ConsumerState<PostCard> {
     return '${dt.month}/${dt.day}/${dt.year}';
   }
 }
-
-
-

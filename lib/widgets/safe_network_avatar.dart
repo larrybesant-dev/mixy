@@ -48,7 +48,14 @@ class SafeNetworkAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final safeUrl = sanitizeNetworkImageUrl(avatarUrl);
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final requestedPixels =
+        (radius * 2 * (devicePixelRatio.isFinite ? devicePixelRatio : 1))
+            .ceil();
+    final safeUrl = sanitizeNetworkImageUrl(
+      avatarUrl,
+      preferredSize: requestedPixels,
+    );
     if (safeUrl == null) return _fallback(context);
 
     // Handle local assets
@@ -86,6 +93,8 @@ class SafeNetworkAvatar extends StatelessWidget {
         imageUrl: safeUrl,
         width: radius * 2,
         height: radius * 2,
+        memCacheWidth: requestedPixels,
+        memCacheHeight: requestedPixels,
         fit: BoxFit.cover,
         placeholder: (context, url) => _fallback(context),
         errorWidget: (context, url, error) => _fallback(context),

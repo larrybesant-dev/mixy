@@ -16,12 +16,18 @@ const {
 const {
   Timestamp,
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } = require("firebase/firestore");
 
 const rules = fs.readFileSync(
@@ -105,6 +111,83 @@ beforeEach(async () => {
 });
 
 describe("firestore rules", () => {
+  const validDatingPreferences = {
+    lookingFor: ["Woman"],
+    minAge: 21,
+    maxAge: 40,
+    maxDistanceKm: 25,
+    distanceUnit: "km",
+    race: null,
+    sexuality: null,
+    preferredRaces: [],
+    preferredSexualities: [],
+    latitude: 40.71,
+    longitude: -74.01,
+    updatedAt: Timestamp.now(),
+  };
+
+  it("allows users to update a bounded messenger status only for themselves", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+
+    await assertSucceeds(updateDoc(doc(selfDb, "users", "user-1"), {
+      statusMessage: "Available to chat",
+      messengerStatus: "away",
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(otherDb, "users", "user-1"), {
+      statusMessage: "Changed by someone else",
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(selfDb, "users", "user-1"), {
+      statusMessage: "x".repeat(81),
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(selfDb, "users", "user-1"), {
+      messengerStatus: "invisible",
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("allows owners to manage valid dating preferences only", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const otherDb = testEnv.authenticatedContext("user-2").firestore();
+    const datingRef = doc(selfDb, "users", "user-1", "private", "dating");
+
+    await assertSucceeds(setDoc(datingRef, validDatingPreferences));
+    await assertSucceeds(getDoc(datingRef));
+    await assertFails(
+      getDoc(doc(otherDb, "users", "user-1", "private", "dating")),
+    );
+    await assertSucceeds(deleteDoc(datingRef));
+  });
+
+  it("rejects malformed or unexpected private dating data", async () => {
+    const selfDb = testEnv.authenticatedContext("user-1").firestore();
+    const datingRef = doc(selfDb, "users", "user-1", "private", "dating");
+
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      minAge: 17,
+    }));
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      latitude: 91,
+    }));
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      race: "not-allowed",
+    }));
+    await assertFails(setDoc(datingRef, {
+      ...validDatingPreferences,
+      publicLocation: "New York",
+    }));
+    await assertFails(setDoc(
+      doc(selfDb, "users", "user-1", "private", "unexpected"),
+      {value: true},
+    ));
+  });
+
   it("allows signed-in users to read top-level presence and only self to write", async () => {
     const viewerDb = testEnv.authenticatedContext("viewer-1").firestore();
     const selfDb = testEnv.authenticatedContext("user-1").firestore();
@@ -186,6 +269,172 @@ describe("firestore rules", () => {
       status: "sent",
       timestamp: Timestamp.now(),
     }));
+  });
+
+  it("keeps creator subscription state server-authoritative", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "creator_subscription_settings", "creator-1"), {
+        creatorId: "creator-1",
+        enabled: true,
+        monthlyPriceCents: 499,
+        currency: "usd",
+      });
+      await setDoc(doc(db, "creator_subscriptions", "subscriber-1_creator-1"), {
+        subscriberId: "subscriber-1",
+        creatorId: "creator-1",
+        status: "active",
+      });
+    });
+
+    const creatorDb = testEnv.authenticatedContext("creator-1").firestore();
+    const subscriberDb = testEnv.authenticatedContext("subscriber-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("outsider-1").firestore();
+
+    await assertSucceeds(
+      getDoc(doc(creatorDb, "creator_subscription_settings", "creator-1")),
+    );
+    await assertFails(
+      getDoc(doc(outsiderDb, "creator_subscription_settings", "creator-1")),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(creatorDb, "creator_subscriptions", "subscriber-1_creator-1"),
+      ),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(subscriberDb, "creator_subscriptions", "subscriber-1_creator-1"),
+      ),
+    );
+    await assertFails(
+      getDoc(
+        doc(outsiderDb, "creator_subscriptions", "subscriber-1_creator-1"),
+      ),
+    );
+    await assertFails(
+      setDoc(doc(creatorDb, "creator_subscription_settings", "creator-1"), {
+        creatorId: "creator-1",
+        enabled: false,
+        monthlyPriceCents: 299,
+        currency: "usd",
+      }),
+    );
+    await assertFails(
+      updateDoc(
+        doc(
+          subscriberDb,
+          "creator_subscriptions",
+          "subscriber-1_creator-1",
+        ),
+        {status: "canceled"},
+      ),
+    );
+  });
+
+  it("keeps subscriber-only updates and reports behind callable functions", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "creator_subscriber_updates", "update-1"), {
+        creatorId: "creator-1",
+        text: "Private update",
+        createdAt: Timestamp.now(),
+      });
+      await setDoc(doc(db, "creator_subscriber_update_reports", "report-1"), {
+        updateId: "update-1",
+        reporterId: "subscriber-1",
+        reason: "inappropriate_content",
+        createdAt: Timestamp.now(),
+      });
+    });
+
+    const creatorDb = testEnv.authenticatedContext("creator-1").firestore();
+    const subscriberDb = testEnv.authenticatedContext("subscriber-1").firestore();
+
+    await assertFails(
+      getDoc(doc(creatorDb, "creator_subscriber_updates", "update-1")),
+    );
+    await assertFails(
+      setDoc(doc(creatorDb, "creator_subscriber_updates", "update-2"), {
+        creatorId: "creator-1",
+        text: "Client-authored update",
+        createdAt: Timestamp.now(),
+      }),
+    );
+    await assertFails(
+      setDoc(
+        doc(subscriberDb, "creator_subscriber_update_reports", "report-2"),
+        {
+          updateId: "update-1",
+          reporterId: "subscriber-1",
+          reason: "inappropriate_content",
+          createdAt: Timestamp.now(),
+        },
+      ),
+    );
+  });
+
+  it("allows only active subscribers to join subscriber lounges", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "subscriber-room"), {
+        hostId: "creator-1",
+        ownerId: "creator-1",
+        name: "Members lounge",
+        isLive: true,
+        isAdult: true,
+        subscriberOnly: true,
+        creatorId: "creator-1",
+        audienceUserIds: ["creator-1"],
+        stageUserIds: [],
+        memberCount: 1,
+      });
+      await setDoc(
+        doc(db, "creator_subscriptions", "subscriber-1_creator-1"),
+        {
+          subscriberId: "subscriber-1",
+          creatorId: "creator-1",
+          status: "active",
+          terminal: false,
+        },
+      );
+    });
+
+    const subscriberDb = testEnv.authenticatedContext("subscriber-1").firestore();
+    const outsiderDb = testEnv.authenticatedContext("outsider-1").firestore();
+
+    await assertSucceeds(
+      setDoc(
+        doc(
+          subscriberDb,
+          "rooms",
+          "subscriber-room",
+          "participants",
+          "subscriber-1",
+        ),
+        {
+          userId: "subscriber-1",
+          role: "audience",
+          joinedAt: Timestamp.now(),
+        },
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(
+          outsiderDb,
+          "rooms",
+          "subscriber-room",
+          "participants",
+          "outsider-1",
+        ),
+        {
+          userId: "outsider-1",
+          role: "audience",
+          joinedAt: Timestamp.now(),
+        },
+      ),
+    );
   });
 
   it("blocks direct client writes to room speakers while still allowing participant reads", async () => {
@@ -277,6 +526,67 @@ describe("firestore rules", () => {
     }));
   });
 
+  it("allows room whispers only between the selected participants", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "rooms", "room-whisper-1"), {
+        hostId: "host-1",
+        ownerId: "host-1",
+        isLocked: false,
+      });
+      await setDoc(doc(db, "rooms", "room-whisper-1", "participants", "user-1"), {
+        userId: "user-1",
+        role: "audience",
+      });
+      await setDoc(doc(db, "rooms", "room-whisper-1", "participants", "user-2"), {
+        userId: "user-2",
+        role: "audience",
+      });
+    });
+
+    const senderDb = testEnv.authenticatedContext("user-1").firestore();
+    const recipientDb = testEnv.authenticatedContext("user-2").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+    const whisperPath = [
+      "rooms",
+      "room-whisper-1",
+      "whispers",
+      "whisper-1",
+    ];
+    const whisper = {
+      id: "whisper-1",
+      roomId: "room-whisper-1",
+      senderId: "user-1",
+      senderName: "User 1",
+      recipientId: "user-2",
+      recipientName: "User 2",
+      participantIds: ["user-1", "user-2"],
+      content: "private hello",
+      createdAt: serverTimestamp(),
+      clientSentAt: Timestamp.now(),
+    };
+
+    await assertSucceeds(setDoc(doc(senderDb, ...whisperPath), whisper));
+    await assertSucceeds(getDoc(doc(senderDb, ...whisperPath)));
+    await assertSucceeds(getDoc(doc(recipientDb, ...whisperPath)));
+    await assertFails(getDoc(doc(outsiderDb, ...whisperPath)));
+    await assertSucceeds(getDocs(query(
+      collection(senderDb, "rooms", "room-whisper-1", "whispers"),
+      where("participantIds", "array-contains", "user-1"),
+      limit(100),
+    )));
+    await assertSucceeds(getDocs(query(
+      collection(recipientDb, "rooms", "room-whisper-1", "whispers"),
+      where("participantIds", "array-contains", "user-2"),
+      limit(100),
+    )));
+    await assertFails(getDocs(query(
+      collection(outsiderDb, "rooms", "room-whisper-1", "whispers"),
+      where("participantIds", "array-contains", "user-1"),
+      limit(100),
+    )));
+  });
+
   it("enforces canonical follows edge writes", async () => {
     const followerDb = testEnv.authenticatedContext("user-1").firestore();
 
@@ -349,6 +659,81 @@ describe("firestore rules", () => {
     }));
   });
 
+  it("allows participants to list their conversations", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "conversations", "conv-user-1"), {
+        type: "direct",
+        participantIds: ["user-1", "user-2"],
+        createdAt: Timestamp.now(),
+        lastMessageAt: Timestamp.now(),
+        isArchived: false,
+        status: "active",
+      });
+      await setDoc(doc(db, "conversations", "conv-other"), {
+        type: "direct",
+        participantIds: ["user-2", "user-3"],
+        createdAt: Timestamp.now(),
+        lastMessageAt: Timestamp.now(),
+        isArchived: false,
+        status: "active",
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const conversationsQuery = query(
+      collection(userDb, "conversations"),
+      where("participantIds", "array-contains", "user-1"),
+      orderBy("lastMessageAt", "desc"),
+      limit(50),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(conversationsQuery));
+    assert.deepEqual(snapshot.docs.map((entry) => entry.id), ["conv-user-1"]);
+  });
+
+  it("allows normal and buzz conversation messages only", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "conversations", "conv-buzz"), {
+        type: "direct",
+        participantIds: ["user-1", "user-2"],
+        createdAt: Timestamp.now(),
+        isArchived: false,
+        status: "active",
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext("user-1").firestore();
+    const message = {
+      conversationId: "conv-buzz",
+      senderId: "user-1",
+      senderName: "User 1",
+      senderAvatarUrl: null,
+      content: "BUZZ!",
+      clientMessageId: "client-message-1",
+      createdAt: serverTimestamp(),
+      clientSentAt: Timestamp.now(),
+      expiresAt: Timestamp.fromDate(
+        new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      ),
+      isDeleted: false,
+      readBy: ["user-1"],
+    };
+
+    await assertSucceeds(setDoc(
+      doc(userDb, "conversations", "conv-buzz", "messages", "normal"),
+      {...message, type: "normal"},
+    ));
+    await assertSucceeds(setDoc(
+      doc(userDb, "conversations", "conv-buzz", "messages", "buzz"),
+      {...message, clientMessageId: "client-message-2", type: "buzz"},
+    ));
+    await assertFails(setDoc(
+      doc(userDb, "conversations", "conv-buzz", "messages", "invalid"),
+      {...message, clientMessageId: "client-message-3", type: "shake_forever"},
+    ));
+  });
+
   it("enforces post creation identity and blocks guest writes", async () => {
     const authorDb = testEnv.authenticatedContext("user-1").firestore();
     const guestDb = testEnv.unauthenticatedContext().firestore();
@@ -356,6 +741,30 @@ describe("firestore rules", () => {
     await assertSucceeds(setDoc(doc(authorDb, "posts", "post-cap-1"), {
       authorId: "user-1",
       content: "hello",
+      createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
+    }));
+
+    await assertSucceeds(setDoc(doc(authorDb, "posts", "post-cap-photo"), {
+      authorId: "user-1",
+      content: "",
+      imageUrl: "https://example.test/photo.jpg",
+      videoUrl: null,
+      createdAt: serverTimestamp(),
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      likes: [],
+    }));
+
+    await assertFails(setDoc(doc(authorDb, "posts", "post-cap-empty"), {
+      authorId: "user-1",
+      content: "",
+      imageUrl: null,
+      videoUrl: null,
       createdAt: serverTimestamp(),
       likeCount: 0,
       commentCount: 0,
@@ -992,6 +1401,88 @@ describe("firestore rules", () => {
     await assertFails(setDoc(doc(otherDb, "users", "user-1", "privacy", "settings"), {
       isPrivate: true,
     }, {merge: true}));
+  });
+
+  it("allows discovery owners and recipients without exposing other swipes", async () => {
+    const ownerDb = testEnv.authenticatedContext("user-1").firestore();
+    const recipientDb = testEnv.authenticatedContext("user-2").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+    const swipeRef = doc(ownerDb, "users", "user-1", "discovery", "user-2");
+
+    await assertSucceeds(setDoc(swipeRef, {
+      candidateId: "user-2",
+      isLike: true,
+      createdAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(
+      doc(recipientDb, "users", "user-1", "discovery", "user-3"),
+      {
+        candidateId: "user-3",
+        isLike: true,
+        createdAt: serverTimestamp(),
+      },
+    ));
+
+    await assertSucceeds(getDoc(doc(
+      recipientDb,
+      "users",
+      "user-1",
+      "discovery",
+      "user-2",
+    )));
+    await assertFails(getDoc(doc(
+      outsiderDb,
+      "users",
+      "user-1",
+      "discovery",
+      "user-2",
+    )));
+    await assertSucceeds(getDocs(query(
+      collectionGroup(recipientDb, "discovery"),
+      where("candidateId", "==", "user-2"),
+      where("isLike", "==", true),
+    )));
+  });
+
+  it("allows profile viewers to record views and owners to read them", async () => {
+    const ownerDb = testEnv.authenticatedContext("user-1").firestore();
+    const viewerDb = testEnv.authenticatedContext("user-2").firestore();
+    const outsiderDb = testEnv.authenticatedContext("user-3").firestore();
+    const viewRef = doc(
+      viewerDb,
+      "users",
+      "user-1",
+      "profileViews",
+      "view-1",
+    );
+
+    await assertSucceeds(setDoc(viewRef, {
+      viewerId: "user-2",
+      viewedUserId: "user-1",
+      createdAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(
+      doc(viewerDb, "users", "user-1", "profileViews", "view-spoofed"),
+      {
+        viewerId: "user-3",
+        viewedUserId: "user-1",
+        createdAt: serverTimestamp(),
+      },
+    ));
+    await assertSucceeds(getDoc(doc(
+      ownerDb,
+      "users",
+      "user-1",
+      "profileViews",
+      "view-1",
+    )));
+    await assertFails(getDoc(doc(
+      outsiderDb,
+      "users",
+      "user-1",
+      "profileViews",
+      "view-1",
+    )));
   });
 
   it("enforces activity_feed self-userId create", async () => {

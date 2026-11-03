@@ -1,7 +1,7 @@
 name: mixvy
 description: "MixVy — Meet. Connect. Vibe. Live audio/video rooms."
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.3+8
 
 environment:
   sdk: ^3.5.0
@@ -46,6 +46,7 @@ dependencies:
   package_info_plus: ^8.0.0
   path: ^1.9.0
   flutter_webrtc: ^0.12.0
+  dart_webrtc: ^1.8.1
   cached_network_image: ^3.4.1
   google_fonts: ^6.2.1
   crypto: ^3.0.3
@@ -58,6 +59,7 @@ dependencies:
   web: any
   meta: any
   firebase_app_check: ^0.4.5+2
+  geolocator: ^14.0.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -77,6 +79,24 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/branding/
+    - assets/images/room_categories/
     - assets/icons/
     - assets/fonts/
     - assets/emojis/
+  fonts:
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+    - family: NotoEmoji
+      fonts:
+        - asset: assets/fonts/NotoEmoji-Regular.ttf
+    - family: NotoSansSymbols
+      fonts:
+        - asset: assets/fonts/NotoSansSymbols-Regular.ttf
+    - family: NotoSansSymbols2
+      fonts:
+        - asset: assets/fonts/NotoSansSymbols2-Regular.ttf
+    - family: NotoColorEmoji
+      fonts:
+        - asset: assets/fonts/NotoColorEmoji-Regular.ttf

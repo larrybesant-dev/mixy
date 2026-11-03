@@ -2,7 +2,6 @@ import 'dart:developer' as developer;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/layout/app_layout.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
+import '../../services/profile_photo_upload_service.dart';
 import 'profile_completion.dart';
 import 'profile_controller.dart';
 
@@ -35,6 +35,27 @@ const _kInterestSuggestions = [
   'Podcasts',
 ];
 
+String editProfileUploadErrorMessage(Object error) {
+  if (error is! FirebaseException) {
+    return 'Upload failed. Check your connection and try again.';
+  }
+
+  return switch (error.code.toLowerCase()) {
+    'quota-exceeded' =>
+      'Photo uploads are temporarily unavailable. Please try again later.',
+    'unauthenticated' ||
+    'permission-denied' ||
+    'unauthorized' =>
+      'Upload blocked. Please sign out and sign in again.',
+    'cancelled' => 'Upload was cancelled.',
+    'invalid-image' => 'This photo could not be read. Choose a JPEG, PNG, or WebP.',
+    'photo-too-large' => 'Photo is too large. Choose one under 20MB.',
+    'retry-limit-exceeded' =>
+      'Upload timed out. Check your connection and try again.',
+    _ => 'Upload failed. Please try again.',
+  };
+}
+
 class EditProfileScreen extends ConsumerStatefulWidget {
   final int initialTab;
   const EditProfileScreen({super.key, this.initialTab = 0});
@@ -46,6 +67,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _hydratedUserId;
+  bool _profileLoaded = false;
 
   // Identity
   final _nameController = TextEditingController();
@@ -87,15 +109,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       vsync: this,
       initialIndex: widget.initialTab.clamp(0, 2),
     );
-    _hydrateFromState(ref.read(profileControllerProvider));
-    Future.microtask(
-      () => ref.read(profileControllerProvider.notifier).loadCurrentProfile(),
-    );
+    Future.microtask(() async {
+      await ref.read(profileControllerProvider.notifier).loadCurrentProfile();
+      if (!mounted) return;
+      final loadedState = ref.read(profileControllerProvider);
+      setState(() {
+        _profileLoaded = true;
+        _hydrateFromState(loadedState, force: true);
+      });
+    });
   }
 
-  void _hydrateFromState(ProfileState state) {
+  void _hydrateFromState(ProfileState state, {bool force = false}) {
+    if (!_profileLoaded || state.isLoading) return;
     final userId = state.userId;
-    if (userId == null || userId.isEmpty || _hydratedUserId == userId) {
+    if (userId == null ||
+        userId.isEmpty ||
+        (!force && _hydratedUserId == userId)) {
       return;
     }
     _hydratedUserId = userId;
@@ -142,30 +172,33 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   // ── Photo uploaders ────────────────────────────────────────────────────────
 
   Future<void> _pickAndUpload({
-    required String storagePath,
+    required String folder,
     required void Function(String url) onSuccess,
     required void Function(bool loading) setLoading,
   }) async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1200,
-      maxHeight: 1200,
-      imageQuality: 85,
-    );
-    if (file == null) return;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
     setLoading(true);
     try {
-      final bytes = await file.readAsBytes();
-      final ext = file.name.split('.').last.toLowerCase();
-      final ref = FirebaseStorage.instance.ref('$storagePath.$ext');
-      final snap = await ref.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/$ext'),
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
       );
-      final url = await snap.ref.getDownloadURL();
+      if (file == null) return;
+      final uid = ref.read(profileControllerProvider).userId ??
+          FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || uid.isEmpty) {
+        throw FirebaseException(
+          plugin: 'firebase_storage',
+          code: 'unauthenticated',
+        );
+      }
+      final bytes = await file.readAsBytes();
+      final url = await ref.read(profilePhotoUploadServiceProvider).upload(
+        bytes: bytes,
+        userId: uid,
+        folder: folder,
+      );
       if (mounted) onSuccess(url);
     } catch (e, st) {
       developer.log(
@@ -177,10 +210,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        ).showSnackBar(
+          SnackBar(content: Text(editProfileUploadErrorMessage(e))),
+        );
       }
     } finally {
-      setLoading(false);
+      if (mounted) setLoading(false);
     }
   }
 
@@ -192,8 +227,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       return;
     }
     await _pickAndUpload(
-      storagePath:
-          'users/${FirebaseAuth.instance.currentUser?.uid}/gallery/${DateTime.now().millisecondsSinceEpoch}',
+      folder: 'gallery_photos',
       onSuccess: (url) => setState(() => _galleryUrls = [..._galleryUrls, url]),
       setLoading: (v) => setState(() => _isUploadingGallery = v),
     );
@@ -204,9 +238,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   Future<void> _saveProfile() async {
     final current = ref.read(profileControllerProvider);
     try {
-      await ref
-          .read(profileControllerProvider.notifier)
-          .updateProfile(
+      await ref.read(profileControllerProvider.notifier).updateProfile(
             current.copyWith(
               username: _nameController.text.trim(),
               email: _emailController.text.trim(),
@@ -229,7 +261,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             ),
           );
       if (!mounted) return;
-      
+
       final updatedState = ref.read(profileControllerProvider);
       if (updatedState.error == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -329,19 +361,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   // ── Tab 0: Basics ─────────────────────────────────────────────────────────
 
   Widget _buildPhotosTab(ProfileState s) {
+    final canUpload = _profileLoaded && !s.isLoading;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Text(
           'Social profile media',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Lead with visuals first: cover, avatar, and a six-photo gallery.',
+          'Lead with visuals first: cover, avatar, and a six-photo gallery. After uploading, select Save to keep your changes.',
           style: TextStyle(color: Colors.white60, height: 1.4),
         ),
         const SizedBox(height: 18),
@@ -349,14 +382,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           clipBehavior: Clip.none,
           children: [
             GestureDetector(
-              onTap: _isUploadingCover
+              onTap: !canUpload || _isUploadingCover
                   ? null
                   : () => _pickAndUpload(
-                      storagePath:
-                          'users/${FirebaseAuth.instance.currentUser?.uid}/cover',
-                      onSuccess: (url) => setState(() => _coverPhotoUrl = url),
-                      setLoading: (v) => setState(() => _isUploadingCover = v),
-                    ),
+                        folder: 'cover_photos',
+                        onSuccess: (url) =>
+                            setState(() => _coverPhotoUrl = url),
+                        setLoading: (v) =>
+                            setState(() => _isUploadingCover = v),
+                      ),
               child: Container(
                 height: 180,
                 decoration: BoxDecoration(
@@ -372,43 +406,44 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 child: Center(
                   child: _isUploadingCover
                       ? const CircularProgressIndicator()
-                      : (_coverPhotoUrl == null || (_coverPhotoUrl ?? '').isEmpty)
-                        ? Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.add_photo_alternate_outlined,
-                                color: Colors.white38,
-                                size: 36,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Add cover photo',
-                                style: TextStyle(
+                      : (_coverPhotoUrl == null ||
+                              (_coverPhotoUrl ?? '').isEmpty)
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.add_photo_alternate_outlined,
                                   color: Colors.white38,
-                                  fontSize: 13,
+                                  size: 36,
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Add cover photo',
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Align(
+                              alignment: Alignment.bottomLeft,
+                              child: Container(
+                                margin: const EdgeInsets.all(14),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: const Text(
+                                  'Tap to replace cover',
+                                  style: TextStyle(color: Colors.white70),
                                 ),
                               ),
-                            ],
-                          )
-                        : Align(
-                            alignment: Alignment.bottomLeft,
-                            child: Container(
-                              margin: const EdgeInsets.all(14),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Text(
-                                'Tap to replace cover',
-                                style: TextStyle(color: Colors.white70),
-                              ),
                             ),
-                          ),
                 ),
               ),
             ),
@@ -416,15 +451,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
               bottom: -34,
               left: 18,
               child: GestureDetector(
-                onTap: _isUploadingAvatar
+                onTap: !canUpload || _isUploadingAvatar
                     ? null
                     : () => _pickAndUpload(
-                        storagePath:
-                            'users/${FirebaseAuth.instance.currentUser?.uid}/avatar',
-                        onSuccess: (url) => setState(() => _avatarUrl = url),
-                        setLoading: (v) =>
-                            setState(() => _isUploadingAvatar = v),
-                      ),
+                          folder: 'profile_photos',
+                          onSuccess: (url) => setState(() => _avatarUrl = url),
+                          setLoading: (v) =>
+                              setState(() => _isUploadingAvatar = v),
+                        ),
                 child: Stack(
                   alignment: Alignment.bottomRight,
                   children: [
@@ -438,21 +472,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                          ? ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: _avatarUrl ?? '',
-                                width: 84,
-                                height: 84,
-                                fit: BoxFit.cover,
-                                errorWidget: (___, __, _) =>
-                                    const Icon(Icons.person, size: 32),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.person,
-                              size: 32,
-                              color: Colors.white54,
-                            ),
+                              ? ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: _avatarUrl ?? '',
+                                    width: 84,
+                                    height: 84,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (___, __, _) =>
+                                        const Icon(Icons.person, size: 32),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  size: 32,
+                                  color: Colors.white54,
+                                ),
                     ),
                     CircleAvatar(
                       radius: 14,
@@ -476,9 +510,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             Text(
               'Gallery',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
             Text(
               '${_galleryUrls.length}/$_maxGalleryPhotos',
@@ -507,7 +541,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             return _GallerySlot(
               imageUrl: hasPhoto ? _galleryUrls[index] : null,
               loading: _isUploadingGallery && !hasPhoto,
-              onTap: hasPhoto ? null : _addGalleryPhoto,
+              onTap: hasPhoto || !canUpload || _isUploadingGallery
+                  ? null
+                  : _addGalleryPhoto,
               onRemove: hasPhoto
                   ? () => setState(() => _galleryUrls.removeAt(index))
                   : null,
@@ -516,9 +552,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         ),
         const SizedBox(height: 18),
         OutlinedButton.icon(
-          onPressed: (_isUploadingGallery || _galleryUrls.length >= _maxGalleryPhotos)
-              ? null
-              : _addGalleryPhoto,
+          onPressed:
+              (!canUpload || _isUploadingGallery || _galleryUrls.length >= _maxGalleryPhotos)
+                  ? null
+                  : _addGalleryPhoto,
           icon: const Icon(Icons.add_photo_alternate_outlined),
           label: const Text('Add gallery photo'),
         ),
@@ -526,9 +563,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         Text(
           'Intro video',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -554,11 +591,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 : 'Anyone can view your profile',
           ),
           value: s.privacy.isPrivate,
-          onChanged: (val) => ref
-              .read(profileControllerProvider.notifier)
-              .updateDraft(
-                s.copyWith(privacy: s.privacy.copyWith(isPrivate: val)),
-              ),
+          onChanged: (val) =>
+              ref.read(profileControllerProvider.notifier).updateDraft(
+                    s.copyWith(privacy: s.privacy.copyWith(isPrivate: val)),
+                  ),
         ),
       ],
     );
@@ -592,15 +628,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           maxLength: 500,
           decoration: InputDecoration(
             labelText: 'About me',
-            hintText: 'Give your profile some personality beyond a single line.',
+            hintText:
+                'Give your profile some personality beyond a single line.',
             prefixIcon: const Icon(Icons.article_outlined),
             alignLabelWithHint: true,
           ),
         ),
         const SizedBox(height: 14),
-        _field(_locationController, 'Location', Icons.place_outlined, next: true),
+        _field(_locationController, 'Location', Icons.place_outlined,
+            next: true),
         const SizedBox(height: 14),
-        _field(_genderController, 'Gender', Icons.person_pin_outlined, next: true),
+        _field(_genderController, 'Gender', Icons.person_pin_outlined,
+            next: true),
         const SizedBox(height: 14),
         _field(
           _relationshipController,
@@ -612,9 +651,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         Text(
           'Account contact',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(height: 8),
         _field(_emailController, 'Email', Icons.email_outlined, next: true),
@@ -634,9 +673,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         Text(
           'Prompts that start conversations',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(height: 6),
         const Text(
@@ -829,7 +868,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         title: const Text('Edit Social Profile'),
         actions: [
           TextButton(
-            onPressed: state.isLoading ? null : _saveProfile,
+            onPressed: state.isLoading ||
+                    !_profileLoaded ||
+                    _isUploadingAvatar ||
+                    _isUploadingCover ||
+                    _isUploadingGallery
+                ? null
+                : _saveProfile,
             child: state.isLoading
                 ? const SizedBox(
                     width: 18,
@@ -904,9 +949,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: isSelected
-                  ? Border.all(color: Colors.white, width: 3)
-                  : null,
+              border:
+                  isSelected ? Border.all(color: Colors.white, width: 3) : null,
               boxShadow: isSelected
                   ? [
                       BoxShadow(
@@ -1011,7 +1055,8 @@ class _GallerySlot extends StatelessWidget {
                         color: Colors.black54,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                      child: const Icon(Icons.close,
+                          size: 14, color: Colors.white),
                     ),
                   ),
                 ),
@@ -1022,6 +1067,3 @@ class _GallerySlot extends StatelessWidget {
     );
   }
 }
-
-
-

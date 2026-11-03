@@ -1,6 +1,9 @@
 #!/usr/bin/env dart
-/// Simple Production Diagnostics for MixVy
-/// Run: dart bin/diagnostic_simple.dart
+// ignore_for_file: avoid_print
+// cSpell:words MIXVY
+
+// Simple Production Diagnostics for MixVy
+// Run: dart bin/diagnostic_simple.dart
 
 import 'dart:io';
 

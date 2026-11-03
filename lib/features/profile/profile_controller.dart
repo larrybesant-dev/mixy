@@ -6,6 +6,12 @@ import 'package:mixvy/core/providers/firebase_providers.dart';
 import 'package:mixvy/features/auth/controllers/auth_controller.dart';
 import 'profile_completion.dart';
 
+const _unchangedError = Object();
+
+final profileServiceProvider = Provider<ProfileService>(
+  (ref) => ProfileService(firestore: ref.watch(firestoreProvider)),
+);
+
 class ProfileState {
   final bool isLoading;
   final String? error, userId, username, email, avatarUrl, coverPhotoUrl, bio, aboutMe, themeId, location, gender, relationshipStatus, vibePrompt, firstDatePrompt, musicTastePrompt, profileAccentColor, profileBgGradientStart, profileBgGradientEnd, profileMusicUrl, profileMusicTitle, introVideoUrl, membershipLevel;
@@ -29,7 +35,7 @@ class ProfileState {
   });
 
   ProfileState copyWith({
-    bool? isLoading, String? error, String? userId, String? username, String? email, String? avatarUrl, 
+    bool? isLoading, Object? error = _unchangedError, String? userId, String? username, String? email, String? avatarUrl,
     String? coverPhotoUrl, List<String>? galleryUrls, String? bio, String? aboutMe, String? themeId, 
     List<String>? interests, List<String>? followers, List<String>? adultKinks, List<String>? adultPreferences, 
     List<String>? adultBoundaries, List<dynamic>? adultLookingFor, int? coinBalance, ProfilePrivacyModel? privacy, 
@@ -39,7 +45,9 @@ class ProfileState {
     String? profileMusicTitle, String? introVideoUrl, String? membershipLevel
   }) {
     return ProfileState(
-      isLoading: isLoading ?? this.isLoading, error: error ?? this.error, userId: userId ?? this.userId,
+      isLoading: isLoading ?? this.isLoading,
+      error: identical(error, _unchangedError) ? this.error : error as String?,
+      userId: userId ?? this.userId,
       username: username ?? this.username, email: email ?? this.email, avatarUrl: avatarUrl ?? this.avatarUrl,
       coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl, galleryUrls: galleryUrls ?? this.galleryUrls,
       bio: bio ?? this.bio, aboutMe: aboutMe ?? this.aboutMe, themeId: themeId ?? this.themeId,
@@ -67,7 +75,7 @@ class ProfileController extends Notifier<ProfileState> {
   @override
   ProfileState build() {
     // Corrected to use 'firestoreProvider' from your firebase_providers.dart
-    _profileService = ProfileService(firestore: ref.read(firestoreProvider));
+    _profileService = ref.read(profileServiceProvider);
     return const ProfileState();
   }
 
@@ -146,6 +154,24 @@ class ProfileController extends Notifier<ProfileState> {
           username: userProfile.username,
           email: userProfile.email,
           avatarUrl: userProfile.avatarUrl,
+          coverPhotoUrl: userProfile.coverPhotoUrl,
+          galleryUrls: userProfile.galleryUrls,
+          introVideoUrl: userProfile.introVideoUrl,
+          aboutMe: userProfile.aboutMe,
+          interests: userProfile.interests,
+          age: userProfile.age,
+          gender: userProfile.gender,
+          location: userProfile.location,
+          relationshipStatus: userProfile.relationshipStatus,
+          vibePrompt: userProfile.vibePrompt,
+          firstDatePrompt: userProfile.firstDatePrompt,
+          musicTastePrompt: userProfile.musicTastePrompt,
+          themeId: userProfile.themeId,
+          profileAccentColor: userProfile.profileAccentColor,
+          profileBgGradientStart: userProfile.profileBgGradientStart,
+          profileBgGradientEnd: userProfile.profileBgGradientEnd,
+          profileMusicUrl: userProfile.profileMusicUrl,
+          profileMusicTitle: userProfile.profileMusicTitle,
           bio: userProfile.bio,
           isLoading: false,
         );

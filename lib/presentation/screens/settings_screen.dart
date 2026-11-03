@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/flags/feature_flags.dart';
 import '../../core/layout/app_layout.dart';
 import '../providers/app_settings_provider.dart';
 import '../../features/beta/beta_tester_provider.dart';
@@ -66,13 +67,13 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.manage_accounts_outlined,
               label: 'Account & Security',
-              onTap: () => context.go('/account'),
+              onTap: () => context.go('/profile/account'),
             ),
             _SettingsTile(
               icon: Icons.shield_outlined,
               label: 'Privacy Controls',
               sub: 'Manage profile visibility and account privacy preferences.',
-              onTap: () => context.go('/profile/editif (tab != null) tab=0'),
+              onTap: () => context.go('/profile/edit?tab=0'),
             ),
             _SettingsTile(
               icon: Icons.block_outlined,
@@ -83,7 +84,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.verified_outlined,
               label: 'Verify Account',
-              onTap: () => context.go('/verification'),
+              onTap: () => context.go('/profile/verification'),
             ),
 
             const SizedBox(height: 24),
@@ -94,6 +95,18 @@ class SettingsScreen extends ConsumerWidget {
               label: 'Notifications',
               value: settings.notificationsEnabled,
               onChanged: controller.setNotificationsEnabled,
+            ),
+            _SettingsSwitchTile(
+              icon: Icons.volume_up_outlined,
+              label: 'Messenger Sounds',
+              value: settings.messengerSoundsEnabled,
+              onChanged: controller.setMessengerSoundsEnabled,
+            ),
+            _SettingsSwitchTile(
+              icon: Icons.vibration_rounded,
+              label: 'Messenger Buzz',
+              value: settings.messengerBuzzEnabled,
+              onChanged: controller.setMessengerBuzzEnabled,
             ),
 
             // Appearance sub-section
@@ -131,34 +144,62 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    SegmentedButton<ThemeMode>(
-                      style: SegmentedButton.styleFrom(
-                        backgroundColor: _svHigh,
-                        foregroundColor: _svMuted,
-                        selectedForegroundColor: Colors.black,
-                        selectedBackgroundColor: _svPrimary,
-                        side: const BorderSide(color: _svOutline),
-                      ),
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          icon: Icon(Icons.brightness_auto, size: 16),
-                          label: Text('System'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          icon: Icon(Icons.light_mode, size: 16),
-                          label: Text('Light'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          icon: Icon(Icons.dark_mode, size: 16),
-                          label: Text('Dark'),
-                        ),
-                      ],
-                      selected: {settings.themeMode},
-                      onSelectionChanged: (s) =>
-                          controller.updateThemeMode(s.first),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final showIcons = constraints.maxWidth >= 360;
+                        return SegmentedButton<ThemeMode>(
+                          expandedInsets: EdgeInsets.zero,
+                          showSelectedIcon: showIcons,
+                          style: SegmentedButton.styleFrom(
+                            backgroundColor: _svHigh,
+                            foregroundColor: _svMuted,
+                            selectedForegroundColor: Colors.black,
+                            selectedBackgroundColor: _svPrimary,
+                            side: const BorderSide(color: _svOutline),
+                          ),
+                          segments: [
+                            ButtonSegment(
+                              value: ThemeMode.system,
+                              icon: showIcons
+                                  ? const Icon(
+                                      Icons.brightness_auto,
+                                      size: 16,
+                                    )
+                                  : null,
+                              label: const Text(
+                                'System',
+                                maxLines: 1,
+                                softWrap: false,
+                              ),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.light,
+                              icon: showIcons
+                                  ? const Icon(Icons.light_mode, size: 16)
+                                  : null,
+                              label: const Text(
+                                'Light',
+                                maxLines: 1,
+                                softWrap: false,
+                              ),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.dark,
+                              icon: showIcons
+                                  ? const Icon(Icons.dark_mode, size: 16)
+                                  : null,
+                              label: const Text(
+                                'Dark',
+                                maxLines: 1,
+                                softWrap: false,
+                              ),
+                            ),
+                          ],
+                          selected: {settings.themeMode},
+                          onSelectionChanged: (s) =>
+                              controller.updateThemeMode(s.first),
+                        );
+                      },
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -239,12 +280,16 @@ class SettingsScreen extends ConsumerWidget {
                           size: 20,
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          'Camera & Microphone',
-                          style: GoogleFonts.raleway(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: _svCream,
+                        Expanded(
+                          child: Text(
+                            'Camera & Microphone',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.raleway(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: _svCream,
+                            ),
                           ),
                         ),
                       ],
@@ -256,25 +301,26 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
-            // ── PAYMENTS ─────────────────────────────────────────────────
-            _SettingsGroupLabel('PAYMENTS'),
-            _SettingsTile(
-              icon: Icons.credit_card_outlined,
-              label: 'Payment Methods',
-              onTap: () => context.go('/payments'),
-            ),
-            _SettingsTile(
-              icon: Icons.workspace_premium_rounded,
-              label: 'VIP Subscription',
-              accent: _svPrimary,
-              onTap: () => context.go('/payments'),
-            ),
-            _SettingsTile(
-              icon: Icons.receipt_long_outlined,
-              label: 'Purchase History',
-              onTap: () => context.go('/payments'),
-            ),
+            if (kPaymentsEnabled) ...[
+              const SizedBox(height: 24),
+              _SettingsGroupLabel('PAYMENTS'),
+              _SettingsTile(
+                icon: Icons.credit_card_outlined,
+                label: 'Payment Methods',
+                onTap: () => context.go('/profile/payments'),
+              ),
+              _SettingsTile(
+                icon: Icons.workspace_premium_rounded,
+                label: 'VIP Subscription',
+                accent: _svPrimary,
+                onTap: () => context.go('/profile/payments'),
+              ),
+              _SettingsTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'Purchase History',
+                onTap: () => context.go('/profile/payments'),
+              ),
+            ],
 
             const SizedBox(height: 24),
             // ── LEGAL ────────────────────────────────────────────────────
@@ -295,7 +341,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.info_outline,
               label: 'App Info & Diagnostics',
-              onTap: () => context.go('/about'),
+              onTap: () => context.go('/profile/about'),
             ),
 
             // After Dark
@@ -307,7 +353,9 @@ class SettingsScreen extends ConsumerWidget {
               builder: (ctx) {
                 final isBeta =
                     ref.watch(isBetaTesterProvider).valueOrNull ?? false;
-                if (!isBeta) return const SizedBox.shrink();
+                if (!isBeta || context.isExpandedLayout) {
+                  return const SizedBox.shrink();
+                }
                 return Column(
                   children: [
                     const SizedBox(height: 12),
@@ -745,6 +793,3 @@ class _AfterDarkSettingsCard extends ConsumerWidget {
     if (confirmed == true) await controller.disable();
   }
 }
-
-
-

@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/mixvy_economy_config.dart';
+import '../../core/flags/feature_flags.dart';
 import '../../core/layout/app_layout.dart';
 import '../../models/cash_out_request_model.dart';
 import '../../models/user_model.dart';
@@ -41,8 +42,17 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   void initState() {
     super.initState();
     _cashOutService = ref.read(cashOutServiceProvider);
-    final paymentApi = ref.read(paymentApiProvider);
-    _connectStatusFuture = paymentApi.getStripeConnectStatus();
+    _connectStatusFuture = kCreatorPayoutsEnabled
+        ? ref.read(paymentApiProvider).getStripeConnectStatus()
+        : Future.value(
+            const StripeConnectStatus(
+              hasAccount: false,
+              chargesEnabled: false,
+              payoutsEnabled: false,
+              detailsSubmitted: false,
+              onboardingComplete: false,
+            ),
+          );
   }
 
   @override
@@ -169,6 +179,15 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     WalletModel wallet,
     double pendingCashOut,
   ) async {
+    if (!kCreatorPayoutsEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Creator cash-outs are disabled during beta testing.'),
+        ),
+      );
+      return;
+    }
+
     final amountController = TextEditingController();
     final submitted = await showDialog<bool>(
       context: context,
@@ -418,7 +437,22 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             const StripeWebPaymentWidget(),
             const SizedBox(height: 24),
           ],
-          FutureBuilder<StripeConnectStatus>(
+          if (!kCreatorPayoutsEnabled)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.lock_outline),
+                  title: Text('Creator payouts unavailable during beta'),
+                  subtitle: Text(
+                    'Test purchases do not create real withdrawable earnings.',
+                  ),
+                ),
+              ),
+            )
+          else
+            FutureBuilder<StripeConnectStatus>(
             future: _connectStatusFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -595,15 +629,19 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                           ),
                           const SizedBox(height: 12),
                           FilledButton.icon(
-                            onPressed: (wallet.cashBalance - pendingCashOut) >=
-                                    MixVyEconomyConfig.creatorPayoutMinimumCash
+                            onPressed: kCreatorPayoutsEnabled &&
+                                    (wallet.cashBalance - pendingCashOut) >=
+                                        MixVyEconomyConfig
+                                            .creatorPayoutMinimumCash
                                 ? () => _requestCashOut(wallet, pendingCashOut)
                                 : null,
                             icon: const Icon(
                               Icons.account_balance_wallet_outlined,
                             ),
                             label: Text(
-                              'Request Cash Out (${MixVyEconomyConfig.creatorPayoutMinimumCash.toStringAsFixed(0)} min)',
+                              kCreatorPayoutsEnabled
+                                  ? 'Request Cash Out (${MixVyEconomyConfig.creatorPayoutMinimumCash.toStringAsFixed(0)} min)'
+                                  : 'Cash Out Disabled During Beta',
                             ),
                           ),
                           if (requests.isNotEmpty) ...[

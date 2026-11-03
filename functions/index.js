@@ -9,16 +9,17 @@ const Stripe = require("stripe");
 const {RtcTokenBuilder, RtcRole} = require("agora-access-token");
 const nodeFetch = require("node-fetch");
 const {
-  ACTIVE_PARTICIPANT_WINDOW_MS,
-  applyFreshParticipantCounts,
-} = require("./live_room_freshness");
-const {
   STRIPE_SECRET,
   STRIPE_WEBHOOK_SECRET,
   AGORA_APP_ID,
   AGORA_APP_CERTIFICATE,
   METERED_API_KEY,
 } = require("./params");
+const {
+  buildDatingProfile,
+  distanceBetweenKm,
+  isCompatiblePair,
+} = require("./dating_matching");
 
 admin.initializeApp();
 
@@ -43,6 +44,8 @@ admin.initializeApp();
 
 const ENABLE_RTDB_PRESENCE_SYNC =
   String(process.env.ENABLE_RTDB_PRESENCE_SYNC || "").toLowerCase() === "true";
+const ENABLE_LIVE_STRIPE =
+  String(process.env.ENABLE_LIVE_STRIPE || "").toLowerCase() === "true";
 
 const DEFAULT_ICE_SERVERS = [
   {
@@ -57,10 +60,25 @@ let cachedTurnIceServers = null;
 let cachedTurnIceServersFetchedAt = 0;
 
 let _stripe;
+function assertStripeSecretAllowed(key, allowLive = ENABLE_LIVE_STRIPE) {
+  if (!key) {
+    throw new HttpsError("internal", "Stripe is not configured.");
+  }
+  if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_")) {
+    throw new HttpsError("internal", "Stripe configuration is invalid.");
+  }
+  if (key.startsWith("sk_live_") && !allowLive) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Live Stripe payments are disabled for this deployment.",
+    );
+  }
+  return key;
+}
+
 function getStripe() {
   if (!_stripe) {
-    const key = process.env.STRIPE_SECRET;
-    if (!key) throw new HttpsError("internal", "Stripe is not configured.");
+    const key = assertStripeSecretAllowed(process.env.STRIPE_SECRET);
     _stripe = new Stripe(key);
   }
   return _stripe;
@@ -116,9 +134,65 @@ const CHECKOUT_PRODUCTS = {
     },
   },
 };
+const CREATOR_SUBSCRIPTION_MIN_PRICE_CENTS = 299;
+const CREATOR_SUBSCRIPTION_MAX_PRICE_CENTS = 999;
+const CREATOR_SUBSCRIPTION_PLATFORM_FEE_PERCENT = 15;
+const ACTIVE_CREATOR_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+const TERMINAL_CREATOR_SUBSCRIPTION_STATUSES = new Set([
+  "canceled",
+  "incomplete_expired",
+  "unpaid",
+]);
+const NONTERMINAL_CREATOR_SUBSCRIPTION_STATUSES = [
+  "active",
+  "trialing",
+  "past_due",
+  "incomplete",
+  "paused",
+];
 
 const db = admin.firestore();
 const CHAT_RETENTION_BATCH_LIMIT = 400;
+const OPERATIONAL_SIGNAL_CODES = new Set([
+  "launch_auth_failure",
+  "launch_stale_room_navigation",
+  "launch_messaging_freshness",
+  "launch_rtc_recovery_exhausted",
+  "launch_payment_entitlement_mismatch",
+  "launch_uncaught_error",
+]);
+
+function sanitizeOperationalMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
+  return Object.fromEntries(Object.entries(metadata).slice(0, 10).map(([key, value]) => {
+    const safeKey = String(key).replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 40);
+    const safeValue = ["string", "number", "boolean"].includes(typeof value) ? value : String(value);
+    return [safeKey, typeof safeValue === "string" ? safeValue.slice(0, 120) : safeValue];
+  }));
+}
+
+async function recordOperationalSignalHandler(request) {
+  const code = typeof request.data?.code === "string" ? request.data.code.trim() : "";
+  if (!OPERATIONAL_SIGNAL_CODES.has(code)) {
+    throw new HttpsError("invalid-argument", "Unknown operational signal code.");
+  }
+  if (!request.auth && !["launch_auth_failure", "launch_uncaught_error"].includes(code)) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+  const actor = request.auth?.uid || request.rawRequest?.ip || "anonymous";
+  enforceRateLimit("recordOperationalSignal", actor);
+  logger.warn("mixvy_launch_signal", {
+    code,
+    result: typeof request.data?.result === "string" ? request.data.result.slice(0, 80) : null,
+    authenticated: Boolean(request.auth),
+    uid: request.auth?.uid || null,
+    metadata: sanitizeOperationalMetadata(request.data?.metadata),
+  });
+  return {accepted: true};
+}
+
+exports.recordOperationalSignal = onCall(async (request) =>
+  recordOperationalSignalHandler(request));
 
 function buildMessagePreview(content) {
   const normalized = typeof content === "string" ? content.trim() : "";
@@ -187,6 +261,14 @@ const RATE_LIMITS = {
   getStripeConnectStatus: {windowMs: 60 * 1000, maxRequests: 40},
   createStripeConnectOnboardingLink: {windowMs: 60 * 1000, maxRequests: 10},
   createStripeConnectDashboardLink: {windowMs: 60 * 1000, maxRequests: 20},
+  getCreatorSubscriptionOverview: {windowMs: 60 * 1000, maxRequests: 40},
+  saveCreatorSubscriptionOffer: {windowMs: 60 * 1000, maxRequests: 12},
+  createCreatorSubscriptionCheckout: {windowMs: 60 * 1000, maxRequests: 12},
+  cancelCreatorSubscription: {windowMs: 60 * 1000, maxRequests: 12},
+  listCreatorSubscriptionMarketplace: {windowMs: 60 * 1000, maxRequests: 30},
+  publishCreatorSubscriberUpdate: {windowMs: 60 * 1000, maxRequests: 8},
+  listCreatorSubscriberUpdates: {windowMs: 60 * 1000, maxRequests: 30},
+  reportCreatorSubscriberUpdate: {windowMs: 60 * 1000, maxRequests: 12},
   generateAgoraToken: {windowMs: 60 * 1000, maxRequests: 30},
   generateTurnCredentials: {windowMs: 60 * 1000, maxRequests: 30},
   requestRefund: {windowMs: 60 * 1000, maxRequests: 12},
@@ -303,7 +385,7 @@ function buildModerationReviewPayload(reportData = {}) {
 function getCheckoutBaseUrl() {
   const baseUrl = process.env.CHECKOUT_BASE_URL ||
     process.env.PUBLIC_APP_URL ||
-    "http://localhost:3000";
+    "https://mixvy.app";
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 }
 
@@ -410,18 +492,30 @@ async function ensureStripeConnectAccount(uid, deps = {}) {
 async function createCheckoutSessionHandler(req, res, deps = {}) {
   const stripeClient = deps.stripeClient || getStripe();
 
+  const authHeader = req.headers && req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send("Unauthorized - missing auth token");
+  }
+
+  let uid;
   try {
-    const userId = parseIdField(req.body && req.body.userId, "userId");
+    const decoded = await admin.auth().verifyIdToken(authHeader.substring(7));
+    uid = decoded.uid;
+  } catch (error) {
+    return res.status(401).send("Unauthorized - invalid auth token");
+  }
+
+  try {
     const session = await stripeClient.checkout.sessions.create(
       buildCheckoutSessionPayload({
-        uid: userId,
+        uid,
         packageId: req.body && req.body.packageId,
       }),
     );
     return res.json({url: session.url});
   } catch (error) {
     console.error(error);
-    return res.status(500).send(error.message);
+    return res.status(500).send("Checkout session could not be created.");
   }
 }
 
@@ -1609,6 +1703,728 @@ exports.createStripeConnectDashboardLink = onCall({secrets: [STRIPE_SECRET]}, as
   createStripeConnectDashboardLinkHandler(request),
 );
 
+function creatorSubscriptionDocId(subscriberId, creatorId) {
+  return `${subscriberId}_${creatorId}`;
+}
+
+function validateCreatorSubscriptionOffer(data = {}) {
+  if (typeof data.enabled !== "boolean") {
+    throw new HttpsError("invalid-argument", "enabled must be a boolean.");
+  }
+  const monthlyPriceCents = Number(data.monthlyPriceCents);
+  if (!Number.isInteger(monthlyPriceCents) ||
+      monthlyPriceCents < CREATOR_SUBSCRIPTION_MIN_PRICE_CENTS ||
+      monthlyPriceCents > CREATOR_SUBSCRIPTION_MAX_PRICE_CENTS) {
+    throw new HttpsError(
+      "invalid-argument",
+      "monthlyPriceCents must be an integer from 299 through 999.",
+    );
+  }
+  if (!Array.isArray(data.benefits) || data.benefits.length > 10) {
+    throw new HttpsError("invalid-argument", "benefits must contain at most 10 items.");
+  }
+  const benefits = data.benefits.map((benefit) => {
+    if (typeof benefit !== "string") {
+      throw new HttpsError("invalid-argument", "Each benefit must be a string.");
+    }
+    const normalized = benefit.trim();
+    if (!normalized || normalized.length > 120) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Each benefit must be between 1 and 120 characters.",
+      );
+    }
+    return normalized;
+  });
+  if (new Set(benefits).size !== benefits.length) {
+    throw new HttpsError("invalid-argument", "benefits must not contain duplicates.");
+  }
+  return {enabled: data.enabled, monthlyPriceCents, benefits};
+}
+
+function creatorSubscriptionSummary(data) {
+  if (!data) return null;
+  return {
+    status: typeof data.status === "string" ? data.status : "incomplete",
+    currentPeriodEnd: Number.isFinite(Number(data.currentPeriodEnd)) ?
+      Number(data.currentPeriodEnd) : null,
+    cancelAtPeriodEnd: data.cancelAtPeriodEnd === true,
+  };
+}
+
+function creatorOffer(creatorId, data) {
+  return {
+    creatorId,
+    enabled: data?.enabled === true,
+    monthlyPriceCents: Number.isInteger(data?.monthlyPriceCents) ?
+      data.monthlyPriceCents : null,
+    currency: "usd",
+    benefits: Array.isArray(data?.benefits) ? data.benefits : [],
+  };
+}
+
+function safeDisplayIdentity(userId, data) {
+  const displayName = typeof data?.displayName === "string" ?
+    data.displayName.trim().slice(0, 80) : "";
+  const username = typeof data?.username === "string" ?
+    data.username.trim().slice(0, 40) : "";
+  const photoUrl = typeof data?.photoUrl === "string" ?
+    data.photoUrl.trim().slice(0, 1000) : null;
+  return {
+    userId,
+    displayName: displayName || username || "MixVy creator",
+    username: username || null,
+    photoUrl: photoUrl || null,
+  };
+}
+
+function timestampMillis(value) {
+  if (value?.toMillis) return value.toMillis();
+  if (typeof value === "string") return Date.parse(value) || 0;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function callableTimestamp(value) {
+  const milliseconds = timestampMillis(value);
+  return milliseconds > 0 ? new Date(milliseconds).toISOString() : null;
+}
+
+async function listCreatorSubscriptionMarketplaceHandler(request, deps = {}) {
+  const userId = requireAuth(request);
+  enforceRateLimit("listCreatorSubscriptionMarketplace", userId);
+  const firestore = deps.firestore || db;
+  const rawSearch = request.data?.search;
+  const search = typeof rawSearch === "string" ? rawSearch.trim().toLowerCase() : "";
+  if (search.length > 80) {
+    throw new HttpsError("invalid-argument", "search must not exceed 80 characters.");
+  }
+  const minPriceCents = request.data?.minPriceCents == null ?
+    CREATOR_SUBSCRIPTION_MIN_PRICE_CENTS : Number(request.data.minPriceCents);
+  const maxPriceCents = request.data?.maxPriceCents == null ?
+    CREATOR_SUBSCRIPTION_MAX_PRICE_CENTS : Number(request.data.maxPriceCents);
+  if (!Number.isInteger(minPriceCents) || !Number.isInteger(maxPriceCents) ||
+      minPriceCents < CREATOR_SUBSCRIPTION_MIN_PRICE_CENTS ||
+      maxPriceCents > CREATOR_SUBSCRIPTION_MAX_PRICE_CENTS ||
+      minPriceCents > maxPriceCents) {
+    throw new HttpsError("invalid-argument", "The marketplace price filter is invalid.");
+  }
+
+  const settingsSnap = await firestore.collection("creator_subscription_settings")
+    .where("enabled", "==", true).limit(100).get();
+  const candidates = settingsSnap.docs.filter((doc) => {
+    const price = doc.data().monthlyPriceCents;
+    return Number.isInteger(price) && price >= minPriceCents && price <= maxPriceCents;
+  });
+  const creatorsWithSearch = await Promise.all(candidates.map(async (doc) => {
+    const data = doc.data();
+    const creatorId = data.creatorId || doc.id;
+    const [userSnap, subscriptionsSnap] = await Promise.all([
+      firestore.collection("users").doc(creatorId).get(),
+      firestore.collection("creator_subscriptions")
+        .where("creatorId", "==", creatorId).get(),
+    ]);
+    const identity = safeDisplayIdentity(
+      creatorId,
+      userSnap.exists ? userSnap.data() : null,
+    );
+    const benefits = Array.isArray(data.benefits) ? data.benefits : [];
+    const searchText = [
+      identity.displayName,
+      identity.username,
+      ...benefits,
+    ].filter(Boolean).join(" ").toLowerCase();
+    return {
+      creator: {
+        creatorId,
+        displayName: identity.displayName,
+        avatarUrl: identity.photoUrl,
+        subscriberCount: subscriptionsSnap.docs.reduce(
+          (count, subscriptionDoc) => count +
+            (ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(
+              subscriptionDoc.data().status,
+            ) ? 1 : 0),
+          0,
+        ),
+        offer: creatorOffer(creatorId, data),
+      },
+      searchText,
+    };
+  }));
+
+  return {
+    creators: creatorsWithSearch
+      .filter((entry) => !search || entry.searchText.includes(search))
+      .map((entry) => entry.creator),
+  };
+}
+
+exports.listCreatorSubscriptionMarketplace = onCall(async (request) =>
+  listCreatorSubscriptionMarketplaceHandler(request),
+);
+
+function publicConnectStatus(data, isOwner) {
+  const status = {
+    hasAccount: Boolean(data?.accountId),
+    chargesEnabled: data?.chargesEnabled === true,
+    payoutsEnabled: data?.payoutsEnabled === true,
+    detailsSubmitted: data?.detailsSubmitted === true,
+    onboardingComplete: data?.onboardingComplete === true,
+    country: data?.country || process.env.STRIPE_CONNECT_COUNTRY || "US",
+  };
+  if (isOwner) status.accountId = data?.accountId || null;
+  return status;
+}
+
+async function retrieveCreatorConnectStatus(creatorId, deps = {}) {
+  const firestore = deps.firestore || db;
+  const stripeClient = deps.stripeClient || getStripe();
+  const accountRef = firestore.collection("stripe_connect_accounts").doc(creatorId);
+  const accountSnap = await accountRef.get();
+  const stored = accountSnap.exists ? accountSnap.data() : null;
+  if (!stored?.accountId) return publicConnectStatus(null, true);
+
+  const mapped = mapStripeConnectAccount(
+    await stripeClient.accounts.retrieve(stored.accountId),
+  );
+  await accountRef.set({
+    ...mapped,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+  return {hasAccount: true, ...mapped};
+}
+
+async function getCreatorSubscriptionOverviewHandler(request, deps = {}) {
+  const subscriberId = requireAuth(request);
+  enforceRateLimit("getCreatorSubscriptionOverview", subscriberId);
+  const creatorId = parseIdField(request.data?.creatorId, "creatorId");
+  const firestore = deps.firestore || db;
+  const isOwner = subscriberId === creatorId;
+
+  const [offerSnap, connectResult, subscriptionSnap, subscriptionsSnap] =
+    await Promise.all([
+      firestore.collection("creator_subscription_settings").doc(creatorId).get(),
+      isOwner ?
+        retrieveCreatorConnectStatus(creatorId, deps) :
+        firestore.collection("stripe_connect_accounts").doc(creatorId).get(),
+      firestore.collection("creator_subscriptions")
+        .doc(creatorSubscriptionDocId(subscriberId, creatorId)).get(),
+      firestore.collection("creator_subscriptions")
+        .where("creatorId", "==", creatorId).get(),
+    ]);
+  const subscriberCount = subscriptionsSnap.docs.reduce(
+    (count, doc) => count +
+      (ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(doc.data().status) ? 1 : 0),
+    0,
+  );
+  let analytics = null;
+  if (isOwner) {
+    const activeRows = subscriptionsSnap.docs
+      .map((doc) => ({id: doc.id, ...doc.data()}))
+      .filter((row) => ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(row.status));
+    const cancelingCount = activeRows.filter(
+      (row) => row.cancelAtPeriodEnd === true,
+    ).length;
+    const monthlyPriceCents = offerSnap.exists &&
+      Number.isInteger(offerSnap.data().monthlyPriceCents) ?
+      offerSnap.data().monthlyPriceCents : 0;
+    const monthlyGrossCents = activeRows.length * monthlyPriceCents;
+    const estimatedPlatformFeeCents = Math.round(
+      monthlyGrossCents * CREATOR_SUBSCRIPTION_PLATFORM_FEE_PERCENT / 100,
+    );
+    const recentRows = subscriptionsSnap.docs
+      .map((doc) => ({id: doc.id, ...doc.data()}))
+      .filter((row) =>
+        typeof row.subscriberId === "string" && row.subscriberId.trim())
+      .sort((left, right) =>
+        timestampMillis(right.updatedAt) - timestampMillis(left.updatedAt))
+      .slice(0, 10);
+    const recentSubscriberActivity = await Promise.all(recentRows.map(async (row) => {
+      const userSnap = await firestore.collection("users").doc(row.subscriberId).get();
+      return {
+        subscriber: safeDisplayIdentity(
+          row.subscriberId,
+          userSnap.exists ? userSnap.data() : null,
+        ),
+        status: row.status,
+        cancelAtPeriodEnd: row.cancelAtPeriodEnd === true,
+        currentPeriodEnd: Number.isFinite(Number(row.currentPeriodEnd)) ?
+          Number(row.currentPeriodEnd) : null,
+        updatedAt: row.updatedAt || null,
+      };
+    }));
+    analytics = {
+      activeCount: activeRows.length,
+      cancelingCount,
+      monthlyGrossCents,
+      estimatedPlatformFeeCents,
+      estimatedCreatorNetBeforeStripeCents:
+        monthlyGrossCents - estimatedPlatformFeeCents,
+      recentSubscriberActivity,
+    };
+  }
+
+  return {
+    isOwner,
+    offer: creatorOffer(creatorId, offerSnap.exists ? offerSnap.data() : null),
+    connectStatus: isOwner ?
+      publicConnectStatus(connectResult, true) :
+      publicConnectStatus(connectResult.exists ? connectResult.data() : null, false),
+    subscription: subscriptionSnap.exists ?
+      creatorSubscriptionSummary(subscriptionSnap.data()) : null,
+    subscriberCount,
+    analytics,
+  };
+}
+
+exports.getCreatorSubscriptionOverview = onCall({secrets: [STRIPE_SECRET]}, async (request) =>
+  getCreatorSubscriptionOverviewHandler(request),
+);
+
+async function saveCreatorSubscriptionOfferHandler(request, deps = {}) {
+  const creatorId = requireAuth(request);
+  enforceRateLimit("saveCreatorSubscriptionOffer", creatorId);
+  const firestore = deps.firestore || db;
+  const validated = validateCreatorSubscriptionOffer(request.data);
+
+  let connectStatus;
+  if (validated.enabled) {
+    connectStatus = await retrieveCreatorConnectStatus(creatorId, deps);
+    if (!connectStatus.onboardingComplete) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Complete Stripe Connect onboarding before enabling subscriptions.",
+      );
+    }
+  } else {
+    const connectSnap = await firestore
+      .collection("stripe_connect_accounts").doc(creatorId).get();
+    connectStatus = publicConnectStatus(
+      connectSnap.exists ? connectSnap.data() : null,
+      true,
+    );
+  }
+
+  const offerRef = firestore.collection("creator_subscription_settings").doc(creatorId);
+  const existing = await offerRef.get();
+  await offerRef.set({
+    creatorId,
+    ...validated,
+    currency: "usd",
+    platformFeePercent: CREATOR_SUBSCRIPTION_PLATFORM_FEE_PERCENT,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    ...(!existing.exists && {
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    }),
+  }, {merge: true});
+
+  return getCreatorSubscriptionOverviewHandler({
+    auth: request.auth,
+    data: {creatorId},
+  }, deps);
+}
+
+exports.saveCreatorSubscriptionOffer = onCall({secrets: [STRIPE_SECRET]}, async (request) =>
+  saveCreatorSubscriptionOfferHandler(request),
+);
+
+function buildCreatorSubscriptionCheckoutPayload({
+  subscriberId,
+  creatorId,
+  offer,
+  destinationAccountId,
+}) {
+  const checkoutBaseUrl = getCheckoutBaseUrl();
+  const metadata = {
+    productType: "creator_subscription",
+    subscriberId,
+    creatorId,
+  };
+  return {
+    mode: "subscription",
+    payment_method_types: ["card"],
+    client_reference_id: subscriberId,
+    line_items: [{
+      quantity: 1,
+      price_data: {
+        currency: "usd",
+        unit_amount: offer.monthlyPriceCents,
+        recurring: {interval: "month"},
+        product_data: {
+          name: "MixVy Creator Subscription",
+          metadata: {creatorId},
+        },
+      },
+    }],
+    metadata,
+    subscription_data: {
+      metadata,
+      application_fee_percent: CREATOR_SUBSCRIPTION_PLATFORM_FEE_PERCENT,
+      transfer_data: {destination: destinationAccountId},
+    },
+    success_url:
+      `${checkoutBaseUrl}/creator/${encodeURIComponent(creatorId)}` +
+      "?subscription=success&session_id={CHECKOUT_SESSION_ID}",
+    cancel_url:
+      `${checkoutBaseUrl}/creator/${encodeURIComponent(creatorId)}` +
+      "?subscription=cancel",
+  };
+}
+
+async function createCreatorSubscriptionCheckoutHandler(request, deps = {}) {
+  const subscriberId = requireAuth(request);
+  enforceRateLimit("createCreatorSubscriptionCheckout", subscriberId);
+  const creatorId = parseIdField(request.data?.creatorId, "creatorId");
+  if (subscriberId === creatorId) {
+    throw new HttpsError("invalid-argument", "You cannot subscribe to yourself.");
+  }
+  const firestore = deps.firestore || db;
+  const stripeClient = deps.stripeClient || getStripe();
+  const [offerSnap, existingSnap] = await Promise.all([
+    firestore.collection("creator_subscription_settings").doc(creatorId).get(),
+    firestore.collection("creator_subscriptions")
+      .doc(creatorSubscriptionDocId(subscriberId, creatorId)).get(),
+  ]);
+  if (!offerSnap.exists || offerSnap.data().enabled !== true) {
+    throw new HttpsError("failed-precondition", "This creator offer is not enabled.");
+  }
+  if (existingSnap.exists &&
+      ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(existingSnap.data().status)) {
+    throw new HttpsError("already-exists", "You already subscribe to this creator.");
+  }
+
+  const connectStatus = await retrieveCreatorConnectStatus(creatorId, deps);
+  if (!connectStatus.onboardingComplete) {
+    throw new HttpsError(
+      "failed-precondition",
+      "This creator cannot accept subscriptions yet.",
+    );
+  }
+  const idempotencyKey = parseOptionalIdempotencyKey(request.data?.idempotencyKey);
+  const payload = buildCreatorSubscriptionCheckoutPayload({
+    subscriberId,
+    creatorId,
+    offer: offerSnap.data(),
+    destinationAccountId: connectStatus.accountId,
+  });
+  const session = await stripeClient.checkout.sessions.create(
+    payload,
+    idempotencyKey ? {
+      idempotencyKey: `creator_subscription_${subscriberId}_${creatorId}_${idempotencyKey}`,
+    } : undefined,
+  );
+  return {url: session.url};
+}
+
+exports.createCreatorSubscriptionCheckout = onCall({secrets: [STRIPE_SECRET]}, async (request) =>
+  createCreatorSubscriptionCheckoutHandler(request),
+);
+
+function subscriptionPeriodEnd(subscription) {
+  const value = subscription.current_period_end ??
+    subscription.items?.data?.[0]?.current_period_end;
+  return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+function creatorSubscriptionRecord(subscription, overrides = {}) {
+  const status = subscription.status || overrides.status || "incomplete";
+  return {
+    subscriberId: subscription.metadata?.subscriberId || overrides.subscriberId,
+    creatorId: subscription.metadata?.creatorId || overrides.creatorId,
+    stripeSubscriptionId: subscription.id,
+    stripeCustomerId: typeof subscription.customer === "string" ?
+      subscription.customer : subscription.customer?.id || overrides.stripeCustomerId || null,
+    status,
+    currentPeriodEnd: subscriptionPeriodEnd(subscription),
+    cancelAtPeriodEnd: subscription.cancel_at_period_end === true,
+    terminal: TERMINAL_CREATOR_SUBSCRIPTION_STATUSES.has(status),
+  };
+}
+
+async function cancelCreatorSubscriptionHandler(request, deps = {}) {
+  const subscriberId = requireAuth(request);
+  enforceRateLimit("cancelCreatorSubscription", subscriberId);
+  const creatorId = parseIdField(request.data?.creatorId, "creatorId");
+  const firestore = deps.firestore || db;
+  const stripeClient = deps.stripeClient || getStripe();
+  const subscriptionRef = firestore.collection("creator_subscriptions")
+    .doc(creatorSubscriptionDocId(subscriberId, creatorId));
+  const subscriptionSnap = await subscriptionRef.get();
+  if (!subscriptionSnap.exists || !subscriptionSnap.data().stripeSubscriptionId) {
+    throw new HttpsError("not-found", "Subscription not found.");
+  }
+
+  const stored = subscriptionSnap.data();
+  const stripeSubscription = await stripeClient.subscriptions.retrieve(
+    stored.stripeSubscriptionId,
+  );
+  if (stripeSubscription.metadata?.subscriberId !== subscriberId ||
+      stripeSubscription.metadata?.creatorId !== creatorId) {
+    throw new HttpsError("permission-denied", "Subscription ownership could not be verified.");
+  }
+  const updated = stripeSubscription.cancel_at_period_end ?
+    stripeSubscription :
+    await stripeClient.subscriptions.update(stripeSubscription.id, {
+      cancel_at_period_end: true,
+    });
+  const record = creatorSubscriptionRecord(updated);
+  const shouldNotify = stored.cancelAtPeriodEnd !== true &&
+    record.cancelAtPeriodEnd;
+  await firestore.runTransaction(async (txn) => {
+    txn.set(subscriptionRef, {
+      ...record,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+    if (!shouldNotify) return;
+    const eventKey = `creator_subscription_cancel_${updated.id}`;
+    const notifications = [
+      {
+        userId: subscriberId,
+        actorId: creatorId,
+        creatorId,
+        type: "creator_subscription_cancel_scheduled",
+        content: "Your creator subscription will cancel at the end of the billing period.",
+      },
+      {
+        userId: creatorId,
+        actorId: subscriberId,
+        creatorId,
+        type: "creator_subscription_cancel_scheduled",
+        content: "A subscriber scheduled their creator subscription to end.",
+      },
+    ];
+    notifications.forEach((payload) => {
+      const notificationRef = firestore.collection("notifications")
+        .doc(notificationDocId(eventKey, payload.userId));
+      txn.set(notificationRef, {
+        ...payload,
+        isRead: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+  });
+  return getCreatorSubscriptionOverviewHandler({
+    auth: request.auth,
+    data: {creatorId},
+  }, deps);
+}
+
+exports.cancelCreatorSubscription = onCall({secrets: [STRIPE_SECRET]}, async (request) =>
+  cancelCreatorSubscriptionHandler(request),
+);
+
+async function requireCreatorSubscriberAccess(userId, creatorId, firestore) {
+  if (userId === creatorId) return {isCreator: true, subscription: null};
+  const subscriptionSnap = await firestore.collection("creator_subscriptions")
+    .doc(creatorSubscriptionDocId(userId, creatorId)).get();
+  if (!subscriptionSnap.exists ||
+      !ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(subscriptionSnap.data().status)) {
+    throw new HttpsError(
+      "permission-denied",
+      "An active creator subscription is required.",
+    );
+  }
+  return {isCreator: false, subscription: subscriptionSnap.data()};
+}
+
+function validateCreatorUpdateText(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (text.length < 1 || text.length > 1000) {
+    throw new HttpsError(
+      "invalid-argument",
+      "text must be between 1 and 1000 characters.",
+    );
+  }
+  const moderation = classifyModerationText("", text);
+  if (moderation.needsManualReview) {
+    throw new HttpsError(
+      "invalid-argument",
+      "This update requires moderation review and cannot be published.",
+    );
+  }
+  return {text, moderation};
+}
+
+function notificationDocId(eventKey, userId) {
+  return `${eventKey}_${userId}`.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 500);
+}
+
+async function writeNotificationOnce(firestore, eventKey, payload) {
+  const ref = firestore.collection("notifications")
+    .doc(notificationDocId(eventKey, payload.userId));
+  await ref.set({
+    ...payload,
+    isRead: false,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: false});
+  return ref.id;
+}
+
+async function publishCreatorSubscriberUpdateHandler(request, deps = {}) {
+  const creatorId = requireAuth(request);
+  enforceRateLimit("publishCreatorSubscriberUpdate", creatorId);
+  const firestore = deps.firestore || db;
+  const {text, moderation} = validateCreatorUpdateText(request.data?.text);
+  const updateRef = firestore.collection("creator_subscriber_updates").doc();
+  const publishedAt = new Date().toISOString();
+  await updateRef.set({
+    updateId: updateRef.id,
+    creatorId,
+    text,
+    status: "published",
+    moderation: {
+      riskLevel: moderation.riskLevel,
+      score: moderation.score,
+      classifierVersion: "v1-baseline",
+    },
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const subscriptionsSnap = await firestore.collection("creator_subscriptions")
+    .where("creatorId", "==", creatorId).get();
+  const activeSubscriberIds = [...new Set(subscriptionsSnap.docs
+    .map((doc) => doc.data())
+    .filter((row) => ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(row.status))
+    .map((row) => row.subscriberId)
+    .filter(Boolean))];
+  await Promise.all(activeSubscriberIds.map((subscriberId) =>
+    writeNotificationOnce(firestore, `creator_update_${updateRef.id}`, {
+      userId: subscriberId,
+      actorId: creatorId,
+      creatorId,
+      updateId: updateRef.id,
+      type: "creator_subscriber_update",
+      content: "A creator you subscribe to posted a new subscriber update.",
+    })));
+
+  return {
+    update: {
+      id: updateRef.id,
+      creatorId,
+      text,
+      createdAt: publishedAt,
+    },
+  };
+}
+
+exports.publishCreatorSubscriberUpdate = onCall(async (request) =>
+  publishCreatorSubscriberUpdateHandler(request),
+);
+
+function publicCreatorUpdate(data) {
+  return {
+    id: data.updateId,
+    creatorId: data.creatorId,
+    text: data.text,
+    createdAt: callableTimestamp(data.createdAt),
+  };
+}
+
+async function listCreatorSubscriberUpdatesHandler(request, deps = {}) {
+  const userId = requireAuth(request);
+  enforceRateLimit("listCreatorSubscriberUpdates", userId);
+  const creatorId = parseIdField(request.data?.creatorId, "creatorId");
+  const firestore = deps.firestore || db;
+  await requireCreatorSubscriberAccess(userId, creatorId, firestore);
+
+  const updatesSnap = await firestore.collection("creator_subscriber_updates")
+    .where("creatorId", "==", creatorId).limit(100).get();
+  const updates = updatesSnap.docs
+    .map((doc) => ({updateId: doc.id, ...doc.data()}))
+    .filter((update) => update.status === "published")
+    .sort((left, right) =>
+      timestampMillis(right.createdAt) - timestampMillis(left.createdAt))
+    .slice(0, 50)
+    .map((update) => publicCreatorUpdate(update));
+  return {updates};
+}
+
+exports.listCreatorSubscriberUpdates = onCall(async (request) =>
+  listCreatorSubscriberUpdatesHandler(request),
+);
+
+function validateCreatorUpdateReport(data = {}) {
+  if (typeof data.reason !== "string" ||
+      (data.details != null && typeof data.details !== "string")) {
+    throw new HttpsError(
+      "invalid-argument",
+      "reason and details must be text.",
+    );
+  }
+  const reason = typeof data.reason === "string" ? data.reason.trim() : "";
+  const details = typeof data.details === "string" ? data.details.trim() : "";
+  if (reason.length < 3 || reason.length > 80) {
+    throw new HttpsError(
+      "invalid-argument",
+      "reason must be between 3 and 80 characters.",
+    );
+  }
+  if (details.length > 500) {
+    throw new HttpsError(
+      "invalid-argument",
+      "details must not exceed 500 characters.",
+    );
+  }
+  return {reason, details};
+}
+
+async function reportCreatorSubscriberUpdateHandler(request, deps = {}) {
+  const reporterId = requireAuth(request);
+  enforceRateLimit("reportCreatorSubscriberUpdate", reporterId);
+  const updateId = parseIdField(request.data?.updateId, "updateId");
+  const {reason, details} = validateCreatorUpdateReport(request.data);
+  const firestore = deps.firestore || db;
+  const updateSnap = await firestore.collection("creator_subscriber_updates")
+    .doc(updateId).get();
+  if (!updateSnap.exists || updateSnap.data().status !== "published") {
+    throw new HttpsError("not-found", "Subscriber update not found.");
+  }
+  const creatorId = updateSnap.data().creatorId;
+  await requireCreatorSubscriberAccess(reporterId, creatorId, firestore);
+  const reportRef = firestore.collection("creator_subscriber_update_reports")
+    .doc(`${updateId}_${reporterId}`);
+  const moderationReportRef = firestore.collection("reports").doc(reportRef.id);
+  const createdAtIso = new Date().toISOString();
+  return firestore.runTransaction(async (txn) => {
+    const [existing, moderationReport] = await Promise.all([
+      txn.get(reportRef),
+      txn.get(moderationReportRef),
+    ]);
+    const existingModerationData = moderationReport.exists ?
+      moderationReport.data() : null;
+    txn.set(moderationReportRef, {
+      id: reportRef.id,
+      reporterUserId: reporterId,
+      targetId: updateId,
+      targetType: "message",
+      reason,
+      details,
+      status: "open",
+      createdAt: typeof existingModerationData?.createdAt === "string" ?
+        existingModerationData.createdAt : createdAtIso,
+    }, {merge: true});
+    if (existing.exists) return {reported: true, deduplicated: true};
+
+    txn.set(reportRef, {
+      reportId: reportRef.id,
+      updateId,
+      creatorId,
+      reporterId,
+      reason,
+      details,
+      status: "pending",
+      ...buildModerationReviewPayload({reason, details}),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return {reported: true, deduplicated: false};
+  });
+}
+
+exports.reportCreatorSubscriberUpdate = onCall(async (request) =>
+  reportCreatorSubscriberUpdateHandler(request),
+);
+
 async function generateAgoraTokenHandler(request, deps = {}) {
   const authUid = requireAuth(request);
   enforceRateLimit("generateAgoraToken", authUid);
@@ -1803,51 +2619,59 @@ exports.requestRefund = onCall(async (request) => requestRefundHandler(request))
 
 async function cleanupDeletedUserData(uid, deps = {}) {
   const firestore = deps.firestore || db;
+  const bucket = deps.bucket || admin.storage().bucket();
 
   if (!uid || typeof uid !== "string") {
-    return;
+    throw new HttpsError("invalid-argument", "A valid user ID is required.");
   }
 
-  const userRef = firestore.collection("users").doc(uid);
-  const profilePublicRef = firestore.collection("profile_public").doc(uid);
-  const preferencesRef = firestore.collection("preferences").doc(uid);
-  const verificationRef = firestore.collection("verification").doc(uid);
-  const walletRef = firestore.collection("wallets").doc(uid);
-  const presenceRef = firestore.collection("presence").doc(uid);
-  const connectRef = firestore.collection("stripe_connect_accounts").doc(uid);
+  const recursiveDelete = async (documentRef) => {
+    if (typeof firestore.recursiveDelete === "function") {
+      await firestore.recursiveDelete(documentRef);
+      return;
+    }
+    await documentRef.delete();
+  };
 
-  // 1. Delete user-specific subcollections that might leak PII
-  const subColls = [
-    "notification_tokens",
-    "adult_profile",
-    "privacy",
-    "bookmarks",
-    "verification",
-    "preferences",
-    "wallet",
-    "security",
-    "profile_public",
+  const deleteMatchingDocuments = async (collection, field, operator = "==") => {
+    const pageSize = 100;
+    let snapshot;
+    do {
+      snapshot = await firestore
+          .collection(collection)
+          .where(field, operator, uid)
+          .limit(pageSize)
+          .get();
+      await Promise.all(snapshot.docs.map((doc) => recursiveDelete(doc.ref)));
+    } while (snapshot.size === pageSize);
+  };
+
+  const directDocuments = [
+    ["users", uid],
+    ["profile_public", uid],
+    ["preferences", uid],
+    ["verification", uid],
+    ["wallets", uid],
+    ["presence", uid],
+    ["stripe_connect_accounts", uid],
+    ["beta_feedback", uid],
+    ["speed_dating_queue", uid],
   ];
 
-  for (const collName of subColls) {
-    const snap = await userRef.collection(collName).limit(500).get();
-    if (!snap.empty) {
-      const batch = firestore.batch();
-      snap.docs.forEach((doc) => batch.delete(doc.ref));
-      await batch.commit();
-    }
-  }
+  await Promise.all(directDocuments.map(([collection, documentId]) =>
+    recursiveDelete(firestore.collection(collection).doc(documentId))));
 
-  // 2. Delete the root domain documents
-  await Promise.allSettled([
-    userRef.delete(),
-    profilePublicRef.delete(),
-    preferencesRef.delete(),
-    verificationRef.delete(),
-    walletRef.delete(),
-    presenceRef.delete(),
-    connectRef.delete(),
+  await Promise.all([
+    deleteMatchingDocuments("posts", "authorId"),
+    deleteMatchingDocuments("blocks", "blockerUserId"),
+    deleteMatchingDocuments("blocks", "blockedUserId"),
+    deleteMatchingDocuments("friendships", "userA"),
+    deleteMatchingDocuments("friendships", "userB"),
+    deleteMatchingDocuments("notifications", "userId"),
+    deleteMatchingDocuments("notifications", "actorId"),
   ]);
+
+  await bucket.deleteFiles({prefix: `users/${uid}/`, force: true});
 
   logger.info(`Cleanup complete for deleted user: ${uid}`);
 }
@@ -1858,6 +2682,38 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
   }
   await cleanupDeletedUserData(user.uid);
 });
+
+async function deleteCurrentUserAccountHandler(request, deps = {}) {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+
+  const nowSeconds = Math.floor((deps.now?.() || Date.now()) / 1000);
+  const authTimeSeconds = Number(request.auth?.token?.auth_time);
+  const authenticationAge = nowSeconds - authTimeSeconds;
+  if (!Number.isFinite(authTimeSeconds) ||
+      authenticationAge < 0 ||
+      authenticationAge > 5 * 60) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Sign in again before deleting your account.",
+        {reason: "requires-recent-login"},
+    );
+  }
+
+  const cleanup = deps.cleanup || cleanupDeletedUserData;
+  const auth = deps.auth || admin.auth();
+
+  await cleanup(uid, deps);
+  await auth.deleteUser(uid);
+
+  logger.info("User account deleted", {uid});
+  return {deleted: true};
+}
+
+exports.deleteCurrentUserAccount = onCall({invoker: "public"}, async (request) =>
+  deleteCurrentUserAccountHandler(request));
 
 exports.classifyNewReport = onDocumentCreated("reports/{reportId}", async (event) => {
   if (!event.data) {
@@ -2086,8 +2942,36 @@ async function stripeWebhookHandler(req, res, deps = {}) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    await handleCheckoutSessionCompleted(session, {
+    if (session.metadata?.productType === "creator_subscription") {
+      await handleCreatorSubscriptionCheckoutCompleted(session, {
+        firestore,
+        stripeClient,
+        eventId: event.id,
+        eventType: event.type,
+      });
+    } else {
+      await handleCheckoutSessionCompleted(session, {
+        firestore,
+        eventId: event.id,
+        eventType: event.type,
+      });
+    }
+  }
+
+  if (event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted") {
+    await handleCreatorSubscriptionChanged(event.data.object, {
       firestore,
+      eventId: event.id,
+      eventType: event.type,
+    });
+  }
+
+  if (event.type === "invoice.payment_failed" ||
+      event.type === "invoice.paid") {
+    await handleCreatorSubscriptionInvoice(event.data.object, {
+      firestore,
+      stripeClient,
       eventId: event.id,
       eventType: event.type,
     });
@@ -2100,6 +2984,255 @@ async function stripeWebhookHandler(req, res, deps = {}) {
 
   return res.json({received: true});
 }
+
+function lifecycleNotificationPayloads(record, previous, eventType) {
+  const payloads = [];
+  const common = {creatorId: record.creatorId};
+  const add = (userId, actorId, type, content) => payloads.push({
+    userId,
+    actorId,
+    ...common,
+    type,
+    content,
+  });
+  if (eventType === "checkout.session.completed") {
+    add(
+      record.subscriberId,
+      record.creatorId,
+      "creator_subscription_started",
+      "Your creator subscription is active.",
+    );
+    add(
+      record.creatorId,
+      record.subscriberId,
+      "creator_subscription_started",
+      "You have a new creator subscriber.",
+    );
+  }
+  if (record.status === "past_due" && previous?.status !== "past_due") {
+    add(
+      record.subscriberId,
+      record.creatorId,
+      "creator_subscription_payment_failed",
+      "A creator subscription payment failed. Update your payment method.",
+    );
+    add(
+      record.creatorId,
+      record.subscriberId,
+      "creator_subscription_payment_failed",
+      "A subscriber payment is past due.",
+    );
+  }
+  if (eventType === "invoice.paid" && previous?.status === "past_due" &&
+      ACTIVE_CREATOR_SUBSCRIPTION_STATUSES.has(record.status)) {
+    add(
+      record.subscriberId,
+      record.creatorId,
+      "creator_subscription_payment_restored",
+      "Your creator subscription payment succeeded.",
+    );
+  }
+  if (record.cancelAtPeriodEnd && previous?.cancelAtPeriodEnd !== true) {
+    add(
+      record.subscriberId,
+      record.creatorId,
+      "creator_subscription_cancel_scheduled",
+      "Your creator subscription will cancel at the end of the billing period.",
+    );
+    add(
+      record.creatorId,
+      record.subscriberId,
+      "creator_subscription_cancel_scheduled",
+      "A subscriber scheduled their creator subscription to end.",
+    );
+  }
+  if (record.terminal && previous?.status !== record.status) {
+    add(
+      record.subscriberId,
+      record.creatorId,
+      "creator_subscription_ended",
+      "Your creator subscription has ended.",
+    );
+    add(
+      record.creatorId,
+      record.subscriberId,
+      "creator_subscription_ended",
+      "A creator subscription has ended.",
+    );
+  }
+  return payloads;
+}
+
+async function writeCreatorSubscriptionEvent(record, deps = {}) {
+  const firestore = deps.firestore || db;
+  const eventId = typeof deps.eventId === "string" ? deps.eventId : null;
+  if (!record.subscriberId || !record.creatorId || !record.stripeSubscriptionId) {
+    return {updated: false, reason: "missing_metadata"};
+  }
+  const subscriptionRef = firestore.collection("creator_subscriptions")
+    .doc(creatorSubscriptionDocId(record.subscriberId, record.creatorId));
+  const eventRef = eventId ?
+    firestore.collection("stripe_webhook_events").doc(`event_${eventId}`) : null;
+
+  return firestore.runTransaction(async (txn) => {
+    const previousSnap = await txn.get(subscriptionRef);
+    if (eventRef) {
+      const eventSnap = await txn.get(eventRef);
+      if (eventSnap.exists) return {updated: false, reason: "deduplicated"};
+    }
+    const previous = previousSnap.exists ? previousSnap.data() : null;
+    txn.set(subscriptionRef, {
+      ...record,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+    if (eventRef) {
+      txn.set(eventRef, {
+        eventId,
+        eventType: deps.eventType || null,
+        creatorId: record.creatorId,
+        subscriberId: record.subscriberId,
+        stripeSubscriptionId: record.stripeSubscriptionId,
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    const eventKey = eventId ||
+      `${record.stripeSubscriptionId}_${deps.eventType || record.status}`;
+    const notifications = lifecycleNotificationPayloads(
+      record,
+      previous,
+      deps.eventType,
+    );
+    notifications.forEach((payload) => {
+      const notificationRef = firestore.collection("notifications")
+        .doc(notificationDocId(
+          `${eventKey}_${payload.type}`,
+          payload.userId,
+        ));
+      txn.set(notificationRef, {
+        ...payload,
+        isRead: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    return {updated: true, subscription: creatorSubscriptionSummary(record)};
+  });
+}
+
+async function handleCreatorSubscriptionCheckoutCompleted(session, deps = {}) {
+  const subscriberId = session.metadata?.subscriberId;
+  const creatorId = session.metadata?.creatorId;
+  const subscriptionId = typeof session.subscription === "string" ?
+    session.subscription : session.subscription?.id;
+  if (!subscriberId || !creatorId || !subscriptionId) {
+    return {updated: false, reason: "missing_metadata"};
+  }
+  const stripeClient = deps.stripeClient || getStripe();
+  const subscription = await stripeClient.subscriptions.retrieve(subscriptionId);
+  const record = creatorSubscriptionRecord(subscription, {
+    subscriberId,
+    creatorId,
+    stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
+  });
+  if (record.subscriberId !== subscriberId || record.creatorId !== creatorId) {
+    return {updated: false, reason: "metadata_mismatch"};
+  }
+  return writeCreatorSubscriptionEvent({
+    ...record,
+    stripeCheckoutSessionId: session.id,
+  }, deps);
+}
+
+async function handleCreatorSubscriptionChanged(subscription, deps = {}) {
+  if (subscription.metadata?.productType !== "creator_subscription") {
+    return {updated: false, reason: "not_creator_subscription"};
+  }
+  return writeCreatorSubscriptionEvent(
+    creatorSubscriptionRecord(subscription),
+    deps,
+  );
+}
+
+async function handleCreatorSubscriptionInvoice(invoice, deps = {}) {
+  const subscriptionId = typeof invoice.subscription === "string" ?
+    invoice.subscription :
+    invoice.subscription?.id ||
+      invoice.parent?.subscription_details?.subscription;
+  if (!subscriptionId) return {updated: false, reason: "no_subscription"};
+  const stripeClient = deps.stripeClient || getStripe();
+  const subscription = await stripeClient.subscriptions.retrieve(subscriptionId);
+  if (subscription.metadata?.productType !== "creator_subscription") {
+    return {updated: false, reason: "not_creator_subscription"};
+  }
+  const record = creatorSubscriptionRecord(subscription);
+  return writeCreatorSubscriptionEvent(record, deps);
+}
+
+async function reconcileCreatorSubscriptionsHandler(deps = {}) {
+  const firestore = deps.firestore || db;
+  const stripeClient = deps.stripeClient || getStripe();
+  const subscriptionsSnap = await firestore.collection("creator_subscriptions")
+    .where("status", "in", NONTERMINAL_CREATOR_SUBSCRIPTION_STATUSES)
+    .limit(100).get();
+  let checked = 0;
+  let updated = 0;
+  let failed = 0;
+
+  for (const doc of subscriptionsSnap.docs) {
+    const stored = doc.data();
+    if (!stored.stripeSubscriptionId) continue;
+    checked += 1;
+    try {
+      const subscription = await stripeClient.subscriptions.retrieve(
+        stored.stripeSubscriptionId,
+      );
+      if (subscription.metadata?.productType !== "creator_subscription" ||
+          subscription.metadata?.subscriberId !== stored.subscriberId ||
+          subscription.metadata?.creatorId !== stored.creatorId) {
+        throw new Error("Stripe subscription metadata mismatch");
+      }
+      const record = creatorSubscriptionRecord(subscription);
+      const hasDrift =
+        stored.status !== record.status ||
+        Number(stored.currentPeriodEnd || 0) !== Number(record.currentPeriodEnd || 0) ||
+        stored.cancelAtPeriodEnd !== record.cancelAtPeriodEnd ||
+        stored.terminal !== record.terminal ||
+        stored.stripeCustomerId !== record.stripeCustomerId;
+      if (!hasDrift) continue;
+      const eventId = [
+        "reconcile",
+        record.stripeSubscriptionId,
+        record.status,
+        record.currentPeriodEnd || "none",
+        record.cancelAtPeriodEnd ? "canceling" : "renewing",
+      ].join("_");
+      const result = await writeCreatorSubscriptionEvent(record, {
+        firestore,
+        eventId,
+        eventType: "creator.subscription.reconciled",
+      });
+      if (result.updated) updated += 1;
+    } catch (error) {
+      failed += 1;
+      await firestore.collection("logs").add({
+        type: "creator_subscription_reconciliation_error",
+        subscriptionDocId: doc.id,
+        stripeSubscriptionId: stored.stripeSubscriptionId,
+        message: String(error?.message || error).slice(0, 500),
+        time: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      logger.error("Creator subscription reconciliation failed", {
+        subscriptionDocId: doc.id,
+        error: String(error?.message || error),
+      });
+    }
+  }
+  return {checked, updated, failed};
+}
+
+exports.reconcileCreatorSubscriptions = onSchedule({
+  schedule: "every 6 hours",
+  secrets: [STRIPE_SECRET],
+}, async () => reconcileCreatorSubscriptionsHandler());
 
 // Revoke entitlement when Stripe confirms a full refund. Uses the stored
 // sessionId on the charge to find the right user and writes an audit event.
@@ -2452,54 +3585,62 @@ async function _sendPushToUser(userId, { title, body, data = {} }) {
 }
 
 const SPEED_DATING_SESSION_SECONDS = 90;
+const SPEED_DATING_QUEUE_SCAN_LIMIT = 30;
+const SPEED_DATING_CANDIDATE_SCAN_LIMIT = 80;
+const SPEED_DATING_CANDIDATE_RESULT_LIMIT = 40;
+const SPEED_DATING_CANDIDATE_MAX_PAGES = 5;
 
-/**
- * joinSpeedDatingQueue – callable that places the authenticated user in the
- * speed_dating_queue collection and, if a waiting partner is found, creates
- * a matched session room in speed_dating_sessions.
- *
- * Returns: { matched: boolean, sessionId?: string, partnerId?: string }
- */
-exports.joinSpeedDatingQueue = onCall(async (request) => {
-  const { auth } = request;
-  if (!auth) throw new HttpsError("unauthenticated", "Sign in first.");
-  const uid = auth.uid;
-
-  // Write/refresh the queue entry
-  const queueRef = db.collection("speed_dating_queue").doc(uid);
-  await queueRef.set({
-    uid,
-    joinedAt: admin.firestore.FieldValue.serverTimestamp(),
-    matched: false,
-  });
-
-  // Look for another waiting user (not self, not already matched)
-  const waiting = await db
-    .collection("speed_dating_queue")
-    .where("matched", "==", false)
-    .where("uid", "!=", uid)
-    .limit(1)
-    .get();
-
-  if (waiting.empty) {
-    return { matched: false };
+function existingSpeedDatingMatch(queueData) {
+  if (!queueData?.matched || typeof queueData.sessionId !== "string") {
+    return null;
   }
+  return {
+    matched: true,
+    sessionId: queueData.sessionId,
+    partnerId: typeof queueData.partnerId === "string" ?
+      queueData.partnerId :
+      undefined,
+  };
+}
 
-  const partnerDoc = waiting.docs[0];
-  const partnerId = partnerDoc.id;
+async function ensureSpeedDatingQueueEntry(firestore, uid) {
+  const queueRef = firestore.collection("speed_dating_queue").doc(uid);
+  const existingMatch = await firestore.runTransaction(async (tx) => {
+    const snapshot = await tx.get(queueRef);
+    const match = snapshot.exists ?
+      existingSpeedDatingMatch(snapshot.data()) :
+      null;
+    if (match) return match;
+    tx.set(queueRef, {
+      uid,
+      joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      matched: false,
+    });
+    return null;
+  });
+  return {queueRef, existingMatch};
+}
 
-  // Create a session atomically
-  const sessionRef = db.collection("speed_dating_sessions").doc();
-  const expiresAt = admin.firestore.Timestamp.fromMillis(
-    Date.now() + SPEED_DATING_SESSION_SECONDS * 1000,
-  );
-
-  await db.runTransaction(async (tx) => {
-    // Re-read partner queue entry inside the transaction
-    const freshPartner = await tx.get(partnerDoc.ref);
-    if (!freshPartner.exists || freshPartner.data().matched) {
-      // Partner was already matched by a concurrent call — abort
-      throw new HttpsError("aborted", "Partner already matched. Try again.");
+async function claimSpeedDatingMatch({
+  firestore,
+  queueRef,
+  partnerRef,
+  sessionRef,
+  uid,
+  partnerId,
+  expiresAt,
+}) {
+  return firestore.runTransaction(async (tx) => {
+    const [ownQueue, partnerQueue] = await Promise.all([
+      tx.get(queueRef),
+      tx.get(partnerRef),
+    ]);
+    const ownMatch = ownQueue.exists ?
+      existingSpeedDatingMatch(ownQueue.data()) :
+      null;
+    if (ownMatch) return ownMatch;
+    if (!ownQueue.exists || !partnerQueue.exists || partnerQueue.data().matched) {
+      return null;
     }
 
     tx.set(sessionRef, {
@@ -2508,9 +3649,141 @@ exports.joinSpeedDatingQueue = onCall(async (request) => {
       expiresAt,
       active: true,
     });
-    tx.update(queueRef, { matched: true, sessionId: sessionRef.id });
-    tx.update(partnerDoc.ref, { matched: true, sessionId: sessionRef.id });
+    tx.update(queueRef, {
+      matched: true,
+      sessionId: sessionRef.id,
+      partnerId,
+    });
+    tx.update(partnerRef, {
+      matched: true,
+      sessionId: sessionRef.id,
+      partnerId: uid,
+    });
+    return {
+      matched: true,
+      sessionId: sessionRef.id,
+      partnerId,
+    };
   });
+}
+
+function blockedUserIdsFromRows(uid, rows) {
+  const blocked = new Set();
+  for (const row of rows) {
+    if (row.blockerUserId === uid && typeof row.blockedUserId === "string") {
+      blocked.add(row.blockedUserId);
+    }
+    if (row.blockedUserId === uid && typeof row.blockerUserId === "string") {
+      blocked.add(row.blockerUserId);
+    }
+  }
+  return blocked;
+}
+
+async function _readBlockedUserIds(uid) {
+  const [outgoing, incoming] = await Promise.all([
+    db.collection("blocks").where("blockerUserId", "==", uid).get(),
+    db.collection("blocks").where("blockedUserId", "==", uid).get(),
+  ]);
+  return blockedUserIdsFromRows(uid, [
+    ...outgoing.docs.map((doc) => doc.data()),
+    ...incoming.docs.map((doc) => doc.data()),
+  ]);
+}
+
+/** Reads the owner-only dating preference docs for the given uids in one batch. */
+async function _readDatingPrivateDocs(uids) {
+  const unique = [...new Set(uids)];
+  const result = new Map();
+  if (unique.length === 0) return result;
+  const snaps = await db.getAll(
+    ...unique.map((id) => db.doc(`users/${id}/private/dating`)),
+  );
+  snaps.forEach((snap, i) => result.set(unique[i], snap.exists ? snap.data() : {}));
+  return result;
+}
+
+/**
+ * joinSpeedDatingQueue – callable that places the authenticated user in the
+ * speed_dating_queue collection and, if a waiting partner is found, creates
+ * a matched session room in speed_dating_sessions.
+ *
+ * Only partners whose dating preferences are mutually compatible are matched.
+ *
+ * Returns: { matched: boolean, sessionId?: string, partnerId?: string }
+ */
+async function joinSpeedDatingQueueHandler(request) {
+  const { auth } = request;
+  if (!auth) throw new HttpsError("unauthenticated", "Sign in first.");
+  const uid = auth.uid;
+
+  const {queueRef, existingMatch} =
+    await ensureSpeedDatingQueueEntry(db, uid);
+  if (existingMatch) return existingMatch;
+
+  // Look for a waiting user who is compatible with this user's preferences
+  const [waiting, blockedUserIds] = await Promise.all([
+    db
+      .collection("speed_dating_queue")
+      .where("matched", "==", false)
+      .limit(SPEED_DATING_QUEUE_SCAN_LIMIT)
+      .get(),
+    _readBlockedUserIds(uid),
+  ]);
+
+  const waitingDocs = waiting.docs.filter(
+    (doc) => doc.id !== uid && !blockedUserIds.has(doc.id),
+  );
+  if (waitingDocs.length === 0) {
+    return { matched: false };
+  }
+
+  const waitingIds = waitingDocs.map((doc) => doc.id);
+  const [viewerSnap, partnerSnaps, privateDocs] = await Promise.all([
+    db.doc(`users/${uid}`).get(),
+    db.getAll(...waitingIds.map((id) => db.doc(`users/${id}`))),
+    _readDatingPrivateDocs([uid, ...waitingIds]),
+  ]);
+  if (!viewerSnap.exists) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Complete your profile before joining speed dating.",
+    );
+  }
+  const viewerProfile = buildDatingProfile(
+    viewerSnap.data() || {},
+    privateDocs.get(uid),
+  );
+  const partnerIndex = waitingDocs.findIndex((doc, i) =>
+    partnerSnaps[i].exists && isCompatiblePair(
+      viewerProfile,
+      buildDatingProfile(partnerSnaps[i].data() || {}, privateDocs.get(doc.id)),
+    ),
+  );
+  if (partnerIndex === -1) {
+    return { matched: false };
+  }
+
+  const partnerDoc = waitingDocs[partnerIndex];
+  const partnerId = partnerDoc.id;
+
+  // Create a session atomically
+  const sessionRef = db.collection("speed_dating_sessions").doc();
+  const expiresAt = admin.firestore.Timestamp.fromMillis(
+    Date.now() + SPEED_DATING_SESSION_SECONDS * 1000,
+  );
+
+  const match = await claimSpeedDatingMatch({
+    firestore: db,
+    queueRef,
+    partnerRef: partnerDoc.ref,
+    sessionRef,
+    uid,
+    partnerId,
+    expiresAt,
+  });
+  if (!match) return {matched: false};
+  if (match.sessionId !== sessionRef.id) return match;
 
   // Notify both participants (best-effort, outside the transaction)
   const pushPayload = {
@@ -2523,7 +3796,87 @@ exports.joinSpeedDatingQueue = onCall(async (request) => {
     _sendPushToUser(partnerId, pushPayload),
   ]);
 
-  return { matched: true, sessionId: sessionRef.id, partnerId };
+  return match;
+}
+
+exports.joinSpeedDatingQueue = onCall(joinSpeedDatingQueueHandler);
+
+/**
+ * getSpeedDatingCandidates – returns up to 40 users the caller may be matched
+ * with, after applying both sides' dating preferences. Private fields (race,
+ * sexuality, coordinates) are read here with admin access and never returned.
+ *
+ * Returns: { candidates: [{ id, username, avatarUrl, bio, interests, distanceKm }] }
+ */
+exports.getSpeedDatingCandidates = onCall(async (request) => {
+  const { auth } = request;
+  if (!auth) throw new HttpsError("unauthenticated", "Sign in first.");
+  const uid = auth.uid;
+
+  const [viewerSnap, viewerPrivateDocs, blockedUserIds] = await Promise.all([
+    db.doc(`users/${uid}`).get(),
+    _readDatingPrivateDocs([uid]),
+    _readBlockedUserIds(uid),
+  ]);
+  if (!viewerSnap.exists) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Complete your profile before browsing speed dating.",
+    );
+  }
+
+  const viewerProfile = buildDatingProfile(
+    viewerSnap.data() || {},
+    viewerPrivateDocs.get(uid),
+  );
+
+  const candidates = [];
+  let lastDocument = null;
+  for (
+    let page = 0;
+    page < SPEED_DATING_CANDIDATE_MAX_PAGES &&
+      candidates.length < SPEED_DATING_CANDIDATE_RESULT_LIMIT;
+    page++
+  ) {
+    let query = db
+      .collection("users")
+      .where("username", ">", "")
+      .orderBy("username")
+      .limit(SPEED_DATING_CANDIDATE_SCAN_LIMIT);
+    if (lastDocument) query = query.startAfter(lastDocument);
+
+    const scan = await query.get();
+    if (scan.empty) break;
+    lastDocument = scan.docs.at(-1);
+    const others = scan.docs.filter(
+      (doc) => doc.id !== uid && !blockedUserIds.has(doc.id),
+    );
+    const privateDocs = await _readDatingPrivateDocs(
+      others.map((doc) => doc.id),
+    );
+
+    for (const doc of others) {
+      if (candidates.length >= SPEED_DATING_CANDIDATE_RESULT_LIMIT) break;
+      const data = doc.data() || {};
+      const profile = buildDatingProfile(data, privateDocs.get(doc.id));
+      if (!isCompatiblePair(viewerProfile, profile)) continue;
+      candidates.push({
+        id: doc.id,
+        username: typeof data.username === "string" ? data.username : "",
+        avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : null,
+        bio: typeof data.bio === "string" ? data.bio : null,
+        interests: Array.isArray(data.interests)
+          ? data.interests
+            .filter((item) => typeof item === "string")
+            .slice(0, 20) :
+          [],
+        distanceKm: distanceBetweenKm(viewerProfile, profile),
+      });
+    }
+    if (scan.size < SPEED_DATING_CANDIDATE_SCAN_LIMIT) break;
+  }
+
+  return { candidates };
 });
 
 /**
@@ -2845,7 +4198,7 @@ exports.feed = onRequest(
 
       // Fetch live rooms (top 20 by activity)
       // Note: We fetch without ordering first, then sort in memory to avoid requiring
-      // a composite index (isLive + memberCount). This is safe because active
+      // a composite index (isLive + participantCount). This is safe because active
       // rooms are typically < 500 docs, well within Firestore document limits.
       const liveRoomsSnap = await db
         .collection("rooms")
@@ -2853,44 +4206,86 @@ exports.feed = onRequest(
         .limit(200)  // Fetch more, then sort in memory for top 20
         .get();
 
-      const candidateRooms = liveRoomsSnap.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          // Ensure serializable timestamps
-          createdAt:
-            doc.data().createdAt instanceof admin.firestore.Timestamp
-              ? doc.data().createdAt.toMillis()
-              : doc.data().createdAt,
-          updatedAt:
-            doc.data().updatedAt instanceof admin.firestore.Timestamp
-              ? doc.data().updatedAt.toMillis()
-              : doc.data().updatedAt,
-        }))
-        .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
-        .slice(0, 60);  // Stored counts can be stale, so verify the top 60 below
-
-      // Stored participant counts only change on join/leave, so crashed or
-      // abandoned sessions remain isLive. Count only recent heartbeats.
-      const activeCutoff = admin.firestore.Timestamp.fromMillis(
-        Date.now() - ACTIVE_PARTICIPANT_WINDOW_MS,
+      const activeParticipantCutoff = admin.firestore.Timestamp.fromMillis(
+        Date.now() - 90 * 1000,
       );
-      const freshCounts = new Map();
-      await Promise.all(candidateRooms.map(async (room) => {
-        try {
-          const agg = await db
-            .collection("rooms")
-            .doc(room.id)
-            .collection("participants")
-            .where("lastActiveAt", ">=", activeCutoff)
-            .count()
-            .get();
-          freshCounts.set(room.id, agg.data().count);
-        } catch (error) {
-          logger.warn(`Feed: fresh participant count failed for room ${room.id}: ${error.message}`);
+      const activeParticipantsSnap = await db
+        .collectionGroup("participants")
+        .get();
+      const activeParticipantsByRoom = new Map();
+      const stageRoles = new Set([
+        "host",
+        "owner",
+        "cohost",
+        "moderator",
+        "trusted_speaker",
+        "stage",
+      ]);
+
+      for (const participantDoc of activeParticipantsSnap.docs) {
+        const roomRef = participantDoc.ref.parent.parent;
+        if (!roomRef) continue;
+
+        const data = participantDoc.data();
+        const lastActiveAt = data.lastActiveAt;
+        if (!(lastActiveAt instanceof admin.firestore.Timestamp) ||
+            lastActiveAt.toMillis() < activeParticipantCutoff.toMillis()) {
+          continue;
         }
-      }));
-      const liveRooms = applyFreshParticipantCounts(candidateRooms, freshCounts, 20);
+        if (String(data.userStatus || "").trim().toLowerCase() === "offline") {
+          continue;
+        }
+
+        const roomId = roomRef.id;
+        const participant = activeParticipantsByRoom.get(roomId) || {
+          stageUserIds: [],
+          audienceUserIds: [],
+          stageUserAvatarUrls: [],
+          audienceUserAvatarUrls: [],
+        };
+        const userId = String(data.userId || participantDoc.id).trim();
+        if (!userId) continue;
+
+        const role = String(data.role || "audience").trim().toLowerCase();
+        const photoUrl = String(data.photoUrl || "").trim();
+        if (stageRoles.has(role)) {
+          participant.stageUserIds.push(userId);
+          participant.stageUserAvatarUrls.push(photoUrl);
+        } else {
+          participant.audienceUserIds.push(userId);
+          participant.audienceUserAvatarUrls.push(photoUrl);
+        }
+        activeParticipantsByRoom.set(roomId, participant);
+      }
+
+      const liveRooms = liveRoomsSnap.docs
+        .map((doc) => {
+          const data = doc.data();
+          const active = activeParticipantsByRoom.get(doc.id) || {
+            stageUserIds: [],
+            audienceUserIds: [],
+            stageUserAvatarUrls: [],
+            audienceUserAvatarUrls: [],
+          };
+          return {
+            id: doc.id,
+            ...data,
+            ...active,
+            memberCount:
+              active.stageUserIds.length + active.audienceUserIds.length,
+            // Ensure serializable timestamps
+            createdAt:
+              data.createdAt instanceof admin.firestore.Timestamp
+                ? data.createdAt.toMillis()
+                : data.createdAt,
+            updatedAt:
+              data.updatedAt instanceof admin.firestore.Timestamp
+                ? data.updatedAt.toMillis()
+                : data.updatedAt,
+          };
+        })
+        .sort((a, b) => b.memberCount - a.memberCount)
+        .slice(0, 20);  // Take top 20 after sorting
 
       // Fetch upcoming rooms (next 48 hours)
       // Simplified to avoid composite index: fetch without date filtering, then filter in memory
@@ -2956,8 +4351,8 @@ exports.feed = onRequest(
         success: true,
       };
 
-      // Set cache headers (5 minute cache for browser, 1 minute for CDN)
-      response.set("Cache-Control", "public, max-age=15, s-maxage=30");
+      // Keep active presence counts responsive while still absorbing refresh bursts.
+      response.set("Cache-Control", "public, max-age=15, s-maxage=15");
       response.set("Content-Type", "application/json");
       response.set("X-Feed-Timestamp", new Date().toISOString());
 
@@ -2989,6 +4384,35 @@ function convertTimestamps(doc) {
     }
   });
   return data;
+}
+
+// Fields that must never be returned by the public profile endpoint.
+const PRIVATE_PROFILE_FIELDS = [
+  "admin", "isAdmin", "role", "roles", "membershipLevel", "vipLevel",
+  "coins", "coinBalance", "cashBalance", "wallet", "security", "email",
+  "phoneNumber", "phone", "fcmToken", "fcmTokens", "stripeCustomerId",
+  "isVerified", "isAdultVerified", "adultVerified", "verificationStatus",
+  "adultModeEnabled", "adultConsentAccepted", "adultModeEnabledAt",
+];
+
+function stripPrivateProfileFields(data) {
+  const copy = {...data};
+  for (const field of PRIVATE_PROFILE_FIELDS) {
+    delete copy[field];
+  }
+  return copy;
+}
+
+// Returns the caller's uid when a valid Bearer ID token is present, otherwise null.
+async function optionalViewerUid(request) {
+  const authHeader = request.headers && request.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  try {
+    const decoded = await admin.auth().verifyIdToken(authHeader.substring(7));
+    return decoded.uid;
+  } catch (error) {
+    return null;
+  }
 }
 
 exports.getProfile = onRequest(
@@ -3043,32 +4467,35 @@ exports.getProfile = onRequest(
         profilePublicData = convertTimestamps(profilePublicDoc);
       }
 
-      // Fetch adult profile if user has enabled adult mode
+      // Fetch adult profile only for its owner. The viewer must present their own ID token.
       let adultProfileData = {
         enabled: false,
         adultConsentAccepted: false,
       };
-      const adultDoc = await db
-        .collection("users")
-        .doc(userId)
-        .collection("adult_profile")
-        .doc("details")
-        .get();
-      if (adultDoc.exists) {
-        adultProfileData = convertTimestamps(adultDoc);
+      const viewerUid = await optionalViewerUid(request);
+      if (viewerUid === userId) {
+        const adultDoc = await db
+          .collection("users")
+          .doc(userId)
+          .collection("adult_profile")
+          .doc("details")
+          .get();
+        if (adultDoc.exists) {
+          adultProfileData = convertTimestamps(adultDoc);
+        }
       }
 
       // Combine all profile data
       const profileData = {
-        ...userData,
-        ...profilePublicData,
+        ...stripPrivateProfileFields(userData),
+        ...stripPrivateProfileFields(profilePublicData),
         privacy: privacyData,
         adultProfile: adultProfileData,
         success: true,
         loadedAt: new Date().toISOString(),
       };
 
-      response.set("Cache-Control", "public, max-age=30, s-maxage=60");
+      response.set("Cache-Control", "no-cache, no-store, must-revalidate");
       response.set("Content-Type", "application/json");
       return response.status(200).json(profileData);
     } catch (error) {
@@ -3113,6 +4540,8 @@ exports.saveProfile = onRequest(
       // Update users/{userId} with identity fields
       const userRef = db.collection("users").doc(userId);
       const identityFields = {
+        uid: userId,
+        id: userId,
         username: userData.username || "",
         displayName: userData.username || "",
         email: userData.email || "",
@@ -3124,13 +4553,15 @@ exports.saveProfile = onRequest(
         relationshipStatus: userData.relationshipStatus || null,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
-      batch.update(userRef, identityFields);
+      batch.set(userRef, identityFields, {merge: true});
 
       // Update profile_public/{userId} with public profile data
       const profilePublicRef = db.collection("profile_public").doc(userId);
       const profilePublicFields = {
         avatarUrl: userData.avatarUrl || null,
         coverPhotoUrl: userData.coverPhotoUrl || null,
+        galleryUrls: userData.galleryUrls || [],
+        introVideoUrl: userData.introVideoUrl || null,
         bio: userData.bio || null,
         aboutMe: userData.aboutMe || null,
         interests: userData.interests || [],
@@ -3807,6 +5238,7 @@ exports.onUserCreated = onDocumentCreated("users/{uid}", async (event) => {
 });
 
 exports.__testing = {
+  assertStripeSecretAllowed,
   createPaymentIntentHandler,
   recordStripePaymentSuccessHandler,
   claimDailyCheckinHandler,
@@ -3817,12 +5249,29 @@ exports.__testing = {
   getStripeConnectStatusHandler,
   createStripeConnectOnboardingLinkHandler,
   createStripeConnectDashboardLinkHandler,
+  getCreatorSubscriptionOverviewHandler,
+  saveCreatorSubscriptionOfferHandler,
+  createCreatorSubscriptionCheckoutHandler,
+  cancelCreatorSubscriptionHandler,
+  validateCreatorSubscriptionOffer,
+  buildCreatorSubscriptionCheckoutPayload,
+  handleCreatorSubscriptionCheckoutCompleted,
+  handleCreatorSubscriptionChanged,
+  handleCreatorSubscriptionInvoice,
+  reconcileCreatorSubscriptionsHandler,
+  creatorSubscriptionDocId,
+  listCreatorSubscriptionMarketplaceHandler,
+  publishCreatorSubscriberUpdateHandler,
+  listCreatorSubscriberUpdatesHandler,
+  reportCreatorSubscriberUpdateHandler,
+  validateCreatorUpdateText,
   generateAgoraTokenHandler,
   createCheckoutSessionHandler,
   createCheckoutSessionCallableHandler,
   requestRefundHandler,
   sendRoomGiftHandler,
   cleanupDeletedUserData,
+  deleteCurrentUserAccountHandler,
   classifyModerationText,
   buildModerationReviewPayload,
   getCheckoutBaseUrl,
@@ -3850,4 +5299,11 @@ exports.__testing = {
   inviteToMicHandler,
   buildCheckoutSessionPayload,
   resolveCheckoutProduct,
+  recordOperationalSignalHandler,
+  sanitizeOperationalMetadata,
+  existingSpeedDatingMatch,
+  ensureSpeedDatingQueueEntry,
+  claimSpeedDatingMatch,
+  blockedUserIdsFromRows,
+  joinSpeedDatingQueueHandler,
 };

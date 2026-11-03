@@ -58,16 +58,16 @@ $functionsToCheck = @(
     }
 )
 
-# Firebase API endpoints to verify
+# Public hosting endpoints to verify
 $firebaseEndpoints = @(
     @{
-        Name = "Firestore Health"
-        Url = "https://firestore.googleapis.com/v1/projects/$ProjectId"
+        Name = "Firebase Hosting"
+        Url = "https://$ProjectId.web.app"
         Critical = $true
     },
     @{
-        Name = "Firebase Auth"
-        Url = "https://identitytoolkit.googleapis.com/v1/projects/$ProjectId"
+        Name = "Firebase Hosting Alias"
+        Url = "https://$ProjectId.firebaseapp.com"
         Critical = $true
     }
 )
@@ -175,32 +175,26 @@ function Test-CloudFunctionDeployed {
     $success = $false
     
     try {
-        # Query Cloud Functions API to check if function exists
-        # This is read-only and doesn't invoke the function
-        
-        # Build Cloud Functions API endpoint
-        $apiUrl = "https://cloudfunctions.googleapis.com/v1/projects/$ProjectId/locations/$Region/functions/$FunctionName"
-        
-        # Try without auth first (public functions)
-        $response = Invoke-WebRequest `
-            -Uri $apiUrl `
-            -Method GET `
-            -TimeoutSec 5 `
-            -SkipHttpErrorCheck `
-            -ErrorAction SilentlyContinue
-        
-        if ($response.StatusCode -eq 200) {
-            $success = $true
-            $message = "Function deployed and active"
-        } elseif ($response.StatusCode -eq 404) {
-            $message = "Function not found (not deployed yet)"
-        } else {
-            $message = "Status: $($response.StatusCode)"
+        $rawResult = firebase functions:list --project $ProjectId --json 2>$null | Out-String
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Firebase CLI could not list functions.'
         }
-        
+
+        $functions = ($rawResult | ConvertFrom-Json).result
+        $deployedFunction = $functions | Where-Object {
+            $_.id -eq $FunctionName -and $_.region -eq $Region
+        } | Select-Object -First 1
+
+        if ($null -ne $deployedFunction -and $deployedFunction.state -eq 'ACTIVE') {
+            $success = $true
+            $message = "Function deployed and active ($($deployedFunction.runtime))"
+        } elseif ($null -eq $deployedFunction) {
+            $message = "Function not found in Firebase deployment"
+        } else {
+            $message = "Function state: $($deployedFunction.state)"
+        }
     } catch {
-        # If no auth available, assume not deployed
-        $message = "Unable to verify (may require authentication)"
+        $message = "Unable to verify with Firebase CLI: $($_.Exception.Message)"
     }
     
     return @{

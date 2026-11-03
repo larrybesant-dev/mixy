@@ -6,6 +6,7 @@ import 'package:mixvy/features/friends/models/friendship_model.dart';
 import 'package:mixvy/features/friends/panes/friends_pane_view.dart';
 import 'package:mixvy/features/friends/providers/friends_providers.dart';
 import 'package:mixvy/features/schema_messenger/core/schema_engine/schema_module_health_provider.dart';
+import 'package:mixvy/features/schema_messenger/friends/providers/schema_friend_render_mode_provider.dart';
 import 'package:mixvy/models/presence_model.dart';
 import 'package:mixvy/models/user_model.dart';
 import 'package:mixvy/presentation/providers/user_provider.dart';
@@ -16,7 +17,18 @@ void main() {
     await testSetup();
   });
 
-  testWidgets('FriendListScreen renders online, in-room, and offline sections', (
+  test('production defaults to the single schema friends pane', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(friendPaneRenderModeProvider),
+      FriendPaneRenderMode.schema,
+    );
+  });
+
+  testWidgets('FriendListScreen renders online, in-room, and offline sections',
+      (
     tester,
   ) async {
     final now = DateTime.now();

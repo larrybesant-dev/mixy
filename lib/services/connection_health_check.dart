@@ -29,9 +29,9 @@ class ConnectionHealthCheckService with DiagnosticLogger {
   final FirebaseFirestore _firestore;
 
   // Configuration
-  static const int _pingIntervalMs = 5000;      // Ping every 5 seconds
-  static const int _latencyThresholdMs = 1000;  // >1s = degraded
-  static const int _historySizeBytes = 10;      // Track last 10 pings for trend
+  static const int _pingIntervalMs = 5000; // Ping every 5 seconds
+  static const int _latencyThresholdMs = 1000; // >1s = degraded
+  static const int _historySizeBytes = 10; // Track last 10 pings for trend
 
   // State
   Timer? _pingTimer;
@@ -124,7 +124,9 @@ class ConnectionHealthCheckService with DiagnosticLogger {
 
       // Open circuit breaker after 3 consecutive failures
       if (_latencyHistory.length >= 3 &&
-          _latencyHistory.sublist(_latencyHistory.length - 3).every((l) => l > _latencyThresholdMs)) {
+          _latencyHistory
+              .sublist(_latencyHistory.length - 3)
+              .every((l) => l > _latencyThresholdMs)) {
         _circuitBreakerOpen = true;
         logCritical('Circuit breaker opened, halting health checks', error: e);
         _updateHealth(ConnectionHealth.unavailable);
@@ -153,7 +155,8 @@ class ConnectionHealthCheckService with DiagnosticLogger {
   /// Calculate average latency from history.
   int _calculateAverageLatency() {
     if (_latencyHistory.isEmpty) return 0;
-    return (_latencyHistory.reduce((a, b) => a + b) / _latencyHistory.length).round();
+    return (_latencyHistory.reduce((a, b) => a + b) / _latencyHistory.length)
+        .round();
   }
 
   /// Update health status and notify listeners.
@@ -231,7 +234,8 @@ enum ConnectionHealth {
 ///   // Show warning badge
 /// }
 /// ```
-final connectionHealthServiceProvider = Provider.autoDispose<ConnectionHealthCheckService>((ref) {
+final connectionHealthServiceProvider =
+    Provider.autoDispose<ConnectionHealthCheckService>((ref) {
   final service = ConnectionHealthCheckService(FirebaseFirestore.instance);
 
   // Start monitoring when provider is first accessed
@@ -248,6 +252,8 @@ final connectionHealthServiceProvider = Provider.autoDispose<ConnectionHealthChe
 /// **Riverpod State Notifier: Health Status + Latency**
 class ConnectionHealthNotifier extends StateNotifier<ConnectionHealthState> {
   final ConnectionHealthCheckService _service;
+  Timer? _latencyTimer;
+  bool _isDisposed = false;
 
   ConnectionHealthNotifier(this._service)
       : super(const ConnectionHealthState(
@@ -257,6 +263,7 @@ class ConnectionHealthNotifier extends StateNotifier<ConnectionHealthState> {
         )) {
     // Wire service callbacks to Riverpod state updates
     _service.onHealthChanged = (newHealth) {
+      if (_isDisposed) return;
       state = state.copyWith(
         health: newHealth,
         lastPingTime: DateTime.now(),
@@ -268,20 +275,25 @@ class ConnectionHealthNotifier extends StateNotifier<ConnectionHealthState> {
   }
 
   void _startLatencyUpdater() {
-    Timer.periodic(const Duration(seconds: 1), (_) {
+    _latencyTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_isDisposed) return;
       state = state.copyWith(averageLatency: _service.averageLatency);
     });
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _service.onHealthChanged = null;
+    _latencyTimer?.cancel();
     _service.stopMonitoring();
     super.dispose();
   }
 }
 
 /// **Riverpod State: Health data**
-final connectionHealthProvider = StateNotifierProvider.autoDispose<ConnectionHealthNotifier, ConnectionHealthState>(
+final connectionHealthProvider = StateNotifierProvider.autoDispose<
+    ConnectionHealthNotifier, ConnectionHealthState>(
   (ref) {
     final service = ref.watch(connectionHealthServiceProvider);
     return ConnectionHealthNotifier(service);

@@ -1,4 +1,4 @@
-String? sanitizeNetworkImageUrl(String? rawUrl) {
+String? sanitizeNetworkImageUrl(String? rawUrl, {int preferredSize = 128}) {
   final trimmed = rawUrl?.trim();
   if (trimmed == null || trimmed.isEmpty) {
     return null;
@@ -24,13 +24,11 @@ String? sanitizeNetworkImageUrl(String? rawUrl) {
       if (uri.host.endsWith('googleusercontent.com')) {
         final eqIdx = trimmed.indexOf('=');
         final base = eqIdx >= 0 ? trimmed.substring(0, eqIdx) : trimmed;
-        return '$base=s128-c';
+        final size = preferredSize.clamp(64, 1024);
+        return '$base=s$size-c';
       }
       return trimmed;
     default:
       return null;
   }
 }
-
-
-

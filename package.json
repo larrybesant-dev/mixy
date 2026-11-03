@@ -10,6 +10,10 @@
     "test:e2e:ci": "playwright test --reporter=html,junit",
     "test:e2e:critical": "playwright test e2e/06-critical-user-flows.spec.ts",
     "test:e2e:auth": "playwright test e2e/01-auth-and-navigation.spec.ts",
+    "test:e2e:provision-account": "node tools/provision_e2e_account.mjs --count=3",
+    "test:e2e:provision-ci-pool": "node tools/provision_e2e_account.mjs --count=8",
+    "test:e2e:journey": "playwright test e2e/07-real-life-latency-journey.spec.ts --project=chromium",
+    "test:e2e:stress": "playwright test e2e/08-resilience-stress.spec.ts --project=chromium --workers=1",
     "report:e2e": "playwright show-report",
     "firestore:contract": "node tools/firestore_contract_compiler.mjs"
   },

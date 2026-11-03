@@ -55,5 +55,65 @@ void main() {
         );
       },
     );
+
+    test('approving a request grants the requester camera access', () async {
+      await controller.sendRequest(
+        roomId: 'room-1',
+        requesterId: 'viewer',
+        targetId: 'camera-owner',
+        requesterName: 'Viewer',
+      );
+      final request = (await firestore
+              .collection('rooms')
+              .doc('room-1')
+              .collection('cam_view_requests')
+              .get())
+          .docs
+          .single;
+
+      await controller.respondToRequest(
+        roomId: 'room-1',
+        requestId: request.id,
+        approved: true,
+      );
+
+      final updatedRequest = await request.reference.get();
+      final permissions = await firestore
+          .collection('userCamPermissions')
+          .doc('camera-owner')
+          .get();
+      expect(updatedRequest.data()?['status'], 'approved');
+      expect(permissions.data()?['allowedViewers'], contains('viewer'));
+    });
+
+    test('denying a request does not grant camera access', () async {
+      await controller.sendRequest(
+        roomId: 'room-1',
+        requesterId: 'viewer',
+        targetId: 'camera-owner',
+        requesterName: 'Viewer',
+      );
+      final request = (await firestore
+              .collection('rooms')
+              .doc('room-1')
+              .collection('cam_view_requests')
+              .get())
+          .docs
+          .single;
+
+      await controller.respondToRequest(
+        roomId: 'room-1',
+        requestId: request.id,
+        approved: false,
+      );
+
+      final updatedRequest = await request.reference.get();
+      final permissions = await firestore
+          .collection('userCamPermissions')
+          .doc('camera-owner')
+          .get();
+      expect(updatedRequest.data()?['status'], 'denied');
+      expect(permissions.exists, isFalse);
+    });
   });
 }

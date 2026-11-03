@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../core/providers/firebase_providers.dart';
+import 'creator_subscription_service.dart';
 
 String _asTrimmedString(dynamic value, {String fallback = ''}) {
   if (value is String) {
@@ -55,7 +56,7 @@ abstract class PaymentFunctionsGateway {
 
 class FirebasePaymentFunctionsGateway implements PaymentFunctionsGateway {
   FirebasePaymentFunctionsGateway({FirebaseFunctions? functions})
-    : _functions = functions ?? FirebaseFunctions.instance;
+      : _functions = functions ?? FirebaseFunctions.instance;
 
   final FirebaseFunctions _functions;
 
@@ -76,7 +77,7 @@ abstract class PaymentAuthGateway {
 
 class FirebasePaymentAuthGateway implements PaymentAuthGateway {
   FirebasePaymentAuthGateway({FirebaseAuth? auth})
-    : _auth = auth ?? FirebaseAuth.instance;
+      : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
 
@@ -102,13 +103,13 @@ class CoinTransaction {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'senderId': senderId,
-    'receiverId': receiverId,
-    'amount': amount,
-    'timestamp': timestamp.toIso8601String(),
-    'status': status,
-  };
+        'id': id,
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'amount': amount,
+        'timestamp': timestamp.toIso8601String(),
+        'status': status,
+      };
 
   factory CoinTransaction.fromJson(Map<String, dynamic> json) =>
       CoinTransaction(
@@ -214,7 +215,7 @@ class PaymentIntentResult {
 
 /// Instance-based PaymentApi that uses dependency injection via Riverpod.
 /// All Firebase instances are provided via Ref to enable testing and flexibility.
-class PaymentApi {
+class PaymentApi implements CreatorSubscriptionService {
   final Ref _ref;
   final PaymentFunctionsGateway? _functionsGateway;
   final PaymentAuthGateway? _authGateway;
@@ -230,11 +231,14 @@ class PaymentApi {
 
   /// Get resolved functions gateway (Riverpod-provided or default)
   PaymentFunctionsGateway get _resolvedFunctionsGateway =>
-      _functionsGateway ?? FirebasePaymentFunctionsGateway(functions: _ref.read(firebaseFunctionsProvider));
+      _functionsGateway ??
+      FirebasePaymentFunctionsGateway(
+          functions: _ref.read(firebaseFunctionsProvider));
 
   /// Get resolved auth gateway (Riverpod-provided or default)
   PaymentAuthGateway get _resolvedAuthGateway =>
-      _authGateway ?? FirebasePaymentAuthGateway(auth: _ref.read(firebaseAuthProvider));
+      _authGateway ??
+      FirebasePaymentAuthGateway(auth: _ref.read(firebaseAuthProvider));
 
   Future<T> _callFunction<T>(
     String name,
@@ -253,16 +257,16 @@ class PaymentApi {
   }) async {
     final resolvedIdempotencyKey =
         (idempotencyKey == null || idempotencyKey.trim().isEmpty)
-        ? 'intent_${_uuid.v4()}'
-        : idempotencyKey.trim();
+            ? 'intent_${_uuid.v4()}'
+            : idempotencyKey.trim();
 
     final data =
         await _callFunction<Map<String, dynamic>>('createPaymentIntent', {
-          'amount': amount,
-          'currency': currency,
-          'recipientId': recipientId,
-          'idempotencyKey': resolvedIdempotencyKey,
-        });
+      'amount': amount,
+      'currency': currency,
+      'recipientId': recipientId,
+      'idempotencyKey': resolvedIdempotencyKey,
+    });
     final clientSecret = _asTrimmedString(data['clientSecret']);
     final paymentIntentId = _asTrimmedString(data['paymentIntentId']);
     final returnedIdempotencyKey = _asTrimmedString(
@@ -350,6 +354,7 @@ class PaymentApi {
     return StripeConnectStatus.fromJson(data);
   }
 
+  @override
   Future<String> createStripeConnectOnboardingLink() async {
     final user = _resolvedAuthGateway.currentUser;
     if (user == null) {
@@ -382,6 +387,144 @@ class PaymentApi {
       throw Exception('Dashboard URL missing in response');
     }
     return url;
+  }
+
+  @override
+  Future<CreatorSubscriptionOverview> getCreatorSubscriptionOverview(
+    String creatorId,
+  ) async {
+    final normalizedCreatorId = creatorId.trim();
+    if (normalizedCreatorId.isEmpty) {
+      throw Exception('Creator id is required');
+    }
+    final data = await _callFunction<Map<String, dynamic>>(
+      'getCreatorSubscriptionOverview',
+      {'creatorId': normalizedCreatorId},
+    );
+    return CreatorSubscriptionOverview.fromJson(data);
+  }
+
+  @override
+  Future<CreatorSubscriptionOverview> saveCreatorSubscriptionOffer({
+    required bool enabled,
+    required int monthlyPriceCents,
+    required List<String> benefits,
+  }) async {
+    final data = await _callFunction<Map<String, dynamic>>(
+      'saveCreatorSubscriptionOffer',
+      {
+        'enabled': enabled,
+        'monthlyPriceCents': monthlyPriceCents,
+        'benefits': benefits,
+      },
+    );
+    return CreatorSubscriptionOverview.fromJson(data);
+  }
+
+  @override
+  Future<String> createCreatorSubscriptionCheckout(String creatorId) async {
+    final normalizedCreatorId = creatorId.trim();
+    if (normalizedCreatorId.isEmpty) {
+      throw Exception('Creator id is required');
+    }
+    final data = await _callFunction<Map<String, dynamic>>(
+      'createCreatorSubscriptionCheckout',
+      {'creatorId': normalizedCreatorId},
+    );
+    final url = _asTrimmedString(data['url']);
+    if (url.isEmpty) {
+      throw Exception('Subscription checkout URL missing in response');
+    }
+    return url;
+  }
+
+  @override
+  Future<CreatorSubscriptionOverview> cancelCreatorSubscription(
+    String creatorId,
+  ) async {
+    final normalizedCreatorId = creatorId.trim();
+    if (normalizedCreatorId.isEmpty) {
+      throw Exception('Creator id is required');
+    }
+    final data = await _callFunction<Map<String, dynamic>>(
+      'cancelCreatorSubscription',
+      {'creatorId': normalizedCreatorId},
+    );
+    return CreatorSubscriptionOverview.fromJson(data);
+  }
+
+  @override
+  Future<List<CreatorMarketplaceEntry>> listCreatorSubscriptionMarketplace({
+    String query = '',
+  }) async {
+    final data = await _callFunction<Map<String, dynamic>>(
+      'listCreatorSubscriptionMarketplace',
+      {'query': query.trim()},
+    );
+    return (data['creators'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map>()
+        .map(
+          (item) => CreatorMarketplaceEntry.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .where((entry) => entry.creatorId.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<CreatorSubscriberUpdate> publishCreatorSubscriberUpdate(
+    String text,
+  ) async {
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty) {
+      throw Exception('Subscriber update text is required');
+    }
+    final data = await _callFunction<Map<String, dynamic>>(
+      'publishCreatorSubscriberUpdate',
+      {'text': normalizedText},
+    );
+    return CreatorSubscriberUpdate.fromJson(
+      Map<String, dynamic>.from(data['update'] as Map? ?? data),
+    );
+  }
+
+  @override
+  Future<List<CreatorSubscriberUpdate>> listCreatorSubscriberUpdates(
+    String creatorId,
+  ) async {
+    final normalizedCreatorId = creatorId.trim();
+    if (normalizedCreatorId.isEmpty) {
+      throw Exception('Creator id is required');
+    }
+    final data = await _callFunction<Map<String, dynamic>>(
+      'listCreatorSubscriberUpdates',
+      {'creatorId': normalizedCreatorId},
+    );
+    return (data['updates'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map>()
+        .map(
+          (item) => CreatorSubscriberUpdate.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> reportCreatorSubscriberUpdate({
+    required String updateId,
+    required String reason,
+    String details = '',
+  }) async {
+    await _callFunction<Map<String, dynamic>>(
+      'reportCreatorSubscriberUpdate',
+      {
+        'updateId': updateId.trim(),
+        'reason': reason.trim(),
+        'details': details.trim(),
+      },
+    );
   }
 
   Future<void> requestRefund({
@@ -419,19 +562,16 @@ class PaymentApi {
         .where('requesterId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-          final requests =
-              snapshot.docs
-                  .map((doc) => RefundRequest.fromJson(doc.data()))
-                  .toList(growable: false)
-                ..sort((a, b) {
-                  final aTime =
-                      a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                  final bTime =
-                      b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                  return bTime.compareTo(aTime);
-                });
-          return requests;
+      final requests = snapshot.docs
+          .map((doc) => RefundRequest.fromJson(doc.data()))
+          .toList(growable: false)
+        ..sort((a, b) {
+          final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bTime.compareTo(aTime);
         });
+      return requests;
+    });
   }
 
   Stream<List<CoinTransaction>> getTransactions(String userId) {
@@ -445,13 +585,12 @@ class PaymentApi {
         .where('participants', arrayContains: userId)
         .snapshots()
         .map((snapshot) {
-          final transactions =
-              snapshot.docs
-                  .map((doc) => CoinTransaction.fromJson(doc.data()))
-                  .toList(growable: false)
-                ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-          return transactions;
-        });
+      final transactions = snapshot.docs
+          .map((doc) => CoinTransaction.fromJson(doc.data()))
+          .toList(growable: false)
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return transactions;
+    });
   }
 }
 
@@ -460,6 +599,3 @@ class PaymentApi {
 final paymentApiProvider = Provider((ref) {
   return PaymentApi(ref);
 });
-
-
-
