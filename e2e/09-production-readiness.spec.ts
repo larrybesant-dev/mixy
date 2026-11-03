@@ -29,7 +29,11 @@ test.describe('MixVy production readiness', () => {
     });
   }
 
-  test('exposes a guarded account deletion flow', async ({ page }) => {
+  test('exposes a guarded account deletion flow', async ({ page, browserName }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Authenticated Flutter semantics interactions are validated in Chromium.',
+    );
     test.skip(!hasCredentials, 'A disposable E2E account is required.');
     expect(await authenticateTestUser(page)).toBe(true);
     await page.goto('/profile/account', { waitUntil: 'domcontentloaded' });
@@ -49,7 +53,11 @@ test.describe('MixVy production readiness', () => {
     await expect(page.getByText('Delete account?', { exact: true })).toBeHidden();
   });
 
-  test('redirects disabled payment offers', async ({ page }) => {
+  test('redirects disabled payment offers', async ({ page, browserName }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Authenticated Flutter semantics interactions are validated in Chromium.',
+    );
     test.skip(!hasCredentials, 'A disposable E2E account is required.');
     expect(await authenticateTestUser(page)).toBe(true);
 

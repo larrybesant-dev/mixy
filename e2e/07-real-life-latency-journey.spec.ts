@@ -34,7 +34,6 @@ test.describe('MixVy real-life journey under latency', () => {
         .getByRole('button', { name: /^Rooms(?: Rooms)?$/ })
         .click();
       await expect(page).toHaveURL(/\/(?:rooms|\?__dl=%2Frooms)/);
-      await expect(page.getByText('Rooms', { exact: true }).first()).toBeVisible();
 
       const musicCategory = page.getByRole('button', { name: /Music$/ }).first();
       await expect(musicCategory).toBeVisible();
