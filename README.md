@@ -65,8 +65,10 @@ Behavior:
 - Hosting revalidates cached responses for `/`, deep links, and assets; runtime
   scripts and version metadata use no-store.
 - Scheduled E2E health checks do not deploy. Push-triggered E2E deployments
-  still publish the pushed main or develop branch, so release changes must be
-  merged into the deployment branch to avoid reverting a local-only build.
+  publish the pushed main or develop branch unless the head commit message
+  contains `[skip deploy]`; the marker skips Hosting only, not the E2E checks.
+  Release changes must be merged into the deployment branch before a later
+  unmarked push to avoid reverting a local-only build.
 
 ## Tests
 Run focused tests:

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('scheduled E2E health checks cannot deploy to production', () {
+  test('only unmarked main and develop pushes can deploy', () {
     final workflow = File('.github/workflows/e2e-tests.yml').readAsStringSync();
     final deployStart =
         RegExp(r'^  deploy:[ \t]*\r?$', multiLine: true).firstMatch(workflow);
@@ -22,6 +22,7 @@ void main() {
     expect(
       condition!.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim(),
       "success() && github.event_name == 'push' && "
+      "!contains(github.event.head_commit.message, '[skip deploy]') && "
       "(github.ref == 'refs/heads/main' || "
       "github.ref == 'refs/heads/develop')",
     );

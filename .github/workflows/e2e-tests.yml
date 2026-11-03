@@ -290,6 +290,7 @@ jobs:
     if: |
       success() &&
       github.event_name == 'push' &&
+      !contains(github.event.head_commit.message, '[skip deploy]') &&
       (github.ref == 'refs/heads/main' ||
        github.ref == 'refs/heads/develop')
     needs: e2e-tests
@@ -368,5 +369,4 @@ jobs:
                 `Branch: \`${{ github.ref_name }}\`\n` +
                 `[View workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
             });
-
 
