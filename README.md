@@ -62,7 +62,13 @@ Behavior:
 ## Web Stability Notes
 - Hosting rewrites are configured in firebase.json to route all paths to /index.html.
 - Entry boot script is now stable and no longer force-clears browser caches every load.
-- Cache-control headers are configured for index/bootstrap/service worker in firebase.json.
+- Hosting revalidates cached responses for `/`, deep links, and assets; runtime
+  scripts and version metadata use no-store.
+- Scheduled E2E health checks do not deploy. Push-triggered E2E deployments
+  publish the pushed main or develop branch unless the head commit message
+  contains `[skip deploy]`; the marker skips Hosting only, not the E2E checks.
+  Release changes must be merged into the deployment branch before a later
+  unmarked push to avoid reverting a local-only build.
 
 ## Tests
 Run focused tests:

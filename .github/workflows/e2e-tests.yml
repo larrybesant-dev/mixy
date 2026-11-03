@@ -286,11 +286,13 @@ jobs:
   deploy:
     name: Deploy to Firebase Hosting
     runs-on: ubuntu-latest
+    # Scheduled health checks must not republish the default branch.
     if: |
       success() &&
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' ||
-       github.event_name == 'push' && github.ref == 'refs/heads/develop' ||
-       github.event_name == 'schedule')
+      github.event_name == 'push' &&
+      !contains(github.event.head_commit.message, '[skip deploy]') &&
+      (github.ref == 'refs/heads/main' ||
+       github.ref == 'refs/heads/develop')
     needs: e2e-tests
 
     steps:
@@ -367,5 +369,4 @@ jobs:
                 `Branch: \`${{ github.ref_name }}\`\n` +
                 `[View workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
             });
-
 
