@@ -69,6 +69,8 @@ Behavior:
   contains `[skip deploy]`; the marker skips Hosting only, not the E2E checks.
   Release changes must be merged into the deployment branch before a later
   unmarked push to avoid reverting a local-only build.
+- Architecture-gated production deployments build the exact validated main
+  revision; manually requested deployments build the selected revision.
 
 ## Tests
 Run focused tests:
