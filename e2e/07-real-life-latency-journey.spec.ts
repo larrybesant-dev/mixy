@@ -30,7 +30,9 @@ test.describe('MixVy real-life journey under latency', () => {
       await enableFlutterSemantics(page);
       await expect(page).not.toHaveURL(/\/auth(?:$|[/?#])/);
 
-      await page.getByRole('button', { name: 'Rooms', exact: true }).click();
+      await page
+        .getByRole('button', { name: /^Rooms(?: Rooms)?$/ })
+        .click();
       await expect(page).toHaveURL(/\/(?:rooms|\?__dl=%2Frooms)/);
       await expect(page.getByText('Rooms', { exact: true }).first()).toBeVisible();
 
@@ -38,7 +40,9 @@ test.describe('MixVy real-life journey under latency', () => {
       await expect(musicCategory).toBeVisible();
       await musicCategory.click();
 
-      await page.getByRole('button', { name: 'Messages', exact: true }).click();
+      await page
+        .getByRole('button', { name: /^Messages(?: Messages)?$/ })
+        .click();
       await expect(page).toHaveURL(/\/messages(?:$|[/?#])/);
       await expect(page.getByText('Inbox', { exact: true }).first()).toBeVisible();
 

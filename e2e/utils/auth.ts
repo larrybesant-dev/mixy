@@ -105,7 +105,7 @@ async function assertMixvyAppEndpoint(page: Page): Promise<void> {
 
 /**
  * Authenticates a user in the test environment by logging into the Flutter web app
- * Supports multiple fallback methods including Firebase auth and local storage injection
+ * Uses the real email/password form so the app owns a persistent Firebase session.
  */
 export async function authenticateTestUser(page: Page): Promise<boolean> {
   activateWorkerCredentials();
@@ -138,26 +138,8 @@ export async function authenticateTestUser(page: Page): Promise<boolean> {
       return true;
     }
 
-    // Method 2: Try Firebase Auth REST API (fallback)
-    const firebaseSuccess = await withTimeout(
-      tryFirebaseRestAuth(page, testEmail, testPassword),
-      AUTH_STEP_TIMEOUT_MS,
-      'firebase REST authentication'
-    ).catch((error) => {
-      console.warn(
-        `Firebase REST authentication fallback failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      return false;
-    });
-    if (firebaseSuccess) {
-      console.log('✓ Authenticated via Firebase REST API');
-      return true;
-    }
-
     if (authRequired) {
-      console.warn('⚠ Could not authenticate with credentials and guest fallback is disabled (AUTH_REQUIRED=1).');
+      console.warn('⚠ Could not authenticate with the app and guest fallback is disabled (AUTH_REQUIRED=1).');
       return false;
     }
 
@@ -254,75 +236,15 @@ async function enterFlutterText(
   input: Locator,
   value: string,
 ): Promise<void> {
-  await input.click();
-  await input.press('ControlOrMeta+A');
-  await input.pressSequentially(value, { delay: 10 });
+  await input.fill(value);
   const entered = await input.inputValue().catch(() => '');
   if (entered === value) return;
 
-  await input.fill(value);
+  await input.click();
+  await input.press('ControlOrMeta+A');
+  await input.pressSequentially(value, { delay: 10 });
   if (await input.inputValue().catch(() => '') !== value) {
     throw new Error('Flutter text field did not accept the requested value.');
-  }
-}
-
-/**
- * Attempts authentication via Firebase Auth REST API (server-side fallback)
- */
-async function tryFirebaseRestAuth(page: Page, email: string, password: string): Promise<boolean> {
-  try {
-    // Get Firebase config from window object or use hardcoded values
-    const firebaseKey = process.env.FIREBASE_API_KEY || 'AIzaSyCM6_Eye8JMEW7dXFpo-i-Frp4t3owyh_I';
-    const firebaseProjectId = 'mixvy-v2';
-
-    const response = await page.request.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseKey}`,
-      {
-        data: {
-          email,
-          password,
-          returnSecureToken: true,
-        },
-      }
-    );
-
-    if (!response.ok()) {
-      return false;
-    }
-
-    const result = await response.json() as any;
-    
-    if (!result.idToken) {
-      return false;
-    }
-
-    // Store auth tokens in localStorage
-    await page.evaluate(
-      ({ tokens, uid }) => {
-        localStorage.setItem('firebase:authUser:mixvy-v2', JSON.stringify({
-          uid,
-          email: tokens.email,
-          emailVerified: false,
-          displayName: null,
-          isAnonymous: false,
-          metadata: {
-            creationTime: new Date().toISOString(),
-            lastSignInTime: new Date().toISOString(),
-          },
-          providerData: [],
-          _token: tokens.idToken,
-          _tokenExpirationTime: Date.now() + (3600 * 1000),
-        }));
-      },
-      { tokens: result, uid: result.localId }
-    );
-
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForURL((url) => !url.pathname.includes('/auth'), { timeout: 10000 });
-    await page.waitForTimeout(3000);
-    return !new URL(page.url()).pathname.includes('/auth');
-  } catch (e) {
-    return false;
   }
 }
 

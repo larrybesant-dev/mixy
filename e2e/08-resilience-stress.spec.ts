@@ -48,18 +48,26 @@ test.describe.serial('MixVy resilience stress', () => {
 
     try {
       for (let iteration = 0; iteration < 5; iteration += 1) {
-        await page.getByRole('button', { name: 'Rooms', exact: true }).click();
-        await page.getByRole('button', { name: 'Messages', exact: true }).click();
+        await page
+          .getByRole('button', { name: /^Rooms(?: Rooms)?$/ })
+          .click();
+        await page
+          .getByRole('button', { name: /^Messages(?: Messages)?$/ })
+          .click();
       }
       await expect(page).toHaveURL(/\/messages(?:$|[/?#])/);
       await expect(page.getByText('Inbox', { exact: true }).first()).toBeVisible();
 
       await page.context().setOffline(true);
-      await page.getByRole('button', { name: 'Rooms', exact: true }).click();
+      await page
+        .getByRole('button', { name: /^Rooms(?: Rooms)?$/ })
+        .click();
       await expect(page.locator('body')).toBeVisible();
       await page.context().setOffline(false);
 
-      await page.getByRole('button', { name: 'Messages', exact: true }).click();
+      await page
+        .getByRole('button', { name: /^Messages(?: Messages)?$/ })
+        .click();
       await expect(page.getByText('Inbox', { exact: true }).first()).toBeVisible();
       expect(diagnostics.pageErrors).toEqual([]);
     } finally {

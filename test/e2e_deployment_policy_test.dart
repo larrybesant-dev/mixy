@@ -27,6 +27,9 @@ String _jobCondition(String job) {
 void main() {
   test('only unmarked main and develop pushes can deploy', () {
     final workflow = File('.github/workflows/e2e-tests.yml').readAsStringSync();
+    final e2eJob = _jobBody(workflow, 'e2e-tests');
+    expect(e2eJob, contains('runs-on: ubuntu-24.04'));
+    expect(e2eJob, isNot(contains('runs-on: ubuntu-latest')));
     expect(
       _jobCondition(_jobBody(workflow, 'deploy')),
       "success() && github.event_name == 'push' && "
