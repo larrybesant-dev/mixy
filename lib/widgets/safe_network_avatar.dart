@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../core/utils/network_image_url.dart';
 
@@ -66,6 +67,22 @@ class SafeNetworkAvatar extends StatelessWidget {
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _fallback(context),
+        ),
+      );
+    }
+
+    // On web, CachedNetworkImage can paint an empty texture (black circle)
+    // for valid Google photos, so use Image.network there.
+    if (kIsWeb) {
+      return ClipOval(
+        child: Image.network(
+          safeUrl,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) =>
+              progress == null ? child : _fallback(context),
           errorBuilder: (context, error, stackTrace) => _fallback(context),
         ),
       );

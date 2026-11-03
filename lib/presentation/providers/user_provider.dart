@@ -121,11 +121,15 @@ final userProvider = Provider<UserModel?>((ref) {
   );
 
   // Use avatar if it belongs to the current user.
-  final profileAvatar =
+  final profileAvatarFromState =
       (profileState.userId == uid || profileState.userId == null) &&
               (profileState.avatarUrl?.isNotEmpty == true)
           ? profileState.avatarUrl
           : persistedProfile?.avatarUrl;
+  final authUser = ref.watch(firebaseAuthProvider).currentUser;
+  final authPhotoUrl = authUser?.uid == uid ? authUser?.photoURL : null;
+  final profileAvatar = profileAvatarFromState ??
+      (authPhotoUrl?.isNotEmpty == true ? authPhotoUrl : null);
 
   return UserModel(
     id: uid,

@@ -61,7 +61,9 @@ class StoriesRow extends ConsumerWidget {
                 child: _StoryBubble(
                   userId: id,
                   username: isOwn ? 'Your Story' : (story?.username ?? ''),
-                  avatarUrl: story?.userAvatarUrl,
+                  avatarUrl: isOwn
+                      ? (authUser?.avatarUrl ?? story?.userAvatarUrl)
+                      : story?.userAvatarUrl,
                   hasStory: hasStory,
                   isOwn: isOwn,
                 ),
