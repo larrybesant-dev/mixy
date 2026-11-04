@@ -188,7 +188,7 @@ final conversationDocProvider = StreamProvider.autoDispose
   final lifecycle = ref.watch(streamLifecycleManagerProvider);
   return lifecycle.bind(
     key: 'conversation-doc:$conversationId',
-    routePrefixes: const <String>['/chat'],
+    routePrefixes: const <String>['/chat', '/messages'],
     create: () => firestore
         .collection('conversations')
         .doc(conversationId)
@@ -217,7 +217,7 @@ final messageStreamProvider = StreamProvider.autoDispose
   final lifecycle = ref.watch(streamLifecycleManagerProvider);
   return lifecycle.bind(
     key: 'messages:$conversationId',
-    routePrefixes: const <String>['/chat'],
+    routePrefixes: const <String>['/chat', '/messages'],
     create: () => firestore
         .collection('conversations')
         .doc(conversationId)
@@ -891,7 +891,7 @@ final messageReactionsProvider = StreamProvider.autoDispose
   final lifecycle = ref.watch(streamLifecycleManagerProvider);
   return lifecycle.bind(
     key: 'message-reactions:${params.conversationId}:${params.messageId}',
-    routePrefixes: const <String>['/chat'],
+    routePrefixes: const <String>['/chat', '/messages'],
     create: () => firestore
         .collection('conversations')
         .doc(params.conversationId)
@@ -921,7 +921,7 @@ final typingUsersProvider = StreamProvider.autoDispose
   final lifecycle = ref.watch(streamLifecycleManagerProvider);
   return lifecycle.bind(
     key: 'typing:$conversationId',
-    routePrefixes: const <String>['/chat'],
+    routePrefixes: const <String>['/chat', '/messages'],
     create: () => firestore
         .collection('conversations')
         .doc(conversationId)

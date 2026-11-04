@@ -104,6 +104,19 @@ Behavior:
   per conversation on the sending client.
 
 ## Tests
+
+Run the local Firebase emulator Playwright journey for authentication, room
+creation, and real-time messaging:
+
+```powershell
+npm run test:e2e:emulator
+```
+
+The command builds the web app with emulator routing enabled, provisions two
+isolated Auth/Firestore emulator users, runs Chromium against the Hosting
+emulator, and writes the HTML report to `playwright-report/`. Java 21 or newer
+is required by the Firebase emulators.
+
 Profile photos on web and mobile are normalized to JPEG and uploaded to Firebase
 Storage; profile documents store download URLs, not inline image data. Inputs
 must be under 20MB, and processed uploads must be under the Storage rules' 5MB

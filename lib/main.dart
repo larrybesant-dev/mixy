@@ -17,6 +17,7 @@ import 'app/boot_state_notifier.dart';
 import 'core/logger.dart';
 import 'core/telemetry/launch_monitoring.dart';
 import 'core/telemetry/web_vitals.dart';
+import 'dev/firebase_emulator_bootstrap.dart';
 import 'services/diagnostic_logger.dart';
 
 bool get _crashlyticsSupported =>
@@ -48,9 +49,10 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    await FirebaseEmulatorBootstrap.configure();
     debugPrint('[Firebase] Firebase initialized successfully');
 
-    if (kIsWeb) {
+    if (kIsWeb && !FirebaseEmulatorBootstrap.enabled) {
       FirebaseFirestore.instance.settings = const Settings(
         persistenceEnabled: true,
         cacheSizeBytes: 50 * 1024 * 1024,
@@ -132,7 +134,9 @@ Future<void> main() async {
     final webAppCheckDisabled =
         disableWebAppCheck.toLowerCase().trim() == 'true';
 
-    if (kIsWeb && webAppCheckDisabled) {
+    if (FirebaseEmulatorBootstrap.enabled) {
+      debugPrint('[Firebase] App Check skipped for local emulators');
+    } else if (kIsWeb && webAppCheckDisabled) {
       debugPrint(
         '[Firebase] App Check disabled on web via DISABLE_WEB_APPCHECK=true',
       );
