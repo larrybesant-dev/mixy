@@ -10,7 +10,8 @@
 - Desktop Messenger windows, buddy list, status controls, Buzz messages, room
   invitations, and profile photo viewing.
 - Configurable live-room camera layouts, viewer-local tile sizing and focus,
-  room artwork backgrounds, and local room-audio muting.
+  draggable floating camera windows, room artwork backgrounds, and local
+  room-audio muting.
 - Local Firebase emulator Playwright coverage for authentication, room
   creation, and real-time direct messaging.
 

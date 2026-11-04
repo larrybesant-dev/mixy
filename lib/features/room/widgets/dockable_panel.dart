@@ -76,12 +76,10 @@ class _DockablePanelState extends State<DockablePanel> {
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(8),
                   topRight: const Radius.circular(8),
-                  bottomLeft: _minimized
-                      ? const Radius.circular(8)
-                      : Radius.zero,
-                  bottomRight: _minimized
-                      ? const Radius.circular(8)
-                      : Radius.zero,
+                  bottomLeft:
+                      _minimized ? const Radius.circular(8) : Radius.zero,
+                  bottomRight:
+                      _minimized ? const Radius.circular(8) : Radius.zero,
                 ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -166,6 +164,13 @@ class FloatingDockablePanel extends StatefulWidget {
     super.key,
     required this.title,
     required this.child,
+    this.panelId,
+    this.position,
+    this.size,
+    this.minimized,
+    this.onMove,
+    this.onResize,
+    this.onMinimizedChanged,
     this.icon,
     this.initialOffset = const Offset(80, 120),
     this.width = 320.0,
@@ -180,6 +185,13 @@ class FloatingDockablePanel extends StatefulWidget {
 
   final String title;
   final Widget child;
+  final String? panelId;
+  final Offset? position;
+  final Size? size;
+  final bool? minimized;
+  final ValueChanged<Offset>? onMove;
+  final ValueChanged<Offset>? onResize;
+  final ValueChanged<bool>? onMinimizedChanged;
   final IconData? icon;
   final Offset initialOffset;
   final double width;
@@ -192,21 +204,54 @@ class FloatingDockablePanel extends StatefulWidget {
   final List<Widget> actions;
 
   @override
-  State<FloatingDockablePanel> createState() => FloatingDockablePanelState();
+  State<FloatingDockablePanel> createState() => _FloatingDockablePanelState();
 }
 
-class FloatingDockablePanelState extends State<FloatingDockablePanel> {
+class _FloatingDockablePanelState extends State<FloatingDockablePanel> {
   late Offset _position;
-  late double _width;
-  late double _height;
-  bool _minimized = false;
+  late Size _size;
+  late bool _minimized;
 
   @override
   void initState() {
     super.initState();
-    _position = widget.initialOffset;
-    _width = widget.width;
-    _height = widget.height;
+    _position = widget.position ?? widget.initialOffset;
+    _size = widget.size ?? Size(widget.width, widget.height);
+    _minimized = widget.minimized ?? false;
+  }
+
+  @override
+  void didUpdateWidget(FloatingDockablePanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.position != null) _position = widget.position!;
+    if (widget.size != null) _size = widget.size!;
+    if (widget.minimized != null) _minimized = widget.minimized!;
+  }
+
+  void _move(Offset delta) {
+    widget.onMove?.call(delta);
+    if (widget.position == null) {
+      setState(() => _position += delta);
+    }
+  }
+
+  void _resize(Offset delta) {
+    widget.onResize?.call(delta);
+    if (widget.size == null) {
+      setState(() {
+        _size = Size(
+          (_size.width + delta.dx).clamp(200.0, 800.0),
+          (_size.height + delta.dy).clamp(150.0, 600.0),
+        );
+      });
+    }
+  }
+
+  void _setMinimized(bool minimized) {
+    widget.onMinimizedChanged?.call(minimized);
+    if (widget.minimized == null) {
+      setState(() => _minimized = minimized);
+    }
   }
 
   @override
@@ -214,13 +259,15 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
     const npOnVariant = Color(0xFFB09080);
     const npPrimary = Color(0xFFD4A853);
     const headerHeight = 32.0;
-
-    final panelHeight = _minimized ? headerHeight : (_height.isFinite ? _height : 260.0);
+    final panelHeight = _minimized
+        ? headerHeight
+        : (_size.height.isFinite ? _size.height : 260.0);
+    final panelId = widget.panelId ?? widget.title;
 
     return Positioned(
       left: _position.dx.isFinite ? _position.dx : 80.0,
       top: _position.dy.isFinite ? _position.dy : 120.0,
-      width: _width.isFinite ? _width : 320.0,
+      width: _size.width.isFinite ? _size.width : 320.0,
       height: panelHeight,
       child: Material(
         color: Colors.transparent,
@@ -244,14 +291,11 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── Draggable title bar ───────────────────────────────────
                   GestureDetector(
-                    onDoubleTap: () => setState(() => _minimized = !_minimized),
-                    onPanUpdate: (details) {
-                      setState(() {
-                        _position += details.delta;
-                      });
-                    },
+                    key: ValueKey('floating_panel_header_$panelId'),
+                    behavior: HitTestBehavior.opaque,
+                    onDoubleTap: () => _setMinimized(!_minimized),
+                    onPanUpdate: (details) => _move(details.delta),
                     child: Container(
                       height: headerHeight,
                       decoration: BoxDecoration(
@@ -304,8 +348,7 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
                                 ? Icons.keyboard_arrow_down
                                 : Icons.keyboard_arrow_up,
                             color: npOnVariant,
-                            onTap: () =>
-                                setState(() => _minimized = !_minimized),
+                            onTap: () => _setMinimized(!_minimized),
                           ),
                           if (widget.onClose != null)
                             _HeaderIconButton(
@@ -318,29 +361,17 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
                       ),
                     ),
                   ),
-                  // ── Content ───────────────────────────────────────────────
                   if (!_minimized) Expanded(child: widget.child),
                 ],
               ),
-              // ── Resize handle (bottom-right corner) ─────────────────
               if (!_minimized)
                 Positioned(
                   right: 0,
                   bottom: 0,
                   child: GestureDetector(
+                    key: ValueKey('floating_panel_resize_$panelId'),
                     behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (details) {
-                      setState(() {
-                        _width = (_width + details.delta.dx).clamp(
-                          200.0,
-                          800.0,
-                        );
-                        _height = (_height + details.delta.dy).clamp(
-                          150.0,
-                          600.0,
-                        );
-                      });
-                    },
+                    onPanUpdate: (details) => _resize(details.delta),
                     child: MouseRegion(
                       cursor: SystemMouseCursors.resizeDownRight,
                       child: Container(
@@ -368,6 +399,3 @@ class FloatingDockablePanelState extends State<FloatingDockablePanel> {
     );
   }
 }
-
-
-

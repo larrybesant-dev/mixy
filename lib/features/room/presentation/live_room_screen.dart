@@ -28,12 +28,14 @@ import '../providers/mic_access_provider.dart';
 import '../providers/cam_view_request_provider.dart';
 import '../providers/presence_provider.dart';
 import '../providers/connection_recovery_provider.dart';
+import '../providers/floating_cam_provider.dart';
 import '../providers/room_gift_provider.dart';
 import '../repository/room_repository.dart';
 import '../widgets/network_health_widget.dart';
 import '../widgets/recovery_badge.dart';
 import '../widgets/connection_failed_overlay.dart';
 import '../widgets/cam_view_request_dialog.dart';
+import '../widgets/floating_cam_window.dart';
 import '../widgets/mic_queue_panel.dart';
 import '../widgets/user_list_panel.dart';
 import '../widgets/room_text_utils.dart';
@@ -2400,6 +2402,30 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
           ));
         }
 
+        final allCameraEntries = List.of(gridEntries, growable: false);
+        final floatingCamStates =
+            ref.watch(floatingCamStatesProvider(widget.roomId));
+        final activeStreamIds =
+            allCameraEntries.map((entry) => entry.key).toSet();
+        if (floatingCamStates.length != activeStreamIds.length ||
+            floatingCamStates.keys.any((id) => !activeStreamIds.contains(id))) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ref
+                .read(floatingCamStatesProvider(widget.roomId).notifier)
+                .syncActiveStreamIds(activeStreamIds);
+          });
+        }
+        gridEntries.removeWhere(
+          (entry) => floatingCamStates[entry.key]?.isDetached == true,
+        );
+        final floatingCamLabels = <String, String>{
+          for (final entry in allCameraEntries) entry.key: entry.label,
+        };
+        final floatingCamViews = <String, Widget>{
+          for (final entry in allCameraEntries) entry.key: entry.view,
+        };
+
         final gridSlotCount = _manualGridSlotCount ??
             liveRoomAutomaticGridSlotCount(gridEntries.length);
         final visibleCount = gridEntries.length > gridSlotCount
@@ -2487,8 +2513,41 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
                                 ),
                               ),
                               Positioned(
-                                left: 8,
+                                top: 6,
                                 right: 48,
+                                child: IconButton(
+                                  key: ValueKey(
+                                    'detach-camera-$videoKey',
+                                  ),
+                                  tooltip: 'Float camera',
+                                  onPressed: () {
+                                    if (_expandedVideoKey == videoKey) {
+                                      setState(() => _expandedVideoKey = null);
+                                    }
+                                    ref
+                                        .read(
+                                          floatingCamStatesProvider(
+                                            widget.roomId,
+                                          ).notifier,
+                                        )
+                                        .detach(videoKey);
+                                  },
+                                  style: IconButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.black.withValues(alpha: 0.62),
+                                    foregroundColor: VelvetNoir.onSurface,
+                                    minimumSize: const Size(34, 34),
+                                    padding: const EdgeInsets.all(7),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.picture_in_picture_alt,
+                                    size: 17,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 8,
+                                right: 88,
                                 bottom: 8,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -2866,6 +2925,13 @@ class _LiveRoomScreenState extends ConsumerState<LiveRoomScreen>
             GiftTickerWidget(
               roomId: widget.roomId,
               bottomPadding: 80,
+            ),
+
+            FloatingCamWindowLayer(
+              roomId: widget.roomId,
+              labels: floatingCamLabels,
+              contentBuilder: (streamId) =>
+                  floatingCamViews[streamId] ?? const SizedBox.shrink(),
             ),
           ],
         );
