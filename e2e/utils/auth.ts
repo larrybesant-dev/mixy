@@ -38,6 +38,8 @@ export async function enableFlutterSemantics(page: Page): Promise<void> {
         await semanticsPlaceholder.evaluate((element) => {
           (element as HTMLElement).click();
         });
+      } else {
+        await page.keyboard.press('Tab');
       }
     }
     await page.waitForTimeout(500);
@@ -53,7 +55,7 @@ export async function waitForAppReady(page: Page): Promise<void> {
     .poll(
       async () =>
         await page
-          .locator('flt-semantics-placeholder, flt-glass-pane, flutter-view, canvas, [flt-semantics], button, [role="button"], input')
+          .locator('flt-semantics-placeholder, flt-semantics, flt-glass-pane, flutter-view, canvas, button, [role="button"], input')
           .count(),
       {
         timeout: 30000,

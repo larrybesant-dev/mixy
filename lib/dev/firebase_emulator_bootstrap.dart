@@ -17,7 +17,7 @@ class FirebaseEmulatorBootstrap {
   );
   static const int firestorePort = int.fromEnvironment(
     'FIRESTORE_EMULATOR_PORT',
-    defaultValue: 8080,
+    defaultValue: 8085,
   );
   static const int functionsPort = int.fromEnvironment(
     'FUNCTIONS_EMULATOR_PORT',
@@ -34,6 +34,3 @@ class FirebaseEmulatorBootstrap {
     FirebaseFunctions.instance.useFunctionsEmulator(host, functionsPort);
   }
 }
-
-
-
